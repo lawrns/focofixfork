@@ -1,0 +1,3636 @@
+{
+  "config": {
+    "configFile": "/Users/lukatenbosch/Downloads/bieno/frontend/playwright.config.ts",
+    "rootDir": "/Users/lukatenbosch/Downloads/bieno/frontend/src/__tests__/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 7
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/lukatenbosch/Downloads/bieno/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/lukatenbosch/Downloads/bieno/frontend/src/__tests__/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/lukatenbosch/Downloads/bieno/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/lukatenbosch/Downloads/bieno/frontend/src/__tests__/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/lukatenbosch/Downloads/bieno/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/lukatenbosch/Downloads/bieno/frontend/src/__tests__/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/lukatenbosch/Downloads/bieno/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/lukatenbosch/Downloads/bieno/frontend/src/__tests__/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/lukatenbosch/Downloads/bieno/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/lukatenbosch/Downloads/bieno/frontend/src/__tests__/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.1",
+    "workers": 7,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "foco-validation.spec.ts",
+      "file": "foco-validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Foco Application - Complete Validation",
+          "file": "foco-validation.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. Landing Page - Should display Foco branding and navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1697,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Foco branding found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Register button found: \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.656Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-568cfe880651eccc7ccc",
+              "file": "foco-validation.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "2. Authentication Flow - Login with provided credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 13030,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Current URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "📧 Email input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔒 Password input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔘 Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 After login URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "✅ Login successful (dashboard): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Login error: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.667Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-298db31f6bedf28e5320",
+              "file": "foco-validation.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "3. Dashboard - Validate core functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 11147,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Dashboard URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "📋 Header found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Sidebar found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Table view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📋 Kanban view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📅 Gantt view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 AI view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Team view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Auto view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Main content area: \u001b[33mtrue\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.714Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-409590c6f811b8bef087",
+              "file": "foco-validation.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "4. Projects Page - Validate project management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 16109,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Projects URL: http://localhost:3000/login?redirect=%2Fprojects\n"
+                        },
+                        {
+                          "text": "🔒 Projects page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88261) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.656Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-8bdc0f4ac97dc907d1d0",
+              "file": "foco-validation.spec.ts",
+              "line": 148,
+              "column": 7
+            },
+            {
+              "title": "5. Organizations Page - Validate organization management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 16214,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Organizations URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Organizations page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88258) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.672Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-eedad872f5ab6a521574",
+              "file": "foco-validation.spec.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "title": "6. Milestones Page - Validate milestone management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 16206,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Milestones URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Milestones page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88259) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.703Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-5793bf05fd12612190dd",
+              "file": "foco-validation.spec.ts",
+              "line": 198,
+              "column": 7
+            },
+            {
+              "title": "7. Settings Page - Validate user settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 9832,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Settings URL: http://localhost:3000/settings\n"
+                        },
+                        {
+                          "text": "👤 Profile settings: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "⚙️ Preferences settings: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🌙 Theme toggle: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88262) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:25.664Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-265da1eafbd4801aea04",
+              "file": "foco-validation.spec.ts",
+              "line": 219,
+              "column": 7
+            },
+            {
+              "title": "8. API Health Check - Validate backend connectivity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5544,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🏥 Health check status: \u001b[33m200\u001b[39m\n"
+                        },
+                        {
+                          "text": "🏥 Health check data: {\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-09-24T01:19:32.772Z\",\n  \"version\": \"1.0.0\",\n  \"uptime\": 10.672369833,\n  \"response_time_ms\": 507,\n  \"checks\": {\n    \"database\": {\n      \"status\": \"healthy\",\n      \"response_time_ms\": 507,\n      \"details\": \"Connected\"\n    },\n    \"environment\": {\n      \"status\": \"healthy\",\n      \"details\": \"All required variables present\"\n    }\n  },\n  \"environment\": {\n    \"node_version\": \"v20.19.4\",\n    \"platform\": \"darwin\",\n    \"arch\": \"arm64\",\n    \"memory\": {\n      \"used\": 529,\n      \"total\": 622,\n      \"external\": 491\n    }\n  }\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:27.814Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-d776b37351483f312400",
+              "file": "foco-validation.spec.ts",
+              "line": 242,
+              "column": 7
+            },
+            {
+              "title": "9. Performance Validation - Check load times and responsiveness",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5237,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⚡ Page load time: \u001b[33m2770\u001b[39m ms\n"
+                        },
+                        {
+                          "text": "🖼️ Large images found: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📱 Responsive design tested\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:33.380Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-293098175d3461ccc5dd",
+              "file": "foco-validation.spec.ts",
+              "line": 255,
+              "column": 7
+            },
+            {
+              "title": "10. Accessibility Validation - Basic accessibility checks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 6239,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "♿ Images without alt text: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Buttons without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Links without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H1 headings: \u001b[33m1\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H2 headings: \u001b[33m1\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:35.961Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-e5a323d1a7e18b815aed",
+              "file": "foco-validation.spec.ts",
+              "line": 286,
+              "column": 7
+            },
+            {
+              "title": "11. Branding Validation - Confirm Foco identity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4935,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎨 Foco references found: \u001b[33m5\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        },
+                        {
+                          "text": "📝 Meta description: Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.\n"
+                        },
+                        {
+                          "text": "🔍 Other brandings found: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:37.315Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-b2ab8a4316c67cb74841",
+              "file": "foco-validation.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "12. Feature Completeness - Check for claimed features",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4746,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 Feature completeness check:\n"
+                        },
+                        {
+                          "text": "  ✅ Dashboard with view buttons: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Search functionality: Found\n"
+                        },
+                        {
+                          "text": "  ❌ User menu: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Navigation sidebar: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Project creation: Found\n"
+                        },
+                        {
+                          "text": "  ❌ AI Assistant: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ Time Tracking: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ File Upload: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Import/Export: Found\n"
+                        },
+                        {
+                          "text": "  ❌ Notifications: Missing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:38.643Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-968bd820ee777d36e5c1",
+              "file": "foco-validation.spec.ts",
+              "line": 333,
+              "column": 7
+            },
+            {
+              "title": "13. Data Connectivity - Verify database integration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5089,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⏳ Loading indicators: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Error messages: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Data elements found: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:39.157Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-28792db3139e55fd8cef",
+              "file": "foco-validation.spec.ts",
+              "line": 369,
+              "column": 7
+            },
+            {
+              "title": "14. Error Handling - Test error scenarios",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 3586,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📄 404 page content: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 Invalid API status: \u001b[33m404\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:42.227Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-ca259108fea7825942e9",
+              "file": "foco-validation.spec.ts",
+              "line": 392,
+              "column": 7
+            },
+            {
+              "title": "1. Landing Page - Should display Foco branding and navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 6585,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Foco branding found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Register button found: \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88941) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:43.108Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-116dc67f431f71c3a69a",
+              "file": "foco-validation.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "2. Authentication Flow - Login with provided credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 9876,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Current URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "📧 Email input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔒 Password input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔘 Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 After login URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "✅ Login successful (dashboard): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Login error: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88953) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:43.100Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-2f92cfac29c92dfb5733",
+              "file": "foco-validation.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "3. Dashboard - Validate core functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 7018,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Dashboard URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "📋 Header found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Sidebar found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Table view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📋 Kanban view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📅 Gantt view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 AI view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Team view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Auto view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Main content area: \u001b[33mtrue\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88955) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:43.104Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-c3eb2e348682b3062b41",
+              "file": "foco-validation.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "4. Projects Page - Validate project management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3219,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Projects URL: http://localhost:3000/projects\n"
+                        },
+                        {
+                          "text": "➕ Create project button: \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📋 Project items found: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Project table: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88954) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:43.109Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-8052fa1c9d2b8ac7826c",
+              "file": "foco-validation.spec.ts",
+              "line": 148,
+              "column": 7
+            },
+            {
+              "title": "5. Organizations Page - Validate organization management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13608,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Organizations URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Organizations page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:88977) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:43.942Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-fc09f9bab42002d664df",
+              "file": "foco-validation.spec.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "title": "6. Milestones Page - Validate milestone management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 11808,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Milestones URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Milestones page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89002) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:45.002Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-459cabac3179638aa502",
+              "file": "foco-validation.spec.ts",
+              "line": 198,
+              "column": 7
+            },
+            {
+              "title": "7. Settings Page - Validate user settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 10020,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Settings URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Settings page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89039) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:46.892Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-66ab7987b227f0bec40a",
+              "file": "foco-validation.spec.ts",
+              "line": 219,
+              "column": 7
+            },
+            {
+              "title": "8. API Health Check - Validate backend connectivity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3209,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🏥 Health check status: \u001b[33m200\u001b[39m\n"
+                        },
+                        {
+                          "text": "🏥 Health check data: {\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-09-24T01:19:50.660Z\",\n  \"version\": \"1.0.0\",\n  \"uptime\": 28.560565708,\n  \"response_time_ms\": 8,\n  \"checks\": {\n    \"database\": {\n      \"status\": \"healthy\",\n      \"response_time_ms\": 8,\n      \"details\": \"Connected\"\n    },\n    \"environment\": {\n      \"status\": \"healthy\",\n      \"details\": \"All required variables present\"\n    }\n  },\n  \"environment\": {\n    \"node_version\": \"v20.19.4\",\n    \"platform\": \"darwin\",\n    \"arch\": \"arm64\",\n    \"memory\": {\n      \"used\": 745,\n      \"total\": 784,\n      \"external\": 639\n    }\n  }\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:47.565Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-d7d1049f6e347310c12d",
+              "file": "foco-validation.spec.ts",
+              "line": 242,
+              "column": 7
+            },
+            {
+              "title": "9. Performance Validation - Check load times and responsiveness",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 6381,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⚡ Page load time: \u001b[33m3802\u001b[39m ms\n"
+                        },
+                        {
+                          "text": "🖼️ Large images found: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📱 Responsive design tested\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:50.801Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-fd302eeb64b5bb4b4232",
+              "file": "foco-validation.spec.ts",
+              "line": 255,
+              "column": 7
+            },
+            {
+              "title": "10. Accessibility Validation - Basic accessibility checks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 4097,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "♿ Images without alt text: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Buttons without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Links without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H1 headings: \u001b[33m1\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H2 headings: \u001b[33m1\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:53.659Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-fee482b314bccf44aa9a",
+              "file": "foco-validation.spec.ts",
+              "line": 286,
+              "column": 7
+            },
+            {
+              "title": "11. Branding Validation - Confirm Foco identity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2832,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎨 Foco references found: \u001b[33m5\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        },
+                        {
+                          "text": "📝 Meta description: Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.\n"
+                        },
+                        {
+                          "text": "🔍 Other brandings found: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:55.852Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-50428d967912f48ac07d",
+              "file": "foco-validation.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "12. Feature Completeness - Check for claimed features",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4362,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 Feature completeness check:\n"
+                        },
+                        {
+                          "text": "  ✅ Dashboard with view buttons: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Search functionality: Found\n"
+                        },
+                        {
+                          "text": "  ❌ User menu: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Navigation sidebar: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Project creation: Found\n"
+                        },
+                        {
+                          "text": "  ❌ AI Assistant: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ Time Tracking: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ File Upload: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Import/Export: Found\n"
+                        },
+                        {
+                          "text": "  ❌ Notifications: Missing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:56.048Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-75559720f9ba30810440",
+              "file": "foco-validation.spec.ts",
+              "line": 333,
+              "column": 7
+            },
+            {
+              "title": "13. Data Connectivity - Verify database integration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 5766,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⏳ Loading indicators: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Error messages: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Data elements found: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:57.194Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-0a0edbf35e58f5951ac4",
+              "file": "foco-validation.spec.ts",
+              "line": 369,
+              "column": 7
+            },
+            {
+              "title": "14. Error Handling - Test error scenarios",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 2160,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📄 404 page content: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 Invalid API status: \u001b[33m404\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:19:57.776Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-872fcea3623d99d02f0f",
+              "file": "foco-validation.spec.ts",
+              "line": 392,
+              "column": 7
+            },
+            {
+              "title": "1. Landing Page - Should display Foco branding and navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2742,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Foco branding found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Register button found: \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:00.269Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-bb57351a20ceb5195b76",
+              "file": "foco-validation.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "2. Authentication Flow - Login with provided credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5664,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Current URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "📧 Email input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔒 Password input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔘 Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 After login URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "✅ Login successful (dashboard): \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Login error: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89457) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:00.239Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-af77b5e8c0fdf232480f",
+              "file": "foco-validation.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "3. Dashboard - Validate core functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4216,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Dashboard URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "📋 Header found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Sidebar found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Table view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📋 Kanban view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📅 Gantt view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 AI view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Team view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Auto view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Main content area: \u001b[33mtrue\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:01.068Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-35b51a5a9c5c0c382c0b",
+              "file": "foco-validation.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "4. Projects Page - Validate project management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 3428,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Projects URL: http://localhost:3000/login?redirect=%2Fprojects\n"
+                        },
+                        {
+                          "text": "🔒 Projects page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89501) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:01.579Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-26c0a7d41d1f9bdbface",
+              "file": "foco-validation.spec.ts",
+              "line": 148,
+              "column": 7
+            },
+            {
+              "title": "5. Organizations Page - Validate organization management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 3462,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Organizations URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Organizations page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:01.674Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-4db5203e614e75266f38",
+              "file": "foco-validation.spec.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "title": "6. Milestones Page - Validate milestone management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5155,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Milestones URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Milestones page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89527) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:03.034Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-059b83a7582594ed5713",
+              "file": "foco-validation.spec.ts",
+              "line": 198,
+              "column": 7
+            },
+            {
+              "title": "7. Settings Page - Validate user settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 4325,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Settings URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Settings page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89619) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:05.832Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-b2983f22a88a7d8f6800",
+              "file": "foco-validation.spec.ts",
+              "line": 219,
+              "column": 7
+            },
+            {
+              "title": "8. API Health Check - Validate backend connectivity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 424,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🏥 Health check status: \u001b[33m200\u001b[39m\n"
+                        },
+                        {
+                          "text": "🏥 Health check data: {\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-09-24T01:20:03.548Z\",\n  \"version\": \"1.0.0\",\n  \"uptime\": 41.44865075,\n  \"response_time_ms\": 2,\n  \"checks\": {\n    \"database\": {\n      \"status\": \"healthy\",\n      \"response_time_ms\": 2,\n      \"details\": \"Connected\"\n    },\n    \"environment\": {\n      \"status\": \"healthy\",\n      \"details\": \"All required variables present\"\n    }\n  },\n  \"environment\": {\n    \"node_version\": \"v20.19.4\",\n    \"platform\": \"darwin\",\n    \"arch\": \"arm64\",\n    \"memory\": {\n      \"used\": 927,\n      \"total\": 980,\n      \"external\": 570\n    }\n  }\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:03.322Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-48dde819ab74e764abde",
+              "file": "foco-validation.spec.ts",
+              "line": 242,
+              "column": 7
+            },
+            {
+              "title": "9. Performance Validation - Check load times and responsiveness",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 6315,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⚡ Page load time: \u001b[33m1578\u001b[39m ms\n"
+                        },
+                        {
+                          "text": "🖼️ Large images found: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📱 Responsive design tested\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:03.869Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-dcdbc346f3929885ebde",
+              "file": "foco-validation.spec.ts",
+              "line": 255,
+              "column": 7
+            },
+            {
+              "title": "10. Accessibility Validation - Basic accessibility checks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3252,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "♿ Images without alt text: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Buttons without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Links without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H1 headings: \u001b[33m1\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H2 headings: \u001b[33m1\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:05.757Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-593537bdb7bde8c9ded8",
+              "file": "foco-validation.spec.ts",
+              "line": 286,
+              "column": 7
+            },
+            {
+              "title": "11. Branding Validation - Confirm Foco identity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 3414,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎨 Foco references found: \u001b[33m5\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        },
+                        {
+                          "text": "📝 Meta description: Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.\n"
+                        },
+                        {
+                          "text": "🔍 Other brandings found: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:05.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-c94413b3fe2ab3ea6514",
+              "file": "foco-validation.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "12. Feature Completeness - Check for claimed features",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 5116,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 Feature completeness check:\n"
+                        },
+                        {
+                          "text": "  ✅ Dashboard with view buttons: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Search functionality: Found\n"
+                        },
+                        {
+                          "text": "  ❌ User menu: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Navigation sidebar: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Project creation: Found\n"
+                        },
+                        {
+                          "text": "  ❌ AI Assistant: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ Time Tracking: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ File Upload: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Import/Export: Found\n"
+                        },
+                        {
+                          "text": "  ❌ Notifications: Missing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:05.848Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-b7eeeb9c8dcdcbcc24e5",
+              "file": "foco-validation.spec.ts",
+              "line": 333,
+              "column": 7
+            },
+            {
+              "title": "13. Data Connectivity - Verify database integration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5119,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⏳ Loading indicators: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Error messages: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Data elements found: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:06.238Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-92036e0d45918cccbcd3",
+              "file": "foco-validation.spec.ts",
+              "line": 369,
+              "column": 7
+            },
+            {
+              "title": "14. Error Handling - Test error scenarios",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1670,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📄 404 page content: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 Invalid API status: \u001b[33m404\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:08.677Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-9ad43dd767d7dc065b14",
+              "file": "foco-validation.spec.ts",
+              "line": 392,
+              "column": 7
+            },
+            {
+              "title": "1. Landing Page - Should display Foco branding and navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2087,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Foco branding found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Register button found: \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89797) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:10.164Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-afba98b65e3544a4a1a8",
+              "file": "foco-validation.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "2. Authentication Flow - Login with provided credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 22,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 5628,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Current URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "📧 Email input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔒 Password input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔘 Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 After login URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "✅ Login successful (dashboard): \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Login error: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89810) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:10.276Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-7703e259d10a96dc2c18",
+              "file": "foco-validation.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "3. Dashboard - Validate core functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 23,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 3286,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Dashboard URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "📋 Header found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Sidebar found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Table view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📋 Kanban view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📅 Gantt view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 AI view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Team view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Auto view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Main content area: \u001b[33mtrue\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89830) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:11.457Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-238ae7dbceb2d073d9a8",
+              "file": "foco-validation.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "4. Projects Page - Validate project management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 24,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 2766,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Projects URL: http://localhost:3000/login?redirect=%2Fprojects\n"
+                        },
+                        {
+                          "text": "🔒 Projects page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89836) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:11.802Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-8b4ca98abf06dd9c6639",
+              "file": "foco-validation.spec.ts",
+              "line": 148,
+              "column": 7
+            },
+            {
+              "title": "5. Organizations Page - Validate organization management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 25,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 2804,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Organizations URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Organizations page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89837) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:11.775Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-e105a08d73a557eecf18",
+              "file": "foco-validation.spec.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "title": "6. Milestones Page - Validate milestone management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 2660,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Milestones URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Milestones page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89867) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:12.121Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-d9fb7ce6530a90cbd832",
+              "file": "foco-validation.spec.ts",
+              "line": 198,
+              "column": 7
+            },
+            {
+              "title": "7. Settings Page - Validate user settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 27,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2280,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Settings URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Settings page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:89871) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:12.664Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-17cb3daa9a37af3084ac",
+              "file": "foco-validation.spec.ts",
+              "line": 219,
+              "column": 7
+            },
+            {
+              "title": "8. API Health Check - Validate backend connectivity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 539,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🏥 Health check status: \u001b[33m200\u001b[39m\n"
+                        },
+                        {
+                          "text": "🏥 Health check data: {\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-09-24T01:20:13.259Z\",\n  \"version\": \"1.0.0\",\n  \"uptime\": 51.159488833,\n  \"response_time_ms\": 2,\n  \"checks\": {\n    \"database\": {\n      \"status\": \"healthy\",\n      \"response_time_ms\": 2,\n      \"details\": \"Connected\"\n    },\n    \"environment\": {\n      \"status\": \"healthy\",\n      \"details\": \"All required variables present\"\n    }\n  },\n  \"environment\": {\n    \"node_version\": \"v20.19.4\",\n    \"platform\": \"darwin\",\n    \"arch\": \"arm64\",\n    \"memory\": {\n      \"used\": 728,\n      \"total\": 798,\n      \"external\": 566\n    }\n  }\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:12.861Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-6085affe3f80cf75f853",
+              "file": "foco-validation.spec.ts",
+              "line": 242,
+              "column": 7
+            },
+            {
+              "title": "9. Performance Validation - Check load times and responsiveness",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5278,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⚡ Page load time: \u001b[33m1333\u001b[39m ms\n"
+                        },
+                        {
+                          "text": "🖼️ Large images found: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📱 Responsive design tested\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:13.439Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-4bffa2d6a85a91abf960",
+              "file": "foco-validation.spec.ts",
+              "line": 255,
+              "column": 7
+            },
+            {
+              "title": "10. Accessibility Validation - Basic accessibility checks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 23,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1685,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "♿ Images without alt text: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Buttons without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Links without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H1 headings: \u001b[33m1\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H2 headings: \u001b[33m1\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:15.149Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-a627abe2a0ebd325fa3a",
+              "file": "foco-validation.spec.ts",
+              "line": 286,
+              "column": 7
+            },
+            {
+              "title": "11. Branding Validation - Confirm Foco identity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 25,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 1961,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎨 Foco references found: \u001b[33m5\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        },
+                        {
+                          "text": "📝 Meta description: Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.\n"
+                        },
+                        {
+                          "text": "🔍 Other brandings found: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:15.205Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-a64f18f46caede32afdf",
+              "file": "foco-validation.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "12. Feature Completeness - Check for claimed features",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 24,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3009,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 Feature completeness check:\n"
+                        },
+                        {
+                          "text": "  ✅ Dashboard with view buttons: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Search functionality: Found\n"
+                        },
+                        {
+                          "text": "  ❌ User menu: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Navigation sidebar: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Project creation: Found\n"
+                        },
+                        {
+                          "text": "  ❌ AI Assistant: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ Time Tracking: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ File Upload: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Import/Export: Found\n"
+                        },
+                        {
+                          "text": "  ❌ Notifications: Missing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:15.211Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-5aa89993e549279a79db",
+              "file": "foco-validation.spec.ts",
+              "line": 333,
+              "column": 7
+            },
+            {
+              "title": "13. Data Connectivity - Verify database integration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 4286,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⏳ Loading indicators: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Error messages: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Data elements found: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:15.264Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-be3f60a9973fb0bf2ca3",
+              "file": "foco-validation.spec.ts",
+              "line": 369,
+              "column": 7
+            },
+            {
+              "title": "14. Error Handling - Test error scenarios",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [
+                    {
+                      "workerIndex": 27,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1455,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📄 404 page content: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 Invalid API status: \u001b[33m404\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:15.456Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-3b5ff7073380254de5df",
+              "file": "foco-validation.spec.ts",
+              "line": 392,
+              "column": 7
+            },
+            {
+              "title": "1. Landing Page - Should display Foco branding and navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 28,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 2381,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Foco branding found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "✅ Register button found: \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90017) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:17.634Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-5a339acc346554db23e3",
+              "file": "foco-validation.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "2. Authentication Flow - Login with provided credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 29,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 5402,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Current URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "📧 Email input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔒 Password input found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔘 Login button found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 After login URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "✅ Login successful (dashboard): \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Login error: \u001b[33mfalse\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90031) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:17.759Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-ce6bc6df4a9729ef6532",
+              "file": "foco-validation.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "3. Dashboard - Validate core functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 30,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3309,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Dashboard URL: http://localhost:3000/dashboard\n"
+                        },
+                        {
+                          "text": "📋 Header found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Sidebar found: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Table view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📋 Kanban view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "📅 Gantt view button: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 AI view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Team view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "🚫 Auto view button (should be removed): \u001b[33mfalse\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Main content area: \u001b[33mtrue\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90032) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:17.802Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-36ec17fe6f9bacbfc4f4",
+              "file": "foco-validation.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "4. Projects Page - Validate project management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 31,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 2753,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Projects URL: http://localhost:3000/login?redirect=%2Fprojects\n"
+                        },
+                        {
+                          "text": "🔒 Projects page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90043) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:18.507Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-c8e9f54c55f9900be145",
+              "file": "foco-validation.spec.ts",
+              "line": 148,
+              "column": 7
+            },
+            {
+              "title": "5. Organizations Page - Validate organization management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 32,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3383,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Organizations URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Organizations page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90090) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:19.964Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-c3da35c9491ff5fb9020",
+              "file": "foco-validation.spec.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "title": "6. Milestones Page - Validate milestone management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 33,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3214,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Milestones URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Milestones page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90105) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:20.106Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-33af5712ae6962883314",
+              "file": "foco-validation.spec.ts",
+              "line": 198,
+              "column": 7
+            },
+            {
+              "title": "7. Settings Page - Validate user settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 34,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 3624,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔗 Settings URL: http://localhost:3000/login\n"
+                        },
+                        {
+                          "text": "🔒 Settings page requires authentication\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:90136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:20.826Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-4f53e09eaccdbc78a65c",
+              "file": "foco-validation.spec.ts",
+              "line": 219,
+              "column": 7
+            },
+            {
+              "title": "8. API Health Check - Validate backend connectivity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 28,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 618,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🏥 Health check status: \u001b[33m200\u001b[39m\n"
+                        },
+                        {
+                          "text": "🏥 Health check data: {\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-09-24T01:20:20.716Z\",\n  \"version\": \"1.0.0\",\n  \"uptime\": 58.617257583,\n  \"response_time_ms\": 3,\n  \"checks\": {\n    \"database\": {\n      \"status\": \"healthy\",\n      \"response_time_ms\": 3,\n      \"details\": \"Connected\"\n    },\n    \"environment\": {\n      \"status\": \"healthy\",\n      \"details\": \"All required variables present\"\n    }\n  },\n  \"environment\": {\n    \"node_version\": \"v20.19.4\",\n    \"platform\": \"darwin\",\n    \"arch\": \"arm64\",\n    \"memory\": {\n      \"used\": 736,\n      \"total\": 803,\n      \"external\": 564\n    }\n  }\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:20.311Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-badfc348440491dd3097",
+              "file": "foco-validation.spec.ts",
+              "line": 242,
+              "column": 7
+            },
+            {
+              "title": "9. Performance Validation - Check load times and responsiveness",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 28,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 5039,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⚡ Page load time: \u001b[33m1580\u001b[39m ms\n"
+                        },
+                        {
+                          "text": "🖼️ Large images found: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📱 Responsive design tested\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:21.019Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-77b500f67804595eae34",
+              "file": "foco-validation.spec.ts",
+              "line": 255,
+              "column": 7
+            },
+            {
+              "title": "10. Accessibility Validation - Basic accessibility checks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 30,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2265,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "♿ Images without alt text: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Buttons without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "♿ Links without text/label: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H1 headings: \u001b[33m1\u001b[39m\n"
+                        },
+                        {
+                          "text": "📝 H2 headings: \u001b[33m1\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:21.518Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-a10a76fca97ab34df228",
+              "file": "foco-validation.spec.ts",
+              "line": 286,
+              "column": 7
+            },
+            {
+              "title": "11. Branding Validation - Confirm Foco identity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 31,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 2579,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🎨 Foco references found: \u001b[33m5\u001b[39m\n"
+                        },
+                        {
+                          "text": "📄 Page title: Foco - Project Management Platform\n"
+                        },
+                        {
+                          "text": "📝 Meta description: Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.\n"
+                        },
+                        {
+                          "text": "🔍 Other brandings found: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:21.671Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-80b8c6454cebc5947ba7",
+              "file": "foco-validation.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "12. Feature Completeness - Check for claimed features",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 29,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2521,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 Feature completeness check:\n"
+                        },
+                        {
+                          "text": "  ✅ Dashboard with view buttons: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Search functionality: Found\n"
+                        },
+                        {
+                          "text": "  ❌ User menu: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Navigation sidebar: Found\n"
+                        },
+                        {
+                          "text": "  ✅ Project creation: Found\n"
+                        },
+                        {
+                          "text": "  ❌ AI Assistant: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ Time Tracking: Missing\n"
+                        },
+                        {
+                          "text": "  ❌ File Upload: Missing\n"
+                        },
+                        {
+                          "text": "  ✅ Import/Export: Found\n"
+                        },
+                        {
+                          "text": "  ❌ Notifications: Missing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:23.537Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-8d6f52a9015c7696c084",
+              "file": "foco-validation.spec.ts",
+              "line": 333,
+              "column": 7
+            },
+            {
+              "title": "13. Data Connectivity - Verify database integration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 30,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3389,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⏳ Loading indicators: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "❌ Error messages: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "📊 Data elements found: \u001b[33m0\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:23.801Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-5d54d73d5fac430fabf5",
+              "file": "foco-validation.spec.ts",
+              "line": 369,
+              "column": 7
+            },
+            {
+              "title": "14. Error Handling - Test error scenarios",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [
+                    {
+                      "workerIndex": 32,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1095,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📄 404 page content: \u001b[33mtrue\u001b[39m\n"
+                        },
+                        {
+                          "text": "🔗 Invalid API status: \u001b[33m404\u001b[39m\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-24T01:20:23.840Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a8275148354945484523-84304f74c416cc8b7e9b",
+              "file": "foco-validation.spec.ts",
+              "line": 392,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-09-24T01:19:21.386Z",
+    "duration": 65915.855,
+    "expected": 70,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

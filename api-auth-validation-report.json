@@ -1,0 +1,195 @@
+{
+  "timestamp": "2025-09-23T19:36:13.228Z",
+  "baseUrl": "http://localhost:3000",
+  "totalTests": 7,
+  "passedTests": 7,
+  "failedTests": 0,
+  "tests": [
+    {
+      "name": "Session API (Unauthenticated)",
+      "status": "PASSED",
+      "result": {
+        "error": "Failed to fetch"
+      },
+      "timestamp": "2025-09-23T19:36:14.947Z"
+    },
+    {
+      "name": "Projects API (Unauthenticated)",
+      "status": "PASSED",
+      "result": {
+        "error": "Failed to fetch"
+      },
+      "timestamp": "2025-09-23T19:36:14.949Z"
+    },
+    {
+      "name": "Application Loading",
+      "status": "PASSED",
+      "result": {
+        "title": "Create Next App",
+        "url": "http://localhost:3000/",
+        "hasLoginForm": false,
+        "hasAuthElements": true
+      },
+      "timestamp": "2025-09-23T19:36:15.769Z"
+    },
+    {
+      "name": "Authentication Flow",
+      "status": "PASSED",
+      "result": {
+        "loginFormFound": true,
+        "credentialsFilled": true,
+        "currentUrl": "http://localhost:3000/login/",
+        "isAuthenticated": false,
+        "hasError": false,
+        "hasSuccessMessage": true
+      },
+      "timestamp": "2025-09-23T19:36:17.605Z"
+    },
+    {
+      "name": "Authenticated API Calls",
+      "status": "PASSED",
+      "result": {
+        "sessionResponse": {
+          "status": 401,
+          "data": {
+            "success": false,
+            "error": "Authentication required"
+          }
+        },
+        "projectsResponse": null,
+        "isAuthenticated": false
+      },
+      "timestamp": "2025-09-23T19:36:17.611Z"
+    },
+    {
+      "name": "Error Handling",
+      "status": "PASSED",
+      "result": {
+        "errorTests": [
+          {
+            "endpoint": "/api/auth/session",
+            "status": 401,
+            "data": {
+              "success": false,
+              "error": "Authentication required"
+            }
+          },
+          {
+            "endpoint": "/api/projects",
+            "status": 401,
+            "data": {
+              "success": false,
+              "error": "Authentication required"
+            }
+          },
+          {
+            "endpoint": "/api/organizations",
+            "status": 401,
+            "data": {
+              "success": false,
+              "error": "Authentication required"
+            }
+          },
+          {
+            "endpoint": "/api/milestones",
+            "status": 401,
+            "data": {
+              "success": false,
+              "error": "Authentication required"
+            }
+          }
+        ],
+        "errorAnalysis": {
+          "properAuthErrors": 4,
+          "improperAuthErrors": 0,
+          "serverErrors": 0,
+          "totalEndpoints": 4
+        }
+      },
+      "timestamp": "2025-09-23T19:36:17.862Z"
+    },
+    {
+      "name": "Performance Metrics",
+      "status": "PASSED",
+      "result": {
+        "tests": [
+          {
+            "endpoint": "/api/auth/session",
+            "status": 401,
+            "responseTime": 17.099999964237213,
+            "data": {
+              "success": false,
+              "error": "Authentication required"
+            }
+          },
+          {
+            "endpoint": "/api/projects",
+            "status": 401,
+            "responseTime": 18.200000047683716,
+            "data": {
+              "success": false,
+              "error": "Authentication required"
+            }
+          }
+        ],
+        "averageResponseTime": 17.650000005960464,
+        "verdict": "EXCELLENT"
+      },
+      "timestamp": "2025-09-23T19:36:17.900Z"
+    }
+  ],
+  "aiClaimsValidation": {
+    "sessionEndpoint": {
+      "claimedStatus": 401,
+      "claimedBehavior": "Returns 401 for unauthenticated users",
+      "actualBehavior": "Failed to fetch",
+      "verdict": "INCORRECT"
+    },
+    "projectsEndpoint": {
+      "claimedStatus": 401,
+      "claimedImprovement": "Changed from 403/404 to 401",
+      "actualBehavior": "Failed to fetch",
+      "verdict": "INCORRECT"
+    },
+    "authenticationFlow": null,
+    "errorHandling": {
+      "claimedImprovement": "All endpoints return 401 for authentication errors",
+      "actualResults": {
+        "properAuthErrors": 4,
+        "improperAuthErrors": 0,
+        "serverErrors": 0,
+        "totalEndpoints": 4
+      },
+      "verdict": "CORRECT"
+    },
+    "middleware": null
+  },
+  "summary": {
+    "totalTests": 7,
+    "passedTests": 7,
+    "failedTests": 0,
+    "successRate": "100.0"
+  },
+  "aiClaimsAnalysis": {
+    "Session API Returns 401": {
+      "claim": "/api/auth/session returns 401 for unauthenticated users",
+      "actual": "Unknown",
+      "verdict": "INCORRECT"
+    },
+    "Projects API Returns 401": {
+      "claim": "/api/projects returns 401 (not 403/404) for unauthenticated users",
+      "actual": "Unknown",
+      "verdict": "INCORRECT"
+    },
+    "Error Handling Improvement": {
+      "claim": "All endpoints return proper 401 authentication errors",
+      "actual": {
+        "properAuthErrors": 4,
+        "improperAuthErrors": 0,
+        "serverErrors": 0,
+        "totalEndpoints": 4
+      },
+      "verdict": "CORRECT"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "file": "UI_CONTRAST_AND_THEMING_FIXES.json",
+  "meta": {
+    "project": "Foco",
+    "generatedAt": "2025-09-23T19:30:00Z",
+    "goal": "Fix color contrast and theme consistency issues",
+    "ruleset": "WCAG 2.1 AA",
+    "scope": [
+      "src/components/**/*.{tsx,jsx}",
+      "src/app/**/*.{tsx,jsx}",
+      "src/ui/**/*.{tsx,jsx}"
+    ]
+  },
+  "instructions": {
+    "1_remove_hardcoded_colors": {
+      "find": [
+        "text-black",
+        "text-gray-800",
+        "text-gray-900",
+        "bg-gray-800",
+        "bg-gray-900"
+      ],
+      "replaceWith": {
+        "text": "text-foreground",
+        "background": "bg-background"
+      },
+      "note": "Replace all hardcoded blacks/greys with semantic tokens"
+    },
+    "2_icon_foreground_tokens": {
+      "find": [
+        "class=.*(text-black|fill-black|stroke-black).*",
+        "class=.*(text-gray-.*|fill-gray-.*|stroke-gray-.*).*"
+      ],
+      "replaceWith": "text-primary-foreground",
+      "note": "Icons should use semantic foreground tokens matching their container background"
+    },
+    "3_button_text_contrast": {
+      "rule": "All buttons must use `text-primary-foreground`  on `bg-primary`  or `bg-secondary` ",
+      "autoFix": true
+    },
+    "4_card_headers": {
+      "rule": "Card headers must use `text-foreground`  (never raw black) and adjust opacity for secondary text with `text-muted-foreground` ",
+      "autoFix": true
+    },
+    "5_enforce_theme_tokens": {
+      "rule": "Enforce semantic tokens for all fg/bg usage",
+      "tokens": {
+        "foreground": "Neutral default text",
+        "muted-foreground": "Secondary/dimmed text",
+        "primary-foreground": "Text/icons on primary background",
+        "accent-foreground": "Text/icons on accent background",
+        "background": "Default background",
+        "card": "Card background",
+        "card-foreground": "Card text/icons"
+      }
+    },
+    "6_accessibility_check": {
+      "rule": "Run WCAG contrast check for all fg/bg pairs",
+      "tools": [
+        "axe-core",
+        "lighthouse",
+        "storybook-accessibility-addon"
+      ],
+      "minimumContrast": "4.5:1 for text, 3:1 for icons and large text"
+    }
+  }
+}

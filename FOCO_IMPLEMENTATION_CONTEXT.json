@@ -1,0 +1,272 @@
+{
+  "project": {
+    "name": "Foco",
+    "description": "Complete rebuild of CRICO as Foco - a modern project management platform with meticulously designed UI matching the /newdesign/ system",
+    "tech_stack": {
+      "frontend": "Next.js 14 (App Router)",
+      "styling": "Tailwind CSS with custom design tokens",
+      "ai": "Ollama integration for smart suggestions",
+      "backend": "Supabase (PostgreSQL + Auth + Realtime)",
+      "deployment": "Netlify"
+    },
+    "branding": {
+      "name": "Foco",
+      "tagline": "Focus on what matters",
+      "logo": "Custom Foco logo (designed to match the aesthetic)",
+      "color_scheme": "Based on /newdesign/ tokens"
+    }
+  },
+  "design_system": {
+    "source": "/newdesign/ directory",
+    "key_designs": [
+      "crico_dashboard",
+      "project_overview_dashboard", 
+      "milestone_details_page",
+      "tasks_list_page",
+      "notifications_center",
+      "crico_user_settings",
+      "dashboard_customization_settings"
+    ],
+    "tokens": {
+      "colors": {
+        "primary": "#0c5fe4",
+        "background_light": "#f5f7f8", 
+        "background_dark": "#101722",
+        "text_primary": "#ffffff",
+        "text_secondary": "rgba(255, 255, 255, 0.6)"
+      },
+      "typography": {
+        "font_family": "Inter",
+        "weights": ["400", "500", "600", "700"],
+        "sizes": {
+          "xs": "0.75rem",
+          "sm": "0.875rem", 
+          "base": "1rem",
+          "lg": "1.125rem",
+          "xl": "1.25rem"
+        }
+      },
+      "spacing": {
+        "sidebar_width": "16rem (256px)",
+        "padding": "1rem (16px)",
+        "gap": "0.75rem (12px)"
+      },
+      "border_radius": {
+        "default": "0.25rem",
+        "lg": "0.5rem", 
+        "xl": "0.75rem",
+        "full": "9999px"
+      }
+    },
+    "components": {
+      "sidebar": {
+        "width": "w-64 (16rem)",
+        "background": "bg-background-dark",
+        "text": "text-white",
+        "logo_section": "flex items-center gap-3 p-2",
+        "nav_links": "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+        "active_link": "bg-primary/20 text-white font-semibold",
+        "inactive_link": "text-white/60 hover:bg-white/10 hover:text-white"
+      },
+      "main_content": {
+        "background": "bg-background-light dark:bg-background-dark",
+        "layout": "flex h-screen font-display"
+      },
+      "buttons": {
+        "primary": "bg-primary text-white hover:bg-primary/90 rounded-lg",
+        "sizes": "h-10 px-4 text-sm font-bold"
+      }
+    }
+  },
+  "pages": [
+    {
+      "name": "Landing Page",
+      "route": "/",
+      "components": ["Hero section", "Feature grid", "CTA buttons"],
+      "design_reference": "Clean, modern layout with Foco branding"
+    },
+    {
+      "name": "Authentication",
+      "routes": ["/login", "/register"],
+      "components": ["Login form", "Register form", "Social auth buttons"],
+      "design_reference": "Consistent with /newdesign/ form styling"
+    },
+    {
+      "name": "Dashboard",
+      "route": "/dashboard", 
+      "components": ["Sidebar navigation", "Project cards", "Quick actions", "Recent activity"],
+      "design_reference": "crico_dashboard/code.html",
+      "layout": "Sidebar + main content area"
+    },
+    {
+      "name": "Projects",
+      "routes": ["/projects", "/projects/[id]"],
+      "components": ["Project list", "Project details", "Milestone cards", "Team members"],
+      "design_reference": "project_overview_dashboard/code.html"
+    },
+    {
+      "name": "Milestones", 
+      "routes": ["/milestones", "/milestones/[id]"],
+      "components": ["Milestone timeline", "Task lists", "Progress indicators"],
+      "design_reference": "milestone_details_page/code.html"
+    },
+    {
+      "name": "Tasks",
+      "route": "/tasks",
+      "components": ["Task board", "Filters", "Search", "Bulk actions"],
+      "design_reference": "tasks_list_page/code.html"
+    },
+    {
+      "name": "Settings",
+      "route": "/settings", 
+      "components": ["Profile settings", "Team management", "Preferences"],
+      "design_reference": "crico_user_settings/code.html"
+    }
+  ],
+  "key_features": [
+    {
+      "name": "AI-Powered Suggestions",
+      "description": "Ollama integration for smart milestone and task suggestions",
+      "implementation": "API routes calling Ollama for content generation"
+    },
+    {
+      "name": "Real-time Collaboration", 
+      "description": "Live updates using Supabase realtime subscriptions",
+      "implementation": "WebSocket connections for live project updates"
+    },
+    {
+      "name": "Advanced Project Views",
+      "description": "Table, Kanban, Gantt, and Calendar views",
+      "implementation": "Multiple view components with shared data"
+    },
+    {
+      "name": "Team Management",
+      "description": "Organization and team member management",
+      "implementation": "Role-based access control with Supabase RLS"
+    }
+  ],
+  "navigation": {
+    "sidebar_items": [
+      {"name": "Home", "icon": "home", "route": "/dashboard", "active": true},
+      {"name": "Inbox", "icon": "inbox", "route": "/inbox"},
+      {"name": "My Tasks", "icon": "tasks", "route": "/tasks"},
+      {"name": "Favorites", "icon": "star", "route": "/favorites"},
+      {"name": "Reports", "icon": "chart", "route": "/reports"},
+      {"name": "Goals", "icon": "target", "route": "/goals"}
+    ],
+    "bottom_actions": [
+      {"name": "New Project", "action": "create_project", "style": "primary"},
+      {"name": "Invite team", "action": "invite_team", "style": "secondary"}
+    ]
+  },
+  "implementation_requirements": {
+    "pixel_perfect_design": "Every component must match /newdesign/ exactly",
+    "responsive_design": "Mobile-first approach matching design references",
+    "dark_mode_support": "Full dark/light theme implementation",
+    "consistent_spacing": "Use design tokens for all spacing and sizing",
+    "brand_consistency": "Foco branding throughout, no Bien.mx references",
+    "ai_integration": "Ollama must be properly configured and accessible",
+    "authentication_flow": "Complete login/register flow with proper redirects"
+  },
+  "missing_implementation": {
+    "ui_components": "No UI components match /newdesign/ designs",
+    "branding": "Still shows 'Bien.mx CRICO' instead of 'Foco'",
+    "layout": "No sidebar navigation or proper dashboard layout",
+    "styling": "No design tokens or color scheme implementation",
+    "pages": "Only basic placeholder pages, no actual UI matching designs"
+  },
+  "immediate_actions_required": [
+    {
+      "priority": "CRITICAL",
+      "task": "Update Tailwind config with exact design tokens from /newdesign/",
+      "file": "tailwind.config.ts"
+    },
+    {
+      "priority": "CRITICAL", 
+      "task": "Replace all 'Bien.mx' and 'CRICO' branding with 'Foco'",
+      "files": ["All components", "Login page", "Dashboard"]
+    },
+    {
+      "priority": "CRITICAL",
+      "task": "Implement sidebar navigation layout matching crico_dashboard/code.html",
+      "file": "src/components/layout/Sidebar.tsx"
+    },
+    {
+      "priority": "CRITICAL",
+      "task": "Create dashboard layout with exact styling from design",
+      "file": "src/app/dashboard/page.tsx"
+    },
+    {
+      "priority": "HIGH",
+      "task": "Implement project table view with exact styling",
+      "file": "src/components/projects/ProjectTable.tsx"
+    },
+    {
+      "priority": "HIGH",
+      "task": "Add view mode tabs (Table, Kanban, Gantt, AI, Team, Auto)",
+      "file": "src/components/projects/ViewTabs.tsx"
+    },
+    {
+      "priority": "MEDIUM",
+      "task": "Implement search functionality in header",
+      "file": "src/components/layout/Header.tsx"
+    },
+    {
+      "priority": "MEDIUM",
+      "task": "Add user avatar and profile dropdown",
+      "file": "src/components/layout/UserMenu.tsx"
+    }
+  ],
+  "exact_design_specifications": {
+    "layout": {
+      "structure": "flex h-screen font-display",
+      "sidebar": "flex w-64 flex-col bg-background-dark text-white",
+      "main": "flex-1 overflow-y-auto"
+    },
+    "colors_from_design": {
+      "primary": "#0c5fe4",
+      "background_light": "#f5f7f8",
+      "background_dark": "#101722",
+      "sidebar_bg": "#101722",
+      "text_white": "#ffffff",
+      "text_white_60": "rgba(255, 255, 255, 0.6)",
+      "border_light": "rgba(0, 0, 0, 0.1)",
+      "border_dark": "rgba(255, 255, 255, 0.1)"
+    },
+    "typography_exact": {
+      "font_family": "Inter",
+      "logo_title": "text-base font-bold text-white",
+      "logo_subtitle": "text-xs font-medium text-white/60",
+      "nav_active": "text-sm font-semibold text-white",
+      "nav_inactive": "text-sm font-medium text-white/60",
+      "header_title": "text-xl font-bold text-black dark:text-white",
+      "tab_active": "text-sm font-semibold text-primary",
+      "tab_inactive": "text-sm font-medium text-black/50 dark:text-white/50"
+    },
+    "components_exact": {
+      "sidebar_logo": {
+        "container": "flex items-center gap-3 p-2",
+        "icon": "flex size-8 items-center justify-center rounded-lg bg-primary/20 text-primary",
+        "text_container": "flex flex-col"
+      },
+      "nav_links": {
+        "active": "flex items-center gap-3 rounded-lg bg-primary/20 px-3 py-2 text-sm font-semibold text-white",
+        "inactive": "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white"
+      },
+      "buttons": {
+        "primary": "flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-white transition-colors hover:bg-primary/90",
+        "secondary": "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white"
+      },
+      "header": {
+        "container": "sticky top-0 z-10 flex items-center justify-between border-b border-black/10 bg-background-light/80 px-8 py-3 backdrop-blur-sm dark:border-white/10 dark:bg-background-dark/80",
+        "search": "h-10 w-full rounded-lg border-black/10 bg-black/5 pl-10 pr-4 text-sm text-black placeholder:text-black/40 focus:border-primary focus:ring-primary dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
+      },
+      "tabs": {
+        "container": "border-b border-black/10 dark:border-white/10",
+        "nav": "-mb-px flex gap-6",
+        "active": "border-b-2 border-primary px-1 pb-3 text-sm font-semibold text-primary",
+        "inactive": "border-b-2 border-transparent px-1 pb-3 text-sm font-medium text-black/50 hover:border-black/20 hover:text-black/80 dark:text-white/50 dark:hover:border-white/20 dark:hover:text-white/80"
+      }
+    }
+  }
+}

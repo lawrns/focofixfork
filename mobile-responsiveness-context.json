@@ -1,0 +1,385 @@
+{
+  "context": {
+    "project": "Foco - AI-Powered Project Management",
+    "problem": "Site is not properly responsive for mobile devices",
+    "scope": "Complete mobile responsiveness overhaul",
+    "framework": "Next.js 14 + Tailwind CSS",
+    "current_state": {
+      "responsive_features": [
+        "Dashboard sidebar has mobile overlay and slide-out behavior",
+        "Header adapts with hidden elements on mobile",
+        "Some typography uses clamp() for fluid scaling",
+        "Accessibility.css provides touch target minimums (44px)",
+        "Milestone lists have mobile-optimized layouts"
+      ],
+      "issues_identified": [
+        "Missing viewport meta tag in layout.tsx",
+        "Table components use horizontal scroll only",
+        "Homepage hero section needs better mobile stacking",
+        "No mobile-first card layouts for data tables",
+        "Search and filter controls hidden on mobile",
+        "Navigation could be more touch-friendly",
+        "Button groups and controls need mobile optimization"
+      ],
+      "testing_results": "Mobile milestone fixes completed, but broader mobile UX issues remain"
+    }
+  },
+  "deliverables": {
+    "1_viewport_meta_tag": {
+      "task": "Add proper viewport meta tag to layout.tsx",
+      "description": "Critical for mobile responsiveness - prevents zoom issues and enables proper scaling",
+      "implementation": {
+        "file": "src/app/layout.tsx",
+        "change": "Add viewport meta tag to head section",
+        "code": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=5.0\">"
+      },
+      "priority": "CRITICAL",
+      "testing": "Verify no horizontal scroll on mobile devices"
+    },
+    "2_mobile_table_components": {
+      "task": "Create mobile-responsive table layouts",
+      "description": "Replace horizontal scroll tables with card-based layouts on mobile",
+      "components": [
+        {
+          "name": "MobileTable",
+          "file": "src/components/ui/mobile-table.tsx",
+          "features": [
+            "Auto-detect mobile screen size (< 768px)",
+            "Convert table rows to card format",
+            "Stack key-value pairs vertically",
+            "Maintain table functionality on desktop",
+            "Preserve sorting and filtering"
+          ]
+        },
+        {
+          "name": "ResponsiveDataGrid",
+          "file": "src/components/ui/responsive-data-grid.tsx",
+          "features": [
+            "Priority column display on mobile",
+            "Expandable cards for full data",
+            "Swipe gestures for navigation",
+            "Contextual actions in card footer"
+          ]
+        }
+      ],
+      "priority": "HIGH",
+      "testing": "Test table views on iPhone/Android emulators"
+    },
+    "3_mobile_navigation_enhancement": {
+      "task": "Enhance mobile navigation UX",
+      "description": "Improve sidebar and header navigation for mobile devices",
+      "improvements": [
+        {
+          "component": "DashboardSidebar",
+          "changes": [
+            "Increase touch target sizes (48px minimum)",
+            "Add swipe-to-close gesture",
+            "Improve overlay backdrop blur",
+            "Add keyboard navigation support"
+          ]
+        },
+        {
+          "component": "DashboardHeader",
+          "changes": [
+            "Make search always visible on mobile",
+            "Improve mobile menu dropdown",
+            "Add bottom sheet for filters on mobile",
+            "Optimize button spacing and sizing"
+          ]
+        },
+        {
+          "component": "BreadcrumbNavigation",
+          "changes": [
+            "Horizontal scroll on mobile instead of wrap",
+            "Touch-friendly breadcrumb items",
+            "Ellipsis for long paths with expandable view"
+          ]
+        }
+      ],
+      "priority": "HIGH",
+      "testing": "Test navigation on various mobile devices"
+    },
+    "4_mobile_homepage_optimization": {
+      "task": "Optimize homepage for mobile devices",
+      "description": "Improve hero section and feature sections for mobile viewing",
+      "sections": [
+        {
+          "name": "Hero Section",
+          "changes": [
+            "Better text scaling with improved clamp() values",
+            "Stack CTA buttons vertically on mobile",
+            "Optimize video container aspect ratio",
+            "Reduce padding and margins for mobile"
+          ]
+        },
+        {
+          "name": "Features Section",
+          "changes": [
+            "Full-width feature cards on mobile",
+            "Stack content vertically in feature blocks",
+            "Optimize illustration sizes",
+            "Improve spacing between sections"
+          ]
+        },
+        {
+          "name": "Pricing Section",
+          "changes": [
+            "Single column pricing cards",
+            "Larger touch targets for CTA buttons",
+            "Better feature list spacing",
+            "Mobile-optimized pricing display"
+          ]
+        }
+      ],
+      "priority": "MEDIUM",
+      "testing": "Visual regression testing on mobile devices"
+    },
+    "5_mobile_form_components": {
+      "task": "Optimize forms and input components for mobile",
+      "description": "Improve form usability and touch interaction on mobile devices",
+      "components": [
+        {
+          "name": "MobileFormLayout",
+          "file": "src/components/forms/mobile-form-layout.tsx",
+          "features": [
+            "Stack form fields vertically",
+            "Increase input heights (48px minimum)",
+            "Optimize label positioning",
+            "Touch-friendly checkboxes and radios"
+          ]
+        },
+        {
+          "name": "MobileDatePicker",
+          "file": "src/components/forms/mobile-date-picker.tsx",
+          "features": [
+            "Native mobile date picker",
+            "Fallback to accessible custom picker",
+            "Proper keyboard handling",
+            "Touch gesture support"
+          ]
+        },
+        {
+          "name": "MobileSelect",
+          "file": "src/components/forms/mobile-select.tsx",
+          "features": [
+            "Native mobile select dropdown",
+            "Search functionality for long lists",
+            "Keyboard navigation support",
+            "Touch-friendly option selection"
+          ]
+        }
+      ],
+      "priority": "MEDIUM",
+      "testing": "Form usability testing on mobile devices"
+    },
+    "6_mobile_dashboard_layout": {
+      "task": "Optimize dashboard layout for mobile devices",
+      "description": "Improve overall dashboard UX on mobile screens",
+      "improvements": [
+        {
+          "area": "Main Content Area",
+          "changes": [
+            "Remove fixed widths causing overflow",
+            "Optimize content padding and margins",
+            "Improve card layouts for mobile",
+            "Better use of available screen space"
+          ]
+        },
+        {
+          "area": "Action Buttons",
+          "changes": [
+            "Larger touch targets (minimum 48px)",
+            "Better button grouping and spacing",
+            "Contextual actions in mobile sheets",
+            "Floating action buttons where appropriate"
+          ]
+        },
+        {
+          "area": "Data Visualization",
+          "changes": [
+            "Responsive chart sizing",
+            "Mobile-optimized data tables",
+            "Touch-friendly interactive elements",
+            "Simplified views for small screens"
+          ]
+        }
+      ],
+      "priority": "HIGH",
+      "testing": "Dashboard functionality testing on mobile"
+    },
+    "7_mobile_typography_system": {
+      "task": "Implement comprehensive mobile typography system",
+      "description": "Ensure consistent and readable typography across all mobile devices",
+      "implementation": {
+        "file": "src/styles/mobile-typography.css",
+        "features": [
+          "Fluid typography scaling with better clamp() values",
+          "Improved line heights for mobile reading",
+          "Better font loading and rendering",
+          "Accessibility-compliant font sizes",
+          "Dark mode typography optimization"
+        ],
+        "breakpoints": {
+          "mobile": "320px - 767px",
+          "tablet": "768px - 1023px",
+          "desktop": "1024px+"
+        }
+      },
+      "priority": "MEDIUM",
+      "testing": "Typography readability testing across devices"
+    },
+    "8_mobile_performance_optimization": {
+      "task": "Optimize performance for mobile devices",
+      "description": "Ensure fast loading and smooth interaction on mobile",
+      "optimizations": [
+        {
+          "area": "Image Optimization",
+          "changes": [
+            "Implement responsive images with srcset",
+            "Lazy loading for below-fold content",
+            "WebP format with fallbacks",
+            "Proper image sizing for mobile"
+          ]
+        },
+        {
+          "area": "JavaScript Optimization",
+          "changes": [
+            "Code splitting for mobile routes",
+            "Lazy loading of heavy components",
+            "Optimize bundle size for mobile",
+            "Reduce unused JavaScript on mobile"
+          ]
+        },
+        {
+          "area": "CSS Optimization",
+          "changes": [
+            "Critical CSS inlining",
+            "Remove unused CSS on mobile",
+            "Optimize CSS delivery",
+            "Better font loading strategies"
+          ]
+        }
+      ],
+      "priority": "HIGH",
+      "testing": "Lighthouse mobile performance scores"
+    },
+    "9_mobile_testing_suite": {
+      "task": "Implement comprehensive mobile testing",
+      "description": "Ensure all mobile features work correctly across devices",
+      "testing_framework": {
+        "unit_tests": "Test mobile-specific components and utilities",
+        "integration_tests": "Test mobile workflows end-to-end",
+        "visual_regression": "Catch layout breaks on mobile devices",
+        "accessibility_tests": "WCAG compliance on mobile devices",
+        "performance_tests": "Mobile performance benchmarks"
+      },
+      "device_coverage": [
+        "iPhone SE (375px)",
+        "iPhone 12/13/14 (390px)",
+        "iPhone Pro Max (428px)",
+        "Samsung Galaxy S21 (360px)",
+        "iPad (768px)",
+        "iPad Pro (1024px)"
+      ],
+      "priority": "HIGH",
+      "automation": "Playwright mobile testing setup"
+    },
+    "10_mobile_pwa_enhancement": {
+      "task": "Enhance PWA features for mobile experience",
+      "description": "Leverage existing PWA setup for better mobile experience",
+      "enhancements": [
+        {
+          "feature": "App-like Navigation",
+          "changes": [
+            "Bottom tab navigation for mobile",
+            "Swipe gestures for navigation",
+            "Native-like transitions",
+            "Back button handling"
+          ]
+        },
+        {
+          "feature": "Offline Capabilities",
+          "changes": [
+            "Cache critical mobile content",
+            "Offline forms and data entry",
+            "Sync when back online",
+            "Offline indicators"
+          ]
+        },
+        {
+          "feature": "Touch Gestures",
+          "changes": [
+            "Swipe to refresh",
+            "Pull-to-refresh functionality",
+            "Touch feedback for interactions",
+            "Gesture-based navigation"
+          ]
+        }
+      ],
+      "priority": "MEDIUM",
+      "testing": "PWA functionality on mobile devices"
+    }
+  },
+  "implementation_strategy": {
+    "phase_1_critical": [
+      "1_viewport_meta_tag",
+      "2_mobile_table_components",
+      "3_mobile_navigation_enhancement"
+    ],
+    "phase_2_core_mobile": [
+      "4_mobile_homepage_optimization",
+      "5_mobile_form_components",
+      "6_mobile_dashboard_layout"
+    ],
+    "phase_3_enhancement": [
+      "7_mobile_typography_system",
+      "8_mobile_performance_optimization",
+      "9_mobile_testing_suite"
+    ],
+    "phase_4_polish": [
+      "10_mobile_pwa_enhancement"
+    ]
+  },
+  "success_criteria": {
+    "technical": [
+      "Zero horizontal scroll on mobile devices",
+      "Touch targets meet 44px minimum",
+      "Lighthouse mobile score > 90",
+      "WCAG 2.1 AA compliance on mobile",
+      "No layout shifts on mobile",
+      "Fast loading on 3G connections"
+    ],
+    "ux": [
+      "Intuitive mobile navigation",
+      "Readable content on all screen sizes",
+      "Efficient mobile workflows",
+      "Consistent experience across devices",
+      "Touch-friendly interactions",
+      "Proper mobile form handling"
+    ],
+    "performance": [
+      "First Contentful Paint < 1.5s",
+      "Largest Contentful Paint < 2.5s",
+      "Cumulative Layout Shift < 0.1",
+      "Bundle size optimized for mobile",
+      "Efficient image loading",
+      "Smooth 60fps animations"
+    ]
+  },
+  "estimated_effort": {
+    "phase_1": "1-2 days",
+    "phase_2": "2-3 days",
+    "phase_3": "2-3 days",
+    "phase_4": "1-2 days",
+    "total": "6-10 days"
+  },
+  "dependencies": [
+    "Tailwind CSS responsive utilities",
+    "Next.js Image component for responsive images",
+    "Framer Motion for mobile animations",
+    "Playwright for mobile testing",
+    "Lighthouse CI for performance monitoring"
+  ]
+}
+
+

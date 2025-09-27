@@ -1,0 +1,260 @@
+/* Mobile-First Fluid Typography System */
+/* Provides consistent, accessible typography that scales beautifully across all devices */
+
+/* ==========================================================================
+   CSS Custom Properties for Typography Scale
+   ========================================================================== */
+
+:root {
+  /* Base font size - responsive */
+  --font-size-base: clamp(14px, 4vw, 16px);
+  --font-size-sm: clamp(12px, 3vw, 14px);
+  --font-size-xs: clamp(11px, 2.5vw, 12px);
+
+  /* Heading scale - mobile-first with fluid scaling */
+  --font-size-h1: clamp(1.75rem, 8vw, 3.5rem);
+  --font-size-h2: clamp(1.5rem, 7vw, 3rem);
+  --font-size-h3: clamp(1.25rem, 6vw, 2.25rem);
+  --font-size-h4: clamp(1.125rem, 5vw, 1.875rem);
+  --font-size-h5: clamp(1rem, 4vw, 1.5rem);
+  --font-size-h6: clamp(0.875rem, 3.5vw, 1.25rem);
+
+  /* Line heights for optimal readability */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.6;
+  --line-height-loose: 1.8;
+
+  /* Letter spacing */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+}
+
+/* ==========================================================================
+   Mobile Typography Classes
+   ========================================================================== */
+
+/* Text Size Classes */
+.text-mobile-xs { font-size: var(--font-size-xs); }
+.text-mobile-sm { font-size: var(--font-size-sm); }
+.text-mobile-base { font-size: var(--font-size-base); }
+.text-mobile-lg { font-size: clamp(18px, 5vw, 20px); }
+.text-mobile-xl { font-size: clamp(20px, 6vw, 24px); }
+.text-mobile-2xl { font-size: clamp(24px, 7vw, 30px); }
+.text-mobile-3xl { font-size: clamp(30px, 8vw, 36px); }
+
+/* Heading Classes with Mobile Optimization */
+.heading-mobile-h1 {
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  font-weight: 700;
+}
+
+.heading-mobile-h2 {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  font-weight: 600;
+}
+
+.heading-mobile-h3 {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  font-weight: 600;
+}
+
+.heading-mobile-h4 {
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  font-weight: 600;
+}
+
+.heading-mobile-h5 {
+  font-size: var(--font-size-h5);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  font-weight: 500;
+}
+
+.heading-mobile-h6 {
+  font-size: var(--font-size-h6);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  font-weight: 500;
+}
+
+/* Body Text Classes */
+.text-mobile-body {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.text-mobile-body-sm {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.text-mobile-caption {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Component-Specific Typography
+   ========================================================================== */
+
+/* Cards */
+.card-mobile-title {
+  font-size: clamp(16px, 5vw, 18px);
+  font-weight: 600;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.card-mobile-subtitle {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: var(--line-height-relaxed);
+  color: #666666;
+}
+
+.card-mobile-meta {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: #666666;
+}
+
+/* Buttons */
+.btn-mobile-primary {
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-normal);
+  padding: clamp(12px, 3vw, 16px) clamp(16px, 4vw, 24px);
+  min-height: 48px;
+}
+
+.btn-mobile-secondary {
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 500;
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-normal);
+  padding: clamp(10px, 2.5vw, 14px) clamp(14px, 3.5vw, 20px);
+  min-height: 44px;
+}
+
+/* Form Elements */
+.form-mobile-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  margin-bottom: clamp(4px, 1vw, 8px);
+}
+
+.form-mobile-input {
+  font-size: clamp(16px, 4vw, 16px);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  padding: clamp(12px, 3vw, 16px);
+  min-height: 48px;
+}
+
+.form-mobile-help {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--letter-spacing-normal);
+  color: #666666;
+  margin-top: clamp(4px, 1vw, 6px);
+}
+
+.form-mobile-error {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  color: #dc2626;
+  margin-top: clamp(4px, 1vw, 6px);
+}
+
+/* Navigation */
+.nav-mobile-item {
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 500;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  padding: clamp(12px, 3vw, 16px);
+  min-height: 48px;
+}
+
+.nav-mobile-title {
+  font-size: clamp(18px, 5vw, 20px);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
+@media (min-width: 640px) {
+  :root {
+    --font-size-base: 16px;
+    --font-size-sm: 14px;
+    --font-size-xs: 12px;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --font-size-base: 16px;
+    --font-size-sm: 14px;
+    --font-size-xs: 12px;
+
+    --font-size-h1: 2.5rem;
+    --font-size-h2: 2rem;
+    --font-size-h3: 1.5rem;
+    --font-size-h4: 1.25rem;
+    --font-size-h5: 1.125rem;
+    --font-size-h6: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --font-size-h1: 3rem;
+    --font-size-h2: 2.25rem;
+    --font-size-h3: 1.875rem;
+    --font-size-h4: 1.5rem;
+    --font-size-h5: 1.25rem;
+    --font-size-h6: 1.125rem;
+  }
+}
+
+/* ==========================================================================
+   Utility Classes for Easy Implementation
+   ========================================================================== */
+
+.mobile-typography {
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.mobile-typography * {
+  font-family: inherit;
+}

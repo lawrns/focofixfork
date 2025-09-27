@@ -116,11 +116,15 @@ export function withLazyMobile<P extends object>(
   Component: React.ComponentType<P>,
   options: Omit<LazyMobileWrapperProps, 'children'> = {}
 ) {
-  return React.forwardRef<any, P>((props, ref) => (
+  const WrappedComponent = React.forwardRef<any, P>((props, ref) => (
     <LazyMobileWrapper {...options}>
-      <Component {...props} ref={ref} />
+      <Component {...(props as any)} ref={ref} />
     </LazyMobileWrapper>
   ))
+
+  WrappedComponent.displayName = `withLazyMobile(${Component.displayName || Component.name})`
+
+  return WrappedComponent
 }
 
 export default LazyMobileWrapper

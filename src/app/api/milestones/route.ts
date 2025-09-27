@@ -7,7 +7,7 @@ const createMilestoneSchema = z.object({
   name: z.string().min(1, 'Milestone name is required').max(500, 'Name must be less than 500 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   project_id: z.string().min(1, 'Project is required'),
-  status: z.enum(['red', 'yellow', 'green']).default('yellow'),
+  status: z.enum(['planned', 'active', 'completed', 'cancelled']).default('planned'),
   progress_percentage: z.number().min(0).max(100).default(0),
   deadline: z.string().min(1, 'Deadline is required'),
   due_date: z.string().optional(),

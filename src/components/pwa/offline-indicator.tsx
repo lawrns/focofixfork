@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Wifi, WifiOff, RefreshCw, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 interface OfflineIndicatorProps {
@@ -230,9 +231,9 @@ export function useOfflineActions() {
       setActions(current)
 
       // Register background sync if available
-      if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+      if ('serviceWorker' in navigator && 'sync' in (window as any).ServiceWorkerRegistration.prototype) {
         navigator.serviceWorker.ready.then(registration => {
-          registration.sync.register('background-sync')
+          ;(registration as any).sync.register('background-sync')
         })
       }
     } catch (error) {

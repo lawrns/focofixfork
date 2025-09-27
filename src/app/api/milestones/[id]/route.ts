@@ -7,7 +7,7 @@ const updateMilestoneSchema = z.object({
   name: z.string().min(1, 'Milestone name is required').max(500, 'Name must be less than 500 characters').optional(),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   project_id: z.string().min(1, 'Project is required').optional(),
-  status: z.enum(['red', 'yellow', 'green']).optional(),
+  status: z.enum(['planned', 'active', 'completed', 'cancelled']).optional(),
   progress_percentage: z.number().min(0).max(100).optional(),
   due_date: z.string().optional(),
   completion_date: z.string().optional(),
@@ -15,7 +15,7 @@ const updateMilestoneSchema = z.object({
 
 // Schema for status updates
 const updateStatusSchema = z.object({
-  status: z.enum(['red', 'yellow', 'green']),
+  status: z.enum(['planned', 'active', 'completed', 'cancelled']),
 })
 
 interface RouteParams {

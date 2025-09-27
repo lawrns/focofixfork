@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     } catch (serviceError) {
       console.error('Goals service error:', serviceError)
       return NextResponse.json(
-        { success: false, error: 'Failed to create goal', details: serviceError.message },
+        { success: false, error: 'Failed to create goal', details: serviceError instanceof Error ? serviceError.message : String(serviceError) },
         { status: 500 }
       )
     }

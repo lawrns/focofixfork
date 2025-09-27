@@ -7,7 +7,7 @@ const CONNECTION_CONFIG = {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce' as const
   },
   realtime: {
     params: {
@@ -15,7 +15,7 @@ const CONNECTION_CONFIG = {
     }
   },
   db: {
-    schema: 'public'
+    schema: 'public' as const
   },
   global: {
     headers: {
@@ -59,7 +59,7 @@ class DatabaseConnection {
     }
 
     try {
-      this.client = createClient<Database>(supabaseUrl, supabaseAnonKey, CONNECTION_CONFIG)
+      this.client = createClient<Database>(supabaseUrl, supabaseAnonKey, CONNECTION_CONFIG) as SupabaseClient<Database>
       
       // Test the connection
       await this.testConnection()

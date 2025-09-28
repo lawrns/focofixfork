@@ -238,10 +238,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
       >
         <Button
           onClick={() => setIsOpen(true)}
-          size="lg"
-          className="rounded-full w-14 h-14 shadow-lg"
+          className="rounded-full w-14 h-14 p-0 shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
         >
-          <Bot className="h-6 w-6" />
+          <Bot className="h-6 w-6 text-primary-foreground" />
         </Button>
       </motion.div>
     )

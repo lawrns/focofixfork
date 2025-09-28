@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,28 +11,21 @@ import { Plus, Users, Building, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 export default function OrganizationsPage() {
+  return (
+    <ProtectedRoute>
+      <OrganizationsContent />
+    </ProtectedRoute>
+  )
+}
+
+function OrganizationsContent() {
   const [organizations, setOrganizations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    // Check authentication
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/session')
-        if (!response.ok) {
-          router.push('/login')
-          return
-        }
-      } catch (error) {
-        router.push('/login')
-        return
-      }
-    }
-
-    checkAuth()
     loadOrganizations()
-  }, [router])
+  }, [])
 
   const loadOrganizations = async () => {
     try {

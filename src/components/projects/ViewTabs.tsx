@@ -25,7 +25,7 @@ export default function ViewTabs({ activeTab = 'table', onTabChange }: ViewTabsP
 
   return (
     <div className="border-b border-border">
-      <nav aria-label="Tabs" className="-mb-px flex gap-6">
+      <nav aria-label="Tabs" className="-mb-px flex gap-8">
         {tabs.map((tab) => {
           const isActive = currentTab === tab.id
           
@@ -33,7 +33,7 @@ export default function ViewTabs({ activeTab = 'table', onTabChange }: ViewTabsP
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
-              className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+              className={`border-b-2 px-2 pb-4 pt-1 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'border-primary font-semibold text-primary'
                   : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'

@@ -52,12 +52,33 @@ export default function DashboardPage() {
   noStore()
 
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null
+  }
   const { createView, setActiveView } = useSavedViews()
   const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Saved views handlers
   const handleViewSelect = (view: ViewConfig) => {
@@ -154,7 +175,7 @@ export default function DashboardPage() {
   const handleCreateProject = async (formData: FormData) => {
     if (!user) return
 
-    setLoading(true)
+    setIsLoading(true)
     try {
       const projectData = {
         name: formData.get('name'),
@@ -181,7 +202,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error creating project:', error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -191,22 +212,10 @@ export default function DashboardPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="flex items-center justify-between border-b bg-background px-4 py-3">
           <Header />
-          <div className="flex items-center gap-4">
-            <PresenceIndicator
-              users={[]} // TODO: Implement real-time presence
-              currentUserId={user?.id || ''}
-              compact={true}
-            />
-            {/* NotificationCenter disabled - requires notifications table */}
-            {/* <NotificationCenter
-              currentUserId={user?.id || ''}
-              compact={true}
-            /> */}
-          </div>
         </div>
         <div className="flex">
-          <div className="flex-1 p-4 md:p-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex-1 p-6 md:p-8">
+          <div className="flex items-end justify-between mb-8 gap-6">
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {
@@ -216,7 +225,7 @@ export default function DashboardPage() {
               }}
             />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 pb-4">
               <AIAssistant />
               <ImportDialog
                 onImportComplete={() => window.location.reload()}
@@ -374,8 +383,8 @@ export default function DashboardPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create Project'}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Creating...' : 'Create Project'}
               </Button>
             </div>
           </form>

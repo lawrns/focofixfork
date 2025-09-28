@@ -54,59 +54,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.warn('Session refresh failed:', refreshError)
           }
         } else {
-          // For demo purposes, create a mock user when no session exists
-          // Use the first real user from the database for consistency
-          const mockUser = {
-            id: '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562',
-            email: 'julian@fyves.com',
-            user_metadata: {
-              full_name: 'Demo User',
-              avatar_url: null
-            },
-            app_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as User
-
-          const mockSession = {
-            access_token: 'demo-token',
-            refresh_token: 'demo-refresh-token',
-            expires_at: Date.now() / 1000 + 3600,
-            token_type: 'bearer',
-            user: mockUser
-          } as Session
-
-          setUser(mockUser)
-          setSession(mockSession)
+          // No session exists - user is not authenticated
+          setUser(null)
+          setSession(null)
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error)
         if (mounted) {
-          // For demo purposes, create a mock user even on error
-          const mockUser = {
-            id: '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562',
-            email: 'julian@fyves.com',
-            user_metadata: {
-              full_name: 'Demo User',
-              avatar_url: null
-            },
-            app_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as User
-
-          const mockSession = {
-            access_token: 'demo-token',
-            refresh_token: 'demo-refresh-token',
-            expires_at: Date.now() / 1000 + 3600,
-            token_type: 'bearer',
-            user: mockUser
-          } as Session
-
-          setUser(mockUser)
-          setSession(mockSession)
+          // On error, ensure user is not authenticated
+          setUser(null)
+          setSession(null)
         }
       } finally {
         if (mounted) {

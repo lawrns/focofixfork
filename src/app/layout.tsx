@@ -4,6 +4,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/auth-context";
 import { I18nProvider } from "@/lib/i18n/context";
+import ErrorBoundary from "@/components/error/error-boundary";
+import { Toaster } from "sonner";
+import { ToastProvider, ToastViewport } from "@/components/toast/toast";
 // import { PerformanceService } from "@/lib/services/performance";
 // import { PWAService } from "@/lib/services/pwa";
 // import { PerformanceMonitor } from "@/lib/performance/monitor";
@@ -74,13 +77,19 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
-        <I18nProvider>
-          <AuthProvider>
-            {children}
-            {/* <MobilePerformanceMonitor /> */}
-            <MobileBottomNav />
-          </AuthProvider>
-        </I18nProvider>
+        <ErrorBoundary>
+          <I18nProvider>
+            <ToastProvider>
+              <AuthProvider>
+                {children}
+                {/* <MobilePerformanceMonitor /> */}
+                <MobileBottomNav showFab={false} />
+                <Toaster />
+                <ToastViewport />
+              </AuthProvider>
+            </ToastProvider>
+          </I18nProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

@@ -6,21 +6,21 @@ import { ViewConfig } from '@/lib/hooks/use-saved-views'
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-8 py-3 backdrop-blur-sm">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur-sm">
+      <div className="flex items-center gap-6">
         <h2 className="text-xl font-bold text-foreground">Foco</h2>
-        <div className="flex items-center gap-2">
-          <span className="rounded-lg bg-primary/20 px-2 py-1 text-xs font-bold text-primary">
+        <div className="flex items-center gap-3">
+          <span className="rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
             Project Management
           </span>
-          <span className="rounded-lg bg-muted px-2 py-1 text-xs font-bold text-muted-foreground">
+          <span className="rounded-lg bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">
             Dashboard
           </span>
         </div>
       </div>
 
       {/* Saved Views */}
-      <div className="hidden md:flex flex-1 justify-center">
+      <div className="hidden md:flex flex-1 justify-center px-8">
         <SavedViews
           onViewSelect={(view: ViewConfig) => {
             // TODO: Implement view selection logic
@@ -37,26 +37,26 @@ export default function Header() {
         />
       </div>
 
-      <div className="flex flex-1 justify-end gap-4">
+      <div className="flex flex-1 justify-end items-center gap-4">
         {/* Search */}
-        <div className="relative w-64">
+        <div className="relative w-72">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="h-5 w-5 text-muted-foreground" />
           </div>
           <input
-            className="h-10 w-full rounded-lg border-input bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
+            className="h-11 w-full rounded-lg border border-input bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             placeholder="Search projects..."
             type="search"
           />
         </div>
         
         {/* Help Button */}
-        <button className="flex size-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+        <button className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
           <HelpCircle className="h-5 w-5" />
         </button>
         
         {/* User Avatar */}
-        <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center">
+        <div className="size-11 rounded-full bg-primary/20 flex items-center justify-center">
           <span className="text-sm font-semibold text-primary">U</span>
         </div>
       </div>

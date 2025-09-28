@@ -1,4 +1,7 @@
+'use client'
+
 import { Metadata } from 'next'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 
 export const metadata: Metadata = {
   title: 'Reports - Foco',
@@ -6,6 +9,14 @@ export const metadata: Metadata = {
 }
 
 export default function ReportsPage() {
+  return (
+    <ProtectedRoute>
+      <ReportsContent />
+    </ProtectedRoute>
+  )
+}
+
+function ReportsContent() {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">

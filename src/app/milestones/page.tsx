@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,14 @@ import {
 import Link from 'next/link'
 
 export default function MilestonesPage() {
+  return (
+    <ProtectedRoute>
+      <MilestonesContent />
+    </ProtectedRoute>
+  )
+}
+
+function MilestonesContent() {
   const [milestones, setMilestones] = useState<any[]>([])
   const [projects, setProjects] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -32,23 +41,8 @@ export default function MilestonesPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check authentication
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/session')
-        if (!response.ok) {
-          router.push('/login')
-          return
-        }
-      } catch (error) {
-        router.push('/login')
-        return
-      }
-    }
-
-    checkAuth()
     loadData()
-  }, [router])
+  }, [])
 
   const loadData = async () => {
     try {

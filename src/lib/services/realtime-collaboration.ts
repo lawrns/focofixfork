@@ -349,53 +349,19 @@ export class RealtimeCollaborationService {
    */
   private async loadSession(entityType: CollaborationEntityType, entityId: string): Promise<void> {
     try {
-      // Try to load existing document
-      const { data: existingDoc, error } = await supabase
-        .from('collaborative_documents')
-        .select('*')
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
-        .single()
-
-      if (existingDoc && !error) {
-        this.state.document = {
-          id: existingDoc.id,
-          entity_type: existingDoc.entity_type,
-          entity_id: existingDoc.entity_id,
-          content: existingDoc.content || {},
-          version: existingDoc.version || 1,
-          last_modified: existingDoc.last_modified,
-          last_modified_by: existingDoc.last_modified_by,
-          collaborators: existingDoc.collaborators || [],
-          lock_status: existingDoc.lock_status || 'unlocked',
-          locked_by: existingDoc.locked_by,
-          lock_expires_at: existingDoc.lock_expires_at
-        }
-      } else {
-        // Create new document
-        const newDoc = {
-          entity_type: entityType,
-          entity_id: entityId,
-          content: {},
-          version: 1,
-          last_modified: new Date().toISOString(),
-          last_modified_by: this.userId,
-          collaborators: [this.userId],
-          lock_status: 'unlocked' as const
-        }
-
-        const { data: createdDoc, error: createError } = await supabase
-          .from('collaborative_documents')
-          .insert(newDoc)
-          .select()
-          .single()
-
-        if (createError) throw createError
-
-        this.state.document = {
-          id: createdDoc.id,
-          ...newDoc
-        }
+      // Since collaborative_documents table doesn't exist, create in-memory document
+      this.state.document = {
+        id: `doc_${entityType}_${entityId}`,
+        entity_type: entityType,
+        entity_id: entityId,
+        content: {},
+        version: 1,
+        last_modified: new Date().toISOString(),
+        last_modified_by: this.userId,
+        collaborators: [this.userId],
+        lock_status: 'unlocked',
+        locked_by: undefined,
+        lock_expires_at: undefined
       }
 
       // Create session object
@@ -418,40 +384,12 @@ export class RealtimeCollaborationService {
   }
 
   /**
-   * Save operation to database
+   * Save operation to database (disabled - tables don't exist)
    */
   private async saveOperation(operation: OperationalTransform): Promise<void> {
-    const { error } = await supabase
-      .from('operational_transforms')
-      .insert({
-        id: operation.id,
-        entity_type: operation.entity_type,
-        entity_id: operation.entity_id,
-        operation: operation.operation,
-        path: operation.path,
-        old_value: operation.old_value,
-        new_value: operation.new_value,
-        position: operation.position,
-        length: operation.length,
-        version: operation.version,
-        client_id: operation.client_id,
-        user_id: operation.user_id,
-        timestamp: operation.timestamp
-      })
-
-    if (error) throw error
-
-    // Update document version
-    if (this.state.document) {
-      await supabase
-        .from('collaborative_documents')
-        .update({
-          version: operation.version,
-          last_modified: operation.timestamp,
-          last_modified_by: operation.user_id
-        })
-        .eq('id', this.state.document.id)
-    }
+    // Since operational_transforms and collaborative_documents tables don't exist,
+    // operations are only kept in memory for the session
+    console.warn('Operation persistence disabled - database tables not found')
   }
 
   /**

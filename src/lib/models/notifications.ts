@@ -28,15 +28,9 @@ export interface Notification {
   title: string
   message: string
   data: NotificationData
-  priority: NotificationPriority
-  status: NotificationStatus
-  channels: NotificationChannel[]
-  read_at?: string
-  archived_at?: string
-  dismissed_at?: string
+  is_read: boolean
   created_at: string
-  updated_at: string
-  expires_at?: string
+  channels?: NotificationChannel[] // For delivery logic, not stored in DB
 }
 
 export interface NotificationData {
@@ -91,9 +85,7 @@ export interface NotificationPreferences {
 export interface NotificationSummary {
   total_unread: number
   total_read: number
-  total_archived: number
   by_type: Record<NotificationType, number>
-  by_priority: Record<NotificationPriority, number>
   recent_notifications: Notification[]
   oldest_unread?: string
 }
@@ -137,7 +129,7 @@ export class NotificationModel {
     mentionedUserId: string,
     actorName: string,
     actorAvatar?: string
-  ): Omit<Notification, 'id' | 'created_at' | 'updated_at' | 'read_at' | 'archived_at' | 'dismissed_at'> {
+  ): Omit<Notification, 'id' | 'created_at'> {
     return {
       user_id: mentionedUserId,
       type: 'mention',
@@ -156,8 +148,7 @@ export class NotificationModel {
           length: mention.length
         }
       },
-      priority: 'normal',
-      status: 'unread',
+      is_read: false,
       channels: ['in_app']
     }
   }
@@ -171,7 +162,7 @@ export class NotificationModel {
     entityId: string,
     actorName: string,
     actorAvatar?: string
-  ): Omit<Notification, 'id' | 'created_at' | 'updated_at' | 'read_at' | 'archived_at' | 'dismissed_at'> {
+  ): Omit<Notification, 'id' | 'created_at'> {
     return {
       user_id: comment.author_id, // This would be the entity owner
       type: 'comment',
@@ -185,8 +176,7 @@ export class NotificationModel {
         actor_avatar: actorAvatar,
         action_url: `/comments/${comment.id}`
       },
-      priority: 'normal',
-      status: 'unread',
+      is_read: false,
       channels: ['in_app']
     }
   }
@@ -201,7 +191,7 @@ export class NotificationModel {
     entityTitle: string,
     actorName: string,
     actorAvatar?: string
-  ): Omit<Notification, 'id' | 'created_at' | 'updated_at' | 'read_at' | 'archived_at' | 'dismissed_at'> {
+  ): Omit<Notification, 'id' | 'created_at'> {
     return {
       user_id: assigneeId,
       type: 'assignment',
@@ -212,8 +202,7 @@ export class NotificationModel {
         actor_name: actorName,
         actor_avatar: actorAvatar
       },
-      priority: 'high',
-      status: 'unread',
+      is_read: false,
       channels: ['in_app', 'email']
     }
   }
@@ -227,9 +216,7 @@ export class NotificationModel {
     entityTitle: string,
     dueDate: string,
     daysUntilDue: number
-  ): Omit<Notification, 'id' | 'created_at' | 'updated_at' | 'read_at' | 'archived_at' | 'dismissed_at'> {
-    const priority: NotificationPriority = daysUntilDue <= 1 ? 'urgent' : daysUntilDue <= 3 ? 'high' : 'normal'
-
+  ): Omit<Notification, 'id' | 'created_at'> {
     return {
       user_id: userId,
       type: 'due_date',
@@ -239,8 +226,7 @@ export class NotificationModel {
         entity_type: entityType as any,
         metadata: { due_date: dueDate, days_until_due: daysUntilDue }
       },
-      priority,
-      status: 'unread',
+      is_read: false,
       channels: ['in_app', 'email']
     }
   }
@@ -424,15 +410,9 @@ export class NotificationModel {
       title: data.title,
       message: data.message,
       data: data.data || {},
-      priority: data.priority,
-      status: data.status,
-      channels: data.channels || [],
-      read_at: data.read_at,
-      archived_at: data.archived_at,
-      dismissed_at: data.dismissed_at,
+      is_read: data.is_read || false,
       created_at: data.created_at,
-      updated_at: data.updated_at,
-      expires_at: data.expires_at
+      channels: ['in_app'] // Default, since not stored in DB
     }
   }
 }

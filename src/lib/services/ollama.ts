@@ -442,11 +442,8 @@ Provide 1-3 specific code suggestions or implementation approaches.`
       const { error } = await supabase
         .from('ai_suggestions')
         .insert({
-          id: suggestion.id,
-          type: suggestion.type,
-          title: suggestion.title,
+          suggestion_type: suggestion.type,
           content: suggestion.content,
-          confidence: suggestion.confidence,
           metadata: suggestion.metadata || {},
           created_at: suggestion.created_at
         })
@@ -483,12 +480,12 @@ Provide 1-3 specific code suggestions or implementation approaches.`
 
       return (data || []).map(row => ({
         id: row.id,
-        type: row.type,
-        title: row.title,
+        type: row.suggestion_type as any,
+        title: 'AI Suggestion', // Default since not in DB
         content: row.content,
-        confidence: row.confidence,
-        metadata: row.metadata || {},
-        created_at: row.created_at
+        confidence: 0.8, // Default since not in DB
+        metadata: (row.metadata as Record<string, any>) || {},
+        created_at: row.created_at || new Date().toISOString()
       }))
     } catch (error) {
       console.error('Error fetching AI suggestions:', error)

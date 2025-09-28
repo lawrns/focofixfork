@@ -155,81 +155,30 @@ export class ConflictResolutionService {
 
   /**
    * Store conflict for later resolution
+   * Note: This functionality requires a conflict_logs table that is not currently implemented
    */
   static async storeConflict(conflict: ConflictData): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('conflict_logs')
-        .insert({
-          id: conflict.id,
-          table_name: conflict.table,
-          server_data: conflict.serverData,
-          client_data: conflict.clientData,
-          conflict_timestamp: conflict.timestamp.toISOString(),
-          user_id: conflict.userId,
-          status: 'pending'
-        })
-
-      if (error) {
-        console.error('Failed to store conflict:', error)
-      }
-    } catch (error) {
-      console.error('Error storing conflict:', error)
-    }
+    // TODO: Implement conflict logging table
+    console.warn('Conflict logging not implemented:', conflict)
   }
 
   /**
    * Get pending conflicts for a user
+   * Note: This functionality requires a conflict_logs table that is not currently implemented
    */
   static async getPendingConflicts(userId: string): Promise<ConflictData[]> {
-    try {
-      const { data, error } = await supabase
-        .from('conflict_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .order('conflict_timestamp', { ascending: false })
-
-      if (error) {
-        console.error('Failed to fetch conflicts:', error)
-        return []
-      }
-
-      return (data || []).map(row => ({
-        id: row.id,
-        table: row.table_name,
-        serverData: row.server_data,
-        clientData: row.client_data,
-        timestamp: new Date(row.conflict_timestamp),
-        userId: row.user_id
-      }))
-    } catch (error) {
-      console.error('Error fetching conflicts:', error)
-      return []
-    }
+    // TODO: Implement conflict logging table
+    console.warn('Conflict retrieval not implemented for user:', userId)
+    return []
   }
 
   /**
    * Mark conflict as resolved
+   * Note: This functionality requires a conflict_logs table that is not currently implemented
    */
   static async markConflictResolved(conflictId: string, resolution: ResolutionResult): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('conflict_logs')
-        .update({
-          status: 'resolved',
-          resolution_strategy: resolution.strategy,
-          resolved_data: resolution.resolvedData,
-          resolved_at: new Date().toISOString()
-        })
-        .eq('id', conflictId)
-
-      if (error) {
-        console.error('Failed to mark conflict as resolved:', error)
-      }
-    } catch (error) {
-      console.error('Error marking conflict as resolved:', error)
-    }
+    // TODO: Implement conflict logging table
+    console.warn('Conflict resolution logging not implemented:', conflictId, resolution)
   }
 }
 

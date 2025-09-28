@@ -1,6 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '../supabase-client'
+import { Database } from '../supabase/types'
 import { getDatabase } from './connection'
+
+type OrganizationInsert = Database['public']['Tables']['organizations']['Insert']
+type ProjectInsert = Database['public']['Tables']['projects']['Insert']
+type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 
 // Type definitions for database operations
 export type DatabaseResult<T> = {
@@ -95,7 +99,7 @@ export class DatabaseService {
     })
   }
 
-  async createOrganization(data: Database['public']['Tables']['organizations']['Insert']): Promise<DatabaseResult<Database['public']['Tables']['organizations']['Row']>> {
+  async createOrganization(data: OrganizationInsert): Promise<DatabaseResult<Database['public']['Tables']['organizations']['Row']>> {
     return this.executeQuery(async (client) => {
       return await client
         .from('organizations')
@@ -131,7 +135,7 @@ export class DatabaseService {
     })
   }
 
-  async createProject(data: Database['public']['Tables']['projects']['Insert']): Promise<DatabaseResult<Database['public']['Tables']['projects']['Row']>> {
+  async createProject(data: ProjectInsert): Promise<DatabaseResult<Database['public']['Tables']['projects']['Row']>> {
     return this.executeQuery(async (client) => {
       return await client
         .from('projects')
@@ -167,7 +171,7 @@ export class DatabaseService {
     })
   }
 
-  async createTask(data: Database['public']['Tables']['tasks']['Insert']): Promise<DatabaseResult<Database['public']['Tables']['tasks']['Row']>> {
+  async createTask(data: TaskInsert): Promise<DatabaseResult<Database['public']['Tables']['tasks']['Row']>> {
     return this.executeQuery(async (client) => {
       return await client
         .from('tasks')
@@ -246,10 +250,10 @@ export class DatabaseService {
   }
 
   // Batch operations
-  async batchInsert<T extends keyof Database['public']['Tables']>(
-    table: T,
-    data: Database['public']['Tables'][T]['Insert'][]
-  ): Promise<DatabaseResult<Database['public']['Tables'][T]['Row'][]>> {
+  async batchInsert(
+    table: keyof Database['public']['Tables'],
+    data: any[]
+  ): Promise<DatabaseResult<any[]>> {
     return this.executeQuery(async (client) => {
       return await client
         .from(table)

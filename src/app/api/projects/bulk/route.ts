@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     if (realProjectIds.length > 0) {
       const { data: userProjects, error: permissionError } = await supabase
-        .from('project_members')
+        .from('project_team_assignments')
         .select('project_id, role')
         .eq('user_id', userId)
         .in('project_id', realProjectIds)

@@ -63,9 +63,9 @@ export class ProjectsService {
         .from('projects')
         .select(`
           *,
-          project_members!inner(user_id)
+          project_team_assignments!inner(user_id)
         `, { count: 'exact' })
-        .eq('project_members.user_id', userId)
+        .eq('project_team_assignments.user_id', userId)
         .order('created_at', { ascending: false })
 
       // Add additional organization filter if specified
@@ -101,7 +101,19 @@ export class ProjectsService {
 
       return {
         success: true,
-        data: data || [],
+        data: (data || []).map(project => ({
+          ...project,
+          description: project.description || undefined,
+          organization_id: project.organization_id || undefined,
+          created_by: project.created_by || undefined,
+          start_date: project.start_date || undefined,
+          due_date: project.due_date || undefined,
+          status: project.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
+          priority: project.priority as 'low' | 'medium' | 'high' | 'urgent',
+          progress_percentage: project.progress_percentage || 0,
+          created_at: project.created_at || '',
+          updated_at: project.updated_at || ''
+        })),
         pagination: {
           total: count || 0,
           limit: options?.limit || 10,
@@ -185,7 +197,19 @@ export class ProjectsService {
 
       return {
         success: true,
-        data
+        data: {
+          ...data,
+          description: data.description || undefined,
+          organization_id: data.organization_id || undefined,
+          created_by: data.created_by || undefined,
+          start_date: data.start_date || undefined,
+          due_date: data.due_date || undefined,
+          status: data.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
+          priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
+          progress_percentage: data.progress_percentage || 0,
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
+        }
       }
     } catch (error: any) {
       console.error('Project service error:', error)
@@ -266,7 +290,19 @@ export class ProjectsService {
 
       return {
         success: true,
-        data
+        data: {
+          ...data,
+          description: data.description || undefined,
+          organization_id: data.organization_id || undefined,
+          created_by: data.created_by || undefined,
+          start_date: data.start_date || undefined,
+          due_date: data.due_date || undefined,
+          status: data.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
+          priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
+          progress_percentage: data.progress_percentage || 0,
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
+        }
       }
     } catch (error: any) {
       console.error('Project creation service error:', error)
@@ -343,7 +379,19 @@ export class ProjectsService {
 
       return {
         success: true,
-        data
+        data: {
+          ...data,
+          description: data.description || undefined,
+          organization_id: data.organization_id || undefined,
+          created_by: data.created_by || undefined,
+          start_date: data.start_date || undefined,
+          due_date: data.due_date || undefined,
+          status: data.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
+          priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
+          progress_percentage: data.progress_percentage || 0,
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
+        }
       }
     } catch (error: any) {
       console.error('Project update service error:', error)

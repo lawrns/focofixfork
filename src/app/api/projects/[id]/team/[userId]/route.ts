@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Check if the current user has permission to manage team member roles
     const { data: userRole, error: roleError } = await supabase
-      .from('project_members')
+      .from('project_team_assignments')
       .select('role')
       .eq('project_id', projectId)
       .eq('user_id', currentUserId)
@@ -111,7 +111,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Verify the target user is a team member of this project
     const { data: targetMember, error: memberError } = await supabase
-      .from('project_members')
+      .from('project_team_assignments')
       .select('id, role')
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)
@@ -127,7 +127,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Prevent demoting the last owner/admin
     if (targetMember.role === 'owner' || targetMember.role === 'admin') {
       const { count: adminCount } = await supabase
-        .from('project_members')
+        .from('project_team_assignments')
         .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId)
         .in('role', ['owner', 'admin'])
@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Update the team member role
     const { data: updatedMember, error: updateError } = await supabase
-      .from('project_members')
+      .from('project_team_assignments')
       .update({ role: validationResult.data.role })
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)
@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         role,
         added_by,
         added_at,
-        auth.users!project_members_user_id_fkey (
+        auth.users!project_team_assignments_user_id_fkey (
           email,
           raw_user_meta_data
         )
@@ -233,8 +233,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if the current user has permission to remove team members
-    const { data: userRole, error: roleError } = await supabase
-      .from('project_members')
+      const { data: userRole, error: roleError } = await supabase
+        .from('project_team_assignments')
       .select('role')
       .eq('project_id', projectId)
       .eq('user_id', currentUserId)
@@ -277,7 +277,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Verify the target user is a team member of this project
     const { data: targetMember, error: memberError } = await supabase
-      .from('project_members')
+      .from('project_team_assignments')
       .select('id, role')
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)
@@ -293,7 +293,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Prevent removing the last owner/admin
     if (targetMember.role === 'owner' || targetMember.role === 'admin') {
       const { count: adminCount } = await supabase
-        .from('project_members')
+        .from('project_team_assignments')
         .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId)
         .in('role', ['owner', 'admin'])
@@ -308,7 +308,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Remove the team member
     const { error: deleteError } = await supabase
-      .from('project_members')
+      .from('project_team_assignments')
       .delete()
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)

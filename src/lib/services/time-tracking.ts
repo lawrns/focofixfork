@@ -11,7 +11,7 @@ import {
 
 export class TimeTrackingService {
   /**
-   * Start a new timer session
+   * Start a new timer session (disabled - timer_sessions table not in schema)
    */
   static async startTimer(data: {
     user_id: string
@@ -21,165 +21,42 @@ export class TimeTrackingService {
     description: string
     tags?: string[]
   }): Promise<TimerSession> {
-    // Stop any existing running timers for this user
-    await this.stopAllTimers(data.user_id)
-
-    const session = TimerSessionModel.createSession(data)
-
-    const { data: result, error } = await supabase
-      .from('timer_sessions')
-      .insert(session)
-      .select()
-      .single()
-
-    if (error) {
-      throw new Error(`Failed to start timer: ${error.message}`)
-    }
-
-    return TimerSessionModel.fromDatabase(result)
+    throw new Error('Timer functionality not supported - timer_sessions table not in schema')
   }
 
   /**
-   * Pause the current timer session
+   * Pause the current timer session (disabled)
    */
   static async pauseTimer(userId: string): Promise<TimerSession | null> {
-    const session = await this.getActiveTimerSession(userId)
-    if (!session) return null
-
-    const pausedSession = TimerSessionModel.pauseSession(session)
-
-    const { data, error } = await supabase
-      .from('timer_sessions')
-      .update({
-        last_pause_start: pausedSession.last_pause_start,
-        updated_at: pausedSession.updated_at
-      })
-      .eq('id', session.id)
-      .select()
-      .single()
-
-    if (error) {
-      throw new Error(`Failed to pause timer: ${error.message}`)
-    }
-
-    return TimerSessionModel.fromDatabase(data)
+    throw new Error('Timer functionality not supported - timer_sessions table not in schema')
   }
 
   /**
-   * Resume the current timer session
+   * Resume the current timer session (disabled)
    */
   static async resumeTimer(userId: string): Promise<TimerSession | null> {
-    const session = await this.getActiveTimerSession(userId)
-    if (!session) return null
-
-    const resumedSession = TimerSessionModel.resumeSession(session)
-
-    const { data, error } = await supabase
-      .from('timer_sessions')
-      .update({
-        paused_duration: resumedSession.paused_duration,
-        last_pause_start: resumedSession.last_pause_start,
-        updated_at: resumedSession.updated_at
-      })
-      .eq('id', session.id)
-      .select()
-      .single()
-
-    if (error) {
-      throw new Error(`Failed to resume timer: ${error.message}`)
-    }
-
-    return TimerSessionModel.fromDatabase(data)
+    throw new Error('Timer functionality not supported - timer_sessions table not in schema')
   }
 
   /**
-   * Stop the current timer session and create a time entry
+   * Stop the current timer session and create a time entry (disabled)
    */
   static async stopTimer(userId: string, description?: string): Promise<TimeEntry | null> {
-    const session = await this.getActiveTimerSession(userId)
-    if (!session) return null
-
-    // Stop the session
-    const timeEntryData = TimerSessionModel.stopSession({
-      ...session,
-      description: description || session.description
-    })
-
-    // Create time entry
-    const { data: entry, error: entryError } = await supabase
-      .from('time_entries')
-      .insert(timeEntryData)
-      .select()
-      .single()
-
-    if (entryError) {
-      throw new Error(`Failed to create time entry: ${entryError.message}`)
-    }
-
-    // Delete the timer session
-    const { error: deleteError } = await supabase
-      .from('timer_sessions')
-      .delete()
-      .eq('id', session.id)
-
-    if (deleteError) {
-      console.error('Failed to delete timer session:', deleteError)
-      // Don't throw here as the time entry was created successfully
-    }
-
-    return TimeEntryModel.fromDatabase(entry)
+    throw new Error('Timer functionality not supported - timer_sessions table not in schema')
   }
 
   /**
-   * Stop all running timers for a user
+   * Stop all running timers for a user (disabled)
    */
   static async stopAllTimers(userId: string): Promise<void> {
-    const { data: sessions, error } = await supabase
-      .from('timer_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_running', true)
-
-    if (error) {
-      throw new Error(`Failed to get active timers: ${error.message}`)
-    }
-
-    for (const session of sessions || []) {
-      const sessionObj = TimerSessionModel.fromDatabase(session)
-      const timeEntryData = TimerSessionModel.stopSession(sessionObj)
-
-      // Create time entry
-      await supabase
-        .from('time_entries')
-        .insert(timeEntryData)
-
-      // Delete the session
-      await supabase
-        .from('timer_sessions')
-        .delete()
-        .eq('id', session.id)
-    }
+    throw new Error('Timer functionality not supported - timer_sessions table not in schema')
   }
 
   /**
-   * Get the active timer session for a user
+   * Get the active timer session for a user (disabled)
    */
   static async getActiveTimerSession(userId: string): Promise<TimerSession | null> {
-    const { data, error } = await supabase
-      .from('timer_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_running', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') return null // No rows found
-      throw new Error(`Failed to get active timer: ${error.message}`)
-    }
-
-    return TimerSessionModel.fromDatabase(data)
+    throw new Error('Timer functionality not supported - timer_sessions table not in schema')
   }
 
   /**
@@ -199,15 +76,20 @@ export class TimeTrackingService {
     tags?: string[]
   }): Promise<TimeEntry> {
     const entryData = {
-      ...data,
-      duration_minutes: data.duration_minutes || (data.end_time ?
-        TimeEntryModel.calculateDuration(data.start_time, data.end_time) : 0),
-      billable: data.billable || false,
-      status: 'completed' as const,
-      tags: data.tags || []
+      user_id: data.user_id,
+      project_id: data.project_id,
+      milestone_id: data.milestone_id,
+      description: data.description,
+      date: data.start_time.split('T')[0], // Extract date from start_time
+      hours: (data.duration_minutes || (data.end_time ?
+        TimeEntryModel.calculateDuration(data.start_time, data.end_time) : 0)) / 60 // Convert minutes to hours
     }
 
-    const validation = TimeEntryModel.validateTimeEntry(entryData)
+    const validation = TimeEntryModel.validateTimeEntry({
+      ...data,
+      duration_minutes: entryData.hours * 60,
+      status: 'completed'
+    })
     if (!validation.isValid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
     }
@@ -544,71 +426,28 @@ export class TimeTrackingService {
   }
 
   /**
-   * Get or create user time tracking settings
+   * Get or create user time tracking settings (disabled)
    */
   static async getUserSettings(userId: string): Promise<TimeTrackingSettings> {
-    const { data, error } = await supabase
-      .from('time_tracking_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-
-    if (error && error.code === 'PGRST116') {
-      // Settings don't exist, create defaults
-      const defaults = TimeTrackingSettingsModel.getDefaults()
-      const newSettings = {
-        ...defaults,
-        user_id: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      const { data: created, error: createError } = await supabase
-        .from('time_tracking_settings')
-        .insert(newSettings)
-        .select()
-        .single()
-
-      if (createError) {
-        throw new Error(`Failed to create settings: ${createError.message}`)
-      }
-
-      return TimeTrackingSettingsModel.fromDatabase(created)
+    // Return default settings since table doesn't exist
+    const defaults = TimeTrackingSettingsModel.getDefaults()
+    return {
+      ...defaults,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
-
-    if (error) {
-      throw new Error(`Failed to fetch settings: ${error.message}`)
-    }
-
-    return TimeTrackingSettingsModel.fromDatabase(data)
   }
 
   /**
-   * Update user time tracking settings
+   * Update user time tracking settings (disabled)
    */
   static async updateUserSettings(
     userId: string,
     updates: Partial<TimeTrackingSettings>
   ): Promise<TimeTrackingSettings> {
-    const validation = TimeTrackingSettingsModel.validateSettings(updates)
-    if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
-    }
-
-    const { data, error } = await supabase
-      .from('time_tracking_settings')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-      .select()
-      .single()
-
-    if (error) {
-      throw new Error(`Failed to update settings: ${error.message}`)
-    }
-
-    return TimeTrackingSettingsModel.fromDatabase(data)
+    // Return updated defaults since table doesn't exist
+    const current = await this.getUserSettings(userId)
+    return { ...current, ...updates }
   }
 }

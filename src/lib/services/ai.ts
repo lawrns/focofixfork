@@ -444,17 +444,20 @@ Consider:
     input_data: any
     output_data: any
     user_id?: string
-    project_id?: string
+    milestone_id?: string
   }): Promise<void> {
     try {
       await supabase
         .from('ai_suggestions')
         .insert({
-          type: suggestion.type,
-          input_data: suggestion.input_data,
-          output_data: suggestion.output_data,
+          suggestion_type: suggestion.type,
+          content: JSON.stringify(suggestion.output_data),
+          metadata: {
+            input_data: suggestion.input_data,
+            output_data: suggestion.output_data
+          },
           user_id: suggestion.user_id,
-          project_id: suggestion.project_id,
+          milestone_id: suggestion.milestone_id,
           created_at: new Date().toISOString()
         })
     } catch (error) {

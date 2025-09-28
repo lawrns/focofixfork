@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Check if user is already a member of this project
     const { data: existingMember } = await supabaseAdmin
-      .from('project_members')
+      .from('project_team_assignments')
       .select('id')
       .eq('project_id', projectId)
       .eq('user_id', validationResult.data.user_id)
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Add the team member
     const { data: newMember, error: insertError } = await supabaseAdmin
-      .from('project_members')
+      .from('project_team_assignments')
       .insert({
         project_id: projectId,
         user_id: validationResult.data.user_id,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         role,
         added_by,
         added_at,
-        auth.users!project_members_user_id_fkey (
+        auth.users!project_team_assignments_user_id_fkey (
           email,
           raw_user_meta_data
         )
@@ -158,9 +158,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Fetch team members from project_members table
+    // Fetch team members from project_team_assignments table
     const { data: teamMembers, error } = await supabaseAdmin
-      .from('project_members')
+      .from('project_team_assignments')
       .select(`
         id,
         user_id,

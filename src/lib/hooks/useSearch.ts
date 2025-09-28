@@ -145,12 +145,12 @@ export function useSearch(options: SearchOptions) {
       type: 'project' as const,
       title: project.name,
       subtitle: (project.organizations as any)?.name,
-      description: project.description,
+      description: project.description || undefined,
       url: `/projects/${project.id}`,
       metadata: {
         organizationId: project.organization_id
       },
-      score: calculateRelevanceScore(query, project.name, project.description)
+      score: calculateRelevanceScore(query, project.name, project.description || undefined)
     }))
   }
 
@@ -189,7 +189,7 @@ export function useSearch(options: SearchOptions) {
       type: 'milestone' as const,
       title: milestone.name,
       subtitle: (milestone.projects as any)?.name,
-      description: milestone.description,
+      description: milestone.description || undefined,
       url: `/milestones/${milestone.id}`,
       metadata: {
         status: milestone.status,
@@ -197,7 +197,7 @@ export function useSearch(options: SearchOptions) {
         projectId: milestone.project_id,
         organizationName: (milestone.projects as any)?.organizations?.name
       },
-      score: calculateRelevanceScore(query, milestone.name, milestone.description)
+      score: calculateRelevanceScore(query, milestone.name, milestone.description || undefined)
     }))
   }
 
@@ -257,7 +257,7 @@ export function useSearch(options: SearchOptions) {
       type: 'organization' as const,
       title: org.name,
       subtitle: 'Organization',
-      description: `Created ${new Date(org.created_at).toLocaleDateString()}`,
+      description: `Created ${org.created_at ? new Date(org.created_at).toLocaleDateString() : 'Unknown'}`,
       url: `/organizations/${org.id}`,
       metadata: {
         createdAt: org.created_at

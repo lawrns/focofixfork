@@ -28,7 +28,6 @@ export interface ProjectExportData {
   status: string
   priority: string
   progress_percentage: number
-  start_date?: string
   due_date?: string
   created_at: string
   organization_name?: string
@@ -41,7 +40,6 @@ export interface MilestoneExportData {
   status: string
   priority: string
   progress_percentage: number
-  start_date?: string
   due_date?: string
   project_name?: string
   created_at: string
@@ -53,7 +51,6 @@ export interface TaskExportData {
   description?: string
   status: string
   priority: string
-  start_date?: string
   due_date?: string
   milestone_name?: string
   project_name?: string
@@ -158,13 +155,12 @@ export class ExportService {
     return data.map(item => ({
       id: item.id,
       name: item.name,
-      description: item.description,
+      description: item.description || undefined,
       status: item.status || 'planning',
       priority: item.priority || 'medium',
       progress_percentage: item.progress_percentage || 0,
-      start_date: item.start_date,
-      due_date: item.due_date,
-      created_at: item.created_at,
+      due_date: item.due_date || undefined,
+      created_at: item.created_at || '',
       organization_name: item.organizations?.name
     }))
   }
@@ -208,14 +204,13 @@ export class ExportService {
     return data.map(item => ({
       id: item.id,
       name: item.name,
-      description: item.description,
+      description: item.description || undefined,
       status: item.status || 'planning',
       priority: item.priority || 'medium',
       progress_percentage: item.progress_percentage || 0,
-      start_date: item.start_date,
-      due_date: item.due_date,
+      due_date: item.due_date || undefined,
       project_name: item.projects?.name,
-      created_at: item.created_at
+      created_at: item.created_at || ''
     }))
   }
 
@@ -232,9 +227,6 @@ export class ExportService {
           projects (
             name
           )
-        ),
-        user_profiles!tasks_assigned_to_fkey (
-          display_name
         )
       `)
       .order('created_at', { ascending: false })
@@ -263,16 +255,15 @@ export class ExportService {
 
     return data.map(item => ({
       id: item.id,
-      name: item.name,
-      description: item.description,
+      name: item.title,
+      description: item.description || undefined,
       status: item.status || 'todo',
       priority: item.priority || 'medium',
-      start_date: item.start_date,
-      due_date: item.due_date,
+      due_date: item.due_date || undefined,
       milestone_name: item.milestones?.name,
       project_name: item.milestones?.projects?.name,
-      assignee_name: item.user_profiles?.display_name,
-      created_at: item.created_at
+      assignee_name: item.assignee_id || 'Unassigned',
+      created_at: item.created_at || ''
     }))
   }
 
@@ -474,20 +465,20 @@ export class ExportService {
    * Get project headers for export
    */
   private static getProjectHeaders(): string[] {
-    return ['Name', 'Description', 'Status', 'Priority', 'Progress', 'Start Date', 'Due Date', 'Organization', 'Created At']
+    return ['Name', 'Description', 'Status', 'Priority', 'Progress', 'Due Date', 'Organization', 'Created At']
   }
 
   /**
    * Get milestone headers for export
    */
   private static getMilestoneHeaders(): string[] {
-    return ['Name', 'Description', 'Status', 'Priority', 'Progress', 'Start Date', 'Due Date', 'Project', 'Created At']
+    return ['Name', 'Description', 'Status', 'Priority', 'Progress', 'Due Date', 'Project', 'Created At']
   }
 
   /**
    * Get task headers for export
    */
   private static getTaskHeaders(): string[] {
-    return ['Name', 'Description', 'Status', 'Priority', 'Start Date', 'Due Date', 'Milestone', 'Project', 'Assignee', 'Created At']
+    return ['Name', 'Description', 'Status', 'Priority', 'Due Date', 'Milestone', 'Project', 'Assignee', 'Created At']
   }
 }

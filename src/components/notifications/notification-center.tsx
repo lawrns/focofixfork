@@ -61,7 +61,7 @@ export default function NotificationCenter({
 
       const [notificationsResult, summaryResult] = await Promise.all([
         NotificationsService.getNotifications(currentUserId, {
-          status: activeTab === 'unread' ? ['unread'] : undefined,
+          is_read: activeTab === 'unread' ? [false] : undefined,
           limit: 50
         }),
         NotificationsService.getNotificationSummary(currentUserId)
@@ -87,7 +87,7 @@ export default function NotificationCenter({
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId
-            ? { ...n, status: 'read', read_at: new Date().toISOString() }
+            ? { ...n, is_read: true }
             : n
         )
       )
@@ -138,7 +138,7 @@ export default function NotificationCenter({
   // Handle notification click
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read if unread
-    if (notification.status === 'unread') {
+    if (!notification.is_read) {
       await handleMarkAsRead(notification.id)
     }
 
@@ -257,7 +257,7 @@ export default function NotificationCenter({
                     animate={{ opacity: 1, y: 0 }}
                     className={cn(
                       'p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors',
-                      notification.status === 'unread' && 'bg-blue-50/50 dark:bg-blue-950/20'
+                      !notification.is_read && 'bg-blue-50/50 dark:bg-blue-950/20'
                     )}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -278,7 +278,7 @@ export default function NotificationCenter({
                         </p>
                       </div>
 
-                      {notification.status === 'unread' && (
+                      {!notification.is_read && (
                         <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
                       )}
                     </div>
@@ -375,7 +375,7 @@ export default function NotificationCenter({
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
                     'p-4 border rounded-lg hover:shadow-sm transition-all cursor-pointer',
-                    notification.status === 'unread' && 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
+                    !notification.is_read && 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
                     selectedNotifications.has(notification.id) && 'ring-2 ring-primary'
                   )}
                   onClick={() => handleNotificationClick(notification)}
@@ -400,15 +400,6 @@ export default function NotificationCenter({
                         <h4 className="font-medium text-sm line-clamp-1">
                           {notification.title}
                         </h4>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-xs',
-                            NotificationModel.getPriorityColor(notification.priority)
-                          )}
-                        >
-                          {notification.priority}
-                        </Badge>
                       </div>
 
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
@@ -421,7 +412,7 @@ export default function NotificationCenter({
                         </span>
 
                         <div className="flex items-center gap-1">
-                          {notification.status === 'unread' && (
+                          {!notification.is_read && (
                             <Button
                               variant="ghost"
                               size="sm"

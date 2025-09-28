@@ -198,26 +198,28 @@ export class TimeEntryModel {
    * Transform raw database response to TimeEntry
    */
   static fromDatabase(data: any): TimeEntry {
+    // Map database fields to model fields
+    // The database has a simpler structure, so we need to adapt
     return {
       id: data.id,
-      user_id: data.user_id,
+      user_id: data.user_id || '',
       project_id: data.project_id,
       milestone_id: data.milestone_id,
-      task_id: data.task_id,
-      description: data.description,
-      start_time: data.start_time,
-      end_time: data.end_time,
-      duration_minutes: data.duration_minutes,
-      billable: data.billable,
-      billable_rate: data.billable_rate,
-      status: data.status,
-      tags: data.tags || [],
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      submitted_at: data.submitted_at,
-      approved_at: data.approved_at,
-      approved_by: data.approved_by,
-      rejection_reason: data.rejection_reason
+      task_id: undefined, // Not stored in DB
+      description: data.description || '',
+      start_time: data.date || '', // Use date as start_time
+      end_time: undefined, // Not stored
+      duration_minutes: data.hours ? data.hours * 60 : 0, // Convert hours to minutes
+      billable: false, // Default, not stored
+      billable_rate: undefined, // Not stored
+      status: 'completed', // Default, not stored
+      tags: [], // Not stored
+      created_at: data.created_at || '',
+      updated_at: data.updated_at || '',
+      submitted_at: undefined, // Not stored
+      approved_at: undefined, // Not stored
+      approved_by: undefined, // Not stored
+      rejection_reason: undefined // Not stored
     }
   }
 }

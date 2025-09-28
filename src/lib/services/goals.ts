@@ -44,207 +44,55 @@ export interface GoalComment {
 export class GoalsService {
   // Goal CRUD operations
   static async getGoals(organizationId?: string, projectId?: string, userId?: string): Promise<Goal[]> {
-    try {
-      let query = supabase.from('goals').select('*').order('created_at', { ascending: false });
-
-      if (organizationId) {
-        query = query.eq('organization_id', organizationId);
-      }
-
-      if (projectId) {
-        query = query.eq('project_id', projectId);
-      }
-
-      if (userId) {
-        query = query.eq('owner_id', userId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching goals:', error);
-      return [];
-    }
+    // Goals functionality not yet implemented in database
+    console.warn('Goals functionality not yet implemented')
+    return []
   }
 
   static async getGoalById(id: string): Promise<Goal | null> {
-    try {
-      const { data, error } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching goal:', error);
-      return null;
-    }
+    // Goals functionality not yet implemented in database
+    console.warn('Goals functionality not yet implemented')
+    return null
   }
 
   static async createGoal(goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'progress_percentage'>): Promise<Goal | null> {
-    try {
-      const goalData = {
-        ...goal,
-        progress_percentage: 0,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from('goals')
-        .insert(goalData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating goal:', error);
-      return null;
-    }
+    // Goals functionality not yet implemented in database
+    throw new Error('Goals functionality not yet implemented')
   }
 
   static async updateGoal(id: string, updates: Partial<Goal>): Promise<Goal | null> {
-    try {
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from('goals')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating goal:', error);
-      return null;
-    }
+    // Goals functionality not yet implemented in database
+    throw new Error('Goals functionality not yet implemented')
   }
 
   static async deleteGoal(id: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('goals')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error deleting goal:', error);
-      return false;
-    }
+    // Goals functionality not yet implemented in database
+    throw new Error('Goals functionality not yet implemented')
   }
 
   // Goal progress tracking
   static async updateGoalProgress(goalId: string, newValue: number, note?: string): Promise<boolean> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      // Get current goal
-      const goal = await this.getGoalById(goalId);
-      if (!goal) throw new Error('Goal not found');
-
-      // Calculate new progress percentage
-      let progressPercentage = 0;
-      if (goal.target_value && goal.target_value > 0) {
-        progressPercentage = Math.min(100, (newValue / goal.target_value) * 100);
-      }
-
-      // Update goal with new values
-      const updateData: Partial<Goal> = {
-        current_value: newValue,
-        progress_percentage: progressPercentage,
-      };
-
-      // Auto-complete goal if target reached
-      if (progressPercentage >= 100 && goal.status === 'active') {
-        updateData.status = 'completed';
-      }
-
-      await this.updateGoal(goalId, updateData);
-
-      // Record progress entry
-      const { error } = await supabase
-        .from('goal_progress')
-        .insert({
-          goal_id: goalId,
-          user_id: user.id,
-          value: newValue,
-          note,
-        });
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error updating goal progress:', error);
-      return false;
-    }
+    // Goals functionality not yet implemented in database
+    console.warn('Goals functionality not yet implemented')
+    return false
   }
 
   static async getGoalProgress(goalId: string, userId: string): Promise<GoalProgress[]> {
-    try {
-      const { data, error } = await supabase
-        .from('goal_progress')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching goal progress:', error);
-      return [];
-    }
+    // Goals functionality not yet implemented in database
+    console.warn('Goals functionality not yet implemented')
+    return []
   }
 
   // Goal comments
   static async addGoalComment(goalId: string, content: string): Promise<GoalComment | null> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('goal_comments')
-        .insert({
-          goal_id: goalId,
-          user_id: user.id,
-          content,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error adding goal comment:', error);
-      return null;
-    }
+    // Goals functionality not yet implemented in database
+    throw new Error('Goals functionality not yet implemented')
   }
 
   static async getGoalComments(goalId: string): Promise<GoalComment[]> {
-    try {
-      const { data, error } = await supabase
-        .from('goal_comments')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching goal comments:', error);
-      return [];
-    }
+    // Goals functionality not yet implemented in database
+    console.warn('Goals functionality not yet implemented')
+    return []
   }
 
   // Goal templates
@@ -355,35 +203,13 @@ export class GoalsService {
 
   // Bulk operations
   static async bulkUpdateGoals(goalIds: string[], updates: Partial<Goal>): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('goals')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .in('id', goalIds);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error bulk updating goals:', error);
-      return false;
-    }
+    // Goals functionality not yet implemented in database
+    throw new Error('Goals functionality not yet implemented')
   }
 
   static async bulkDeleteGoals(goalIds: string[]): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('goals')
-        .delete()
-        .in('id', goalIds);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error bulk deleting goals:', error);
-      return false;
-    }
+    // Goals functionality not yet implemented in database
+    console.warn('Goals functionality not yet implemented')
+    return false
   }
 }

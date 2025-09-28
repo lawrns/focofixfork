@@ -76,13 +76,13 @@ export class AnalyticsService {
       const activeProjects = projects.filter(p => p.status !== 'completed');
       const completedProjects = projects.filter(p => p.status === 'completed');
       const overdueProjects = projects.filter(p => {
-        if (!p.end_date) return false;
-        return new Date(p.end_date) < now && p.status !== 'completed';
+        if (!p.due_date) return false;
+        return new Date(p.due_date) < now && p.status !== 'completed';
       });
 
       const totalDuration = projects.reduce((sum, p) => {
-        if (p.start_date && p.end_date) {
-          const duration = new Date(p.end_date).getTime() - new Date(p.start_date).getTime();
+        if (p.start_date && p.due_date) {
+          const duration = new Date(p.due_date).getTime() - new Date(p.start_date).getTime();
           return sum + (duration / (1000 * 60 * 60 * 24)); // Convert to days
         }
         return sum;
@@ -122,9 +122,8 @@ export class AnalyticsService {
       });
 
       const totalDuration = milestones.reduce((sum, m) => {
-        if (m.created_at && (m.completed_at || m.status === 'completed')) {
-          const endDate = m.completed_at || new Date();
-          const duration = new Date(endDate).getTime() - new Date(m.created_at).getTime();
+        if (m.created_at && m.status === 'completed' && m.updated_at) {
+          const duration = new Date(m.updated_at).getTime() - new Date(m.created_at).getTime();
           return sum + (duration / (1000 * 60 * 60 * 24)); // Convert to days
         }
         return sum;
@@ -163,12 +162,14 @@ export class AnalyticsService {
       });
 
       const tasksByPriority = tasks.reduce((acc, task) => {
-        acc[task.priority] = (acc[task.priority] || 0) + 1;
+        const priority = task.priority || 'none';
+        acc[priority] = (acc[priority] || 0) + 1;
         return acc;
       }, {} as { [key: string]: number });
 
       const tasksByStatus = tasks.reduce((acc, task) => {
-        acc[task.status] = (acc[task.status] || 0) + 1;
+        const status = task.status || 'unknown';
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       }, {} as { [key: string]: number });
 
@@ -206,17 +207,17 @@ export class AnalyticsService {
 
       if (!timeEntries) return this.getEmptyTimeTrackingAnalytics();
 
-      const totalHoursTracked = timeEntries.reduce((sum, entry) => sum + entry.duration_hours, 0);
+      const totalHoursTracked = timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
 
       // Calculate average hours per day
-      const uniqueDays = new Set(timeEntries.map(entry => entry.start_time.split('T')[0]));
+      const uniqueDays = new Set(timeEntries.map(entry => entry.date));
       const averageHoursPerDay = uniqueDays.size > 0 ? totalHoursTracked / uniqueDays.size : 0;
 
       // Find most productive day
       const dayHours: { [key: string]: number } = {};
       timeEntries.forEach(entry => {
-        const day = entry.start_time.split('T')[0];
-        dayHours[day] = (dayHours[day] || 0) + entry.duration_hours;
+        const day = entry.date;
+        dayHours[day] = (dayHours[day] || 0) + entry.hours;
       });
 
       const mostProductiveDay = Object.entries(dayHours).reduce((max, [day, hours]) =>
@@ -276,7 +277,7 @@ export class AnalyticsService {
 
       return {
         totalMembers: members.length,
-        activeMembers: members.filter(m => m.status === 'active').length,
+        activeMembers: members.filter(m => m.is_active === true).length,
         averageTasksPerMember: members.length > 0 ? totalTasks / members.length : 0,
         teamProductivity: totalHours, // Could be calculated differently
         memberContributions,

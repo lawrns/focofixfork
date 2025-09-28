@@ -1,5 +1,5 @@
 import { supabaseAdmin as supabase } from '../supabase-server'
-import type { Database } from '@/lib/supabase'
+import type { Database } from '../supabase/types'
 
 type Milestone = Database['public']['Tables']['milestones']['Row']
 type MilestoneInsert = Database['public']['Tables']['milestones']['Insert']
@@ -368,10 +368,8 @@ export class MilestonesService {
         }
       }
 
-      const now = new Date().toISOString()
       const updates = {
         status: 'completed' as const,
-        completion_date: now,
         progress_percentage: 100,
       }
 

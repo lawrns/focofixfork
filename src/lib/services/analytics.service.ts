@@ -106,10 +106,10 @@ export class AnalyticsService {
     ).length || 0
 
     // Calculate average cycle time (time from creation to completion)
-    const completedTasksWithTimes = tasks?.filter(t => t.status === 'done' && t.updated_at) || []
+    const completedTasksWithTimes = tasks?.filter(t => t.status === 'done' && t.updated_at && t.created_at) || []
     const averageCycleTime = completedTasksWithTimes.length > 0
       ? completedTasksWithTimes.reduce((sum, task) => {
-          const created = new Date(task.created_at)
+          const created = new Date(task.created_at!)
           const completed = new Date(task.updated_at!)
           const cycleTime = (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24) // days
           return sum + cycleTime
@@ -141,7 +141,7 @@ export class AnalyticsService {
   static async getTeamMetrics(projectIds: string[], dateRange: { start: Date, end: Date }): Promise<TeamMetrics[]> {
     // Get all team members for the projects
     const { data: projectMembers, error: membersError } = await supabase
-      .from('project_members')
+      .from('project_team_assignments')
       .select('user_id')
       .in('project_id', projectIds)
 
@@ -188,10 +188,10 @@ export class AnalyticsService {
     const tasksCompleted = tasks?.filter(t => t.status === 'done').length || 0
 
     // Calculate average cycle time
-    const completedTasks = tasks?.filter(t => t.status === 'done' && t.updated_at) || []
+    const completedTasks = tasks?.filter(t => t.status === 'done' && t.updated_at && t.created_at) || []
     const averageCycleTime = completedTasks.length > 0
       ? completedTasks.reduce((sum, task) => {
-          const created = new Date(task.created_at)
+          const created = new Date(task.created_at!)
           const completed = new Date(task.updated_at!)
           const cycleTime = (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
           return sum + cycleTime
@@ -560,11 +560,12 @@ export class AnalyticsService {
         .gte('updated_at', weekStart.toISOString())
         .lte('updated_at', weekEnd.toISOString())
 
-      const avgCycleTime = tasks && tasks.length > 0
-        ? tasks.reduce((sum, task) => {
-            const cycleTime = (new Date(task.updated_at).getTime() - new Date(task.created_at).getTime()) / (1000 * 60 * 60 * 24)
+      const validTasks = tasks?.filter(task => task.created_at && task.updated_at) || []
+      const avgCycleTime = validTasks.length > 0
+        ? validTasks.reduce((sum, task) => {
+            const cycleTime = (new Date(task.updated_at!).getTime() - new Date(task.created_at!).getTime()) / (1000 * 60 * 60 * 24)
             return sum + cycleTime
-          }, 0) / tasks.length
+          }, 0) / validTasks.length
         : 0
 
       trends.push({

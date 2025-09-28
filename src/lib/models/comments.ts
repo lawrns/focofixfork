@@ -367,21 +367,21 @@ export class CommentModel {
     return {
       id: data.id,
       content: data.content,
-      content_html: data.content_html,
-      author_id: data.author_id,
-      author_name: data.author_name,
-      author_avatar: data.author_avatar,
-      entity_type: data.entity_type,
-      entity_id: data.entity_id,
-      type: data.type,
-      status: data.status,
+      content_html: data.content_html || data.content, // Fallback to content if no HTML
+      author_id: data.author_id || '',
+      author_name: data.author_name || 'Unknown User', // Default if not stored
+      author_avatar: data.author_avatar, // May be undefined
+      entity_type: data.entity_type || (data.milestone_id ? 'milestone' : data.project_id ? 'project' : 'unknown'), // Infer from available fields
+      entity_id: data.entity_id || data.milestone_id || data.project_id || '',
+      type: data.type || 'comment',
+      status: data.status || 'active',
       parent_id: data.parent_id,
       mentions: data.mentions || [],
       attachments: data.attachments || [],
       reactions: data.reactions || [],
       metadata: data.metadata || {},
-      created_at: data.created_at,
-      updated_at: data.updated_at,
+      created_at: data.created_at || '',
+      updated_at: data.updated_at || '',
       edited_at: data.edited_at,
       deleted_at: data.deleted_at
     }

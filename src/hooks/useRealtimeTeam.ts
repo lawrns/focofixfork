@@ -36,7 +36,7 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
           ? `project_team_${projectId}`
           : `organization_team_${organizationId}`
 
-        const table = 'organization_members'
+        const table = projectId ? 'project_team_assignments' : 'organization_members'
         const filter = projectId
           ? `project_id=eq.${projectId}`
           : `organization_id=eq.${organizationId}`
@@ -88,8 +88,9 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
 
     const fetchTeamMembers = async () => {
       try {
+        const table = projectId ? 'project_team_assignments' : 'organization_members'
         let query = supabase
-          .from('organization_members')
+          .from(table)
           .select('*')
 
         if (projectId) {
@@ -106,7 +107,32 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
           return
         }
 
-        setTeamMembers(data || [])
+        // Transform data to match TeamMember type
+        const transformedData = (data || []).map((item: any) => {
+          if (projectId) {
+            // Transform project_team_assignments data
+            return {
+              user_id: item.user_id,
+              organization_id: organizationId || '', // Will need to get this from project
+              project_id: item.project_id,
+              role: item.role,
+              added_by: item.assigned_by || '',
+              added_at: item.assigned_at || new Date().toISOString(),
+            }
+          } else {
+            // Transform organization_members data
+            return {
+              user_id: item.user_id,
+              organization_id: item.organization_id,
+              project_id: null,
+              role: item.role,
+              added_by: item.invited_by || '',
+              added_at: item.invited_at || item.joined_at || new Date().toISOString(),
+            }
+          }
+        })
+
+        setTeamMembers(transformedData)
       } catch (err) {
         console.error('Error in fetchTeamMembers:', err)
         setError('Failed to fetch team members')
@@ -173,8 +199,9 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
     if (!projectId && !organizationId) return
 
     try {
+      const table = projectId ? 'project_team_assignments' : 'organization_members'
       let query = supabase
-        .from('organization_members')
+        .from(table)
         .select('*')
 
       if (projectId) {
@@ -191,7 +218,32 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
         return
       }
 
-      setTeamMembers(data || [])
+      // Transform data to match TeamMember type
+      const transformedData = (data || []).map((item: any) => {
+        if (projectId) {
+          // Transform project_team_assignments data
+          return {
+            user_id: item.user_id,
+            organization_id: organizationId || '', // Will need to get this from project
+            project_id: item.project_id,
+            role: item.role,
+            added_by: item.assigned_by || '',
+            added_at: item.assigned_at || new Date().toISOString(),
+          }
+        } else {
+          // Transform organization_members data
+          return {
+            user_id: item.user_id,
+            organization_id: item.organization_id,
+            project_id: null,
+            role: item.role,
+            added_by: item.invited_by || '',
+            added_at: item.invited_at || item.joined_at || new Date().toISOString(),
+          }
+        }
+      })
+
+      setTeamMembers(transformedData)
     } catch (err) {
       console.error('Error in refetch:', err)
       setError('Failed to refetch team members')

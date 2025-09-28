@@ -43,31 +43,22 @@ export class FileUploadService {
       userId
     )
 
-    // Create file attachment record
+    // Create file attachment record - map to files table schema
     const attachmentData = {
-      filename: storagePath.split('/').pop()!,
-      original_filename: file.name,
+      name: storagePath.split('/').pop()!,
+      original_name: file.name,
       mime_type: file.type,
-      file_type: FileAttachmentModel.getFileTypeFromMime(file.type),
       size_bytes: file.size,
-      storage_path: storagePath,
-      entity_type: entityType,
-      entity_id: entityId,
       uploaded_by: userId,
-      uploaded_by_name: userName,
-      access_level: options.accessLevel || 'project',
-      status: 'uploading' as const,
-      upload_progress: 0,
-      metadata: {},
-      tags: options.tags || [],
-      version: 1,
-      is_deleted: false,
+      url: '', // Will be updated after successful upload
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      // Map entity relationships to files table fields
+      ...(entityType === 'project' && { project_id: entityId }),
+      ...(entityType === 'milestone' && { milestone_id: entityId })
     }
 
     const { data: attachment, error: insertError } = await supabase
-      .from('file_attachments')
+      .from('files')
       .insert(attachmentData)
       .select()
       .single()
@@ -79,7 +70,7 @@ export class FileUploadService {
     try {
       // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('file-attachments')
+        .from('files')
         .upload(storagePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -89,24 +80,14 @@ export class FileUploadService {
 
       // Generate public URL
       const { data: urlData } = supabase.storage
-        .from('file-attachments')
+        .from('files')
         .getPublicUrl(storagePath)
 
-      // Generate thumbnail if needed
-      let thumbnailUrl: string | undefined
-      if (options.generateThumbnail && fileAttachment.file_type === 'image') {
-        thumbnailUrl = await this.generateThumbnail(file, storagePath)
-      }
-
-      // Update attachment with success
+      // Update attachment with the file URL
       const { data: updatedAttachment, error: updateError } = await supabase
-        .from('file_attachments')
+        .from('files')
         .update({
-          public_url: urlData.publicUrl,
-          thumbnail_url: thumbnailUrl,
-          status: 'completed',
-          upload_progress: 100,
-          updated_at: new Date().toISOString()
+          url: urlData.publicUrl
         })
         .eq('id', fileAttachment.id)
         .select()
@@ -117,31 +98,15 @@ export class FileUploadService {
       // Update quota
       await this.updateStorageQuota(userId, file.size)
 
-      // Extract metadata
-      const metadata = await this.extractFileMetadata(file, fileAttachment.file_type)
-      if (Object.keys(metadata).length > 0) {
-        await supabase
-          .from('file_attachments')
-          .update({
-            metadata: { ...fileAttachment.metadata, ...metadata },
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', fileAttachment.id)
-      }
-
       const finalAttachment = FileAttachmentModel.fromDatabase(updatedAttachment)
       options.onComplete?.(finalAttachment)
       return finalAttachment
 
     } catch (error: any) {
-      // Update attachment with failure
+      // Delete the failed file record since we can't track status in the files table
       await supabase
-        .from('file_attachments')
-        .update({
-          status: 'failed',
-          error_message: error.message,
-          updated_at: new Date().toISOString()
-        })
+        .from('files')
+        .delete()
         .eq('id', fileAttachment.id)
 
       options.onError?.(error.message)
@@ -262,19 +227,19 @@ export class FileUploadService {
     filters: FileSearchFilters = {}
   ): Promise<{ attachments: FileAttachment[]; total: number }> {
     let query = supabase
-      .from('file_attachments')
+      .from('files')
       .select('*', { count: 'exact' })
-      .eq('entity_type', entityType)
-      .eq('entity_id', entityId)
-      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
 
-    if (filters.query) {
-      query = query.ilike('original_filename', `%${filters.query}%`)
+    // Map entity type to appropriate field
+    if (entityType === 'project' && entityId) {
+      query = query.eq('project_id', entityId)
+    } else if (entityType === 'milestone' && entityId) {
+      query = query.eq('milestone_id', entityId)
     }
 
-    if (filters.file_types?.length) {
-      query = query.in('file_type', filters.file_types)
+    if (filters.query) {
+      query = query.ilike('original_name', `%${filters.query}%`)
     }
 
     if (filters.uploaded_by?.length) {
@@ -295,10 +260,6 @@ export class FileUploadService {
 
     if (filters.size_max) {
       query = query.lt('size_bytes', filters.size_max)
-    }
-
-    if (filters.tags?.length) {
-      query = query.overlaps('tags', filters.tags)
     }
 
     if (filters.limit) {
@@ -328,7 +289,7 @@ export class FileUploadService {
   ): Promise<void> {
     // Get attachment to check permissions
     const { data: attachment, error: fetchError } = await supabase
-      .from('file_attachments')
+      .from('files')
       .select('*')
       .eq('id', attachmentId)
       .single()
@@ -343,17 +304,13 @@ export class FileUploadService {
       throw new Error('You do not have permission to delete this file')
     }
 
-    // Soft delete the attachment
-    const { error: updateError } = await supabase
-      .from('file_attachments')
-      .update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+    // Delete the attachment (hard delete since files table doesn't support soft delete)
+    const { error: deleteError } = await supabase
+      .from('files')
+      .delete()
       .eq('id', attachmentId)
 
-    if (updateError) throw updateError
+    if (deleteError) throw deleteError
 
     // Update storage quota
     await this.updateStorageQuota(userId, -fileAttachment.size_bytes)
@@ -366,10 +323,9 @@ export class FileUploadService {
    */
   static async downloadFileAttachment(attachmentId: string): Promise<void> {
     const { data: attachment, error } = await supabase
-      .from('file_attachments')
+      .from('files')
       .select('*')
       .eq('id', attachmentId)
-      .eq('is_deleted', false)
       .single()
 
     if (error) throw error
@@ -394,32 +350,37 @@ export class FileUploadService {
    */
   static async getFilePreview(attachmentId: string): Promise<FilePreview> {
     const { data: attachment, error } = await supabase
-      .from('file_attachments')
+      .from('files')
       .select('*')
       .eq('id', attachmentId)
-      .eq('is_deleted', false)
       .single()
 
     if (error) throw error
 
     const fileAttachment = FileAttachmentModel.fromDatabase(attachment)
 
-    const previewType = FileAttachmentModel.getPreviewType(
-      fileAttachment.file_type,
-      fileAttachment.mime_type
-    )
-
-    if (!previewType) {
-      return {
-        url: fileAttachment.public_url || '',
-        type: 'document',
-        metadata: fileAttachment.metadata,
-        canPreview: false,
-        previewError: 'Preview not supported for this file type'
+    // Simple preview type detection based on mime type
+    let previewType: 'image' | 'video' | 'audio' | 'document' | 'text' | 'code' = 'document'
+    if (fileAttachment.mime_type) {
+      if (fileAttachment.mime_type.startsWith('image/')) {
+        previewType = 'image'
+      } else if (fileAttachment.mime_type.startsWith('text/')) {
+        previewType = 'text'
+      } else if (fileAttachment.mime_type.startsWith('video/')) {
+        previewType = 'video'
+      } else if (fileAttachment.mime_type.startsWith('audio/')) {
+        previewType = 'audio'
+      } else if (fileAttachment.mime_type === 'application/pdf') {
+        previewType = 'document'
+      } else if (fileAttachment.mime_type === 'application/javascript' || 
+                 fileAttachment.mime_type === 'application/typescript' ||
+                 fileAttachment.mime_type === 'text/javascript' ||
+                 fileAttachment.mime_type === 'application/json') {
+        previewType = 'code'
       }
     }
 
-    // For text/code files, try to fetch content
+    // Get file content for text preview
     let content: string | undefined
     if ((previewType === 'text' || previewType === 'code') && fileAttachment.public_url) {
       try {
@@ -468,49 +429,15 @@ export class FileUploadService {
    * Get storage quota for user
    */
   static async getStorageQuota(userId: string): Promise<FileStorageQuota> {
-    const { data, error } = await supabase
-      .from('file_storage_quotas')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-
-    if (error && error.code === 'PGRST116') {
-      // Create default quota
-      const defaultQuota = {
-        user_id: userId,
-        total_quota: 1024 * 1024 * 1024, // 1GB
-        used_quota: 0,
-        file_count: 0,
-        last_updated: new Date().toISOString()
-      }
-
-      const { data: created, error: createError } = await supabase
-        .from('file_storage_quotas')
-        .insert(defaultQuota)
-        .select()
-        .single()
-
-      if (createError) throw createError
-
-      return {
-        user_id: created.user_id,
-        organization_id: created.organization_id,
-        total_quota: created.total_quota,
-        used_quota: created.used_quota,
-        file_count: created.file_count,
-        last_updated: created.last_updated
-      }
-    }
-
-    if (error) throw error
-
+    // TODO: Implement proper quota management when file_storage_quotas table is available
+    // For now, return default unlimited quota
     return {
-      user_id: data.user_id,
-      organization_id: data.organization_id,
-      total_quota: data.total_quota,
-      used_quota: data.used_quota,
-      file_count: data.file_count,
-      last_updated: data.last_updated
+      user_id: userId,
+      organization_id: undefined,
+      total_quota: 1024 * 1024 * 1024 * 10, // 10GB default
+      used_quota: 0,
+      file_count: 0,
+      last_updated: new Date().toISOString()
     }
   }
 
@@ -619,20 +546,9 @@ export class FileUploadService {
   }
 
   private static async updateStorageQuota(userId: string, sizeDelta: number): Promise<void> {
-    const quota = await this.getStorageQuota(userId)
-
-    const { error } = await supabase
-      .from('file_storage_quotas')
-      .update({
-        used_quota: Math.max(0, quota.used_quota + sizeDelta),
-        file_count: Math.max(0, quota.file_count + (sizeDelta > 0 ? 1 : -1)),
-        last_updated: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-
-    if (error) {
-      console.warn('Failed to update storage quota:', error)
-    }
+    // TODO: Implement proper quota management when file_storage_quotas table is available
+    // For now, quota updates are disabled
+    console.log(`Storage quota update: user ${userId}, delta ${sizeDelta} bytes`)
   }
 
   private static notifyListeners(): void {

@@ -1,12 +1,6 @@
 'use client'
 
-import { Metadata } from 'next'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-
-export const metadata: Metadata = {
-  title: 'Reports - Foco',
-  description: 'Project reports and analytics',
-}
 
 export default function ReportsPage() {
   return (

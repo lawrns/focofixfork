@@ -1,12 +1,6 @@
 'use client'
 
-import { Metadata } from 'next'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-
-export const metadata: Metadata = {
-  title: 'My Tasks - Foco',
-  description: 'Manage your personal tasks and assignments',
-}
 
 export default function TasksPage() {
   return (

@@ -1,12 +1,6 @@
 'use client'
 
-import { Metadata } from 'next'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-
-export const metadata: Metadata = {
-  title: 'Favorites - Foco',
-  description: 'Your favorite projects and items',
-}
 
 export default function FavoritesPage() {
   return (

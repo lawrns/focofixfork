@@ -1,12 +1,6 @@
 'use client'
 
-import { Metadata } from 'next'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-
-export const metadata: Metadata = {
-  title: 'Inbox - Foco',
-  description: 'Manage your notifications and messages',
-}
 
 export default function InboxPage() {
   return (

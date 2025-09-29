@@ -100,9 +100,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-        // Temporarily allow project creation without organization requirement
-        const projectData = { ...validationResult.data, organization_id: null }
-        const result = await ProjectsService.createProject(userId, projectData as any)
+    const result = await ProjectsService.createProject(userId, validationResult.data as any)
 
     if (!result.success) {
       // Determine appropriate HTTP status code based on error type

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,14 +33,70 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [invitationToken, setInvitationToken] = useState<string | null>(null)
+  const [invitationData, setInvitationData] = useState<any>(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     displayName: '',
   })
+
+  useEffect(() => {
+    const token = searchParams.get('invitation')
+    if (token) {
+      setInvitationToken(token)
+      validateInvitation(token)
+    }
+  }, [searchParams])
+
+  const validateInvitation = async (token: string) => {
+    try {
+      const response = await fetch(`/api/invitations/${token}/validate`)
+      const result = await response.json()
+
+      if (result.success) {
+        setInvitationData(result.data)
+        // Pre-fill email if available
+        if (result.data.email) {
+          setFormData(prev => ({ ...prev, email: result.data.email }))
+        }
+      } else {
+        setError('Invalid or expired invitation')
+      }
+    } catch (err) {
+      setError('Failed to validate invitation')
+    }
+  }
+
+  const acceptInvitation = async (userId: string) => {
+    if (!invitationToken) return
+
+    try {
+      const response = await fetch(`/api/invitations/${invitationToken}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Redirect to the organization
+        router.push(`/organizations/${result.data.organization_id}`)
+      } else {
+        console.error('Failed to accept invitation:', result.error)
+        // Still redirect to dashboard as fallback
+        router.push('/dashboard')
+      }
+    } catch (error) {
+      console.error('Error accepting invitation:', error)
+      router.push('/dashboard')
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -104,7 +160,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
           return
         }
 
-        // Success - create user profile and redirect
+        // Success - create user profile
         if (data.user.id) {
           // Create user profile in our database
           const { error: profileError } = await supabase
@@ -119,6 +175,12 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
           if (profileError) {
             console.error('Profile creation error:', profileError)
             // Don't fail registration if profile creation fails, just log it
+          }
+
+          // If there's an invitation, accept it
+          if (invitationToken) {
+            await acceptInvitation(data.user.id)
+            return // acceptInvitation handles the redirect
           }
         }
 
@@ -152,10 +214,22 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
   return (
     <div className="w-full space-y-8">
       <div className="space-y-3 text-center">
-        <h1 className="text-3xl font-bold text-foreground">Crear tu cuenta</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          {invitationData ? 'Únete a tu equipo' : 'Crear tu cuenta'}
+        </h1>
         <p className="text-muted-foreground text-base">
-          Comienza con la gestión de proyectos de Foco
+          {invitationData
+            ? `Has sido invitado a unirte a ${invitationData.organization_name} en Foco`
+            : 'Comienza con la gestión de proyectos de Foco'
+          }
         </p>
+        {invitationData && (
+          <div className="bg-muted p-4 rounded-lg mt-4">
+            <p className="text-sm">
+              <strong>{invitationData.invited_by_name}</strong> te ha invitado como <strong>{invitationData.role}</strong> en <strong>{invitationData.organization_name}</strong>.
+            </p>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

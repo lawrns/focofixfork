@@ -3,8 +3,7 @@
 import { Suspense, useEffect, useState, useMemo } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/layout/Sidebar'
-import Header from '@/components/layout/Header'
+import MainLayout from '@/components/layout/MainLayout'
 import ViewTabs from '@/components/projects/ViewTabs'
 import ProjectTable from '@/components/projects/ProjectTable'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -217,11 +216,6 @@ export default function DashboardPage() {
         if (data.success) {
           const orgs = data.data || []
           setOrganizations(orgs)
-
-          // If no organizations exist, create a default "Personal" one
-          if (orgs.length === 0) {
-            await createDefaultOrganization()
-          }
         }
       }
     } catch (error) {
@@ -229,29 +223,6 @@ export default function DashboardPage() {
     }
   }
 
-  const createDefaultOrganization = async () => {
-    if (!user) return
-
-    try {
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.id,
-        },
-        body: JSON.stringify({
-          name: 'Personal'
-        }),
-      })
-
-      if (response.ok) {
-        // Refresh organizations list
-        fetchOrganizations()
-      }
-    } catch (error) {
-      console.error('Error creating default organization:', error)
-    }
-  }
 
   const handleCreateProject = async (formData: FormData) => {
     if (!user) return
@@ -288,14 +259,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen font-display bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="flex items-center justify-between border-b bg-background px-4 py-3">
-          <Header />
-        </div>
-        <div className="flex">
-          <div className="flex-1 p-6 md:p-8">
+    <MainLayout>
+      <div className="flex">
+        <div className="flex-1 p-6 md:p-8">
           <div className="flex items-end justify-between mb-8 gap-6">
             <ViewTabs
               activeTab={activeView}
@@ -334,7 +300,6 @@ export default function DashboardPage() {
             />
           </div> */}
         </div>
-      </main>
 
       {/* New Project Modal */}
       <Dialog open={showNewProjectModal} onOpenChange={setShowNewProjectModal}>
@@ -420,7 +385,7 @@ export default function DashboardPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </MainLayout>
   )
 }
 

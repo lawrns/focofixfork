@@ -26,6 +26,7 @@ import {
   UserPlus,
   Calendar
 } from 'lucide-react'
+import { useAuth } from '@/lib/hooks/use-auth'
 import { InvitationWithDetails, InvitationStatus, CreateInvitationData, InvitationModel } from '@/lib/models/invitations'
 import { MemberRole } from '@/lib/models/organization-members'
 
@@ -40,6 +41,7 @@ export default function InvitationsManager({
   currentUserRole = 'member',
   className
 }: InvitationsManagerProps) {
+  const { user } = useAuth()
   const [invitations, setInvitations] = useState<InvitationWithDetails[]>([])
   const [showCreateInvitation, setShowCreateInvitation] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -93,7 +95,8 @@ export default function InvitationsManager({
         },
         body: JSON.stringify({
           ...invitationData,
-          message: inviteMessage.trim() || undefined
+          message: inviteMessage.trim() || undefined,
+          userId: user?.id
         }),
       })
 
@@ -120,6 +123,12 @@ export default function InvitationsManager({
     try {
       const response = await fetch(`/api/organizations/${organizationId}/invitations/${invitationId}/resend`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id
+        }),
       })
 
       if (response.ok) {

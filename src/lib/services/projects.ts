@@ -102,14 +102,15 @@ export class ProjectsService {
       return {
         success: true,
         data: (data || []).map(project => ({
-          ...project,
+          id: project.id,
+          name: project.name,
           description: project.description || undefined,
           organization_id: project.organization_id || undefined,
+          status: project.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
+          priority: project.priority as 'low' | 'medium' | 'high' | 'urgent',
           created_by: project.created_by || undefined,
           start_date: project.start_date || undefined,
           due_date: project.due_date || undefined,
-          status: project.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
-          priority: project.priority as 'low' | 'medium' | 'high' | 'urgent',
           progress_percentage: project.progress_percentage || 0,
           created_at: project.created_at || '',
           updated_at: project.updated_at || ''

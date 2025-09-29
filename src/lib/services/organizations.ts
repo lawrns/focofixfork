@@ -99,7 +99,10 @@ export class OrganizationsService {
    */
   static async createOrganization(data: CreateOrganizationData): Promise<OrganizationsResponse<Organization>> {
     try {
+      console.log('OrganizationsService.createOrganization called with:', data)
+
       if (!data.created_by) {
+        console.error('No created_by user ID provided')
         return {
           success: false,
           error: 'User not authenticated'
@@ -109,6 +112,7 @@ export class OrganizationsService {
       // Validate input
       const validation = OrganizationModel.validateCreate(data)
       if (!validation.isValid) {
+        console.error('Validation failed:', validation.errors)
         return {
           success: false,
           error: validation.errors.join(', ')
@@ -117,6 +121,8 @@ export class OrganizationsService {
 
       // Create organization with slug
       const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      console.log('Inserting organization:', { name: data.name, slug })
+
       const { data: organization, error: orgError } = await supabase
         .from('organizations')
         .insert({
@@ -127,22 +133,55 @@ export class OrganizationsService {
         .single()
 
       if (orgError) {
-        console.error('Create organization error:', orgError)
+        console.error('Create organization database error:', orgError)
+
+        // Handle specific database constraint errors with user-friendly messages
+        if (orgError.code === '23505') { // unique_violation
+          if (orgError.message.includes('organizations_name_key')) {
+            return {
+              success: false,
+              error: 'An organization with this name already exists. Please choose a different name.'
+            }
+          }
+        }
+
         return {
           success: false,
-          error: 'Failed to create organization'
+          error: `Failed to create organization: ${orgError.message}`
         }
       }
 
-      // Note: Organization member creation might fail if the table schema is different
-      // This is okay for now - organizations can be created without members
+      console.log('Organization created:', organization)
+
+      // Add creator as member of the organization
+      console.log('Adding creator as member:', { organization_id: organization.id, user_id: data.created_by })
+
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          organization_id: organization.id,
+          user_id: data.created_by,
+          role: 'member',
+          joined_at: new Date().toISOString()
+        })
+
+      if (memberError) {
+        console.error('Add creator to organization error:', memberError)
+        // Don't fail the whole operation, but log the error
+        // The organization is created, just the membership failed
+      } else {
+        console.log('Creator added as organization member successfully')
+      }
+
+      const result = OrganizationModel.fromDatabase(organization)
+      console.log('Returning organization data:', result)
 
       return {
         success: true,
-        data: OrganizationModel.fromDatabase(organization)
+        data: result
       }
     } catch (error) {
-      console.error('Create organization error:', error)
+      console.error('Create organization service error:', error)
       return {
         success: false,
         error: 'An unexpected error occurred'
@@ -217,13 +256,126 @@ export class OrganizationsService {
         }
       }
 
-      // For now, assume user doesn't exist and send invitation
-      // In a real implementation, you'd check user existence through auth
+      // Get organization details
+      const { data: orgData, error: orgError } = await supabaseAdmin
+        .from('organizations')
+        .select('name')
+        .eq('id', organizationId)
+        .single()
+
+      if (orgError || !orgData) {
+        return {
+          success: false,
+          error: 'Organization not found'
+        }
+      }
+
+      // Get inviter details
+      const { data: inviterData, error: inviterError } = await supabaseAdmin
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+
+      const inviterName = inviterData?.full_name || inviterData?.email || 'Someone'
+
+      // Check if user already exists in profiles (simplified check)
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', data.email)
+        .single()
+
+      if (existingProfile) {
+        // User exists, check if already a member
+        const { data: existingMember } = await supabaseAdmin
+          .from('organization_members')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('user_id', existingProfile.id)
+          .single()
+
+        if (existingMember) {
+          return {
+            success: false,
+            error: 'User is already a member of this organization'
+          }
+        }
+
+        // Add existing user directly
+        const { error: memberError } = await supabaseAdmin
+          .from('organization_members')
+          .insert({
+            organization_id: organizationId,
+            user_id: existingProfile.id,
+            role: data.role || 'member',
+            joined_at: new Date().toISOString()
+          })
+
+        if (memberError) {
+          return {
+            success: false,
+            error: 'Failed to add member'
+          }
+        }
+
+        return {
+          success: true,
+          data: {
+            invitation_sent: false,
+            message: 'User added to organization successfully'
+          }
+        }
+      }
+
+      // User doesn't exist, create invitation
+      const token = crypto.randomUUID()
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 7)
+
+      const { error: inviteError } = await supabaseAdmin
+        .from('organization_invitations')
+        .insert({
+          organization_id: organizationId,
+          email: data.email,
+          role: data.role,
+          invited_by: user.id,
+          status: 'pending',
+          token,
+          invited_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString()
+        })
+
+      if (inviteError) {
+        console.error('Database invitation error:', inviteError)
+        return {
+          success: false,
+          error: 'Failed to create invitation'
+        }
+      }
+
+      // Send email invitation
+      const { EmailService } = await import('./email')
+      const emailResult = await EmailService.sendInvitationEmail(
+        data.email,
+        orgData.name,
+        inviterName,
+        token,
+        data.role || 'member'
+      )
+
+      if (!emailResult.success) {
+        console.error('Email sending failed:', emailResult.error)
+        // Don't fail the whole operation, just log the error
+      }
+
       return {
         success: true,
         data: {
-          invitation_sent: true,
-          message: 'Invitation sent (user registration required)'
+          invitation_sent: emailResult.success,
+          message: emailResult.success
+            ? 'Invitation sent successfully!'
+            : 'Invitation created but email failed to send'
         }
       }
     } catch (error) {

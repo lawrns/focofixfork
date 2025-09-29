@@ -83,7 +83,7 @@ export default function RootLayout({
               <AuthProvider>
                 {children}
                 {/* <MobilePerformanceMonitor /> */}
-                <MobileBottomNav showFab={false} />
+                {pathname !== '/login' && pathname !== '/register' && <MobileBottomNav showFab={false} />}
                 <Toaster />
                 <ToastViewport />
               </AuthProvider>

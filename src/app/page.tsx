@@ -73,18 +73,22 @@ export default function Home() {
 
             {/* Navigation */}
             <div className="flex items-center space-x-8">
-              <a
-                href="#features"
-                className="text-[#404040] hover:text-[#0052CC] transition-colors duration-300"
-              >
-                Características
-              </a>
-              <a
-                href="#pricing"
-                className="text-[#404040] hover:text-[#0052CC] transition-colors duration-300"
-              >
-                Precios
-              </a>
+              <Link href="#features">
+                <Button
+                  variant="ghost"
+                  className="hidden md:inline-flex text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5"
+                >
+                  Características
+                </Button>
+              </Link>
+              <Link href="#pricing">
+                <Button
+                  variant="ghost"
+                  className="hidden md:inline-flex text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5"
+                >
+                  Precios
+                </Button>
+              </Link>
               <Link href="/login">
                 <Button
                   variant="ghost"

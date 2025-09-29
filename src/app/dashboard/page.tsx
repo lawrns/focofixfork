@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useMemo } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
@@ -17,6 +17,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
 import GanttView from '@/components/views/gantt-view'
+
+interface Project {
+  id: string
+  name: string
+  milestones: Array<{
+    id: string
+    name: string
+    start_date: string
+    due_date: string
+    status: 'planning' | 'active' | 'completed' | 'cancelled'
+    progress_percentage?: number
+    dependencies?: string[]
+  }>
+  tasks: Array<{
+    id: string
+    milestone_id: string
+    name: string
+    start_date?: string
+    due_date?: string
+    status: 'todo' | 'in_progress' | 'completed'
+    assignee_id?: string
+  }>
+}
 import ExportDialog from '@/components/export/export-dialog'
 import ImportDialog from '@/components/import/import-dialog'
 import AIAssistant from '@/components/ai/ai-assistant'
@@ -206,6 +229,62 @@ export default function DashboardPage() {
     }
   }
 
+  // Memoize the sample project data to prevent infinite re-renders
+  const sampleProject = useMemo(() => {
+    return {
+      id: 'sample-project',
+      name: 'Sample Project',
+      milestones: [
+        {
+          id: 'm1',
+          name: 'Planning Phase',
+          start_date: '2024-01-01',
+          due_date: '2024-01-15',
+          status: 'completed' as const,
+          progress_percentage: 100
+        },
+        {
+          id: 'm2',
+          name: 'Development Phase',
+          start_date: '2024-01-16',
+          due_date: '2024-02-15',
+          status: 'active' as const,
+          progress_percentage: 65,
+          dependencies: ['m1']
+        },
+        {
+          id: 'm3',
+          name: 'Testing Phase',
+          start_date: '2024-02-16',
+          due_date: '2024-03-01',
+          status: 'planning' as const,
+          progress_percentage: 0,
+          dependencies: ['m2']
+        }
+      ],
+      tasks: [
+        {
+          id: 't1',
+          milestone_id: 'm2',
+          name: 'Frontend Implementation',
+          start_date: '2024-01-20',
+          due_date: '2024-02-05',
+          status: 'completed' as const,
+          assignee_id: 'user1'
+        },
+        {
+          id: 't2',
+          milestone_id: 'm2',
+          name: 'Backend API',
+          start_date: '2024-01-25',
+          due_date: '2024-02-10',
+          status: 'in_progress' as const,
+          assignee_id: 'user2'
+        }
+      ]
+    } as Project
+  }, [])
+
   return (
     <div className="flex h-screen font-display bg-background">
       <Sidebar />
@@ -239,58 +318,7 @@ export default function DashboardPage() {
             {activeView === 'kanban' && <div className="text-center py-12">Kanban view coming soon...</div>}
             {activeView === 'gantt' && (
               <GanttView
-                project={{
-                  id: 'sample-project',
-                  name: 'Sample Project',
-                  milestones: [
-                    {
-                      id: 'm1',
-                      name: 'Planning Phase',
-                      start_date: '2024-01-01',
-                      due_date: '2024-01-15',
-                      status: 'completed',
-                      progress_percentage: 100
-                    },
-                    {
-                      id: 'm2',
-                      name: 'Development Phase',
-                      start_date: '2024-01-16',
-                      due_date: '2024-02-15',
-                      status: 'active',
-                      progress_percentage: 65,
-                      dependencies: ['m1']
-                    },
-                    {
-                      id: 'm3',
-                      name: 'Testing Phase',
-                      start_date: '2024-02-16',
-                      due_date: '2024-03-01',
-                      status: 'planning',
-                      progress_percentage: 0,
-                      dependencies: ['m2']
-                    }
-                  ],
-                  tasks: [
-                    {
-                      id: 't1',
-                      milestone_id: 'm2',
-                      name: 'Frontend Implementation',
-                      start_date: '2024-01-20',
-                      due_date: '2024-02-05',
-                      status: 'completed',
-                      assignee_id: 'user1'
-                    },
-                    {
-                      id: 't2',
-                      milestone_id: 'm2',
-                      name: 'Backend API',
-                      start_date: '2024-01-25',
-                      due_date: '2024-02-10',
-                      status: 'in_progress',
-                      assignee_id: 'user2'
-                    }
-                  ]
-                }}
+                project={sampleProject}
               />
             )}
           </Suspense>

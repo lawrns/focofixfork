@@ -76,17 +76,94 @@ export default function DashboardPage() {
 
   console.log('DashboardPage render')
 
+  // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
   const { user, loading } = useAuth()
+  const { createView, setActiveView } = useSavedViews()
+  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Redirect to login if not authenticated
+  // ALL useEffect hooks here
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login')
     }
   }, [user, loading, router])
 
-  // Show loading while checking authentication
+  useEffect(() => {
+    // Check if we should show the new project modal
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('new') === 'true') {
+      setShowNewProjectModal(true)
+      // Clean up the URL
+      router.replace('/dashboard', undefined)
+    }
+
+    // Load organizations
+    if (user) {
+      fetchOrganizations()
+    }
+  }, [user, router])
+
+  // Memoize the sample project data to prevent infinite re-renders
+  const sampleProject = useMemo(() => {
+    return {
+      id: 'sample-project',
+      name: 'Sample Project',
+      milestones: [
+        {
+          id: 'm1',
+          name: 'Planning Phase',
+          start_date: '2024-01-01',
+          due_date: '2024-01-15',
+          status: 'completed' as const,
+          progress_percentage: 100
+        },
+        {
+          id: 'm2',
+          name: 'Development Phase',
+          start_date: '2024-01-16',
+          due_date: '2024-02-15',
+          status: 'active' as const,
+          progress_percentage: 65,
+          dependencies: ['m1']
+        },
+        {
+          id: 'm3',
+          name: 'Testing Phase',
+          start_date: '2024-02-16',
+          due_date: '2024-03-01',
+          status: 'planning' as const,
+          progress_percentage: 0,
+          dependencies: ['m2']
+        }
+      ],
+      tasks: [
+        {
+          id: 't1',
+          milestone_id: 'm2',
+          name: 'Frontend Implementation',
+          start_date: '2024-01-20',
+          due_date: '2024-02-05',
+          status: 'completed' as const,
+          assignee_id: 'user1'
+        },
+        {
+          id: 't2',
+          milestone_id: 'm2',
+          name: 'Backend API',
+          start_date: '2024-01-25',
+          due_date: '2024-02-10',
+          status: 'in_progress' as const,
+          assignee_id: 'user2'
+        }
+      ]
+    } as Project
+  }, [])
+
+  // CONDITIONAL RENDERING ONLY AFTER ALL HOOKS
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -95,15 +172,9 @@ export default function DashboardPage() {
     )
   }
 
-  // Don't render anything if not authenticated (will redirect)
   if (!user) {
     return null
   }
-  const { createView, setActiveView } = useSavedViews()
-  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
-  const [showNewProjectModal, setShowNewProjectModal] = useState(false)
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [isLoading, setIsLoading] = useState(false)
 
   // Saved views handlers
   const handleViewSelect = (view: ViewConfig) => {
@@ -130,21 +201,6 @@ export default function DashboardPage() {
     filters: {},
     // Add more current view configuration
   }
-
-  useEffect(() => {
-    // Check if we should show the new project modal
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('new') === 'true') {
-      setShowNewProjectModal(true)
-      // Clean up the URL
-      router.replace('/dashboard', undefined)
-    }
-
-    // Load organizations
-    if (user) {
-      fetchOrganizations()
-    }
-  }, [user, router])
 
   const fetchOrganizations = async () => {
     if (!user) return
@@ -230,62 +286,6 @@ export default function DashboardPage() {
       setIsLoading(false)
     }
   }
-
-  // Memoize the sample project data to prevent infinite re-renders
-  const sampleProject = useMemo(() => {
-    return {
-      id: 'sample-project',
-      name: 'Sample Project',
-      milestones: [
-        {
-          id: 'm1',
-          name: 'Planning Phase',
-          start_date: '2024-01-01',
-          due_date: '2024-01-15',
-          status: 'completed' as const,
-          progress_percentage: 100
-        },
-        {
-          id: 'm2',
-          name: 'Development Phase',
-          start_date: '2024-01-16',
-          due_date: '2024-02-15',
-          status: 'active' as const,
-          progress_percentage: 65,
-          dependencies: ['m1']
-        },
-        {
-          id: 'm3',
-          name: 'Testing Phase',
-          start_date: '2024-02-16',
-          due_date: '2024-03-01',
-          status: 'planning' as const,
-          progress_percentage: 0,
-          dependencies: ['m2']
-        }
-      ],
-      tasks: [
-        {
-          id: 't1',
-          milestone_id: 'm2',
-          name: 'Frontend Implementation',
-          start_date: '2024-01-20',
-          due_date: '2024-02-05',
-          status: 'completed' as const,
-          assignee_id: 'user1'
-        },
-        {
-          id: 't2',
-          milestone_id: 'm2',
-          name: 'Backend API',
-          start_date: '2024-01-25',
-          due_date: '2024-02-10',
-          status: 'in_progress' as const,
-          assignee_id: 'user2'
-        }
-      ]
-    } as Project
-  }, [])
 
   return (
     <div className="flex h-screen font-display bg-background">

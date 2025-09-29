@@ -6,6 +6,7 @@ import { Menu, X, Search, Filter, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { useMobile } from '@/lib/hooks/use-mobile'
 
 interface MobileDashboardLayoutProps {
   children: React.ReactNode
@@ -28,20 +29,9 @@ export function MobileDashboardLayout({
   createButtonText = 'Create New',
   className
 }: MobileDashboardLayoutProps) {
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useMobile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
-
-  // Detect mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
 
   if (isMobile) {
     return (

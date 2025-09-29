@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Search, X, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { useMobile } from '@/lib/hooks/use-mobile'
 
 interface SelectOption {
   value: string
@@ -45,22 +46,11 @@ export function MobileSelect({
   helperText,
   multiple = false
 }: MobileSelectProps) {
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useMobile()
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedValues, setSelectedValues] = useState<Set<string>>(new Set())
   const selectRef = useRef<HTMLDivElement>(null)
-
-  // Detect mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
 
   // Initialize selected values for multiple select
   useEffect(() => {

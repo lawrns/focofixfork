@@ -75,7 +75,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body
-        className={`${inter.variable} antialiased`}
+        className={`${inter.variable} antialiased light`}
       >
         <ErrorBoundary>
           <I18nProvider>

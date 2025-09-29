@@ -27,7 +27,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'light',
   storageKey = 'foco-ui-theme',
   ...props
 }: ThemeProviderProps) {
@@ -41,13 +41,8 @@ export function ThemeProvider({
 
     root.classList.remove('light', 'dark')
 
-    let resolved: 'light' | 'dark'
-
-    if (theme === 'system') {
-      resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    } else {
-      resolved = theme
-    }
+    // Always use light theme
+    const resolved: 'light' = 'light'
 
     root.classList.add(resolved)
     setResolvedTheme(resolved)

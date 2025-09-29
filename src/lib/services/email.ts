@@ -25,7 +25,7 @@ export class EmailService {
 
     try {
       const { data, error } = await resend.emails.send({
-        from: 'Foco <noreply@foco.app>',
+        from: 'Foco <noreply@foco.mx>',
         to: [email],
         subject: `You're invited to join ${organizationName} on Foco`,
         html: `

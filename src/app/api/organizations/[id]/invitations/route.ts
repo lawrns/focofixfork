@@ -74,6 +74,10 @@ export async function POST(
       return NextResponse.json(result, { status: 400 })
     }
 
+    if (!result.data?.invitation_sent) {
+      return NextResponse.json({ error: result.data?.message || 'Failed to send invitation' }, { status: 400 })
+    }
+
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
     console.error('Invite member API error:', error)

@@ -75,17 +75,19 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
   }
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="text-muted-foreground">
+    <div className="w-full space-y-8">
+      <div className="space-y-3 text-center">
+        <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
+        <p className="text-muted-foreground text-base">
           Sign in to your Foco account
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-3">
+          <Label htmlFor="email" className="text-sm font-medium text-foreground">
+            Email
+          </Label>
           <Input
             id="email"
             name="email"
@@ -97,11 +99,14 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
             disabled={isLoading}
             autoComplete="email"
             data-testid="email-input"
+            className="h-12 px-4 text-base"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+        <div className="space-y-3">
+          <Label htmlFor="password" className="text-sm font-medium text-foreground">
+            Password
+          </Label>
           <Input
             id="password"
             name="password"
@@ -113,31 +118,32 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
             disabled={isLoading}
             autoComplete="current-password"
             data-testid="password-input"
+            className="h-12 px-4 text-base"
           />
         </div>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="border-destructive/50">
+            <AlertDescription className="text-sm">{error}</AlertDescription>
           </Alert>
         )}
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full h-12 text-base font-medium"
           disabled={isLoading || !formData.email || !formData.password}
           data-testid="login-button"
         >
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
           Sign In
         </Button>
       </form>
 
-      <div className="text-center text-sm">
-        <span className="text-muted-foreground">Don't have an account? </span>
+      <div className="text-center pt-2">
+        <span className="text-muted-foreground text-sm">Don't have an account? </span>
         <a
           href="/register"
-          className="text-primary hover:underline"
+          className="text-primary hover:underline font-medium text-sm"
           onClick={(e) => {
             e.preventDefault()
             router.push('/register')

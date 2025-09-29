@@ -116,7 +116,7 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
             disabled={isLoading}
             autoComplete="email"
             data-testid="email-input"
-            className="h-12 px-4 text-base text-black"
+            className="h-12 px-4 text-base"
           />
         </div>
 
@@ -135,7 +135,7 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
             disabled={isLoading}
             autoComplete="current-password"
             data-testid="password-input"
-            className="h-12 px-4 text-base text-black"
+            className="h-12 px-4 text-base"
           />
         </div>
 

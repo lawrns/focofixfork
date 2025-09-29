@@ -174,7 +174,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
             disabled={isLoading}
             autoComplete="name"
             data-testid="displayName-input"
-            className="h-12 px-4 text-base text-black"
+            className="h-12 px-4 text-base"
           />
         </div>
 
@@ -193,7 +193,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
             disabled={isLoading}
             autoComplete="email"
             data-testid="email-input"
-            className="h-12 px-4 text-base text-black"
+            className="h-12 px-4 text-base"
           />
         </div>
 
@@ -212,7 +212,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
             disabled={isLoading}
             autoComplete="new-password"
             data-testid="password-input"
-            className="h-12 px-4 text-base text-black"
+            className="h-12 px-4 text-base"
           />
         </div>
 
@@ -231,7 +231,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
             disabled={isLoading}
             autoComplete="new-password"
             data-testid="confirmPassword-input"
-            className="h-12 px-4 text-base text-black"
+            className="h-12 px-4 text-base"
           />
         </div>
 

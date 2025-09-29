@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/auth-context";
 import { I18nProvider } from "@/lib/i18n/context";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import ErrorBoundary from "@/components/error/error-boundary";
 import { Toaster } from "sonner";
 import { ToastProvider, ToastViewport } from "@/components/toast/toast";
@@ -75,21 +76,23 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body
-        className={`${inter.variable} antialiased light`}
+        className={`${inter.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <I18nProvider>
-            <ToastProvider>
-              <AuthProvider>
-                {children}
-                {/* <MobilePerformanceMonitor /> */}
-                {pathname !== '/login' && pathname !== '/register' && <MobileBottomNav showFab={false} />}
-                <Toaster />
-                <ToastViewport />
-              </AuthProvider>
-            </ToastProvider>
-          </I18nProvider>
-        </ErrorBoundary>
+        <ThemeProvider defaultTheme="light">
+          <ErrorBoundary>
+            <I18nProvider>
+              <ToastProvider>
+                <AuthProvider>
+                  {children}
+                  {/* <MobilePerformanceMonitor /> */}
+                  {pathname !== '/login' && pathname !== '/register' && <MobileBottomNav showFab={false} />}
+                  <Toaster />
+                  <ToastViewport />
+                </AuthProvider>
+              </ToastProvider>
+            </I18nProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

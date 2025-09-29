@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const tabs = [
   { id: 'table', name: 'Table' },
@@ -17,6 +17,11 @@ interface ViewTabsProps {
 
 export default function ViewTabs({ activeTab = 'table', onTabChange }: ViewTabsProps) {
   const [currentTab, setCurrentTab] = useState(activeTab)
+
+  // Sync internal state with prop changes
+  useEffect(() => {
+    setCurrentTab(activeTab)
+  }, [activeTab])
 
   const handleTabClick = (tabId: string) => {
     setCurrentTab(tabId)

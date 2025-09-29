@@ -74,6 +74,8 @@ export default function DashboardPage() {
   // Disable static generation for this page since it requires authentication
   noStore()
 
+  console.log('DashboardPage render')
+
   const router = useRouter()
   const { user, loading } = useAuth()
 

@@ -520,6 +520,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   // Apply filtering and sorting
   useEffect(() => {
+    console.log('ProjectTable filtering useEffect triggered', { projectsLength: projects.length, filtersLength: filters.length, sortConditionsLength: sortConditions.length })
     const result = FilteringService.filterAndSort(projects, filters, sortConditions)
     setFilteredProjects(result.items)
   }, [projects, filters, sortConditions])

@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export interface EmailResult {
   success: boolean
@@ -16,6 +16,11 @@ export class EmailService {
     invitationToken: string,
     role: string
   ): Promise<EmailResult> {
+    if (!resend) {
+      console.warn('Resend API key not configured, skipping email send')
+      return { success: false, error: 'Email service not configured' }
+    }
+
     const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invitationToken}`
 
     try {

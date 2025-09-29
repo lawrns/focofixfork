@@ -10,6 +10,8 @@ import { OrganizationModel } from '../models/organizations'
 import type { OrganizationMember, OrganizationMemberWithDetails, MemberRole } from '../models/organization-members'
 import { OrganizationMemberModel } from '../models/organization-members'
 import type { InviteMemberData, UpdateMemberRoleData } from '../models/organization-members'
+import type { OrganizationInvitation, InvitationWithDetails } from '../models/invitations'
+import { InvitationModel } from '../models/invitations'
 
 export interface CreateOrganizationData {
   name: string
@@ -234,18 +236,72 @@ export class OrganizationsService {
   }
 
   /**
-   * Invite member to organization
+   * Get organization invitations
    */
-  static async inviteMember(organizationId: string, data: InviteMemberData): Promise<OrganizationsResponse<{ invitation_sent: boolean; message: string }>> {
+  static async getOrganizationInvitations(organizationId: string): Promise<OrganizationsResponse<InvitationWithDetails[]>> {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error } = await supabaseAdmin
+        .from('organization_invitations')
+        .select(`
+          id,
+          organization_id,
+          email,
+          role,
+          invited_by,
+          status,
+          invited_at,
+          expires_at,
+          accepted_at,
+          token,
+          profiles!organization_invitations_invited_by_fkey (
+            full_name,
+            email
+          )
+        `)
+        .eq('organization_id', organizationId)
+        .order('invited_at', { ascending: false })
 
-      if (!user) {
+      if (error) {
+        console.error('Get invitations error:', error)
         return {
           success: false,
-          error: 'User not authenticated'
+          error: 'Failed to fetch organization invitations'
         }
       }
+
+      const invitations = data.map(invitation => {
+        const profile = Array.isArray(invitation.profiles) ? invitation.profiles[0] : invitation.profiles
+        return InvitationModel.fromDatabaseWithDetails({
+          ...invitation,
+          invited_by_name: profile?.full_name || profile?.email || 'Unknown',
+          organization_name: '' // Will be set by caller if needed
+        })
+      })
+
+      return {
+        success: true,
+        data: invitations
+      }
+    } catch (error) {
+      console.error('Get invitations error:', error)
+      return {
+        success: false,
+        error: 'An unexpected error occurred'
+      }
+    }
+  }
+
+  /**
+    * Invite member to organization
+    */
+   static async inviteMember(organizationId: string, userId: string, data: InviteMemberData): Promise<OrganizationsResponse<{ invitation_sent: boolean; message: string }>> {
+     try {
+       if (!userId) {
+         return {
+           success: false,
+           error: 'User not authenticated'
+         }
+       }
 
       // Validate input
       const validation = OrganizationMemberModel.validateInvite(data)
@@ -274,7 +330,7 @@ export class OrganizationsService {
       const { data: inviterData, error: inviterError } = await supabaseAdmin
         .from('profiles')
         .select('full_name, email')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single()
 
       const inviterName = inviterData?.full_name || inviterData?.email || 'Someone'
@@ -339,7 +395,7 @@ export class OrganizationsService {
           organization_id: organizationId,
           email: data.email,
           role: data.role,
-          invited_by: user.id,
+          invited_by: userId,
           status: 'pending',
           token,
           invited_at: new Date().toISOString(),
@@ -388,18 +444,16 @@ export class OrganizationsService {
   }
 
   /**
-   * Update member role
-   */
-  static async updateMemberRole(organizationId: string, memberId: string, data: UpdateMemberRoleData): Promise<OrganizationsResponse<OrganizationMember>> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        return {
-          success: false,
-          error: 'User not authenticated'
-        }
-      }
+    * Update member role
+    */
+   static async updateMemberRole(organizationId: string, memberId: string, userId: string, data: UpdateMemberRoleData): Promise<OrganizationsResponse<OrganizationMember>> {
+     try {
+       if (!userId) {
+         return {
+           success: false,
+           error: 'User not authenticated'
+         }
+       }
 
       // Validate input
       const validation = OrganizationMemberModel.validateRoleUpdate(data)
@@ -426,11 +480,11 @@ export class OrganizationsService {
       }
 
       // Check permissions
-      const currentUserRole = await this.getUserRoleInOrganization(user.id, organizationId)
+      const currentUserRole = await this.getUserRoleInOrganization(userId, organizationId)
       const canUpdate = OrganizationMemberModel.canUpdateRole(
         currentUserRole,
         currentMember.role as 'director' | 'lead' | 'member',
-        currentMember.user_id === user.id
+        currentMember.user_id === userId
       )
 
       if (!canUpdate) {
@@ -471,18 +525,16 @@ export class OrganizationsService {
   }
 
   /**
-   * Remove member from organization
-   */
-  static async removeMember(organizationId: string, memberId: string): Promise<OrganizationsResponse<{ message: string }>> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        return {
-          success: false,
-          error: 'User not authenticated'
-        }
-      }
+    * Remove member from organization
+    */
+   static async removeMember(organizationId: string, memberId: string, userId: string): Promise<OrganizationsResponse<{ message: string }>> {
+     try {
+       if (!userId) {
+         return {
+           success: false,
+           error: 'User not authenticated'
+         }
+       }
 
       // Get member data
       const { data: member, error: fetchError } = await supabase

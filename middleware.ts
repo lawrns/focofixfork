@@ -90,6 +90,8 @@ export async function middleware(req: NextRequest) {
 
   // API route protection
   if (pathname.startsWith('/api/')) {
+    console.log('Middleware: API route detected:', pathname, 'Session:', session ? 'present' : 'null')
+
     // Allow auth endpoints without authentication
     if (pathname.startsWith('/api/auth/')) {
       return res
@@ -97,12 +99,14 @@ export async function middleware(req: NextRequest) {
 
     // Check for valid session on protected API routes
     if (!session) {
+      console.log('Middleware: No session for API route, returning 401')
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
 
+    console.log('Middleware: Setting user headers for API route:', session.user.id)
     // Rate limiting for API routes (basic implementation)
     const clientIP = req.headers.get('x-forwarded-for') ||
                      req.headers.get('x-real-ip') ||
@@ -115,6 +119,8 @@ export async function middleware(req: NextRequest) {
     const requestHeaders = new Headers(req.headers)
     requestHeaders.set('x-user-id', session.user.id)
     requestHeaders.set('x-user-email', session.user.email || '')
+
+    console.log('Middleware: Modified headers contain x-user-id:', requestHeaders.has('x-user-id'))
 
     // Return response with modified headers
     return NextResponse.next({

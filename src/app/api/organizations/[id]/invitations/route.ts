@@ -1,6 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { OrganizationsService } from '@/lib/services/organizations'
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Extract user ID from headers (set by middleware)
+    const userId = request.headers.get('x-user-id')
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { id: organizationId } = params
+
+    const result = await OrganizationsService.getOrganizationInvitations(organizationId)
+
+    if (!result.success) {
+      return NextResponse.json(result, { status: 400 })
+    }
+
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('Get invitations API error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -32,7 +65,7 @@ export async function POST(
       )
     }
 
-    const result = await OrganizationsService.inviteMember(organizationId, {
+    const result = await OrganizationsService.inviteMember(organizationId, userId, {
       email,
       role
     })

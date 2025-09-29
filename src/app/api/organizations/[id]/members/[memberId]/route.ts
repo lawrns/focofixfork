@@ -12,7 +12,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id, memberId } = params
     const body = await request.json()
-    const { role } = body
+    const { role, userId } = body
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
 
     if (!role) {
       return NextResponse.json(
@@ -21,7 +28,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const result = await OrganizationsService.updateMemberRole(id, memberId, { role })
+    const result = await OrganizationsService.updateMemberRole(id, memberId, userId, { role })
 
     if (!result.success) {
       const status = result.error?.includes('not found') ? 404 : 403
@@ -41,8 +48,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id, memberId } = params
+    const body = await request.json()
+    const { userId } = body
 
-    const result = await OrganizationsService.removeMember(id, memberId)
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const result = await OrganizationsService.removeMember(id, memberId, userId)
 
     if (!result.success) {
       const status = result.error?.includes('not found') ? 404 : 403

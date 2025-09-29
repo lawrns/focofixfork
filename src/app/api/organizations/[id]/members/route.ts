@@ -32,7 +32,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = params
     const body = await request.json()
-    const { email, role } = body
+    const { email, role, userId } = body
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
 
     if (!email) {
       return NextResponse.json(
@@ -41,7 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const result = await OrganizationsService.inviteMember(id, { email, role })
+    const result = await OrganizationsService.inviteMember(id, userId, { email, role })
 
     if (!result.success) {
       return NextResponse.json(result, { status: 400 })

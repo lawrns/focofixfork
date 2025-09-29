@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
+import { InvitationWithDetails } from '@/lib/models/invitations'
+import { InvitationModel } from '@/lib/models/invitations'
 
 export default function OrganizationsPage() {
   return (
@@ -53,6 +55,7 @@ function OrganizationsContent() {
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null)
   const [showOrgModal, setShowOrgModal] = useState(false)
   const [orgMembers, setOrgMembers] = useState<OrganizationMemberWithDetails[]>([])
+  const [orgInvitations, setOrgInvitations] = useState<InvitationWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -121,9 +124,27 @@ function OrganizationsContent() {
           }
         }
       }
+
+      // Load invitations
+      const invitationsResponse = await fetch(`/api/organizations/${organization.id}/invitations`, {
+        headers: {
+          'x-user-id': user?.id || '',
+        },
+      })
+      if (invitationsResponse.ok) {
+        const invitationsData = await invitationsResponse.json()
+        if (invitationsData.success) {
+          setOrgInvitations(invitationsData.data || [])
+        }
+      }
     } catch (error) {
       console.error('Failed to load organization details:', error)
     }
+  }
+
+  const openInviteModalForOrg = async (organization: any) => {
+    await openOrganizationModal(organization)
+    setShowInviteModal(true)
   }
 
   const handleInviteMember = async () => {
@@ -133,6 +154,13 @@ function OrganizationsContent() {
     setInviteResult(null)
 
     try {
+      console.log('[DEBUG] Sending invitation request:', {
+        organizationId: selectedOrganization.id,
+        email: inviteEmail,
+        role: inviteRole,
+        userId: user?.id,
+      })
+
       const response = await fetch(`/api/organizations/${selectedOrganization.id}/members`, {
         method: 'POST',
         headers: {
@@ -141,13 +169,25 @@ function OrganizationsContent() {
         body: JSON.stringify({
           email: inviteEmail,
           role: inviteRole,
+          userId: user?.id,
         }),
       })
 
       const data = await response.json()
 
+      console.log('[DEBUG] Invitation API response:', {
+        status: response.status,
+        ok: response.ok,
+        data: data,
+      })
+
       if (response.ok && data.success) {
-        setInviteResult({ success: true, message: data.message || 'Invitation sent successfully!' })
+        console.log('[DEBUG] Invitation sent successfully, refreshing lists')
+        // Show appropriate message based on email sending status
+        const message = data.data?.invitation_sent === false
+          ? 'Invitation created but email could not be sent. Please check email service configuration.'
+          : data.message || 'Invitation sent successfully!'
+        setInviteResult({ success: data.data?.invitation_sent !== false, message })
         setInviteEmail('')
         setInviteRole('member')
         setShowInviteModal(false)
@@ -159,10 +199,30 @@ function OrganizationsContent() {
             setOrgMembers(membersData.data || [])
           }
         }
+        // Refresh invitations list
+        const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`, {
+          headers: {
+            'x-user-id': user?.id || '',
+          },
+        })
+        console.log('[DEBUG] Invitations fetch response:', {
+          status: invitationsResponse.status,
+          ok: invitationsResponse.ok,
+        })
+        if (invitationsResponse.ok) {
+          const invitationsData = await invitationsResponse.json()
+          if (invitationsData.success) {
+            setOrgInvitations(invitationsData.data || [])
+          }
+        } else {
+          console.error('[DEBUG] Failed to refresh invitations:', invitationsResponse.status)
+        }
       } else {
+        console.error('[DEBUG] Invitation failed:', data.error)
         setInviteResult({ success: false, message: data.error || 'Failed to send invitation' })
       }
     } catch (error) {
+      console.error('[DEBUG] Invitation error:', error)
       setInviteResult({ success: false, message: 'An unexpected error occurred' })
     } finally {
       setIsInviting(false)
@@ -178,7 +238,7 @@ function OrganizationsContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: newRole, userId: user?.id }),
       })
 
       if (response.ok) {
@@ -203,6 +263,10 @@ function OrganizationsContent() {
     try {
       const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user?.id }),
       })
 
       if (response.ok) {
@@ -217,6 +281,52 @@ function OrganizationsContent() {
       }
     } catch (error) {
       console.error('Failed to remove member:', error)
+    }
+  }
+
+  const handleResendInvitation = async (invitationId: string) => {
+    if (!selectedOrganization) return
+
+    try {
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        // Refresh invitations list
+        const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`)
+        if (invitationsResponse.ok) {
+          const invitationsData = await invitationsResponse.json()
+          if (invitationsData.success) {
+            setOrgInvitations(invitationsData.data || [])
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to resend invitation:', error)
+    }
+  }
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    if (!selectedOrganization || !confirm('Are you sure you want to cancel this invitation?')) return
+
+    try {
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Refresh invitations list
+        const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`)
+        if (invitationsResponse.ok) {
+          const invitationsData = await invitationsResponse.json()
+          if (invitationsData.success) {
+            setOrgInvitations(invitationsData.data || [])
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to cancel invitation:', error)
     }
   }
 
@@ -242,7 +352,7 @@ function OrganizationsContent() {
     }
   }
 
-  const canManageMembers = currentUserRole === 'director' || currentUserRole === 'lead'
+  const canManageMembers = currentUserRole === 'director' || currentUserRole === 'lead' || currentUserRole === 'member'
   const canRemoveMembers = currentUserRole === 'director'
 
   const handleCreateOrganization = async (e?: React.MouseEvent) => {
@@ -433,9 +543,22 @@ function OrganizationsContent() {
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      <Settings className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openInviteModalForOrg(org)
+                        }}
+                        title="Invite member"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -550,12 +673,16 @@ function OrganizationsContent() {
                     </CardContent>
                   </Card>
 
-                  {/* Tabs for Team, Permissions, and Invitations */}
-                  <Tabs defaultValue="team" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3">
+                  {/* Tabs for Team, Invite, Permissions, and Invitations */}
+                  <Tabs defaultValue="invite" className="space-y-6">
+                    <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="team" className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         Team Members
+                      </TabsTrigger>
+                      <TabsTrigger value="invite" className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Invite
                       </TabsTrigger>
                       <TabsTrigger value="permissions" className="flex items-center gap-2">
                         <Shield className="w-4 h-4" />
@@ -576,9 +703,17 @@ function OrganizationsContent() {
                               <Users className="w-5 h-5" />
                               Team Members
                             </CardTitle>
-                            <Badge variant="secondary">
-                              {orgMembers.length} member{orgMembers.length !== 1 ? 's' : ''}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">
+                                {orgMembers.length} member{orgMembers.length !== 1 ? 's' : ''}
+                              </Badge>
+                              {canManageMembers && (
+                                <Button onClick={() => setShowInviteModal(true)} size="sm">
+                                  <Mail className="w-4 h-4 mr-2" />
+                                  Add Members by Email
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -697,6 +832,79 @@ function OrganizationsContent() {
                       </Card>
                     </TabsContent>
 
+                    <TabsContent value="invite">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Mail className="w-5 h-5" />
+                            Invite Team Member
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="invite-email">Email Address</Label>
+                                <Input
+                                  id="invite-email"
+                                  type="email"
+                                  placeholder="member@example.com"
+                                  value={inviteEmail}
+                                  onChange={(e) => setInviteEmail(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="invite-role">Role</Label>
+                                <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as MemberRole)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="member">Member</SelectItem>
+                                    <SelectItem value="lead">Lead</SelectItem>
+                                    <SelectItem value="director">Director</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <AnimatePresence>
+                              {inviteResult && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                >
+                                  <Alert variant={inviteResult.success ? 'default' : 'destructive'}>
+                                    <AlertDescription>{inviteResult.message}</AlertDescription>
+                                  </Alert>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+
+                            <div className="flex justify-end">
+                              <Button
+                                onClick={handleInviteMember}
+                                disabled={!inviteEmail.trim() || isInviting}
+                              >
+                                {isInviting ? (
+                                  <>
+                                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                                    Sending...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Mail className="w-4 h-4 mr-2" />
+                                    Send Invitation
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
                     <TabsContent value="permissions">
                       <Card>
                         <CardContent className="py-12">
@@ -713,13 +921,89 @@ function OrganizationsContent() {
 
                     <TabsContent value="invitations">
                       <Card>
-                        <CardContent className="py-12">
-                          <div className="text-center">
-                            <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Invitations</h3>
-                            <p className="text-muted-foreground">
-                              Invitation management features coming soon.
-                            </p>
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                              <Mail className="w-5 h-5" />
+                              Invitations
+                            </CardTitle>
+                            <Badge variant="secondary">
+                              {orgInvitations.length} invitation{orgInvitations.length !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-6">
+                            {/* Invitations List */}
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-semibold">Invitation History</h3>
+
+                              <AnimatePresence>
+                                {orgInvitations.map((invitation) => (
+                                  <motion.div
+                                    key={invitation.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                  >
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                                        <Mail className="w-5 h-5 text-primary-foreground" />
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="font-medium">{invitation.email}</span>
+                                          <Badge variant="secondary" className={InvitationModel.getStatusInfo(invitation.status).color}>
+                                            {InvitationModel.getStatusInfo(invitation.status).icon} {InvitationModel.getStatusInfo(invitation.status).label}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                          Invited by {invitation.invited_by_name} • {new Date(invitation.invited_at).toLocaleDateString()}
+                                        </p>
+                                        {invitation.status === 'pending' && (
+                                          <p className="text-xs text-muted-foreground">
+                                            Expires {new Date(invitation.expires_at).toLocaleDateString()}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {canManageMembers && invitation.status === 'pending' && (
+                                      <div className="flex items-center space-x-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleResendInvitation(invitation.id)}
+                                          title="Resend invitation"
+                                        >
+                                          <Mail className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleCancelInvitation(invitation.id)}
+                                          className="text-destructive hover:text-destructive"
+                                          title="Cancel invitation"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </AnimatePresence>
+
+                              {orgInvitations.length === 0 && (
+                                <div className="text-center py-12">
+                                  <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                  <h3 className="text-lg font-semibold mb-2">No invitations yet</h3>
+                                  <p className="text-muted-foreground">
+                                    Send your first invitation to bring new members to your organization.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

@@ -129,6 +129,16 @@ const GanttView: React.FC<GanttViewProps> = ({ project, className }) => {
     return items.sort((a, b) => a.start.getTime() - b.start.getTime())
   }, [project])
 
+  // Memoize tasks for CriticalPathAnalysis to prevent infinite re-renders
+  const criticalPathTasks = useMemo(() => {
+    return ganttData.map(item => ({
+      id: item.id,
+      name: item.name,
+      duration: Math.max(1, Math.ceil((item.end.getTime() - item.start.getTime()) / (1000 * 60 * 60 * 24))),
+      dependencies: item.dependencies || []
+    }))
+  }, [ganttData])
+
   // Generate timeline columns
   const timelineColumns = useMemo(() => {
     const columns = []
@@ -558,12 +568,7 @@ const GanttView: React.FC<GanttViewProps> = ({ project, className }) => {
 
           <TabsContent value="analysis" className="flex-1 overflow-hidden mt-4">
             <CriticalPathAnalysis
-              tasks={ganttData.map(item => ({
-                id: item.id,
-                name: item.name,
-                duration: Math.max(1, Math.ceil((item.end.getTime() - item.start.getTime()) / (1000 * 60 * 60 * 24))),
-                dependencies: item.dependencies || []
-              }))}
+              tasks={criticalPathTasks}
             />
           </TabsContent>
         </Tabs>

@@ -45,6 +45,9 @@ export const UpdateProjectSchema = z.object({
     .nullable(),
   status: ProjectStatusSchema.optional(),
   priority: ProjectPrioritySchema.optional(),
+  start_date: z.string().optional().nullable(),
+  due_date: z.string().optional().nullable(),
+  progress_percentage: z.number().min(0).max(100).optional(),
 }).refine(
   (data) => Object.keys(data).length > 0,
   'At least one field must be provided for update'

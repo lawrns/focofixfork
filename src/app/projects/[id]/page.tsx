@@ -20,19 +20,14 @@ import {
   Loader2
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import ProjectEditDialog from '@/components/dialogs/project-edit-dialog'
+import { useToast } from '@/components/toast/toast'
+import { UpdateProject, Project } from '@/lib/validation/schemas/project.schema'
 
-interface Project {
-  id: string
-  name: string
-  description: string | null
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
+interface ProjectDetails extends Project {
   progress_percentage: number
   start_date: string | null
   due_date: string | null
-  created_at: string
-  created_by: string
-  organization_id: string
 }
 
 export default function ProjectDetailsPage() {
@@ -47,9 +42,11 @@ function ProjectDetailsContent() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const [project, setProject] = useState<Project | null>(null)
+  const { toast } = useToast()
+  const [project, setProject] = useState<ProjectDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   const projectId = params.id as string
 
@@ -94,6 +91,37 @@ function ProjectDetailsContent() {
       month: 'long',
       day: 'numeric'
     })
+  }
+
+  const handleSaveProject = async (projectId: string, data: UpdateProject) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update project')
+      }
+
+      const result = await response.json()
+      setProject(result.data)
+      toast({
+        title: 'Success',
+        description: 'Project updated successfully',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update project. Please try again.',
+        variant: 'destructive',
+      })
+      throw error
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -182,7 +210,7 @@ function ProjectDetailsContent() {
             </div>
           </div>
 
-          <Button>
+          <Button onClick={() => setEditDialogOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Project
           </Button>
@@ -339,6 +367,16 @@ function ProjectDetailsContent() {
           </div>
         </div>
       </div>
+
+      {/* Edit Project Dialog */}
+      {project && (
+        <ProjectEditDialog
+          project={project as Project}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSave={handleSaveProject}
+        />
+      )}
     </MainLayout>
   )
 }

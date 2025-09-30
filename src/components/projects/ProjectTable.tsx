@@ -228,8 +228,21 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         throw new Error('Failed to update project')
       }
 
-      // Refresh projects list
-      await fetchProjects()
+      // Get the updated project data from response
+      const result = await response.json()
+
+      // Immediately update the store with the new data for instant UI feedback
+      if (result.success && result.data) {
+        console.log('ProjectTable: updating project in store after edit:', result.data.id)
+        projectStore.updateProject(result.data.id, result.data)
+
+        // Update selectedProject state if it's the same project
+        if (selectedProject && selectedProject.id === result.data.id) {
+          setSelectedProject(result.data)
+        }
+      }
+
+      // Don't call fetchProjects() - rely on realtime updates or manual refresh only
     } catch (error) {
       throw error
     }
@@ -258,6 +271,18 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       // Immediately remove from global store for instant UI feedback across all components
       console.log('Project deleted successfully, removing from store:', projectId)
       projectStore.removeProject(projectId)
+
+      // Clear the deleted project from selection state
+      setSelectedProjects(prev => {
+        const newSelected = new Set(prev)
+        newSelected.delete(projectId)
+        return newSelected
+      })
+
+      // Clear selectedProject state if it matches the deleted project
+      if (selectedProject && selectedProject.id === projectId) {
+        setSelectedProject(null)
+      }
 
       // No automatic refresh - rely on real-time updates or manual refresh only
     } catch (error) {
@@ -396,6 +421,18 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         result.successful.forEach((projectId: string) => {
           if (operation === 'delete') {
             projectStore.removeProject(projectId)
+
+            // Clear the deleted project from selection state
+            setSelectedProjects(prev => {
+              const newSelected = new Set(prev)
+              newSelected.delete(projectId)
+              return newSelected
+            })
+
+            // Clear selectedProject state if it matches the deleted project
+            if (selectedProject && selectedProject.id === projectId) {
+              setSelectedProject(null)
+            }
           }
         })
       }
@@ -465,6 +502,19 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   }
 
   const handleBulkDelete = async () => {
+    // If only one project is selected, use the individual delete dialog for consistency
+    if (selectedProjects.size === 1) {
+      const projectId = Array.from(selectedProjects)[0]
+      const project = projects.find(p => p.id === projectId)
+      if (project) {
+        setSelectedProject(project)
+        setDeleteDialogOpen(true)
+        setShowBulkActions(false)
+        return
+      }
+    }
+
+    // For multiple projects, use the bulk dialog
     setBulkOperation('delete')
     setBulkDialogOpen(true)
     setShowBulkActions(false)
@@ -534,7 +584,20 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       } else if (payload.eventType === 'UPDATE') {
         projectStore.updateProject(payload.new.id, payload.new)
       } else if (payload.eventType === 'DELETE') {
-        projectStore.removeProject(payload.old?.id)
+        const deletedProjectId = payload.old?.id
+        projectStore.removeProject(deletedProjectId)
+
+        // Clear the deleted project from selection state
+        setSelectedProjects(prev => {
+          const newSelected = new Set(prev)
+          newSelected.delete(deletedProjectId)
+          return newSelected
+        })
+
+        // Clear selectedProject state if it matches the deleted project
+        if (selectedProject && selectedProject.id === deletedProjectId) {
+          setSelectedProject(null)
+        }
       }
     }
   })

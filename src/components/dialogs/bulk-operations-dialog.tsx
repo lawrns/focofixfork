@@ -204,22 +204,23 @@ export default function BulkOperationsDialog({
             </div>
           )}
 
-          {/* Bulk Operation Warning for Delete */}
-          {operation === 'delete' && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                <div className="text-sm">
-                  <div className="font-medium text-destructive mb-1">Warning</div>
-                  <div className="text-muted-foreground">
-                    This will permanently delete the selected projects along with all their tasks, milestones, and team assignments.
-                    Organizations will remain intact. This action cannot be undone.
-                  </div>
+        </div>
+
+        {/* Bulk Operation Warning for Delete */}
+        {operation === 'delete' && (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="text-sm">
+                <div className="font-medium text-destructive mb-1">Warning</div>
+                <div className="text-muted-foreground">
+                  This will permanently delete the selected projects along with all their tasks, milestones, and team assignments.
+                  Organizations will remain intact. This action cannot be undone.
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <DialogFooter className="gap-2">
           <Button

@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectsService } from '@/lib/services/projects'
-import { z } from 'zod'
-
-// Schema for project updates
-const updateProjectSchema = z.object({
-  name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters').optional(),
-  description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
-  organization_id: z.string().min(1, 'Organization is required').optional(),
-  status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  start_date: z.string().optional(),
-  due_date: z.string().optional(),
-  progress_percentage: z.number().min(0).max(100).optional(),
-})
+import { UpdateProjectSchema } from '@/lib/validation/schemas/project.schema'
 
 interface RouteParams {
   params: {
@@ -69,12 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(
@@ -83,8 +66,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    console.log('API PUT /api/projects/[id]: Starting update for projectId:', params.id)
+    console.log('Using userId:', userId)
+
     const projectId = params.id
     if (!projectId) {
+      console.log('API PUT /api/projects/[id]: No projectId provided')
       return NextResponse.json(
         { success: false, error: 'Project ID is required' },
         { status: 400 }
@@ -92,10 +79,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json()
+    console.log('API PUT /api/projects/[id]: Request body:', body)
+    console.log('API PUT /api/projects/[id]: Field types:', {
+      name: typeof body.name,
+      description: typeof body.description,
+      status: typeof body.status,
+      priority: typeof body.priority,
+      start_date: typeof body.start_date,
+      due_date: typeof body.due_date,
+      progress_percentage: typeof body.progress_percentage
+    })
 
     // Validate request body
-    const validationResult = updateProjectSchema.safeParse(body)
+    const validationResult = UpdateProjectSchema.safeParse(body)
     if (!validationResult.success) {
+      console.log('API PUT /api/projects/[id]: Validation failed:', validationResult.error.issues)
       return NextResponse.json(
         {
           success: false,
@@ -106,7 +104,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    console.log('API PUT /api/projects/[id]: Validation passed, calling updateProject')
     const result = await ProjectsService.updateProject(userId, projectId, validationResult.data)
+    console.log('API PUT /api/projects/[id]: Update result:', { success: result.success, error: result.error })
 
     if (!result.success) {
       // Determine appropriate HTTP status code based on error type
@@ -143,9 +143,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    console.log('API DELETE /api/projects/[id]: Starting deletion for projectId:', params.id)
     let userId = request.headers.get('x-user-id')
+    console.log('API DELETE /api/projects/[id]: userId from header:', userId)
 
     if (!userId) {
+      console.log('API DELETE /api/projects/[id]: No userId provided')
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
@@ -154,13 +157,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const projectId = params.id
     if (!projectId) {
+      console.log('API DELETE /api/projects/[id]: No projectId provided')
       return NextResponse.json(
         { success: false, error: 'Project ID is required' },
         { status: 400 }
       )
     }
 
+    console.log('API DELETE /api/projects/[id]: Calling deleteProject')
     const result = await ProjectsService.deleteProject(userId, projectId)
+    console.log('API DELETE /api/projects/[id]: Delete result:', { success: result.success, error: result.error })
 
     if (!result.success) {
       // Determine appropriate HTTP status code based on error type

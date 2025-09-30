@@ -49,6 +49,15 @@ export default function Sidebar() {
   const fetchProjects = async () => {
     if (!user) return
 
+    // Only fetch if we don't already have projects from the store
+    const existingProjects = projectStore.getProjects()
+    if (existingProjects.length > 0) {
+      console.log('Sidebar: using existing projects from store:', existingProjects.length)
+      setProjects(existingProjects)
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/projects', {
         headers: {

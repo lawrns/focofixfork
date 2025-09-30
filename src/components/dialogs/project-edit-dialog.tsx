@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -43,14 +43,22 @@ export default function ProjectEditDialog({
     reset,
     formState: { errors, isDirty }
   } = useForm<UpdateProject>({
-    resolver: zodResolver(UpdateProjectSchema),
-    defaultValues: {
-      name: project.name,
-      description: project.description || '',
-      status: project.status,
-      priority: project.priority,
-    }
+    resolver: zodResolver(UpdateProjectSchema)
   })
+
+  // Initialize form when dialog opens with current project data
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: project.name,
+        description: project.description || '',
+        status: project.status,
+        priority: project.priority,
+        due_date: project.due_date || null,
+        start_date: project.start_date || null,
+      })
+    }
+  }, [open, project, reset])
 
   const watchedStatus = watch('status')
   const watchedPriority = watch('priority')
@@ -61,9 +69,16 @@ export default function ProjectEditDialog({
       return
     }
 
+    // Convert empty strings to null for date fields
+    const processedData = {
+      ...data,
+      due_date: data.due_date === '' ? null : data.due_date,
+      start_date: data.start_date === '' ? null : data.start_date,
+    }
+
     setIsLoading(true)
     try {
-      await onSave(project.id, data)
+      await onSave(project.id, processedData)
       toast({
         title: 'Success',
         description: 'Project updated successfully',
@@ -121,6 +136,18 @@ export default function ProjectEditDialog({
             />
             {errors.description && (
               <p className="text-sm text-destructive">{errors.description.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="due_date">Due Date</Label>
+            <Input
+              id="due_date"
+              type="date"
+              {...register('due_date')}
+            />
+            {errors.due_date && (
+              <p className="text-sm text-destructive">{errors.due_date.message}</p>
             )}
           </div>
 

@@ -19,9 +19,12 @@ const createProjectSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('API /api/projects: Starting request')
     let userId = request.headers.get('x-user-id')
+    console.log('API /api/projects: userId from header:', userId)
 
     if (!userId) {
+      console.log('API /api/projects: No userId provided')
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
@@ -37,6 +40,8 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
 
+    console.log('API /api/projects: Calling ProjectsService.getUserProjects with userId:', userId)
+
     const result = await ProjectsService.getUserProjects(userId, {
       organization_id: organizationId,
       status,
@@ -45,7 +50,10 @@ export async function GET(request: NextRequest) {
       offset,
     })
 
+    console.log('API /api/projects: ProjectsService result:', { success: result.success, error: result.error, dataCount: result.data?.length })
+
     if (!result.success) {
+      console.log('API /api/projects: ProjectsService returned error:', result.error)
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 500 }
@@ -100,7 +108,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('API /api/projects POST: About to create project with userId:', userId)
+    console.log('API /api/projects POST: Project data:', validationResult.data)
+
     const result = await ProjectsService.createProject(userId, validationResult.data as any)
+
+    console.log('API /api/projects POST: Create result:', { success: result.success, error: result.error })
 
     if (!result.success) {
       // Determine appropriate HTTP status code based on error type

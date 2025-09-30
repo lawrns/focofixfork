@@ -2,8 +2,18 @@
 interface Project {
   id: string
   name: string
+  description: string | null
   status: string
-  created_by?: string
+  priority: string
+  organization_id: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  color?: string
+  is_active?: boolean
+  start_date?: string | null
+  due_date?: string | null
+  progress_percentage?: number
 }
 
 class ProjectStore {

@@ -173,8 +173,8 @@ export function PWASettings() {
             <Alert>
               <WifiOff className="h-4 w-4" />
               <AlertDescription>
-                You're currently offline. Some features may be limited, but you can continue working.
-                Changes will be synced when you're back online.
+                You&apos;re currently offline. Some features may be limited, but you can continue working.
+                Changes will be synced when you&apos;re back online.
               </AlertDescription>
             </Alert>
           )}
@@ -366,7 +366,7 @@ export function PWASettings() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Clearing the cache will remove all offline data. You'll need to reconnect to sync your data again.
+              Clearing the cache will remove all offline data. You&apos;ll need to reconnect to sync your data again.
             </AlertDescription>
           </Alert>
         </CardContent>

@@ -292,7 +292,7 @@ export default function ConflictResolver({
                             {selectedConflict.their_change.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{selectedConflict.their_change.user_name}'s Change</span>
+                        <span className="font-medium">{selectedConflict.their_change.user_name}&apos;s Change</span>
                         <Badge variant="outline" className="text-xs">
                           {getTimeAgo(selectedConflict.their_change.timestamp)}
                         </Badge>
@@ -340,7 +340,7 @@ New Value: ${formatValue(selectedConflict.your_change.new_value)}`}
 
                 <TabsContent value="their-change">
                   <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                    <h4 className="font-medium mb-3">{selectedConflict.their_change.user_name}'s Change Details</h4>
+                    <h4 className="font-medium mb-3">{selectedConflict.their_change.user_name}&apos;s Change Details</h4>
                     <pre className="text-sm overflow-x-auto">
 {`Operation: ${selectedConflict.their_change.operation}
 Timestamp: ${selectedConflict.their_change.timestamp}

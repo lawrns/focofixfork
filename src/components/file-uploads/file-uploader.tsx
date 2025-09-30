@@ -215,13 +215,13 @@ export default function FileUploader({
   const getFileIcon = (fileType: FileType) => {
     const iconClass = 'w-4 h-4'
     switch (fileType) {
-      case 'image': return <Image className={iconClass} />
-      case 'video': return <Video className={iconClass} />
-      case 'audio': return <Music className={iconClass} />
-      case 'archive': return <Archive className={iconClass} />
-      case 'code': return <Code className={iconClass} />
-      case 'document': return <FileText className={iconClass} />
-      default: return <File className={iconClass} />
+      case 'image': return <Image className={iconClass} aria-hidden="true" />
+      case 'video': return <Video className={iconClass} aria-hidden="true" />
+      case 'audio': return <Music className={iconClass} aria-hidden="true" />
+      case 'archive': return <Archive className={iconClass} aria-hidden="true" />
+      case 'code': return <Code className={iconClass} aria-hidden="true" />
+      case 'document': return <FileText className={iconClass} aria-hidden="true" />
+      default: return <File className={iconClass} aria-hidden="true" />
     }
   }
 

@@ -144,7 +144,7 @@ export function OfflineIndicator({
                 <div className="flex items-center gap-2">
                   <WifiOff className="w-5 h-5" />
                   <div className="flex flex-col">
-                    <span className="font-semibold text-sm">You're offline</span>
+                    <span className="font-semibold text-sm">You&apos;re offline</span>
                     <span className="text-xs opacity-90">
                       Changes will sync when connection returns
                     </span>

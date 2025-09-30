@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, PlayCircle, Flag, Users, BarChart3, Sparkles, Zap, Target, Check } from 'lucide-react'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
@@ -63,9 +64,11 @@ export default function Home() {
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <img
+              <Image
                 src="/focologo.png"
                 alt="Foco Logo"
+                width={40}
+                height={40}
                 className="w-10 h-10 object-contain"
               />
               <span className="ml-3 text-2xl font-bold text-[#0A0A0A]">Foco</span>
@@ -520,7 +523,7 @@ export default function Home() {
 
                 {/* Quote */}
                 <blockquote className="text-[#0A0A0A] mb-8 leading-relaxed text-lg font-medium">
-                  "{testimonial.quote}"
+                  &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
 
                 {/* Author */}
@@ -741,9 +744,11 @@ export default function Home() {
               transition={{ duration: 0.6 }}
             >
               <div className="flex items-center mb-4">
-                <img
+                <Image
                   src="/focologo.png"
                   alt="Foco Logo"
+                  width={40}
+                  height={40}
                   className="w-10 h-10 object-contain"
                 />
                 <span className="ml-3 text-xl font-bold text-white">Foco</span>

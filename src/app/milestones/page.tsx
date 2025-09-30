@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { projectStore } from '@/lib/stores/project-store'
 import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
@@ -43,7 +43,7 @@ function MilestonesContent() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   // Subscribe to global project store
   useEffect(() => {
@@ -56,7 +56,7 @@ function MilestonesContent() {
     return unsubscribe
   }, [])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       // Load projects first to get project names
       const projectsResponse = await fetch('/api/projects')
@@ -119,7 +119,7 @@ function MilestonesContent() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   const filteredMilestones = milestones.filter(milestone => {
     const matchesSearch = milestone.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -28,17 +28,20 @@ function Form<T extends FieldValues = FieldValues>({
   form: providedForm,
   ...props
 }: FormProps<T> & React.FormHTMLAttributes<HTMLFormElement>) {
-  const form = providedForm || useForm<T>({
+  const form = useForm<T>({
     resolver: schema ? zodResolver(schema as any) : undefined,
     defaultValues,
     mode: 'onChange'
   })
 
+  // Use provided form if available, otherwise use the created one
+  const formToUse = providedForm || form
+
   return (
-    <FormProvider {...form}>
+    <FormProvider {...formToUse}>
       <form
         className={cn('space-y-6', className)}
-        onSubmit={form.handleSubmit(onSubmit, onError)}
+        onSubmit={formToUse.handleSubmit(onSubmit, onError)}
         {...props}
       >
         {children}

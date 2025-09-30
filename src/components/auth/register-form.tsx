@@ -184,11 +184,11 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
           }
         }
 
-        // Success - redirect or call onSuccess callback
+        // Success - redirect to organization setup
         if (onSuccess) {
           onSuccess()
         } else {
-          router.push(redirectTo)
+          router.push('/organization-setup')
         }
       }
     } catch (error: any) {

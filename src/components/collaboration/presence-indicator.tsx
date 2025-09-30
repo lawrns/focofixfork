@@ -211,7 +211,7 @@ export default function PresenceIndicator({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            <h3 className="font-medium">Who's Here</h3>
+            <h3 className="font-medium">Who&apos;s Here</h3>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

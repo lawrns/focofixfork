@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { userSetupMiddleware, redirectToSetupIfNeeded } from '@/lib/middleware/user-setup'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next({
@@ -80,12 +81,36 @@ export async function middleware(req: NextRequest) {
       redirectUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(redirectUrl)
     }
+
+    // Check if user has completed organization setup
+    const setupResult = await userSetupMiddleware(req)
+    if (setupResult.error) {
+      return setupResult.error
+    }
+
+    // Redirect to organization setup if not completed
+    const redirectResponse = redirectToSetupIfNeeded(req, setupResult.completed)
+    if (redirectResponse) {
+      return redirectResponse
+    }
   }
 
-  // Handle auth routes - redirect authenticated users to dashboard
+  // Handle auth routes - redirect authenticated users appropriately
   if (isAuthRoute && session) {
-    const redirectTo = req.nextUrl.searchParams.get('redirect') || '/dashboard'
-    return NextResponse.redirect(new URL(redirectTo, req.url))
+    // Check if user has completed organization setup
+    const setupResult = await userSetupMiddleware(req)
+    if (setupResult.error) {
+      return setupResult.error
+    }
+
+    if (setupResult.completed) {
+      // User has completed setup, redirect to dashboard or requested page
+      const redirectTo = req.nextUrl.searchParams.get('redirect') || '/dashboard'
+      return NextResponse.redirect(new URL(redirectTo, req.url))
+    } else {
+      // User hasn't completed setup, redirect to organization setup
+      return NextResponse.redirect(new URL('/organization-setup', req.url))
+    }
   }
 
   // API route protection
@@ -97,12 +122,47 @@ export async function middleware(req: NextRequest) {
       return res
     }
 
+    // Allow organization setup endpoint without organization setup completion
+    if (pathname === '/api/organization-setup') {
+      // Still require authentication
+      if (!session) {
+        console.log('Middleware: No session for organization setup API, returning 401')
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        )
+      }
+      // Allow the organization setup API even if setup isn't complete
+      const requestHeaders = new Headers(req.headers)
+      requestHeaders.set('x-user-id', session.user.id)
+      requestHeaders.set('x-user-email', session.user.email || '')
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
+    }
+
     // Check for valid session on protected API routes
     if (!session) {
       console.log('Middleware: No session for API route, returning 401')
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Check organization setup completion for protected API routes
+    const setupResult = await userSetupMiddleware(req)
+    if (setupResult.error) {
+      return setupResult.error
+    }
+
+    if (!setupResult.completed) {
+      console.log('Middleware: User has not completed organization setup, blocking API access')
+      return NextResponse.json(
+        { error: 'Organization setup required' },
+        { status: 403 }
       )
     }
 

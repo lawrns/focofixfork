@@ -315,7 +315,7 @@ export default function TeamManagementDialog({
 
             {!permissions.canView && (
               <div className="text-center py-4 text-muted-foreground border border-dashed rounded-lg">
-                You don't have permission to view team members
+                You don&apos;t have permission to view team members
               </div>
             )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -66,9 +66,9 @@ export default function OrganizationDetailPage() {
   useEffect(() => {
     loadOrganization()
     loadMembers()
-  }, [organizationId])
+  }, [loadOrganization, loadMembers])
 
-  const loadOrganization = async () => {
+  const loadOrganization = useCallback(async () => {
     try {
       const response = await fetch(`/api/organizations/${organizationId}`)
       if (response.ok) {
@@ -80,9 +80,9 @@ export default function OrganizationDetailPage() {
     } catch (error) {
       console.error('Failed to load organization:', error)
     }
-  }
+  }, [organizationId])
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const response = await fetch(`/api/organizations/${organizationId}/members`)
       if (response.ok) {
@@ -105,7 +105,7 @@ export default function OrganizationDetailPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [organizationId, user])
 
   const handleInviteMember = async () => {
     if (!inviteEmail.trim()) return
@@ -225,7 +225,7 @@ export default function OrganizationDetailPage() {
             <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
             <h3 className="text-lg font-semibold mb-2">Organization Not Found</h3>
             <p className="text-muted-foreground text-center mb-4">
-              The organization you're looking for doesn't exist or you don't have access to it.
+              The organization you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
             </p>
             <Button onClick={() => router.push('/organizations')}>
               <ArrowLeft className="w-4 h-4 mr-2" />

@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo } from 'react'
+import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
 import MainLayout from '@/components/layout/MainLayout'
@@ -62,6 +62,28 @@ export default function DashboardPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  const fetchOrganizations = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const response = await fetch('/api/organizations', {
+        headers: {
+          'x-user-id': user.id,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          const orgs = data.data || []
+          setOrganizations(orgs)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching organizations:', error)
+    }
+  }, [user])
+
   // ALL useEffect hooks here
   useEffect(() => {
     if (!loading && !user) {
@@ -82,7 +104,7 @@ export default function DashboardPage() {
     if (user) {
       fetchOrganizations()
     }
-  }, [user, router])
+  }, [user, router, fetchOrganizations])
 
   // TODO: Load projects data for Gantt view when needed
 
@@ -124,29 +146,6 @@ export default function DashboardPage() {
     filters: {},
     // Add more current view configuration
   }
-
-  const fetchOrganizations = async () => {
-    if (!user) return
-
-    try {
-      const response = await fetch('/api/organizations', {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          const orgs = data.data || []
-          setOrganizations(orgs)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error)
-    }
-  }
-
 
   const handleCreateProject = async (formData: FormData) => {
     if (!user) return

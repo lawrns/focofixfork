@@ -235,7 +235,6 @@ export function MobileSelect({
           )}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
-          aria-invalid={!!error}
         >
           <span className={cn(
             'truncate',

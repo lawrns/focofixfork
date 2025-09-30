@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase-client'
 import { Button } from '@/components/ui/button'
@@ -29,9 +29,9 @@ export default function InviteAcceptPage() {
 
   useEffect(() => {
     validateInvitation()
-  }, [token])
+  }, [validateInvitation, token])
 
-  const validateInvitation = async () => {
+  const validateInvitation = useCallback(async () => {
     try {
       const response = await fetch(`/api/invitations/${token}/validate`)
       const result = await response.json()
@@ -46,7 +46,7 @@ export default function InviteAcceptPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
 
   const acceptInvitation = async () => {
     setAccepting(true)
@@ -100,7 +100,7 @@ export default function InviteAcceptPage() {
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <CardTitle>Welcome to the team!</CardTitle>
             <CardDescription>
-              You've successfully joined {invitation?.organization_name}
+              You&apos;ve successfully joined {invitation?.organization_name}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -136,7 +136,7 @@ export default function InviteAcceptPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>You're Invited!</CardTitle>
+          <CardTitle>You&apos;re Invited!</CardTitle>
           <CardDescription>
             Join {invitation?.organization_name} on Foco
           </CardDescription>

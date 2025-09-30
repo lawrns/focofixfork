@@ -2797,6 +2797,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           id: string
+          organization_id: string | null
           preferences: Json | null
           settings: Json | null
           timezone: string | null
@@ -2807,6 +2808,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          organization_id?: string | null
           preferences?: Json | null
           settings?: Json | null
           timezone?: string | null
@@ -2817,6 +2819,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          organization_id?: string | null
           preferences?: Json | null
           settings?: Json | null
           timezone?: string | null

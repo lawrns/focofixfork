@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -58,9 +58,9 @@ export default function MilestonePage() {
 
   useEffect(() => {
     loadMilestoneData()
-  }, [milestoneId])
+  }, [loadMilestoneData])
 
-  const loadMilestoneData = async () => {
+  const loadMilestoneData = useCallback(async () => {
     try {
       setLoading(true)
 
@@ -83,7 +83,7 @@ export default function MilestonePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [milestoneId])
 
   const getStatusInfo = (status: string) => {
     switch (status) {

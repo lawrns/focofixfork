@@ -45,19 +45,23 @@ export default function Sidebar() {
   const [projects, setProjects] = useState<Project[]>([])
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (forceRefresh = false) => {
     if (!user) return
 
-    // Only fetch if we don't already have projects from the store
-    const existingProjects = projectStore.getProjects()
-    if (existingProjects.length > 0) {
-      console.log('Sidebar: using existing projects from store:', existingProjects.length)
-      setProjects(existingProjects)
-      setLoading(false)
-      return
+    // Only use cached projects if not forcing refresh and we have projects
+    if (!forceRefresh) {
+      const existingProjects = projectStore.getProjects()
+      if (existingProjects.length > 0) {
+        console.log('Sidebar: using existing projects from store:', existingProjects.length)
+        setProjects(existingProjects)
+        setLoading(false)
+        return
+      }
     }
 
+    console.log('Sidebar: fetching fresh projects from API')
     try {
       const response = await fetch('/api/projects', {
         headers: {
@@ -76,9 +80,15 @@ export default function Sidebar() {
           projectStore.setProjects([])
           setProjects([])
         }
+      } else {
+        console.error('Sidebar: failed to fetch projects, status:', response.status)
+        projectStore.setProjects([])
+        setProjects([])
       }
     } catch (error) {
       console.error('Error fetching projects:', error)
+      projectStore.setProjects([])
+      setProjects([])
     } finally {
       setLoading(false)
     }
@@ -87,6 +97,47 @@ export default function Sidebar() {
   useEffect(() => {
     fetchProjects()
   }, [user])
+
+  // Refresh projects when navigating back to dashboard or when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Sidebar: Page became visible, refreshing projects')
+        fetchProjects(true) // Force refresh
+      }
+    }
+
+    const handleFocus = () => {
+      console.log('Sidebar: Window focused, refreshing projects')
+      fetchProjects(true) // Force refresh
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [user])
+
+  // Fallback: If no real-time updates received in 30 seconds, force refresh
+  useEffect(() => {
+    const checkRealtimeHealth = () => {
+      const now = Date.now()
+      const timeSinceLastUpdate = now - lastRealtimeUpdate
+
+      if (timeSinceLastUpdate > 30000) { // 30 seconds
+        console.log('Sidebar: No real-time updates received in 30s, forcing refresh')
+        fetchProjects(true) // Force refresh
+        setLastRealtimeUpdate(now) // Reset timer
+      }
+    }
+
+    const interval = setInterval(checkRealtimeHealth, 10000) // Check every 10 seconds
+
+    return () => clearInterval(interval)
+  }, [lastRealtimeUpdate, user])
 
   // Don't auto-refresh on auth changes - rely on store subscription
 
@@ -103,16 +154,28 @@ export default function Sidebar() {
 
   // Real-time updates for projects in sidebar (updates store)
   useGlobalRealtime((payload) => {
+    console.log('Sidebar: Real-time event received:', {
+      eventType: payload.eventType,
+      table: payload.table,
+      projectId: payload.new?.id || payload.old?.id
+    })
+
+    // Track that we received a real-time update
+    setLastRealtimeUpdate(Date.now())
+
     if (payload.table === 'projects') {
       if (payload.eventType === 'INSERT') {
+        console.log('Sidebar: Adding project via real-time:', payload.new.id)
         projectStore.addProject(payload.new)
       } else if (payload.eventType === 'UPDATE') {
+        console.log('Sidebar: Updating project via real-time:', payload.new.id)
         projectStore.updateProject(payload.new.id, payload.new)
       } else if (payload.eventType === 'DELETE') {
+        console.log('Sidebar: Removing project via real-time:', payload.old?.id)
         projectStore.removeProject(payload.old?.id)
       }
     }
-  })
+  }, true) // Explicitly enable real-time
 
   const handleNewProject = () => {
     // For now, just navigate to dashboard - we'll implement a modal later

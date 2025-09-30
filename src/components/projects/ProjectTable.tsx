@@ -578,13 +578,22 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   // Real-time updates for projects in table (updates store)
   useGlobalRealtime((payload) => {
+    console.log('ProjectTable: Real-time event received:', {
+      eventType: payload.eventType,
+      table: payload.table,
+      projectId: payload.new?.id || payload.old?.id
+    })
+
     if (payload.table === 'projects') {
       if (payload.eventType === 'INSERT') {
+        console.log('ProjectTable: Adding project via real-time:', payload.new.id)
         projectStore.addProject(payload.new)
       } else if (payload.eventType === 'UPDATE') {
+        console.log('ProjectTable: Updating project via real-time:', payload.new.id)
         projectStore.updateProject(payload.new.id, payload.new)
       } else if (payload.eventType === 'DELETE') {
         const deletedProjectId = payload.old?.id
+        console.log('ProjectTable: Removing project via real-time:', deletedProjectId)
         projectStore.removeProject(deletedProjectId)
 
         // Clear the deleted project from selection state

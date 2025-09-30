@@ -513,7 +513,7 @@ export class ProjectsService {
 
       // 1. Delete time tracking entries
       const { error: timeTrackingError } = await supabase
-        .from('time_tracking_entries')
+        .from('time_tracking_entries' as any)
         .delete()
         .eq('project_id', projectId)
 
@@ -534,7 +534,7 @@ export class ProjectsService {
 
       // 3. Delete milestone predictions
       const { error: predictionsError } = await supabase
-        .from('milestone_predictions')
+        .from('milestone_predictions' as any)
         .delete()
         .eq('project_id', projectId)
 

@@ -21,21 +21,10 @@ export default function ProjectDeleteDialog({
   onDelete
 }: ProjectDeleteDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [confirmText, setConfirmText] = useState('')
   const { toast } = useToast()
 
   const handleDelete = async () => {
     if (!project) return
-
-    // Require typing project name for confirmation
-    if (confirmText !== project.name) {
-      toast({
-        title: 'Confirmation Required',
-        description: 'Please type the project name to confirm deletion.',
-        variant: 'destructive',
-      })
-      return
-    }
 
     setIsLoading(true)
     try {
@@ -45,7 +34,6 @@ export default function ProjectDeleteDialog({
         description: 'Project deleted successfully',
       })
       onOpenChange(false)
-      setConfirmText('')
     } catch (error) {
       toast({
         title: 'Error',
@@ -59,7 +47,6 @@ export default function ProjectDeleteDialog({
 
   const handleCancel = () => {
     onOpenChange(false)
-    setConfirmText('')
   }
 
   if (!project) return null
@@ -93,21 +80,6 @@ export default function ProjectDeleteDialog({
               </div>
             )}
           </div>
-
-          <div className="space-y-2">
-            <label htmlFor="confirm" className="text-sm font-medium">
-              Type <span className="font-mono bg-muted px-1 rounded text-xs">{project.name}</span> to confirm:
-            </label>
-            <input
-              id="confirm"
-              type="text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder={`Type "${project.name}" here`}
-              disabled={isLoading}
-            />
-          </div>
         </div>
 
         <DialogFooter className="gap-2">
@@ -123,7 +95,7 @@ export default function ProjectDeleteDialog({
             type="button"
             variant="destructive"
             onClick={handleDelete}
-            disabled={isLoading || confirmText !== project.name}
+            disabled={isLoading}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Delete Project

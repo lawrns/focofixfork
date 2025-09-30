@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { RealTimeEvent } from '@/lib/models/real-time-events'
@@ -167,6 +167,27 @@ export function useRealtime(
         )
     }
 
+    // Global projects subscription when no specific filters are provided
+    if (options.enabled && !options.projectId && !options.organizationId && !options.userId) {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects'
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          callbackRef.current({
+            eventType: payload.eventType,
+            new: payload.new,
+            old: payload.old,
+            table: 'projects',
+            schema: 'public'
+          })
+        }
+      )
+    }
+
     // Global real-time events
     channel.on(
       'postgres_changes',
@@ -218,19 +239,23 @@ export function useRealtime(
 // Specialized hooks for specific use cases
 
 export function useProjectRealtime(projectId: string, callback: RealtimeCallback, enabled = true) {
-  return useRealtime({ projectId, enabled }, callback)
+  const options = useMemo(() => ({ projectId, enabled }), [projectId, enabled])
+  return useRealtime(options, callback)
 }
 
 export function useMilestoneRealtime(milestoneId: string, callback: RealtimeCallback, enabled = true) {
-  return useRealtime({ milestoneId, enabled }, callback)
+  const options = useMemo(() => ({ milestoneId, enabled }), [milestoneId, enabled])
+  return useRealtime(options, callback)
 }
 
 export function useOrganizationRealtime(organizationId: string, callback: RealtimeCallback, enabled = true) {
-  return useRealtime({ organizationId, enabled }, callback)
+  const options = useMemo(() => ({ organizationId, enabled }), [organizationId, enabled])
+  return useRealtime(options, callback)
 }
 
 export function useGlobalRealtime(callback: RealtimeCallback, enabled = true) {
-  return useRealtime({ enabled }, callback)
+  const options = useMemo(() => ({ enabled }), [enabled])
+  return useRealtime(options, callback)
 }
 
 // Hook for activity feed

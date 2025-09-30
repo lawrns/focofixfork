@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import MainLayout from '@/components/layout/MainLayout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { ProjectList } from '@/components/projects/project-list'
 import { ProjectForm } from '@/components/projects/project-form'
@@ -23,16 +24,11 @@ function ProjectsContent() {
   const [editingProject, setEditingProject] = useState<any>(null)
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([])
 
-  // Mock organizations for now - in a real app, this would be fetched
-  // TODO: Replace with actual organization fetching
-  const mockOrganizations = [
-    { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Acme Corporation' },
-    { id: '550e8400-e29b-41d4-a716-446655440002', name: 'TechStart Inc' },
-  ]
+  // Organizations will be fetched by the ProjectForm component
 
   const handleCreateProject = () => {
     setEditingProject(null)
-    setOrganizations(mockOrganizations)
+    setOrganizations([])
     setShowCreateDialog(true)
   }
 
@@ -58,8 +54,8 @@ function ProjectsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <MainLayout>
+      <div className="p-6">
         <ProjectList
           showCreateButton={true}
           onCreateProject={handleCreateProject}
@@ -85,6 +81,6 @@ function ProjectsContent() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </MainLayout>
   )
 }

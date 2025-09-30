@@ -15,30 +15,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
-import GanttView from '@/components/views/gantt-view'
+import { projectStore } from '@/lib/stores/project-store'
 
-interface Project {
-  id: string
-  name: string
-  milestones: Array<{
-    id: string
-    name: string
-    start_date: string
-    due_date: string
-    status: 'planning' | 'active' | 'completed' | 'cancelled'
-    progress_percentage?: number
-    dependencies?: string[]
-  }>
-  tasks: Array<{
-    id: string
-    milestone_id: string
-    name: string
-    start_date?: string
-    due_date?: string
-    status: 'todo' | 'in_progress' | 'completed'
-    assignee_id?: string
-  }>
-}
 import ExportDialog from '@/components/export/export-dialog'
 import ImportDialog from '@/components/import/import-dialog'
 import AIAssistant from '@/components/ai/ai-assistant'
@@ -106,61 +84,7 @@ export default function DashboardPage() {
     }
   }, [user, router])
 
-  // Memoize the sample project data to prevent infinite re-renders
-  const sampleProject = useMemo(() => {
-    return {
-      id: 'sample-project',
-      name: 'Sample Project',
-      milestones: [
-        {
-          id: 'm1',
-          name: 'Planning Phase',
-          start_date: '2024-01-01',
-          due_date: '2024-01-15',
-          status: 'completed' as const,
-          progress_percentage: 100
-        },
-        {
-          id: 'm2',
-          name: 'Development Phase',
-          start_date: '2024-01-16',
-          due_date: '2024-02-15',
-          status: 'active' as const,
-          progress_percentage: 65,
-          dependencies: ['m1']
-        },
-        {
-          id: 'm3',
-          name: 'Testing Phase',
-          start_date: '2024-02-16',
-          due_date: '2024-03-01',
-          status: 'planning' as const,
-          progress_percentage: 0,
-          dependencies: ['m2']
-        }
-      ],
-      tasks: [
-        {
-          id: 't1',
-          milestone_id: 'm2',
-          name: 'Frontend Implementation',
-          start_date: '2024-01-20',
-          due_date: '2024-02-05',
-          status: 'completed' as const,
-          assignee_id: 'user1'
-        },
-        {
-          id: 't2',
-          milestone_id: 'm2',
-          name: 'Backend API',
-          start_date: '2024-01-25',
-          due_date: '2024-02-10',
-          status: 'in_progress' as const,
-          assignee_id: 'user2'
-        }
-      ]
-    } as Project
-  }, [])
+  // TODO: Load projects data for Gantt view when needed
 
   // CONDITIONAL RENDERING ONLY AFTER ALL HOOKS
   if (loading) {
@@ -245,9 +169,10 @@ export default function DashboardPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        console.log('Dashboard: project created:', result.data)
+        projectStore.addProject(result.data)
         setShowNewProjectModal(false)
-        // Refresh the page to show the new project
-        window.location.reload()
       } else {
         console.error('Failed to create project')
       }
@@ -285,9 +210,10 @@ export default function DashboardPage() {
             {activeView === 'table' && <ProjectTable />}
             {activeView === 'kanban' && <div className="text-center py-12">Kanban view coming soon...</div>}
             {activeView === 'gantt' && (
-              <GanttView
-                project={sampleProject}
-              />
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-lg font-medium">Gantt view coming soon</p>
+                <p className="text-sm">Project timeline visualization will be available in a future update</p>
+              </div>
             )}
           </Suspense>
           </div>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Plus, Search, Filter } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useRealtime } from '@/lib/hooks/useRealtime'
+import { projectStore } from '@/lib/stores/project-store'
 
 interface Project {
   id: string
@@ -55,24 +56,28 @@ export function ProjectList({
     fetchProjects()
   }, [user, organizationId, statusFilter, priorityFilter])
 
-  // Real-time updates for projects
+  // Subscribe to global project store
+  useEffect(() => {
+    console.log('ProjectList: subscribing to project store')
+    const unsubscribe = projectStore.subscribe((storeProjects) => {
+      console.log('ProjectList: received projects from store:', storeProjects.length)
+      setProjects(storeProjects as Project[])
+    })
+
+    return unsubscribe
+  }, [])
+
+  // Real-time updates for projects (backup to store)
   useRealtime(
     organizationId ? { organizationId } : { enabled: false },
     (payload) => {
       if (payload.table === 'projects') {
         if (payload.eventType === 'INSERT') {
-          // Add new project to the list
-          setProjects(prev => [payload.new, ...prev])
+          projectStore.addProject(payload.new)
         } else if (payload.eventType === 'UPDATE') {
-          // Update existing project in the list
-          setProjects(prev =>
-            prev.map(project =>
-              project.id === payload.new.id ? { ...project, ...payload.new } : project
-            )
-          )
+          projectStore.updateProject(payload.new.id, payload.new)
         } else if (payload.eventType === 'DELETE') {
-          // Remove deleted project from the list
-          setProjects(prev => prev.filter(project => project.id !== payload.old?.id))
+          projectStore.removeProject(payload.old?.id)
         }
       }
     }
@@ -102,6 +107,8 @@ export function ProjectList({
       }
 
       const data = await response.json()
+      console.log('ProjectList: fetched projects from API:', data.data?.length || 0)
+      projectStore.setProjects(data.data || [])
       setProjects(data.data || [])
     } catch (err) {
       console.error('Error fetching projects:', err)

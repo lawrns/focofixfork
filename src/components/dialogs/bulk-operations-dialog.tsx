@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ interface BulkOperationsDialogProps {
   operation: 'archive' | 'delete' | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onExecute: (operation: 'archive' | 'delete', projectIds: string[]) => Promise<{
+  onExecute: (operation: 'archive' | 'delete', projectIds: string[], force?: boolean) => Promise<{
     successful: string[]
     failed: { id: string; error: string }[]
   }>
@@ -71,7 +71,7 @@ export default function BulkOperationsDialog({
         setProgress(prev => Math.min(prev + 10, 90))
       }, 200)
 
-      const result = await onExecute(operation, selectedProjects.map(p => p.id))
+      const result = await onExecute(operation, selectedProjects.map(p => p.id), operation === 'delete' ? true : undefined)
 
       clearInterval(progressInterval)
       setProgress(100)
@@ -135,9 +135,9 @@ export default function BulkOperationsDialog({
             </div>
             <div>
               <DialogTitle>{config.title}</DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <DialogDescription className="text-sm text-muted-foreground mt-1">
                 {config.description}
-              </p>
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -210,10 +210,10 @@ export default function BulkOperationsDialog({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
                 <div className="text-sm">
-                  <div className="font-medium text-destructive mb-1">Danger Zone</div>
+                  <div className="font-medium text-destructive mb-1">Warning</div>
                   <div className="text-muted-foreground">
-                    Projects with active tasks or milestones cannot be deleted.
-                    Only projects that can be safely deleted will be processed.
+                    This will permanently delete the selected projects along with all their tasks, milestones, and team assignments.
+                    Organizations will remain intact. This action cannot be undone.
                   </div>
                 </div>
               </div>

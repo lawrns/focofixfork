@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useGlobalRealtime } from '@/lib/hooks/useRealtime'
+import { projectStore } from '@/lib/stores/project-store'
 import { QuickActions, createProjectActions } from '@/components/ui/quick-actions'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
@@ -64,6 +66,17 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   const [sortConditions, setSortConditions] = useState<SortCondition[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithOrg[]>([])
   const { toast } = useToast()
+
+  // Subscribe to global project store
+  useEffect(() => {
+    console.log('ProjectTable: subscribing to project store')
+    const unsubscribe = projectStore.subscribe((storeProjects) => {
+      console.log('ProjectTable: received projects from store:', storeProjects.length)
+      setProjects(storeProjects as ProjectWithOrg[])
+    })
+
+    return unsubscribe
+  }, [])
 
   // Permissions - for demo purposes, assume admin permissions
   // In real app, this would be based on actual user roles
@@ -176,7 +189,11 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   const fetchTeamMembers = async (projectId: string) => {
     setLoadingTeamMembers(true)
     try {
-      const response = await fetch(`/api/projects/${projectId}/team`)
+      const response = await fetch(`/api/projects/${projectId}/team`, {
+        headers: {
+          'x-user-id': user?.id || '',
+        },
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch team members')
       }
@@ -202,6 +219,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
         },
         body: JSON.stringify(data),
       })
@@ -221,14 +239,27 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     try {
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'DELETE',
+        headers: {
+          'x-user-id': user?.id || '',
+        },
       })
 
       if (!response.ok) {
+        // If project is already deleted (404), consider it a success
+        if (response.status === 404) {
+          console.log('Project was already deleted or not found, removing from store')
+          // Immediately remove from global store
+          projectStore.removeProject(projectId)
+          return
+        }
         throw new Error('Failed to delete project')
       }
 
-      // Refresh projects list
-      await fetchProjects()
+      // Immediately remove from global store for instant UI feedback across all components
+      console.log('Project deleted successfully, removing from store:', projectId)
+      projectStore.removeProject(projectId)
+
+      // No automatic refresh - rely on real-time updates or manual refresh only
     } catch (error) {
       throw error
     }
@@ -240,6 +271,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
         },
         body: JSON.stringify(data),
       })
@@ -274,6 +306,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     try {
       const response = await fetch(`/api/projects/${projectId}/team/${userId}`, {
         method: 'DELETE',
+        headers: {
+          'x-user-id': user?.id || '',
+        },
       })
 
       if (!response.ok) {
@@ -306,6 +341,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
         },
         body: JSON.stringify({ role }),
       })
@@ -334,16 +370,18 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     }
   }
 
-  const handleBulkOperation = async (operation: 'archive' | 'delete', projectIds: string[]) => {
+  const handleBulkOperation = async (operation: 'archive' | 'delete', projectIds: string[], force?: boolean) => {
     try {
       const response = await fetch('/api/projects/bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
         },
         body: JSON.stringify({
           operation,
           project_ids: projectIds,
+          ...(force !== undefined && { parameters: { force } }),
         }),
       })
 
@@ -353,8 +391,14 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
       const result = await response.json()
 
-      // Refresh projects list
-      await fetchProjects()
+      // Update store with successful operations
+      if (result.successful) {
+        result.successful.forEach((projectId: string) => {
+          if (operation === 'delete') {
+            projectStore.removeProject(projectId)
+          }
+        })
+      }
 
       return result
     } catch (error) {
@@ -368,6 +412,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
         },
         body: JSON.stringify(settings),
       })
@@ -452,62 +497,19 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       }
 
       const data = await response.json()
-      if (data.success && data.data && data.data.length > 0) {
+      if (data.success && data.data) {
+        console.log('ProjectTable: fetched projects from API:', data.data.length)
+        projectStore.setProjects(data.data)
         setProjects(data.data)
       } else {
-        // Show sample data for demo purposes
-        setProjects([
-          {
-            id: 'proj-1',
-            name: 'Mobile App Development',
-            status: 'active',
-            due_date: '2024-12-31',
-            priority: 'high',
-            progress_percentage: 75,
-            created_at: '2024-09-01T00:00:00Z',
-            organization_id: 'org-1',
-            organizations: { name: 'Acme Corp' }
-          },
-          {
-            id: 'proj-2',
-            name: 'API Backend Refactor',
-            status: 'active',
-            due_date: '2024-11-15',
-            priority: 'medium',
-            progress_percentage: 45,
-            created_at: '2024-08-15T00:00:00Z',
-            organization_id: 'org-1',
-            organizations: { name: 'Acme Corp' }
-          },
-          {
-            id: 'proj-3',
-            name: 'Dashboard UI Redesign',
-            status: 'planning',
-            due_date: '2024-10-30',
-            priority: 'low',
-            progress_percentage: 10,
-            created_at: '2024-09-10T00:00:00Z',
-            organization_id: 'org-1',
-            organizations: { name: 'Acme Corp' }
-          }
-        ])
+        console.log('ProjectTable: no projects from API')
+        projectStore.setProjects([])
+        setProjects([])
       }
     } catch (err) {
       console.error('Error fetching projects:', err)
-      // Show sample data on error for demo purposes
-      setProjects([
-        {
-          id: 'demo-proj-1',
-          name: 'E-commerce Platform',
-          status: 'active',
-          due_date: '2024-12-15',
-          priority: 'high',
-          progress_percentage: 60,
-          created_at: '2024-09-01T00:00:00Z',
-          organization_id: 'org-1',
-          organizations: { name: 'Demo Corp' }
-        }
-      ])
+      setError('Failed to load projects. Please try again.')
+      setProjects([])
     } finally {
       setLoading(false)
     }
@@ -520,10 +522,22 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   // Apply filtering and sorting
   useEffect(() => {
-    console.log('ProjectTable filtering useEffect triggered', { projectsLength: projects.length, filtersLength: filters.length, sortConditionsLength: sortConditions.length })
     const result = FilteringService.filterAndSort(projects, filters, sortConditions)
     setFilteredProjects(result.items)
   }, [projects, filters, sortConditions])
+
+  // Real-time updates for projects in table (updates store)
+  useGlobalRealtime((payload) => {
+    if (payload.table === 'projects') {
+      if (payload.eventType === 'INSERT') {
+        projectStore.addProject(payload.new)
+      } else if (payload.eventType === 'UPDATE') {
+        projectStore.updateProject(payload.new.id, payload.new)
+      } else if (payload.eventType === 'DELETE') {
+        projectStore.removeProject(payload.old?.id)
+      }
+    }
+  })
 
   if (error) {
     return (
@@ -535,59 +549,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   }
 
   return (
-    <div className="mt-6 space-y-4">
-      {/* Bulk Actions Toolbar */}
-      {showBulkActions && (
-        <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
-          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium">
-                {selectedProjects.size} project{selectedProjects.size !== 1 ? 's' : ''} selected
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkManageTeam}
-                className="flex items-center space-x-1 sm:space-x-2"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden xs:inline">Manage Team</span>
-                <span className="xs:hidden">Team</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkArchive}
-                className="flex items-center space-x-1 sm:space-x-2"
-              >
-                <Archive className="h-4 w-4" />
-                <span>Archive</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkDelete}
-                className="flex items-center space-x-1 sm:space-x-2 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedProjects(new Set())
-                  setShowBulkActions(false)
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className={`mt-6 space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
 
       {/* Advanced Filtering */}
       <div className="mb-4 flex items-center justify-between">
@@ -643,7 +605,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                 <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground xl:table-cell xl:px-6" scope="col">
                   Priority
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground sm:px-6" scope="col">
+                <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground sm:px-6" scope="col">
                   Actions
                 </th>
               </tr>
@@ -687,8 +649,14 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                 </tr>
               ) : (
                 filteredProjects.map((project) => (
-                  <tr key={project.id} className="hover:bg-muted/50 transition-colors cursor-pointer">
-                    <td className="px-3 py-4 sm:px-6">
+                  <tr
+                    key={project.id}
+                    className={`hover:bg-muted/50 transition-colors cursor-pointer ${
+                      selectedProjects.has(project.id) ? 'bg-primary/5' : ''
+                    }`}
+                    onClick={() => handleSelectProject(project.id, !selectedProjects.has(project.id))}
+                  >
+                    <td className={`px-3 py-4 sm:px-6 ${selectedProjects.has(project.id) ? 'border-l-4 border-l-primary' : ''}`}>
                       <Checkbox
                         checked={selectedProjects.has(project.id)}
                         onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
@@ -719,6 +687,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                       {getPriorityBadge(project.priority)}
                     </td>
                     <td className="px-3 py-4 text-right sm:px-6">
+                      <div onClick={(e) => e.stopPropagation()}>
                       <QuickActions
                         actions={createProjectActions(
                           project.id,
@@ -761,6 +730,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                           }
                         )}
                       />
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -803,7 +773,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         />
       )}
 
-      {selectedProjects.size > 0 && (
+      {(selectedProjects.size > 0 || bulkDialogOpen) && (
         <BulkOperationsDialog
           selectedProjects={filteredProjects.filter(p => selectedProjects.has(p.id)) as any}
           operation={bulkOperation}
@@ -820,6 +790,60 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
           onOpenChange={setSettingsDialogOpen}
           onSave={handleSaveSettings}
         />
+      )}
+
+      {/* Sticky Bottom Selection Display */}
+      {selectedProjects.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-100 dark:bg-blue-900/40 backdrop-blur-sm border border-blue-200 dark:border-blue-800 p-3 pb-4 shadow-lg rounded-lg max-w-xl w-full mx-4">
+          <div className="flex flex-row items-center justify-between gap-4">
+            <div className="flex items-center flex-1 min-w-0">
+              <span className="text-sm font-medium !text-blue-800 dark:!text-blue-300 whitespace-nowrap">
+                {selectedProjects.size} project{selectedProjects.size !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkManageTeam}
+                className="flex items-center space-x-1 sm:space-x-2"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden xs:inline">Manage Team</span>
+                <span className="xs:hidden">Team</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkArchive}
+                className="flex items-center space-x-1 sm:space-x-2"
+              >
+                <Archive className="h-4 w-4" />
+                <span>Archive</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDelete}
+                className="flex items-center space-x-1 sm:space-x-2 text-destructive hover:text-destructive border-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProjects(new Set())
+                  setShowBulkActions(false)
+                }}
+                className=""
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

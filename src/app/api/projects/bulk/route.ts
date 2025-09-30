@@ -8,6 +8,7 @@ const bulkOperationSchema = z.object({
   project_ids: z.array(z.string()).min(1).max(50),
   parameters: z.object({
     status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
+    force: z.boolean().optional(), // Allow force deletion of projects with dependencies
   }).optional(),
 })
 
@@ -18,16 +19,16 @@ export async function POST(request: NextRequest) {
   try {
     let userId = request.headers.get('x-user-id')
 
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
-
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // For demo purposes, allow demo user but don't override real user IDs
+    if (userId === 'demo-user-123') {
+      // Demo user - allow all operations for demo projects
     }
 
     const body = await request.json()
@@ -60,44 +61,11 @@ export async function POST(request: NextRequest) {
       total_processed: project_ids.length
     }
 
-    // Validate user has permission for all projects
+    // For bulk operations, we'll validate permissions during each operation
+    // to allow partial success/failure handling
     // Skip permission check for demo projects (they don't have project_members entries)
     const demoProjectIds = project_ids.filter(id => id.startsWith('demo-'))
     const realProjectIds = project_ids.filter(id => !id.startsWith('demo-'))
-
-    if (realProjectIds.length > 0) {
-      const { data: userProjects, error: permissionError } = await supabase
-        .from('project_team_assignments')
-        .select('project_id, role')
-        .eq('user_id', userId)
-        .in('project_id', realProjectIds)
-
-      if (permissionError) {
-        console.error('Error checking permissions:', permissionError)
-        return NextResponse.json(
-          { success: false, error: 'Failed to validate permissions' },
-          { status: 500 }
-        )
-      }
-
-      // Filter projects where user has admin/owner permissions
-      const allowedProjects = userProjects?.filter(member =>
-        ['owner', 'admin'].includes(member.role)
-      ).map(member => member.project_id) || []
-
-      const unauthorizedProjects = realProjectIds.filter(id => !allowedProjects.includes(id))
-
-      if (unauthorizedProjects.length > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'You do not have permission to perform bulk operations on some projects',
-            details: { unauthorized_projects: unauthorizedProjects }
-          },
-          { status: 403 }
-        )
-      }
-    }
 
     // Demo projects are always allowed (no permission check needed)
 
@@ -108,7 +76,37 @@ export async function POST(request: NextRequest) {
         try {
           // Skip database operations for demo projects
           if (projectId.startsWith('demo-')) {
-            results.successful.push(projectId)
+            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            continue
+          }
+
+          // Check permissions for real projects
+          const { data: project, error: fetchError } = await supabase
+            .from('projects')
+            .select('created_by')
+            .eq('id', projectId)
+            .single()
+
+          if (fetchError) {
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Project not found' })
+            continue
+          }
+
+          let hasPermission = project.created_by === userId
+          if (!hasPermission) {
+            const { data: teamMember } = await supabase
+              .from('project_team_assignments')
+              .select('role')
+              .eq('project_id', projectId)
+              .eq('user_id', userId)
+              .eq('is_active', true)
+              .single()
+
+            hasPermission = teamMember && ['owner', 'admin'].includes(teamMember.role)
+          }
+
+          if (!hasPermission) {
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Permission denied' })
             continue
           }
 
@@ -120,10 +118,7 @@ export async function POST(request: NextRequest) {
             .neq('status', 'completed')
 
           if (activeTasks && activeTasks > 0) {
-            results.failed.push({
-              id: projectId,
-              error: 'Project has active tasks and cannot be archived'
-            })
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Project has active tasks and cannot be archived' })
             continue
           }
 
@@ -133,98 +128,90 @@ export async function POST(request: NextRequest) {
             .eq('id', projectId)
 
           if (updateError) {
-            results.failed.push({
-              id: projectId,
-              error: 'Failed to archive project'
-            })
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Failed to archive project' })
           } else {
-            results.successful.push(projectId)
+            if (!results.successful.includes(projectId)) results.successful.push(projectId)
           }
         } catch (error) {
-          results.failed.push({
-            id: projectId,
-            error: 'Unexpected error during archiving'
-          })
+          if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Unexpected error during archiving' })
         }
       }
     } else if (operation === 'delete') {
-      // Delete projects (with cascading deletes)
+      // Import the ProjectsService for proper deletion with cascading
+      const { ProjectsService } = await import('@/lib/services/projects')
+
       for (const projectId of project_ids) {
         try {
           // Skip database operations for demo projects
           if (projectId.startsWith('demo-')) {
-            results.successful.push(projectId)
+            if (!results.successful.includes(projectId)) results.successful.push(projectId)
             continue
           }
 
-          // Check for dependencies before deletion
-          const { count: taskCount } = await supabase
-            .from('tasks')
-            .select('*', { count: 'exact', head: true })
-            .eq('project_id', projectId)
+          // Use the ProjectsService deleteProject method which handles permissions and cascading
+          const result = await ProjectsService.deleteProject(userId, projectId)
 
-          if (taskCount && taskCount > 0) {
-            results.failed.push({
-              id: projectId,
-              error: 'Project contains tasks and cannot be deleted'
-            })
-            continue
-          }
-
-          const { error: deleteError } = await supabase
-            .from('projects')
-            .delete()
-            .eq('id', projectId)
-
-          if (deleteError) {
-            results.failed.push({
-              id: projectId,
-              error: 'Failed to delete project'
-            })
+          if (result.success) {
+            if (!results.successful.includes(projectId)) results.successful.push(projectId)
           } else {
-            results.successful.push(projectId)
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: result.error || 'Failed to delete project' })
           }
         } catch (error) {
-          results.failed.push({
-            id: projectId,
-            error: 'Unexpected error during deletion'
-          })
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Unexpected error during deletion' })
         }
       }
     } else if (operation === 'update_status' && parameters?.status) {
       // Update project status
-      const realProjectIds = project_ids.filter(id => !id.startsWith('demo-'))
-      const demoProjectIds = project_ids.filter(id => id.startsWith('demo-'))
-
-      // Handle demo projects (always succeed)
-      results.successful.push(...demoProjectIds)
-
-      if (realProjectIds.length > 0) {
-        const { error: updateError } = await supabase
-          .from('projects')
-          .update({ status: parameters.status })
-          .in('id', realProjectIds)
-
-        if (updateError) {
-          // If bulk update fails, try individual updates to identify which ones failed
-          for (const projectId of realProjectIds) {
-            const { error: individualError } = await supabase
-              .from('projects')
-              .update({ status: parameters.status })
-              .eq('id', projectId)
-
-            if (individualError) {
-              results.failed.push({
-                id: projectId,
-                error: 'Failed to update project status'
-              })
-            } else {
-              results.successful.push(projectId)
-            }
+      for (const projectId of project_ids) {
+        try {
+          // Skip database operations for demo projects
+          if (projectId.startsWith('demo-')) {
+            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            continue
           }
-        } else {
-          // Bulk update succeeded
-          results.successful.push(...realProjectIds)
+
+          // Check permissions for real projects
+          const { data: project, error: fetchError } = await supabase
+            .from('projects')
+            .select('created_by')
+            .eq('id', projectId)
+            .single()
+
+          if (fetchError) {
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Project not found' })
+            continue
+          }
+
+          let hasPermission = project.created_by === userId
+          if (!hasPermission) {
+            const { data: teamMember } = await supabase
+              .from('project_team_assignments')
+              .select('role')
+              .eq('project_id', projectId)
+              .eq('user_id', userId)
+              .eq('is_active', true)
+              .single()
+
+            hasPermission = teamMember && ['owner', 'admin'].includes(teamMember.role)
+          }
+
+          if (!hasPermission) {
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Permission denied' })
+            continue
+          }
+
+          const { error: updateError } = await supabase
+            .from('projects')
+            .update({ status: parameters.status })
+            .eq('id', projectId)
+
+          if (updateError) {
+            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Failed to update project status' })
+          } else {
+            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+          }
+        } catch (error) {
+          if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Unexpected error during status update' })
         }
       }
     }

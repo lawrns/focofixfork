@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import MainLayout from '@/components/layout/MainLayout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { ProjectCard } from '@/components/projects/project-card'
 import { Button } from '@/components/ui/button'
@@ -118,73 +119,75 @@ function ProjectDetailsContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading project...</p>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading project...</p>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <Button onClick={() => router.push('/projects')}>
-            Back to Projects
-          </Button>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+            <Button onClick={() => router.push('/projects')}>
+              Back to Projects
+            </Button>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Project not found</p>
-          <Button onClick={() => router.push('/projects')}>
-            Back to Projects
-          </Button>
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">Project not found</p>
+            <Button onClick={() => router.push('/projects')}>
+              Back to Projects
+            </Button>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/projects')}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Projects
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">{project.name}</h1>
-                <p className="text-muted-foreground">
-                  Project Details
-                </p>
-              </div>
-            </div>
-
-            <Button>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Project
+    <MainLayout>
+      <div className="p-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/projects')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Projects
             </Button>
+            <div>
+              <h1 className="text-2xl font-bold">{project.name}</h1>
+              <p className="text-muted-foreground">
+                Project Details
+              </p>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
+          <Button>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Project
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -336,6 +339,6 @@ function ProjectDetailsContent() {
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { projectStore } from '@/lib/stores/project-store'
 import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import DashboardLayout from '@/components/dashboard/layout'
@@ -44,12 +45,25 @@ function MilestonesContent() {
     loadData()
   }, [])
 
+  // Subscribe to global project store
+  useEffect(() => {
+    console.log('Milestones page: subscribing to project store')
+    const unsubscribe = projectStore.subscribe((storeProjects) => {
+      console.log('Milestones page: received projects from store:', storeProjects.length)
+      setProjects(storeProjects)
+    })
+
+    return unsubscribe
+  }, [])
+
   const loadData = async () => {
     try {
       // Load projects first to get project names
       const projectsResponse = await fetch('/api/projects')
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json()
+        console.log('Milestones page: loaded projects:', projectsData.data?.length || 0)
+        projectStore.setProjects(projectsData.data || [])
         setProjects(projectsData.data || [])
       }
 

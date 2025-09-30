@@ -19,6 +19,8 @@ import {
   Settings
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useGlobalRealtime } from '@/lib/hooks/useRealtime'
+import { projectStore } from '@/lib/stores/project-store'
 
 interface Project {
   id: string
@@ -44,32 +46,64 @@ export default function Sidebar() {
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchProjects() {
-      if (!user) return
+  const fetchProjects = async () => {
+    if (!user) return
 
-      try {
-        const response = await fetch('/api/projects', {
-          headers: {
-            'x-user-id': user.id,
-          },
-        })
+    try {
+      const response = await fetch('/api/projects', {
+        headers: {
+          'x-user-id': user.id,
+        },
+      })
 
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            setProjects(data.data || [])
-          }
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          console.log('Sidebar: fetched projects from API:', data.data?.length || 0)
+          projectStore.setProjects(data.data || [])
+          setProjects(data.data || [])
+        } else {
+          console.log('Sidebar: no projects from API')
+          projectStore.setProjects([])
+          setProjects([])
         }
-      } catch (error) {
-        console.error('Error fetching projects:', error)
-      } finally {
-        setLoading(false)
       }
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchProjects()
   }, [user])
+
+  // Don't auto-refresh on auth changes - rely on store subscription
+
+  // Subscribe to global project store
+  useEffect(() => {
+    console.log('Sidebar: subscribing to project store')
+    const unsubscribe = projectStore.subscribe((storeProjects) => {
+      console.log('Sidebar: received projects from store:', storeProjects.length)
+      setProjects(storeProjects as Project[])
+    })
+
+    return unsubscribe
+  }, [])
+
+  // Real-time updates for projects in sidebar (updates store)
+  useGlobalRealtime((payload) => {
+    if (payload.table === 'projects') {
+      if (payload.eventType === 'INSERT') {
+        projectStore.addProject(payload.new)
+      } else if (payload.eventType === 'UPDATE') {
+        projectStore.updateProject(payload.new.id, payload.new)
+      } else if (payload.eventType === 'DELETE') {
+        projectStore.removeProject(payload.old?.id)
+      }
+    }
+  })
 
   const handleNewProject = () => {
     // For now, just navigate to dashboard - we'll implement a modal later

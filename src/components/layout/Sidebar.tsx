@@ -26,7 +26,7 @@ interface Project {
   id: string
   name: string
   status: string
-  organization_id?: string
+  organization_id: string | null
 }
 
 const navigation = [

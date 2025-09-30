@@ -4,13 +4,13 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 interface Project {
   id: string
   name: string
-  description?: string
-  organization_id?: string
+  description: string | null
+  organization_id: string | null
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  created_by?: string
-  start_date?: string
-  due_date?: string
+  created_by: string
+  start_date: string | null
+  due_date: string | null
   progress_percentage: number
   created_at: string
   updated_at: string
@@ -235,11 +235,11 @@ export class ProjectsService {
         success: true,
         data: {
           ...data,
-          description: data.description || undefined,
-          organization_id: data.organization_id || undefined,
-          created_by: data.created_by || undefined,
-          start_date: data.start_date || undefined,
-          due_date: data.due_date || undefined,
+          description: data.description || null,
+          organization_id: data.organization_id || null,
+          created_by: data.created_by || '',
+          start_date: data.start_date || null,
+          due_date: data.due_date || null,
           status: data.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
           priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
           progress_percentage: data.progress_percentage || 0,
@@ -345,11 +345,11 @@ export class ProjectsService {
         success: true,
         data: {
           ...data,
-          description: data.description || undefined,
-          organization_id: data.organization_id || undefined,
-          created_by: data.created_by || undefined,
-          start_date: data.start_date || undefined,
-          due_date: data.due_date || undefined,
+          description: data.description || null,
+          organization_id: data.organization_id || null,
+          created_by: data.created_by || '',
+          start_date: data.start_date || null,
+          due_date: data.due_date || null,
           status: data.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
           priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
           progress_percentage: data.progress_percentage || 0,
@@ -480,11 +480,11 @@ export class ProjectsService {
         success: true,
         data: {
           ...data,
-          description: data.description || undefined,
-          organization_id: data.organization_id || undefined,
-          created_by: data.created_by || undefined,
-          start_date: data.start_date || undefined,
-          due_date: data.due_date || undefined,
+          description: data.description || null,
+          organization_id: data.organization_id || null,
+          created_by: data.created_by || '',
+          start_date: data.start_date || null,
+          due_date: data.due_date || null,
           status: data.status as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
           priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
           progress_percentage: data.progress_percentage || 0,

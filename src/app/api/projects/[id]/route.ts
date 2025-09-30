@@ -109,6 +109,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updateData = {
       ...validationResult.data,
       description: validationResult.data.description === null ? undefined : validationResult.data.description,
+      start_date: validationResult.data.start_date === null ? undefined : validationResult.data.start_date,
+      due_date: validationResult.data.due_date === null ? undefined : validationResult.data.due_date,
     }
     const result = await ProjectsService.updateProject(userId, projectId, updateData)
     console.log('API PUT /api/projects/[id]: Update result:', { success: result.success, error: result.error })

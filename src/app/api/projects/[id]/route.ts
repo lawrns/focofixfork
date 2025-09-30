@@ -105,7 +105,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     console.log('API PUT /api/projects/[id]: Validation passed, calling updateProject')
-    const result = await ProjectsService.updateProject(userId, projectId, validationResult.data)
+    // Transform null values to undefined for compatibility with service expectations
+    const updateData = {
+      ...validationResult.data,
+      description: validationResult.data.description === null ? undefined : validationResult.data.description,
+    }
+    const result = await ProjectsService.updateProject(userId, projectId, updateData)
     console.log('API PUT /api/projects/[id]: Update result:', { success: result.success, error: result.error })
 
     if (!result.success) {

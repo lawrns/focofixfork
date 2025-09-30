@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
               .eq('is_active', true)
               .single()
 
-            hasPermission = teamMember && ['owner', 'admin'].includes(teamMember.role)
+            hasPermission = teamMember ? ['owner', 'admin'].includes(teamMember.role) : false
           }
 
           if (!hasPermission) {
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
               .eq('is_active', true)
               .single()
 
-            hasPermission = teamMember && ['owner', 'admin'].includes(teamMember.role)
+            hasPermission = teamMember ? ['owner', 'admin'].includes(teamMember.role) : false
           }
 
           if (!hasPermission) {

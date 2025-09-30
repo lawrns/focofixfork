@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ProtectedRoute } from '@/components/auth/protected-route'
@@ -68,9 +68,9 @@ function OrganizationsContent() {
 
   useEffect(() => {
     loadOrganizations()
-  }, [])
+  }, [user])
 
-  const loadOrganizations = async () => {
+  const loadOrganizations = useCallback(async () => {
     try {
       const response = await fetch('/api/organizations', {
         headers: {
@@ -90,7 +90,7 @@ function OrganizationsContent() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   const openOrganizationModal = async (organization: any) => {
     setSelectedOrganization(organization)

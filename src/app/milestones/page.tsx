@@ -43,7 +43,7 @@ function MilestonesContent() {
 
   useEffect(() => {
     loadData()
-  }, [loadData])
+  }, [])
 
   // Subscribe to global project store
   useEffect(() => {
@@ -119,7 +119,7 @@ function MilestonesContent() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [projects])
 
   const filteredMilestones = milestones.filter(milestone => {
     const matchesSearch = milestone.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

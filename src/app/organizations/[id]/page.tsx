@@ -66,7 +66,7 @@ export default function OrganizationDetailPage() {
   useEffect(() => {
     loadOrganization()
     loadMembers()
-  }, [loadOrganization, loadMembers])
+  }, [organizationId, user])
 
   const loadOrganization = useCallback(async () => {
     try {

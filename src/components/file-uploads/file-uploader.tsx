@@ -83,7 +83,7 @@ export default function FileUploader({
     return () => FileUploadService.unsubscribeFromQueue(subscriptionId)
   }, [])
 
-  const loadExistingFiles = async () => {
+  const loadExistingFiles = useCallback(async () => {
     try {
       setIsLoading(true)
       const { attachments } = await FileUploadService.getFileAttachments(entityType, entityId)
@@ -93,7 +93,7 @@ export default function FileUploader({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [entityType, entityId])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -118,7 +118,7 @@ export default function FileUploader({
     if (files.length > 0) {
       await handleFiles(files)
     }
-  }, [])
+  }, [maxFiles, existingFiles, uploadQueue, entityType, entityId, currentUserId, currentUserName, allowedTypes, maxSize, onUploadComplete, onUploadError])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -131,7 +131,7 @@ export default function FileUploader({
     }
   }
 
-  const handleFiles = async (files: File[]) => {
+  const handleFiles = useCallback(async (files: File[]) => {
     const currentUploads = uploadQueue.filter(item => item.status === 'uploading').length
     const totalFiles = existingFiles.length + currentUploads + files.length
 
@@ -187,7 +187,7 @@ export default function FileUploader({
       setError(error.message)
       onUploadError?.(error.message)
     }
-  }
+  }, [maxFiles, existingFiles, uploadQueue, entityType, entityId, currentUserId, currentUserName, allowedTypes, maxSize, onUploadComplete, onUploadError])
 
   const handleCancelUpload = (queueId: string) => {
     FileUploadService.cancelUpload(queueId)

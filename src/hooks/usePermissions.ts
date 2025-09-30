@@ -194,5 +194,5 @@ export function useProjectPermissions(projectId: string, organizationId: string)
       canManageTeam: true,
       canView: true,
     }
-  }, [user, projectId, organizationId])
+  }, [user])
 }

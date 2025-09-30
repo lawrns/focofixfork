@@ -379,7 +379,7 @@ export function SettingsDashboard() {
             <CardHeader>
               <CardTitle>Organization Settings</CardTitle>
               <CardDescription>
-                Manage your organization's settings and preferences.
+                Manage your organization&apos;s settings and preferences.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

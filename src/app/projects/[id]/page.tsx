@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import MainLayout from '@/components/layout/MainLayout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
@@ -55,9 +55,9 @@ function ProjectDetailsContent() {
 
   useEffect(() => {
     fetchProject()
-  }, [projectId, user])
+  }, [user, projectId])
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     if (!user || !projectId) return
 
     try {
@@ -85,7 +85,7 @@ function ProjectDetailsContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, projectId])
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set'

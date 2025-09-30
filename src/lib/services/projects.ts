@@ -498,7 +498,7 @@ export class ProjectsService {
           }
         }
 
-        hasPermission = teamMember && ['owner', 'admin'].includes(teamMember.role)
+        hasPermission = teamMember ? ['owner', 'admin'].includes(teamMember.role) : false
       }
 
       if (!hasPermission) {

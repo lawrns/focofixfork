@@ -11,12 +11,7 @@ interface RouteParams {
 // GET /api/goals/[id]/milestones - Get milestones for a goal
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(
@@ -53,12 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST /api/goals/[id]/milestones - Create milestone for a goal
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(

@@ -7,12 +7,14 @@ export async function POST(
 ) {
   try {
     const { token } = params
-    const { userId } = await request.json()
+
+    // SECURITY FIX: Get userId from authenticated session, not request body
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'User ID is required' },
-        { status: 400 }
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
       )
     }
 

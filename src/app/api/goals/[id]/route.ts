@@ -11,12 +11,7 @@ interface RouteParams {
 // GET /api/goals/[id] - Get goal details
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(
@@ -67,12 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PATCH /api/goals/[id] - Update goal
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(
@@ -130,12 +120,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/goals/[id] - Delete goal
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(

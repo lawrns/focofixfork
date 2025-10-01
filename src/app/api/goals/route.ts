@@ -5,12 +5,7 @@ import { CreateGoalSchema } from '@/lib/validation/schemas/goals'
 // GET /api/goals - List goals
 export async function GET(request: NextRequest) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(

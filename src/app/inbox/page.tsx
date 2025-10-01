@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
-import { NotificationCenter } from '@/components/notifications/notification-center'
+import NotificationCenter from '@/components/notifications/notification-center'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'

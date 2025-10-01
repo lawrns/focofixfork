@@ -80,6 +80,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check Ollama availability before attempting to parse
+    const { ollamaService } = await import('@/lib/services/ollama')
+    const connectionTest = await ollamaService.testConnection()
+    if (!connectionTest.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'AI service is currently unavailable. Please try again in a few minutes.',
+          details: connectionTest.message
+        },
+        { status: 503 }
+      )
+    }
+
+    // Check if required models are available
+    if (!connectionTest.models || connectionTest.models.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'AI models are still loading. Please try again in a few minutes.',
+          details: 'The AI service is downloading required models. This may take 5-10 minutes on first deployment.'
+        },
+        { status: 503 }
+      )
+    }
+
     // Parse the project specification using Ollama
     const parsedProject = await OllamaProjectManager.parseProjectSpecification(
       specification,

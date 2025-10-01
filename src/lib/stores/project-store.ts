@@ -99,16 +99,21 @@ class ProjectStore {
   }
 
   // Remove a project
-  removeProject(projectId: string) {
-    console.log('ProjectStore: removing project', projectId)
+  removeProject(projectId: string, isFromRealtime: boolean = false) {
+    console.log('ProjectStore: removing project', projectId, isFromRealtime ? '(from real-time)' : '(from local operation)')
 
-    // Start operation tracking
-    this.startOperation(projectId)
+    // Only start operation tracking if this is not from a real-time event
+    // Real-time events should not start new operations, they should respect existing ones
+    if (!isFromRealtime) {
+      this.startOperation(projectId)
+    }
 
     const projectExists = this.projects.some(p => p.id === projectId)
     if (!projectExists) {
       console.log('ProjectStore: Project not found for removal:', projectId)
-      this.endOperation(projectId)
+      if (!isFromRealtime) {
+        this.endOperation(projectId)
+      }
       return
     }
 
@@ -123,17 +128,20 @@ class ProjectStore {
     })
 
     // End operation tracking after a short delay to prevent race conditions
-    setTimeout(() => {
-      this.endOperation(projectId)
-    }, 100)
+    // Only end if this was a local operation (not from real-time)
+    if (!isFromRealtime) {
+      setTimeout(() => {
+        this.endOperation(projectId)
+      }, 200) // Increased delay for better race condition prevention
+    }
   }
 
   // Update a project
-  updateProject(projectId: string, updates: Partial<Project>) {
-    console.log('ProjectStore: updating project', projectId, 'with updates:', updates)
+  updateProject(projectId: string, updates: Partial<Project>, isFromRealtime: boolean = false) {
+    console.log('ProjectStore: updating project', projectId, 'with updates:', updates, isFromRealtime ? '(from real-time)' : '(from local operation)')
 
-    // Check if operation is in progress for this project
-    if (this.operationInProgress.has(projectId)) {
+    // Check if operation is in progress for this project (skip for real-time updates)
+    if (!isFromRealtime && this.operationInProgress.has(projectId)) {
       console.log('ProjectStore: Operation in progress for project, skipping update:', projectId)
       return
     }

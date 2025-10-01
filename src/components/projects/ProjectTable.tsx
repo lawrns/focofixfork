@@ -215,6 +215,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   // Dialog action handlers
   const handleSaveProject = async (projectId: string, data: UpdateProject) => {
     try {
+      // Start operation tracking to prevent race conditions with real-time updates
+      projectStore.startOperation(projectId)
+
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'PUT',
         headers: {
@@ -225,6 +228,8 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       })
 
       if (!response.ok) {
+        // End operation tracking on error
+        projectStore.endOperation(projectId)
         throw new Error('Failed to update project')
       }
 
@@ -242,8 +247,13 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         }
       }
 
+      // End operation tracking after successful update
+      projectStore.endOperation(projectId)
+
       // Don't call fetchProjects() - rely on realtime updates or manual refresh only
     } catch (error) {
+      // Ensure operation tracking is ended on error
+      projectStore.endOperation(projectId)
       throw error
     }
   }
@@ -657,6 +667,13 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     if (payload.table === 'projects') {
       const projectId = payload.new?.id || payload.old?.id
 
+      // Skip real-time events if a local operation is in progress for this project
+      // This prevents race conditions between optimistic UI updates and real-time events
+      if (projectId && projectStore.isOperationInProgress(projectId)) {
+        console.log(`ProjectTable: Skipping ${source} real-time event for project ${projectId} - operation in progress`)
+        return
+      }
+
       if (payload.eventType === 'INSERT') {
         console.log(`ProjectTable: Adding project via ${source} real-time:`, payload.new?.id)
         if (payload.new?.id && payload.new?.name) {
@@ -667,7 +684,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       } else if (payload.eventType === 'UPDATE') {
         console.log(`ProjectTable: Updating project via ${source} real-time:`, payload.new?.id, 'with data:', payload.new)
         if (payload.new?.id && payload.new?.name) {
-          projectStore.updateProject(payload.new.id, payload.new)
+          projectStore.updateProject(payload.new.id, payload.new, true) // Mark as from real-time
         } else {
           console.warn('ProjectTable: Invalid UPDATE payload, missing id or name:', payload.new)
         }
@@ -675,7 +692,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         const deletedProjectId = payload.old?.id
         console.log(`ProjectTable: Removing project via ${source} real-time:`, deletedProjectId)
         if (deletedProjectId) {
-          projectStore.removeProject(deletedProjectId)
+          projectStore.removeProject(deletedProjectId, true) // Mark as from real-time
 
           // Clear the deleted project from selection state
           setSelectedProjects(prev => {

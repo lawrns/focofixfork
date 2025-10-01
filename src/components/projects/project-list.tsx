@@ -67,7 +67,7 @@ export function ProjectList({
     return unsubscribe
   }, [])
 
-  // Real-time updates for projects (backup to store)
+  // Real-time updates for projects
   useRealtime(
     organizationId ? { organizationId } : { enabled: false },
     (payload) => {
@@ -75,7 +75,7 @@ export function ProjectList({
         if (payload.eventType === 'INSERT') {
           projectStore.addProject(payload.new)
         } else if (payload.eventType === 'UPDATE') {
-          projectStore.updateProject(payload.new.id, payload.new)
+          projectStore.updateProject(payload.new.id, payload.new, true) // isFromRealtime = true
         } else if (payload.eventType === 'DELETE') {
           projectStore.removeProject(payload.old?.id)
         }
@@ -140,8 +140,18 @@ export function ProjectList({
         throw new Error('Failed to delete project')
       }
 
-      // Remove from local state
-      setProjects(prev => prev.filter(p => p.id !== projectId))
+      // Remove from ProjectStore (this will update all subscribers)
+      projectStore.removeProject(projectId)
+
+      // Force sidebar and all components to refresh from API
+      window.dispatchEvent(new CustomEvent('projectDeleted', { detail: { projectId, forceRefresh: true } }))
+
+      // Additional safeguard: Force refresh after a short delay
+      setTimeout(() => {
+        console.log('ProjectList: Force refreshing all project data after delete')
+        // This will trigger sidebar and other components to fetch fresh data
+        window.dispatchEvent(new CustomEvent('forceProjectRefresh'))
+      }, 500)
 
       // Call optional callback
       onDeleteProject?.(projectId)

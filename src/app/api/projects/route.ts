@@ -5,12 +5,12 @@ import { z } from 'zod'
 // Schema for project creation
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
-  description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
+  description: z.string().max(2000, 'Description must be less than 2000 characters').nullable().optional(),
   organization_id: z.string().nullable().optional(),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  start_date: z.string().optional(),
-  due_date: z.string().optional(),
+  start_date: z.string().nullable().optional(),
+  due_date: z.string().nullable().optional(),
   progress_percentage: z.number().min(0).max(100).optional(),
 })
 
@@ -79,12 +79,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    let userId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!userId || userId === 'demo-user-123') {
-      userId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const userId = request.headers.get('x-user-id')
 
     if (!userId) {
       return NextResponse.json(

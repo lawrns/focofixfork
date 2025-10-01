@@ -72,10 +72,36 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     console.log('ProjectTable: subscribing to project store')
     const unsubscribe = projectStore.subscribe((storeProjects) => {
       console.log('ProjectTable: received projects from store:', storeProjects.length)
+      if (storeProjects.length > 0) {
+        console.log('ProjectTable: project IDs from store:', storeProjects.map((p: any) => p.id))
+      }
       setProjects(storeProjects as ProjectWithOrg[])
     })
 
+    // If store is empty on mount, trigger a fetch
+    const currentProjects = projectStore.getProjects()
+    if (currentProjects.length === 0) {
+      console.log('ProjectTable: store is empty on mount, triggering sidebar refresh')
+      // Trigger sidebar to fetch data
+      window.dispatchEvent(new CustomEvent('forceProjectRefresh'))
+    }
+
     return unsubscribe
+  }, [])
+
+  // Listen for force refresh events
+  useEffect(() => {
+    const handleForceRefresh = () => {
+      console.log('ProjectTable: Force refresh requested, reloading from store')
+      const latestProjects = projectStore.getProjects()
+      setProjects(latestProjects as ProjectWithOrg[])
+    }
+
+    window.addEventListener('forceProjectRefresh', handleForceRefresh)
+
+    return () => {
+      window.removeEventListener('forceProjectRefresh', handleForceRefresh)
+    }
   }, [])
 
   // Permissions - for demo purposes, assume admin permissions
@@ -236,21 +262,26 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       // Get the updated project data from response
       const result = await response.json()
 
+      // End operation tracking first, then update the store
+      projectStore.endOperation(projectId)
+
       // Immediately update the store with the new data for instant UI feedback
       if (result.success && result.data) {
-        console.log('ProjectTable: updating project in store after edit:', result.data.id)
+        console.log('ProjectTable: updating project in store after edit:', result.data.id, 'new name:', result.data.name, 'status:', result.data.status, 'priority:', result.data.priority)
+        console.log('ProjectTable: full result.data:', result.data)
         projectStore.updateProject(result.data.id, result.data)
 
         // Update selectedProject state if it's the same project
         if (selectedProject && selectedProject.id === result.data.id) {
+          console.log('ProjectTable: updating selectedProject from:', selectedProject.name, 'to:', result.data.name)
           setSelectedProject(result.data)
         }
+
+        // Notify other components that a project was updated
+        window.dispatchEvent(new CustomEvent('projectUpdated', {
+          detail: { projectId: result.data.id, project: result.data }
+        }))
       }
-
-      // End operation tracking after successful update
-      projectStore.endOperation(projectId)
-
-      // Don't call fetchProjects() - rely on realtime updates or manual refresh only
     } catch (error) {
       // Ensure operation tracking is ended on error
       projectStore.endOperation(projectId)
@@ -300,7 +331,10 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         setSelectedProject(null)
       }
 
-      // No automatic refresh - rely on real-time updates or manual refresh only
+      // Notify other components that a project was deleted
+      window.dispatchEvent(new CustomEvent('projectDeleted', {
+        detail: { projectId }
+      }))
     } catch (error) {
       // Ensure operation tracking is ended on error
       projectStore.endOperation(projectId)
@@ -460,6 +494,12 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
             if (selectedProject && selectedProject.id === projectId) {
               setSelectedProject(null)
             }
+
+            // Notify other components that a project was deleted
+            console.log('ProjectTable: Dispatching projectDeleted event for projectId:', projectId)
+            window.dispatchEvent(new CustomEvent('projectDeleted', {
+              detail: { projectId }
+            }))
           }
         })
       }
@@ -721,9 +761,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     }
   })
 
-  // Fallback: Also listen for projects created by the user directly (not through organizations)
+  // Fallback: Also listen for projects created by the user directly
   useGlobalRealtime((payload) => {
-    // Only process events for projects created by the current user or not belonging to any organization
+    // Only process events for projects created by the user directly (not through organizations)
     const project = payload.new || payload.old
     if (project && (project.created_by === user?.id || !project.organization_id)) {
       handleRealtimeEvent(payload, 'global')

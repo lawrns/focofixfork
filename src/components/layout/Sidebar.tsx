@@ -50,29 +50,24 @@ export default function Sidebar() {
   const fetchProjects = async (forceRefresh = false) => {
     if (!user) return
 
-    // Only use cached projects if not forcing refresh and we have projects
-    if (!forceRefresh) {
-      const existingProjects = projectStore.getProjects()
-      if (existingProjects.length > 0) {
-        console.log('Sidebar: using existing projects from store:', existingProjects.length)
-        setProjects(existingProjects)
-        setLoading(false)
-        return
-      }
-    }
-
+    // Always fetch fresh data from API to ensure consistency
+    // Don't rely on store cache as it may contain stale data
     console.log('Sidebar: fetching fresh projects from API')
     try {
-      const response = await fetch('/api/projects', {
+      const response = await fetch(`/api/projects?t=${Date.now()}`, {
         headers: {
           'x-user-id': user.id,
         },
+        cache: 'no-cache',
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
           console.log('Sidebar: fetched projects from API:', data.data?.length || 0)
+          if (data.data && data.data.length > 0) {
+            console.log('Sidebar: project IDs from API:', data.data.map((p: any) => p.id))
+          }
           projectStore.setProjects(data.data || [])
           setProjects(data.data || [])
         } else {
@@ -95,7 +90,7 @@ export default function Sidebar() {
   }
 
   useEffect(() => {
-    fetchProjects()
+    fetchProjects(true) // Always force refresh on mount
   }, [user])
 
   // Refresh projects when navigating back to dashboard or when component becomes visible
@@ -112,12 +107,37 @@ export default function Sidebar() {
       fetchProjects(true) // Force refresh
     }
 
+    const handleProjectDeleted = (event: CustomEvent) => {
+      console.log('Sidebar: Project deleted event received:', event.detail?.projectId)
+      console.log('Sidebar: Projects before deletion:', projects.map(p => ({ id: p.id, name: p.name })))
+      fetchProjects(true) // Force refresh
+    }
+
+    const handleProjectUpdated = () => {
+      console.log('Sidebar: Project updated, ensuring latest data')
+      // For updates, we don't need to force refresh since the store should be updated
+      // But we can ensure the sidebar reflects the latest store state
+      const latestProjects = projectStore.getProjects()
+      setProjects(latestProjects)
+    }
+
+    const handleForceProjectRefresh = () => {
+      console.log('Sidebar: Force project refresh requested, fetching from API')
+      fetchProjects(true) // Force fresh data from API
+    }
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
+    window.addEventListener('projectDeleted', handleProjectDeleted as EventListener)
+    window.addEventListener('projectUpdated', handleProjectUpdated)
+    window.addEventListener('forceProjectRefresh', handleForceProjectRefresh)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('projectDeleted', handleProjectDeleted as EventListener)
+      window.removeEventListener('projectUpdated', handleProjectUpdated)
+      window.removeEventListener('forceProjectRefresh', handleForceProjectRefresh)
     }
   }, [user])
 
@@ -145,14 +165,14 @@ export default function Sidebar() {
   useEffect(() => {
     console.log('Sidebar: subscribing to project store')
     const unsubscribe = projectStore.subscribe((storeProjects) => {
-      console.log('Sidebar: received projects from store:', storeProjects.length)
+      console.log('Sidebar: received projects from store:', storeProjects.length, 'projects:', storeProjects.map(p => ({ id: p.id, name: p.name })))
       setProjects(storeProjects as Project[])
     })
 
     return unsubscribe
   }, [])
 
-  // Real-time updates for projects in sidebar (updates store)
+  // Real-time updates for projects in sidebar
   useGlobalRealtime((payload) => {
     console.log('Sidebar: Real-time event received:', {
       eventType: payload.eventType,
@@ -176,7 +196,7 @@ export default function Sidebar() {
       } else if (payload.eventType === 'UPDATE') {
         console.log('Sidebar: Updating project via real-time:', payload.new?.id, 'with data:', payload.new)
         if (payload.new?.id && payload.new?.name) {
-          projectStore.updateProject(payload.new.id, payload.new)
+          projectStore.updateProject(payload.new.id, payload.new, true) // isFromRealtime = true
         } else {
           console.warn('Sidebar: Invalid UPDATE payload, missing id or name:', payload.new)
         }

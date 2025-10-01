@@ -3,7 +3,7 @@
  * Defines the structure and operations for project data
  */
 
-export type ProjectStatus = 'planning' | 'active' | 'on-hold' | 'completed'
+export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
 
 export interface Project {
   id: string
@@ -89,7 +89,7 @@ export class ProjectModel {
       }
     }
 
-    if (data.status && !['planning', 'active', 'on-hold', 'completed'].includes(data.status)) {
+    if (data.status && !['planning', 'active', 'on_hold', 'completed', 'cancelled'].includes(data.status)) {
       errors.push('Invalid project status')
     }
 
@@ -109,10 +109,11 @@ export class ProjectModel {
   static validateStatusTransition(currentStatus: ProjectStatus, newStatus: ProjectStatus): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
     const validTransitions: Record<ProjectStatus, ProjectStatus[]> = {
-      planning: ['active', 'on-hold', 'completed'],
-      active: ['on-hold', 'completed'],
-      'on-hold': ['active', 'completed'],
-      completed: [] // Terminal state
+      planning: ['active', 'on_hold', 'completed', 'cancelled'],
+      active: ['on_hold', 'completed', 'cancelled'],
+      on_hold: ['active', 'completed', 'cancelled'],
+      completed: ['cancelled'], // Can be cancelled after completion
+      cancelled: [] // Terminal state
     }
 
     if (!validTransitions[currentStatus].includes(newStatus)) {
@@ -144,10 +145,12 @@ export class ProjectModel {
         return '#6b7280' // gray
       case 'active':
         return '#059669' // green
-      case 'on-hold':
+      case 'on_hold':
         return '#d97706' // amber
       case 'completed':
         return '#2563eb' // blue
+      case 'cancelled':
+        return '#dc2626' // red
       default:
         return '#6b7280'
     }
@@ -162,10 +165,12 @@ export class ProjectModel {
         return 'Planning'
       case 'active':
         return 'Active'
-      case 'on-hold':
+      case 'on_hold':
         return 'On Hold'
       case 'completed':
         return 'Completed'
+      case 'cancelled':
+        return 'Cancelled'
       default:
         return status
     }

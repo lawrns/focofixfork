@@ -14,6 +14,9 @@ interface Project {
   start_date?: string | null
   due_date?: string | null
   progress_percentage?: number
+  organizations?: {
+    name: string
+  }
 }
 
 class ProjectStore {
@@ -57,13 +60,17 @@ class ProjectStore {
       console.warn('ProjectStore: filtered out invalid projects:', projects.length - validProjects.length)
     }
 
-    // Remove any projects that are currently being operated on to prevent conflicts
-    const filteredProjects = validProjects.filter(p => !this.operationInProgress.has(p.id))
+    // Keep all valid projects - operation tracking should not affect visibility
+    // Operations are tracked separately to prevent race conditions in updates
+    const filteredProjects = validProjects
 
     this.projects = [...filteredProjects]
+    // Force a new array reference to ensure React detects the change
+    const updatedProjects = [...this.projects]
+
     this.listeners.forEach(listener => {
       try {
-        listener([...this.projects])
+        listener(updatedProjects)
       } catch (error) {
         console.error('ProjectStore: error notifying listener:', error)
       }
@@ -74,12 +81,6 @@ class ProjectStore {
   addProject(project: Project) {
     console.log('ProjectStore: adding project', project.id)
 
-    // Check if operation is in progress for this project
-    if (this.operationInProgress.has(project.id)) {
-      console.log('ProjectStore: Operation in progress for project, skipping add:', project.id)
-      return
-    }
-
     // Check if project already exists
     const existingIndex = this.projects.findIndex(p => p.id === project.id)
     if (existingIndex !== -1) {
@@ -89,9 +90,12 @@ class ProjectStore {
     }
 
     this.projects = [...this.projects, project]
+    // Force a new array reference to ensure React detects the change
+    const updatedProjects = [...this.projects]
+
     this.listeners.forEach(listener => {
       try {
-        listener([...this.projects])
+        listener(updatedProjects)
       } catch (error) {
         console.error('ProjectStore: error notifying listener:', error)
       }
@@ -119,26 +123,37 @@ class ProjectStore {
 
     this.projects = this.projects.filter(p => p.id !== projectId)
 
+    // Force a new array reference to ensure React detects the change
+    const updatedProjects = [...this.projects]
+
     this.listeners.forEach(listener => {
       try {
-        listener([...this.projects])
+        listener(updatedProjects)
       } catch (error) {
         console.error('ProjectStore: error notifying listener:', error)
       }
     })
 
-    // End operation tracking after a short delay to prevent race conditions
-    // Only end if this was a local operation (not from real-time)
+    // End operation tracking immediately
+    // Operation tracking prevents race conditions but doesn't hide projects
     if (!isFromRealtime) {
-      setTimeout(() => {
-        this.endOperation(projectId)
-      }, 200) // Increased delay for better race condition prevention
+      this.endOperation(projectId)
     }
   }
 
   // Update a project
   updateProject(projectId: string, updates: Partial<Project>, isFromRealtime: boolean = false) {
     console.log('ProjectStore: updating project', projectId, 'with updates:', updates, isFromRealtime ? '(from real-time)' : '(from local operation)')
+
+    if (updates.name) {
+      console.log('ProjectStore: updating project name to:', updates.name)
+    }
+    if (updates.status) {
+      console.log('ProjectStore: updating project status to:', updates.status)
+    }
+    if (updates.priority) {
+      console.log('ProjectStore: updating project priority to:', updates.priority)
+    }
 
     // Check if operation is in progress for this project (skip for real-time updates)
     if (!isFromRealtime && this.operationInProgress.has(projectId)) {
@@ -153,7 +168,7 @@ class ProjectStore {
     }
 
     const oldProject = this.projects[projectIndex]
-    const updatedProject = { ...oldProject, ...updates }
+    const updatedProject = { ...oldProject, ...updates, _updated: Date.now() } // Force object reference change
 
     // Validate that the updated project still has required fields
     if (!updatedProject.id || !updatedProject.name) {
@@ -163,12 +178,15 @@ class ProjectStore {
 
     this.projects[projectIndex] = updatedProject
 
-    console.log('ProjectStore: project updated successfully from:', oldProject, 'to:', updatedProject)
+    console.log('ProjectStore: project updated successfully from:', oldProject.name, 'to:', updatedProject.name)
     console.log('ProjectStore: total projects after update:', this.projects.length)
+
+    // Force a new array reference to ensure React detects the change
+    const updatedProjects = [...this.projects]
 
     this.listeners.forEach(listener => {
       try {
-        listener([...this.projects])
+        listener(updatedProjects)
       } catch (error) {
         console.error('ProjectStore: error notifying listener:', error)
       }

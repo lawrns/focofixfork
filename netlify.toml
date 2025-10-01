@@ -6,7 +6,10 @@
   publish = ".next"
 
   # Install all dependencies, plugin, then build
-  command = "npm ci && npm install @netlify/plugin-nextjs@latest && npm run build"
+  command = "npm ci && npm run build"
+
+  # Functions directory
+  functions = "netlify/functions"
 
 [build.environment]
   # Node.js version for builds
@@ -15,16 +18,25 @@
   # Next.js build configuration
   NEXT_TELEMETRY_DISABLED = "1"
 
-  # Supabase environment variables (these should be set in Netlify dashboard)
+  # Supabase environment variables
   NEXT_PUBLIC_SUPABASE_URL = "https://czijxfbkihrauyjwcgfn.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aWp4ZmJraWhyYXV5andjZ2ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNzU5ODMsImV4cCI6MjA2Nzc1MTk4M30.0MYAeaLn3L1LYiGNrsWPIvuZUVq-z7MUvaigybzCnQ0"
   SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aWp4ZmJraWhyYXV5andjZ2ZuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjE3NTk4MywiZXhwIjoyMDY3NzUxOTgzfQ._JnBgXZLk23daPdnCUksfvooIJk2r9mFyclO8MnvfQ8"
 
-# Redirects and headers are handled automatically by @netlify/plugin-nextjs
-
-# Next.js plugin installed via npm and configured here
+# Next.js plugin for pages only
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# API route redirects to Netlify functions
+[[redirects]]
+  from = "/api/projects"
+  to = "/.netlify/functions/projects"
+  status = 200
+
+[[redirects]]
+  from = "/api/projects/*"
+  to = "/.netlify/functions/projects-id"
+  status = 200
 
 [dev]
   # Development server configuration

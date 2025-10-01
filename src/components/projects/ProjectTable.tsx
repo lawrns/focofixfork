@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { useGlobalRealtime } from '@/lib/hooks/useRealtime'
+import { useGlobalRealtime, useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
 import { QuickActions, createProjectActions } from '@/components/ui/quick-actions'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -250,6 +250,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   const handleDeleteProjectConfirm = async (projectId: string) => {
     try {
+      // Start operation tracking to prevent race conditions
+      projectStore.startOperation(projectId)
+
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'DELETE',
         headers: {
@@ -258,6 +261,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       })
 
       if (!response.ok) {
+        // End operation tracking on error
+        projectStore.endOperation(projectId)
+
         // If project is already deleted (404), consider it a success
         if (response.status === 404) {
           console.log('Project was already deleted or not found, removing from store')
@@ -286,6 +292,8 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
       // No automatic refresh - rely on real-time updates or manual refresh only
     } catch (error) {
+      // Ensure operation tracking is ended on error
+      projectStore.endOperation(projectId)
       throw error
     }
   }
@@ -397,6 +405,11 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   const handleBulkOperation = async (operation: 'archive' | 'delete', projectIds: string[], force?: boolean) => {
     try {
+      // Start operation tracking for all projects
+      projectIds.forEach(projectId => {
+        projectStore.startOperation(projectId)
+      })
+
       const response = await fetch('/api/projects/bulk', {
         method: 'POST',
         headers: {
@@ -411,6 +424,10 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       })
 
       if (!response.ok) {
+        // End operation tracking on error
+        projectIds.forEach(projectId => {
+          projectStore.endOperation(projectId)
+        })
         throw new Error('Bulk operation failed')
       }
 
@@ -437,8 +454,28 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         })
       }
 
+      // End operation tracking for successful operations
+      if (result.successful) {
+        result.successful.forEach((projectId: string) => {
+          setTimeout(() => {
+            projectStore.endOperation(projectId)
+          }, 100)
+        })
+      }
+
+      // End operation tracking for failed operations
+      if (result.failed) {
+        result.failed.forEach((projectId: string) => {
+          projectStore.endOperation(projectId)
+        })
+      }
+
       return result
     } catch (error) {
+      // Ensure operation tracking is ended on error
+      projectIds.forEach(projectId => {
+        projectStore.endOperation(projectId)
+      })
       throw error
     }
   }
@@ -577,8 +614,39 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   }, [projects, filters, sortConditions])
 
   // Real-time updates for projects in table (updates store)
-  useGlobalRealtime((payload) => {
-    console.log('ProjectTable: Real-time event received:', {
+  // Use a single organization subscription if user has organizations, otherwise use global
+  const [userOrganizations, setUserOrganizations] = useState<string[]>([])
+
+  // Fetch user organizations for real-time subscriptions
+  useEffect(() => {
+    const fetchUserOrganizations = async () => {
+      if (!user) return
+
+      try {
+        const response = await fetch('/api/organizations', {
+          headers: {
+            'x-user-id': user.id,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data) {
+            const orgIds = data.data.map((org: any) => org.id)
+            setUserOrganizations(orgIds)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user organizations for real-time:', error)
+      }
+    }
+
+    fetchUserOrganizations()
+  }, [user])
+
+  // Real-time updates with operation tracking to prevent race conditions
+  const handleRealtimeEvent = useCallback((payload: any, source: string) => {
+    console.log(`ProjectTable: ${source} real-time event received:`, {
       eventType: payload.eventType,
       table: payload.table,
       projectId: payload.new?.id || payload.old?.id,
@@ -587,15 +655,17 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     })
 
     if (payload.table === 'projects') {
+      const projectId = payload.new?.id || payload.old?.id
+
       if (payload.eventType === 'INSERT') {
-        console.log('ProjectTable: Adding project via real-time:', payload.new?.id)
+        console.log(`ProjectTable: Adding project via ${source} real-time:`, payload.new?.id)
         if (payload.new?.id && payload.new?.name) {
           projectStore.addProject(payload.new)
         } else {
           console.warn('ProjectTable: Invalid INSERT payload, missing id or name:', payload.new)
         }
       } else if (payload.eventType === 'UPDATE') {
-        console.log('ProjectTable: Updating project via real-time:', payload.new?.id, 'with data:', payload.new)
+        console.log(`ProjectTable: Updating project via ${source} real-time:`, payload.new?.id, 'with data:', payload.new)
         if (payload.new?.id && payload.new?.name) {
           projectStore.updateProject(payload.new.id, payload.new)
         } else {
@@ -603,7 +673,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         }
       } else if (payload.eventType === 'DELETE') {
         const deletedProjectId = payload.old?.id
-        console.log('ProjectTable: Removing project via real-time:', deletedProjectId)
+        console.log(`ProjectTable: Removing project via ${source} real-time:`, deletedProjectId)
         if (deletedProjectId) {
           projectStore.removeProject(deletedProjectId)
 
@@ -620,6 +690,25 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
           }
         }
       }
+    }
+  }, [selectedProject])
+
+  // Use organization-specific real-time subscription for the first organization
+  // This avoids calling hooks in a loop while still providing real-time updates
+  const primaryOrgId = userOrganizations.length > 0 ? userOrganizations[0] : null
+
+  if (primaryOrgId) {
+    useOrganizationRealtime(primaryOrgId, (payload: any) => {
+      handleRealtimeEvent(payload, 'organization')
+    })
+  }
+
+  // Fallback: Also listen for projects created by the user directly (not through organizations)
+  useGlobalRealtime((payload) => {
+    // Only process events for projects created by the current user or not belonging to any organization
+    const project = payload.new || payload.old
+    if (project && (project.created_by === user?.id || !project.organization_id)) {
+      handleRealtimeEvent(payload, 'global')
     }
   })
 

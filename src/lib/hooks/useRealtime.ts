@@ -168,6 +168,8 @@ export function useRealtime(
     }
 
     // Global projects subscription when no specific filters are provided
+    // Note: This creates a global subscription that may conflict with organization-specific ones
+    // Consider using organization-specific subscriptions instead for better consistency
     if (options.enabled && !options.projectId && !options.organizationId && !options.userId) {
       channel.on(
         'postgres_changes',

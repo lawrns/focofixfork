@@ -33,8 +33,12 @@ class ProjectStore {
 
   // Update projects and notify all listeners
   setProjects(projects: Project[]) {
-    console.log('ProjectStore: updating projects to', projects.length, 'projects')
-    this.projects = [...projects]
+    console.log('ProjectStore: updating projects to', projects.length, 'projects:', projects.map(p => ({ id: p.id, name: p.name })))
+    const validProjects = projects.filter(p => p && p.id && p.name)
+    if (validProjects.length !== projects.length) {
+      console.warn('ProjectStore: filtered out invalid projects:', projects.length - validProjects.length)
+    }
+    this.projects = [...validProjects]
     this.listeners.forEach(listener => {
       try {
         listener([...this.projects])
@@ -72,10 +76,27 @@ class ProjectStore {
 
   // Update a project
   updateProject(projectId: string, updates: Partial<Project>) {
-    console.log('ProjectStore: updating project', projectId)
-    this.projects = this.projects.map(p =>
-      p.id === projectId ? { ...p, ...updates } : p
-    )
+    console.log('ProjectStore: updating project', projectId, 'with updates:', updates)
+    const projectIndex = this.projects.findIndex(p => p.id === projectId)
+    if (projectIndex === -1) {
+      console.warn('ProjectStore: project not found for update:', projectId, 'available projects:', this.projects.map(p => p.id))
+      return
+    }
+
+    const oldProject = this.projects[projectIndex]
+    const updatedProject = { ...oldProject, ...updates }
+
+    // Validate that the updated project still has required fields
+    if (!updatedProject.id || !updatedProject.name) {
+      console.error('ProjectStore: update would result in invalid project, aborting:', updatedProject)
+      return
+    }
+
+    this.projects[projectIndex] = updatedProject
+
+    console.log('ProjectStore: project updated successfully from:', oldProject, 'to:', updatedProject)
+    console.log('ProjectStore: total projects after update:', this.projects.length)
+
     this.listeners.forEach(listener => {
       try {
         listener([...this.projects])

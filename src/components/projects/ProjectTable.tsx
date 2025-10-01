@@ -581,31 +581,43 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     console.log('ProjectTable: Real-time event received:', {
       eventType: payload.eventType,
       table: payload.table,
-      projectId: payload.new?.id || payload.old?.id
+      projectId: payload.new?.id || payload.old?.id,
+      newData: payload.new,
+      oldData: payload.old
     })
 
     if (payload.table === 'projects') {
       if (payload.eventType === 'INSERT') {
-        console.log('ProjectTable: Adding project via real-time:', payload.new.id)
-        projectStore.addProject(payload.new)
+        console.log('ProjectTable: Adding project via real-time:', payload.new?.id)
+        if (payload.new?.id && payload.new?.name) {
+          projectStore.addProject(payload.new)
+        } else {
+          console.warn('ProjectTable: Invalid INSERT payload, missing id or name:', payload.new)
+        }
       } else if (payload.eventType === 'UPDATE') {
-        console.log('ProjectTable: Updating project via real-time:', payload.new.id)
-        projectStore.updateProject(payload.new.id, payload.new)
+        console.log('ProjectTable: Updating project via real-time:', payload.new?.id, 'with data:', payload.new)
+        if (payload.new?.id && payload.new?.name) {
+          projectStore.updateProject(payload.new.id, payload.new)
+        } else {
+          console.warn('ProjectTable: Invalid UPDATE payload, missing id or name:', payload.new)
+        }
       } else if (payload.eventType === 'DELETE') {
         const deletedProjectId = payload.old?.id
         console.log('ProjectTable: Removing project via real-time:', deletedProjectId)
-        projectStore.removeProject(deletedProjectId)
+        if (deletedProjectId) {
+          projectStore.removeProject(deletedProjectId)
 
-        // Clear the deleted project from selection state
-        setSelectedProjects(prev => {
-          const newSelected = new Set(prev)
-          newSelected.delete(deletedProjectId)
-          return newSelected
-        })
+          // Clear the deleted project from selection state
+          setSelectedProjects(prev => {
+            const newSelected = new Set(prev)
+            newSelected.delete(deletedProjectId)
+            return newSelected
+          })
 
-        // Clear selectedProject state if it matches the deleted project
-        if (selectedProject && selectedProject.id === deletedProjectId) {
-          setSelectedProject(null)
+          // Clear selectedProject state if it matches the deleted project
+          if (selectedProject && selectedProject.id === deletedProjectId) {
+            setSelectedProject(null)
+          }
         }
       }
     }

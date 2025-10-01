@@ -157,7 +157,9 @@ export default function Sidebar() {
     console.log('Sidebar: Real-time event received:', {
       eventType: payload.eventType,
       table: payload.table,
-      projectId: payload.new?.id || payload.old?.id
+      projectId: payload.new?.id || payload.old?.id,
+      newData: payload.new,
+      oldData: payload.old
     })
 
     // Track that we received a real-time update
@@ -165,14 +167,26 @@ export default function Sidebar() {
 
     if (payload.table === 'projects') {
       if (payload.eventType === 'INSERT') {
-        console.log('Sidebar: Adding project via real-time:', payload.new.id)
-        projectStore.addProject(payload.new)
+        console.log('Sidebar: Adding project via real-time:', payload.new?.id)
+        if (payload.new?.id && payload.new?.name) {
+          projectStore.addProject(payload.new)
+        } else {
+          console.warn('Sidebar: Invalid INSERT payload, missing id or name:', payload.new)
+        }
       } else if (payload.eventType === 'UPDATE') {
-        console.log('Sidebar: Updating project via real-time:', payload.new.id)
-        projectStore.updateProject(payload.new.id, payload.new)
+        console.log('Sidebar: Updating project via real-time:', payload.new?.id, 'with data:', payload.new)
+        if (payload.new?.id && payload.new?.name) {
+          projectStore.updateProject(payload.new.id, payload.new)
+        } else {
+          console.warn('Sidebar: Invalid UPDATE payload, missing id or name:', payload.new)
+        }
       } else if (payload.eventType === 'DELETE') {
         console.log('Sidebar: Removing project via real-time:', payload.old?.id)
-        projectStore.removeProject(payload.old?.id)
+        if (payload.old?.id) {
+          projectStore.removeProject(payload.old.id)
+        } else {
+          console.warn('Sidebar: Invalid DELETE payload, missing old.id:', payload.old)
+        }
       }
     }
   }, true) // Explicitly enable real-time

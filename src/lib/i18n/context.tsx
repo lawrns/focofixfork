@@ -54,6 +54,7 @@ export function I18nProvider({
     if (savedLanguage && SUPPORTED_LANGUAGES[savedLanguage]) {
       setLanguage(savedLanguage);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
   // Update document direction for RTL languages

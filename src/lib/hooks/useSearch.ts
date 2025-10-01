@@ -65,6 +65,7 @@ export function useSearch(options: SearchOptions) {
     }
 
     performSearch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, options.types, options.organizationId, options.projectId, options.limit])
 
   const performSearch = async () => {

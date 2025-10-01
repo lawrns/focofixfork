@@ -6,7 +6,17 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 
 export type OrganizationRole = 'owner' | 'admin' | 'member' | 'guest'
 export type ProjectRole = 'owner' | 'admin' | 'member' | 'guest'
-export type Permission = 'view' | 'edit' | 'delete' | 'manage_team' | 'manage_settings'
+export type Permission =
+  | 'view'
+  | 'edit'
+  | 'delete'
+  | 'manage_team'
+  | 'manage_settings'
+  | 'view_project'
+  | 'update_project'
+  | 'delete_project'
+  | 'manage_milestones'
+  | 'manage_tasks'
 
 /**
  * Check if a user has a specific role in an organization

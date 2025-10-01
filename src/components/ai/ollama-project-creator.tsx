@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -51,7 +51,7 @@ export function OllamaProjectCreator({ onSuccess, onCancel }: OllamaProjectCreat
   const [orgsLoading, setOrgsLoading] = useState(false)
 
   // Load organizations on mount
-  useState(() => {
+  useEffect(() => {
     const loadOrganizations = async () => {
       if (!user) return
 
@@ -80,7 +80,7 @@ export function OllamaProjectCreator({ onSuccess, onCancel }: OllamaProjectCreat
     }
 
     loadOrganizations()
-  })
+  }, [user])
 
   const handleCreate = async () => {
     if (!user) {

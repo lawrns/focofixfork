@@ -697,11 +697,12 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   // This avoids calling hooks in a loop while still providing real-time updates
   const primaryOrgId = userOrganizations.length > 0 ? userOrganizations[0] : null
 
-  if (primaryOrgId) {
-    useOrganizationRealtime(primaryOrgId, (payload: any) => {
+  // Always call the hook, but conditionally handle the events
+  useOrganizationRealtime(primaryOrgId || '', (payload: any) => {
+    if (primaryOrgId) {
       handleRealtimeEvent(payload, 'organization')
-    })
-  }
+    }
+  })
 
   // Fallback: Also listen for projects created by the user directly (not through organizations)
   useGlobalRealtime((payload) => {

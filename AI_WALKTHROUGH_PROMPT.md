@@ -29,6 +29,21 @@ Go to https://foco.mx, login with laurence@fyves.com / Hennie@@12 and go through
   ```
 
 - Click "**Create with AI**" button
+
+**⚠️ IMPORTANT - First Deployment Note:**
+- If this is the first time using AI features (or within 10 minutes of deployment), you may see:
+  ```
+  ⏳ AI models are still loading. Please try again in a few minutes.
+  ℹ️  The AI service is downloading required models. This may take 5-10 minutes on first deployment.
+  ```
+- This is **expected behavior** - the Ollama AI models (3.8GB each) are downloading in the background
+- Wait 5-10 minutes and try again
+- To check if models are ready: `curl https://foco-ollama.fly.dev/api/tags`
+  - Returns `{"models": []}` → still loading
+  - Returns models array → ready to use
+
+**When Models Are Ready:**
+- Click "**Create with AI**" button
 - **IMPORTANT**: This will take 10-30 seconds as the AI processes your request
 - Watch for:
   - Loading spinner with "AI is working on your project..." message

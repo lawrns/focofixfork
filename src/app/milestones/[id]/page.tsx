@@ -56,10 +56,6 @@ export default function MilestonePage() {
   const [error, setError] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
 
-  useEffect(() => {
-    loadMilestoneData()
-  }, [milestoneId, loadMilestoneData])
-
   const loadMilestoneData = useCallback(async () => {
     try {
       setLoading(true)
@@ -84,6 +80,10 @@ export default function MilestonePage() {
       setLoading(false)
     }
   }, [milestoneId])
+
+  useEffect(() => {
+    loadMilestoneData()
+  }, [milestoneId, loadMilestoneData])
 
   const getStatusInfo = (status: string) => {
     switch (status) {

@@ -63,11 +63,6 @@ export default function OrganizationDetailPage() {
   const [editingMember, setEditingMember] = useState<string | null>(null)
   const [editRole, setEditRole] = useState<MemberRole>('member')
 
-  useEffect(() => {
-    loadOrganization()
-    loadMembers()
-  }, [organizationId, user, loadOrganization, loadMembers])
-
   const loadOrganization = useCallback(async () => {
     try {
       const response = await fetch(`/api/organizations/${organizationId}`)
@@ -106,6 +101,11 @@ export default function OrganizationDetailPage() {
       setIsLoading(false)
     }
   }, [organizationId, user])
+
+  useEffect(() => {
+    loadOrganization()
+    loadMembers()
+  }, [organizationId, user, loadOrganization, loadMembers])
 
   const handleInviteMember = async () => {
     if (!inviteEmail.trim()) return

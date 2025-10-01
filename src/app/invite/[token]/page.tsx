@@ -27,10 +27,6 @@ export default function InviteAcceptPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  useEffect(() => {
-    validateInvitation()
-  }, [token, validateInvitation])
-
   const validateInvitation = useCallback(async () => {
     try {
       const response = await fetch(`/api/invitations/${token}/validate`)
@@ -47,6 +43,10 @@ export default function InviteAcceptPage() {
       setLoading(false)
     }
   }, [token])
+
+  useEffect(() => {
+    validateInvitation()
+  }, [token, validateInvitation])
 
   const acceptInvitation = async () => {
     setAccepting(true)

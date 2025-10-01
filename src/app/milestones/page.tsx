@@ -41,21 +41,6 @@ function MilestonesContent() {
   const [filterPriority, setFilterPriority] = useState('all')
   const router = useRouter()
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  // Subscribe to global project store
-  useEffect(() => {
-    console.log('Milestones page: subscribing to project store')
-    const unsubscribe = projectStore.subscribe((storeProjects) => {
-      console.log('Milestones page: received projects from store:', storeProjects.length)
-      setProjects(storeProjects)
-    })
-
-    return unsubscribe
-  }, [])
-
   const loadData = useCallback(async () => {
     try {
       // Load projects first to get project names
@@ -120,6 +105,21 @@ function MilestonesContent() {
       setIsLoading(false)
     }
   }, [projects])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  // Subscribe to global project store
+  useEffect(() => {
+    console.log('Milestones page: subscribing to project store')
+    const unsubscribe = projectStore.subscribe((storeProjects) => {
+      console.log('Milestones page: received projects from store:', storeProjects.length)
+      setProjects(storeProjects)
+    })
+
+    return unsubscribe
+  }, [])
 
   const filteredMilestones = milestones.filter(milestone => {
     const matchesSearch = milestone.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

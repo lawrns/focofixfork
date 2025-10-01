@@ -29,6 +29,11 @@
 
 # API route redirects to Netlify functions
 [[redirects]]
+  from = "/api/organizations"
+  to = "/.netlify/functions/organizations"
+  status = 200
+
+[[redirects]]
   from = "/api/projects"
   to = "/.netlify/functions/projects"
   status = 200

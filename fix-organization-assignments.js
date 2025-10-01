@@ -141,7 +141,7 @@ async function fixOrganizationAssignments() {
           .insert({
             organization_id: newOrg.id,
             user_id: profile.user_id || profile.id,
-            role: 'member',
+            role: 'owner', // User owns their organization
             joined_at: new Date().toISOString()
           })
 
@@ -198,7 +198,7 @@ async function fixOrganizationAssignments() {
             .insert({
               organization_id: newOrg.id,
               user_id: profile.user_id || profile.id,
-              role: 'member',
+              role: 'owner', // User owns their organization
               joined_at: new Date().toISOString()
             })
 

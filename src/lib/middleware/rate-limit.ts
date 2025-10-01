@@ -104,11 +104,23 @@ export const exportRateLimiter = new RateLimiter({
   maxRequests: 10 // 10 exports per hour
 })
 
+export const aiRateLimiter = new RateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 5 // 5 AI requests per minute (AI is expensive)
+})
+
+export const ollamaRateLimiter = new RateLimiter({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  maxRequests: 10 // 10 Ollama requests per 5 minutes
+})
+
 // Clean up expired entries every 5 minutes
 setInterval(() => {
   authRateLimiter.cleanup()
   apiRateLimiter.cleanup()
   exportRateLimiter.cleanup()
+  aiRateLimiter.cleanup()
+  ollamaRateLimiter.cleanup()
 }, 5 * 60 * 1000)
 
 

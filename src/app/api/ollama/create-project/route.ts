@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { OllamaProjectManager } from '@/lib/services/ollama-project-manager'
 import { canManageOrganizationMembers } from '@/lib/middleware/authorization'
+import { ollamaRateLimiter } from '@/lib/middleware/rate-limit'
 import { z } from 'zod'
 
 const CreateProjectSchema = z.object({
@@ -34,6 +35,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Apply rate limiting
+    const rateLimitResult = await ollamaRateLimiter.check(userId)
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Rate limit exceeded. Please wait before making another AI request.',
+          retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetTime.toString(),
+          }
+        }
       )
     }
 

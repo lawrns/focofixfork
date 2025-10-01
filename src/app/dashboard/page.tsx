@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import MainLayout from '@/components/layout/MainLayout'
 import ViewTabs from '@/components/projects/ViewTabs'
 import ProjectTable from '@/components/projects/ProjectTable'
+import { KanbanBoard } from '@/components/projects/kanban-board'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ import ExportDialog from '@/components/export/export-dialog'
 import ImportDialog from '@/components/import/import-dialog'
 import AIAssistant from '@/components/ai/ai-assistant'
 import AISuggestionsPanel from '@/components/ai/ai-suggestions-panel'
+import { OllamaProjectCreator } from '@/components/ai/ollama-project-creator'
 import TimeTracker from '@/components/time-tracking/time-tracker'
 import PresenceIndicator from '@/components/collaboration/presence-indicator'
 import CommentsSection from '@/components/comments/comments-section'
@@ -58,6 +60,7 @@ export default function DashboardPage() {
   const { createView, setActiveView } = useSavedViews()
   const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
+  const [showAIProjectModal, setShowAIProjectModal] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -196,6 +199,26 @@ export default function DashboardPage() {
             />
 
             <div className="flex items-center gap-3 pb-4">
+              <Button
+                onClick={() => setShowAIProjectModal(true)}
+                variant="default"
+                className="gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+                Create with AI
+              </Button>
               <AIAssistant />
               <ImportDialog
                 onImportComplete={() => window.location.reload()}
@@ -206,7 +229,7 @@ export default function DashboardPage() {
 
           <Suspense fallback={<DashboardSkeleton />}>
             {activeView === 'table' && <ProjectTable />}
-            {activeView === 'kanban' && <div className="text-center py-12">Kanban view coming soon...</div>}
+            {activeView === 'kanban' && <KanbanBoard />}
             {activeView === 'gantt' && (
               <div className="text-center py-12 text-muted-foreground">
                 <p className="text-lg font-medium">Gantt view coming soon</p>
@@ -297,6 +320,22 @@ export default function DashboardPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Project Creator Modal */}
+      <Dialog open={showAIProjectModal} onOpenChange={setShowAIProjectModal}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI-Powered Project Creator</DialogTitle>
+          </DialogHeader>
+          <OllamaProjectCreator
+            onSuccess={(projectId) => {
+              setShowAIProjectModal(false)
+              router.push(`/projects/${projectId}`)
+            }}
+            onCancel={() => setShowAIProjectModal(false)}
+          />
         </DialogContent>
       </Dialog>
     </MainLayout>

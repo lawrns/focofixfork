@@ -46,17 +46,26 @@ export function KanbanBoard() {
 
     setIsLoading(true)
     try {
-      // TODO: Replace with actual API call
-      // For now, using mock data
-      const mockTasks: Task[] = []
+      const response = await fetch('/api/tasks', {
+        headers: {
+          'x-user-id': user.id,
+        },
+      })
 
-      // Distribute mock tasks into columns
-      const updatedColumns = columns.map(col => ({
-        ...col,
-        tasks: mockTasks.filter(task => task.status === col.id)
-      }))
+      if (response.ok) {
+        const data = await response.json()
+        const tasks: Task[] = data.data || []
 
-      setColumns(updatedColumns)
+        // Distribute tasks into columns
+        const updatedColumns = columns.map(col => ({
+          ...col,
+          tasks: tasks.filter(task => task.status === col.id)
+        }))
+
+        setColumns(updatedColumns)
+      } else {
+        console.error('Failed to fetch tasks')
+      }
     } catch (error) {
       console.error('Failed to load tasks:', error)
     } finally {

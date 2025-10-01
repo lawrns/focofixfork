@@ -23,6 +23,13 @@
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aWp4ZmJraWhyYXV5andjZ2ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNzU5ODMsImV4cCI6MjA2Nzc1MTk4M30.0MYAeaLn3L1LYiGNrsWPIvuZUVq-z7MUvaigybzCnQ0"
   SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aWp4ZmJraWhyYXV5andjZ2ZuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjE3NTk4MywiZXhwIjoyMDY3NzUxOTgzfQ._JnBgXZLk23daPdnCUksfvooIJk2r9mFyclO8MnvfQ8"
 
+  # Ollama AI environment variables
+  NEXT_PUBLIC_OLLAMA_URL = "https://foco-ollama.fly.dev"
+  OLLAMA_ENABLED = "true"
+  NEXT_PUBLIC_OLLAMA_DEFAULT_MODEL = "llama2"
+  NEXT_PUBLIC_OLLAMA_CODE_MODEL = "codellama"
+  NEXT_PUBLIC_OLLAMA_CHAT_MODEL = "mistral"
+
 # Next.js plugin for pages only
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -12,9 +12,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <div className="flex h-screen font-display bg-background">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="flex items-center justify-between border-b bg-background px-4 py-3">
-          <Header />
-        </div>
+        <Header />
         {children}
       </main>
     </div>

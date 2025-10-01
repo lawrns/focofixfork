@@ -7,6 +7,7 @@ import MainLayout from '@/components/layout/MainLayout'
 import ViewTabs from '@/components/projects/ViewTabs'
 import ProjectTable from '@/components/projects/ProjectTable'
 import { KanbanBoard } from '@/components/projects/kanban-board'
+import GanttView from '@/components/views/gantt-view'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -58,7 +59,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
   const { createView, setActiveView } = useSavedViews()
-  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
+  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt' | 'analytics' | 'goals'>('table')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [showAIProjectModal, setShowAIProjectModal] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -192,8 +193,8 @@ export default function DashboardPage() {
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {
-                if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt') {
-                  setActiveViewState(tabId)
+                if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
+                  setActiveViewState(tabId as typeof activeView)
                 }
               }}
             />
@@ -202,7 +203,7 @@ export default function DashboardPage() {
               <Button
                 onClick={() => setShowAIProjectModal(true)}
                 variant="default"
-                className="gap-2"
+                className="flex flex-row items-center gap-2"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +218,7 @@ export default function DashboardPage() {
                 >
                   <path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </svg>
-                Create with AI
+                <span>Create with AI</span>
               </Button>
               <AIAssistant />
               <ImportDialog
@@ -230,12 +231,9 @@ export default function DashboardPage() {
           <Suspense fallback={<DashboardSkeleton />}>
             {activeView === 'table' && <ProjectTable />}
             {activeView === 'kanban' && <KanbanBoard />}
-            {activeView === 'gantt' && (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="text-lg font-medium">Gantt view coming soon</p>
-                <p className="text-sm">Project timeline visualization will be available in a future update</p>
-              </div>
-            )}
+            {activeView === 'gantt' && <GanttView project={{ id: '', name: '', milestones: [], tasks: [] }} />}
+            {activeView === 'analytics' && <AnalyticsDashboard />}
+            {activeView === 'goals' && <GoalsDashboard />}
           </Suspense>
           </div>
 

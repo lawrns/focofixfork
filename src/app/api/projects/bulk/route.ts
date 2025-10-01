@@ -13,6 +13,18 @@ const bulkOperationSchema = z.object({
 })
 
 /**
+ * GET /api/projects/bulk - Get info about bulk operations endpoint
+ */
+export async function GET() {
+  return NextResponse.json({
+    success: true,
+    message: 'Bulk operations endpoint',
+    supportedOperations: ['archive', 'delete', 'update_status'],
+    method: 'POST'
+  })
+}
+
+/**
  * POST /api/projects/bulk - Perform bulk operations on projects
  */
 export async function POST(request: NextRequest) {

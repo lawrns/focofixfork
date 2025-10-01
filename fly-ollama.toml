@@ -7,7 +7,7 @@ app = 'foco-ollama'
 primary_region = 'sjc'
 
 [build]
-  image = 'ollama/ollama:latest'
+  dockerfile = 'Dockerfile.ollama'
 
 [deploy]
   strategy = 'immediate'

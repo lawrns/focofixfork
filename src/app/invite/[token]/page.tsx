@@ -29,7 +29,7 @@ export default function InviteAcceptPage() {
 
   useEffect(() => {
     validateInvitation()
-  }, [token])
+  }, [token, validateInvitation])
 
   const validateInvitation = useCallback(async () => {
     try {

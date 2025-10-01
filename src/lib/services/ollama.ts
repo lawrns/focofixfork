@@ -49,10 +49,15 @@ export interface AISuggestion {
 export class OllamaService {
   public config: OllamaConfig
   private abortController: AbortController | null = null
+  private isProduction: boolean
 
   constructor(config?: Partial<OllamaConfig>) {
+    this.isProduction = process.env.NODE_ENV === 'production' ||
+                       process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ||
+                       !process.env.NEXT_PUBLIC_OLLAMA_HOST
+
     this.config = {
-      host: process.env.NEXT_PUBLIC_OLLAMA_HOST || 'http://127.0.0.1:11434',
+      host: this.isProduction ? '' : (process.env.NEXT_PUBLIC_OLLAMA_HOST || 'http://127.0.0.1:11434'),
       defaultModel: process.env.NEXT_PUBLIC_OLLAMA_DEFAULT_MODEL || 'llama2',
       codeModel: process.env.NEXT_PUBLIC_OLLAMA_CODE_MODEL || 'codellama',
       chatModel: process.env.NEXT_PUBLIC_OLLAMA_CHAT_MODEL || 'mistral',
@@ -66,6 +71,14 @@ export class OllamaService {
    * Test connection to Ollama server
    */
   async testConnection(): Promise<{ success: boolean; message: string; models?: string[] }> {
+    // In production, Ollama is not available
+    if (this.isProduction) {
+      return {
+        success: false,
+        message: 'Ollama AI service is not available in production environment'
+      }
+    }
+
     try {
       const response = await this.makeRequest('/api/tags')
 
@@ -95,6 +108,10 @@ export class OllamaService {
    * Generate text using Ollama
    */
   async generate(request: OllamaRequest): Promise<OllamaResponse> {
+    if (this.isProduction) {
+      throw new Error('Ollama AI service is not available in production environment')
+    }
+
     const payload = {
       model: request.model,
       prompt: request.prompt,
@@ -497,6 +514,10 @@ Provide 1-3 specific code suggestions or implementation approaches.`
    * Private helper methods
    */
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    if (this.isProduction) {
+      throw new Error('Ollama AI service is not available in production environment')
+    }
+
     const url = `${this.config.host}${endpoint}`
 
     const defaultOptions: RequestInit = {

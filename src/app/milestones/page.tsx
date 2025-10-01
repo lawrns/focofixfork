@@ -43,7 +43,7 @@ function MilestonesContent() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   // Subscribe to global project store
   useEffect(() => {

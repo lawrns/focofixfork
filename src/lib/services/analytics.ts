@@ -191,16 +191,15 @@ export class AnalyticsService {
     try {
       let query = supabase.from('time_entries').select('*');
 
-      if (organizationId) {
-        query = query.eq('organization_id', organizationId);
-      }
+      // Note: time_entries table doesn't have organization_id column
+      // We'll filter by organization through related projects if needed
 
       if (startDate) {
-        query = query.gte('start_time', startDate);
+        query = query.gte('date', startDate.split('T')[0]); // Extract date part
       }
 
       if (endDate) {
-        query = query.lte('start_time', endDate);
+        query = query.lte('date', endDate.split('T')[0]); // Extract date part
       }
 
       const { data: timeEntries } = await query;

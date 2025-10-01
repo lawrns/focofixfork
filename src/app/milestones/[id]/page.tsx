@@ -58,7 +58,7 @@ export default function MilestonePage() {
 
   useEffect(() => {
     loadMilestoneData()
-  }, [milestoneId])
+  }, [milestoneId, loadMilestoneData])
 
   const loadMilestoneData = useCallback(async () => {
     try {

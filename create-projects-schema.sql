@@ -82,3 +82,4 @@ FROM information_schema.columns
 WHERE table_name IN ('projects', 'project_team_assignments')
 AND table_schema = 'public'
 ORDER BY table_name, ordinal_position;
+

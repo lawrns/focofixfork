@@ -42,6 +42,9 @@ export interface ContentGenerationRequest {
 
 export class AIService {
   private static ollamaUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://localhost:11434'
+  private static isProduction = process.env.NODE_ENV === 'production' ||
+                                process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ||
+                                !process.env.NEXT_PUBLIC_OLLAMA_URL
 
   /**
    * Analyze project and suggest milestones
@@ -333,6 +336,10 @@ Consider:
    * Call Ollama API
    */
   private static async callOllama(prompt: string): Promise<string> {
+    if (this.isProduction) {
+      throw new Error('Ollama AI service is not available in production environment')
+    }
+
     try {
       const response = await fetch(`${this.ollamaUrl}/api/generate`, {
         method: 'POST',
@@ -368,6 +375,13 @@ Consider:
    * Check if Ollama is available
    */
   static async checkHealth(): Promise<{ available: boolean; error?: string }> {
+    if (this.isProduction) {
+      return {
+        available: false,
+        error: 'Ollama AI service is not available in production environment'
+      }
+    }
+
     try {
       const response = await fetch(`${this.ollamaUrl}/api/tags`)
       return { available: response.ok }

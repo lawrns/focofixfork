@@ -22,7 +22,6 @@ import ImportDialog from '@/components/import/import-dialog'
 import AIAssistant from '@/components/ai/ai-assistant'
 import AISuggestionsPanel from '@/components/ai/ai-suggestions-panel'
 import TimeTracker from '@/components/time-tracking/time-tracker'
-import FileUploader from '@/components/file-uploads/file-uploader'
 import PresenceIndicator from '@/components/collaboration/presence-indicator'
 import CommentsSection from '@/components/comments/comments-section'
 import NotificationCenter from '@/components/notifications/notification-center'
@@ -282,18 +281,8 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* File Attachments */}
-            <div className="space-y-2">
-              <Label>Attachments (Optional)</Label>
-              <FileUploader
-                entityType="project"
-                entityId="new-project" // Will be updated after creation
-                currentUserId={user?.id || ''}
-                currentUserName={user?.email || 'User'}
-                maxFiles={5}
-                compact={true}
-              />
-            </div>
+            {/* File Attachments - Disabled for new project creation */}
+            {/* Files can be uploaded after the project is created */}
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button

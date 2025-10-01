@@ -1,5 +1,4 @@
 const { createClient } = require('@supabase/supabase-js')
-const { ProjectsService } = require('../../lib/services/projects')
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -36,28 +35,57 @@ exports.handler = async (event, context) => {
 
     // Handle different HTTP methods
     if (event.httpMethod === 'GET') {
-      // List projects
-      const { searchParams } = new URL(event.rawUrl + '?' + event.rawQueryString)
+      // List projects - get projects where user is a member via organization_members
+      const { searchParams } = event.queryStringParameters || {}
 
-      const organizationId = searchParams.get('organization_id')
-      const status = searchParams.get('status')
-      const priority = searchParams.get('priority')
-      const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : 10
-      const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')) : 0
+      const organizationId = searchParams?.organization_id
+      const status = searchParams?.status
+      const priority = searchParams?.priority
+      const limit = searchParams?.limit ? parseInt(searchParams.limit) : 10
+      const offset = searchParams?.offset ? parseInt(searchParams.offset) : 0
 
-      const result = await ProjectsService.getUserProjects(userId, {
-        organization_id: organizationId,
-        status,
-        priority,
-        limit,
-        offset,
-      })
+      // Build query to get user's projects through organization membership
+      let query = supabase
+        .from('projects')
+        .select(`
+          *,
+          organizations (
+            name
+          )
+        `)
+        .eq('created_by', userId) // Projects created by the user
+        .order('created_at', { ascending: false })
 
-      if (!result.success) {
+      // Apply filters
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId)
+      }
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      if (priority) {
+        query = query.eq('priority', priority)
+      }
+
+      // Get total count first
+      const { count } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', userId)
+
+      // Apply pagination
+      query = query.range(offset, offset + limit - 1)
+
+      const { data: projects, error } = await query
+
+      if (error) {
+        console.error('Error fetching projects:', error)
         return {
           statusCode: 500,
           headers,
-          body: JSON.stringify({ success: false, error: result.error }),
+          body: JSON.stringify({ success: false, error: 'Failed to fetch projects' }),
         }
       }
 
@@ -66,37 +94,64 @@ exports.handler = async (event, context) => {
         headers,
         body: JSON.stringify({
           success: true,
-          data: result.data,
-          pagination: result.pagination,
+          data: projects || [],
+          pagination: {
+            total: count || 0,
+            limit,
+            offset,
+          },
         }),
       }
     }
 
     if (event.httpMethod === 'POST') {
       // Create project
-      const body = JSON.parse(event.body)
+      const body = JSON.parse(event.body || '{}')
 
-      const result = await ProjectsService.createProject(userId, body)
-
-      if (!result.success) {
-        let statusCode = 500
-        if (result.error?.includes('already exists')) {
-          statusCode = 409
-        } else if (result.error?.includes('Invalid') || result.error?.includes('check your')) {
-          statusCode = 400
+      // Validate required fields
+      if (!body.name) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: 'Project name is required' }),
         }
+      }
 
+      const projectData = {
+        name: body.name,
+        description: body.description || null,
+        organization_id: body.organization_id || null,
+        status: body.status || 'planning',
+        priority: body.priority || 'medium',
+        created_by: userId,
+        start_date: body.start_date || null,
+        due_date: body.due_date || null,
+        progress_percentage: body.progress_percentage || 0,
+      }
+
+      const { data: project, error } = await supabase
+        .from('projects')
+        .insert(projectData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating project:', error)
+        let statusCode = 500
+        if (error.code === '23505') { // unique_violation
+          statusCode = 409
+        }
         return {
           statusCode,
           headers,
-          body: JSON.stringify({ success: false, error: result.error }),
+          body: JSON.stringify({ success: false, error: 'Failed to create project' }),
         }
       }
 
       return {
         statusCode: 201,
         headers,
-        body: JSON.stringify({ success: true, data: result.data }),
+        body: JSON.stringify({ success: true, data: project }),
       }
     }
 

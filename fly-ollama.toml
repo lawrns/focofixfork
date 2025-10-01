@@ -1,0 +1,43 @@
+# fly.toml app configuration file generated for foco-ollama on 2025-10-01T14:13:13-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'foco-ollama'
+primary_region = 'sjc'
+
+[build]
+  image = 'ollama/ollama:latest'
+
+[deploy]
+  strategy = 'immediate'
+
+[env]
+  OLLAMA_HOST = '0.0.0.0:11434'
+  OLLAMA_MODELS = 'llama2,codellama,mistral'
+  OLLAMA_ORIGINS = '*'
+
+[[mounts]]
+  source = 'ollama_data'
+  destination = '/root/.ollama'
+  initial_size = '50GB'
+
+[http_service]
+  internal_port = 11434
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'GET'
+    path = '/api/tags'
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 4
+  memory_mb = 8192

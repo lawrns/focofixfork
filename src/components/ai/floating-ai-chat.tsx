@@ -68,19 +68,31 @@ export function FloatingAIChat() {
     setIsLoading(true)
 
     try {
-      const response = await ollamaService.generate({
-        model: ollamaService.config.chatModel,
-        prompt: `You are a helpful AI assistant for a project management application called Foco. The user's message: ${userMessage.content}\n\nProvide a helpful, concise response.`,
-        options: {
-          temperature: 0.7,
-          num_predict: 500
-        }
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id
+        },
+        body: JSON.stringify({
+          message: userMessage.content
+        })
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get response')
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.response,
+        content: data.data.message,
         timestamp: new Date()
       }
 

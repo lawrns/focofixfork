@@ -21,7 +21,6 @@ import { projectStore } from '@/lib/stores/project-store'
 
 import ExportDialog from '@/components/export/export-dialog'
 import ImportDialog from '@/components/import/import-dialog'
-import AIAssistant from '@/components/ai/ai-assistant'
 import AISuggestionsPanel from '@/components/ai/ai-suggestions-panel'
 import { OllamaProjectCreator } from '@/components/ai/ollama-project-creator'
 import TimeTracker from '@/components/time-tracking/time-tracker'
@@ -220,7 +219,6 @@ export default function DashboardPage() {
                 </svg>
                 <span>Create with AI</span>
               </Button>
-              <AIAssistant />
               <ImportDialog
                 onImportComplete={() => window.location.reload()}
               />

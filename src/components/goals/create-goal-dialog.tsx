@@ -155,15 +155,15 @@ export function CreateGoalDialog({ children, onGoalCreated, initialData }: Creat
             <Label>Start with a template (optional)</Label>
             <Select value={selectedTemplate} onValueChange={(value) => {
               setSelectedTemplate(value);
-              if (value) applyTemplate(value);
+              if (value && value !== 'none') applyTemplate(value);
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a template..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No template</SelectItem>
+                <SelectItem value="none">No template</SelectItem>
                 {templates.map((template, index) => (
-                  <SelectItem key={index} value={template.title || ''}>
+                  template.title && <SelectItem key={index} value={template.title}>
                     {template.title}
                   </SelectItem>
                 ))}

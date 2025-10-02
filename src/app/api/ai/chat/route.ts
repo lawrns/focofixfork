@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ollamaServerService } from '@/lib/services/ollama-server'
+import { OllamaServerService } from '@/lib/services/ollama-server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,11 +22,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[AI Chat] Ollama host:', ollamaServerService.config.host)
-    console.log('[AI Chat] Chat model:', ollamaServerService.config.chatModel)
+    // Create new instance each time to ensure env vars are fresh
+    const ollamaService = new OllamaServerService()
+
+    console.log('[AI Chat] Ollama host:', ollamaService.config.host)
+    console.log('[AI Chat] Chat model:', ollamaService.config.chatModel)
+    console.log('[AI Chat] ENV NEXT_PUBLIC_OLLAMA_URL:', process.env.NEXT_PUBLIC_OLLAMA_URL)
 
     // Check Ollama connection
-    const connectionTest = await ollamaServerService.testConnection()
+    const connectionTest = await ollamaService.testConnection()
     console.log('[AI Chat] Connection test:', connectionTest)
     if (!connectionTest.success) {
       // Return a friendly message instead of error
@@ -40,8 +44,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate response using Ollama
-    const response = await ollamaServerService.generate({
-      model: ollamaServerService.config.chatModel || 'llama2',
+    const response = await ollamaService.generate({
+      model: ollamaService.config.chatModel || 'llama2',
       prompt: `You are a helpful AI assistant for a project management application called Foco. The user's message: ${message}\n\nProvide a helpful, concise response.`,
       options: {
         temperature: 0.7,

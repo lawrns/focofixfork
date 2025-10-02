@@ -4,5 +4,5 @@ FROM ollama/ollama:latest
 COPY ollama-entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Set entrypoint and command
-CMD ["/usr/local/bin/entrypoint.sh"]
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

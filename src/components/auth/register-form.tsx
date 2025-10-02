@@ -214,6 +214,13 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
   return (
     <div className="w-full space-y-8">
       <div className="space-y-3 text-center">
+        <div className="flex justify-center mb-4">
+          <img
+            src="/focologo.png"
+            alt="Foco Logo"
+            className="h-16 w-auto"
+          />
+        </div>
         <h1 className="text-3xl font-bold text-foreground">
           {invitationData ? 'Únete a tu equipo' : 'Crear tu cuenta'}
         </h1>

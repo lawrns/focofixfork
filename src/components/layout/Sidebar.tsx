@@ -221,9 +221,12 @@ export default function Sidebar() {
       <div className="flex h-full flex-col p-4">
         {/* Logo Section */}
         <div className="flex items-center gap-3 p-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-            <Target className="h-5 w-5" />
-          </div>
+          <img
+            src="/focologo.png"
+            alt="Foco Logo"
+            className="h-10 w-auto brightness-0 invert"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
           <div className="flex flex-col">
             <h1 className="text-base font-bold text-sidebar-text-active">Foco</h1>
             <p className="text-xs font-medium text-sidebar-text">Focus on what matters</p>

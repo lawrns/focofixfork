@@ -94,6 +94,13 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
   return (
     <div className="w-full space-y-8">
       <div className="space-y-3 text-center">
+        <div className="flex justify-center mb-4">
+          <img
+            src="/focologo.png"
+            alt="Foco Logo"
+            className="h-16 w-auto"
+          />
+        </div>
         <h1 className="text-3xl font-bold text-foreground">Bienvenido de vuelta</h1>
         <p className="text-muted-foreground text-base">
           Inicia sesión en tu cuenta de Foco

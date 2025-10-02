@@ -107,9 +107,12 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
-              <Building2 className="h-5 w-5" />
-            </div>
+            <img
+              src="/focologo.png"
+              alt="Foco Logo"
+              className="h-10 w-auto brightness-0 invert"
+              style={{ filter: 'brightness(0) invert(1)' }}
+            />
             <div className="flex flex-col">
               <h1 className="text-base font-bold text-foreground">Foco</h1>
               <p className="text-xs font-medium text-muted-foreground">Project Management</p>

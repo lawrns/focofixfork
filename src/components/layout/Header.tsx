@@ -132,7 +132,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur-sm">
       <div className="flex items-center gap-6">
-        <h2 className="text-xl font-bold text-foreground">Foco</h2>
+        <div className="flex items-center gap-3">
+          <img
+            src="/focologo.png"
+            alt="Foco Logo"
+            className="h-8 w-auto"
+          />
+          <h2 className="text-xl font-bold text-foreground">Foco</h2>
+        </div>
         <div className="flex items-center gap-3">
           <span className="rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
             Project Management

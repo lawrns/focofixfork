@@ -54,7 +54,7 @@ export function FloatingAIChat() {
   }, [messages])
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !isConnected) return
+    if (!input.trim() || isLoading || !isConnected || !user) return
 
     const userMessage: Message = {
       id: Date.now().toString(),

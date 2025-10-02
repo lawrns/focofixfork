@@ -36,8 +36,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate response using Ollama
+    // Use llama2 since it's the only model loaded on Fly.io
     const response = await ollamaService.generate({
-      model: ollamaService.config.chatModel || 'llama2',
+      model: 'llama2',
       prompt: `You are a helpful AI assistant for a project management application called Foco. User says: ${message}`,
       options: {
         temperature: 0.7,

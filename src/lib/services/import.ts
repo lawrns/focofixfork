@@ -122,15 +122,16 @@ export class ImportService {
             query = query.eq('organization_id', project.organization_id)
           }
 
-          const { data: existing } = await query.single()
+          // @ts-ignore - Avoiding deep type instantiation issue
+          const response = await query.single()
 
-          if (existing) {
+          if (response.data) {
             if (options.updateExisting) {
               // Update existing project
               const { error } = await supabase
                 .from('projects')
                 .update(project)
-                .eq('id', existing.id)
+                .eq('id', response.data.id)
 
               if (error) {
                 result.errors.push(`Failed to update project "${project.name}": ${error.message}`)
@@ -217,14 +218,15 @@ export class ImportService {
           // Resolve project ID from name if needed
           let projectId = row.project_id?.trim()
           if (!projectId && row.project_name?.trim()) {
-            const { data: project } = await supabase
+            // @ts-ignore - Avoiding deep type instantiation issue
+            const response = await supabase
               .from('projects')
               .select('id')
               .eq('name', row.project_name.trim())
               .single()
 
-            if (project) {
-              projectId = project.id
+            if (response.data) {
+              projectId = response.data.id
             } else {
               result.errors.push(`Row ${rowNumber}: Project "${row.project_name}" not found`)
               continue
@@ -332,14 +334,15 @@ export class ImportService {
           // Resolve milestone ID from name if needed
           let milestoneId = row.milestone_id?.trim()
           if (!milestoneId && row.milestone_name?.trim()) {
-            const { data: milestone } = await supabase
+            // @ts-ignore - Avoiding deep type instantiation issue
+            const response = await supabase
               .from('milestones')
               .select('id')
               .eq('name', row.milestone_name.trim())
               .single()
 
-            if (milestone) {
-              milestoneId = milestone.id
+            if (response.data) {
+              milestoneId = response.data.id
             } else {
               result.errors.push(`Row ${rowNumber}: Milestone "${row.milestone_name}" not found`)
               continue
@@ -349,14 +352,15 @@ export class ImportService {
           // Resolve assignee ID from name if needed
           let assigneeId = row.assignee_id?.trim()
           if (!assigneeId && row.assignee_name?.trim()) {
-            const { data: user } = await supabase
+            // @ts-ignore - Avoiding deep type instantiation issue
+            const response = await supabase
               .from('user_profiles')
               .select('id')
               .eq('display_name', row.assignee_name.trim())
-              .single() as { data: { id: string } | null; error: any }
+              .single()
 
-            if (user) {
-              assigneeId = user.id
+            if (response.data) {
+              assigneeId = response.data.id
             } else {
               result.warnings.push(`Row ${rowNumber}: Assignee "${row.assignee_name}" not found, leaving unassigned`)
             }

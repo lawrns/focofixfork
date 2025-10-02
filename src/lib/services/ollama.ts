@@ -492,6 +492,7 @@ Provide 1-3 specific code suggestions or implementation approaches.`
         .limit(limit)
 
       if (type) {
+        // @ts-ignore - Avoiding deep type instantiation issue
         query = query.eq('type', type)
       }
 

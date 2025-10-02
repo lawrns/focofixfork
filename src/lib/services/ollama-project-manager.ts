@@ -274,8 +274,8 @@ Priority values: "low", "medium", "high", "urgent"
 
 Return ONLY valid JSON.`
 
-    const response = await ollamaService.generate({
-      model: ollamaService.config.defaultModel,
+    const response = await ollamaServerService.generate({
+      model: ollamaServerService.config.defaultModel,
       prompt,
       options: { temperature: 0.2, num_predict: 512 }
     })
@@ -321,8 +321,8 @@ Return JSON:
 
 Return ONLY valid JSON.`
 
-    const response = await ollamaService.generate({
-      model: ollamaService.config.defaultModel,
+    const response = await ollamaServerService.generate({
+      model: ollamaServerService.config.defaultModel,
       prompt,
       options: { temperature: 0.3, num_predict: 512 }
     })
@@ -376,8 +376,8 @@ Return JSON:
 
 Return ONLY valid JSON.`
 
-    const response = await ollamaService.generate({
-      model: ollamaService.config.defaultModel,
+    const response = await ollamaServerService.generate({
+      model: ollamaServerService.config.defaultModel,
       prompt,
       options: { temperature: 0.3, num_predict: 512 }
     })

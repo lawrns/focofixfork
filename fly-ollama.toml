@@ -38,6 +38,5 @@ primary_region = 'sjc'
     path = '/api/tags'
 
 [[vm]]
-  cpu_kind = 'shared'
-  cpus = 4
-  memory_mb = 8192
+  size = 'shared-cpu-4x'
+  memory = '16gb'

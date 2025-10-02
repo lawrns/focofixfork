@@ -30,6 +30,12 @@
   NEXT_PUBLIC_OLLAMA_CODE_MODEL = "codellama"
   NEXT_PUBLIC_OLLAMA_CHAT_MODEL = "mistral"
 
+# Function configuration
+[functions]
+  # Increase timeout for AI endpoints (max 26 seconds on free tier)
+  # Pro tier allows up to 60 seconds
+  node_bundler = "esbuild"
+
 # Next.js plugin for pages only
 [[plugins]]
   package = "@netlify/plugin-nextjs"

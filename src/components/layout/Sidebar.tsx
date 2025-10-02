@@ -217,16 +217,16 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex w-64 flex-col bg-card border-r border-border">
+    <aside className="flex w-64 flex-col bg-sidebar border-r border-sidebar-hover">
       <div className="flex h-full flex-col p-4">
         {/* Logo Section */}
         <div className="flex items-center gap-3 p-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
             <Target className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-bold text-foreground">Foco</h1>
-            <p className="text-xs font-medium text-muted-foreground">Focus on what matters</p>
+            <h1 className="text-base font-bold text-sidebar-text-active">Foco</h1>
+            <p className="text-xs font-medium text-sidebar-text">Focus on what matters</p>
           </div>
         </div>
 
@@ -242,8 +242,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary/20 font-semibold text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-primary font-semibold text-white'
+                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -256,7 +256,7 @@ export default function Sidebar() {
           <div className="mt-6">
             <button
               onClick={() => setProjectsExpanded(!projectsExpanded)}
-              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active transition-colors"
             >
               {projectsExpanded ? (
                 <ChevronDown className="h-4 w-4" />

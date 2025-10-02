@@ -68,6 +68,10 @@ export function FloatingAIChat() {
     setIsLoading(true)
 
     try {
+      // Create an abort controller for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
@@ -76,8 +80,11 @@ export function FloatingAIChat() {
         },
         body: JSON.stringify({
           message: userMessage.content
-        })
+        }),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
@@ -152,8 +159,8 @@ export function FloatingAIChat() {
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="space-y-4">
+          <ScrollArea className="flex-1" ref={scrollRef}>
+            <div className="space-y-4 p-4">
               {messages.map((message) => (
                 <div
                   key={message.id}

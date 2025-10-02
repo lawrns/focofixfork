@@ -10,10 +10,42 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        "background-light": "#f5f7f8",
-        "background-dark": "#101722",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Brand colors from design system
+        primary: {
+          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
+          hover: "rgb(var(--color-primary-hover) / <alpha-value>)",
+          light: "rgb(var(--color-primary-light) / <alpha-value>)",
+          dark: "rgb(var(--color-primary-dark) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        // Backgrounds
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface: {
+          DEFAULT: "rgb(var(--color-surface) / <alpha-value>)",
+          hover: "rgb(var(--color-surface-hover) / <alpha-value>)",
+        },
+        // Sidebar
+        sidebar: {
+          DEFAULT: "rgb(var(--color-sidebar) / <alpha-value>)",
+          hover: "rgb(var(--color-sidebar-hover) / <alpha-value>)",
+          text: "rgb(var(--color-sidebar-text) / <alpha-value>)",
+          'text-active': "rgb(var(--color-sidebar-text-active) / <alpha-value>)",
+        },
+        // Text
+        foreground: "rgb(var(--color-text-primary) / <alpha-value>)",
+        'text-secondary': "rgb(var(--color-text-secondary) / <alpha-value>)",
+        'text-tertiary': "rgb(var(--color-text-tertiary) / <alpha-value>)",
+        'text-disabled': "rgb(var(--color-text-disabled) / <alpha-value>)",
+        // Status
+        success: "rgb(var(--color-success) / <alpha-value>)",
+        warning: "rgb(var(--color-warning) / <alpha-value>)",
+        error: "rgb(var(--color-error) / <alpha-value>)",
+        info: "rgb(var(--color-info) / <alpha-value>)",
+        // Borders
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        'border-light': "rgb(var(--color-border-light) / <alpha-value>)",
+        'border-dark': "rgb(var(--color-border-dark) / <alpha-value>)",
+        // Shadcn compatibility
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
@@ -21,10 +53,6 @@ const config: Config = {
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
-        },
-        primary: {
-          DEFAULT: "#0c5fe4",
-          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -42,18 +70,54 @@ const config: Config = {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
-        border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
       fontFamily: {
-        "display": ["Inter", "sans-serif"]
+        sans: ["var(--font-sans)", "Inter", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
+        display: ["Inter", "sans-serif"]
+      },
+      fontSize: {
+        xs: "var(--text-xs)",
+        sm: "var(--text-sm)",
+        base: "var(--text-base)",
+        lg: "var(--text-lg)",
+        xl: "var(--text-xl)",
+        "2xl": "var(--text-2xl)",
+        "3xl": "var(--text-3xl)",
+        "4xl": "var(--text-4xl)",
+      },
+      spacing: {
+        xs: "var(--spacing-xs)",
+        sm: "var(--spacing-sm)",
+        md: "var(--spacing-md)",
+        lg: "var(--spacing-lg)",
+        xl: "var(--spacing-xl)",
+        "2xl": "var(--spacing-2xl)",
+        "3xl": "var(--spacing-3xl)",
       },
       borderRadius: {
-        "DEFAULT": "0.25rem",
-        "lg": "0.5rem",
-        "xl": "0.75rem",
-        "full": "9999px"
+        sm: "var(--radius-sm)",
+        DEFAULT: "var(--radius-md)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+        full: "var(--radius-full)",
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        DEFAULT: "var(--shadow-md)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        xl: "var(--shadow-xl)",
+        "2xl": "var(--shadow-2xl)",
+      },
+      transitionDuration: {
+        fast: "var(--transition-fast)",
+        DEFAULT: "var(--transition-base)",
+        slow: "var(--transition-slow)",
       },
     },
   },

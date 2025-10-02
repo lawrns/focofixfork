@@ -353,7 +353,7 @@ export class ImportService {
               .from('user_profiles')
               .select('id')
               .eq('display_name', row.assignee_name.trim())
-              .single()
+              .single() as { data: { id: string } | null; error: any }
 
             if (user) {
               assigneeId = user.id

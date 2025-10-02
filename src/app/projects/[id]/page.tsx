@@ -22,6 +22,9 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import ProjectEditDialog from '@/components/dialogs/project-edit-dialog'
 import { useToast } from '@/components/toast/toast'
 import { UpdateProject, Project } from '@/lib/validation/schemas/project.schema'
+import { TaskList } from '@/components/tasks/task-list'
+import { MilestoneTimeline } from '@/components/milestones/milestone-timeline'
+import { ActivityFeed } from '@/components/activity/activity-feed'
 
 interface ProjectDetails extends Project {
   progress_percentage: number
@@ -260,36 +263,24 @@ function ProjectDetailsContent() {
               </TabsList>
 
               <TabsContent value="tasks" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Tasks</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">Task management coming soon...</p>
-                  </CardContent>
-                </Card>
+                <TaskList
+                  projectId={projectId}
+                  showCreateButton={true}
+                  onCreateTask={() => router.push(`/projects/${projectId}/tasks/new`)}
+                  onEditTask={(taskId) => router.push(`/tasks/${taskId}`)}
+                />
               </TabsContent>
 
               <TabsContent value="milestones" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Milestones</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">Milestone tracking coming soon...</p>
-                  </CardContent>
-                </Card>
+                <MilestoneTimeline
+                  projectId={projectId}
+                  onMilestoneClick={(milestoneId) => router.push(`/milestones/${milestoneId}`)}
+                  onCreateMilestone={() => router.push(`/projects/${projectId}/milestones/new`)}
+                />
               </TabsContent>
 
               <TabsContent value="activity" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">Activity feed coming soon...</p>
-                  </CardContent>
-                </Card>
+                <ActivityFeed projectId={projectId} limit={20} />
               </TabsContent>
 
               <TabsContent value="team" className="space-y-4">

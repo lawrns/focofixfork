@@ -91,6 +91,50 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error)
+      setError('Failed to sign in with Google. Please try again.')
+      setIsLoading(false)
+    }
+  }
+
+  const handleAppleSignIn = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (error: any) {
+      console.error('Apple sign-in error:', error)
+      setError('Failed to sign in with Apple. Please try again.')
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="w-full space-y-8">
       <div className="space-y-3 text-center">
@@ -178,7 +222,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
           <Button
             type="button"
             className="h-12 text-base font-medium bg-[#4285F4] hover:bg-[#3367D6] text-white border-0 shadow-sm hover:shadow-md rounded-lg transition-all duration-200"
-            onClick={() => console.log('Google sign-in clicked')}
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
           >
             <GoogleIcon />
             <span className="ml-2">Inicia sesión con Google</span>
@@ -187,7 +232,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
           <Button
             type="button"
             className="h-12 text-base font-medium bg-black hover:bg-gray-800 text-white border-0 shadow-sm hover:shadow-md rounded-lg transition-all duration-200"
-            onClick={() => console.log('Apple sign-in clicked')}
+            onClick={handleAppleSignIn}
+            disabled={isLoading}
           >
             <AppleIcon />
             <span className="ml-2">Inicia sesión con Apple</span>

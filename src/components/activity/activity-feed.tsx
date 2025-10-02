@@ -1,0 +1,224 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Loader2, MessageSquare, CheckCircle, Edit, Trash, Plus, Clock } from 'lucide-react'
+import { useAuth } from '@/lib/hooks/use-auth'
+import { useRealtime } from '@/lib/hooks/useRealtime'
+
+interface Activity {
+  id: string
+  entity_type: 'task' | 'milestone' | 'project' | 'comment'
+  entity_id: string
+  action: 'created' | 'updated' | 'deleted' | 'completed' | 'commented'
+  description: string
+  user_id: string
+  user_name?: string
+  created_at: string
+  project_id: string
+  metadata?: Record<string, string>
+}
+
+interface ActivityFeedProps {
+  projectId: string
+  limit?: number
+}
+
+const actionConfig = {
+  created: {
+    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    icon: Plus,
+  },
+  updated: {
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    icon: Edit,
+  },
+  deleted: {
+    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    icon: Trash,
+  },
+  completed: {
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+    icon: CheckCircle,
+  },
+  commented: {
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    icon: MessageSquare,
+  },
+}
+
+export function ActivityFeed({ projectId, limit = 20 }: ActivityFeedProps) {
+  const { user } = useAuth()
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchActivities = useCallback(async () => {
+    if (!user) return
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/activities?project_id=${projectId}&limit=${limit}`, {
+        headers: {
+          'x-user-id': user.id,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch activities')
+      }
+
+      const data = await response.json()
+      setActivities(data.data || [])
+    } catch (err) {
+      console.error('Error fetching activities:', err)
+      setError('Failed to load activity feed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [user, projectId, limit])
+
+  useEffect(() => {
+    fetchActivities()
+  }, [fetchActivities])
+
+  // Real-time updates for activities
+  useRealtime(
+    { projectId },
+    (payload) => {
+      if (payload.table === 'activities') {
+        if (payload.eventType === 'INSERT') {
+          // Add new activity to the top of the list
+          setActivities(prev => [payload.new, ...prev].slice(0, limit))
+        }
+      }
+    }
+  )
+
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading activity...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+        <Button onClick={fetchActivities} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    )
+  }
+
+  if (activities.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-center py-12">
+          <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No activity yet</h3>
+          <p className="text-muted-foreground">
+            Project activity will appear here as team members work on tasks and milestones
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Recent Activity</h3>
+        <p className="text-sm text-muted-foreground">
+          Track what&apos;s happening in your project
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {activities.map((activity) => {
+          const ActionIcon = actionConfig[activity.action]?.icon || MessageSquare
+          const actionColor = actionConfig[activity.action]?.color || 'bg-gray-100 text-gray-800'
+
+          return (
+            <Card key={activity.id} className="hover:shadow-sm transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${actionColor}`}>
+                    <ActionIcon className="h-5 w-5" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {activity.user_name || 'Unknown User'}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {activity.description}
+                        </p>
+                        {activity.metadata && Object.keys(activity.metadata).length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {Object.entries(activity.metadata).map(([key, value]) => (
+                              <Badge key={key} variant="outline" className="text-xs">
+                                {key}: {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant="outline" className="text-xs whitespace-nowrap">
+                          {activity.entity_type}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatTimestamp(activity.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {activities.length >= limit && (
+        <div className="text-center">
+          <Button variant="outline" size="sm">
+            Load More
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}

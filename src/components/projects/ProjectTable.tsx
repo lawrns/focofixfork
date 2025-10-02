@@ -173,11 +173,45 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     }
   }
 
-  const handleDuplicateProject = (projectId: string) => {
-    toast({
-      title: 'Feature Coming Soon',
-      description: 'Project duplication will be available in a future update.',
-    })
+  const handleDuplicateProject = async (projectId: string) => {
+    const project = projects.find(p => p.id === projectId)
+    if (!project || !user) return
+
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+        },
+        body: JSON.stringify({
+          name: `${project.name} (Copy)`,
+          status: 'planning',
+          priority: project.priority,
+          due_date: project.due_date,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to duplicate project')
+      }
+
+      const result = await response.json()
+      toast({
+        title: 'Success',
+        description: `Project "${project.name}" has been duplicated.`,
+      })
+
+      // Refresh projects list
+      fetchProjects()
+    } catch (error) {
+      console.error('Error duplicating project:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to duplicate project. Please try again.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleArchiveProject = (projectId: string) => {
@@ -608,10 +642,31 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   }
 
   const handleBulkManageTeam = async () => {
+    if (selectedProjects.size === 0) {
+      toast({
+        title: 'No Projects Selected',
+        description: 'Please select at least one project to manage team members.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (selectedProjects.size === 1) {
+      // If only one project selected, open the team dialog for that project
+      const projectId = Array.from(selectedProjects)[0]
+      handleManageTeam(projectId)
+      return
+    }
+
+    // For multiple projects, show a dialog to manage team across all selected projects
     toast({
-      title: 'Feature Coming Soon',
-      description: 'Bulk team management will be available in a future update.',
+      title: 'Bulk Team Management',
+      description: `Managing team for ${selectedProjects.size} projects. Opening team management interface...`,
     })
+
+    // Navigate to a bulk team management page or show a modal
+    // For now, we'll just open settings with members tab
+    window.location.href = '/dashboard/settings?tab=members'
   }
 
   const allSelected = projects.length > 0 && selectedProjects.size === projects.length

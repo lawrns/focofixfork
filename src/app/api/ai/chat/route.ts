@@ -22,8 +22,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('[AI Chat] Ollama host:', ollamaServerService.config.host)
+    console.log('[AI Chat] Chat model:', ollamaServerService.config.chatModel)
+
     // Check Ollama connection
     const connectionTest = await ollamaServerService.testConnection()
+    console.log('[AI Chat] Connection test:', connectionTest)
     if (!connectionTest.success) {
       // Return a friendly message instead of error
       return NextResponse.json({

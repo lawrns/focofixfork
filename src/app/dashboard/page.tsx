@@ -106,7 +106,7 @@ export default function DashboardPage() {
     if (user) {
       fetchOrganizations()
     }
-  }, [user, router])
+  }, [user, router, fetchOrganizations])
 
   // TODO: Load projects data for Gantt view when needed
 

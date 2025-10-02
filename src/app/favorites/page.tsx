@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
 import { ProjectCard } from '@/components/projects/project-card'
@@ -35,11 +35,7 @@ function FavoritesContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('all')
 
-  useEffect(() => {
-    loadFavorites()
-  }, [user])
-
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     if (!user) return
 
     setIsLoading(true)
@@ -93,7 +89,11 @@ function FavoritesContent() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    loadFavorites()
+  }, [loadFavorites])
 
   const removeFavorite = async (favoriteId: string) => {
     setFavorites(prev => prev.filter(f => f.id !== favoriteId))

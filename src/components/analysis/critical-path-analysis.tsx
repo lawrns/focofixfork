@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,13 +42,7 @@ export default function CriticalPathAnalysis({
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [metrics, setMetrics] = useState<any>(null)
 
-  useEffect(() => {
-    if (tasks.length > 0) {
-      runAnalysis()
-    }
-  }, [tasks])
-
-  const runAnalysis = async () => {
+  const runAnalysis = useCallback(async () => {
     setIsAnalyzing(true)
 
     try {
@@ -76,7 +70,13 @@ export default function CriticalPathAnalysis({
     } finally {
       setIsAnalyzing(false)
     }
-  }
+  }, [tasks])
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      runAnalysis()
+    }
+  }, [runAnalysis, tasks])
 
   const getRiskColor = (risk: string) => {
     switch (risk) {

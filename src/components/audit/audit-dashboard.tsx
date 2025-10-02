@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,11 +42,7 @@ export function AuditDashboard({ organizationId }: AuditDashboardProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState('7d');
 
-  useEffect(() => {
-    loadAuditData();
-  }, [organizationId, dateRange]);
-
-  const loadAuditData = async () => {
+  const loadAuditData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Calculate date range
@@ -88,7 +84,11 @@ export function AuditDashboard({ organizationId }: AuditDashboardProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [organizationId, dateRange]);
+
+  useEffect(() => {
+    loadAuditData();
+  }, [loadAuditData]);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = searchQuery === '' ||

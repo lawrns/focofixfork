@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ProjectCard } from './project-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -83,7 +83,7 @@ export function ProjectList({
     }
   )
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!user) return
 
     try {
@@ -116,7 +116,7 @@ export function ProjectList({
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, searchTerm, statusFilter, priorityFilter])
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

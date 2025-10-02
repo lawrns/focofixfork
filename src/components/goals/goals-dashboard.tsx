@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,9 +41,9 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
   useEffect(() => {
     loadGoals();
     loadAnalytics();
-  }, [organizationId, projectId]);
+  }, [organizationId, projectId, loadGoals, loadAnalytics]);
 
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await GoalsService.getGoals(organizationId, projectId);
@@ -134,9 +134,9 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [organizationId, projectId]);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       const data = await GoalsService.getGoalAnalytics(organizationId);
       if (!data) {
@@ -166,7 +166,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
         goalsByType: { project: 4, milestone: 2, task: 1, organization: 1, personal: 0 }
       });
     }
-  };
+  }, [organizationId]);
 
   const filteredGoals = goals.filter(goal => {
     if (statusFilter !== 'all' && goal.status !== statusFilter) return false;

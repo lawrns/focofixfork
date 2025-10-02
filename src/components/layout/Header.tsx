@@ -22,22 +22,7 @@ export default function Header() {
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
 
-  // Debounced search
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([])
-      setShowResults(false)
-      return
-    }
-
-    const timer = setTimeout(() => {
-      performSearch(searchQuery)
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  const performSearch = async (query: string) => {
+  const performSearch = useCallback(async (query: string) => {
     if (!user || !query.trim()) return
 
     setIsSearching(true)
@@ -105,7 +90,22 @@ export default function Header() {
     } finally {
       setIsSearching(false)
     }
-  }
+  }, [user])
+
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      setShowResults(false)
+      return
+    }
+
+    const timer = setTimeout(() => {
+      performSearch(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, performSearch])
 
   const handleResultClick = (result: SearchResult) => {
     setSearchQuery('')

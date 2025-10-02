@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -42,7 +42,7 @@ export function AccessibilitySettings() {
   useEffect(() => {
     const ratio = testColorContrast('#0A0A0A', '#FFFFFF');
     setContrastRatio(ratio);
-  }, []);
+  }, [testColorContrast]);
 
   // Check for changes
   useEffect(() => {

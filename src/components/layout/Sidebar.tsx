@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Home,
   Inbox,
@@ -47,7 +47,7 @@ export default function Sidebar() {
   const [loading, setLoading] = useState(true)
   const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
 
-  const fetchProjects = async (forceRefresh = false) => {
+  const fetchProjects = useCallback(async (forceRefresh = false) => {
     if (!user) return
 
     // Always fetch fresh data from API to ensure consistency
@@ -87,11 +87,11 @@ export default function Sidebar() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchProjects(true) // Always force refresh on mount
-  }, [user])
+  }, [fetchProjects])
 
   // Refresh projects when navigating back to dashboard or when component becomes visible
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function Sidebar() {
       window.removeEventListener('projectUpdated', handleProjectUpdated)
       window.removeEventListener('forceProjectRefresh', handleForceProjectRefresh)
     }
-  }, [user])
+  }, [user, fetchProjects, projects])
 
   // Fallback: If no real-time updates received in 30 seconds, force refresh
   useEffect(() => {
@@ -157,7 +157,7 @@ export default function Sidebar() {
     const interval = setInterval(checkRealtimeHealth, 10000) // Check every 10 seconds
 
     return () => clearInterval(interval)
-  }, [lastRealtimeUpdate, user])
+  }, [lastRealtimeUpdate, user, fetchProjects])
 
   // Don't auto-refresh on auth changes - rely on store subscription
 

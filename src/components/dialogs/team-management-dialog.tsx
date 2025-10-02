@@ -97,7 +97,7 @@ export default function TeamManagementDialog({
       }
     })
     setTeamMembersWithDetails(enhancedMembers)
-  }, [currentTeamMembers])
+  }, [currentTeamMembers, mockUsers])
 
   // Show real-time error if any
   useEffect(() => {

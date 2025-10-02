@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +41,7 @@ export function KanbanBoard() {
     loadTasks()
   }, [user])
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     if (!user) return
 
     setIsLoading(true)
@@ -71,7 +71,7 @@ export function KanbanBoard() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result

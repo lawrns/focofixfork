@@ -618,7 +618,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   const someSelected = selectedProjects.size > 0 && selectedProjects.size < projects.length
 
   // Fetch projects function
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!user) return
 
     try {
@@ -650,12 +650,12 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   // Initial fetch
   useEffect(() => {
     fetchProjects()
-  }, [user])
+  }, [fetchProjects])
 
   // Apply filtering and sorting
   useEffect(() => {

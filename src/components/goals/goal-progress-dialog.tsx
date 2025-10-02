@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -31,9 +31,9 @@ export function GoalProgressDialog({ goal, children, onProgressUpdated }: GoalPr
     if (isOpen) {
       loadProgressHistory();
     }
-  }, [isOpen, goal.id, user?.id]);
+  }, [isOpen, loadProgressHistory]);
 
-  const loadProgressHistory = async () => {
+  const loadProgressHistory = useCallback(async () => {
     try {
       if (!user?.id) return;
       const history = await GoalsService.getGoalProgress(goal.id, user.id);
@@ -41,7 +41,7 @@ export function GoalProgressDialog({ goal, children, onProgressUpdated }: GoalPr
     } catch (error) {
       console.error('Error loading progress history:', error);
     }
-  };
+  }, [goal.id, user?.id]);
 
   const handleUpdateProgress = async () => {
     setIsLoading(true);

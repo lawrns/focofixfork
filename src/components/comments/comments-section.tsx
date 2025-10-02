@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -77,6 +77,48 @@ export default function CommentsSection({
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const replyInputRef = useRef<HTMLTextAreaElement>(null)
 
+  const updateCommentInState = useCallback((updatedComment: any) => {
+    setThreads(prevThreads =>
+      prevThreads.map(thread => {
+        if (thread.root_comment.id === updatedComment.id) {
+          return { ...thread, root_comment: { ...thread.root_comment, ...updatedComment } }
+        }
+        return {
+          ...thread,
+          replies: thread.replies.map(reply =>
+            reply.id === updatedComment.id ? { ...reply, ...updatedComment } : reply
+          )
+        }
+      })
+    )
+  }, [])
+
+  const removeCommentFromState = useCallback((commentId: string) => {
+    setThreads(prevThreads =>
+      prevThreads
+        .filter(thread => thread.root_comment.id !== commentId)
+        .map(thread => ({
+          ...thread,
+          replies: thread.replies.filter(reply => reply.id !== commentId)
+        }))
+    )
+  }, [])
+
+  const loadComments = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const { threads: commentThreads } = await CommentsService.getComments({
+        entity_type: entityType,
+        entity_id: entityId
+      })
+      setThreads(commentThreads)
+    } catch (error) {
+      console.error('Failed to load comments:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [entityType, entityId])
+
   useEffect(() => {
     loadComments()
 
@@ -98,7 +140,7 @@ export default function CommentsSection({
     return () => {
       subscription.unsubscribe()
     }
-  }, [entityType, entityId])
+  }, [entityType, entityId, loadComments, updateCommentInState, removeCommentFromState])
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -114,56 +156,6 @@ export default function CommentsSection({
       setFilteredThreads(threads)
     }
   }, [threads, searchQuery])
-
-  const loadComments = async () => {
-    try {
-      setIsLoading(true)
-      const { threads: commentThreads } = await CommentsService.getComments({
-        entity_type: entityType,
-        entity_id: entityId
-      })
-      setThreads(commentThreads)
-    } catch (error) {
-      console.error('Failed to load comments:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const updateCommentInState = (updatedComment: any) => {
-    setThreads(prevThreads =>
-      prevThreads.map(thread => {
-        if (thread.root_comment.id === updatedComment.id) {
-          return {
-            ...thread,
-            root_comment: CommentModel.fromDatabase(updatedComment)
-          }
-        }
-
-        const updatedReplies = thread.replies.map(reply =>
-          reply.id === updatedComment.id
-            ? CommentModel.fromDatabase(updatedComment)
-            : reply
-        )
-
-        return {
-          ...thread,
-          replies: updatedReplies
-        }
-      })
-    )
-  }
-
-  const removeCommentFromState = (commentId: string) => {
-    setThreads(prevThreads =>
-      prevThreads.map(thread => ({
-        ...thread,
-        replies: thread.replies.filter(reply => reply.id !== commentId)
-      })).filter(thread =>
-        thread.root_comment.id !== commentId && thread.replies.length > 0
-      )
-    )
-  }
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return

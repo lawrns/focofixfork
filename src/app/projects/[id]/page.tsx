@@ -50,10 +50,6 @@ function ProjectDetailsContent() {
 
   const projectId = params.id as string
 
-  useEffect(() => {
-    fetchProject()
-  }, [user, projectId])
-
   const fetchProject = useCallback(async () => {
     if (!user || !projectId) return
 
@@ -83,6 +79,10 @@ function ProjectDetailsContent() {
       setLoading(false)
     }
   }, [user, projectId])
+
+  useEffect(() => {
+    fetchProject()
+  }, [fetchProject])
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set'

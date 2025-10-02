@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +42,7 @@ export function PerformanceDashboard() {
     return () => clearInterval(interval);
   }, [timeRange]);
 
-  const loadPerformanceData = async () => {
+  const loadPerformanceData = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await PerformanceService.getPerformanceReport(timeRange);
@@ -53,7 +53,7 @@ export function PerformanceDashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [timeRange]);
 
   const handleExportReport = async () => {
     try {

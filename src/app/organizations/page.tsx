@@ -65,11 +65,6 @@ function OrganizationsContent() {
   const [editingMember, setEditingMember] = useState<string | null>(null)
   const [editRole, setEditRole] = useState<MemberRole>('member')
 
-
-  useEffect(() => {
-    loadOrganizations()
-  }, [user])
-
   const loadOrganizations = useCallback(async () => {
     try {
       const response = await fetch('/api/organizations', {
@@ -91,6 +86,10 @@ function OrganizationsContent() {
       setIsLoading(false)
     }
   }, [user])
+
+  useEffect(() => {
+    loadOrganizations()
+  }, [loadOrganizations])
 
   const openOrganizationModal = async (organization: any) => {
     setSelectedOrganization(organization)

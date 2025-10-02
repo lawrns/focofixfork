@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,7 +69,7 @@ export function SettingsDashboard() {
     loadSettings()
   }, [user])
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     if (!user) return
 
     // For demo purposes, just show sample data
@@ -91,8 +91,8 @@ export function SettingsDashboard() {
       defaultVisibility: 'private'
     })
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  }, [user])
 
   const saveUserSettings = async () => {
     if (!user) return

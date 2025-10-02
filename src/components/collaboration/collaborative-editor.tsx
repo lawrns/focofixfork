@@ -77,28 +77,6 @@ export default function CollaborativeEditor({
   const collaborationServiceRef = useRef<RealtimeCollaborationService | null>(null)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Initialize collaboration service
-  useEffect(() => {
-    const service = new RealtimeCollaborationService(
-      currentUser.id,
-      currentUser.name,
-      handleStateChange,
-      handleOperation,
-      handlePresenceChange
-    )
-
-    collaborationServiceRef.current = service
-
-    // Join collaboration session
-    service.joinSession(entityType, entityId).catch(error => {
-      console.error('Failed to join collaboration session:', error)
-    })
-
-    return () => {
-      service.leaveSession()
-    }
-  }, [entityType, entityId, currentUser.id, currentUser.name])
-
   // Handle state changes from collaboration service
   const handleStateChange = useCallback((state: CollaborationState) => {
     setIsConnected(state.isConnected)
@@ -120,8 +98,30 @@ export default function CollaborativeEditor({
 
   // Handle presence changes
   const handlePresenceChange = useCallback((users: CollaborationUser[]) => {
-    setCollaborators(users.filter(u => u.user_id !== currentUser.id))
+    setCollaborators(users.filter(u => u.id !== currentUser.id))
   }, [currentUser.id])
+
+  // Initialize collaboration service
+  useEffect(() => {
+    const service = new RealtimeCollaborationService(
+      currentUser.id,
+      currentUser.name,
+      handleStateChange,
+      handleOperation,
+      handlePresenceChange
+    )
+
+    collaborationServiceRef.current = service
+
+    // Join collaboration session
+    service.joinSession(entityType, entityId).catch(error => {
+      console.error('Failed to join collaboration session:', error)
+    })
+
+    return () => {
+      service.leaveSession()
+    }
+  }, [entityType, entityId, currentUser.id, currentUser.name, handleStateChange, handleOperation, handlePresenceChange])
 
   // Handle text input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

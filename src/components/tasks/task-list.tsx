@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { TaskCard } from './task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,7 +67,7 @@ export function TaskList({
     fetchTasks()
   }, [user, projectId, milestoneId, statusFilter, priorityFilter, assigneeFilter])
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!user) return
 
     try {
@@ -100,7 +100,7 @@ export function TaskList({
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, projectId, milestoneId, statusFilter, priorityFilter, assigneeFilter])
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -82,7 +82,7 @@ export default function TimeTracker({
     return () => clearInterval(interval)
   }, [])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true)
 
@@ -102,7 +102,7 @@ export default function TimeTracker({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userId, projects])
 
   const updateTimer = useCallback(() => {
     if (activeSession) {

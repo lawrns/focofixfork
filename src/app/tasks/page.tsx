@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
 import { TaskList } from '@/components/tasks/task-list'
 import { TaskForm } from '@/components/tasks/task-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { projectStore } from '@/lib/stores/project-store'
 
 export default function TasksPage() {
   return (
@@ -21,6 +22,51 @@ function TasksContent() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [selectedTask, setSelectedTask] = useState<any>(null)
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
+
+  // Load projects for task creation
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const response = await fetch('/api/projects')
+        if (response.ok) {
+          const data = await response.json()
+          const projectList = data.data?.map((p: any) => ({
+            id: p.id,
+            name: p.name
+          })) || []
+          setProjects(projectList)
+        }
+      } catch (error) {
+        console.error('Failed to load projects:', error)
+      }
+    }
+
+    loadProjects()
+  }, [])
+
+  // Load selected task for editing
+  useEffect(() => {
+    const loadTask = async () => {
+      if (!selectedTaskId) {
+        setSelectedTask(null)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/tasks/${selectedTaskId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setSelectedTask(data.data)
+        }
+      } catch (error) {
+        console.error('Failed to load task:', error)
+      }
+    }
+
+    loadTask()
+  }, [selectedTaskId])
 
   const handleCreateTask = () => {
     setShowCreateModal(true)
@@ -59,6 +105,7 @@ function TasksContent() {
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
             <TaskForm
+              projects={projects}
               onSuccess={handleTaskCreated}
               onCancel={() => setShowCreateModal(false)}
             />
@@ -71,9 +118,10 @@ function TasksContent() {
             <DialogHeader>
               <DialogTitle>Edit Task</DialogTitle>
             </DialogHeader>
-            {selectedTaskId && (
+            {selectedTask && (
               <TaskForm
-                taskId={selectedTaskId}
+                task={selectedTask}
+                projects={projects}
                 onSuccess={handleTaskUpdated}
                 onCancel={() => {
                   setShowEditModal(false)

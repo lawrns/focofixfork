@@ -132,7 +132,7 @@ export function MilestoneTimeline({
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, projectId])
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No date set'

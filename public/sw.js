@@ -8,10 +8,10 @@ const API_CACHE = 'foco-api-v1.0.0';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/favicon.ico',
   '/offline.html',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/icons/icon.svg',
+  '/icons/manifest-icon-192.maskable.png',
+  '/icons/manifest-icon-512.maskable.png',
 ];
 
 // API endpoints to cache (GET requests only)

@@ -36,22 +36,7 @@
       "purpose": "any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/test-results/09-mobile-view.png",
-      "sizes": "360x640",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile dashboard view"
-    },
-    {
-      "src": "/test-results/01-landing-page.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Desktop landing page"
-    }
-  ],
+  "screenshots": [],
   "shortcuts": [
     {
       "name": "New Project",
@@ -60,8 +45,8 @@
       "url": "/dashboard?new=true",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
-          "sizes": "96x96"
+          "src": "/icons/manifest-icon-192.maskable.png",
+          "sizes": "192x192"
         }
       ]
     },
@@ -72,8 +57,8 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
-          "sizes": "96x96"
+          "src": "/icons/manifest-icon-192.maskable.png",
+          "sizes": "192x192"
         }
       ]
     },
@@ -84,8 +69,8 @@
       "url": "/analytics",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
-          "sizes": "96x96"
+          "src": "/icons/manifest-icon-192.maskable.png",
+          "sizes": "192x192"
         }
       ]
     }

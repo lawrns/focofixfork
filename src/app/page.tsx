@@ -4,11 +4,18 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Head from 'next/head'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, PlayCircle, Flag, Users, BarChart3, Sparkles, Zap, Target, Check } from 'lucide-react'
+import { ArrowRight, PlayCircle, Flag, Users, BarChart3, Sparkles, Zap, Target, Check, Download, Smartphone } from 'lucide-react'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
+import { useInstallPrompt } from '@/components/pwa/install-prompt'
 
 export default function Home() {
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt()
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+  }, [])
   useEffect(() => {
     document.title = 'Foco - Gestión de Proyectos con IA'
   }, [])
@@ -704,86 +711,110 @@ export default function Home() {
             >
               <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-[#E5E5E5]">
                 <div className="space-y-6">
-                  <h3 className="text-2xl font-bold text-[#0A0A0A] text-center mb-8">
-                    Descarga la app
-                  </h3>
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold text-[#0A0A0A] mb-2">
+                      Instala Foco
+                    </h3>
+                    <p className="text-sm text-[#6B6B6B]">
+                      Progressive Web App • Sin tiendas de apps
+                    </p>
+                  </div>
 
-                  {/* iOS Download Button */}
-                  <motion.a
-                    href="https://cryptoiq.net"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="bg-[#0A0A0A] hover:bg-[#1A1A1A] rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
-                      {/* Apple Icon */}
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="#0A0A0A">
-                          <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                        </svg>
+                  {/* Mobile Install Button - Shows on mobile devices */}
+                  {isMobile && (
+                    <motion.button
+                      onClick={async () => {
+                        if (canInstall) {
+                          await promptInstall()
+                        } else if (isInstalled) {
+                          // Already installed
+                          alert('¡Foco ya está instalado en tu dispositivo!')
+                        } else {
+                          // Show manual instructions
+                          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+                          if (isIOS) {
+                            alert('Para instalar en iOS:\n\n1. Toca el botón de compartir (⬆️)\n2. Selecciona "Añadir a pantalla de inicio"\n3. Toca "Añadir"')
+                          } else {
+                            alert('Para instalar:\n\n1. Toca el menú (⋮) en tu navegador\n2. Selecciona "Instalar app" o "Añadir a pantalla de inicio"')
+                          }
+                        }
+                      }}
+                      className="w-full group"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#004299] hover:to-[#0052CC] rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Download className="w-8 h-8 text-[#0052CC]" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-sm text-white/90 font-medium">
+                            {isInstalled ? '✓ Instalado' : canInstall ? 'Instalar ahora' : 'Añadir a inicio'}
+                          </div>
+                          <div className="text-xl font-bold text-white">
+                            {isInstalled ? 'Foco está listo' : 'Instalar Foco'}
+                          </div>
+                          <div className="text-xs text-white/70 mt-1">
+                            Sin App Store • Instalación instantánea
+                          </div>
+                        </div>
+                        <ArrowRight className="w-6 h-6 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all flex-shrink-0" />
                       </div>
-                      <div className="flex-1">
-                        <div className="text-xs text-white/70 font-medium">Descargar en</div>
-                        <div className="text-lg font-bold text-white">App Store</div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </motion.a>
+                    </motion.button>
+                  )}
 
-                  {/* Android Download Button */}
-                  <motion.a
-                    href="https://cryptoiq.net"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="bg-[#3DDC84] hover:bg-[#2ECC74] rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
-                      {/* Android Icon */}
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="#3DDC84">
-                          <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24c-2.86-1.21-6.08-1.21-8.94 0L5.65 5.67c-.19-.28-.54-.37-.83-.22-.3.16-.42.54-.26.85l1.84 3.18C4.25 11.24 2.5 13.88 2.5 17h19c0-3.12-1.75-5.76-3.9-7.52zM7 15.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25zm10 0c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/>
-                        </svg>
+                  {/* Desktop/All Devices - PWA Info */}
+                  {!isMobile && (
+                    <motion.div
+                      className="block group"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Download className="w-8 h-8 text-[#0052CC]" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-sm text-white/90 font-medium">Instalar en cualquier dispositivo</div>
+                          <div className="text-xl font-bold text-white">Progressive Web App</div>
+                          <div className="text-xs text-white/70 mt-1">
+                            Busca el ícono de instalación en tu navegador
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <div className="text-xs text-white/90 font-medium">Disponible en</div>
-                        <div className="text-lg font-bold text-white">Google Play</div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </motion.a>
+                    </motion.div>
+                  )}
 
-                  {/* Desktop Download Button */}
-                  <motion.a
-                    href="https://cryptoiq.net"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="bg-[#0052CC] hover:bg-[#004299] rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
-                      {/* Desktop Icon */}
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="#0052CC">
-                          <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>
-                        </svg>
+                  {/* Features */}
+                  <div className="grid grid-cols-3 gap-3 pt-4">
+                    <div className="text-center">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Zap className="w-5 h-5 text-green-600" />
                       </div>
-                      <div className="flex-1">
-                        <div className="text-xs text-white/90 font-medium">También en</div>
-                        <div className="text-lg font-bold text-white">Desktop</div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                      <div className="text-xs font-medium text-[#404040]">Instantáneo</div>
                     </div>
-                  </motion.a>
+                    <div className="text-center">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Smartphone className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="text-xs font-medium text-[#404040]">Todos los dispositivos</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Sparkles className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div className="text-xs font-medium text-[#404040]">Siempre actualizado</div>
+                    </div>
+                  </div>
 
                   {/* Info Text */}
-                  <p className="text-center text-sm text-[#6B6B6B] pt-4">
-                    Sin descargas pesadas • Funciona en todos los dispositivos • Siempre actualizado
-                  </p>
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-4">
+                    <p className="text-xs text-blue-900 text-center leading-relaxed">
+                      <strong className="font-semibold">¿Qué es una PWA?</strong><br />
+                      Una Progressive Web App funciona como una app nativa pero sin necesidad de descargarla desde una tienda.
+                      Instálala directamente desde tu navegador en segundos.
+                    </p>
+                  </div>
                 </div>
               </div>
 

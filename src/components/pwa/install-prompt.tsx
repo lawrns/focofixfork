@@ -164,10 +164,10 @@ export function InstallPrompt({
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-1">
-                      Install Foco
+                      Instala Foco en tu dispositivo
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Get the full app experience with offline access, push notifications, and native performance.
+                      Acceso instantáneo, funciona sin conexión, y notificaciones en tiempo real. Sin necesidad de App Store.
                     </p>
                   </div>
 
@@ -186,19 +186,19 @@ export function InstallPrompt({
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                    <span>Offline access</span>
+                    <span>Acceso sin conexión</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-                    <span>Push notifications</span>
+                    <span>Notificaciones</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />
-                    <span>Quick launch</span>
+                    <span>Inicio rápido</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Star className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-                    <span>Native feel</span>
+                    <span>Como app nativa</span>
                   </div>
                 </div>
 
@@ -210,7 +210,7 @@ export function InstallPrompt({
                     size="sm"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Install App
+                    Instalar App
                   </Button>
 
                   <Button
@@ -219,7 +219,7 @@ export function InstallPrompt({
                     className="flex-1"
                     size="sm"
                   >
-                    Maybe Later
+                    Más tarde
                   </Button>
                 </div>
               </div>

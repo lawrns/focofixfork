@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { OllamaServerService } from '@/lib/services/ollama-server'
+import { ollamaService } from '@/lib/services/ollama'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,16 +22,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new instance each time to ensure env vars are fresh
-    const ollamaService = new OllamaServerService()
-
-    console.log('[AI Chat] Ollama host:', ollamaService.config.host)
-    console.log('[AI Chat] Chat model:', ollamaService.config.chatModel)
-    console.log('[AI Chat] ENV NEXT_PUBLIC_OLLAMA_URL:', process.env.NEXT_PUBLIC_OLLAMA_URL)
-
     // Check Ollama connection
     const connectionTest = await ollamaService.testConnection()
-    console.log('[AI Chat] Connection test:', connectionTest)
     if (!connectionTest.success) {
       // Return a friendly message instead of error
       return NextResponse.json({

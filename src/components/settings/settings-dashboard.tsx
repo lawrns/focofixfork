@@ -23,6 +23,7 @@ import {
   EyeOff
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { RoleManagement } from './role-management'
 
 interface UserSettings {
   theme: 'light' | 'dark' | 'system'
@@ -148,7 +149,7 @@ export function SettingsDashboard() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
@@ -164,6 +165,10 @@ export function SettingsDashboard() {
           <TabsTrigger value="organization" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Organization
+          </TabsTrigger>
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Members
           </TabsTrigger>
           <TabsTrigger value="data" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -462,6 +467,10 @@ export function SettingsDashboard() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="members" className="space-y-6">
+          <RoleManagement />
         </TabsContent>
 
         <TabsContent value="data" className="space-y-6">

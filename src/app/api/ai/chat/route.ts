@@ -25,14 +25,14 @@ export async function POST(request: NextRequest) {
     // Check Ollama connection
     const connectionTest = await ollamaServerService.testConnection()
     if (!connectionTest.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'AI service is currently unavailable',
-          details: connectionTest.message
-        },
-        { status: 503 }
-      )
+      // Return a friendly message instead of error
+      return NextResponse.json({
+        success: true,
+        data: {
+          message: `I apologize, but the AI service is currently offline for maintenance. While I'm unavailable, you can:\n\n• Use the search bar to find tasks and projects\n• Create projects manually from the dashboard\n• Check documentation for help with features\n\nThe AI service will be back online soon!`,
+          model: 'fallback'
+        }
+      })
     }
 
     // Generate response using Ollama

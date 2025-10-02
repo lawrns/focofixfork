@@ -27,12 +27,6 @@ export function GoalProgressDialog({ goal, children, onProgressUpdated }: GoalPr
   const [newValue, setNewValue] = useState(goal.current_value?.toString() || '0');
   const [note, setNote] = useState('');
 
-  useEffect(() => {
-    if (isOpen) {
-      loadProgressHistory();
-    }
-  }, [isOpen, loadProgressHistory]);
-
   const loadProgressHistory = useCallback(async () => {
     try {
       if (!user?.id) return;
@@ -42,6 +36,12 @@ export function GoalProgressDialog({ goal, children, onProgressUpdated }: GoalPr
       console.error('Error loading progress history:', error);
     }
   }, [goal.id, user?.id]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadProgressHistory();
+    }
+  }, [isOpen, loadProgressHistory]);
 
   const handleUpdateProgress = async () => {
     setIsLoading(true);

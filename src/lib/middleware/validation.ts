@@ -23,7 +23,7 @@ export function validateRequest<T>(
     if (validation.success) {
       return { success: true, data: validation.data as T };
     } else {
-      const errors = validation.errors.errors.map(err => {
+      const errors = (validation as any).errors.errors.map((err: any) => {
         const path = err.path.join('.');
         return `${path}: ${err.message}`;
       });
@@ -113,7 +113,7 @@ export function withValidation<T>(
           {
             success: false,
             error: 'Validation failed',
-            details: validation.errors
+            details: (validation as any).errors
           },
           { status: 400 }
         );

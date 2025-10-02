@@ -70,19 +70,6 @@ export default function FileUploader({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  // Load existing files on mount
-  React.useEffect(() => {
-    if (showExisting) {
-      loadExistingFiles()
-    }
-  }, [entityType, entityId, showExisting])
-
-  // Subscribe to upload queue
-  React.useEffect(() => {
-    const subscriptionId = FileUploadService.subscribeToQueue(setUploadQueue)
-    return () => FileUploadService.unsubscribeFromQueue(subscriptionId)
-  }, [])
-
   const loadExistingFiles = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -94,6 +81,19 @@ export default function FileUploader({
       setIsLoading(false)
     }
   }, [entityType, entityId])
+
+  // Load existing files on mount
+  React.useEffect(() => {
+    if (showExisting) {
+      loadExistingFiles()
+    }
+  }, [showExisting, loadExistingFiles])
+
+  // Subscribe to upload queue
+  React.useEffect(() => {
+    const subscriptionId = FileUploadService.subscribeToQueue(setUploadQueue)
+    return () => FileUploadService.unsubscribeFromQueue(subscriptionId)
+  }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -215,6 +215,7 @@ export default function FileUploader({
   const getFileIcon = (fileType: FileType) => {
     const iconClass = 'w-4 h-4'
     switch (fileType) {
+      // eslint-disable-next-line jsx-a11y/alt-text
       case 'image': return <Image className={iconClass} aria-hidden="true" />
       case 'video': return <Video className={iconClass} aria-hidden="true" />
       case 'audio': return <Music className={iconClass} aria-hidden="true" />

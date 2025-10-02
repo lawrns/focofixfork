@@ -38,11 +38,6 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [analytics, setAnalytics] = useState<any>(null);
 
-  useEffect(() => {
-    loadGoals();
-    loadAnalytics();
-  }, [organizationId, projectId, loadGoals, loadAnalytics]);
-
   const loadGoals = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -167,6 +162,11 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
       });
     }
   }, [organizationId]);
+
+  useEffect(() => {
+    loadGoals();
+    loadAnalytics();
+  }, [loadGoals, loadAnalytics]);
 
   const filteredGoals = goals.filter(goal => {
     if (statusFilter !== 'all' && goal.status !== statusFilter) return false;

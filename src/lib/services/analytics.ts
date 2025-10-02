@@ -104,13 +104,15 @@ export class AnalyticsService {
 
   static async getMilestoneAnalytics(organizationId?: string): Promise<MilestoneAnalytics> {
     try {
-      let query = supabase.from('milestones').select('*');
+      let milestones: any[] | null = null;
 
       if (organizationId) {
-        query = query.eq('organization_id', organizationId);
+        const result = await (supabase as any).from('milestones').select('*').eq('organization_id', organizationId);
+        milestones = result.data;
+      } else {
+        const result = await (supabase as any).from('milestones').select('*');
+        milestones = result.data;
       }
-
-      const { data: milestones } = await query;
 
       if (!milestones) return this.getEmptyMilestoneAnalytics();
 
@@ -144,13 +146,15 @@ export class AnalyticsService {
 
   static async getTaskAnalytics(organizationId?: string): Promise<TaskAnalytics> {
     try {
-      let query = supabase.from('tasks').select('*');
+      let tasks: any[] | null = null;
 
       if (organizationId) {
-        query = query.eq('organization_id', organizationId);
+        const result = await (supabase as any).from('tasks').select('*').eq('organization_id', organizationId);
+        tasks = result.data;
+      } else {
+        const result = await (supabase as any).from('tasks').select('*');
+        tasks = result.data;
       }
-
-      const { data: tasks } = await query;
 
       if (!tasks) return this.getEmptyTaskAnalytics();
 

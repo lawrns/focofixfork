@@ -31,25 +31,13 @@ export default function RootLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    // Track page performance when route changes
-    // PerformanceService.trackPagePerformance(pathname);
-
-    // Initialize monitoring systems
-    // PWAService.initialize();
-    // PerformanceMonitor.getInstance().startMonitoring();
-    // ErrorTracker.getInstance().initialize();
-    // AnalyticsTracker.getInstance().initialize({
-    //   enabled: process.env.NODE_ENV === 'production',
-    //   sampleRate: 0.1, // Track 10% of users in production
-    //   trackPerformance: true,
-    //   trackErrors: true,
-    //   trackUserInteractions: true,
-    //   trackPageViews: true,
-    // });
-
-    // Track route changes in analytics
-    // AnalyticsTracker.getInstance().trackPageView(pathname);
-  }, [pathname]);
+    // Initialize PWA
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      import('@/lib/services/pwa').then(({ PWAService }) => {
+        PWAService.initialize();
+      });
+    }
+  }, []);
   return (
     <html lang="en">
       <head>
@@ -66,11 +54,11 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="theme-color" content="#0052CC" />
 
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+        <link rel="apple-touch-icon" href="/icons/manifest-icon-192.maskable.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/manifest-icon-192.maskable.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icons/manifest-icon-512.maskable.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/manifest-icon-192.maskable.png" />
+        <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#0052CC" />
         <link rel="shortcut icon" href="/favicon.ico" />

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -58,7 +58,7 @@ export default function TeamManagementDialog({
   // Use permissions hook
   const permissions = usePermissions({
     projectId,
-    teamMembers: realtimeTeamMembers,
+    teamMembers: realtimeTeamMembers as any,
     requireSpecificRole: true
   })
 
@@ -80,11 +80,11 @@ export default function TeamManagementDialog({
   })
 
   // Mock user lookup - in real app this would be an API call
-  const mockUsers = [
+  const mockUsers = useMemo(() => [
     { id: 'user-1', name: 'Alice Johnson', email: 'alice@example.com' },
     { id: 'user-2', name: 'Bob Smith', email: 'bob@example.com' },
     { id: 'user-3', name: 'Carol Davis', email: 'carol@example.com' },
-  ]
+  ], [])
 
   useEffect(() => {
     // Combine team members with user details

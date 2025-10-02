@@ -99,10 +99,11 @@ export class BackupService {
 
       // Optional data based on options
       if (options.includeComments) {
-        const { data: comments } = await supabase
+        const orgIds = organizations?.map(o => o.id) || [];
+        const { data: comments } = await (supabase as any)
           .from('milestone_comments')
           .select('*')
-          .in('organization_id', organizations?.map(o => o.id) || []);
+          .in('organization_id', orgIds);
 
         if (comments) {
           backupData.comments = comments;

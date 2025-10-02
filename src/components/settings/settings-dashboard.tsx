@@ -65,10 +65,6 @@ export function SettingsDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    loadSettings()
-  }, [user, loadSettings])
-
   const loadSettings = useCallback(async () => {
     if (!user) return
 
@@ -93,6 +89,10 @@ export function SettingsDashboard() {
 
     setIsLoading(false);
   }, [user])
+
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
 
   const saveUserSettings = async () => {
     if (!user) return

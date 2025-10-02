@@ -37,10 +37,6 @@ export function KanbanBoard() {
   ])
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    loadTasks()
-  }, [user, loadTasks])
-
   const loadTasks = useCallback(async () => {
     if (!user) return
 
@@ -70,6 +66,10 @@ export function KanbanBoard() {
       setIsLoading(false)
     }
   }, [user])
+
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
 
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result

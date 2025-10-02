@@ -89,17 +89,27 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
     const fetchTeamMembers = async () => {
       try {
         const table = projectId ? 'project_team_assignments' : 'organization_members'
-        let query = supabase
-          .from(table)
-          .select('*')
+
+        let data: any[] | null = null
+        let error: any = null
 
         if (projectId) {
-          query = query.eq('project_id', projectId)
+          const result = await (supabase as any)
+            .from(table)
+            .select('*')
+            .eq('project_id', projectId)
+          data = result.data
+          error = result.error
         } else if (organizationId) {
-          query = query.eq('organization_id', organizationId)
+          const result = await (supabase as any)
+            .from(table)
+            .select('*')
+            .eq('organization_id', organizationId)
+          data = result.data
+          error = result.error
+        } else {
+          return
         }
-
-        const { data, error } = await query
 
         if (error) {
           console.error('Error fetching team members:', error)
@@ -200,17 +210,27 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
 
     try {
       const table = projectId ? 'project_team_assignments' : 'organization_members'
-      let query = supabase
-        .from(table)
-        .select('*')
+
+      let data: any[] | null = null
+      let error: any = null
 
       if (projectId) {
-        query = query.eq('project_id', projectId)
+        const result = await (supabase as any)
+          .from(table)
+          .select('*')
+          .eq('project_id', projectId)
+        data = result.data
+        error = result.error
       } else if (organizationId) {
-        query = query.eq('organization_id', organizationId)
+        const result = await (supabase as any)
+          .from(table)
+          .select('*')
+          .eq('organization_id', organizationId)
+        data = result.data
+        error = result.error
+      } else {
+        return
       }
-
-      const { data, error } = await query
 
       if (error) {
         console.error('Error refetching team members:', error)

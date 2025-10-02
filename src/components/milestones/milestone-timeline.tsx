@@ -62,43 +62,6 @@ export function MilestoneTimeline({
   const [error, setError] = useState<string | null>(null)
   const [updatedMilestones, setUpdatedMilestones] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    fetchMilestones()
-  }, [user, projectId])
-
-  // Real-time updates for milestones
-  useRealtime(
-    { projectId },
-    (payload) => {
-      if (payload.table === 'milestones') {
-        if (payload.eventType === 'INSERT') {
-          // Add new milestone to the list
-          setMilestones(prev => [payload.new, ...prev])
-        } else if (payload.eventType === 'UPDATE') {
-          // Update existing milestone in the list
-          setMilestones(prev =>
-            prev.map(milestone =>
-              milestone.id === payload.new.id ? { ...milestone, ...payload.new } : milestone
-            )
-          )
-          // Mark as updated for visual feedback
-          setUpdatedMilestones(prev => new Set(prev).add(payload.new.id))
-          // Reset the updated indicator after 3 seconds
-          setTimeout(() => {
-            setUpdatedMilestones(prev => {
-              const newSet = new Set(prev)
-              newSet.delete(payload.new.id)
-              return newSet
-            })
-          }, 3000)
-        } else if (payload.eventType === 'DELETE') {
-          // Remove deleted milestone from the list
-          setMilestones(prev => prev.filter(milestone => milestone.id !== payload.old?.id))
-        }
-      }
-    }
-  )
-
   const fetchMilestones = useCallback(async () => {
     if (!user) return
 
@@ -133,6 +96,43 @@ export function MilestoneTimeline({
       setLoading(false)
     }
   }, [user, projectId])
+
+  useEffect(() => {
+    fetchMilestones()
+  }, [fetchMilestones])
+
+  // Real-time updates for milestones
+  useRealtime(
+    { projectId },
+    (payload) => {
+      if (payload.table === 'milestones') {
+        if (payload.eventType === 'INSERT') {
+          // Add new milestone to the list
+          setMilestones(prev => [payload.new, ...prev])
+        } else if (payload.eventType === 'UPDATE') {
+          // Update existing milestone in the list
+          setMilestones(prev =>
+            prev.map(milestone =>
+              milestone.id === payload.new.id ? { ...milestone, ...payload.new } : milestone
+            )
+          )
+          // Mark as updated for visual feedback
+          setUpdatedMilestones(prev => new Set(prev).add(payload.new.id))
+          // Reset the updated indicator after 3 seconds
+          setTimeout(() => {
+            setUpdatedMilestones(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(payload.new.id)
+              return newSet
+            })
+          }, 3000)
+        } else if (payload.eventType === 'DELETE') {
+          // Remove deleted milestone from the list
+          setMilestones(prev => prev.filter(milestone => milestone.id !== payload.old?.id))
+        }
+      }
+    }
+  )
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No date set'

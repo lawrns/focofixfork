@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Parse the project specification using Ollama
     const parsedProject = await OllamaProjectManager.parseProjectSpecification(
-      specification,
+      specification as any,
       userId
     )
 

@@ -172,7 +172,10 @@ export type DesignTokens = typeof designTokens
 // Helper functions for theme-aware values
 export const getColorValue = (color: keyof typeof designTokens.colors, shade: string = '500') => {
   const colorObj = designTokens.colors[color]
-  return typeof colorObj === 'object' ? colorObj[shade as keyof typeof colorObj] : colorObj
+  if (typeof colorObj === 'object' && colorObj !== null) {
+    return (colorObj as Record<string, string>)[shade]
+  }
+  return colorObj
 }
 
 export const getSpacingValue = (size: keyof typeof designTokens.spacing) => {

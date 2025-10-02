@@ -75,13 +75,6 @@ export default function TimeTracker({
   const [entryBillableRate, setEntryBillableRate] = useState('')
   const [entryTags, setEntryTags] = useState<string[]>([])
 
-  // Load data on mount
-  useEffect(() => {
-    loadData()
-    const interval = setInterval(updateTimer, 1000)
-    return () => clearInterval(interval)
-  }, [loadData, updateTimer])
-
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -111,6 +104,13 @@ export default function TimeTracker({
       setCurrentDuration(prev => prev + 1)
     }
   }, [activeSession])
+
+  // Load data on mount
+  useEffect(() => {
+    loadData()
+    const interval = setInterval(updateTimer, 1000)
+    return () => clearInterval(interval)
+  }, [loadData, updateTimer])
 
   const handleStartTimer = async () => {
     if (!timerDescription.trim()) {

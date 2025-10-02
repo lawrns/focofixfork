@@ -52,37 +52,6 @@ export function ProjectList({
   const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
   const [priorityFilter, setPriorityFilter] = useState(initialPriority || 'all')
 
-  useEffect(() => {
-    fetchProjects()
-  }, [user, organizationId, statusFilter, priorityFilter, fetchProjects])
-
-  // Subscribe to global project store
-  useEffect(() => {
-    console.log('ProjectList: subscribing to project store')
-    const unsubscribe = projectStore.subscribe((storeProjects) => {
-      console.log('ProjectList: received projects from store:', storeProjects.length)
-      setProjects(storeProjects as Project[])
-    })
-
-    return unsubscribe
-  }, [])
-
-  // Real-time updates for projects
-  useRealtime(
-    organizationId ? { organizationId } : { enabled: false },
-    (payload) => {
-      if (payload.table === 'projects') {
-        if (payload.eventType === 'INSERT') {
-          projectStore.addProject(payload.new)
-        } else if (payload.eventType === 'UPDATE') {
-          projectStore.updateProject(payload.new.id, payload.new, true) // isFromRealtime = true
-        } else if (payload.eventType === 'DELETE') {
-          projectStore.removeProject(payload.old?.id)
-        }
-      }
-    }
-  )
-
   const fetchProjects = useCallback(async () => {
     if (!user) return
 
@@ -117,6 +86,37 @@ export function ProjectList({
       setLoading(false)
     }
   }, [user, organizationId, statusFilter, priorityFilter])
+
+  useEffect(() => {
+    fetchProjects()
+  }, [fetchProjects])
+
+  // Subscribe to global project store
+  useEffect(() => {
+    console.log('ProjectList: subscribing to project store')
+    const unsubscribe = projectStore.subscribe((storeProjects) => {
+      console.log('ProjectList: received projects from store:', storeProjects.length)
+      setProjects(storeProjects as Project[])
+    })
+
+    return unsubscribe
+  }, [])
+
+  // Real-time updates for projects
+  useRealtime(
+    organizationId ? { organizationId } : { enabled: false },
+    (payload) => {
+      if (payload.table === 'projects') {
+        if (payload.eventType === 'INSERT') {
+          projectStore.addProject(payload.new)
+        } else if (payload.eventType === 'UPDATE') {
+          projectStore.updateProject(payload.new.id, payload.new, true) // isFromRealtime = true
+        } else if (payload.eventType === 'DELETE') {
+          projectStore.removeProject(payload.old?.id)
+        }
+      }
+    }
+  )
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

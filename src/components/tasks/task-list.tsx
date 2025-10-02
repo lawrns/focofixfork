@@ -63,10 +63,6 @@ export function TaskList({
   const [priorityFilter, setPriorityFilter] = useState(initialPriority || 'all')
   const [assigneeFilter, setAssigneeFilter] = useState(initialAssignee || 'all')
 
-  useEffect(() => {
-    fetchTasks()
-  }, [user, projectId, milestoneId, statusFilter, priorityFilter, assigneeFilter, fetchTasks])
-
   const fetchTasks = useCallback(async () => {
     if (!user) return
 
@@ -101,6 +97,10 @@ export function TaskList({
       setLoading(false)
     }
   }, [user, projectId, milestoneId, statusFilter, priorityFilter, assigneeFilter])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

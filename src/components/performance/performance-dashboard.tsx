@@ -32,16 +32,6 @@ export function PerformanceDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
 
-  useEffect(() => {
-    loadPerformanceData();
-    // Update real-time metrics every 5 seconds
-    const interval = setInterval(() => {
-      setRealTimeMetrics(PerformanceService.getRealTimeMetrics());
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [timeRange, loadPerformanceData]);
-
   const loadPerformanceData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -54,6 +44,16 @@ export function PerformanceDashboard() {
       setIsLoading(false);
     }
   }, [timeRange]);
+
+  useEffect(() => {
+    loadPerformanceData();
+    // Update real-time metrics every 5 seconds
+    const interval = setInterval(() => {
+      setRealTimeMetrics(PerformanceService.getRealTimeMetrics());
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [loadPerformanceData]);
 
   const handleExportReport = async () => {
     try {

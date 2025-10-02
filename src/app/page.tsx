@@ -640,6 +640,167 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Download PWA Section - Premium Mobile Experience */}
+      <section className="relative py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0052CC]/5 via-white to-[#00B894]/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left: Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="space-y-8"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-[#E5E5E5] shadow-sm">
+                <Sparkles className="w-4 h-4 text-[#0052CC]" />
+                <span className="text-xs font-semibold text-[#0052CC] uppercase tracking-[0.1em]">NUEVA EXPERIENCIA</span>
+              </div>
+
+              <h2 className="text-4xl lg:text-5xl font-bold text-[#0A0A0A] leading-tight tracking-[-0.02em]">
+                Lleva Foco en tu bolsillo
+              </h2>
+
+              <p className="text-xl text-[#404040] leading-relaxed max-w-xl">
+                Instala nuestra Progressive Web App y disfruta de una experiencia nativa en cualquier dispositivo.
+                <span className="font-semibold text-[#0052CC]"> Offline, rápido y sin descargas pesadas.</span>
+              </p>
+
+              {/* Features List */}
+              <div className="space-y-4">
+                {[
+                  { icon: Zap, text: "Funciona sin conexión", color: "#0052CC" },
+                  { icon: Target, text: "Notificaciones en tiempo real", color: "#00B894" },
+                  { icon: Check, text: "Acceso instantáneo desde tu pantalla de inicio", color: "#0052CC" }
+                ].map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    className="flex items-center gap-4"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-[#E5E5E5] bg-white">
+                      <feature.icon className="w-5 h-5" style={{ color: feature.color }} />
+                    </div>
+                    <span className="text-[#404040] font-medium text-lg">{feature.text}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Right: App Store Buttons */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-[#E5E5E5]">
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold text-[#0A0A0A] text-center mb-8">
+                    Descarga la app
+                  </h3>
+
+                  {/* iOS Download Button */}
+                  <motion.a
+                    href="https://cryptoiq.net"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block group"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="bg-[#0A0A0A] hover:bg-[#1A1A1A] rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                      {/* Apple Icon */}
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="#0A0A0A">
+                          <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs text-white/70 font-medium">Descargar en</div>
+                        <div className="text-lg font-bold text-white">App Store</div>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </motion.a>
+
+                  {/* Android Download Button */}
+                  <motion.a
+                    href="https://cryptoiq.net"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block group"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="bg-[#3DDC84] hover:bg-[#2ECC74] rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                      {/* Android Icon */}
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="#3DDC84">
+                          <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24c-2.86-1.21-6.08-1.21-8.94 0L5.65 5.67c-.19-.28-.54-.37-.83-.22-.3.16-.42.54-.26.85l1.84 3.18C4.25 11.24 2.5 13.88 2.5 17h19c0-3.12-1.75-5.76-3.9-7.52zM7 15.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25zm10 0c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs text-white/90 font-medium">Disponible en</div>
+                        <div className="text-lg font-bold text-white">Google Play</div>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </motion.a>
+
+                  {/* Desktop Download Button */}
+                  <motion.a
+                    href="https://cryptoiq.net"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block group"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="bg-[#0052CC] hover:bg-[#004299] rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                      {/* Desktop Icon */}
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="#0052CC">
+                          <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs text-white/90 font-medium">También en</div>
+                        <div className="text-lg font-bold text-white">Desktop</div>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </motion.a>
+
+                  {/* Info Text */}
+                  <p className="text-center text-sm text-[#6B6B6B] pt-4">
+                    Sin descargas pesadas • Funciona en todos los dispositivos • Siempre actualizado
+                  </p>
+                </div>
+              </div>
+
+              {/* Floating Device Mockup (Optional) */}
+              <motion.div
+                className="absolute -right-8 -bottom-8 w-32 h-32 bg-gradient-to-br from-[#0052CC]/20 to-[#00B894]/20 rounded-full blur-3xl -z-10"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.5, 0.3],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA Section - Integrated and Premium */}
       <section className="relative py-32 px-4 sm:px-6 lg:px-8">
         {/* Subtle gradient overlay */}

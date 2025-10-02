@@ -216,7 +216,7 @@ export function TaskForm({
           <div className="space-y-2">
             <Label htmlFor="milestone">Milestone (Optional)</Label>
             <Select
-              value={watch('milestone_id') || 'none'}
+              value={watch('milestone_id') ?? 'none'}
               onValueChange={(value) => setValue('milestone_id', value === 'none' ? null : value)}
               disabled={isSubmitting || !watchedProjectId}
             >
@@ -279,7 +279,7 @@ export function TaskForm({
           <div className="space-y-2">
             <Label htmlFor="assignee">Assignee (Optional)</Label>
             <Select
-              value={watchedAssigneeId || 'unassigned'}
+              value={watchedAssigneeId ?? 'unassigned'}
               onValueChange={(value) => setValue('assignee_id', value === 'unassigned' ? null : value)}
               disabled={isSubmitting}
             >

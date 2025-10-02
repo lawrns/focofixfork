@@ -1,0 +1,733 @@
+{
+  "test_suite_name": "Foco.mx Comprehensive Functionality Test",
+  "test_suite_version": "1.0.0",
+  "base_url": "https://foco.mx",
+  "test_date": "2025-10-02",
+  "description": "Complete end-to-end testing of all features, buttons, and user journeys on Foco.mx",
+  
+  "prerequisites": {
+    "browser": "Chrome, Firefox, or Safari (latest version)",
+    "screen_sizes": ["Desktop (1920x1080)", "Tablet (768x1024)", "Mobile (375x667)"],
+    "test_accounts": {
+      "admin": {
+        "email": "laurence@fyves.com",
+        "password": "Hennie@@12",
+        "role": "owner",
+        "organization": "Fyves"
+      },
+      "member1": {
+        "email": "isaac@fyves.com",
+        "password": "Hennie@@12",
+        "role": "member",
+        "organization": "Fyves"
+      },
+      "member2": {
+        "email": "oscar@fyves.com",
+        "password": "Hennie@@12",
+        "role": "member",
+        "organization": "Fyves"
+      },
+      "member3": {
+        "email": "jose@fyves.com",
+        "password": "Hennie@@12",
+        "role": "member",
+        "organization": "Fyves"
+      }
+    }
+  },
+
+  "test_scenarios": [
+    {
+      "scenario_id": "TS001",
+      "name": "Homepage and PWA Installation",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to https://foco.mx",
+          "expected": "Homepage loads successfully with hero section visible"
+        },
+        {
+          "step": 2,
+          "action": "Scroll down to 'Instala Foco' section",
+          "expected": "PWA installation section visible with 'Progressive Web App • Sin tiendas de apps' subtitle"
+        },
+        {
+          "step": 3,
+          "action": "On mobile: Click 'Instalar Foco' button",
+          "expected": "PWA install prompt appears OR manual instructions shown for iOS"
+        },
+        {
+          "step": 4,
+          "action": "Click 'Comenzar gratis' button in hero",
+          "expected": "Redirects to /register page"
+        },
+        {
+          "step": 5,
+          "action": "Click 'Iniciar sesión' in navigation",
+          "expected": "Redirects to /login page"
+        },
+        {
+          "step": 6,
+          "action": "Click 'Características' link",
+          "expected": "Scrolls to features section smoothly"
+        },
+        {
+          "step": 7,
+          "action": "Click 'Precios' link",
+          "expected": "Scrolls to pricing section smoothly"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS002",
+      "name": "User Registration Flow",
+      "priority": "CRITICAL",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to https://foco.mx/register",
+          "expected": "Registration form loads with all fields visible"
+        },
+        {
+          "step": 2,
+          "action": "Fill in: Name='Test User', Email='test@example.com', Password='Test123!@#', Confirm Password='Test123!@#', Organization='Test Org'",
+          "expected": "All fields accept input without errors"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Crear cuenta' button",
+          "expected": "Account created, redirects to /organization-setup or /dashboard"
+        },
+        {
+          "step": 4,
+          "action": "Verify user is logged in",
+          "expected": "Dashboard loads, user avatar visible in header"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS003",
+      "name": "User Login Flow",
+      "priority": "CRITICAL",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to https://foco.mx/login",
+          "expected": "Login form loads with email and password fields"
+        },
+        {
+          "step": 2,
+          "action": "Enter email='laurence@fyves.com', password='Hennie@@12'",
+          "expected": "Fields accept input"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Iniciar sesión' button",
+          "expected": "Login successful, redirects to /dashboard"
+        },
+        {
+          "step": 4,
+          "action": "Verify dashboard loads",
+          "expected": "Dashboard visible with projects, sidebar, header"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS004",
+      "name": "Profile Dropdown and Logout",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Login as laurence@fyves.com",
+          "expected": "Dashboard loads"
+        },
+        {
+          "step": 2,
+          "action": "Click user avatar in header",
+          "expected": "Dropdown menu opens with Settings, Profile, Sign Out options"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Settings'",
+          "expected": "Redirects to /dashboard/settings"
+        },
+        {
+          "step": 4,
+          "action": "Click avatar again, click 'Sign Out'",
+          "expected": "User logged out, redirects to /login"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS005",
+      "name": "Project Creation",
+      "priority": "CRITICAL",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Login and navigate to /projects",
+          "expected": "Projects list page loads"
+        },
+        {
+          "step": 2,
+          "action": "Click 'Create Project' button",
+          "expected": "Project creation dialog opens"
+        },
+        {
+          "step": 3,
+          "action": "Fill in: Name='Test Project', Description='Test Description', Status='active', Priority='high'",
+          "expected": "Form accepts input"
+        },
+        {
+          "step": 4,
+          "action": "Click 'Create' or 'Submit' button",
+          "expected": "Project created, dialog closes, new project appears in list"
+        },
+        {
+          "step": 5,
+          "action": "Verify project appears in list",
+          "expected": "Test Project visible with correct details"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS006",
+      "name": "Project Detail View and Quick Actions",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Click on any project to view details",
+          "expected": "Project detail page loads at /projects/[id]"
+        },
+        {
+          "step": 2,
+          "action": "Verify tabs: Overview, Tasks, Team, Activity",
+          "expected": "All tabs visible and clickable"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Add Task' in Quick Actions",
+          "expected": "Redirects to /projects/[id]/tasks/new"
+        },
+        {
+          "step": 4,
+          "action": "Go back, click 'Create Milestone'",
+          "expected": "Redirects to /projects/[id]/milestones/new"
+        },
+        {
+          "step": 5,
+          "action": "Go back, click 'Invite Team Member'",
+          "expected": "Redirects to /dashboard/settings?tab=members"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS007",
+      "name": "Project Bulk Operations - Archive",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to /projects",
+          "expected": "Projects list loads"
+        },
+        {
+          "step": 2,
+          "action": "Select checkbox on one or more projects",
+          "expected": "Bulk actions toolbar appears with Team, Archive, Delete, Cancel buttons"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Archive' button",
+          "expected": "Archive confirmation dialog opens"
+        },
+        {
+          "step": 4,
+          "action": "Read dialog: 'Mark selected projects as completed. They will be hidden from active views.'",
+          "expected": "Dialog shows correct message and project count"
+        },
+        {
+          "step": 5,
+          "action": "Click 'Archive X Projects' button",
+          "expected": "Projects archived, dialog shows progress, then success message"
+        },
+        {
+          "step": 6,
+          "action": "Verify archived projects removed from active list",
+          "expected": "Archived projects no longer visible in default view"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS008",
+      "name": "Project Bulk Operations - Delete",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to /projects",
+          "expected": "Projects list loads"
+        },
+        {
+          "step": 2,
+          "action": "Select checkbox on one or more projects",
+          "expected": "Bulk actions toolbar appears"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Delete' button (red)",
+          "expected": "Delete confirmation dialog opens"
+        },
+        {
+          "step": 4,
+          "action": "Read dialog: 'Permanently delete selected projects. This action cannot be undone.'",
+          "expected": "Dialog shows warning message"
+        },
+        {
+          "step": 5,
+          "action": "Click 'Delete X Projects' button",
+          "expected": "Projects deleted, dialog shows progress, then success"
+        },
+        {
+          "step": 6,
+          "action": "Verify deleted projects removed from list",
+          "expected": "Deleted projects no longer visible"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS009",
+      "name": "Project Bulk Operations - Team (Coming Soon)",
+      "priority": "MEDIUM",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to /projects and select projects",
+          "expected": "Bulk actions toolbar appears"
+        },
+        {
+          "step": 2,
+          "action": "Click 'Team' button",
+          "expected": "Toast notification appears: 'Feature Coming Soon - Bulk team management will be available in a future update.'"
+        },
+        {
+          "step": 3,
+          "action": "Verify this is intentional placeholder",
+          "expected": "This is expected behavior, not a bug"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS010",
+      "name": "Individual Project Actions",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to /projects",
+          "expected": "Projects list loads"
+        },
+        {
+          "step": 2,
+          "action": "Click three-dot menu on any project",
+          "expected": "Quick actions menu opens"
+        },
+        {
+          "step": 3,
+          "action": "Click 'View Details'",
+          "expected": "Navigates to project detail page"
+        },
+        {
+          "step": 4,
+          "action": "Go back, click menu, click 'Edit Project'",
+          "expected": "Edit dialog opens with project data pre-filled"
+        },
+        {
+          "step": 5,
+          "action": "Make changes and save",
+          "expected": "Project updated, changes reflected in list"
+        },
+        {
+          "step": 6,
+          "action": "Click menu, click 'Manage Team'",
+          "expected": "Team management dialog opens"
+        },
+        {
+          "step": 7,
+          "action": "Click menu, click 'Delete'",
+          "expected": "Delete confirmation dialog opens"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS011",
+      "name": "Goal Management",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to /dashboard/goals",
+          "expected": "Goals dashboard loads"
+        },
+        {
+          "step": 2,
+          "action": "Click 'Create Goal' button",
+          "expected": "Goal creation dialog opens"
+        },
+        {
+          "step": 3,
+          "action": "Fill in goal details and submit",
+          "expected": "Goal created and appears in list"
+        },
+        {
+          "step": 4,
+          "action": "Click delete icon on a goal",
+          "expected": "AlertDialog opens: 'Are you sure? This will permanently delete this goal.'"
+        },
+        {
+          "step": 5,
+          "action": "Click 'Delete' to confirm",
+          "expected": "Goal deleted, success toast shown, list refreshes"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS012",
+      "name": "Settings - Role Management",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Login as owner (laurence@fyves.com)",
+          "expected": "Dashboard loads"
+        },
+        {
+          "step": 2,
+          "action": "Navigate to /dashboard/settings",
+          "expected": "Settings page loads"
+        },
+        {
+          "step": 3,
+          "action": "Click 'Members' tab",
+          "expected": "Members list shows: isaac@fyves.com, oscar@fyves.com, jose@fyves.com"
+        },
+        {
+          "step": 4,
+          "action": "Click role dropdown for a member",
+          "expected": "Dropdown shows role options: owner, admin, member"
+        },
+        {
+          "step": 5,
+          "action": "Change role and save",
+          "expected": "Role updated, success toast shown"
+        },
+        {
+          "step": 6,
+          "action": "Click 'Invite Member' button",
+          "expected": "Invite dialog opens"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS013",
+      "name": "Mobile Navigation",
+      "priority": "HIGH",
+      "device": "Mobile (375x667)",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Login on mobile device",
+          "expected": "Dashboard loads"
+        },
+        {
+          "step": 2,
+          "action": "Verify bottom navigation bar appears",
+          "expected": "Bottom nav visible with 5 items: Dashboard, Projects, Tasks, Goals, More"
+        },
+        {
+          "step": 3,
+          "action": "Tap each navigation item",
+          "expected": "Each item navigates to correct page"
+        },
+        {
+          "step": 4,
+          "action": "Scroll down on any page",
+          "expected": "Bottom nav auto-hides on scroll down"
+        },
+        {
+          "step": 5,
+          "action": "Scroll up",
+          "expected": "Bottom nav reappears on scroll up"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS014",
+      "name": "PWA Service Worker (No Console Errors)",
+      "priority": "CRITICAL",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open browser DevTools Console",
+          "expected": "Console tab open"
+        },
+        {
+          "step": 2,
+          "action": "Navigate to https://foco.mx",
+          "expected": "Page loads"
+        },
+        {
+          "step": 3,
+          "action": "Check console for errors",
+          "expected": "NO errors about 'Partial response (status code 206) is unsupported'"
+        },
+        {
+          "step": 4,
+          "action": "Check console for errors",
+          "expected": "NO errors about 'Request scheme chrome-extension is unsupported'"
+        },
+        {
+          "step": 5,
+          "action": "Check console for errors",
+          "expected": "NO errors about 'Failed to execute put on Cache'"
+        },
+        {
+          "step": 6,
+          "action": "Navigate to multiple pages",
+          "expected": "Service worker caches pages without errors"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS015",
+      "name": "Offline Mode (PWA)",
+      "priority": "MEDIUM",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Visit https://foco.mx and navigate to several pages",
+          "expected": "Pages load and are cached"
+        },
+        {
+          "step": 2,
+          "action": "Open DevTools > Network tab, enable 'Offline' mode",
+          "expected": "Network disabled"
+        },
+        {
+          "step": 3,
+          "action": "Navigate to previously visited pages",
+          "expected": "Pages load from cache successfully"
+        },
+        {
+          "step": 4,
+          "action": "Try to navigate to new page",
+          "expected": "Offline page shown OR cached fallback"
+        },
+        {
+          "step": 5,
+          "action": "Disable offline mode",
+          "expected": "Network restored, pages load normally"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS016",
+      "name": "Responsive Design - All Screen Sizes",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Test on Desktop (1920x1080)",
+          "expected": "Full layout with sidebar, all features visible"
+        },
+        {
+          "step": 2,
+          "action": "Test on Tablet (768x1024)",
+          "expected": "Responsive layout, sidebar may collapse, content readable"
+        },
+        {
+          "step": 3,
+          "action": "Test on Mobile (375x667)",
+          "expected": "Mobile layout, bottom nav, hamburger menu, touch-friendly buttons"
+        },
+        {
+          "step": 4,
+          "action": "Verify all buttons are clickable on all sizes",
+          "expected": "No overlapping buttons, all interactive elements accessible"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS017",
+      "name": "Form Validation",
+      "priority": "MEDIUM",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Try to submit login form with empty fields",
+          "expected": "Validation errors shown, form not submitted"
+        },
+        {
+          "step": 2,
+          "action": "Try to submit registration with mismatched passwords",
+          "expected": "Error: 'Passwords do not match'"
+        },
+        {
+          "step": 3,
+          "action": "Try to create project with empty name",
+          "expected": "Validation error: 'Name is required'"
+        },
+        {
+          "step": 4,
+          "action": "Try to submit forms with invalid email format",
+          "expected": "Validation error: 'Invalid email format'"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS018",
+      "name": "Search and Filter",
+      "priority": "MEDIUM",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to /projects",
+          "expected": "Projects list loads"
+        },
+        {
+          "step": 2,
+          "action": "Type in search box",
+          "expected": "Projects filtered in real-time as you type"
+        },
+        {
+          "step": 3,
+          "action": "Click filter dropdown",
+          "expected": "Filter options appear (status, priority, etc.)"
+        },
+        {
+          "step": 4,
+          "action": "Select filter option",
+          "expected": "Projects filtered by selected criteria"
+        },
+        {
+          "step": 5,
+          "action": "Click sort dropdown",
+          "expected": "Sort options appear (name, date, priority, etc.)"
+        },
+        {
+          "step": 6,
+          "action": "Select sort option",
+          "expected": "Projects sorted by selected criteria"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS019",
+      "name": "Real-time Updates",
+      "priority": "LOW",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Open two browser windows, login to same account",
+          "expected": "Both windows show dashboard"
+        },
+        {
+          "step": 2,
+          "action": "In window 1, create a new project",
+          "expected": "Project created"
+        },
+        {
+          "step": 3,
+          "action": "Check window 2",
+          "expected": "New project appears automatically (real-time update)"
+        },
+        {
+          "step": 4,
+          "action": "In window 1, delete a project",
+          "expected": "Project deleted"
+        },
+        {
+          "step": 5,
+          "action": "Check window 2",
+          "expected": "Deleted project removed automatically"
+        }
+      ]
+    },
+
+    {
+      "scenario_id": "TS020",
+      "name": "Error Handling",
+      "priority": "MEDIUM",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Try to access protected route without login",
+          "expected": "Redirected to /login"
+        },
+        {
+          "step": 2,
+          "action": "Try to login with wrong credentials",
+          "expected": "Error message: 'Invalid credentials' or similar"
+        },
+        {
+          "step": 3,
+          "action": "Try to access non-existent project /projects/invalid-id",
+          "expected": "404 page or error message"
+        },
+        {
+          "step": 4,
+          "action": "Simulate network error (disable network mid-operation)",
+          "expected": "Error toast shown, graceful fallback"
+        }
+      ]
+    }
+  ],
+
+  "success_criteria": {
+    "critical_tests_passed": "100% of CRITICAL priority tests must pass",
+    "high_tests_passed": "95% of HIGH priority tests must pass",
+    "medium_tests_passed": "90% of MEDIUM priority tests must pass",
+    "low_tests_passed": "80% of LOW priority tests must pass",
+    "no_console_errors": "No JavaScript errors in console (warnings acceptable)",
+    "no_broken_buttons": "All buttons must have functional onClick handlers",
+    "responsive_design": "Site must be usable on all screen sizes",
+    "pwa_functional": "PWA must install and work offline"
+  },
+
+  "known_limitations": {
+    "oauth_not_implemented": "Google and Apple sign-in buttons show console.log (intentional placeholder)",
+    "bulk_team_management": "Bulk team management shows 'Coming Soon' (intentional)",
+    "duplicate_project": "Duplicate project shows 'Coming Soon' (intentional)",
+    "some_features_incomplete": "Some advanced features may show placeholders"
+  },
+
+  "reporting": {
+    "format": "Create a test report with pass/fail for each scenario",
+    "include_screenshots": "Take screenshots of any failures",
+    "include_console_logs": "Copy any console errors or warnings",
+    "include_network_logs": "Note any failed API calls",
+    "summary": "Provide overall pass rate and list of critical issues"
+  }
+}
+

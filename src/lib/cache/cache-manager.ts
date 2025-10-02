@@ -232,7 +232,7 @@ export function useCache<T>(
     }
 
     loadData()
-  }, [key, fetcher])
+  }, [key, fetcher, options])
 
   const refetch = async () => {
     try {

@@ -98,7 +98,7 @@ export default function CollaborativeEditor({
 
   // Handle presence changes
   const handlePresenceChange = useCallback((users: CollaborationUser[]) => {
-    setCollaborators(users.filter(u => u.id !== currentUser.id))
+    setCollaborators(users.filter(u => u.user_id !== currentUser.id))
   }, [currentUser.id])
 
   // Initialize collaboration service

@@ -239,7 +239,7 @@ export function useVirtualizedData<T>(
   useEffect(() => {
     // Load initial data
     loadMore()
-  }, [])
+  }, [loadMore])
 
   return {
     data,

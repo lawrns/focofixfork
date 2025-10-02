@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check Ollama availability before attempting to parse
-    const { ollamaService } = await import('@/lib/services/ollama')
-    const connectionTest = await ollamaService.testConnection()
+    const { ollamaServerService } = await import('@/lib/services/ollama-server')
+    const connectionTest = await ollamaServerService.testConnection()
     if (!connectionTest.success) {
       return NextResponse.json(
         {

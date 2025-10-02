@@ -7,7 +7,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { ollamaService } from './ollama'
+import { ollamaServerService } from './ollama-server'
 
 export interface ProjectSpecification {
   name: string
@@ -116,8 +116,8 @@ RULES:
 Return ONLY valid JSON, no explanations.`
 
     try {
-      const response = await ollamaService.generate({
-        model: ollamaService.config.defaultModel,
+      const response = await ollamaServerService.generate({
+        model: ollamaServerService.config.defaultModel,
         prompt,
         options: {
           temperature: 0.3, // Low temperature for consistent structure

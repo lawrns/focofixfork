@@ -109,28 +109,6 @@ export default function FileUploader({
     }
   }, [])
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(false)
-
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      await handleFiles(files)
-    }
-  }, [handleFiles])
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      await handleFiles(files)
-    }
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
   const handleFiles = useCallback(async (files: File[]) => {
     const currentUploads = uploadQueue.filter(item => item.status === 'uploading').length
     const totalFiles = existingFiles.length + currentUploads + files.length
@@ -188,6 +166,28 @@ export default function FileUploader({
       onUploadError?.(error.message)
     }
   }, [maxFiles, existingFiles, uploadQueue, entityType, entityId, currentUserId, currentUserName, allowedTypes, maxSize, onUploadComplete, onUploadError])
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      await handleFiles(files)
+    }
+  }, [handleFiles])
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      await handleFiles(files)
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleCancelUpload = (queueId: string) => {
     FileUploadService.cancelUpload(queueId)

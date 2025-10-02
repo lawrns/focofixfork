@@ -40,7 +40,7 @@ export function PerformanceDashboard() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [timeRange]);
+  }, [timeRange, loadPerformanceData]);
 
   const loadPerformanceData = useCallback(async () => {
     setIsLoading(true);

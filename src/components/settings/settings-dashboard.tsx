@@ -67,7 +67,7 @@ export function SettingsDashboard() {
 
   useEffect(() => {
     loadSettings()
-  }, [user])
+  }, [user, loadSettings])
 
   const loadSettings = useCallback(async () => {
     if (!user) return

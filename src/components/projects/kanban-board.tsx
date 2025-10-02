@@ -39,7 +39,7 @@ export function KanbanBoard() {
 
   useEffect(() => {
     loadTasks()
-  }, [user])
+  }, [user, loadTasks])
 
   const loadTasks = useCallback(async () => {
     if (!user) return
@@ -57,12 +57,10 @@ export function KanbanBoard() {
         const tasks: Task[] = data.data || []
 
         // Distribute tasks into columns
-        const updatedColumns = columns.map(col => ({
+        setColumns(prevColumns => prevColumns.map(col => ({
           ...col,
           tasks: tasks.filter(task => task.status === col.id)
-        }))
-
-        setColumns(updatedColumns)
+        })))
       } else {
         console.error('Failed to fetch tasks')
       }

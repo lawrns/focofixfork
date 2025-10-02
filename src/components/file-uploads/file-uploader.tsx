@@ -118,7 +118,7 @@ export default function FileUploader({
     if (files.length > 0) {
       await handleFiles(files)
     }
-  }, [maxFiles, existingFiles, uploadQueue, entityType, entityId, currentUserId, currentUserName, allowedTypes, maxSize, onUploadComplete, onUploadError])
+  }, [handleFiles])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -304,7 +304,7 @@ export default function FileUploader({
           )}
           onClick={() => fileInputRef.current?.click()}
         >
-          <UploadCloud className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <UploadCloud className="w-12 h-12 mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
           <h3 className="text-lg font-medium mb-2">
             {isDragOver ? 'Drop files here' : 'Upload Files'}
           </h3>

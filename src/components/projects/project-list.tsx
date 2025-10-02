@@ -54,7 +54,7 @@ export function ProjectList({
 
   useEffect(() => {
     fetchProjects()
-  }, [user, organizationId, statusFilter, priorityFilter])
+  }, [user, organizationId, statusFilter, priorityFilter, fetchProjects])
 
   // Subscribe to global project store
   useEffect(() => {
@@ -116,7 +116,7 @@ export function ProjectList({
     } finally {
       setLoading(false)
     }
-  }, [user, searchTerm, statusFilter, priorityFilter])
+  }, [user, organizationId, statusFilter, priorityFilter])
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

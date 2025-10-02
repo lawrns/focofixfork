@@ -65,7 +65,7 @@ export function TaskList({
 
   useEffect(() => {
     fetchTasks()
-  }, [user, projectId, milestoneId, statusFilter, priorityFilter, assigneeFilter])
+  }, [user, projectId, milestoneId, statusFilter, priorityFilter, assigneeFilter, fetchTasks])
 
   const fetchTasks = useCallback(async () => {
     if (!user) return

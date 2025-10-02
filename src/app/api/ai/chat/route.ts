@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Generate response using Ollama
     const response = await ollamaService.generate({
       model: ollamaService.config.chatModel || 'llama2',
-      prompt: `You are a helpful AI assistant for a project management application called Foco. The user's message: ${message}\n\nProvide a helpful, concise response.`,
+      prompt: `You are a helpful AI assistant for a project management application called Foco. User says: ${message}`,
       options: {
         temperature: 0.7,
         num_predict: 500

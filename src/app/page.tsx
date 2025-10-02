@@ -2,12 +2,16 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import Head from 'next/head'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, PlayCircle, Flag, Users, BarChart3, Sparkles, Zap, Target, Check } from 'lucide-react'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Home() {
+  useEffect(() => {
+    document.title = 'Foco - Gestión de Proyectos con IA'
+  }, [])
   const { scrollYProgress } = useScroll()
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%'])
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])

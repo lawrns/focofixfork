@@ -150,6 +150,7 @@ export class OllamaServerService {
     }
 
     const url = `${this.config.host}${endpoint}`
+    console.log('[OllamaServer] Fetching:', url)
 
     const defaultOptions: RequestInit = {
       headers: {
@@ -158,7 +159,9 @@ export class OllamaServerService {
       ...options
     }
 
-    return fetch(url, defaultOptions)
+    const response = await fetch(url, defaultOptions)
+    console.log('[OllamaServer] Response:', response.status, response.statusText)
+    return response
   }
 }
 

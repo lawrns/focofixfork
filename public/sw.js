@@ -157,6 +157,22 @@ function isImageRequest(url) {
   return /\.(png|jpg|jpeg|gif|svg|webp|ico)$/i.test(url);
 }
 
+// Validation helper to check if request/response is cacheable
+function isCacheable(request, response) {
+  // Only cache HTTP/HTTPS requests (filter out chrome-extension://, blob:, data:, etc.)
+  if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
+    return false;
+  }
+
+  // Only cache successful responses (status 200)
+  // Skip partial responses (206), redirects (301, 302), not modified (304), errors (404, 500, etc.)
+  if (!response || response.status !== 200 || response.type === 'error') {
+    return false;
+  }
+
+  return true;
+}
+
 // Cache strategies
 async function cacheFirst(request) {
   try {
@@ -166,14 +182,28 @@ async function cacheFirst(request) {
     }
 
     const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
+
+    // Only cache if request and response are cacheable
+    if (isCacheable(request, networkResponse)) {
+      try {
+        const cache = await caches.open(STATIC_CACHE);
+        await cache.put(request, networkResponse.clone());
+      } catch (cacheError) {
+        // Silently ignore caching errors (e.g., quota exceeded, unsupported schemes)
+        console.debug('[SW] Cache put failed:', cacheError.message);
+      }
     }
+
     return networkResponse;
   } catch (error) {
-    console.log('[SW] Cache-first failed, trying network');
-    return fetch(request);
+    // Network failed, try to return cached response
+    console.debug('[SW] Network failed in cacheFirst:', error.message);
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    // Re-throw if no cache available
+    throw error;
   }
 }
 
@@ -181,15 +211,21 @@ async function networkFirst(request, fallbackUrl = '/offline.html') {
   try {
     const networkResponse = await fetch(request);
 
-    // Cache successful GET responses
-    if (request.method === 'GET' && networkResponse.ok) {
-      const cache = await caches.open(isApiRequest(request.url) ? API_CACHE : DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
+    // Only cache if request and response are cacheable
+    if (request.method === 'GET' && isCacheable(request, networkResponse)) {
+      try {
+        const cache = await caches.open(isApiRequest(request.url) ? API_CACHE : DYNAMIC_CACHE);
+        await cache.put(request, networkResponse.clone());
+      } catch (cacheError) {
+        // Silently ignore caching errors (e.g., quota exceeded, partial responses, unsupported schemes)
+        console.debug('[SW] Cache put failed:', cacheError.message);
+      }
     }
 
     return networkResponse;
   } catch (error) {
-    console.log('[SW] Network failed, trying cache');
+    // Network failed, try cache fallback
+    console.debug('[SW] Network failed in networkFirst:', error.message);
 
     // Try cache first
     const cachedResponse = await caches.match(request);
@@ -199,10 +235,20 @@ async function networkFirst(request, fallbackUrl = '/offline.html') {
 
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
-      const cache = await caches.open(STATIC_CACHE);
-      return cache.match(fallbackUrl) || new Response('Offline', { status: 503 });
+      try {
+        const cache = await caches.open(STATIC_CACHE);
+        const offlineResponse = await cache.match(fallbackUrl);
+        if (offlineResponse) {
+          return offlineResponse;
+        }
+      } catch (cacheError) {
+        console.debug('[SW] Failed to get offline page:', cacheError.message);
+      }
+      // Final fallback
+      return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     }
 
+    // For non-navigation requests, throw the error
     throw error;
   }
 }

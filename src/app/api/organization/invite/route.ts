@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = supabaseAdmin
     const { email, name, role } = await request.json()
 
     if (!email || !name) {
@@ -54,14 +54,18 @@ export async function POST(request: NextRequest) {
     // Generate a random password
     const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`
 
-    // Check if user already exists in auth
-    const { data: existingAuthUser } = await supabase.auth.admin.getUserByEmail(email)
+    // Check if user already exists in users table
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
 
     let userId: string
 
-    if (existingAuthUser && existingAuthUser.user) {
-      // User already exists in auth
-      userId = existingAuthUser.user.id
+    if (existingUser) {
+      // User already exists
+      userId = existingUser.id
     } else {
       // Create new user in Supabase Auth
       const { data: authData, error: createAuthError } = await supabase.auth.admin.createUser({

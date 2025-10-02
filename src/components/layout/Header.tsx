@@ -2,10 +2,19 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, HelpCircle, X } from 'lucide-react'
+import { Search, HelpCircle, X, Settings, LogOut, User } from 'lucide-react'
 import { SavedViews } from '@/components/ui/saved-views'
 import { ViewConfig } from '@/lib/hooks/use-saved-views'
 import { useAuth } from '@/lib/hooks/use-auth'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { supabase } from '@/lib/supabase-client'
 
 interface SearchResult {
   id: string
@@ -230,10 +239,46 @@ export default function Header() {
           <HelpCircle className="h-5 w-5" />
         </button>
         
-        {/* User Avatar */}
-        <div className="size-11 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-sm font-semibold text-primary">U</span>
-        </div>
+        {/* User Avatar with Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="size-11 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer">
+              <span className="text-sm font-semibold text-primary">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.email}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.user_metadata?.full_name || 'User'}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={async () => {
+                await supabase.auth.signOut()
+                router.push('/login')
+              }}
+              className="text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign Out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

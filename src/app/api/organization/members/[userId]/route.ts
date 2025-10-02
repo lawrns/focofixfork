@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 interface RouteParams {
   params: {
@@ -9,7 +9,7 @@ interface RouteParams {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createClient()
+    const supabase = supabaseAdmin
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

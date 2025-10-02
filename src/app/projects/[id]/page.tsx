@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import MainLayout from '@/components/layout/MainLayout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import { ProjectCard } from '@/components/projects/project-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -296,10 +295,20 @@ function ProjectDetailsContent() {
               <TabsContent value="team" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Team Members</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Team Members</CardTitle>
+                      <Button
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/settings?tab=members`)}
+                      >
+                        Manage Team
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">Team management coming soon...</p>
+                    <p className="text-muted-foreground">
+                      Team management is available in Settings. Click &ldquo;Manage Team&rdquo; to add or remove members, change roles, and invite new team members.
+                    </p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -353,13 +362,25 @@ function ProjectDetailsContent() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => router.push(`/projects/${project.id}/tasks/new`)}
+                >
                   Add Task
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => router.push(`/projects/${project.id}/milestones/new`)}
+                >
                   Create Milestone
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => router.push(`/dashboard/settings?tab=members`)}
+                >
                   Invite Team Member
                 </Button>
               </CardContent>

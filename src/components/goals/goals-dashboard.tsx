@@ -8,6 +8,17 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/components/toast/toast';
+import {
   Target,
   Plus,
   TrendingUp,
@@ -37,6 +48,8 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [analytics, setAnalytics] = useState<any>(null);
+  const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const loadGoals = useCallback(async () => {
     setIsLoading(true);
@@ -162,6 +175,27 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
       });
     }
   }, [organizationId]);
+
+  const handleDeleteGoal = async () => {
+    if (!deleteGoalId) return;
+
+    try {
+      await GoalsService.deleteGoal(deleteGoalId);
+      toast({
+        title: 'Goal deleted',
+        description: 'The goal has been successfully deleted.',
+      });
+      setDeleteGoalId(null);
+      loadGoals();
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete goal. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   useEffect(() => {
     loadGoals();
@@ -399,7 +433,11 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
                         <Button variant="ghost" size="sm">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteGoalId(goal.id)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -507,6 +545,25 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteGoalId} onOpenChange={() => setDeleteGoalId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the goal
+              and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGoal} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

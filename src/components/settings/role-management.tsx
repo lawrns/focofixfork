@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, UserPlus, Shield, Crown, Trash2, Calendar } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/components/toast/toast'
 
 interface OrganizationMember {
   id: string

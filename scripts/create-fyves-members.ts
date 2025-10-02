@@ -32,12 +32,16 @@ async function createMember(email: string, displayName: string) {
   console.log(`\n🔄 Creating account for ${email}...`)
 
   try {
-    // Check if user already exists by checking auth.users table via admin API
-    const { data: existingUser, error: checkError } = await supabase.auth.admin.getUserByEmail(email)
+    // Check if user already exists by checking users table
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
 
-    if (existingUser && existingUser.user) {
-      console.log(`✅ User ${email} already exists with ID: ${existingUser.user.id}`)
-      return existingUser.user.id
+    if (existingUsers && !checkError) {
+      console.log(`✅ User ${email} already exists with ID: ${existingUsers.id}`)
+      return existingUsers.id
     }
 
     // Create user in Supabase Auth

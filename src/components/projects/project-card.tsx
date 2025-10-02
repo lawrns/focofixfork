@@ -21,6 +21,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useRealtime } from '@/lib/hooks/useRealtime'
 import { motion } from 'framer-motion'
 
@@ -66,6 +76,7 @@ export function ProjectCard({
   const [currentProject, setCurrentProject] = useState(project)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdated, setIsUpdated] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   // Real-time updates for this project
   useRealtime(
@@ -99,6 +110,7 @@ export function ProjectCard({
     if (!onDelete) return
 
     setIsDeleting(true)
+    setShowDeleteDialog(false)
     try {
       await onDelete(currentProject.id)
     } catch (error) {
@@ -167,7 +179,7 @@ export function ProjectCard({
                 <DropdownMenuSeparator />
                 {onDelete && (
                   <DropdownMenuItem
-                    onClick={handleDelete}
+                    onClick={() => setShowDeleteDialog(true)}
                     disabled={isDeleting}
                     className="text-red-600 dark:text-red-400"
                   >
@@ -220,7 +232,7 @@ export function ProjectCard({
         {/* Footer with action button */}
         <div className="pt-2">
           <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href={`/projects/${currentProject.id}`}>
+            <Link href={`/projects/${currentProject.id}`} className="flex items-center justify-center">
               <Eye className="mr-2 h-4 w-4" />
               View Project
             </Link>
@@ -228,6 +240,28 @@ export function ProjectCard({
         </div>
       </CardContent>
     </Card>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Project</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete &ldquo;{currentProject.name}&rdquo;? This action cannot be undone.
+            All tasks, milestones, and data associated with this project will be permanently deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete Project
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </motion.div>
   )
 }

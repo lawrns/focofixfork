@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Calendar, X } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -113,15 +112,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>
-          {isEditing ? 'Edit Project' : 'Create New Project'}
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -294,8 +285,6 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
   )
 }
 

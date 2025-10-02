@@ -216,15 +216,15 @@ export function TaskForm({
           <div className="space-y-2">
             <Label htmlFor="milestone">Milestone (Optional)</Label>
             <Select
-              value={watch('milestone_id') || ''}
-              onValueChange={(value) => setValue('milestone_id', value)}
+              value={watch('milestone_id') || 'none'}
+              onValueChange={(value) => setValue('milestone_id', value === 'none' ? null : value)}
               disabled={isSubmitting || !watchedProjectId}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select milestone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No milestone</SelectItem>
+                <SelectItem value="none">No milestone</SelectItem>
                 {availableMilestones.map((milestone) => (
                   <SelectItem key={milestone.id} value={milestone.id}>
                     {milestone.title}
@@ -279,15 +279,15 @@ export function TaskForm({
           <div className="space-y-2">
             <Label htmlFor="assignee">Assignee (Optional)</Label>
             <Select
-              value={watchedAssigneeId || ''}
-              onValueChange={(value) => setValue('assignee_id', value)}
+              value={watchedAssigneeId || 'unassigned'}
+              onValueChange={(value) => setValue('assignee_id', value === 'unassigned' ? null : value)}
               disabled={isSubmitting}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select assignee" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {teamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.display_name}

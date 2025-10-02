@@ -91,36 +91,35 @@ export function MobileBottomNav({
       id: 'home',
       label: 'Home',
       icon: Home,
-      href: '/',
-      requiresAuth: false
+      href: '/dashboard',
+      requiresAuth: true
     },
     {
       id: 'projects',
       label: 'Projects',
       icon: Folder,
-      href: '/dashboard',
+      href: '/projects',
       requiresAuth: true
     },
     {
       id: 'team',
       label: 'Team',
       icon: Users,
-      href: '/team',
-      requiresAuth: true,
-      badge: 3 // Example notification count
+      href: '/organizations',
+      requiresAuth: true
     },
     {
       id: 'analytics',
       label: 'Analytics',
       icon: BarChart3,
-      href: '/analytics',
+      href: '/dashboard/analytics',
       requiresAuth: true
     },
     {
       id: 'settings',
       label: 'Settings',
       icon: Settings,
-      href: '/settings',
+      href: '/dashboard/settings',
       requiresAuth: true
     }
   ]

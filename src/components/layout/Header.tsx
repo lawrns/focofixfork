@@ -139,17 +139,17 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur-sm">
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-3 md:px-6 py-3 md:py-4 backdrop-blur-sm">
+      <div className="flex items-center gap-2 md:gap-6">
+        <div className="flex items-center gap-2 md:gap-3">
           <img
             src="/focologo.png"
             alt="Foco Logo"
-            className="h-8 w-auto"
+            className="h-6 md:h-8 w-auto"
           />
-          <h2 className="text-xl font-bold text-foreground">Foco</h2>
+          <h2 className="text-lg md:text-xl font-bold text-foreground">Foco</h2>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-3">
           <span className="rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
             Project Management
           </span>
@@ -175,15 +175,15 @@ export default function Header() {
         />
       </div>
 
-      <div className="flex flex-1 justify-end items-center gap-4">
+      <div className="flex flex-1 justify-end items-center gap-2 md:gap-4">
         {/* Search */}
-        <div className="relative w-72">
+        <div className="relative w-full max-w-[200px] sm:max-w-xs md:w-72">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="h-5 w-5 text-muted-foreground" />
+            <Search className="h-4 md:h-5 w-4 md:w-5 text-muted-foreground" />
           </div>
           <input
-            className="h-11 w-full rounded-lg border border-input bg-background pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder="Search projects, tasks, milestones..."
+            className="h-9 md:h-11 w-full rounded-lg border border-input bg-background pl-8 md:pl-10 pr-8 md:pr-10 text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+            placeholder="Search..."
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -192,9 +192,9 @@ export default function Header() {
           {searchQuery && (
             <button
               onClick={clearSearch}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 hover:text-foreground text-muted-foreground"
+              className="absolute inset-y-0 right-0 flex items-center pr-2 md:pr-3 hover:text-foreground text-muted-foreground"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 md:h-4 w-3 md:w-4" />
             </button>
           )}
 
@@ -233,17 +233,17 @@ export default function Header() {
             </div>
           )}
         </div>
-        
+
         {/* Help Button */}
-        <button className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-          <HelpCircle className="h-5 w-5" />
+        <button className="hidden sm:flex size-9 md:size-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
+          <HelpCircle className="h-4 md:h-5 w-4 md:w-5" />
         </button>
-        
+
         {/* User Avatar with Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="size-11 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer">
-              <span className="text-sm font-semibold text-primary">
+            <button className="size-9 md:size-11 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer">
+              <span className="text-xs md:text-sm font-semibold text-primary">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </span>
             </button>

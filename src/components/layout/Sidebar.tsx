@@ -217,7 +217,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex w-64 flex-col bg-sidebar border-r border-sidebar-hover">
+    <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-hover">
       <div className="flex h-full flex-col p-4">
         {/* Logo Section */}
         <div className="flex items-center gap-3 p-2">

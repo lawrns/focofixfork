@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ollamaService } from '@/lib/services/ollama'
+import { aiService } from '@/lib/services/openai'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,35 +22,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check Ollama connection
-    const connectionTest = await ollamaService.testConnection()
+    // Check OpenAI connection
+    const connectionTest = await aiService.testConnection()
     if (!connectionTest.success) {
       // Return a friendly message instead of error
       return NextResponse.json({
         success: true,
         data: {
-          message: `I apologize, but the AI service is currently offline for maintenance. While I'm unavailable, you can:\n\n• Use the search bar to find tasks and projects\n• Create projects manually from the dashboard\n• Check documentation for help with features\n\nThe AI service will be back online soon!`,
+          message: `I apologize, but the AI service is currently unavailable. While I'm offline, you can:\n\n• Use the search bar to find tasks and projects\n• Create projects manually from the dashboard\n• Check documentation for help with features\n\nThe AI service will be back online soon!`,
           model: 'fallback'
         }
       })
     }
 
-    // Generate response using Ollama
-    // Use llama2 since it's the only model loaded on Fly.io
-    const response = await ollamaService.generate({
-      model: 'llama2',
-      prompt: `You are a helpful AI assistant for a project management application called Foco. User says: ${message}`,
-      options: {
-        temperature: 0.7,
-        num_predict: 500
-      }
-    })
+    // Generate response using OpenAI
+    const response = await aiService.chat(message)
 
     return NextResponse.json({
       success: true,
       data: {
-        message: response.response,
-        model: response.model
+        message: response,
+        model: aiService.config.chatModel
       }
     })
 

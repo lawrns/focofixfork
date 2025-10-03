@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MessageCircle, X, Send, Sparkles, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { ollamaService } from '@/lib/services/ollama'
 
 interface Message {
   id: string
@@ -25,11 +24,15 @@ export function FloatingAIChat() {
   const [isConnected, setIsConnected] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Check Ollama connection on mount
+  // Check AI connection on mount
   useEffect(() => {
     const checkConnection = async () => {
-      const result = await ollamaService.testConnection()
-      setIsConnected(result.success)
+      try {
+        const response = await fetch('/api/ai/health')
+        setIsConnected(response.ok)
+      } catch (error) {
+        setIsConnected(false)
+      }
     }
     checkConnection()
   }, [])
@@ -40,7 +43,7 @@ export function FloatingAIChat() {
       setMessages([{
         id: '1',
         role: 'assistant',
-        content: "Hi! I'm your AI assistant powered by Ollama. I can help you with:\n\n• Creating projects and tasks\n• Analyzing your project data\n• Answering questions about your work\n• Providing suggestions and insights\n\nHow can I help you today?",
+        content: "Hi! I'm your AI assistant powered by OpenAI. I can help you with:\n\n• Creating projects and tasks\n• Analyzing your project data\n• Answering questions about your work\n• Providing suggestions and insights\n\nHow can I help you today?",
         timestamp: new Date()
       }])
     }

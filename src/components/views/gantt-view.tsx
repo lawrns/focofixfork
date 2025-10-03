@@ -64,7 +64,16 @@ const GanttView: React.FC<GanttViewProps> = ({ project, className }) => {
   const [showDependencyModal, setShowDependencyModal] = useState(false)
   const [selectedDependency, setSelectedDependency] = useState<{from: string, to: string} | null>(null)
   const [dependencyMode, setDependencyMode] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Calculate date range based on project data
   useEffect(() => {
@@ -247,18 +256,46 @@ const GanttView: React.FC<GanttViewProps> = ({ project, className }) => {
     }
   }
 
-  return (
-    <Card className={cn('h-full flex flex-col', className)}>
-      <CardHeader className="flex-shrink-0">
-        <div className="flex items-center justify-between">
+  // Mobile fallback view
+  if (isMobile) {
+    return (
+      <Card className={cn('h-full flex flex-col', className)}>
+        <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="h-5 w-5" />
             <span>Gantt Chart</span>
           </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">Desktop View Recommended</h3>
+            <p className="text-sm text-muted-foreground">
+              The Gantt chart view is optimized for larger screens. For the best experience, please view this page on a tablet or desktop device.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Try the <strong>Table</strong> or <strong>Kanban</strong> view for a better mobile experience.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-          <div className="flex items-center space-x-2">
-            {/* Zoom Controls */}
-            <div className="flex items-center border rounded-lg">
+  return (
+    <Card className={cn('h-full flex flex-col', className)}>
+      <CardHeader className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 hidden sm:block" />
+            <span className="text-base sm:text-lg">Gantt Chart</span>
+          </CardTitle>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Zoom Controls - Only show on tablet+ */}
+            <div className="hidden sm:flex items-center border rounded-lg">
               <Button
                 variant="ghost"
                 size="sm"
@@ -282,26 +319,28 @@ const GanttView: React.FC<GanttViewProps> = ({ project, className }) => {
               </Button>
             </div>
 
-            {/* Scroll Controls */}
-            <Button variant="outline" size="sm" onClick={() => handleScroll('left')}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleScroll('right')}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            {/* Scroll Controls - Always visible */}
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => handleScroll('left')}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleScroll('right')}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
 
-            {/* Dependency Management */}
+            {/* Dependency Management - Hide on mobile */}
             <Button
               variant={dependencyMode ? "default" : "outline"}
               size="sm"
               onClick={() => setDependencyMode(!dependencyMode)}
-              className={dependencyMode ? "bg-blue-600 hover:bg-blue-700" : ""}
+              className={`hidden md:flex ${dependencyMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
               title="Toggle dependency creation mode"
             >
               <Link className="h-4 w-4" />
             </Button>
 
-            {/* Settings */}
+            {/* Settings - Replace with menu on mobile */}
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4" />
             </Button>

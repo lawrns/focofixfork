@@ -134,7 +134,7 @@ export function FloatingAIChat() {
     <>
       {/* Floating Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-28 sm:bottom-24 right-2 sm:right-6 z-50 w-[calc(100vw-1rem)] sm:w-96 h-[70vh] sm:h-[600px] max-h-[600px] shadow-2xl border-0 flex flex-col overflow-hidden">
+        <Card className="fixed bottom-28 sm:bottom-24 right-2 sm:right-6 z-40 md:z-50 w-[calc(100vw-1rem)] sm:w-96 h-[70vh] sm:h-[600px] max-h-[600px] shadow-2xl border-0 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-primary/10 to-purple-500/10">
             <div className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export function FloatingAIChat() {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:scale-110 transition-transform"
+          className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-40 md:z-50 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:scale-110 transition-transform"
           size="sm"
         >
           <div className="relative">

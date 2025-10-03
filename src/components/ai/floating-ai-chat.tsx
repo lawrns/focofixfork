@@ -131,9 +131,9 @@ export function FloatingAIChat() {
     <>
       {/* Floating Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 z-50 w-96 h-[600px] shadow-2xl border-2 flex flex-col">
+        <Card className="fixed bottom-28 sm:bottom-24 right-2 sm:right-6 z-50 w-[calc(100vw-1rem)] sm:w-96 h-[70vh] sm:h-[600px] max-h-[600px] shadow-2xl border-0 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 to-purple-500/10">
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-primary/10 to-purple-500/10">
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Sparkles className="h-5 w-5 text-primary" />
@@ -193,7 +193,7 @@ export function FloatingAIChat() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-4 border-t">
+          <div className="p-3 sm:p-4 border-t bg-background">
             {!isConnected && (
               <div className="mb-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
                 AI service is starting up. Please wait a moment...
@@ -206,7 +206,7 @@ export function FloatingAIChat() {
                 onKeyPress={handleKeyPress}
                 placeholder={isConnected ? "Ask me anything..." : "Connecting..."}
                 disabled={isLoading || !isConnected}
-                className="flex-1"
+                className="flex-1 border-input"
               />
               <Button
                 onClick={handleSend}
@@ -217,7 +217,7 @@ export function FloatingAIChat() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-2 hidden sm:block">
               Press Enter to send • Shift+Enter for new line
             </p>
           </div>
@@ -228,13 +228,13 @@ export function FloatingAIChat() {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:scale-110 transition-transform"
+          className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:scale-110 transition-transform"
           size="sm"
         >
           <div className="relative">
-            <MessageCircle className="h-6 w-6" />
+            <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
             {isConnected && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white" />
             )}
           </div>
         </Button>

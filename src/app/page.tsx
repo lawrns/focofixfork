@@ -631,21 +631,62 @@ export default function Home() {
 
           {/* Clean CTA Bar */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] p-6 z-50"
+            className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] p-4 sm:p-6 z-50 shadow-lg"
             initial={{ y: 100 }}
             animate={{ y: 0 }}
             transition={{ delay: 1, duration: 0.8, type: "spring", stiffness: 100 }}
           >
-            <div className="max-w-4xl mx-auto flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-[#0A0A0A] text-lg">¿Listo para comenzar?</h3>
-                <p className="text-[#6B6B6B]">Únete gratis hoy mismo • Sin tarjeta de crédito</p>
-              </div>
-              <Link href="/register">
-                <Button className="bg-[#0052CC] hover:bg-[#004299] text-white px-6 py-3 rounded-lg font-semibold shadow-lg">
-                  Comenzar gratis
-                </Button>
-              </Link>
+            <div className="max-w-4xl mx-auto">
+              {/* Mobile: PWA Install Button */}
+              {isMobile ? (
+                <motion.button
+                  onClick={async () => {
+                    if (canInstall) {
+                      await promptInstall()
+                    } else if (isInstalled) {
+                      alert('¡Foco ya está instalado en tu dispositivo!')
+                    } else {
+                      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+                      if (isIOS) {
+                        alert('Para instalar en iOS:\n\n1. Toca el botón de compartir (⬆️)\n2. Selecciona "Añadir a pantalla de inicio"\n3. Toca "Añadir"')
+                      } else {
+                        alert('Para instalar:\n\n1. Toca el menú (⋮) en tu navegador\n2. Selecciona "Instalar app" o "Añadir a pantalla de inicio"')
+                      }
+                    }
+                  }}
+                  className="w-full"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <div className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#004299] hover:to-[#0052CC] rounded-xl p-4 flex items-center gap-3 transition-all duration-300 shadow-md">
+                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Download className="w-6 h-6 text-[#0052CC]" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="text-base font-bold text-white">
+                        {isInstalled ? '✓ Foco instalado' : 'Instalar Foco'}
+                      </div>
+                      <div className="text-xs text-white/80">
+                        {isInstalled ? 'Listo para usar' : 'Acceso rápido desde tu pantalla de inicio'}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-white/70 flex-shrink-0" />
+                  </div>
+                </motion.button>
+              ) : (
+                /* Desktop: Original CTA */
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-[#0A0A0A] text-lg">¿Listo para comenzar?</h3>
+                    <p className="text-[#6B6B6B]">Únete gratis hoy mismo • Sin tarjeta de crédito</p>
+                  </div>
+                  <Link href="/register">
+                    <Button className="bg-[#0052CC] hover:bg-[#004299] text-white px-6 py-3 rounded-lg font-semibold shadow-lg">
+                      Comenzar gratis
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

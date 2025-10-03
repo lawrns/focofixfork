@@ -55,7 +55,7 @@ function ProjectsContent() {
 
   return (
     <MainLayout>
-      <div className="p-6">
+      <div className="p-3 sm:p-4 md:p-6">
         <ProjectList
           showCreateButton={true}
           onCreateProject={handleCreateProject}
@@ -66,7 +66,7 @@ function ProjectsContent() {
 
       {/* Create/Edit Project Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle>
               {editingProject ? 'Edit Project' : 'Create New Project'}

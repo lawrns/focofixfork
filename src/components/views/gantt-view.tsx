@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import CriticalPathAnalysis from '@/components/analysis/critical-path-analysis'
+import MobileTimelineView from '@/components/views/mobile-timeline-view'
 
 interface Milestone {
   id: string
@@ -256,32 +257,9 @@ const GanttView: React.FC<GanttViewProps> = ({ project, className }) => {
     }
   }
 
-  // Mobile fallback view
+  // Mobile fallback view - use timeline instead of complex Gantt
   if (isMobile) {
-    return (
-      <Card className={cn('h-full flex flex-col', className)}>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
-            <span>Gantt Chart</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4 max-w-md">
-            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">Desktop View Recommended</h3>
-            <p className="text-sm text-muted-foreground">
-              The Gantt chart view is optimized for larger screens. For the best experience, please view this page on a tablet or desktop device.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Try the <strong>Table</strong> or <strong>Kanban</strong> view for a better mobile experience.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <MobileTimelineView project={project} className={className} />
   }
 
   return (

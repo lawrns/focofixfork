@@ -926,10 +926,10 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                 ))
               ) : projects.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                    <div className="space-y-2">
-                      <p className="text-lg font-medium">No projects yet</p>
-                      <p className="text-sm">Create your first project to get started</p>
+                  <td colSpan={7} className="px-3 sm:px-6 py-12 text-center text-muted-foreground">
+                    <div className="space-y-2 max-w-full overflow-hidden">
+                      <p className="text-base sm:text-lg font-medium break-words px-2">No projects yet</p>
+                      <p className="text-xs sm:text-sm break-words px-2">Create your first project to get started</p>
                     </div>
                   </td>
                 </tr>

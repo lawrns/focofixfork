@@ -244,17 +244,17 @@ export function ProjectList({
 
       {/* Project Grid */}
       {filteredProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground mb-4">
+        <div className="text-center py-12 px-3">
+          <div className="text-muted-foreground mb-4 max-w-full overflow-hidden">
             {projects.length === 0 ? (
               <>
-                <p className="text-lg mb-2">No projects found</p>
-                <p>Get started by creating your first project</p>
+                <p className="text-base sm:text-lg mb-2 break-words">No projects found</p>
+                <p className="text-sm sm:text-base break-words px-2">Get started by creating your first project</p>
               </>
             ) : (
               <>
-                <p className="text-lg mb-2">No projects match your filters</p>
-                <p>Try adjusting your search or filters</p>
+                <p className="text-base sm:text-lg mb-2 break-words">No projects match your filters</p>
+                <p className="text-sm sm:text-base break-words px-2">Try adjusting your search or filters</p>
               </>
             )}
           </div>

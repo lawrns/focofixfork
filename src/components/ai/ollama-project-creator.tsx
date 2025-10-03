@@ -103,7 +103,7 @@ export function OllamaProjectCreator({ onSuccess, onCancel }: OllamaProjectCreat
     setResult(null)
 
     try {
-      const response = await fetch('/api/ollama/create-project', {
+      const response = await fetch('/api/ai/create-project', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

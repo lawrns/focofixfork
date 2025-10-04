@@ -1,28 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { OpenAIProjectManager } from '@/lib/services/openai-project-manager'
+import { aiService } from '@/lib/services/openai'
+import { supabase } from '@/lib/supabase'
 import { canManageOrganizationMembers } from '@/lib/middleware/authorization'
 import { z } from 'zod'
 
 const CreateProjectSchema = z.object({
-  specification: z.union([
-    z.string().min(10, 'Specification must be at least 10 characters'),
-    z.object({
-      name: z.string().min(1, 'Project name is required'),
-      description: z.string().min(1, 'Project description is required'),
-      requirements: z.array(z.string()).optional(),
-      timeline: z.object({
-        start_date: z.string().optional(),
-        due_date: z.string().optional(),
-        duration_days: z.number().optional()
-      }).optional(),
-      team: z.object({
-        size: z.number().optional(),
-        roles: z.array(z.string()).optional()
-      }).optional(),
-      complexity: z.enum(['simple', 'moderate', 'complex', 'enterprise']).optional(),
-      domain: z.string().optional()
-    })
-  ]),
+  specification: z.string().min(10, 'Project description must be at least 10 characters'),
   organizationId: z.string().uuid('Invalid organization ID')
 })
 
@@ -105,7 +88,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check AI service availability
-    const { aiService } = await import('@/lib/services/openai')
     const connectionTest = await aiService.testConnection()
     if (!connectionTest.success) {
       return NextResponse.json(
@@ -118,29 +100,112 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse the project specification using OpenAI
-    const parsedProject = await OpenAIProjectManager.parseProjectSpecification(
-      specification as any,
-      userId
-    )
+    // Generate project structure using OpenAI
+    console.log('[AI Project Creation] Generating structure for:', specification.substring(0, 100))
+    const projectStructure = await aiService.generateProjectStructure(specification)
+    console.log('[AI Project Creation] Generated structure:', {
+      name: projectStructure.name,
+      milestonesCount: projectStructure.milestones.length,
+      tasksCount: projectStructure.milestones.reduce((acc, m) => acc + m.tasks.length, 0)
+    })
 
-    // Create the project in the database
-    const result = await OpenAIProjectManager.createProject(
-      parsedProject,
-      userId,
-      organizationId
-    )
+    // Create project in database
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .insert({
+        name: projectStructure.name,
+        description: projectStructure.description,
+        status: 'active',
+        priority: projectStructure.priority,
+        created_by: userId,
+        organization_id: organizationId,
+        start_date: new Date().toISOString(),
+        end_date: projectStructure.milestones.length > 0
+          ? projectStructure.milestones[projectStructure.milestones.length - 1].dueDate
+          : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .select()
+      .single()
+
+    if (projectError) {
+      console.error('[AI Project Creation] Error creating project:', projectError)
+      return NextResponse.json(
+        { success: false, error: 'Failed to create project in database' },
+        { status: 500 }
+      )
+    }
+
+    console.log('[AI Project Creation] Project created:', project.id)
+
+    // Create milestones and tasks
+    const createdMilestones = []
+    const createdTasks = []
+
+    for (const milestone of projectStructure.milestones) {
+      const { data: createdMilestone, error: milestoneError } = await supabase
+        .from('milestones')
+        .insert({
+          name: milestone.name,
+          description: milestone.description,
+          project_id: project.id,
+          due_date: milestone.dueDate,
+          priority: milestone.priority,
+          status: 'not_started',
+          created_by: userId,
+        })
+        .select()
+        .single()
+
+      if (milestoneError) {
+        console.error('[AI Project Creation] Error creating milestone:', milestoneError)
+        continue
+      }
+
+      createdMilestones.push(createdMilestone)
+
+      // Create tasks for this milestone
+      const tasksToCreate = milestone.tasks.map(task => ({
+        name: task.name,
+        description: task.description,
+        project_id: project.id,
+        milestone_id: createdMilestone.id,
+        status: 'todo',
+        priority: task.priority,
+        estimated_hours: task.estimatedHours,
+        created_by: userId,
+        assigned_to: userId,
+      }))
+
+      if (tasksToCreate.length > 0) {
+        const { data: tasksBatch, error: tasksError } = await supabase
+          .from('tasks')
+          .insert(tasksToCreate)
+          .select()
+
+        if (tasksError) {
+          console.error('[AI Project Creation] Error creating tasks:', tasksError)
+        } else {
+          createdTasks.push(...tasksBatch)
+        }
+      }
+    }
+
+    console.log('[AI Project Creation] Success:', {
+      projectId: project.id,
+      milestones: createdMilestones.length,
+      tasks: createdTasks.length
+    })
 
     return NextResponse.json({
       success: true,
       data: {
-        project: result.project,
-        milestones: result.milestones,
-        tasks: result.tasks,
+        project,
+        milestones: createdMilestones,
+        tasks: createdTasks,
         summary: {
-          project_name: result.project.name,
-          total_milestones: result.milestones.length,
-          total_tasks: result.tasks.length
+          project_name: project.name,
+          total_milestones: createdMilestones.length,
+          total_tasks: createdTasks.length
         }
       }
     }, { status: 201 })

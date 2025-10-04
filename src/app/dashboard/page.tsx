@@ -27,6 +27,7 @@ import CommentsSection from '@/components/comments/comments-section'
 import NotificationCenter from '@/components/notifications/notification-center'
 import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard'
 import { GoalsDashboard } from '@/components/goals/goals-dashboard'
+import { AIProjectCreator } from '@/components/ai/ai-project-creator'
 
 function DashboardSkeleton() {
   return (
@@ -337,10 +338,13 @@ export default function DashboardPage() {
               Describe your project in natural language, and AI will automatically create a complete project structure with milestones and tasks.
             </p>
           </DialogHeader>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">AI project creation is now powered by OpenAI.</p>
-            <p className="text-sm text-muted-foreground mt-2">Feature integration in progress.</p>
-          </div>
+          <AIProjectCreator
+            onSuccess={(projectId) => {
+              setShowAIProjectModal(false)
+              router.push(`/projects/${projectId}`)
+            }}
+            onCancel={() => setShowAIProjectModal(false)}
+          />
         </DialogContent>
       </Dialog>
     </MainLayout>

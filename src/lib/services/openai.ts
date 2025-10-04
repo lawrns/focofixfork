@@ -277,6 +277,103 @@ Provide a concise, professional description (2-3 sentences) that explains what t
 
     return response.content
   }
+
+  /**
+   * Generate complete project structure with milestones and tasks
+   */
+  async generateProjectStructure(description: string): Promise<{
+    name: string
+    description: string
+    priority: 'low' | 'medium' | 'high' | 'urgent'
+    milestones: {
+      name: string
+      description: string
+      dueDate: string
+      priority: 'low' | 'medium' | 'high' | 'urgent'
+      tasks: {
+        name: string
+        description: string
+        priority: 'low' | 'medium' | 'high' | 'urgent'
+        estimatedHours: number
+      }[]
+    }[]
+  }> {
+    const systemPrompt = `You are a project management AI assistant. Given a project description, create a comprehensive project structure with milestones and tasks.
+
+Return ONLY a valid JSON object with this exact structure (no additional text):
+{
+  "name": "Project name (max 100 chars)",
+  "description": "Detailed project description (max 500 chars)",
+  "priority": "medium",
+  "milestones": [
+    {
+      "name": "Milestone name (max 100 chars)",
+      "description": "What this milestone achieves (max 300 chars)",
+      "dueDate": "YYYY-MM-DD",
+      "priority": "medium",
+      "tasks": [
+        {
+          "name": "Task name (max 100 chars)",
+          "description": "What needs to be done (max 300 chars)",
+          "priority": "medium",
+          "estimatedHours": 8
+        }
+      ]
+    }
+  ]
+}
+
+Guidelines:
+- Create 3-5 milestones covering the project lifecycle
+- Each milestone should have 3-7 tasks
+- Use realistic time estimates (1-160 hours per task)
+- Start with planning/research, end with deployment/review
+- Set realistic due dates (start 14 days from now, spread milestones appropriately)
+- Prioritize tasks logically (blockers = high/urgent, normal work = medium)
+- Use descriptive names that clearly indicate what needs to be done`
+
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: this.config.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Create a project structure for: ${description}` }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+        max_tokens: 3500,
+      })
+
+      const content = completion.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No response from OpenAI')
+      }
+
+      const projectStructure = JSON.parse(content)
+
+      // Validate structure
+      if (!projectStructure.name || !projectStructure.milestones) {
+        throw new Error('Invalid project structure returned')
+      }
+
+      // Ensure priority fields exist with defaults
+      projectStructure.priority = projectStructure.priority || 'medium'
+      projectStructure.milestones = projectStructure.milestones.map((m: any) => ({
+        ...m,
+        priority: m.priority || 'medium',
+        tasks: (m.tasks || []).map((t: any) => ({
+          ...t,
+          priority: t.priority || 'medium',
+          estimatedHours: t.estimatedHours || 8
+        }))
+      }))
+
+      return projectStructure
+    } catch (error: any) {
+      console.error('OpenAI project generation error:', error)
+      throw new Error(`Failed to generate project structure: ${error.message}`)
+    }
+  }
 }
 
 // Export singleton instance

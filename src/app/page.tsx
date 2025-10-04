@@ -118,8 +118,13 @@ export default function Home() {
       </motion.nav>
 
       {/* Hero Section - Premium Flow Start */}
-      <section className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Premium Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50/30"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,rgba(59,130,246,0.1)_0px,transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_100%_100%,rgba(168,85,247,0.08)_0px,transparent_50%)]"></div>
+
+        <div className="max-w-7xl mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left Column - Exclusive Typography */}
             <motion.div
@@ -129,23 +134,23 @@ export default function Home() {
             >
               {/* Refined Headline */}
               <motion.h1
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 text-[#0A0A0A] leading-tight tracking-tight"
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 sm:mb-8 text-[#0A0A0A] leading-[1.1] tracking-tight"
                 style={{ fontFamily: 'Inter Display, Inter, sans-serif' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
               >
                 Concéntrate en lo{' '}
-                <span className="text-[#0052CC]">que importa</span>
+                <span className="bg-gradient-to-r from-[#0052CC] to-[#667eea] bg-clip-text text-transparent">que importa</span>
               </motion.h1>
 
               <motion.p
-                className="text-mobile-xl text-[#404040] leading-responsive-relaxed mb-8 sm:mb-12 max-w-[35ch] mobile-typography"
+                className="text-lg sm:text-xl md:text-2xl text-[#404040] leading-relaxed mb-8 sm:mb-12 max-w-xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                Gestión de proyectos con IA que es <span className="font-semibold text-[#0052CC]">gratis para todos</span>—desde ahora.
+                Gestión de proyectos con IA que es <span className="font-semibold bg-gradient-to-r from-[#0052CC] to-[#667eea] bg-clip-text text-transparent">gratis para todos</span>—desde ahora.
               </motion.p>
 
               {/* Exclusive CTA Buttons - Enhanced for mobile */}

@@ -152,16 +152,18 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
 
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Card className="glass-card hover-lift border-l-4 border-l-primary">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <BarChart3 className="h-4 w-4 text-primary" />
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Total Projects</CardTitle>
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
+              <CardContent className="pt-0">
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
                   {formatNumber(analytics.projects.totalProjects)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -171,29 +173,33 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
             </Card>
 
             <Card className="glass-card hover-lift border-l-4 border-l-emerald-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Task Completion</CardTitle>
-                <div className="p-2 rounded-lg bg-emerald-500/10">
-                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Task Completion</CardTitle>
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 flex-shrink-0">
+                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600" />
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+              <CardContent className="pt-0">
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
                   {formatPercentage(analytics.tasks.taskCompletionRate)}
                 </div>
-                <Progress value={analytics.tasks.taskCompletionRate} className="mt-2 h-2" />
+                <Progress value={analytics.tasks.taskCompletionRate} className="mt-2 h-1.5 sm:h-2" />
               </CardContent>
             </Card>
 
             <Card className="glass-card hover-lift border-l-4 border-l-blue-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <Users className="h-4 w-4 text-blue-600" />
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Team Members</CardTitle>
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
+                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              <CardContent className="pt-0">
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
                   {formatNumber(analytics.team.totalMembers)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -203,17 +209,19 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
             </Card>
 
             <Card className="glass-card hover-lift border-l-4 border-l-amber-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Hours Tracked</CardTitle>
-                <div className="p-2 rounded-lg bg-amber-500/10">
-                  <Clock className="h-4 w-4 text-amber-600" />
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Hours Tracked</CardTitle>
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-amber-500/10 flex-shrink-0">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600" />
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">
+              <CardContent className="pt-0">
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">
                   {formatNumber(analytics.timeTracking.totalHoursTracked)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   Avg {analytics.timeTracking.averageHoursPerDay.toFixed(1)} hrs/day
                 </p>
               </CardContent>

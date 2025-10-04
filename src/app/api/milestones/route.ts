@@ -34,6 +34,24 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || undefined
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
+    const withTaskCounts = searchParams.get('with_task_counts') === 'true'
+
+    // Use the task counts endpoint if requested
+    if (withTaskCounts && projectId) {
+      const result = await MilestonesService.getMilestonesWithTaskCounts(userId, projectId)
+
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: result.data,
+      })
+    }
 
     const result = await MilestonesService.getUserMilestones(userId, {
       project_id: projectId,

@@ -69,7 +69,7 @@ export function MilestoneTimeline({
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/milestones?project_id=${projectId}`, {
+      const response = await fetch(`/api/milestones?project_id=${projectId}&with_task_counts=true`, {
         headers: {
           'x-user-id': user.id,
         },
@@ -80,15 +80,7 @@ export function MilestoneTimeline({
       }
 
       const data = await response.json()
-
-      // Add task counts (mock data for now)
-      const milestonesWithCounts = data.data?.map((milestone: Milestone) => ({
-        ...milestone,
-        task_count: Math.floor(Math.random() * 10) + 1,
-        completed_tasks: Math.floor(Math.random() * (milestone.task_count || 5)),
-      })) || []
-
-      setMilestones(milestonesWithCounts)
+      setMilestones(data.data || [])
     } catch (err) {
       console.error('Error fetching milestones:', err)
       setError('Failed to load milestones. Please try again.')

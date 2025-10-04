@@ -73,9 +73,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const statusInfo = getStatusBadge(selectedProject?.status)
 
   return (
-    <header className="bg-card border-b border-border shadow-sm sticky top-0 z-30 w-full">
+    <header className="glass-subtle border-b border-white/20 shadow-lg sticky top-0 z-30 w-full">
       {/* Branding bar */}
-      <div className="h-1 bg-gradient-to-r from-primary via-purple-500 to-green-500"></div>
+      <div className="h-1 bg-gradient-to-r from-primary via-purple-500 to-emerald-500"></div>
 
       <div className="px-4 sm:px-6 py-4 sm:py-4"> {/* Increased padding on mobile for better touch targets */}
         <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full">

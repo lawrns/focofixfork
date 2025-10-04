@@ -53,18 +53,26 @@ interface ProjectCardProps {
 }
 
 const statusColors = {
-  planning: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  on_hold: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  completed: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  planning: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
+  active: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20',
+  on_hold: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20',
+  completed: 'bg-purple-500/10 text-purple-600 hover:bg-purple-500/20',
+  cancelled: 'bg-red-500/10 text-red-600 hover:bg-red-500/20',
 }
 
 const priorityColors = {
-  low: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-  medium: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  high: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  urgent: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  low: 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20',
+  medium: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
+  high: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20',
+  urgent: 'bg-red-500/10 text-red-600 hover:bg-red-500/20',
+}
+
+const statusBorderColors = {
+  planning: 'border-l-blue-500',
+  active: 'border-l-emerald-500',
+  on_hold: 'border-l-amber-500',
+  completed: 'border-l-purple-500',
+  cancelled: 'border-l-red-500',
 }
 
 export function ProjectCard({
@@ -136,7 +144,7 @@ export function ProjectCard({
       animate={isUpdated ? { scale: [1, 1.02, 1] } : { scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className={`hover:shadow-md transition-shadow duration-200 ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
+      <Card className={`glass-card hover-lift border-l-4 ${statusBorderColors[currentProject.status]} ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">

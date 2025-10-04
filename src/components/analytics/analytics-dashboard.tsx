@@ -153,51 +153,67 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card className="glass-card hover-lift border-l-4 border-l-primary">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(analytics.projects.totalProjects)}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
+                  {formatNumber(analytics.projects.totalProjects)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
                   {analytics.projects.activeProjects} active
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="glass-card hover-lift border-l-4 border-l-emerald-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Task Completion</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatPercentage(analytics.tasks.taskCompletionRate)}</div>
-                <Progress value={analytics.tasks.taskCompletionRate} className="mt-2" />
+                <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+                  {formatPercentage(analytics.tasks.taskCompletionRate)}
+                </div>
+                <Progress value={analytics.tasks.taskCompletionRate} className="mt-2 h-2" />
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="glass-card hover-lift border-l-4 border-l-blue-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Users className="h-4 w-4 text-blue-600" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(analytics.team.totalMembers)}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                  {formatNumber(analytics.team.totalMembers)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
                   {analytics.team.activeMembers} active
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="glass-card hover-lift border-l-4 border-l-amber-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Hours Tracked</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Clock className="h-4 w-4 text-amber-600" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(analytics.timeTracking.totalHoursTracked)}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">
+                  {formatNumber(analytics.timeTracking.totalHoursTracked)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
                   Avg {analytics.timeTracking.averageHoursPerDay.toFixed(1)} hrs/day
                 </p>
               </CardContent>
@@ -206,44 +222,58 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="glass-card hover-lift">
               <CardHeader>
-                <CardTitle>Project Status</CardTitle>
-                <CardDescription>Distribution of project statuses</CardDescription>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <PieChart className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>Project Status</CardTitle>
+                    <CardDescription>Distribution of project statuses</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Active</span>
-                    <Badge variant="secondary">{analytics.projects.activeProjects}</Badge>
+                    <span className="text-sm font-medium">Active</span>
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20">{analytics.projects.activeProjects}</Badge>
                   </div>
-                  <Progress value={(analytics.projects.activeProjects / analytics.projects.totalProjects) * 100} />
+                  <Progress value={(analytics.projects.activeProjects / analytics.projects.totalProjects) * 100} className="h-2" />
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Completed</span>
-                    <Badge variant="secondary">{analytics.projects.completedProjects}</Badge>
+                    <span className="text-sm font-medium">Completed</span>
+                    <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20">{analytics.projects.completedProjects}</Badge>
                   </div>
-                  <Progress value={(analytics.projects.completedProjects / analytics.projects.totalProjects) * 100} />
+                  <Progress value={(analytics.projects.completedProjects / analytics.projects.totalProjects) * 100} className="h-2" />
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Overdue</span>
+                    <span className="text-sm font-medium">Overdue</span>
                     <Badge variant="destructive">{analytics.projects.overdueProjects}</Badge>
                   </div>
-                  <Progress value={(analytics.projects.overdueProjects / analytics.projects.totalProjects) * 100} />
+                  <Progress value={(analytics.projects.overdueProjects / analytics.projects.totalProjects) * 100} className="h-2" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="glass-card hover-lift">
               <CardHeader>
-                <CardTitle>Task Priorities</CardTitle>
-                <CardDescription>Tasks by priority level</CardDescription>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <Target className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle>Task Priorities</CardTitle>
+                    <CardDescription>Tasks by priority level</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {Object.entries(analytics.tasks.tasksByPriority).map(([priority, count]) => (
                     <div key={priority} className="flex items-center justify-between">
-                      <span className="text-sm capitalize">{priority}</span>
+                      <span className="text-sm font-medium capitalize">{priority}</span>
                       <Badge variant={priority === 'high' ? 'destructive' : priority === 'medium' ? 'secondary' : 'outline'}>
                         {count}
                       </Badge>

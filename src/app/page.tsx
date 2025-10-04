@@ -129,14 +129,14 @@ export default function Home() {
             >
               {/* Refined Headline */}
               <motion.h1
-                className="heading-mobile-h1 font-bold mb-6 sm:mb-8 text-[#0A0A0A] mobile-typography"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 text-[#0A0A0A] leading-tight tracking-tight"
                 style={{ fontFamily: 'Inter Display, Inter, sans-serif' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
               >
                 Concéntrate en lo{' '}
-                <span className="text-[#0052CC]">importa</span>
+                <span className="text-[#0052CC]">que importa</span>
               </motion.h1>
 
               <motion.p

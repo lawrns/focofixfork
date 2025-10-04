@@ -151,19 +151,7 @@ export function OllamaProjectCreator({ onSuccess, onCancel }: OllamaProjectCreat
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            <CardTitle>AI-Powered Project Creator</CardTitle>
-          </div>
-          <CardDescription>
-            Describe your project in natural language, and AI will automatically create a complete project
-            structure with milestones and tasks.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Organization Selection */}
+      {/* Organization Selection */}
           <div className="space-y-2">
             <Label htmlFor="organization">Organization</Label>
             <Select
@@ -290,22 +278,18 @@ export function OllamaProjectCreator({ onSuccess, onCancel }: OllamaProjectCreat
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
 
       {/* How It Works */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">How It Works</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+      <div className="bg-muted/30 rounded-xl p-6 space-y-3">
+        <h4 className="text-sm font-semibold text-foreground">How It Works</h4>
+        <div className="space-y-2 text-sm text-muted-foreground">
           <p>1. <strong>Describe your project:</strong> Include features, timeline, team size, and complexity</p>
           <p>2. <strong>AI processes your specification:</strong> Ollama analyzes and structures your project</p>
           <p>3. <strong>Automatic generation:</strong> Creates 3-7 milestones with 3-8 tasks each</p>
           <p>4. <strong>Smart defaults:</strong> Assigns priorities, deadlines, and descriptions</p>
           <p>5. <strong>Ready to use:</strong> Start managing your project immediately</p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

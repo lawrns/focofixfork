@@ -863,12 +863,12 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead>
+      <div className="rounded-xl glass-card hover-lift overflow-hidden border-2">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="min-w-full divide-y divide-border/50">
+            <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground sm:px-6" scope="col">
+                <th className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 sm:px-6" scope="col">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={handleSelectAll}
@@ -876,27 +876,27 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                     className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
                   />
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground sm:px-6" scope="col">
+                <th className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 sm:px-6" scope="col">
                   Name
                 </th>
-                <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground sm:table-cell sm:px-6" scope="col">
+                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 sm:table-cell sm:px-6" scope="col">
                   Status
                 </th>
-                <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground md:table-cell md:px-6" scope="col">
+                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 md:table-cell md:px-6" scope="col">
                   Due Date
                 </th>
-                <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground lg:table-cell lg:px-6" scope="col">
+                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 lg:table-cell lg:px-6" scope="col">
                   Organization
                 </th>
-                <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground xl:table-cell xl:px-6" scope="col">
+                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 xl:table-cell xl:px-6" scope="col">
                   Priority
                 </th>
-                <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground sm:px-6" scope="col">
+                <th className="px-3 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-700 sm:px-6" scope="col">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/50">
+            <tbody className="divide-y divide-border/30 bg-white">
               {loading ? (
                 // Loading skeleton
                 [...Array(3)].map((_, i) => (
@@ -937,12 +937,14 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                 filteredProjects.map((project) => (
                   <tr
                     key={project.id}
-                    className={`hover:bg-muted/50 transition-colors cursor-pointer ${
-                      selectedProjects.has(project.id) ? 'bg-primary/5' : ''
+                    className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent transition-all duration-200 cursor-pointer border-l-4 ${
+                      selectedProjects.has(project.id)
+                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-primary shadow-sm'
+                        : 'border-l-transparent hover:border-l-primary/30'
                     }`}
                     onClick={() => handleSelectProject(project.id, !selectedProjects.has(project.id))}
                   >
-                    <td className={`px-3 py-4 sm:px-6 ${selectedProjects.has(project.id) ? 'border-l-4 border-l-primary' : ''}`}>
+                    <td className="px-3 py-5 sm:px-6">
                       <Checkbox
                         checked={selectedProjects.has(project.id)}
                         onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
@@ -950,9 +952,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                         aria-label={`Select project ${project.name}`}
                       />
                     </td>
-                    <td className="px-3 py-4 sm:px-6">
+                    <td className="px-3 py-5 sm:px-6">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-card-foreground">{project.name}</span>
+                        <span className="text-sm font-semibold text-slate-900">{project.name}</span>
                         {/* Mobile-only additional info */}
                         <div className="flex items-center space-x-2 sm:hidden mt-1">
                           {getStatusBadge(project.status)}
@@ -960,19 +962,19 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                         </div>
                       </div>
                     </td>
-                    <td className="hidden px-3 py-4 sm:table-cell sm:px-6">
+                    <td className="hidden px-3 py-5 sm:table-cell sm:px-6">
                       {getStatusBadge(project.status)}
                     </td>
-                    <td className="hidden px-3 py-4 text-sm text-muted-foreground md:table-cell md:px-6">
+                    <td className="hidden px-3 py-5 text-sm text-slate-600 md:table-cell md:px-6 font-medium">
                       {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}
                     </td>
-                    <td className="hidden px-3 py-4 text-sm text-muted-foreground lg:table-cell lg:px-6">
+                    <td className="hidden px-3 py-5 text-sm text-slate-600 lg:table-cell lg:px-6 font-medium">
                       {project.organizations?.name || 'Personal'}
                     </td>
-                    <td className="hidden px-3 py-4 xl:table-cell xl:px-6">
+                    <td className="hidden px-3 py-5 xl:table-cell xl:px-6">
                       {getPriorityBadge(project.priority)}
                     </td>
-                    <td className="px-3 py-4 text-right sm:px-6">
+                    <td className="px-3 py-5 text-right sm:px-6">
                       <div onClick={(e) => e.stopPropagation()}>
                       <QuickActions
                         actions={createProjectActions(

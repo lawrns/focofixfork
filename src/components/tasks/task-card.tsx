@@ -58,38 +58,42 @@ interface TaskCardProps {
 const statusConfig = {
   todo: {
     label: 'To Do',
-    color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+    color: 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20',
     icon: Circle,
+    borderColor: 'border-l-slate-500',
   },
   in_progress: {
     label: 'In Progress',
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
     icon: PlayCircle,
+    borderColor: 'border-l-blue-500',
   },
   review: {
     label: 'Review',
-    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20',
     icon: AlertTriangle,
+    borderColor: 'border-l-amber-500',
   },
   done: {
     label: 'Done',
-    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    color: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20',
     icon: CheckCircle,
+    borderColor: 'border-l-emerald-500',
   },
 }
 
 const priorityConfig = {
   low: {
-    color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+    color: 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20',
   },
   medium: {
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
   },
   high: {
-    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+    color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20',
   },
   urgent: {
-    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20',
   },
 }
 
@@ -180,7 +184,7 @@ export function TaskCard({
       animate={isUpdated ? { scale: [1, 1.02, 1] } : { scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className={`hover:shadow-md transition-shadow duration-200 ${isOverdue ? 'border-red-200 dark:border-red-800' : ''} ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
+      <Card className={`glass-card hover-lift border-l-4 ${statusConfig[currentTask.status].borderColor} ${isOverdue ? 'ring-2 ring-red-500/20' : ''} ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">

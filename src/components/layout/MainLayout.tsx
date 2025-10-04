@@ -10,11 +10,11 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="flex h-screen font-display bg-background">
+    <div className="flex h-screen font-display gradient-mesh overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none border-none">
         <Header />
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 outline-none border-none">
           {children}
         </div>
       </main>

@@ -152,132 +152,132 @@ export function OllamaProjectCreator({ onSuccess, onCancel }: OllamaProjectCreat
   return (
     <div className="space-y-6">
       {/* Organization Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="organization">Organization</Label>
-            <Select
-              value={organizationId}
-              onValueChange={setOrganizationId}
-              disabled={orgsLoading || organizations.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={orgsLoading ? "Loading organizations..." : "Select organization"} />
-              </SelectTrigger>
-              <SelectContent>
-                {organizations.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {organizations.length === 0 && !orgsLoading && (
-              <p className="text-sm text-muted-foreground">
-                No organizations found. Please create an organization first.
-              </p>
-            )}
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="organization">Organization</Label>
+        <Select
+          value={organizationId}
+          onValueChange={setOrganizationId}
+          disabled={orgsLoading || organizations.length === 0}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={orgsLoading ? "Loading organizations..." : "Select organization"} />
+          </SelectTrigger>
+          <SelectContent>
+            {organizations.map((org) => (
+              <SelectItem key={org.id} value={org.id}>
+                {org.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {organizations.length === 0 && !orgsLoading && (
+          <p className="text-sm text-muted-foreground">
+            No organizations found. Please create an organization first.
+          </p>
+        )}
+      </div>
 
-          {/* Project Specification */}
-          <div className="space-y-2">
-            <Label htmlFor="specification">Project Specification</Label>
-            <Textarea
-              id="specification"
-              placeholder="Describe your project in detail. Include features, timeline, team size, complexity, and any specific requirements..."
-              value={specification}
-              onChange={(e) => setSpecification(e.target.value)}
-              rows={8}
+      {/* Project Specification */}
+      <div className="space-y-2">
+        <Label htmlFor="specification">Project Specification</Label>
+        <Textarea
+          id="specification"
+          placeholder="Describe your project in detail. Include features, timeline, team size, complexity, and any specific requirements..."
+          value={specification}
+          onChange={(e) => setSpecification(e.target.value)}
+          rows={8}
+          disabled={isLoading}
+          className="resize-none"
+        />
+        <p className="text-sm text-muted-foreground">
+          Be specific about features, timeline, team size, and complexity for best results.
+        </p>
+      </div>
+
+      {/* Example Specifications */}
+      <div className="space-y-2">
+        <Label>Example Specifications (click to use)</Label>
+        <div className="grid gap-2">
+          {exampleSpecs.map((example, index) => (
+            <button
+              key={index}
+              onClick={() => handleExampleClick(example)}
               disabled={isLoading}
-              className="resize-none"
-            />
-            <p className="text-sm text-muted-foreground">
-              Be specific about features, timeline, team size, and complexity for best results.
-            </p>
-          </div>
-
-          {/* Example Specifications */}
-          <div className="space-y-2">
-            <Label>Example Specifications (click to use)</Label>
-            <div className="grid gap-2">
-              {exampleSpecs.map((example, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleExampleClick(example)}
-                  disabled={isLoading}
-                  className="text-left p-3 rounded-lg border border-dashed hover:border-solid hover:bg-muted/50 transition-colors text-sm disabled:opacity-50"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <Alert variant="destructive">
-              <XCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Success Display */}
-          {result && (
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                <div className="space-y-2">
-                  <p className="font-semibold">Project created successfully!</p>
-                  <div className="space-y-1 text-sm">
-                    <p><strong>Name:</strong> {result.summary.project_name}</p>
-                    <p><strong>Milestones:</strong> {result.summary.total_milestones}</p>
-                    <p><strong>Tasks:</strong> {result.summary.total_tasks}</p>
-                  </div>
-                  <p className="text-xs mt-2">Redirecting to project...</p>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-4">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              onClick={handleCreate}
-              disabled={isLoading || !specification.trim() || !organizationId}
+              className="text-left p-3 rounded-lg border border-dashed hover:border-solid hover:bg-muted/50 transition-colors text-sm disabled:opacity-50"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Project...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Create with AI
-                </>
-              )}
-            </Button>
-          </div>
+              {example}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* Loading Progress */}
-          {isLoading && (
-            <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm font-medium">AI is working on your project...</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p>✓ Analyzing specification</p>
-                <p>✓ Breaking down into milestones</p>
-                <p>⏳ Generating tasks...</p>
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success Display */}
+      {result && (
+        <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800 dark:text-green-200">
+            <div className="space-y-2">
+              <p className="font-semibold">Project created successfully!</p>
+              <div className="space-y-1 text-sm">
+                <p><strong>Name:</strong> {result.summary.project_name}</p>
+                <p><strong>Milestones:</strong> {result.summary.total_milestones}</p>
+                <p><strong>Tasks:</strong> {result.summary.total_tasks}</p>
               </div>
+              <p className="text-xs mt-2">Redirecting to project...</p>
             </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2 pt-4">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+        )}
+        <Button
+          onClick={handleCreate}
+          disabled={isLoading || !specification.trim() || !organizationId}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Project...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Create with AI
+            </>
           )}
+        </Button>
+      </div>
+
+      {/* Loading Progress */}
+      {isLoading && (
+        <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+          <p className="text-sm font-medium">AI is working on your project...</p>
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <p>✓ Analyzing specification</p>
+            <p>✓ Breaking down into milestones</p>
+            <p>⏳ Generating tasks...</p>
+          </div>
+        </div>
+      )}
 
       {/* How It Works */}
       <div className="bg-muted/30 rounded-xl p-6 space-y-3">

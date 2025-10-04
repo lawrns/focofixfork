@@ -118,11 +118,11 @@ export default function Home() {
       </motion.nav>
 
       {/* Hero Section - Premium Flow Start */}
-      <section className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden" suppressHydrationWarning>
         {/* Premium Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50/30"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,rgba(59,130,246,0.1)_0px,transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(at_100%_100%,rgba(168,85,247,0.08)_0px,transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50/30" suppressHydrationWarning></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,rgba(59,130,246,0.1)_0px,transparent_50%)]" suppressHydrationWarning></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_100%_100%,rgba(168,85,247,0.08)_0px,transparent_50%)]" suppressHydrationWarning></div>
 
         <div className="max-w-7xl mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">

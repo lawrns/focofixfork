@@ -54,18 +54,9 @@ export class OrganizationsService {
 
       if (error) {
         console.error('Get organizations error:', error)
-        // For demo purposes, return mock data
         return {
-          success: true,
-          data: [
-            {
-              id: 'demo-org-123',
-              name: 'Demo Organization',
-              created_by: userId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          ]
+          success: false,
+          error: error.message
         }
       }
 
@@ -80,18 +71,9 @@ export class OrganizationsService {
       }
     } catch (error) {
       console.error('Get organizations error:', error)
-      // For demo purposes, return mock data
       return {
-        success: true,
-        data: [
-          {
-            id: 'demo-org-123',
-            name: 'Demo Organization',
-            created_by: userId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch organizations'
       }
     }
   }

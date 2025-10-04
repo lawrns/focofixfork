@@ -86,17 +86,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(false)
 
         // Handle specific auth events
-        if (event === 'SIGNED_OUT') {
-          // Clear any cached data
-          setUser(null)
-          setSession(null)
-        } else if (event === 'SIGNED_IN' && session?.user) {
+        if (event === 'SIGNED_IN' && session?.user) {
           // User signed in
           console.log('User signed in:', session.user.id)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Token was refreshed
           console.log('Token refreshed for user:', session.user.id)
         }
+        // Note: SIGNED_OUT is handled by the state setting above (setSession/setUser)
       }
     )
 

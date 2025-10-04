@@ -21,8 +21,6 @@ import { projectStore } from '@/lib/stores/project-store'
 
 import ExportDialog from '@/components/export/export-dialog'
 import ImportDialog from '@/components/import/import-dialog'
-import AISuggestionsPanel from '@/components/ai/ai-suggestions-panel'
-import { OllamaProjectCreator } from '@/components/ai/ollama-project-creator'
 import TimeTracker from '@/components/time-tracking/time-tracker'
 import PresenceIndicator from '@/components/collaboration/presence-indicator'
 import CommentsSection from '@/components/comments/comments-section'
@@ -339,13 +337,10 @@ export default function DashboardPage() {
               Describe your project in natural language, and AI will automatically create a complete project structure with milestones and tasks.
             </p>
           </DialogHeader>
-          <OllamaProjectCreator
-            onSuccess={(projectId) => {
-              setShowAIProjectModal(false)
-              router.push(`/projects/${projectId}`)
-            }}
-            onCancel={() => setShowAIProjectModal(false)}
-          />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">AI project creation is now powered by OpenAI.</p>
+            <p className="text-sm text-muted-foreground mt-2">Feature integration in progress.</p>
+          </div>
         </DialogContent>
       </Dialog>
     </MainLayout>

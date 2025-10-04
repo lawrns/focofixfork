@@ -62,18 +62,47 @@ export class ProjectsService {
         }
       }
 
-      console.log('ProjectsService.getUserProjects: Building simplified query for userId:', userId)
+      console.log('ProjectsService.getUserProjects: Building comprehensive query for userId:', userId)
 
-      // Simplified single query - get all projects user has access to
-           let query = supabaseAdmin
-             .from('projects')
-             .select(`
-               *,
-               organizations (
-                 name
-               )
-             `)
-             .eq('created_by', userId) // Start with projects created by user
+      // Get user's organization memberships first
+      const { data: userOrgs, error: orgError } = await supabaseAdmin
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', userId)
+
+      if (orgError) {
+        console.error('Error fetching user organizations:', orgError)
+        return {
+          success: false,
+          error: 'Failed to fetch user organizations'
+        }
+      }
+
+      const userOrgIds = userOrgs?.map(org => org.organization_id) || []
+      console.log('ProjectsService.getUserProjects: User belongs to organizations:', userOrgIds)
+
+      // Build query to get all projects user has access to:
+      // 1. Projects they created
+      // 2. Projects in organizations they belong to
+      // 3. Projects they're assigned to via project_team_assignments
+      let query = supabaseAdmin
+        .from('projects')
+        .select(`
+          *,
+          organizations (
+            name
+          )
+        `)
+
+      // Apply access filters - user can see projects if:
+      // - They created it, OR
+      // - It belongs to an organization they're a member of
+      if (userOrgIds.length > 0) {
+        query = query.or(`created_by.eq.${userId},organization_id.in.(${userOrgIds.join(',')})`)
+      } else {
+        // If user has no organization memberships, only show projects they created
+        query = query.eq('created_by', userId)
+      }
 
       // Apply filters
       if (options?.organization_id) {

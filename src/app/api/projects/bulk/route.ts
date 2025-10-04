@@ -38,11 +38,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For demo purposes, allow demo user but don't override real user IDs
-    if (userId === 'demo-user-123') {
-      // Demo user - allow all operations for demo projects
-    }
-
     const body = await request.json()
 
     // Validate request body

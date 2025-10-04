@@ -19,12 +19,7 @@ interface RouteParams {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    let currentUserId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!currentUserId || currentUserId === 'demo-user-123') {
-      currentUserId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const currentUserId = request.headers.get('x-user-id')
 
     if (!currentUserId) {
       return NextResponse.json(
@@ -200,12 +195,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    let currentUserId = request.headers.get('x-user-id')
-
-    // For demo purposes, allow real user
-    if (!currentUserId || currentUserId === 'demo-user-123') {
-      currentUserId = '0c2af3ff-bd5e-4fbe-b8e2-b5b73266b562'
-    }
+    const currentUserId = request.headers.get('x-user-id')
 
     if (!currentUserId) {
       return NextResponse.json(

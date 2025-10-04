@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Home,
   Inbox,
@@ -46,12 +46,19 @@ export default function Sidebar() {
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
   const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
+  const lastFetchTime = useRef<number>(0)
 
   const fetchProjects = useCallback(async (forceRefresh = false) => {
     if (!user) return
 
-    // Always fetch fresh data from API to ensure consistency
-    // Don't rely on store cache as it may contain stale data
+    // Debounce rapid successive calls
+    const now = Date.now()
+    if (!forceRefresh && lastFetchTime.current && (now - lastFetchTime.current) < 1000) {
+      console.log('Sidebar: skipping fetch due to debouncing')
+      return
+    }
+    lastFetchTime.current = now
+
     console.log('Sidebar: fetching fresh projects from API')
     try {
       const response = await fetch(`/api/projects?t=${Date.now()}`, {

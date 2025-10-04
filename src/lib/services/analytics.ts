@@ -228,11 +228,64 @@ export class AnalyticsService {
         { day: '', hours: 0 }
       ).day;
 
-      // Get top contributors from real data
-      const topContributors: Array<{ userId: string; name: string; hours: number }> = [];
+      // Get top contributors - aggregate hours by user
+      const userHours: { [userId: string]: number } = {};
+      timeEntries.forEach(entry => {
+        if (entry.user_id) {
+          userHours[entry.user_id] = (userHours[entry.user_id] || 0) + entry.hours;
+        }
+      });
 
-      // Get project hours from real data
+      // Fetch user names for top contributors
+      const topUserIds = Object.entries(userHours)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([userId]) => userId);
+
+      const topContributors: Array<{ userId: string; name: string; hours: number }> = [];
+      if (topUserIds.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .in('id', topUserIds);
+
+        if (users) {
+          topContributors.push(...users.map(user => ({
+            userId: user.id,
+            name: user.full_name || user.email || 'Unknown User',
+            hours: Math.round(userHours[user.id] * 10) / 10
+          })));
+        }
+      }
+
+      // Get project hours - aggregate hours by project
+      const projectHoursMap: { [projectId: string]: number } = {};
+      timeEntries.forEach(entry => {
+        if (entry.project_id) {
+          projectHoursMap[entry.project_id] = (projectHoursMap[entry.project_id] || 0) + entry.hours;
+        }
+      });
+
+      const topProjectIds = Object.entries(projectHoursMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([projectId]) => projectId);
+
       const projectHours: Array<{ projectId: string; name: string; hours: number }> = [];
+      if (topProjectIds.length > 0) {
+        const { data: projects } = await supabase
+          .from('projects')
+          .select('id, name')
+          .in('id', topProjectIds);
+
+        if (projects) {
+          projectHours.push(...projects.map(project => ({
+            projectId: project.id,
+            name: project.name,
+            hours: Math.round(projectHoursMap[project.id] * 10) / 10
+          })));
+        }
+      }
 
       return {
         totalHoursTracked,
@@ -262,6 +315,39 @@ export class AnalyticsService {
       // Get real user data for member contributions
       const memberContributions: Array<{ userId: string; name: string; tasksCompleted: number; hoursTracked: number }> = [];
 
+      for (const member of members) {
+        // Get user details
+        const { data: user } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('id', member.user_id)
+          .single();
+
+        if (!user) continue;
+
+        // Get tasks completed by this user
+        const { data: tasks } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('assignee_id', user.id)
+          .eq('status', 'completed');
+
+        // Get hours tracked by this user
+        const { data: timeEntries } = await supabase
+          .from('time_entries')
+          .select('hours')
+          .eq('user_id', user.id);
+
+        const hoursTracked = timeEntries?.reduce((sum, entry) => sum + entry.hours, 0) || 0;
+
+        memberContributions.push({
+          userId: user.id,
+          name: user.full_name || user.email || 'Unknown User',
+          tasksCompleted: tasks?.length || 0,
+          hoursTracked: Math.round(hoursTracked * 10) / 10
+        });
+      }
+
       const totalTasks = memberContributions.reduce((sum, member) => sum + member.tasksCompleted, 0);
       const totalHours = memberContributions.reduce((sum, member) => sum + member.hoursTracked, 0);
 
@@ -279,81 +365,25 @@ export class AnalyticsService {
   }
 
   static async getComprehensiveAnalytics(organizationId?: string, startDate?: string, endDate?: string): Promise<AnalyticsData> {
-    try {
-      const [projects, milestones, tasks, timeTracking, team] = await Promise.all([
-        this.getProjectAnalytics(organizationId),
-        this.getMilestoneAnalytics(organizationId),
-        this.getTaskAnalytics(organizationId),
-        this.getTimeTrackingAnalytics(organizationId, startDate, endDate),
-        this.getTeamAnalytics(organizationId),
-      ]);
+    const [projects, milestones, tasks, timeTracking, team] = await Promise.all([
+      this.getProjectAnalytics(organizationId),
+      this.getMilestoneAnalytics(organizationId),
+      this.getTaskAnalytics(organizationId),
+      this.getTimeTrackingAnalytics(organizationId, startDate, endDate),
+      this.getTeamAnalytics(organizationId),
+    ]);
 
-      return {
-        projects,
-        milestones,
-        tasks,
-        timeTracking,
-        team,
-        period: {
-          startDate: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: endDate || new Date().toISOString(),
-        },
-      };
-    } catch (error) {
-      console.error('Analytics service error:', error)
-      // Return demo analytics data when service fails
-      return {
-        projects: {
-          totalProjects: 5,
-          activeProjects: 3,
-          completedProjects: 2,
-          overdueProjects: 0,
-          projectCompletionRate: 40,
-          averageProjectDuration: 30
-        },
-        milestones: {
-          totalMilestones: 12,
-          completedMilestones: 8,
-          overdueMilestones: 1,
-          milestoneCompletionRate: 67,
-          averageMilestoneDuration: 14
-        },
-        tasks: {
-          totalTasks: 24,
-          completedTasks: 18,
-          overdueTasks: 1,
-          taskCompletionRate: 75,
-          tasksByPriority: { high: 8, medium: 12, low: 4 },
-          tasksByStatus: { todo: 6, in_progress: 8, completed: 18 }
-        },
-        timeTracking: {
-          totalHoursTracked: 156,
-          averageHoursPerDay: 6.5,
-          mostProductiveDay: 'Tuesday',
-          topContributors: [],
-          projectHours: [
-            { projectId: 'demo-project-1', name: 'Demo Project 1', hours: 89 },
-            { projectId: 'demo-project-2', name: 'Demo Project 2', hours: 67 }
-          ]
-        },
-        team: {
-          totalMembers: 4,
-          activeMembers: 3,
-          averageTasksPerMember: 6,
-          teamProductivity: 85,
-          memberContributions: []
-        },
-        trends: {
-          projectCompletionTrend: [65, 70, 75, 78, 82, 85, 87],
-          taskCompletionTrend: [12, 14, 16, 18, 19, 21, 22],
-          teamProductivityTrend: [85, 87, 89, 91, 93, 94, 95]
-        },
-        period: {
-          startDate: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: endDate || new Date().toISOString()
-        }
-      }
-    }
+    return {
+      projects,
+      milestones,
+      tasks,
+      timeTracking,
+      team,
+      period: {
+        startDate: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        endDate: endDate || new Date().toISOString(),
+      },
+    };
   }
 
   // Helper methods for empty states

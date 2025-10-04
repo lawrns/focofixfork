@@ -1,0 +1,932 @@
+{
+  "metadata": {
+    "test_suite": "Foco Project Management - Complete User Journey Testing",
+    "version": "1.0.0",
+    "created": "2025-10-04",
+    "purpose": "Comprehensive end-to-end testing of all features using browser automation",
+    "target_url": "https://foco.mx",
+    "test_accounts": {
+      "existing_user": {
+        "email": "laurence@fyves.com",
+        "password": "Hennie@@18",
+        "purpose": "Test all features with pre-existing data"
+      },
+      "new_user": {
+        "email": "testuser_[TIMESTAMP]@example.com",
+        "password": "TestPassword123!",
+        "purpose": "Test complete onboarding and feature creation from scratch"
+      }
+    }
+  },
+  "instructions": {
+    "overview": "This JSON contains a complete testing journey for Foco Project Management. You will use @browser to navigate to foco.mx and perform TWO complete test runs: one with an existing account and one with a newly created account.",
+    "execution_order": [
+      "Run Journey 1 with existing user (laurence@fyves.com)",
+      "Run Journey 2 with new user (create account first)",
+      "Compare results and report any discrepancies"
+    ],
+    "reporting": "For each step, report: ✅ PASS, ❌ FAIL, or ⚠️ PARTIAL. Include screenshots for failures."
+  },
+  "journey_1_existing_user": {
+    "name": "Complete Feature Testing - Existing User",
+    "account": {
+      "email": "laurence@fyves.com",
+      "password": "Hennie@@18"
+    },
+    "steps": [
+      {
+        "step": 1,
+        "category": "Authentication",
+        "action": "Navigate to Homepage",
+        "instructions": [
+          "Open browser and navigate to https://foco.mx",
+          "Verify hero section displays with gradient background",
+          "Verify heading 'Concéntrate en lo que importa' is visible",
+          "Check for 'Comenzar gratis' and 'Ver Demo' buttons",
+          "Verify navigation bar is present with logo"
+        ],
+        "expected_result": "Homepage loads with premium design, gradient background, proper text sizing, no overlapping elements",
+        "validation": "Hero section should be mobile responsive, no hydration errors in console"
+      },
+      {
+        "step": 2,
+        "category": "Authentication",
+        "action": "Login with Existing Account",
+        "instructions": [
+          "Click 'Iniciar sesión' button in navigation",
+          "Enter email: laurence@fyves.com",
+          "Enter password: Hennie@@18",
+          "Click 'Sign In' button",
+          "Wait for redirect to dashboard"
+        ],
+        "expected_result": "Successfully logs in and redirects to /dashboard",
+        "validation": "No 401 errors, no authentication failures, session token set"
+      },
+      {
+        "step": 3,
+        "category": "Dashboard",
+        "action": "Verify Dashboard Loads",
+        "instructions": [
+          "Verify dashboard page loads at /dashboard",
+          "Check for sidebar with navigation items",
+          "Verify project list is visible",
+          "Check for 'Create New Project' button",
+          "Verify AI Project Creator button is present"
+        ],
+        "expected_result": "Dashboard displays with all UI elements, no loading errors",
+        "validation": "No console errors, all projects load from database (no mock data)"
+      },
+      {
+        "step": 4,
+        "category": "Projects",
+        "action": "Create New Project",
+        "instructions": [
+          "Click 'Create New Project' button",
+          "Enter project name: 'Test Project [TIMESTAMP]'",
+          "Enter description: 'Automated test project for comprehensive testing'",
+          "Select priority: 'High'",
+          "Set start date: today",
+          "Set end date: 30 days from today",
+          "Click 'Create' or 'Save' button",
+          "Wait for project to appear in list"
+        ],
+        "expected_result": "Project created successfully, appears in project list",
+        "validation": "Project saved to database, no errors, redirects to project detail or updates list"
+      },
+      {
+        "step": 5,
+        "category": "Projects",
+        "action": "View Project Details",
+        "instructions": [
+          "Click on the newly created project",
+          "Verify project detail page loads",
+          "Check project name, description, dates are correct",
+          "Verify tabs: Overview, Tasks, Milestones, Analytics, Settings",
+          "Check for 'Add Task' and 'Add Milestone' buttons"
+        ],
+        "expected_result": "Project detail page displays all information correctly",
+        "validation": "All data matches what was entered, no missing fields"
+      },
+      {
+        "step": 6,
+        "category": "Tasks",
+        "action": "Create Task",
+        "instructions": [
+          "Click 'Add Task' or navigate to Tasks tab",
+          "Click '+ New Task' button",
+          "Enter task name: 'Test Task 1'",
+          "Enter description: 'This is a test task'",
+          "Set priority: 'Medium'",
+          "Set status: 'To Do'",
+          "Assign to yourself",
+          "Set due date: 7 days from today",
+          "Click 'Create Task'",
+          "Verify task appears in task list"
+        ],
+        "expected_result": "Task created and visible in task list",
+        "validation": "Task saved to database, all fields populated correctly"
+      },
+      {
+        "step": 7,
+        "category": "Tasks",
+        "action": "Edit Task",
+        "instructions": [
+          "Click on 'Test Task 1'",
+          "Click 'Edit' or pencil icon",
+          "Change status to 'In Progress'",
+          "Add a comment: 'Started working on this task'",
+          "Change priority to 'High'",
+          "Click 'Save'",
+          "Verify changes are reflected"
+        ],
+        "expected_result": "Task updates successfully, changes visible immediately",
+        "validation": "Database updated, no errors, real-time update if applicable"
+      },
+      {
+        "step": 8,
+        "category": "Tasks",
+        "action": "Complete Task",
+        "instructions": [
+          "Open 'Test Task 1'",
+          "Change status to 'Completed'",
+          "Add completion comment: 'Task finished successfully'",
+          "Click 'Save' or 'Mark Complete'",
+          "Verify task shows as completed",
+          "Check if completion date is set"
+        ],
+        "expected_result": "Task marked as completed with timestamp",
+        "validation": "Completed tasks filtered/moved appropriately, analytics updated"
+      },
+      {
+        "step": 9,
+        "category": "Tasks",
+        "action": "Archive Task",
+        "instructions": [
+          "Open 'Test Task 1'",
+          "Click 'Archive' button or menu option",
+          "Confirm archive action if prompted",
+          "Verify task is removed from active list",
+          "Navigate to archived tasks view",
+          "Verify task appears in archived list"
+        ],
+        "expected_result": "Task archived successfully and accessible in archive",
+        "validation": "Task status updated in database, can be unarchived if needed"
+      },
+      {
+        "step": 10,
+        "category": "Milestones",
+        "action": "Create Milestone",
+        "instructions": [
+          "Navigate to Milestones tab",
+          "Click '+ New Milestone' button",
+          "Enter name: 'Phase 1 Completion'",
+          "Enter description: 'Complete all phase 1 tasks'",
+          "Set target date: 15 days from today",
+          "Set priority: 'High'",
+          "Click 'Create Milestone'",
+          "Verify milestone appears in list"
+        ],
+        "expected_result": "Milestone created and visible",
+        "validation": "Milestone saved to database with correct data"
+      },
+      {
+        "step": 11,
+        "category": "Milestones",
+        "action": "Add Tasks to Milestone",
+        "instructions": [
+          "Open 'Phase 1 Completion' milestone",
+          "Click 'Add Task' or 'Link Task'",
+          "Create or select existing tasks to add",
+          "Add at least 2 tasks to the milestone",
+          "Verify tasks appear under milestone",
+          "Check milestone progress updates"
+        ],
+        "expected_result": "Tasks linked to milestone, progress calculated",
+        "validation": "Milestone-task relationship stored, progress percentage accurate"
+      },
+      {
+        "step": 12,
+        "category": "Analytics",
+        "action": "View Project Analytics",
+        "instructions": [
+          "Navigate to Analytics tab or /dashboard/analytics",
+          "Verify analytics dashboard loads",
+          "Check for metric cards: Total Projects, Active Projects, Completed Tasks, etc.",
+          "Verify NO mock data is displayed (all data should be real)",
+          "Check for charts: project progress, task completion over time",
+          "Verify mobile responsiveness - no overlapping elements",
+          "Test on mobile viewport if possible"
+        ],
+        "expected_result": "Analytics display real data, fully responsive, no overlapping",
+        "validation": "All numbers match actual project/task counts, charts render correctly"
+      },
+      {
+        "step": 13,
+        "category": "Goals",
+        "action": "Create and Manage Goals",
+        "instructions": [
+          "Navigate to /dashboard/goals",
+          "Click '+ New Goal' button",
+          "Enter goal name: 'Q1 2025 Objectives'",
+          "Enter description: 'Complete all Q1 deliverables'",
+          "Set target date: 90 days from today",
+          "Set status: 'Active'",
+          "Add metrics or KPIs if available",
+          "Click 'Create Goal'",
+          "Verify goal appears in goals list",
+          "Check that NO mock data is shown"
+        ],
+        "expected_result": "Goal created with real data, no mock goals visible",
+        "validation": "Goal saved to database, analytics show real goal progress"
+      },
+      {
+        "step": 14,
+        "category": "Goals",
+        "action": "Update Goal Progress",
+        "instructions": [
+          "Open 'Q1 2025 Objectives' goal",
+          "Update progress percentage to 25%",
+          "Add progress note: 'Initial milestones completed'",
+          "Click 'Save'",
+          "Verify progress bar updates",
+          "Check analytics reflect new progress"
+        ],
+        "expected_result": "Goal progress updated and reflected in UI",
+        "validation": "Progress saved, analytics updated, no calculation errors"
+      },
+      {
+        "step": 15,
+        "category": "Team",
+        "action": "Invite Team Member",
+        "instructions": [
+          "Navigate to /team or Team section",
+          "Click 'Invite Member' button",
+          "Enter email: testmember@example.com",
+          "Select role: 'Member' or 'Contributor'",
+          "Add optional message",
+          "Click 'Send Invitation'",
+          "Verify invitation sent confirmation",
+          "Check that invitation appears in pending list"
+        ],
+        "expected_result": "Invitation sent successfully",
+        "validation": "Email sent (if email service configured), invitation recorded in database"
+      },
+      {
+        "step": 16,
+        "category": "Organizations",
+        "action": "Create Organization",
+        "instructions": [
+          "Navigate to /organizations",
+          "Click '+ New Organization' button",
+          "Enter name: 'Test Org [TIMESTAMP]'",
+          "Enter description: 'Testing organization features'",
+          "Click 'Create Organization'",
+          "Verify organization appears in list",
+          "Open organization to view details"
+        ],
+        "expected_result": "Organization created successfully",
+        "validation": "Organization saved, user is owner, can manage settings"
+      },
+      {
+        "step": 17,
+        "category": "Time Tracking",
+        "action": "Track Time on Task",
+        "instructions": [
+          "Create a new task: 'Time Tracking Test'",
+          "Open the task",
+          "Click 'Start Timer' or time tracking button",
+          "Wait for 1 minute",
+          "Click 'Stop Timer'",
+          "Verify time logged is approximately 1 minute",
+          "Add time entry description: 'Testing time tracking'",
+          "Save time entry"
+        ],
+        "expected_result": "Time tracked accurately and saved",
+        "validation": "Time entry stored in database, appears in time reports"
+      },
+      {
+        "step": 18,
+        "category": "Reports",
+        "action": "Generate and Export Reports",
+        "instructions": [
+          "Navigate to /reports",
+          "Select report type: 'Project Overview' or 'Performance'",
+          "Set date range: Last 30 days",
+          "Click 'Generate Report'",
+          "Verify report displays with real data (no mock data)",
+          "Click 'Export PDF' button",
+          "Verify PDF download starts",
+          "Check mobile responsiveness of report cards"
+        ],
+        "expected_result": "Reports generate with real data, export works, mobile responsive",
+        "validation": "All report data accurate, PDF contains correct information"
+      },
+      {
+        "step": 19,
+        "category": "Settings",
+        "action": "Update User Settings",
+        "instructions": [
+          "Navigate to /dashboard/settings",
+          "Update profile information (name, bio, etc.)",
+          "Change notification preferences",
+          "Update theme preference if available",
+          "Click 'Save Settings'",
+          "Verify settings saved successfully",
+          "Refresh page and verify settings persisted"
+        ],
+        "expected_result": "Settings updated and persisted",
+        "validation": "Database updated, changes reflected across app"
+      },
+      {
+        "step": 20,
+        "category": "AI Features",
+        "action": "Test AI Chat/Assistant",
+        "instructions": [
+          "Look for AI chat icon or assistant button",
+          "Click to open AI chat interface",
+          "Send message: 'Help me plan a software development project'",
+          "Wait for AI response",
+          "Verify response is relevant and uses OpenAI (not Ollama)",
+          "Test another query: 'Suggest tasks for a marketing campaign'",
+          "Check if AI suggestions can be applied to projects"
+        ],
+        "expected_result": "AI responds with helpful, relevant suggestions using OpenAI",
+        "validation": "No Ollama references, responses are coherent, can interact naturally"
+      },
+      {
+        "step": 21,
+        "category": "AI Features",
+        "action": "Test AI Project Creation",
+        "instructions": [
+          "Navigate to dashboard",
+          "Click 'AI Project Creator' button if available",
+          "If shows 'Feature integration in progress' message, verify that message",
+          "If functional, enter project description: 'Build an e-commerce website with user authentication, product catalog, shopping cart, and payment integration'",
+          "Click 'Generate Project'",
+          "Wait for AI to create project structure",
+          "Verify project, milestones, and tasks are created",
+          "Check that generated content makes sense"
+        ],
+        "expected_result": "AI generates logical project structure or shows migration notice",
+        "validation": "If functional: project structure is coherent. If not: clear message about OpenAI migration"
+      },
+      {
+        "step": 22,
+        "category": "Search & Filters",
+        "action": "Search and Filter",
+        "instructions": [
+          "Navigate to projects list",
+          "Use search bar to search for 'Test Project'",
+          "Verify search results are accurate",
+          "Apply filter: Status = 'Active'",
+          "Verify only active projects shown",
+          "Apply filter: Priority = 'High'",
+          "Verify results update correctly",
+          "Clear filters and verify all projects return"
+        ],
+        "expected_result": "Search and filters work accurately",
+        "validation": "Results match filter criteria, no items missing or extra"
+      },
+      {
+        "step": 23,
+        "category": "Views",
+        "action": "Test Different Views (Table, Kanban, Gantt)",
+        "instructions": [
+          "Navigate to projects page",
+          "Switch to Table view",
+          "Verify all project columns display correctly",
+          "Switch to Kanban view",
+          "Verify projects organized by status in columns",
+          "Drag a project to different status column",
+          "Verify status updates",
+          "Switch to Gantt view",
+          "Verify timeline displays with project durations",
+          "Check for overlapping or rendering issues"
+        ],
+        "expected_result": "All views render correctly, Kanban drag-drop works, Gantt shows timeline",
+        "validation": "View switching smooth, data consistent across views"
+      },
+      {
+        "step": 24,
+        "category": "Favorites",
+        "action": "Add to Favorites",
+        "instructions": [
+          "Open a project",
+          "Click 'Add to Favorites' star icon",
+          "Navigate to /favorites",
+          "Verify project appears in favorites",
+          "Remove from favorites",
+          "Verify it's removed from favorites list"
+        ],
+        "expected_result": "Favorites add/remove functionality works",
+        "validation": "Favorites stored per user, persist across sessions"
+      },
+      {
+        "step": 25,
+        "category": "Notifications",
+        "action": "Test Notifications",
+        "instructions": [
+          "Click notification bell icon",
+          "Verify notification center opens",
+          "Check for any notifications",
+          "If available, create a notification trigger (task assignment, mention, etc.)",
+          "Verify notification appears",
+          "Mark notification as read",
+          "Verify read status updates"
+        ],
+        "expected_result": "Notification system works, notifications can be marked read",
+        "validation": "Real-time updates if supported, notification count accurate"
+      },
+      {
+        "step": 26,
+        "category": "Comments",
+        "action": "Add and Manage Comments",
+        "instructions": [
+          "Open a task or project",
+          "Navigate to comments section",
+          "Add comment: 'This is a test comment for verification'",
+          "Click 'Post' or 'Send'",
+          "Verify comment appears with timestamp and author",
+          "Edit the comment",
+          "Verify edit saves",
+          "Delete the comment",
+          "Confirm deletion"
+        ],
+        "expected_result": "Comments can be created, edited, deleted successfully",
+        "validation": "Comments stored with proper metadata, real-time updates if applicable"
+      },
+      {
+        "step": 27,
+        "category": "Export/Import",
+        "action": "Export Project Data",
+        "instructions": [
+          "Navigate to a project",
+          "Click 'Export' button",
+          "Select export format: CSV or JSON",
+          "Click 'Export'",
+          "Verify download starts",
+          "Open exported file",
+          "Verify data is complete and accurate"
+        ],
+        "expected_result": "Export generates valid file with all project data",
+        "validation": "File format correct, all fields present, data accurate"
+      },
+      {
+        "step": 28,
+        "category": "Export/Import",
+        "action": "Import Project Data",
+        "instructions": [
+          "Navigate to import section",
+          "Click 'Import' button",
+          "Select the previously exported file",
+          "Click 'Import'",
+          "Verify import process completes",
+          "Check that project/tasks imported correctly",
+          "Verify no data corruption or loss"
+        ],
+        "expected_result": "Import successful, data intact",
+        "validation": "Imported data matches original, relationships preserved"
+      },
+      {
+        "step": 29,
+        "category": "Data Integrity",
+        "action": "Verify No Mock Data Anywhere",
+        "instructions": [
+          "Navigate to /dashboard/analytics",
+          "Verify ALL data is real, no 'Sample Project' or fake data",
+          "Check goals dashboard at /dashboard/goals",
+          "Verify NO mock goals or analytics",
+          "Inspect browser console for any 'mock' or 'fake' references",
+          "Check network tab for any mock data endpoints",
+          "Verify all charts and metrics use real database queries"
+        ],
+        "expected_result": "ZERO mock data anywhere in the application",
+        "validation": "All data comes from database, no hardcoded fake data"
+      },
+      {
+        "step": 30,
+        "category": "Mobile Responsiveness",
+        "action": "Test Mobile Views",
+        "instructions": [
+          "Set browser viewport to mobile (375x667 - iPhone SE)",
+          "Navigate to homepage - verify no overlapping elements",
+          "Check hero section - text should be readable, gradient visible",
+          "Login and navigate to dashboard",
+          "Verify analytics cards don't overlap",
+          "Check that icons and text have proper spacing",
+          "Test navigation menu collapses properly",
+          "Verify all buttons are tappable with proper touch targets",
+          "Test on tablet viewport (768x1024)",
+          "Verify responsive breakpoints work correctly"
+        ],
+        "expected_result": "All pages fully responsive with no overlapping elements",
+        "validation": "Elements never overlap, proper spacing on all screen sizes"
+      },
+      {
+        "step": 31,
+        "category": "Error Handling",
+        "action": "Test Error States",
+        "instructions": [
+          "Try to create project with empty name",
+          "Verify validation error appears",
+          "Try to set end date before start date",
+          "Verify error message",
+          "Try to access project that doesn't exist (invalid ID)",
+          "Verify 404 or appropriate error page",
+          "Test with network offline (if possible)",
+          "Verify graceful error handling"
+        ],
+        "expected_result": "Appropriate error messages, no crashes",
+        "validation": "User-friendly errors, app remains stable"
+      },
+      {
+        "step": 32,
+        "category": "Performance",
+        "action": "Check Console for Errors",
+        "instructions": [
+          "Open browser DevTools Console",
+          "Navigate through entire app",
+          "Check for any errors (red messages)",
+          "Verify NO hydration errors",
+          "Verify NO 406 errors for users table",
+          "Verify NO 'Ollama' references in errors",
+          "Check Network tab for failed requests",
+          "Verify all API calls return 200/201 success codes"
+        ],
+        "expected_result": "Zero console errors, all API calls successful",
+        "validation": "Clean console, no warnings or errors during normal use"
+      },
+      {
+        "step": 33,
+        "category": "Cleanup",
+        "action": "Delete Test Data",
+        "instructions": [
+          "Navigate to 'Test Project [TIMESTAMP]'",
+          "Click 'Delete' or trash icon",
+          "Confirm deletion",
+          "Verify project removed from list",
+          "Delete test organization",
+          "Delete test goal",
+          "Verify all test data cleaned up"
+        ],
+        "expected_result": "All test data successfully deleted",
+        "validation": "Soft delete or hard delete works, data removed from UI and database"
+      },
+      {
+        "step": 34,
+        "category": "Authentication",
+        "action": "Logout",
+        "instructions": [
+          "Click user profile menu",
+          "Click 'Logout' or 'Sign Out'",
+          "Verify redirected to login or homepage",
+          "Try to access /dashboard directly",
+          "Verify redirected to login (protected route)",
+          "Verify session cleared"
+        ],
+        "expected_result": "Logout successful, cannot access protected routes",
+        "validation": "Session terminated, auth tokens cleared"
+      }
+    ]
+  },
+  "journey_2_new_user": {
+    "name": "Complete Feature Testing - New User Onboarding",
+    "account": {
+      "email": "testuser_[TIMESTAMP]@example.com",
+      "password": "TestPassword123!",
+      "note": "Replace [TIMESTAMP] with actual timestamp when creating account"
+    },
+    "steps": [
+      {
+        "step": 1,
+        "category": "Authentication",
+        "action": "Create New Account",
+        "instructions": [
+          "Navigate to https://foco.mx",
+          "Click 'Comenzar gratis' or 'Register' button",
+          "Fill registration form:",
+          "  - Email: testuser_[TIMESTAMP]@example.com (use actual timestamp)",
+          "  - Password: TestPassword123!",
+          "  - Confirm Password: TestPassword123!",
+          "  - Full Name: Test User",
+          "Click 'Sign Up' or 'Create Account'",
+          "Check for email verification if required",
+          "Complete any onboarding steps",
+          "Verify redirected to dashboard or organization setup"
+        ],
+        "expected_result": "Account created successfully, user logged in",
+        "validation": "New user in database, session established, no errors"
+      },
+      {
+        "step": 2,
+        "category": "Onboarding",
+        "action": "Complete Organization Setup",
+        "instructions": [
+          "If prompted for organization setup, fill form:",
+          "  - Organization Name: 'Test Organization [TIMESTAMP]'",
+          "  - Description: 'Testing organization setup'",
+          "Click 'Create' or 'Continue'",
+          "Complete any additional onboarding steps",
+          "Verify landing on empty dashboard"
+        ],
+        "expected_result": "Organization created, user is owner, dashboard accessible",
+        "validation": "Organization saved, user has admin permissions"
+      },
+      {
+        "step": 3,
+        "category": "First-Time User Experience",
+        "action": "Verify Empty States",
+        "instructions": [
+          "Navigate to /dashboard",
+          "Verify empty state message for projects",
+          "Check for 'Create First Project' CTA",
+          "Navigate to /dashboard/analytics",
+          "Verify analytics show zero data (not mock data)",
+          "Navigate to /dashboard/goals",
+          "Verify empty state for goals (not mock data)",
+          "Verify NO sample/demo data anywhere"
+        ],
+        "expected_result": "Proper empty states everywhere, NO mock data shown",
+        "validation": "Empty states guide user to create content, no fake data"
+      },
+      {
+        "step": 4,
+        "category": "Projects",
+        "action": "Create First Project",
+        "instructions": [
+          "Click 'Create First Project' or '+ New Project'",
+          "Fill form:",
+          "  - Name: 'My First Project'",
+          "  - Description: 'Testing project creation as new user'",
+          "  - Priority: 'Medium'",
+          "  - Start Date: today",
+          "  - End Date: 14 days from today",
+          "Click 'Create'",
+          "Verify project appears in dashboard",
+          "Open project to view details"
+        ],
+        "expected_result": "First project created successfully",
+        "validation": "Project saved, user is owner, can manage project"
+      },
+      {
+        "step": 5,
+        "category": "Tasks",
+        "action": "Create Multiple Tasks",
+        "instructions": [
+          "In 'My First Project', create 3 tasks:",
+          "Task 1: Name='Setup', Priority='High', Status='In Progress'",
+          "Task 2: Name='Development', Priority='Medium', Status='To Do'",
+          "Task 3: Name='Testing', Priority='Low', Status='To Do'",
+          "Verify all 3 tasks appear in task list",
+          "Test drag-drop in Kanban view if available",
+          "Move Task 1 to 'Completed' status",
+          "Verify task count updates"
+        ],
+        "expected_result": "Multiple tasks created, status changes work",
+        "validation": "All tasks saved, relationships correct, analytics update"
+      },
+      {
+        "step": 6,
+        "category": "Milestones",
+        "action": "Create Milestone with Tasks",
+        "instructions": [
+          "Create milestone: 'Alpha Release'",
+          "Set target date: 7 days from today",
+          "Link Task 1 and Task 2 to this milestone",
+          "Verify milestone progress calculates correctly",
+          "Mark Task 2 as completed",
+          "Verify milestone progress updates to 100%"
+        ],
+        "expected_result": "Milestone tracks task completion accurately",
+        "validation": "Progress calculation correct, updates in real-time"
+      },
+      {
+        "step": 7,
+        "category": "Analytics",
+        "action": "Verify Analytics Populate",
+        "instructions": [
+          "Navigate to /dashboard/analytics",
+          "Verify metrics now show real data:",
+          "  - Total Projects: 1",
+          "  - Active Projects: 1",
+          "  - Completed Tasks: 2 (from previous steps)",
+          "Verify NO mock data or sample projects",
+          "Check that charts render with real data",
+          "Verify mobile responsive layout"
+        ],
+        "expected_result": "Analytics show actual user data, not mock data",
+        "validation": "Counts match reality, charts display correctly"
+      },
+      {
+        "step": 8,
+        "category": "Goals",
+        "action": "Create Goal Linked to Project",
+        "instructions": [
+          "Navigate to /dashboard/goals",
+          "Create goal: 'Complete First Project'",
+          "Link to 'My First Project'",
+          "Set target date: 14 days from today",
+          "Set initial progress: 50%",
+          "Verify goal appears in dashboard",
+          "Update progress to 75%",
+          "Verify analytics reflect changes"
+        ],
+        "expected_result": "Goals system works with real project data",
+        "validation": "Goal-project linkage works, progress tracked"
+      },
+      {
+        "step": 9,
+        "category": "Team Collaboration",
+        "action": "Invite First Team Member",
+        "instructions": [
+          "Navigate to /team",
+          "Click 'Invite Member'",
+          "Enter email: colleague@example.com",
+          "Select role: 'Member'",
+          "Send invitation",
+          "Verify invitation shows in pending list",
+          "Note: Invited user won't actually receive email unless configured"
+        ],
+        "expected_result": "Invitation system functional for new users",
+        "validation": "Invitation stored, can be resent or cancelled"
+      },
+      {
+        "step": 10,
+        "category": "Settings & Preferences",
+        "action": "Customize Profile",
+        "instructions": [
+          "Navigate to /dashboard/settings",
+          "Upload profile picture if available",
+          "Update bio/description",
+          "Set notification preferences",
+          "Change theme if available",
+          "Save settings",
+          "Verify changes persist after page refresh"
+        ],
+        "expected_result": "User can customize their experience",
+        "validation": "Settings saved, reflected across application"
+      },
+      {
+        "step": 11,
+        "category": "AI Interaction",
+        "action": "Test AI Features as New User",
+        "instructions": [
+          "Open AI chat/assistant",
+          "Ask: 'What should I do first in Foco?'",
+          "Verify helpful onboarding response",
+          "Ask: 'Create a task breakdown for building a mobile app'",
+          "Verify AI provides relevant task suggestions",
+          "Check if suggestions can be imported to project"
+        ],
+        "expected_result": "AI provides contextual help for new users",
+        "validation": "Responses use OpenAI, helpful for onboarding"
+      },
+      {
+        "step": 12,
+        "category": "Complete Workflow",
+        "action": "Full Project Lifecycle",
+        "instructions": [
+          "Create project: 'Website Redesign'",
+          "Add 5 tasks covering design, development, testing, deployment",
+          "Create 2 milestones: 'Design Complete', 'Launch'",
+          "Assign tasks to milestones",
+          "Track time on one task (use time tracker)",
+          "Complete 3 tasks",
+          "Mark 1 milestone as achieved",
+          "Generate report for the project",
+          "Export project data",
+          "Verify complete workflow functions"
+        ],
+        "expected_result": "New user can execute full project management workflow",
+        "validation": "All features accessible and functional for new account"
+      },
+      {
+        "step": 13,
+        "category": "Data Verification",
+        "action": "Confirm No Mock Data Pollution",
+        "instructions": [
+          "Navigate through entire application",
+          "Dashboard - verify only 2 projects (created by user)",
+          "Analytics - verify metrics match actual data",
+          "Goals - verify only user-created goals",
+          "No 'Sample Project', 'Demo Project', etc.",
+          "Console - verify no mock data loaded",
+          "Database queries - all real user data"
+        ],
+        "expected_result": "ZERO mock data for new user account",
+        "validation": "New users start with clean slate, no sample data"
+      },
+      {
+        "step": 14,
+        "category": "Mobile Experience",
+        "action": "Test as New User on Mobile",
+        "instructions": [
+          "Switch to mobile viewport (375x667)",
+          "Test entire workflow from step 1-12 on mobile",
+          "Verify no overlapping elements anywhere",
+          "Check touch targets are adequate",
+          "Verify forms are usable on mobile",
+          "Test navigation menu",
+          "Verify analytics cards stack properly"
+        ],
+        "expected_result": "Full functionality on mobile, perfect responsiveness",
+        "validation": "No UI issues on mobile, all features accessible"
+      },
+      {
+        "step": 15,
+        "category": "Cleanup",
+        "action": "Delete Test Account Data",
+        "instructions": [
+          "Delete all created projects",
+          "Delete all created goals",
+          "Remove test organization if possible",
+          "Optionally delete the test user account",
+          "Verify all data removed"
+        ],
+        "expected_result": "User can clean up their data",
+        "validation": "Deletion works, data properly removed"
+      }
+    ]
+  },
+  "critical_validations": {
+    "description": "These are MUST-PASS criteria across both journeys",
+    "requirements": [
+      {
+        "id": "NO_MOCK_DATA",
+        "requirement": "Zero mock data anywhere in the application",
+        "validation": "Search entire app for 'Sample', 'Demo', 'Mock', 'Fake' data",
+        "priority": "CRITICAL"
+      },
+      {
+        "id": "NO_OVERLAPPING",
+        "requirement": "No overlapping elements on any screen size",
+        "validation": "Test on mobile (375px), tablet (768px), desktop (1920px)",
+        "priority": "CRITICAL"
+      },
+      {
+        "id": "NO_HYDRATION_ERRORS",
+        "requirement": "No React hydration errors in console",
+        "validation": "Check console on every page load",
+        "priority": "CRITICAL"
+      },
+      {
+        "id": "NO_406_ERRORS",
+        "requirement": "No 406 Not Acceptable errors for users table",
+        "validation": "Monitor Network tab for all API calls",
+        "priority": "CRITICAL"
+      },
+      {
+        "id": "NO_OLLAMA_REFERENCES",
+        "requirement": "No Ollama code or references anywhere",
+        "validation": "Search for 'Ollama' in UI, console, network requests",
+        "priority": "CRITICAL"
+      },
+      {
+        "id": "MOBILE_RESPONSIVE",
+        "requirement": "Full mobile responsiveness across all pages",
+        "validation": "Every page tested at 375px, 768px, 1024px, 1920px",
+        "priority": "CRITICAL"
+      },
+      {
+        "id": "OPENAI_INTEGRATION",
+        "requirement": "AI features use OpenAI (not Ollama)",
+        "validation": "AI responses work, no Ollama errors",
+        "priority": "HIGH"
+      },
+      {
+        "id": "DATABASE_CONSISTENCY",
+        "requirement": "All data persists correctly across sessions",
+        "validation": "Logout, login, verify all data intact",
+        "priority": "HIGH"
+      }
+    ]
+  },
+  "reporting_template": {
+    "format": "Markdown",
+    "structure": {
+      "summary": {
+        "total_steps_journey_1": "Count",
+        "passed_journey_1": "Count",
+        "failed_journey_1": "Count",
+        "total_steps_journey_2": "Count",
+        "passed_journey_2": "Count",
+        "failed_journey_2": "Count",
+        "critical_failures": "List any CRITICAL validation failures",
+        "overall_status": "PASS/FAIL"
+      },
+      "detailed_results": "For each step, report: Step number, Category, Action, Result (✅/❌/⚠️), Notes, Screenshot if failed",
+      "critical_issues": "List all failures from critical_validations section",
+      "recommendations": "Suggestions for fixes based on failures",
+      "comparison": "Any differences between Journey 1 (existing user) and Journey 2 (new user)"
+    }
+  },
+  "execution_notes": {
+    "browser_requirements": "Use @browser tool to navigate and interact with foco.mx",
+    "screenshot_policy": "Take screenshot for every failure or partial pass",
+    "timing": "Allow adequate time for page loads and API responses",
+    "error_handling": "If a step fails, note it and continue to next step",
+    "console_monitoring": "Keep DevTools Console open throughout all tests",
+    "network_monitoring": "Monitor Network tab for API errors",
+    "timestamp_replacement": "Replace [TIMESTAMP] with actual Unix timestamp or date string"
+  }
+}

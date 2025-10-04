@@ -104,17 +104,17 @@ function ReportsContent() {
 
   return (
     <MainLayout>
-      <div className="flex-1 space-y-6 p-8 pt-6">
-        <div className="flex items-center justify-between">
+      <div className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8 pt-4 sm:pt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports</h2>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               Generate and export detailed analytics reports
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <Calendar className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -126,41 +126,45 @@ function ReportsContent() {
                 <SelectItem value="custom">Custom range</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-            <Button variant="outline" onClick={handleExportCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExportPDF} className="flex-1 sm:flex-none">
+                <Download className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Export PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </Button>
+              <Button variant="outline" onClick={handleExportCSV} className="flex-1 sm:flex-none">
+                <Download className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Export CSV</span>
+                <span className="sm:hidden">CSV</span>
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Report Type Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {reportTypes.map((type) => {
             const Icon = type.icon
             return (
               <Card
                 key={type.id}
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  reportType === type.id ? 'ring-2 ring-primary' : ''
+                className={`cursor-pointer glass-card hover-lift ${
+                  reportType === type.id ? 'ring-2 ring-primary border-primary' : ''
                 }`}
                 onClick={() => setReportType(type.id)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${
-                      reportType === type.id ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                      reportType === type.id ? 'bg-primary/10 text-primary' : 'bg-slate-500/10 text-slate-600'
                     }`}>
                       <Icon className="h-5 w-5" />
                     </div>
-                    <CardTitle className="text-lg">{type.name}</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">{type.name}</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription>{type.description}</CardDescription>
+                <CardContent className="pt-0">
+                  <CardDescription className="text-sm">{type.description}</CardDescription>
                 </CardContent>
               </Card>
             )

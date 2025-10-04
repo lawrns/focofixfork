@@ -55,124 +55,27 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     setIsLoading(true);
     try {
       const data = await GoalsService.getGoals(organizationId, projectId);
-      // If no data or error, show sample data for demo purposes
-      if (!data || data.length === 0) {
-        setGoals([
-          {
-            id: 'goal-1',
-            title: 'Launch Mobile App',
-            description: 'Complete development and launch of the mobile application for Q4',
-            type: 'project',
-            status: 'active',
-            priority: 'high',
-            target_value: 100,
-            current_value: 75,
-            unit: '%',
-            progress_percentage: 75,
-            owner_id: 'user-123',
-            organization_id: organizationId,
-            start_date: '2024-09-01',
-            end_date: '2024-12-31',
-            created_at: '2024-09-01T00:00:00Z',
-            updated_at: '2024-09-24T00:00:00Z'
-          },
-          {
-            id: 'goal-2',
-            title: 'Increase User Engagement',
-            description: 'Improve user engagement metrics by 30% through feature enhancements',
-            type: 'organization',
-            status: 'active',
-            priority: 'medium',
-            target_value: 30,
-            current_value: 18,
-            unit: '%',
-            progress_percentage: 60,
-            owner_id: 'user-123',
-            organization_id: organizationId,
-            start_date: '2024-08-01',
-            end_date: '2024-11-30',
-            created_at: '2024-08-01T00:00:00Z',
-            updated_at: '2024-09-24T00:00:00Z'
-          },
-          {
-            id: 'goal-3',
-            title: 'Complete API Documentation',
-            description: 'Write comprehensive API documentation for all endpoints',
-            type: 'task',
-            status: 'completed',
-            priority: 'low',
-            target_value: 100,
-            current_value: 100,
-            unit: '%',
-            progress_percentage: 100,
-            owner_id: 'user-123',
-            organization_id: organizationId,
-            start_date: '2024-07-01',
-            end_date: '2024-09-15',
-            created_at: '2024-07-01T00:00:00Z',
-            updated_at: '2024-09-15T00:00:00Z'
-          }
-        ]);
-      } else {
-        setGoals(data);
-      }
+      setGoals(data || []);
     } catch (error) {
       console.error('Error loading goals:', error);
-      // Show sample data on error for demo purposes
-      setGoals([
-        {
-          id: 'goal-demo-1',
-          title: 'Complete Project Planning',
-          description: 'Finish detailed planning phase for the new feature set',
-          type: 'milestone',
-          status: 'active',
-          priority: 'high',
-          target_value: 100,
-          current_value: 45,
-          unit: '%',
-          progress_percentage: 45,
-          owner_id: 'user-demo',
-          organization_id: organizationId,
-          start_date: '2024-09-20',
-          end_date: '2024-10-15',
-          created_at: '2024-09-20T00:00:00Z',
-          updated_at: '2024-09-24T00:00:00Z'
-        }
-      ]);
+      toast({
+        title: 'Error',
+        description: 'Failed to load goals. Please try again.',
+        variant: 'destructive',
+      });
+      setGoals([]);
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId, projectId]);
+  }, [organizationId, projectId, toast]);
 
   const loadAnalytics = useCallback(async () => {
     try {
       const data = await GoalsService.getGoalAnalytics(organizationId);
-      if (!data) {
-        // Show sample analytics data
-        setAnalytics({
-          totalGoals: 12,
-          activeGoals: 8,
-          completedGoals: 4,
-          averageProgress: 67.5,
-          goalsByStatus: { active: 8, completed: 4, on_hold: 0, cancelled: 0 },
-          goalsByPriority: { high: 5, medium: 4, low: 3, critical: 0 },
-          goalsByType: { project: 6, milestone: 3, task: 2, organization: 1, personal: 0 }
-        });
-      } else {
-        setAnalytics(data);
-      }
+      setAnalytics(data || null);
     } catch (error) {
       console.error('Error loading analytics:', error);
-      // Show sample analytics data on error
-      setAnalytics({
-        totalGoals: 8,
-        activeGoals: 6,
-        completedGoals: 2,
-        averageProgress: 52.3,
-        goalsByStatus: { active: 6, completed: 2, on_hold: 0, cancelled: 0 },
-        goalsByPriority: { high: 3, medium: 3, low: 2, critical: 0 },
-        goalsByType: { project: 4, milestone: 2, task: 1, organization: 1, personal: 0 }
-      });
+      setAnalytics(null);
     }
   }, [organizationId]);
 
@@ -210,20 +113,20 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'active': return 'bg-blue-100 text-blue-800';
-      case 'on_hold': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20';
+      case 'active': return 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20';
+      case 'on_hold': return 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20';
+      case 'cancelled': return 'bg-red-500/10 text-red-600 hover:bg-red-500/20';
+      default: return 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
+      case 'critical': return 'bg-red-500/10 text-red-600 hover:bg-red-500/20';
+      case 'high': return 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20';
+      case 'medium': return 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20';
+      case 'low': return 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20';
       default: return 'bg-gray-100 text-gray-800';
     }
   };

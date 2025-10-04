@@ -942,13 +942,12 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                         ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-primary shadow-sm'
                         : 'border-l-transparent hover:border-l-primary/30'
                     }`}
-                    onClick={() => handleSelectProject(project.id, !selectedProjects.has(project.id))}
+                    onClick={() => handleViewProject(project.id)}
                   >
-                    <td className="px-3 py-5 sm:px-6">
+                    <td className="px-3 py-5 sm:px-6" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedProjects.has(project.id)}
                         onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
-                        onClick={(e) => e.stopPropagation()}
                         aria-label={`Select project ${project.name}`}
                       />
                     </td>

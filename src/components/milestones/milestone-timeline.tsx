@@ -223,7 +223,9 @@ export function MilestoneTimeline({
             <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
 
             {sortedMilestones.map((milestone, index) => {
-              const StatusIcon = statusConfig[milestone.status].icon
+              // Defensive check for valid status with fallback to 'planned'
+              const validStatus = statusConfig[milestone.status as keyof typeof statusConfig] ? milestone.status : 'planned'
+              const StatusIcon = statusConfig[validStatus as keyof typeof statusConfig].icon
               const timelineStatus = getTimelineStatus(milestone)
               const daysUntilDue = getDaysUntilDue(milestone.due_date)
 
@@ -231,16 +233,16 @@ export function MilestoneTimeline({
                 <div key={milestone.id} className="relative flex items-start space-x-4 pb-8">
                   {/* Timeline dot */}
                   <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background ${
-                    milestone.status === 'completed'
+                    validStatus === 'completed'
                       ? 'border-green-500'
-                      : milestone.status === 'active'
+                      : validStatus === 'active'
                       ? 'border-blue-500'
                       : 'border-muted-foreground'
                   }`}>
                     <StatusIcon className={`h-5 w-5 ${
-                      milestone.status === 'completed'
+                      validStatus === 'completed'
                         ? 'text-green-500'
-                        : milestone.status === 'active'
+                        : validStatus === 'active'
                         ? 'text-blue-500'
                         : 'text-muted-foreground'
                     }`} />
@@ -269,8 +271,8 @@ export function MilestoneTimeline({
                             </p>
                           )}
                         </div>
-                        <Badge className={statusConfig[milestone.status].color}>
-                          {milestone.status.replace('_', ' ')}
+                        <Badge className={statusConfig[validStatus as keyof typeof statusConfig].color}>
+                          {validStatus.replace('_', ' ')}
                         </Badge>
                       </div>
                     </CardHeader>

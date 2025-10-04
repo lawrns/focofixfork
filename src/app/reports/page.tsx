@@ -31,16 +31,48 @@ function ReportsContent() {
   const [reportType, setReportType] = useState('overview')
   const [dateRange, setDateRange] = useState('30d')
 
-  const handleExportPDF = () => {
-    console.log('Exporting PDF report...')
+  const handleExportPDF = async () => {
+    // PDF export would require a library like jspdf or generating server-side
+    // For now, show a message that it's coming soon
+    alert('PDF export feature coming soon! Use CSV or Excel export in the meantime.')
   }
 
-  const handleExportCSV = () => {
-    console.log('Exporting CSV report...')
+  const handleExportCSV = async () => {
+    try {
+      const response = await fetch('/api/reports/export?format=csv&type=' + reportType + '&range=' + dateRange)
+      if (!response.ok) throw new Error('Export failed')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report-${reportType}-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+    }
   }
 
-  const handleExportExcel = () => {
-    console.log('Exporting Excel report...')
+  const handleExportExcel = async () => {
+    try {
+      const response = await fetch('/api/reports/export?format=excel&type=' + reportType + '&range=' + dateRange)
+      if (!response.ok) throw new Error('Export failed')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report-${reportType}-${new Date().toISOString().split('T')[0]}.xls`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting Excel:', error)
+    }
   }
 
   const reportTypes = [

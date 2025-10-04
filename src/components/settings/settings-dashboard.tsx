@@ -100,9 +100,29 @@ export function SettingsDashboard() {
 
     setSaving(true)
     try {
-      // For demo purposes, just simulate saving
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // Show success message
+      const response = await fetch('/api/settings/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: user.user_metadata?.full_name || user.email,
+          timezone: userSettings.timezone,
+          language: userSettings.language
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to save settings')
+
+      // Also save notification settings
+      await fetch('/api/settings/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email_notifications: userSettings.emailNotifications,
+          push_notifications: userSettings.pushNotifications,
+          weekly_reports: userSettings.weeklyReports,
+          marketing_emails: userSettings.marketingEmails
+        })
+      })
     } catch (error) {
       console.error('Error saving user settings:', error)
     } finally {
@@ -113,9 +133,19 @@ export function SettingsDashboard() {
   const saveOrgSettings = async () => {
     setSaving(true)
     try {
-      // For demo purposes, just simulate saving
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // Show success message
+      const response = await fetch('/api/settings/organization', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: orgSettings.name,
+          description: orgSettings.description,
+          allowPublicProjects: orgSettings.allowPublicProjects,
+          requireApproval: orgSettings.requireApproval,
+          defaultVisibility: orgSettings.defaultVisibility
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to save organization settings')
     } catch (error) {
       console.error('Error saving organization settings:', error)
     } finally {

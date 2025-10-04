@@ -357,18 +357,6 @@ export class CommentsService {
     // For organizations: get organization members
     // For now, return a placeholder
     return [
-      {
-        id: 'user1',
-        username: 'john_doe',
-        display_name: 'John Doe',
-        avatar: undefined
-      },
-      {
-        id: 'user2',
-        username: 'jane_smith',
-        display_name: 'Jane Smith',
-        avatar: undefined
-      }
     ]
   }
 

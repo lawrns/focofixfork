@@ -85,11 +85,7 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
             totalHoursTracked: 1247.5,
             averageHoursPerDay: 6.8,
             mostProductiveDay: 'Wednesday',
-            topContributors: [
-              { userId: 'user-1', name: 'Alice Johnson', hours: 156.5 },
-              { userId: 'user-2', name: 'Bob Smith', hours: 142.3 },
-              { userId: 'user-3', name: 'Carol Williams', hours: 134.7 }
-            ],
+            topContributors: [],
             projectHours: [
               { projectId: 'proj-1', name: 'Mobile App', hours: 234.5 },
               { projectId: 'proj-2', name: 'API Backend', hours: 198.3 },
@@ -101,12 +97,7 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
             activeMembers: 10,
             averageTasksPerMember: 24.1,
             teamProductivity: 85.3,
-            memberContributions: [
-              { userId: 'user-1', name: 'Alice Johnson', tasksCompleted: 45, hoursTracked: 156.5 },
-              { userId: 'user-2', name: 'Bob Smith', tasksCompleted: 38, hoursTracked: 142.3 },
-              { userId: 'user-3', name: 'Carol Williams', tasksCompleted: 42, hoursTracked: 134.7 },
-              { userId: 'user-4', name: 'David Brown', tasksCompleted: 35, hoursTracked: 128.9 }
-            ]
+            memberContributions: []
           },
           trends: {
             projectCompletionTrend: [65, 68, 72, 75, 78, 82],
@@ -152,11 +143,7 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
           totalHoursTracked: 892.3,
           averageHoursPerDay: 6.2,
           mostProductiveDay: 'Tuesday',
-          topContributors: [
-            { userId: 'user-1', name: 'Alice Johnson', hours: 124.5 },
-            { userId: 'user-2', name: 'Bob Smith', hours: 118.3 },
-            { userId: 'user-3', name: 'Carol Williams', hours: 112.7 }
-          ],
+          topContributors: [],
           projectHours: [
             { projectId: 'proj-1', name: 'Mobile App', hours: 189.5 },
             { projectId: 'proj-2', name: 'API Backend', hours: 156.3 },
@@ -168,11 +155,7 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
           activeMembers: 8,
           averageTasksPerMember: 24.2,
           teamProductivity: 83.7,
-          memberContributions: [
-            { userId: 'user-1', name: 'Alice Johnson', tasksCompleted: 38, hoursTracked: 124.5 },
-            { userId: 'user-2', name: 'Bob Smith', tasksCompleted: 32, hoursTracked: 118.3 },
-            { userId: 'user-3', name: 'Carol Williams', tasksCompleted: 35, hoursTracked: 112.7 }
-          ]
+          memberContributions: []
         },
         trends: {
           projectCompletionTrend: [62, 65, 68, 71, 74, 77],

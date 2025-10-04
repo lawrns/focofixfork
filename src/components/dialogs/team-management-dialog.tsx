@@ -64,6 +64,7 @@ export default function TeamManagementDialog({
 
   const [isLoading, setIsLoading] = useState(false)
   const [teamMembersWithDetails, setTeamMembersWithDetails] = useState<TeamMemberWithDetails[]>([])
+  const [organizationUsers, setOrganizationUsers] = useState<Array<{ id: string; name: string; email: string }>>([])
   const { toast } = useToast()
 
   // Use real-time team members if available, otherwise fall back to props
@@ -79,25 +80,42 @@ export default function TeamManagementDialog({
     resolver: zodResolver(AddTeamMemberSchema),
   })
 
-  // Mock user lookup - in real app this would be an API call
-  const mockUsers = useMemo(() => [
-    { id: 'user-1', name: 'Alice Johnson', email: 'alice@example.com' },
-    { id: 'user-2', name: 'Bob Smith', email: 'bob@example.com' },
-    { id: 'user-3', name: 'Carol Davis', email: 'carol@example.com' },
-  ], [])
+  // Fetch organization users from API
+  useEffect(() => {
+    const fetchOrgUsers = async () => {
+      try {
+        const response = await fetch('/api/organization/members')
+        if (response.ok) {
+          const data = await response.json()
+          const users = data.members.map((member: any) => ({
+            id: member.user_id,
+            name: member.full_name || member.email.split('@')[0],
+            email: member.email
+          }))
+          setOrganizationUsers(users)
+        }
+      } catch (error) {
+        console.error('Error fetching organization users:', error)
+      }
+    }
+
+    if (open) {
+      fetchOrgUsers()
+    }
+  }, [open])
 
   useEffect(() => {
-    // Combine team members with user details
+    // Combine team members with user details from organization
     const enhancedMembers = currentTeamMembers.map(member => {
-      const userDetails = mockUsers.find(u => u.id === member.user_id)
+      const userDetails = organizationUsers.find(u => u.id === member.user_id)
       return {
         ...member,
-        name: userDetails?.name || `User ${member.user_id.slice(-4)}`,
-        email: userDetails?.email || `${member.user_id}@example.com`
+        name: userDetails?.name || 'Unknown User',
+        email: userDetails?.email || 'No email'
       }
     })
     setTeamMembersWithDetails(enhancedMembers)
-  }, [currentTeamMembers, mockUsers])
+  }, [currentTeamMembers, organizationUsers])
 
   // Show real-time error if any
   useEffect(() => {
@@ -238,7 +256,7 @@ export default function TeamManagementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Manage Team - {projectName}</DialogTitle>
         </DialogHeader>
@@ -252,7 +270,7 @@ export default function TeamManagementDialog({
             </h3>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="user_id">Select User</Label>
                   <Select onValueChange={(value) => setValue('user_id', value)}>
@@ -260,7 +278,7 @@ export default function TeamManagementDialog({
                       <SelectValue placeholder="Choose a user" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockUsers
+                      {organizationUsers
                         .filter(user => !currentTeamMembers.some(m => m.user_id === user.id))
                         .map(user => (
                           <SelectItem key={user.id} value={user.id}>
@@ -327,7 +345,7 @@ export default function TeamManagementDialog({
               ) : (
                 <div className="space-y-3">
                   {teamMembersWithDetails.map((member) => (
-                    <div key={member.user_id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={member.user_id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback>
@@ -340,7 +358,7 @@ export default function TeamManagementDialog({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Select
                           value={member.role}
                           onValueChange={(value: TeamMemberRole) =>
@@ -348,7 +366,7 @@ export default function TeamManagementDialog({
                           }
                           disabled={isLoading || member.user_id === currentUserId || !permissions.canManageTeam}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-32 sm:w-32">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

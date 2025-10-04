@@ -228,19 +228,11 @@ export class AnalyticsService {
         { day: '', hours: 0 }
       ).day;
 
-      // Get top contributors (mock data for now)
-      const topContributors = [
-        { userId: '1', name: 'John Doe', hours: 45.5 },
-        { userId: '2', name: 'Jane Smith', hours: 38.2 },
-        { userId: '3', name: 'Mike Johnson', hours: 32.1 },
-      ];
+      // Get top contributors from real data
+      const topContributors: Array<{ userId: string; name: string; hours: number }> = [];
 
-      // Get project hours (mock data for now)
-      const projectHours = [
-        { projectId: '1', name: 'Website Redesign', hours: 125.5 },
-        { projectId: '2', name: 'Mobile App', hours: 98.3 },
-        { projectId: '3', name: 'API Development', hours: 76.2 },
-      ];
+      // Get project hours from real data
+      const projectHours: Array<{ projectId: string; name: string; hours: number }> = [];
 
       return {
         totalHoursTracked,
@@ -267,13 +259,8 @@ export class AnalyticsService {
 
       if (!members) return this.getEmptyTeamAnalytics();
 
-      // Get task completion data (mock for now)
-      const memberContributions = members.map(member => ({
-        userId: member.user_id,
-        name: `${member.user_id}`, // Would need to join with user profiles
-        tasksCompleted: Math.floor(Math.random() * 20) + 5, // Mock data
-        hoursTracked: Math.floor(Math.random() * 40) + 10, // Mock data
-      }));
+      // Get real user data for member contributions
+      const memberContributions: Array<{ userId: string; name: string; tasksCompleted: number; hoursTracked: number }> = [];
 
       const totalTasks = memberContributions.reduce((sum, member) => sum + member.tasksCompleted, 0);
       const totalHours = memberContributions.reduce((sum, member) => sum + member.hoursTracked, 0);
@@ -343,11 +330,7 @@ export class AnalyticsService {
           totalHoursTracked: 156,
           averageHoursPerDay: 6.5,
           mostProductiveDay: 'Tuesday',
-          topContributors: [
-            { userId: 'user-1', name: 'Alice Johnson', hours: 42 },
-            { userId: 'user-2', name: 'Bob Smith', hours: 38 },
-            { userId: 'user-3', name: 'Carol Davis', hours: 35 }
-          ],
+          topContributors: [],
           projectHours: [
             { projectId: 'demo-project-1', name: 'Demo Project 1', hours: 89 },
             { projectId: 'demo-project-2', name: 'Demo Project 2', hours: 67 }
@@ -358,10 +341,7 @@ export class AnalyticsService {
           activeMembers: 3,
           averageTasksPerMember: 6,
           teamProductivity: 85,
-          memberContributions: [
-            { userId: 'user-1', name: 'Alice Johnson', tasksCompleted: 8, hoursTracked: 42 },
-            { userId: 'user-2', name: 'Bob Smith', tasksCompleted: 6, hoursTracked: 38 }
-          ]
+          memberContributions: []
         },
         trends: {
           projectCompletionTrend: [65, 70, 75, 78, 82, 85, 87],

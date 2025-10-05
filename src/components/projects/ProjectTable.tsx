@@ -117,7 +117,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   const getStatusBadge = (status: Project['status']) => {
     const styles = {
       'planning': 'bg-muted text-muted-foreground',
-      'active': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+      'active': 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300',
       'on_hold': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
       'completed': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
       'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
@@ -141,7 +141,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   const getPriorityBadge = (priority: Project['priority']) => {
     const styles = {
       'low': 'bg-muted text-muted-foreground',
-      'medium': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+      'medium': 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300',
       'high': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
       'urgent': 'bg-destructive/10 text-destructive'
     }

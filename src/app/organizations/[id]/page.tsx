@@ -194,7 +194,7 @@ export default function OrganizationDetailPage() {
       case 'director':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'
       case 'lead':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+        return 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300'
       case 'member':
         return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
     }

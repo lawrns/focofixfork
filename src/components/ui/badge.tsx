@@ -19,7 +19,7 @@ const badgeVariants = cva(
         warning:
           'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200',
         info:
-          'border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200',
+          'border-transparent bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200',
         muted:
           'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300 hover:bg-slate-200',
         glass:

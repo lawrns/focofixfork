@@ -52,7 +52,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const getStatusBadge = (status?: string) => {
     const colors = {
       active: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-      planning: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+      planning: 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300',
       'on-hold': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
       completed: 'bg-gray-100 text-gray-800 dark:bg-gray-700/40 dark:text-gray-300'
     }

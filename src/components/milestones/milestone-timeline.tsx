@@ -38,7 +38,7 @@ const statusConfig = {
     icon: Clock,
   },
   active: {
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    color: 'bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-300',
     icon: PlayCircle,
   },
   completed: {

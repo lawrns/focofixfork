@@ -106,7 +106,7 @@ interface TableViewProps {
 
 const statusConfigs = {
   projects: {
-    planning: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', label: 'Planning' },
+    planning: { color: 'bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-300', label: 'Planning' },
     active: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', label: 'Active' },
     on_hold: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', label: 'On Hold' },
     completed: { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300', label: 'Completed' },
@@ -114,13 +114,13 @@ const statusConfigs = {
   },
   tasks: {
     todo: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300', label: 'To Do' },
-    in_progress: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', label: 'In Progress' },
+    in_progress: { color: 'bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-300', label: 'In Progress' },
     review: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', label: 'Review' },
     done: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', label: 'Done' }
   },
   milestones: {
     planned: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300', label: 'Planned' },
-    active: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', label: 'Active' },
+    active: { color: 'bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-300', label: 'Active' },
     completed: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', label: 'Completed' },
     cancelled: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', label: 'Cancelled' }
   }
@@ -128,7 +128,7 @@ const statusConfigs = {
 
 const priorityConfigs = {
   low: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300', label: 'Low' },
-  medium: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', label: 'Medium' },
+  medium: { color: 'bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-300', label: 'Medium' },
   high: { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300', label: 'High' },
   urgent: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', label: 'Urgent' }
 }

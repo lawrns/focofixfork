@@ -201,11 +201,11 @@ export class AnalyticsService {
       }
 
       if (startDate) {
-        query = query.gte('start_time', startDate);
+        query = query.gte('date', startDate);
       }
 
       if (endDate) {
-        query = query.lte('start_time', endDate);
+        query = query.lte('date', endDate);
       }
 
       const { data: timeEntries } = await query;

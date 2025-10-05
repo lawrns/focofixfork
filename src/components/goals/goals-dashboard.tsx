@@ -54,8 +54,13 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
   const loadGoals = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await GoalsService.getGoals(organizationId, projectId);
-      setGoals(data || []);
+      // Use API route instead of direct Supabase query to bypass RLS
+      const response = await fetch('/api/goals');
+      if (!response.ok) {
+        throw new Error('Failed to fetch goals');
+      }
+      const result = await response.json();
+      setGoals(result.data || []);
     } catch (error) {
       console.error('Error loading goals:', error);
       toast({

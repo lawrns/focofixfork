@@ -297,7 +297,7 @@ export class TimeTrackingService {
     let query = supabase
       .from('time_entries')
       .select('*', { count: 'exact' })
-      .order('start_time', { ascending: false })
+      .order('date', { ascending: false })
 
     // @ts-ignore - Avoiding deep type instantiation issues with Supabase query chaining
     if (filters.user_id) {
@@ -322,12 +322,12 @@ export class TimeTrackingService {
 
     if (filters.start_date) {
       // @ts-ignore
-      query = query.gte('start_time', filters.start_date)
+      query = query.gte('date', filters.start_date)
     }
 
     if (filters.end_date) {
       // @ts-ignore
-      query = query.lte('start_time', filters.end_date)
+      query = query.lte('date', filters.end_date)
     }
 
     if (filters.status?.length) {

@@ -24,6 +24,7 @@ coverage/
 .nyc_output/
 test-results/
 playwright-report/
+api-test-screenshots/
 
 # IDE
 .vscode/

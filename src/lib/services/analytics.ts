@@ -195,32 +195,51 @@ export class AnalyticsService {
     try {
       let query = supabase.from('time_entries').select('*');
 
-      // Note: time_entries table doesn't have organization_id column
-      // We'll filter by organization through related projects if needed
+      // Filter by organization if provided
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      }
 
       if (startDate) {
-        query = query.gte('date', startDate.split('T')[0]); // Extract date part
+        query = query.gte('start_time', startDate);
       }
 
       if (endDate) {
-        query = query.lte('date', endDate.split('T')[0]); // Extract date part
+        query = query.lte('start_time', endDate);
       }
 
       const { data: timeEntries } = await query;
 
       if (!timeEntries) return this.getEmptyTimeTrackingAnalytics();
 
-      const totalHoursTracked = timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
+      // Calculate total hours from duration_minutes (convert to hours)
+      const totalHoursTracked = timeEntries.reduce((sum, entry) => {
+        if (entry.duration_minutes) {
+          return sum + (entry.duration_minutes / 60);
+        }
+        // If no duration_minutes, calculate from start_time and end_time if available
+        if (entry.start_time && entry.end_time) {
+          const durationMs = new Date(entry.end_time).getTime() - new Date(entry.start_time).getTime();
+          return sum + (durationMs / (1000 * 60 * 60)); // Convert ms to hours
+        }
+        return sum;
+      }, 0);
 
       // Calculate average hours per day
-      const uniqueDays = new Set(timeEntries.map(entry => entry.date));
+      const uniqueDays = new Set(timeEntries.map(entry => {
+        const date = new Date(entry.start_time);
+        return date.toISOString().split('T')[0]; // Extract date part
+      }));
       const averageHoursPerDay = uniqueDays.size > 0 ? totalHoursTracked / uniqueDays.size : 0;
 
       // Find most productive day
       const dayHours: { [key: string]: number } = {};
       timeEntries.forEach(entry => {
-        const day = entry.date;
-        dayHours[day] = (dayHours[day] || 0) + entry.hours;
+        const day = new Date(entry.start_time).toISOString().split('T')[0];
+        const hours = entry.duration_minutes ? entry.duration_minutes / 60 :
+          (entry.start_time && entry.end_time ?
+            (new Date(entry.end_time).getTime() - new Date(entry.start_time).getTime()) / (1000 * 60 * 60) : 0);
+        dayHours[day] = (dayHours[day] || 0) + hours;
       });
 
       const mostProductiveDay = Object.entries(dayHours).reduce((max, [day, hours]) =>
@@ -232,7 +251,10 @@ export class AnalyticsService {
       const userHours: { [userId: string]: number } = {};
       timeEntries.forEach(entry => {
         if (entry.user_id) {
-          userHours[entry.user_id] = (userHours[entry.user_id] || 0) + entry.hours;
+          const hours = entry.duration_minutes ? entry.duration_minutes / 60 :
+            (entry.start_time && entry.end_time ?
+              (new Date(entry.end_time).getTime() - new Date(entry.start_time).getTime()) / (1000 * 60 * 60) : 0);
+          userHours[entry.user_id] = (userHours[entry.user_id] || 0) + hours;
         }
       });
 

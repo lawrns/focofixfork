@@ -339,7 +339,6 @@ Guidelines:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Create a project structure for: ${description}` }
         ],
-        response_format: { type: 'json_object' },
         temperature: 0.7,
         max_tokens: 3500,
       })
@@ -349,7 +348,27 @@ Guidelines:
         throw new Error('No response from OpenAI')
       }
 
-      const projectStructure = JSON.parse(content)
+      // Try to parse JSON directly first
+      let projectStructure
+      try {
+        projectStructure = JSON.parse(content)
+      } catch (parseError) {
+        // If direct parsing fails, try to extract JSON from markdown code blocks
+        const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)
+        if (jsonMatch) {
+          projectStructure = JSON.parse(jsonMatch[1])
+        } else {
+          // Last resort: try to find JSON-like content
+          const jsonStart = content.indexOf('{')
+          const jsonEnd = content.lastIndexOf('}')
+          if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+            const jsonString = content.substring(jsonStart, jsonEnd + 1)
+            projectStructure = JSON.parse(jsonString)
+          } else {
+            throw new Error('Could not extract valid JSON from response')
+          }
+        }
+      }
 
       // Validate structure
       if (!projectStructure.name || !projectStructure.milestones) {

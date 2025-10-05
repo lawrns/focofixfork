@@ -23,6 +23,9 @@ function TaskDetailContent() {
   const taskId = params.id as string
 
   const [task, setTask] = useState<any>(null)
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
+  const [milestones, setMilestones] = useState<Array<{ id: string; title: string; project_id: string }>>([])
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; display_name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -33,6 +36,22 @@ function TaskDetailContent() {
         if (response.ok) {
           const data = await response.json()
           setTask(data.data)
+
+          // Load related data
+          const projectsResponse = await fetch('/api/projects')
+          if (projectsResponse.ok) {
+            const projectsData = await projectsResponse.json()
+            setProjects(projectsData.map((p: any) => ({ id: p.id, name: p.name })))
+          }
+
+          // Load milestones for the task's project
+          if (data.data.project_id) {
+            const milestonesResponse = await fetch(`/api/milestones?project_id=${data.data.project_id}`)
+            if (milestonesResponse.ok) {
+              const milestonesData = await milestonesResponse.json()
+              setMilestones(milestonesData.map((m: any) => ({ id: m.id, title: m.name, project_id: m.project_id })))
+            }
+          }
         } else {
           toast.error('Failed to load task')
           router.push('/tasks')
@@ -116,11 +135,11 @@ function TaskDetailContent() {
           <h1 className="text-2xl font-bold mb-6">Edit Task</h1>
           <TaskForm
             task={task}
-            projectId={task.project_id}
-            onSubmit={handleSave}
+            projects={projects}
+            milestones={milestones}
+            teamMembers={teamMembers}
+            onSuccess={() => router.push(`/projects/${task.project_id}`)}
             onCancel={() => router.push(`/projects/${task.project_id}`)}
-            submitLabel={saving ? 'Saving...' : 'Save Changes'}
-            disabled={saving}
           />
         </div>
       </div>

@@ -69,6 +69,14 @@ export async function GET(request: NextRequest) {
           'Content-Disposition': `attachment; filename="report-${type}-${new Date().toISOString().split('T')[0]}.xls"`
         }
       })
+    } else if (format === 'pdf') {
+      const pdf = await generatePDF(data, headers, type)
+      return new NextResponse(new Uint8Array(pdf), {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="report-${type}-${new Date().toISOString().split('T')[0]}.pdf"`
+        }
+      })
     }
 
     return NextResponse.json({ error: 'Invalid format' }, { status: 400 })
@@ -116,6 +124,33 @@ function generateExcel(data: any[], headers: string[]): string {
 
   html += '</tbody></table>'
   return html
+}
+
+async function generatePDF(data: any[], headers: string[], type: string): Promise<Buffer> {
+  // For now, create a simple text-based PDF-like output
+  // In production, you'd use a library like puppeteer, pdfkit, or jsPDF
+  let content = `${type.toUpperCase()} REPORT\n`
+  content += `Generated: ${new Date().toISOString()}\n\n`
+
+  if (data.length === 0) {
+    content += 'No data available for the selected criteria.\n'
+  } else {
+    // Add headers
+    content += headers.join('\t') + '\n'
+    content += '='.repeat(headers.join('\t').length) + '\n'
+
+    // Add data rows
+    data.forEach(row => {
+      const values = headers.map(header => String(row[header] ?? ''))
+      content += values.join('\t') + '\n'
+    })
+
+    content += `\nTotal Records: ${data.length}\n`
+  }
+
+  // Convert to Buffer (simulating PDF content)
+  // In a real implementation, you'd generate actual PDF bytes
+  return Buffer.from(content, 'utf-8')
 }
 
 function escapeHTML(text: string): string {

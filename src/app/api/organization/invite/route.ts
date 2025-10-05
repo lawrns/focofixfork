@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
+    const currentUserId = request.headers.get('x-user-id')
+    if (!currentUserId) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { data: currentUserMember, error: currentUserError } = await supabase
       .from('organization_members')
       .select('organization_id, role')
-      .eq('user_id', userId)
+      .eq('user_id', currentUserId)
       .single()
 
     if (currentUserError || !currentUserMember) {

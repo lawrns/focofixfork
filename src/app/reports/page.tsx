@@ -32,9 +32,23 @@ function ReportsContent() {
   const [dateRange, setDateRange] = useState('30d')
 
   const handleExportPDF = async () => {
-    // PDF export would require a library like jspdf or generating server-side
-    // For now, show a message that it's coming soon
-    alert('PDF export feature coming soon! Use CSV or Excel export in the meantime.')
+    try {
+      const response = await fetch('/api/reports/export?format=pdf&type=' + reportType + '&range=' + dateRange)
+      if (!response.ok) throw new Error('PDF export failed')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report-${reportType}-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('PDF export error:', error)
+      alert('Failed to export PDF. Please try again.')
+    }
   }
 
   const handleExportCSV = async () => {

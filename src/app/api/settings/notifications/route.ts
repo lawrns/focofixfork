@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Note: Since the users table doesn't have a notification_settings column,
-// we'll store preferences in a separate table or return mock data for now.
-// This is a placeholder implementation that returns default settings.
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +8,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Return default notification settings
-    // In a real implementation, these would be stored in a user_preferences table
+    // Get notification settings from user_profiles
+    const { data: userProfile, error } = await supabaseAdmin
+      .from('user_profiles')
+      .select('preferences')
+      .eq('user_id', userId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Default settings
     const defaultSettings = {
       email_notifications: true,
       push_notifications: true,
@@ -24,7 +31,11 @@ export async function GET(request: NextRequest) {
       weekly_summary: true
     }
 
-    return NextResponse.json({ settings: defaultSettings })
+    // Merge stored preferences with defaults
+    const storedSettings = userProfile?.preferences?.notifications || {}
+    const settings = { ...defaultSettings, ...storedSettings }
+
+    return NextResponse.json({ settings })
   } catch (error) {
     console.error('Error fetching notification settings:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -57,9 +68,44 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid settings keys' }, { status: 400 })
     }
 
-    // In a real implementation, save to user_preferences table
-    // For now, just return success
-    console.log(`Notification settings updated for user ${userId}:`, settings)
+    // Check if user profile exists
+    const { data: existingProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, preferences')
+      .eq('user_id', userId)
+      .single()
+
+    const preferences = existingProfile?.preferences || {}
+    preferences.notifications = settings
+
+    const profileUpdateData = {
+      preferences,
+      updated_at: new Date().toISOString()
+    }
+
+    if (existingProfile) {
+      // Update existing profile
+      const { error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .update(profileUpdateData)
+        .eq('user_id', userId)
+
+      if (profileError) {
+        return NextResponse.json({ error: profileError.message }, { status: 500 })
+      }
+    } else {
+      // Create new profile
+      const { error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .insert({
+          user_id: userId,
+          ...profileUpdateData
+        })
+
+      if (profileError) {
+        return NextResponse.json({ error: profileError.message }, { status: 500 })
+      }
+    }
 
     return NextResponse.json({ success: true, message: 'Notification settings updated successfully' })
   } catch (error) {

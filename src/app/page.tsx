@@ -8,10 +8,13 @@ import { ArrowRight, PlayCircle, Flag, Users, BarChart3, Sparkles, Zap, Target, 
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { useInstallPrompt } from '@/components/pwa/install-prompt'
+import { useAuth } from '@/lib/contexts/auth-context'
+import Intercom from '@intercom/messenger-js-sdk'
 
 export default function Home() {
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt()
   const [isMobile, setIsMobile] = useState(false)
+  const { user } = useAuth()
 
   useEffect(() => {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
@@ -19,6 +22,18 @@ export default function Home() {
   useEffect(() => {
     document.title = 'Foco - Gestión de Proyectos con IA'
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      Intercom({
+        app_id: 'z27grz1x',
+        user_id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        created_at: Math.floor(new Date(user.created_at).getTime() / 1000),
+      })
+    }
+  }, [user])
   const { scrollYProgress } = useScroll()
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%'])
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])

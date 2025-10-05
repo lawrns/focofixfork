@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ProjectsService } from '@/lib/services/projects'
+import { ProjectsService } from '@/features/projects/services/projectService'
 import { z } from 'zod'
 
 // Schema for project creation

@@ -2,15 +2,16 @@
 // This file exports all public interfaces for the projects feature
 
 // Components
-export { default as ProjectForm } from './components/ProjectForm'
-export { default as ProjectList } from './components/ProjectList'
-export { default as ProjectTable } from './components/ProjectTable'
-export { default as ProjectCard } from './components/ProjectCard'
-export { default as ProjectKanban } from './components/ProjectKanban'
+export { ProjectForm } from './components/project-form'
+export { ProjectList } from './components/project-list'
+export { ProjectTable } from './components/ProjectTable'
+export { default as ProjectCard } from './components/project-card'
+export { KanbanBoard } from './components/kanban-board'
+export { ViewTabs } from './components/ViewTabs'
 
 // Hooks
 export { useProjects } from './hooks/useProjects'
-export { useProjectMutations } from './hooks/useProjectMutations'
+export { useProjectMutations } from './hooks/useProjects'
 
 // Services
 export { projectService } from './services/projectService'

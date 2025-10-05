@@ -3,7 +3,7 @@
 import { Suspense } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
-import { GoalsDashboard } from '@/components/goals/goals-dashboard'
+import { GoalsDashboard } from '@/features/goals'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardGoalsPage() {

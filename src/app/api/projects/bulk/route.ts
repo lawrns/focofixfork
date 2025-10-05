@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (operation === 'delete') {
       // Import the ProjectsService for proper deletion with cascading
-      const { ProjectsService } = await import('@/lib/services/projects')
+      const { ProjectsService } = await import('@/features/projects/services/projectService')
 
       for (const projectId of project_ids) {
         try {

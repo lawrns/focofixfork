@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { TasksService } from '@/lib/services/tasks'
+import { TasksService } from '@/features/tasks/services/taskService'
 import { z } from 'zod'
 
 // Schema for task updates

@@ -2,8 +2,8 @@
 // This file exports all public interfaces for the goals feature
 
 // Components
-export { GoalsDashboard } from './components/GoalsDashboard'
-export { GoalForm } from './components/GoalForm'
+export { GoalsDashboard } from './components/goals-dashboard'
+export { CreateGoalDialog } from './components/create-goal-dialog'
 
 // Hooks
 export { useGoals } from './hooks/useGoals'

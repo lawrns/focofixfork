@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from('users')
-      .select('full_name, email, timezone, language, avatar_url')
+      .select('full_name, email, avatar_url, role, is_active')
       .eq('id', userId)
       .single()
 
@@ -31,21 +31,23 @@ export async function PUT(request: NextRequest) {
   try {
     const supabase = supabaseAdmin
     const body = await request.json()
-    const { full_name, timezone, language } = body
+    const { full_name, avatar_url } = body
 
     const userId = request.headers.get('x-user-id')
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (full_name !== undefined) updateData.full_name = full_name
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url
+
     const { error } = await supabase
       .from('users')
-      .update({
-        full_name,
-        timezone,
-        language,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', userId)
 
     if (error) {

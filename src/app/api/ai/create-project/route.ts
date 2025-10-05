@@ -119,10 +119,10 @@ export async function POST(request: NextRequest) {
         priority: projectStructure.priority,
         created_by: userId,
         organization_id: organizationId,
-        start_date: new Date().toISOString(),
-        end_date: projectStructure.milestones.length > 0
+        start_date: new Date().toISOString().split('T')[0],
+        due_date: projectStructure.milestones.length > 0
           ? projectStructure.milestones[projectStructure.milestones.length - 1].dueDate
-          : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+          : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       })
       .select()
       .single()
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
           due_date: milestone.dueDate,
           deadline: milestone.dueDate,
           priority: milestone.priority,
-          status: 'not_started',
+          status: 'green',
           created_by: userId,
         })
         .select()

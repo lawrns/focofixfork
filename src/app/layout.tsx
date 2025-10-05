@@ -1,22 +1,6 @@
-'use client';
-
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/contexts/auth-context";
-import { I18nProvider } from "@/lib/i18n/context";
-import { ThemeProvider } from "@/components/providers/theme-provider";
-import ErrorBoundary from "@/components/error/error-boundary";
-import { Toaster } from "sonner";
-import { ToastProvider, ToastViewport } from "@/components/toast/toast";
-// import { PerformanceService } from "@/lib/services/performance";
-// import { PWAService } from "@/lib/services/pwa";
-// import { PerformanceMonitor } from "@/lib/performance/monitor";
-// import { ErrorTracker } from "@/lib/error-tracking/tracker";
-// import { AnalyticsTracker } from "@/lib/analytics/tracker";
-// import { MobilePerformanceMonitor } from "@/components/performance/mobile-performance-monitor";
-import { MobileBottomNav } from "@/components/navigation/mobile-bottom-nav";
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { Providers } from "./providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -28,16 +12,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // Initialize PWA
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      import('@/lib/services/pwa').then(({ PWAService }) => {
-        PWAService.initialize();
-      });
-    }
-  }, []);
   return (
     <html lang="en">
       <head>
@@ -63,24 +37,8 @@ export default function RootLayout({
         <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#0052CC" />
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
-      <body
-        className={`${inter.variable} antialiased`}
-      >
-        <ThemeProvider defaultTheme="light">
-          <ErrorBoundary>
-            <I18nProvider>
-              <ToastProvider>
-                <AuthProvider>
-                  {children}
-                  {/* <MobilePerformanceMonitor /> */}
-                  {pathname !== '/login' && pathname !== '/register' && pathname !== '/organization-setup' && <MobileBottomNav showFab={false} />}
-                  <Toaster />
-                  <ToastViewport />
-                </AuthProvider>
-              </ToastProvider>
-            </I18nProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
+      <body className={`${inter.variable} antialiased`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

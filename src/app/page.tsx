@@ -649,13 +649,12 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Clean CTA Bar - Lower z-index to allow Intercom widget to be visible */}
+          {/* Clean CTA Bar */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] p-4 sm:p-6 z-40 shadow-lg"
+            className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] p-4 sm:p-6 z-50 shadow-lg"
             initial={{ y: 100 }}
             animate={{ y: 0 }}
             transition={{ delay: 1, duration: 0.8, type: "spring", stiffness: 100 }}
-            style={{ paddingRight: isMobile ? '16px' : '80px' }} // Add right padding on mobile for Intercom widget
           >
             <div className="max-w-4xl mx-auto">
               {/* Mobile: PWA Install Button */}

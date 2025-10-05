@@ -1,0 +1,137 @@
+import { useState, useEffect, useCallback } from 'react'
+import { taskService } from '../services/taskService'
+import type { Task, TaskFilters } from '../types'
+
+export function useTasks(filters?: TaskFilters) {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await taskService.getUserTasks('current-user', filters)
+      if (result.success && result.data) {
+        setTasks(result.data)
+      } else {
+        setError(result.error || 'Failed to fetch tasks')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch tasks')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
+
+  const createTask = useCallback(async (taskData: Parameters<typeof taskService.createTask>[1]) => {
+    try {
+      const result = await taskService.createTask('current-user', taskData)
+      if (result.success && result.data) {
+        setTasks(prev => [result.data!, ...prev])
+        return { success: true }
+      }
+      return { success: false, error: result.error }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to create task'
+      setError(error)
+      return { success: false, error }
+    }
+  }, [])
+
+  const updateTask = useCallback(async (id: string, updates: Parameters<typeof taskService.updateTask>[1]) => {
+    try {
+      const result = await taskService.updateTask(id, updates)
+      if (result.success && result.data) {
+        setTasks(prev => prev.map(task => task.id === id ? result.data! : task))
+        return { success: true }
+      }
+      return { success: false, error: result.error }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to update task'
+      setError(error)
+      return { success: false, error }
+    }
+  }, [])
+
+  const deleteTask = useCallback(async (id: string) => {
+    try {
+      const result = await taskService.deleteTask(id)
+      if (result.success) {
+        setTasks(prev => prev.filter(task => task.id !== id))
+        return { success: true }
+      }
+      return { success: false, error: result.error }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to delete task'
+      setError(error)
+      return { success: false, error }
+    }
+  }, [])
+
+  return {
+    tasks,
+    loading,
+    error,
+    refetch: fetchTasks,
+    createTask,
+    updateTask,
+    deleteTask
+  }
+}
+
+export function useTask(id: string) {
+  const [task, setTask] = useState<Task | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchTask = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await taskService.getTask(id)
+      if (result.success && result.data) {
+        setTask(result.data)
+      } else {
+        setError(result.error || 'Task not found')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch task')
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      fetchTask()
+    }
+  }, [id, fetchTask])
+
+  const updateTask = useCallback(async (updates: Parameters<typeof taskService.updateTask>[1]) => {
+    try {
+      const result = await taskService.updateTask(id, updates)
+      if (result.success && result.data) {
+        setTask(result.data)
+        return { success: true }
+      }
+      return { success: false, error: result.error }
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to update task'
+      setError(error)
+      return { success: false, error }
+    }
+  }, [id])
+
+  return {
+    task,
+    loading,
+    error,
+    refetch: fetchTask,
+    updateTask
+  }
+}

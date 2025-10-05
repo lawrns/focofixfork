@@ -24,13 +24,20 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    // Initialize Intercom for all users (logged in or anonymous)
     if (user) {
+      // Logged in user with full details
       Intercom({
         app_id: 'z27grz1x',
         user_id: user.id,
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
         email: user.email || '',
         created_at: Math.floor(new Date(user.created_at).getTime() / 1000),
+      })
+    } else {
+      // Anonymous user - show Intercom without user details
+      Intercom({
+        app_id: 'z27grz1x',
       })
     }
   }, [user])

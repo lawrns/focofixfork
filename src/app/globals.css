@@ -310,3 +310,17 @@ select:focus {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Intercom widget positioning - ensure it's visible above CTA bar on mobile */
+#intercom-container,
+.intercom-lightweight-app,
+.intercom-messenger-frame {
+  z-index: 999999 !important;
+}
+
+/* Adjust Intercom launcher position on mobile to avoid bottom bar overlap */
+@media (max-width: 768px) {
+  .intercom-lightweight-app-launcher {
+    bottom: 100px !important; /* Position above the fixed CTA bar */
+  }
+}

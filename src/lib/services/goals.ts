@@ -45,7 +45,7 @@ export class GoalsService {
   // Goal CRUD operations
   static async getGoals(organizationId?: string, projectId?: string, userId?: string): Promise<Goal[]> {
     try {
-      let query = supabase.from('goals').select('*');
+      let query = (supabase.from as any)('goals').select('*');
 
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
@@ -75,8 +75,7 @@ export class GoalsService {
 
   static async getGoalById(id: string): Promise<Goal | null> {
     try {
-      const { data, error } = await supabase
-        .from('goals')
+      const { data, error } = await (supabase.from as any)('goals')
         .select('*')
         .eq('id', id)
         .single();
@@ -95,21 +94,21 @@ export class GoalsService {
 
   static async createGoal(goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'progress_percentage'>): Promise<Goal | null> {
     try {
-      const { data, error } = await supabase
-        .from('goals')
+      const { data, error } = await (supabase
+        .from('goals' as any)
         .insert({
           ...goal,
           progress_percentage: 0
         })
         .select()
-        .single();
+        .single()) as any;
 
       if (error) {
         console.error('Error creating goal:', error);
         throw new Error(`Failed to create goal: ${error.message}`);
       }
 
-      return data;
+      return data as Goal;
     } catch (error) {
       console.error('Error creating goal:', error);
       throw error;
@@ -118,19 +117,19 @@ export class GoalsService {
 
   static async updateGoal(id: string, updates: Partial<Goal>): Promise<Goal | null> {
     try {
-      const { data, error } = await supabase
-        .from('goals')
+      const { data, error } = await (supabase
+        .from('goals' as any)
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .single()) as any;
 
       if (error) {
         console.error('Error updating goal:', error);
         throw new Error(`Failed to update goal: ${error.message}`);
       }
 
-      return data;
+      return data as Goal;
     } catch (error) {
       console.error('Error updating goal:', error);
       throw error;
@@ -140,7 +139,7 @@ export class GoalsService {
   static async deleteGoal(id: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .delete()
         .eq('id', id);
 
@@ -168,7 +167,7 @@ export class GoalsService {
         : 0;
 
       const { error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .update({
           current_value: newValue,
           progress_percentage: progressPercentage,
@@ -347,7 +346,7 @@ export class GoalsService {
   static async bulkUpdateGoals(goalIds: string[], updates: Partial<Goal>): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .update(updates)
         .in('id', goalIds);
 
@@ -366,7 +365,7 @@ export class GoalsService {
   static async bulkDeleteGoals(goalIds: string[]): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .delete()
         .in('id', goalIds);
 

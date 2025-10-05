@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +46,9 @@ interface OrganizationSettings {
 
 export function SettingsDashboard() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get('tab') || 'profile'
+
   const [userSettings, setUserSettings] = useState<UserSettings>({
     theme: 'system',
     language: 'en',
@@ -178,7 +182,7 @@ export function SettingsDashboard() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />

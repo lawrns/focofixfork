@@ -7,8 +7,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { name, description, allowPublicProjects, requireApproval, defaultVisibility } = body
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest) {
     const { data: orgMember, error: orgError } = await supabase
       .from('organization_members')
       .select('organization_id, role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (orgError || !orgMember) {

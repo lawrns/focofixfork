@@ -5,15 +5,15 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = supabaseAdmin
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile, error } = await supabase
       .from('users')
       .select('full_name, email, timezone, language, avatar_url')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single()
 
     if (error) {
@@ -33,8 +33,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { full_name, timezone, language } = body
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
         language,
         updated_at: new Date().toISOString()
       })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

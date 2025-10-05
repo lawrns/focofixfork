@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AIService } from '@/lib/services/ai'
+import { aiService } from '@/lib/services/ai'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,29 +22,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check AI service health
-    const healthCheck = await AIService.checkHealth()
-    if (!healthCheck.available) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          suggestions: [],
-          analysis: 'AI service currently unavailable'
-        },
-        ai_available: false
-      })
-    }
-
     let suggestions: any[] = []
     let analysis = ''
 
     // Generate context-specific suggestions
     switch (context) {
       case 'project':
-        suggestions = await AIService.suggestMilestones(content, project_context?.existing_milestones || [])
+        suggestions = await aiService.suggestMilestones(content, project_context?.existing_milestones)
         break
       case 'milestone':
-        suggestions = await AIService.suggestTasks(content, project_context?.description || '', project_context?.project_name)
+        suggestions = await aiService.suggestTasks(content, project_context?.description || '')
         break
       case 'task':
         // Could add task-specific suggestions here
@@ -56,20 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Generate analysis if project context is available
     if (project_context && context === 'project') {
-      const projectAnalysis = await AIService.analyzeProject(project_context)
-      analysis = projectAnalysis.summary
-    }
-
-    // Save suggestion for tracking (optional)
-    try {
-      await AIService.saveSuggestion({
-        type: 'milestone',
-        input_data: { context, content, project_context },
-        output_data: { suggestions, analysis },
-        user_id: userId
-      })
-    } catch (error) {
-      console.error('Failed to save AI suggestion:', error)
+      analysis = await aiService.analyzeProject(project_context)
     }
 
     return NextResponse.json({

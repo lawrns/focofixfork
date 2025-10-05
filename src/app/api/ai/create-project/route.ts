@@ -149,6 +149,7 @@ export async function POST(request: NextRequest) {
           description: milestone.description,
           project_id: project.id,
           due_date: milestone.dueDate,
+          deadline: milestone.dueDate,
           priority: milestone.priority,
           status: 'not_started',
           created_by: userId,
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
 
       // Create tasks for this milestone
       const tasksToCreate = milestone.tasks.map(task => ({
-        name: task.name,
+        title: task.name,
         description: task.description,
         project_id: project.id,
         milestone_id: createdMilestone.id,
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
         priority: task.priority,
         estimated_hours: task.estimatedHours,
         created_by: userId,
-        assigned_to: userId,
+        assignee_id: userId,
       }))
 
       if (tasksToCreate.length > 0) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AIService } from '@/lib/services/ai'
+import { aiService } from '@/lib/services/ai'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,34 +21,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check AI service health
-    const healthCheck = await AIService.checkHealth()
-    if (!healthCheck.available) {
-      // Return fallback suggestions if AI is unavailable
-      const suggestions = await AIService.suggestMilestones(project_description, existing_milestones || [])
-      return NextResponse.json({
-        success: true,
-        data: suggestions,
-        ai_available: false,
-        message: 'Using fallback suggestions - AI service unavailable'
-      })
-    }
-
     // Generate AI suggestions
-    const suggestions = await AIService.suggestMilestones(project_description, existing_milestones || [])
-
-    // Save suggestion for tracking (optional)
-    try {
-      await AIService.saveSuggestion({
-        type: 'milestone',
-        input_data: { project_description, existing_milestones },
-        output_data: { suggestions },
-        user_id: userId
-      })
-    } catch (error) {
-      // Don't fail the request if tracking fails
-      console.error('Failed to save AI suggestion:', error)
-    }
+    const suggestions = await aiService.suggestMilestones(project_description, existing_milestones || [])
 
     return NextResponse.json({
       success: true,

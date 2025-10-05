@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ollamaService, AISuggestion } from '@/lib/services/ollama'
+import { aiService, AISuggestion } from '@/lib/services/ai'
 import { cn } from '@/lib/utils'
 
 interface SuggestionPanelProps {
@@ -56,7 +56,7 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
 
   const checkOllamaStatus = async () => {
     try {
-      const status = await ollamaService.testConnection()
+      const status = await aiService.testConnection()
       setOllamaStatus(status.success ? 'connected' : 'disconnected')
       if (!status.success) {
         setError('Ollama server is not available. Please start Ollama and try again.')
@@ -105,13 +105,8 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
     setGeneratingType('tasks')
 
     try {
-      const newSuggestions = await ollamaService.suggestTasks(projectId, context)
+      const newSuggestions = await aiService.suggestTasks(projectId, context)
       setSuggestions(prev => [...newSuggestions, ...prev])
-
-      // Save suggestions to database
-      for (const suggestion of newSuggestions) {
-        await ollamaService.saveSuggestion(suggestion)
-      }
     } catch (error: any) {
       setError('Failed to generate task suggestions')
       console.error('Task suggestion error:', error)
@@ -132,13 +127,8 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
       // Get existing tasks for context
       const { data: tasks } = await fetch(`/api/tasks?project_id=${projectId}`).then(r => r.json())
 
-      const newSuggestions = await ollamaService.suggestMilestones(projectId, tasks?.data || [])
+      const newSuggestions = await aiService.suggestMilestones(projectId, tasks?.data || [])
       setSuggestions(prev => [...newSuggestions, ...prev])
-
-      // Save suggestions
-      for (const suggestion of newSuggestions) {
-        await ollamaService.saveSuggestion(suggestion)
-      }
     } catch (error: any) {
       setError('Failed to generate milestone suggestions')
       console.error('Milestone suggestion error:', error)
@@ -160,13 +150,8 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
       const { data: task } = await fetch(`/api/tasks/${taskId}`).then(r => r.json())
 
       if (task?.data) {
-        const newSuggestions = await ollamaService.suggestCode(task.data, context)
-        setSuggestions(prev => [...newSuggestions, ...prev])
-
-        // Save suggestions
-        for (const suggestion of newSuggestions) {
-          await ollamaService.saveSuggestion(suggestion)
-        }
+        // Code suggestions not implemented in OpenAI service yet
+        setError('Code suggestions not yet available')
       }
     } catch (error: any) {
       setError('Failed to generate code suggestions')
@@ -193,14 +178,16 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
       ])
 
       if (project?.data) {
-        const analysis = await ollamaService.analyzeProject(
-          project.data,
-          tasksData?.data || [],
-          milestonesData?.data || []
-        )
-
+        const analysisText = await aiService.analyzeProject(project.data)
+        const analysis: AISuggestion = {
+          id: `analysis-${Date.now()}`,
+          type: 'analysis',
+          title: 'Project Analysis',
+          content: analysisText,
+          confidence: 0.9,
+          created_at: new Date().toISOString()
+        }
         setSuggestions(prev => [analysis, ...prev])
-        await ollamaService.saveSuggestion(analysis)
       }
     } catch (error: any) {
       setError('Failed to generate project analysis')

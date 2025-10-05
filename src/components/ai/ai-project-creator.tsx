@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useToast } from '@/components/ui/use-toast'
+import { toast as sonnerToast } from 'sonner'
 import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 
@@ -20,7 +20,6 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
   const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [orgsLoading, setOrgsLoading] = useState(true)
-  const { toast } = useToast()
   const { user } = useAuth()
 
   // Load organizations on mount
@@ -48,19 +47,15 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
 
   const handleSubmit = async () => {
     if (!specification.trim()) {
-      toast({
-        title: 'Description Required',
-        description: 'Please describe your project',
-        variant: 'destructive'
+      sonnerToast.error('Description Required', {
+        description: 'Please describe your project'
       })
       return
     }
 
     if (!organizationId) {
-      toast({
-        title: 'Organization Required',
-        description: 'Please select an organization',
-        variant: 'destructive'
+      sonnerToast.error('Organization Required', {
+        description: 'Please select an organization'
       })
       return
     }
@@ -87,9 +82,8 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
       }
 
       if (data.success) {
-        toast({
-          title: 'Project Created!',
-          description: `Created ${data.data.summary.project_name} with ${data.data.summary.total_milestones} milestones and ${data.data.summary.total_tasks} tasks`,
+        sonnerToast.success('Project Created!', {
+          description: `Created ${data.data.summary.project_name} with ${data.data.summary.total_milestones} milestones and ${data.data.summary.total_tasks} tasks`
         })
         onSuccess(data.data.project.id)
       } else {
@@ -97,10 +91,8 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
       }
     } catch (error) {
       console.error('AI project creation error:', error)
-      toast({
-        title: 'Creation Failed',
-        description: error instanceof Error ? error.message : 'Failed to create project with AI',
-        variant: 'destructive'
+      sonnerToast.error('Creation Failed', {
+        description: error instanceof Error ? error.message : 'Failed to create project with AI'
       })
     } finally {
       setLoading(false)

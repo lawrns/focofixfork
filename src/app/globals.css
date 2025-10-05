@@ -318,9 +318,17 @@ select:focus {
   z-index: 999999 !important;
 }
 
-/* Adjust Intercom launcher position on mobile to avoid bottom bar overlap */
+/* Move Intercom launcher to top on mobile for better visibility */
 @media (max-width: 768px) {
   .intercom-lightweight-app-launcher {
-    bottom: 100px !important; /* Position above the fixed CTA bar */
+    bottom: auto !important;
+    top: 80px !important; /* Position below navbar */
+    right: 16px !important;
+  }
+
+  /* Also move the messenger frame to top on mobile */
+  .intercom-messenger-frame {
+    bottom: auto !important;
+    top: 80px !important;
   }
 }

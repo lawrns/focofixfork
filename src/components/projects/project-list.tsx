@@ -65,11 +65,7 @@ export function ProjectList({
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (priorityFilter !== 'all') params.append('priority', priorityFilter)
 
-      const response = await fetch(`/api/projects?${params}`, {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+      const response = await fetch(`/api/projects?${params}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch projects')
@@ -131,9 +127,6 @@ export function ProjectList({
     try {
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'DELETE',
-        headers: {
-          'x-user-id': user.id,
-        },
       })
 
       if (!response.ok) {

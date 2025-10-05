@@ -39,9 +39,7 @@ export default function Header() {
       const results: SearchResult[] = []
 
       // Search projects
-      const projectsRes = await fetch(`/api/projects`, {
-        headers: { 'x-user-id': user.id },
-      })
+      const projectsRes = await fetch(`/api/projects`)
       if (projectsRes.ok) {
         const projectsData = await projectsRes.json()
         const projects = (projectsData.data || []).filter((p: any) =>
@@ -57,9 +55,7 @@ export default function Header() {
       }
 
       // Search tasks
-      const tasksRes = await fetch(`/api/tasks`, {
-        headers: { 'x-user-id': user.id },
-      })
+      const tasksRes = await fetch(`/api/tasks`)
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json()
         const tasks = (tasksData.data || []).filter((t: any) =>
@@ -75,9 +71,7 @@ export default function Header() {
       }
 
       // Search milestones
-      const milestonesRes = await fetch(`/api/milestones`, {
-        headers: { 'x-user-id': user.id },
-      })
+      const milestonesRes = await fetch(`/api/milestones`)
       if (milestonesRes.ok) {
         const milestonesData = await milestonesRes.json()
         const milestones = (milestonesData.data || []).filter((m: any) =>

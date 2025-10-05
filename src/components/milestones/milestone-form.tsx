@@ -85,7 +85,6 @@ export function MilestoneForm({
         method,
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
         },
         body: JSON.stringify(submitData),
       })

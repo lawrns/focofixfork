@@ -62,9 +62,6 @@ export default function Sidebar() {
     console.log('Sidebar: fetching fresh projects from API')
     try {
       const response = await fetch(`/api/projects?t=${Date.now()}`, {
-        headers: {
-          'x-user-id': user.id,
-        },
         cache: 'no-cache',
       })
 

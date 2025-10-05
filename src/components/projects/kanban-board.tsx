@@ -42,11 +42,7 @@ export function KanbanBoard() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/tasks', {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+      const response = await fetch('/api/tasks')
 
       if (response.ok) {
         const data = await response.json()
@@ -120,7 +116,6 @@ export function KanbanBoard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
         },
         body: JSON.stringify({ status: destColumn.id }),
       })

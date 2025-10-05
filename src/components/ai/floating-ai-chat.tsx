@@ -79,7 +79,6 @@ export function FloatingAIChat() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id
         },
         body: JSON.stringify({
           message: userMessage.content

@@ -78,11 +78,7 @@ export function TaskList({
       if (priorityFilter !== 'all') params.append('priority', priorityFilter)
       if (assigneeFilter !== 'all') params.append('assignee_id', assigneeFilter)
 
-      const response = await fetch(`/api/tasks?${params}`, {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+      const response = await fetch(`/api/tasks?${params}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch tasks')
@@ -117,7 +113,6 @@ export function TaskList({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
         },
         body: JSON.stringify({ status: newStatus }),
       })
@@ -147,9 +142,6 @@ export function TaskList({
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
-        headers: {
-          'x-user-id': user.id,
-        },
       })
 
       if (!response.ok) {

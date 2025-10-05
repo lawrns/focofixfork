@@ -69,11 +69,7 @@ export function MilestoneTimeline({
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/milestones?project_id=${projectId}&with_task_counts=true`, {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+      const response = await fetch(`/api/milestones?project_id=${projectId}&with_task_counts=true`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch milestones')

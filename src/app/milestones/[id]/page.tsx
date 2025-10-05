@@ -175,9 +175,6 @@ export default function MilestonePage() {
     try {
       const response = await fetch(`/api/milestones/${milestoneId}`, {
         method: 'DELETE',
-        headers: {
-          'x-user-id': user.id,
-        },
       })
 
       if (!response.ok) {

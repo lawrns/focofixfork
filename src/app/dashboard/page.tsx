@@ -67,11 +67,7 @@ export default function DashboardPage() {
     if (!user) return
 
     try {
-      const response = await fetch('/api/organizations', {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+      const response = await fetch('/api/organizations')
 
       if (response.ok) {
         const data = await response.json()
@@ -163,7 +159,6 @@ export default function DashboardPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
         },
         body: JSON.stringify(projectData),
       })

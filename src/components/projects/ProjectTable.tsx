@@ -181,9 +181,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.id,
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify({
           name: `${project.name} (Copy)`,
           status: 'planning',
@@ -250,10 +248,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     setLoadingTeamMembers(true)
     try {
       const response = await fetch(`/api/projects/${projectId}/team`, {
-        headers: {
-          'x-user-id': user?.id || '',
-        },
-      })
+              })
       if (!response.ok) {
         throw new Error('Failed to fetch team members')
       }
@@ -281,9 +276,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify(data),
       })
 
@@ -330,10 +323,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'DELETE',
-        headers: {
-          'x-user-id': user?.id || '',
-        },
-      })
+              })
 
       if (!response.ok) {
         // End operation tracking on error
@@ -381,9 +371,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       const response = await fetch(`/api/projects/${projectId}/team`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify(data),
       })
 
@@ -417,10 +405,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     try {
       const response = await fetch(`/api/projects/${projectId}/team/${userId}`, {
         method: 'DELETE',
-        headers: {
-          'x-user-id': user?.id || '',
-        },
-      })
+              })
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -451,9 +436,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       const response = await fetch(`/api/projects/${projectId}/team/${userId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify({ role }),
       })
 
@@ -491,9 +474,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       const response = await fetch('/api/projects/bulk', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify({
           operation,
           project_ids: projectIds,
@@ -569,9 +550,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       const response = await fetch(`/api/projects/${projectId}/settings`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify(settings),
       })
 
@@ -679,10 +658,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     try {
       setLoading(true)
       const response = await fetch('/api/projects', {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+              })
 
       if (!response.ok) {
         throw new Error('Failed to fetch projects')
@@ -729,10 +705,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
       try {
         const response = await fetch('/api/organizations', {
-          headers: {
-            'x-user-id': user.id,
-          },
-        })
+                  })
 
         if (response.ok) {
           const data = await response.json()

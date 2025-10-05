@@ -68,10 +68,7 @@ function OrganizationsContent() {
   const loadOrganizations = useCallback(async () => {
     try {
       const response = await fetch('/api/organizations', {
-        headers: {
-          'x-user-id': user?.id || '',
-        },
-      })
+              })
       if (response.ok) {
         const data = await response.json()
         setOrganizations(data.data || [])
@@ -126,10 +123,7 @@ function OrganizationsContent() {
 
       // Load invitations
       const invitationsResponse = await fetch(`/api/organizations/${organization.id}/invitations`, {
-        headers: {
-          'x-user-id': user?.id || '',
-        },
-      })
+              })
       if (invitationsResponse.ok) {
         const invitationsData = await invitationsResponse.json()
         if (invitationsData.success) {
@@ -200,10 +194,7 @@ function OrganizationsContent() {
         }
         // Refresh invitations list
         const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`, {
-          headers: {
-            'x-user-id': user?.id || '',
-          },
-        })
+                  })
         console.log('[DEBUG] Invitations fetch response:', {
           status: invitationsResponse.status,
           ok: invitationsResponse.ok,
@@ -376,7 +367,6 @@ function OrganizationsContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
         },
         body: JSON.stringify({
           name: orgName.trim()

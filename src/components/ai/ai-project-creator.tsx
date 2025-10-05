@@ -26,9 +26,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
   useState(() => {
     async function loadOrganizations() {
       try {
-        const response = await fetch('/api/organizations', {
-          headers: { 'x-user-id': user?.id || '' }
-        })
+        const response = await fetch('/api/organizations')
         const data = await response.json()
         if (data.success) {
           setOrganizations(data.data || [])
@@ -67,7 +65,6 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id || ''
         },
         body: JSON.stringify({
           specification: specification.trim(),

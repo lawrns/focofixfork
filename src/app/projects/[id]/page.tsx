@@ -59,11 +59,7 @@ function ProjectDetailsContent() {
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/projects/${projectId}`, {
-        headers: {
-          'x-user-id': user.id,
-        },
-      })
+      const response = await fetch(`/api/projects/${projectId}`)
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -100,9 +96,7 @@ function ProjectDetailsContent() {
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || '',
-        },
+          'Content-Type': 'application/json',        },
         body: JSON.stringify(data),
       })
 

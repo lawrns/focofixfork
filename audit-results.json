@@ -1,0 +1,229 @@
+{
+  "audit_metadata": {
+    "timestamp": "2025-10-05T10:00:00Z",
+    "audit_version": "1.0",
+    "audit_scope": "complete_codebase_analysis",
+    "auditor": "architectural_refactor_script"
+  },
+  "root_directory_analysis": {
+    "total_files": 85,
+    "audit_artifacts": [
+      "AI_PROJECT_STATUS.md",
+      "COMPREHENSIVE_CODEBASE_ANALYSIS.md",
+      "COMPREHENSIVE_FOCO_ANALYSIS.md",
+      "FOCO_CODEBASE_CONTEXT.json",
+      "FOCO_CODEBASE_CONTEXT_part2.json",
+      "FOCO_CODEBASE_CONTEXT_part3.json",
+      "FOCO_IMPLEMENTATION_COMPLETE.md",
+      "PRODUCTION_ISSUES_ANALYSIS.md",
+      "PRODUCTION_TEST_REPORT.md",
+      "UI_FUNCTIONALITY_TEST_REPORT.md",
+      "BROKEN_FEATURES_INVENTORY.json"
+    ],
+    "generated_content": [
+      "test-results/",
+      "playwright-report/",
+      "api-test-screenshots/",
+      "eslint.config.mjs",
+      "vitest.config.ts",
+      "netlify.toml"
+    ],
+    "recommended_actions": {
+      "move_to_docs": "Create docs/ directory and move all *.md and *.json analysis files there",
+      "add_to_gitignore": "Add generated directories and build artifacts to .gitignore",
+      "clean_root_files": "Target: < 20 files in root directory"
+    }
+  },
+  "service_layer_duplication": {
+    "duplicate_services": [
+      {
+        "service_name": "goals",
+        "locations": [
+          "src/lib/services/goals.service.ts",
+          "src/lib/services/goals.ts"
+        ],
+        "discrepancy": "goals.service.ts has Supabase integration but incomplete methods; goals.ts throws 'not implemented' errors",
+        "recommended_action": "Merge into src/features/goals/services/goalService.ts with complete implementation"
+      },
+      {
+        "service_name": "analytics",
+        "locations": [
+          "src/lib/services/analytics.service.ts",
+          "src/lib/services/analytics.ts"
+        ],
+        "discrepancy": "analytics.service.ts vs analytics.ts - unclear which is canonical",
+        "recommended_action": "Consolidate into src/features/analytics/services/analyticsService.ts"
+      }
+    ],
+    "parallel_abstractions": [
+      {
+        "pattern": "services vs hooks",
+        "examples": [
+          "src/lib/services/projects.ts + src/lib/hooks/use-projects.ts",
+          "src/lib/services/tasks.ts + src/lib/hooks/use-tasks.ts"
+        ],
+        "recommended_action": "Move to feature modules with co-located hooks and services"
+      }
+    ]
+  },
+  "component_scattering": {
+    "scattered_components": [
+      {
+        "feature": "projects",
+        "locations": [
+          "src/components/projects/ProjectForm.tsx",
+          "src/components/projects/ProjectList.tsx",
+          "src/components/projects/ProjectTable.tsx",
+          "src/components/projects/ProjectCard.tsx",
+          "src/components/projects/ProjectKanban.tsx"
+        ],
+        "recommended_action": "Move to src/features/projects/components/"
+      },
+      {
+        "feature": "goals",
+        "locations": [
+          "src/components/goals/goals-dashboard.tsx",
+          "src/components/goals/goal-form.tsx"
+        ],
+        "recommended_action": "Move to src/features/goals/components/"
+      },
+      {
+        "feature": "tasks",
+        "locations": [
+          "src/components/tasks/task-form.tsx",
+          "src/components/tasks/task-list.tsx"
+        ],
+        "recommended_action": "Move to src/features/tasks/components/"
+      }
+    ]
+  },
+  "layout_architecture_issues": {
+    "client_mode_layout": {
+      "file": "src/app/layout.tsx",
+      "issue": "'use client' directive forces all pages to client-side rendering",
+      "impact": "Blocks SSR, increases bundle size, prevents streaming",
+      "recommended_action": "Split into server layout.tsx + client providers.tsx"
+    },
+    "pwa_bootstrapping": {
+      "issue": "PWA initialization mixed with app layout",
+      "recommended_action": "Move PWA logic to dedicated client component"
+    }
+  },
+  "security_boundary_violations": {
+    "supabase_key_exposure": {
+      "file": "src/lib/supabase-client.ts",
+      "status": "REVIEW_NEEDED",
+      "issue": "Verify only anon key is exposed to client",
+      "recommended_action": "Audit client bundle for service key leaks"
+    },
+    "inconsistent_rls": {
+      "tables_rls_disabled": ["projects", "tasks", "milestones"],
+      "tables_rls_enabled": ["goals", "time_entries", "project_members"],
+      "recommended_action": "Document decision and ensure consistent application"
+    }
+  },
+  "test_fragmentation": {
+    "test_directories": [
+      "src/__tests__/",
+      "tests/",
+      "src/test/",
+      "scripts/testing/",
+      "test-results/"
+    ],
+    "recommended_action": "Consolidate into single tests/ directory with subfolders"
+  },
+  "styling_disorganization": {
+    "duplicate_files": [
+      "src/app/styles/accessibility.css",
+      "src/styles/accessibility.css"
+    ],
+    "scattered_styles": [
+      "src/styles/",
+      "src/app/styles/",
+      "src/styles/mobile-typography.css"
+    ],
+    "recommended_action": "Consolidate into src/styles/ with clear organization"
+  },
+  "migration_plan": {
+    "phase_1_preparation": [
+      "Create docs/ directory structure",
+      "Generate architectural documentation",
+      "Create feature/refactor/cleanup branch",
+      "Run comprehensive audit (this file)"
+    ],
+    "phase_2_directory_restructure": [
+      "Clean root directory (< 20 files)",
+      "Create src/features/ structure",
+      "Reorganize tests/ directory",
+      "Consolidate styling assets"
+    ],
+    "phase_3_service_consolidation": [
+      "Merge duplicate service files",
+      "Move components to feature modules",
+      "Update import statements",
+      "Create feature module public APIs"
+    ],
+    "phase_4_layout_refactor": [
+      "Split layout.tsx into server + client components",
+      "Move PWA logic to dedicated component",
+      "Update provider structure"
+    ],
+    "phase_5_security_audit": [
+      "Verify Supabase key boundaries",
+      "Document RLS policy decisions",
+      "Update security documentation"
+    ],
+    "phase_6_database_cleanup": [
+      "Archive experimental migrations",
+      "Document RLS decisions in database/README.md",
+      "Clean migration history"
+    ],
+    "phase_7_testing_validation": [
+      "Update CI/CD for new structure",
+      "Run comprehensive test suite",
+      "Performance validation",
+      "Staging deployment testing"
+    ]
+  },
+  "estimated_effort": {
+    "total_developer_days": 12,
+    "breakdown": {
+      "documentation": 2,
+      "directory_restructure": 3,
+      "service_consolidation": 4,
+      "layout_refactor": 1,
+      "security_audit": 1,
+      "database_cleanup": 1
+    },
+    "risks": [
+      "Import path changes may break builds",
+      "Service consolidation may introduce bugs",
+      "Performance impact from layout changes"
+    ],
+    "mitigations": [
+      "Gradual migration with feature flags",
+      "Comprehensive testing at each phase",
+      "Rollback plan for each major change"
+    ]
+  },
+  "success_criteria": {
+    "architectural_completeness": [
+      "All code organized in feature modules",
+      "Clean separation of server/client components",
+      "Unified test structure",
+      "Comprehensive documentation"
+    ],
+    "functional_preservation": [
+      "All existing features work identically",
+      "No performance regression > 5%",
+      "All tests pass",
+      "Clean build with no errors"
+    ],
+    "maintainability_improvements": [
+      "New developer onboarding time reduced by 50%",
+      "Feature development velocity increased",
+      "Code duplication eliminated",
+      "Clear ownership boundaries established"
+    ]
+  }
+}

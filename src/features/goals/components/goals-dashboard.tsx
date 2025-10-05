@@ -33,7 +33,7 @@ import {
   MoreHorizontal,
   Filter
 } from 'lucide-react';
-import { GoalsService, Goal } from '@/lib/services/goals';
+import { goalService, type Goal } from '../services/goalService';
 import { CreateGoalDialog } from './create-goal-dialog';
 import { GoalProgressDialog } from './goal-progress-dialog';
 
@@ -76,7 +76,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
 
   const loadAnalytics = useCallback(async () => {
     try {
-      const data = await GoalsService.getGoalAnalytics(organizationId);
+      const data = await goalService.getGoalAnalytics(organizationId);
       setAnalytics(data || null);
     } catch (error) {
       console.error('Error loading analytics:', error);
@@ -88,7 +88,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     if (!deleteGoalId) return;
 
     try {
-      await GoalsService.deleteGoal(deleteGoalId);
+      await goalService.deleteGoal(deleteGoalId);
       toast({
         title: 'Goal deleted',
         description: 'The goal has been successfully deleted.',

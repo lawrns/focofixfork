@@ -2,6 +2,12 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
+// Debug server-side environment variables
+console.log('🌍 Server-side env check:', {
+  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET',
+  SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET'
+});
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],

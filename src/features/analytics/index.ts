@@ -2,8 +2,7 @@
 // This file exports all public interfaces for the analytics feature
 
 // Components
-export { AnalyticsDashboard } from './components/AnalyticsDashboard'
-export { AnalyticsChart } from './components/AnalyticsChart'
+export { AnalyticsDashboard } from './components/analytics-dashboard'
 
 // Hooks
 export { useAnalytics } from './hooks/useAnalytics'

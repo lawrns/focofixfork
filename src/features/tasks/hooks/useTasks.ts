@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { taskService } from '../services/taskService'
-import type { Task, TaskFilters } from '../types'
+import { TasksService } from '../services/taskService'
+import type { Task, CreateTaskData, UpdateTaskData, TaskFilters } from '../types'
 
 export function useTasks(filters?: TaskFilters) {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -11,7 +11,7 @@ export function useTasks(filters?: TaskFilters) {
     try {
       setLoading(true)
       setError(null)
-      const result = await taskService.getUserTasks('current-user', filters)
+      const result = await TasksService.getUserTasks('current-user', filters)
       if (result.success && result.data) {
         setTasks(result.data)
       } else {
@@ -28,9 +28,9 @@ export function useTasks(filters?: TaskFilters) {
     fetchTasks()
   }, [fetchTasks])
 
-  const createTask = useCallback(async (taskData: Parameters<typeof taskService.createTask>[1]) => {
+  const createTask = useCallback(async (taskData: CreateTaskData) => {
     try {
-      const result = await taskService.createTask('current-user', taskData)
+      const result = await TasksService.createTask('current-user', taskData)
       if (result.success && result.data) {
         setTasks(prev => [result.data!, ...prev])
         return { success: true }
@@ -43,9 +43,9 @@ export function useTasks(filters?: TaskFilters) {
     }
   }, [])
 
-  const updateTask = useCallback(async (id: string, updates: Parameters<typeof taskService.updateTask>[1]) => {
+  const updateTask = useCallback(async (id: string, updates: UpdateTaskData) => {
     try {
-      const result = await taskService.updateTask(id, updates)
+      const result = await TasksService.updateTask(id, updates)
       if (result.success && result.data) {
         setTasks(prev => prev.map(task => task.id === id ? result.data! : task))
         return { success: true }
@@ -60,7 +60,7 @@ export function useTasks(filters?: TaskFilters) {
 
   const deleteTask = useCallback(async (id: string) => {
     try {
-      const result = await taskService.deleteTask(id)
+      const result = await TasksService.deleteTask(id)
       if (result.success) {
         setTasks(prev => prev.filter(task => task.id !== id))
         return { success: true }

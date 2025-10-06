@@ -3,7 +3,7 @@
 import { Suspense } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
-import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard'
+import { AnalyticsDashboard } from '@/features/analytics'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardAnalyticsPage() {

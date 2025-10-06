@@ -22,7 +22,7 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import ProjectEditDialog from '@/components/dialogs/project-edit-dialog'
 import { useToast } from '@/components/toast/toast'
 import { UpdateProject, Project } from '@/lib/validation/schemas/project.schema'
-import { TaskList } from '@/components/tasks/task-list'
+import { TaskList } from '@/features/tasks'
 import { MilestoneTimeline } from '@/components/milestones/milestone-timeline'
 import { ActivityFeed } from '@/components/activity/activity-feed'
 

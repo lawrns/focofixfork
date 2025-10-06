@@ -4,8 +4,8 @@
 // Components
 export { ProjectForm } from './components/project-form'
 export { ProjectList } from './components/project-list'
-export { ProjectTable } from './components/ProjectTable'
-export { default as ProjectCard } from './components/project-card'
+export { default as ProjectTable } from './components/ProjectTable'
+export { ProjectCard } from './components/project-card'
 export { KanbanBoard } from './components/kanban-board'
 export { ViewTabs } from './components/ViewTabs'
 
@@ -14,7 +14,7 @@ export { useProjects } from './hooks/useProjects'
 export { useProjectMutations } from './hooks/useProjects'
 
 // Services
-export { projectService } from './services/projectService'
+export { ProjectsService as projectService } from './services/projectService'
 
 // Validation
 export { projectSchema, projectFormSchema } from './validation/projectSchemas'

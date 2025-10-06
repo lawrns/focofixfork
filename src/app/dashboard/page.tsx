@@ -23,7 +23,7 @@ import TimeTracker from '@/components/time-tracking/time-tracker'
 import PresenceIndicator from '@/components/collaboration/presence-indicator'
 import CommentsSection from '@/components/comments/comments-section'
 import NotificationCenter from '@/components/notifications/notification-center'
-import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard'
+import { AnalyticsDashboard } from '@/features/analytics'
 import { GoalsDashboard } from '@/features/goals'
 import { AIProjectCreator } from '@/components/ai/ai-project-creator'
 

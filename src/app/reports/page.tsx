@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
-import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard'
+import { AnalyticsDashboard } from '@/features/analytics'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'

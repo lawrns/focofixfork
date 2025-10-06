@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { TaskForm } from '@/components/tasks/task-form'
+import { TaskForm } from '@/features/tasks'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ProjectsService } from '@/features/projects/services/projectService'
 import { MilestonesService } from '@/lib/services/milestones'

@@ -279,7 +279,7 @@ export class AnalyticsService {
 
   static async getTimeTrackingAnalytics(organizationId?: string, startDate?: string, endDate?: string): Promise<TimeTrackingAnalytics> {
     try {
-      let query = supabase.from('time_entries').select('*');
+      let query = supabase.from('time_entries').select('*') as any;
 
       // Filter by organization if provided
       if (organizationId) {

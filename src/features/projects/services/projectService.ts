@@ -1,7 +1,7 @@
-import { supabase } from '@/lib/supabase-client'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { supabase } from '../../../lib/supabase-client'
+import { supabaseAdmin } from '../../../lib/supabase-server'
 
-import { ProjectStatus } from '@/lib/models/projects'
+type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
 
 interface Project {
   id: string

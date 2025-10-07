@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -43,16 +43,12 @@ export function RoleManagement() {
   const [inviting, setInviting] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadMembers()
-  }, [])
-
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/organization/members')
       if (!response.ok) throw new Error('Failed to load members')
-      
+
       const data = await response.json()
       setMembers(data.members || [])
     } catch (error) {
@@ -65,7 +61,11 @@ export function RoleManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadMembers()
+  }, [loadMembers])
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'member') => {
     try {

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../../../lib/supabase-client'
 
 export interface Goal {
   id: string;
@@ -78,7 +78,7 @@ export class GoalsService {
         return [];
       }
 
-      return data || [];
+      return (data as unknown as Goal[]) || [];
     } catch (error) {
       console.error('Error fetching goals:', error);
       return [];
@@ -101,7 +101,7 @@ export class GoalsService {
         return null;
       }
 
-      return data;
+      return data as unknown as Goal;
     } catch (error) {
       console.error('Error fetching goal:', error);
       return null;
@@ -127,7 +127,7 @@ export class GoalsService {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data };
+      return { success: true, data: data as unknown as Goal };
     } catch (error: any) {
       console.error('Error creating goal:', error);
       return { success: false, error: error.message };
@@ -151,7 +151,7 @@ export class GoalsService {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data };
+      return { success: true, data: data as unknown as Goal };
     } catch (error: any) {
       console.error('Error updating goal:', error);
       return { success: false, error: error.message };

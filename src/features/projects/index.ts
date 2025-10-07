@@ -7,7 +7,7 @@ export { ProjectList } from './components/project-list'
 export { default as ProjectTable } from './components/ProjectTable'
 export { ProjectCard } from './components/project-card'
 export { KanbanBoard } from './components/kanban-board'
-export { ViewTabs } from './components/ViewTabs'
+export { default as ViewTabs } from './components/ViewTabs'
 
 // Hooks
 export { useProjects } from './hooks/useProjects'
@@ -22,8 +22,6 @@ export { projectSchema, projectFormSchema } from './validation/projectSchemas'
 // Types
 export type {
   Project,
-  ProjectStatus,
-  ProjectPriority,
   CreateProjectData,
   UpdateProjectData,
   ProjectFilters

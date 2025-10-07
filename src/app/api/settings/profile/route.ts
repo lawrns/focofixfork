@@ -65,8 +65,8 @@ export async function PUT(request: NextRequest) {
         updated_at: new Date().toISOString()
       }
 
-      if (full_name !== undefined) userUpdateData.full_name = full_name
-      if (avatar_url !== undefined) userUpdateData.avatar_url = avatar_url
+      if (full_name !== undefined) userUpdateData.full_name = full_name || null
+      if (avatar_url !== undefined) userUpdateData.avatar_url = avatar_url || null
 
       const { error: userError } = await supabase
         .from('users')
@@ -96,8 +96,8 @@ export async function PUT(request: NextRequest) {
         updated_at: new Date().toISOString()
       }
 
-      if (bio !== undefined) profileUpdateData.bio = bio
-      if (timezone !== undefined) profileUpdateData.timezone = timezone
+      if (bio !== undefined) profileUpdateData.bio = bio || null
+      if (timezone !== undefined) profileUpdateData.timezone = timezone || null
       if (Object.keys(preferences).length > 0) {
         profileUpdateData.preferences = preferences
       }

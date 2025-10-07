@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Home,
@@ -225,9 +226,11 @@ export default function Sidebar() {
       <div className="flex h-full flex-col p-4">
         {/* Logo Section */}
         <div className="flex items-center gap-3 p-2">
-          <img
+          <Image
             src="/focologo.png"
             alt="Foco Logo"
+            width={40}
+            height={40}
             className="h-10 w-auto brightness-0 invert"
             style={{ filter: 'brightness(0) invert(1)' }}
           />

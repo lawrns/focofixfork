@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import {
   Home,
   Folder,
@@ -107,9 +108,11 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <img
+            <Image
               src="/focologo.png"
               alt="Foco Logo"
+              width={40}
+              height={40}
               className="h-10 w-auto brightness-0 invert"
               style={{ filter: 'brightness(0) invert(1)' }}
             />

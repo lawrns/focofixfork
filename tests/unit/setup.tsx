@@ -127,7 +127,7 @@ vi.mock('@/lib/supabase', () => ({
     },
     from: vi.fn((table: string) => {
       if (table === 'organization_members') {
-        return createChainableMock({ data: [{ organization_id: 'org-123' }], error: null });
+        return createChainableMock({ data: [{ organization_id: 'org-123' }], error: null, count: 1 });
       }
       return createChainableMock({ data: [], error: null, count: 0 });
     }),

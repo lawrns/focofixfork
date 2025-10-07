@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ProjectsService } from '../services/projectService'
-import type { Project, CreateProjectData, UpdateProjectData } from '../types'
+import type { Project, CreateProjectData, UpdateProjectData } from '../types/index'
 
 export function useProjects(organizationId?: string) {
   const [projects, setProjects] = useState<Project[]>([])
@@ -45,7 +45,7 @@ export function useProjects(organizationId?: string) {
 
   const updateProject = useCallback(async (id: string, updates: UpdateProjectData) => {
     try {
-      const result = await ProjectsService.updateProject(id, updates)
+      const result = await ProjectsService.updateProject('current-user', id, updates)
       if (result.success && result.data) {
         setProjects(prev => prev.map(project => project.id === id ? result.data! : project))
         return { success: true }
@@ -60,7 +60,7 @@ export function useProjects(organizationId?: string) {
 
   const deleteProject = useCallback(async (id: string) => {
     try {
-      const result = await ProjectsService.deleteProject(id)
+      const result = await ProjectsService.deleteProject('current-user', id)
       if (result.success) {
         setProjects(prev => prev.filter(project => project.id !== id))
         return { success: true }
@@ -93,7 +93,7 @@ export function useProject(id: string) {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.getProject(id)
+      const result = await ProjectsService.getProjectById('current-user', id)
       if (result.success && result.data) {
         setProject(result.data)
       } else {
@@ -114,7 +114,7 @@ export function useProject(id: string) {
 
   const updateProject = useCallback(async (updates: UpdateProjectData) => {
     try {
-      const result = await ProjectsService.updateProject(id, updates)
+      const result = await ProjectsService.updateProject('current-user', id, updates)
       if (result.success && result.data) {
         setProject(result.data)
         return { success: true }
@@ -159,7 +159,7 @@ export function useProjectMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.updateProject(id, updates)
+      const result = await ProjectsService.updateProject('current-user', id, updates)
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to update project'
@@ -174,7 +174,7 @@ export function useProjectMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.deleteProject(id)
+      const result = await ProjectsService.deleteProject('current-user', id)
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to delete project'

@@ -72,7 +72,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId, projectId, toast]);
+  }, [toast]);
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -88,7 +88,14 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     if (!deleteGoalId) return;
 
     try {
-      await goalService.deleteGoal(deleteGoalId);
+      const response = await fetch(`/api/goals/${deleteGoalId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete goal');
+      }
+
       toast({
         title: 'Goal deleted',
         description: 'The goal has been successfully deleted.',

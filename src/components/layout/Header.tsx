@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Search, HelpCircle, X, Settings, LogOut, User } from 'lucide-react'
 import { SavedViews } from '@/components/ui/saved-views'
 import { ViewConfig } from '@/lib/hooks/use-saved-views'
@@ -136,9 +137,11 @@ export default function Header() {
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-3 md:px-6 py-3 md:py-4 backdrop-blur-sm">
       <div className="flex items-center gap-2 md:gap-6">
         <div className="flex items-center gap-2 md:gap-3">
-          <img
+          <Image
             src="/focologo.png"
             alt="Foco Logo"
+            width={32}
+            height={32}
             className="h-6 md:h-8 w-auto"
           />
           <h2 className="text-lg md:text-xl font-bold text-foreground">Foco</h2>

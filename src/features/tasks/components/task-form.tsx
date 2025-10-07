@@ -22,8 +22,14 @@ const taskSchema = z.object({
   status: z.enum(['todo', 'in_progress', 'review', 'done']).default('todo'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   assignee_id: z.string().nullable().optional(),
-  estimated_hours: z.number().min(0).max(1000).optional(),
-  actual_hours: z.number().min(0).max(1000).optional(),
+  estimated_hours: z.preprocess(
+    (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
+    z.number().min(0).max(1000).nullable().optional()
+  ),
+  actual_hours: z.preprocess(
+    (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
+    z.number().min(0).max(1000).nullable().optional()
+  ),
   due_date: z.string().optional(),
 })
 
@@ -305,7 +311,7 @@ export function TaskForm({
                 type="number"
                 min="0"
                 step="0.5"
-                {...register('estimated_hours', { valueAsNumber: true })}
+                {...register('estimated_hours')}
                 placeholder="0.0"
                 disabled={isSubmitting}
               />
@@ -323,7 +329,7 @@ export function TaskForm({
                 type="number"
                 min="0"
                 step="0.5"
-                {...register('actual_hours', { valueAsNumber: true })}
+                {...register('actual_hours')}
                 placeholder="0.0"
                 disabled={isSubmitting}
               />

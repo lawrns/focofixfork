@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { taskService } from '../services/taskService'
+import { TasksService } from '../services/taskService'
 
 export function useTaskMutations() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const updateStatus = async (taskId: string, status: Parameters<typeof taskService.updateTask>[1]['status']) => {
+  const updateStatus = async (taskId: string, status: 'todo' | 'in_progress' | 'review' | 'done') => {
     try {
       setLoading(true)
       setError(null)
-      const result = await taskService.updateTask(taskId, { status })
+      const result = await TasksService.updateTask('current-user', taskId, { status })
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to update status'
@@ -24,7 +24,7 @@ export function useTaskMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await taskService.updateTask(taskId, { assignee_id: assigneeId })
+      const result = await TasksService.updateTask('current-user', taskId, { assignee_id: assigneeId })
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to assign task'
@@ -35,11 +35,11 @@ export function useTaskMutations() {
     }
   }
 
-  const updatePriority = async (taskId: string, priority: Parameters<typeof taskService.updateTask>[1]['priority']) => {
+  const updatePriority = async (taskId: string, priority: 'low' | 'medium' | 'high' | 'urgent') => {
     try {
       setLoading(true)
       setError(null)
-      const result = await taskService.updateTask(taskId, { priority })
+      const result = await TasksService.updateTask('current-user', taskId, { priority })
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to update priority'
@@ -54,7 +54,7 @@ export function useTaskMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await taskService.updateTask(taskId, { due_date: dueDate })
+      const result = await TasksService.updateTask('current-user', taskId, { due_date: dueDate })
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to set due date'

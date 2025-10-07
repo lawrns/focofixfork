@@ -19,8 +19,6 @@ export { taskSchema, taskFormSchema } from './validation/taskSchemas'
 // Types
 export type {
   Task,
-  TaskStatus,
-  TaskPriority,
   CreateTaskData,
   UpdateTaskData,
   TaskFilters

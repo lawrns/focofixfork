@@ -7,13 +7,19 @@ const updateTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required').max(500, 'Title must be less than 500 characters').optional(),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   project_id: z.string().min(1, 'Project is required').optional(),
-  milestone_id: z.string().optional(),
+  milestone_id: z.string().nullable().optional(),
   status: z.enum(['todo', 'in_progress', 'review', 'done']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  assignee_id: z.string().optional(),
-  estimated_hours: z.number().min(0).max(1000).optional(),
-  actual_hours: z.number().min(0).max(1000).optional(),
-  due_date: z.string().optional(),
+  assignee_id: z.string().nullable().optional(),
+  estimated_hours: z.preprocess(
+    (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
+    z.number().min(0).max(1000).nullable().optional()
+  ),
+  actual_hours: z.preprocess(
+    (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
+    z.number().min(0).max(1000).nullable().optional()
+  ),
+  due_date: z.string().nullable().optional(),
 })
 
 // Schema for status updates

@@ -82,7 +82,7 @@ function OrganizationsContent() {
     } finally {
       setIsLoading(false)
     }
-  }, [user])
+  }, [])
 
   useEffect(() => {
     loadOrganizations()

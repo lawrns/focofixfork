@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -259,9 +260,11 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
     <div className="w-full space-y-8">
       <div className="space-y-3 text-center">
         <div className="flex justify-center mb-4">
-          <img
+          <Image
             src="/focologo.png"
             alt="Foco Logo"
+            width={64}
+            height={64}
             className="h-16 w-auto"
           />
         </div>

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { GoalsService, Goal } from '@/lib/services/goals';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/hooks/use-auth';
 
 interface CreateGoalDialogProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ interface CreateGoalDialogProps {
 }
 
 export function CreateGoalDialog({ children, onGoalCreated, initialData }: CreateGoalDialogProps) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [templates, setTemplates] = useState<Partial<Goal>[]>([]);
@@ -88,6 +90,12 @@ export function CreateGoalDialog({ children, onGoalCreated, initialData }: Creat
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user?.id) {
+      toast.error('You must be logged in to create a goal');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -105,7 +113,7 @@ export function CreateGoalDialog({ children, onGoalCreated, initialData }: Creat
         tags: formData.tags.length > 0 ? formData.tags : undefined,
         project_id: formData.project_id || undefined,
         milestone_id: formData.milestone_id || undefined,
-        owner_id: '', // Will be set by the service
+        owner_id: user.id,
       };
 
       const result = await GoalsService.createGoal(goalData);

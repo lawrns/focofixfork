@@ -57,7 +57,7 @@ export class GoalsService {
    */
   static async getGoals(organizationId?: string, projectId?: string, userId?: string): Promise<Goal[]> {
     try {
-      let query = supabase.from('goals').select('*');
+      let query = supabase.from('goals' as any).select('*');
 
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
@@ -91,7 +91,7 @@ export class GoalsService {
   static async getGoalById(id: string): Promise<Goal | null> {
     try {
       const { data, error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .select('*')
         .eq('id', id)
         .single();
@@ -114,7 +114,7 @@ export class GoalsService {
   static async createGoal(goal: Omit<Goal, 'id' | 'created_at' | 'updated_at' | 'progress_percentage'>): Promise<ServiceResult<Goal>> {
     try {
       const { data, error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .insert({
           ...goal,
           progress_percentage: 0
@@ -140,7 +140,7 @@ export class GoalsService {
   static async updateGoal(id: string, updates: Partial<Goal>): Promise<ServiceResult<Goal>> {
     try {
       const { data, error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .update(updates)
         .eq('id', id)
         .select()
@@ -164,7 +164,7 @@ export class GoalsService {
   static async deleteGoal(id: string): Promise<ServiceResult<boolean>> {
     try {
       const { error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .delete()
         .eq('id', id);
 
@@ -200,7 +200,7 @@ export class GoalsService {
         : 0;
 
       const { error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .update({
           current_value: newValue,
           progress_percentage: progressPercentage,

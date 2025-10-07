@@ -77,3 +77,8 @@ export interface GoalFilters {
   type?: Goal['type'];
   priority?: Goal['priority'];
 }
+
+// Export type aliases for convenience
+export type GoalStatus = Goal['status'];
+export type GoalType = Goal['type'];
+export type GoalPriority = Goal['priority'];

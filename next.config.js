@@ -23,7 +23,8 @@ const nextConfig = {
 
   // Compiler optimizations
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Temporarily disabled to debug environment variables
+    // removeConsole: process.env.NODE_ENV === 'production',
   },
 
   // Bundle analyzer (conditionally)

@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Environment variables - ensure they're available at build time
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://czijxfbkihrauyjwcgfn.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aWp4ZmJraWhyYXV5andjZ2ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNzU5ODMsImV4cCI6MjA2Nzc1MTk4M30.0MYAeaLn3L1LYiGNrsWPIvuZUVq-z7MUvaigybzCnQ0',
+  },
+
   // Image optimization for mobile
   images: {
     unoptimized: false, // Enable optimization for better mobile performance

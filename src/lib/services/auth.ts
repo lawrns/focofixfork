@@ -3,7 +3,7 @@
  * Handles user authentication, session management, and user-related operations
  */
 
-import { supabase } from '../supabase'
+import { supabaseAdmin } from '../supabase-server'
 import type { User, Session } from '@supabase/supabase-js'
 
 export interface LoginCredentials {
@@ -36,7 +36,7 @@ export class AuthService {
    */
   static async signIn(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseAdmin.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       })
@@ -56,7 +56,7 @@ export class AuthService {
       }
 
       // Get user role from database
-      const { data: userData, error: userError } = await supabase
+      const { data: userData, error: userError } = await supabaseAdmin
         .from('organization_members')
         .select('role')
         .eq('user_id', data.user.id)
@@ -87,9 +87,10 @@ export class AuthService {
    */
   static async signUp(data: RegisterData): Promise<AuthResponse> {
     try {
-      const { data: authData, error } = await supabase.auth.signUp({
+      const { data: authData, error } = await supabaseAdmin.auth.admin.createUser({
         email: data.email,
         password: data.password,
+        email_confirm: true
       })
 
       if (error) {
@@ -128,7 +129,7 @@ export class AuthService {
    */
   static async signOut(): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabaseAdmin.auth.signOut()
 
       if (error) {
         return {
@@ -152,7 +153,7 @@ export class AuthService {
    */
   static async getCurrentSession(): Promise<{ session: Session | null; user: User | null }> {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await supabaseAdmin.auth.getSession()
       return { session, user: session?.user || null }
     } catch (error) {
       console.error('Get session error:', error)
@@ -165,7 +166,7 @@ export class AuthService {
    */
   static async refreshSession(): Promise<AuthResponse> {
     try {
-      const { data, error } = await supabase.auth.refreshSession()
+      const { data, error } = await supabaseAdmin.auth.refreshSession()
 
       if (error) {
         return {
@@ -204,8 +205,8 @@ export class AuthService {
    */
   static async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://foco.mx'}/reset-password`,
       })
 
       if (error) {
@@ -230,7 +231,7 @@ export class AuthService {
    */
   static async updatePassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await supabaseAdmin.auth.updateUser({
         password: newPassword
       })
 
@@ -255,7 +256,7 @@ export class AuthService {
    * Listen to authentication state changes
    */
   static onAuthStateChange(callback: (event: string, session: Session | null) => void) {
-    return supabase.auth.onAuthStateChange(callback)
+    return supabaseAdmin.auth.onAuthStateChange(callback)
   }
 
   /**
@@ -263,7 +264,7 @@ export class AuthService {
    */
   static async getUserRole(userId: string, organizationId?: string): Promise<'director' | 'lead' | 'member'> {
     try {
-      let query = supabase
+      let query = supabaseAdmin
         .from('organization_members')
         .select('role')
         .eq('user_id', userId)
@@ -289,7 +290,7 @@ export class AuthService {
    * Check if user is authenticated
    */
   static async isAuthenticated(): Promise<boolean> {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await supabaseAdmin.auth.getSession()
     return !!session
   }
 }

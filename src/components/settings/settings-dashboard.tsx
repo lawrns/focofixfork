@@ -104,6 +104,12 @@ export function SettingsDashboard() {
 
     setSaving(true)
     try {
+      console.log('[Settings] Saving user settings:', {
+        full_name: user.user_metadata?.full_name || user.email,
+        timezone: userSettings.timezone,
+        language: userSettings.language
+      })
+
       const response = await fetch('/api/settings/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -114,7 +120,15 @@ export function SettingsDashboard() {
         })
       })
 
-      if (!response.ok) throw new Error('Failed to save settings')
+      const responseData = await response.json()
+      console.log('[Settings] Profile update response:', response.status, responseData)
+
+      if (!response.ok) {
+        console.error('[Settings] Profile update failed:', response.status, responseData)
+        throw new Error(responseData.error || 'Failed to save settings')
+      }
+
+      console.log('[Settings] Profile updated successfully')
 
       // Also save notification settings
       await fetch('/api/settings/notifications', {
@@ -128,7 +142,8 @@ export function SettingsDashboard() {
         })
       })
     } catch (error) {
-      console.error('Error saving user settings:', error)
+      console.error('[Settings] Error saving user settings:', error)
+      alert('Failed to save settings: ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setSaving(false)
     }

@@ -105,13 +105,14 @@ export class OrganizationsService {
 
       // Create organization with slug
       const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      console.log('Inserting organization:', { name: data.name, slug })
+      console.log('Inserting organization:', { name: data.name, slug, created_by: data.created_by })
 
       const { data: organization, error: orgError } = await supabase
         .from('organizations')
         .insert({
           name: data.name,
-          slug: slug
+          slug: slug,
+          created_by: data.created_by
         })
         .select()
         .single()

@@ -107,7 +107,7 @@ export class OrganizationsService {
       const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       console.log('Inserting organization:', { name: data.name, slug, created_by: data.created_by })
 
-      const { data: organization, error: orgError } = await supabase
+      const { data: organization, error: orgError } = await supabaseAdmin
         .from('organizations')
         .insert({
           name: data.name,
@@ -141,7 +141,7 @@ export class OrganizationsService {
       // Add creator as member of the organization
       console.log('Adding creator as member:', { organization_id: organization.id, user_id: data.created_by })
 
-      const { error: memberError } = await supabase
+      const { error: memberError } = await supabaseAdmin
         .from('organization_members')
         .insert({
           organization_id: organization.id,

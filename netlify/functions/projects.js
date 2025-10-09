@@ -1,9 +1,14 @@
 const { createClient } = require('@supabase/supabase-js')
 
-// Initialize Supabase client
+// Initialize Supabase client with service role key to bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 exports.handler = async (event, context) => {
   // Set CORS headers
@@ -35,7 +40,7 @@ exports.handler = async (event, context) => {
 
     // Handle different HTTP methods
     if (event.httpMethod === 'GET') {
-      // List projects - get projects where user is a member via organization_members
+      // List projects - get projects user can access (created by them or in their organizations)
       const { searchParams } = event.queryStringParameters || {}
 
       const organizationId = searchParams?.organization_id
@@ -44,7 +49,27 @@ exports.handler = async (event, context) => {
       const limit = searchParams?.limit ? parseInt(searchParams.limit) : 10
       const offset = searchParams?.offset ? parseInt(searchParams.offset) : 0
 
-      // Build query to get user's projects through organization membership
+      // Get user's organization memberships first
+      const { data: userOrgs, error: orgError } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', userId)
+
+      if (orgError) {
+        console.error('Error fetching user organizations:', orgError)
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: 'Failed to fetch user organizations' }),
+        }
+      }
+
+      const userOrgIds = userOrgs?.map(org => org.organization_id) || []
+      console.log('User belongs to organizations:', userOrgIds)
+
+      // Build query to get all projects user has access to:
+      // 1. Projects they created
+      // 2. Projects in organizations they belong to
       let query = supabase
         .from('projects')
         .select(`
@@ -53,8 +78,18 @@ exports.handler = async (event, context) => {
             name
           )
         `)
-        .eq('created_by', userId) // Projects created by the user
-        .order('created_at', { ascending: false })
+
+      // Apply access filters - user can see projects if:
+      // - They created it, OR
+      // - It belongs to an organization they're a member of
+      if (userOrgIds.length > 0) {
+        query = query.or(`created_by.eq.${userId},organization_id.in.(${userOrgIds.join(',')})`)
+      } else {
+        // If user has no organization memberships, only show projects they created
+        query = query.eq('created_by', userId)
+      }
+
+      query = query.order('created_at', { ascending: false })
 
       // Apply filters
       if (organizationId) {
@@ -69,11 +104,29 @@ exports.handler = async (event, context) => {
         query = query.eq('priority', priority)
       }
 
-      // Get total count first
-      const { count } = await supabase
+      // Get total count first (apply same filters as main query)
+      let countQuery = supabase
         .from('projects')
         .select('*', { count: 'exact', head: true })
-        .eq('created_by', userId)
+
+      if (userOrgIds.length > 0) {
+        countQuery = countQuery.or(`created_by.eq.${userId},organization_id.in.(${userOrgIds.join(',')})`)
+      } else {
+        countQuery = countQuery.eq('created_by', userId)
+      }
+
+      // Apply same filters to count query
+      if (organizationId) {
+        countQuery = countQuery.eq('organization_id', organizationId)
+      }
+      if (status && status !== 'all') {
+        countQuery = countQuery.eq('status', status)
+      }
+      if (priority && priority !== 'all') {
+        countQuery = countQuery.eq('priority', priority)
+      }
+
+      const { count } = await countQuery
 
       // Apply pagination
       query = query.range(offset, offset + limit - 1)

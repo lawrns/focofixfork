@@ -138,9 +138,14 @@ export function FloatingAIChat() {
           <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-primary/10 to-purple-500/10">
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Sparkles className="h-5 w-5 text-primary" />
+                <MessageCircle className="h-5 w-5 text-primary" />
                 {isConnected && (
                   <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />
+                )}
+                {messages.length > 1 && (
+                  <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">•</span>
+                  </div>
                 )}
               </div>
               <div>

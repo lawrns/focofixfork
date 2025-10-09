@@ -1,3 +1,4 @@
+import { supabase } from '../../../lib/supabase-client'
 import { supabaseAdmin } from '../../../lib/supabase-server'
 
 type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
@@ -187,7 +188,7 @@ export class ProjectsService {
         }
       }
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
@@ -491,7 +492,7 @@ export class ProjectsService {
       }
 
       // Check if user can delete this project (user must be creator)
-      const { data: project, error: fetchError } = await supabaseAdmin
+      const { data: project, error: fetchError } = await supabase
         .from('projects')
         .select('created_by')
         .eq('id', projectId)
@@ -626,7 +627,7 @@ export class ProjectsService {
       }
 
       // Get all projects for the user
-      const { data: projects, error } = await supabaseAdmin
+      const { data: projects, error } = await supabase
         .from('projects')
         .select('status, due_date')
         .eq('created_by', userId)

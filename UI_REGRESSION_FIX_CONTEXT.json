@@ -1,0 +1,134 @@
+{
+  "ui_regression_analysis": {
+    "comparison_baseline": {
+      "production_url": "campfire-support.fly.dev",
+      "localhost_url": "localhost:4444",
+      "issue_type": "regression",
+      "severity": "annoying"
+    },
+    "issues_identified": [
+      {
+        "id": "speech_bubble_missing",
+        "description": "Agent doesn't show as having a speech bubble on the widget anymore",
+        "component_affected": "chat_widget_agent_indicator",
+        "previous_behavior": "agent avatar showed speech bubble indicator",
+        "current_behavior": "speech bubble indicator missing",
+        "impact": "users can't tell if agent is responding",
+        "severity": "medium",
+        "files_to_check": [
+          "src/components/chat/**/*",
+          "src/components/ui/**/*"
+        ]
+      },
+      {
+        "id": "black_font_blue_pill",
+        "description": "Black font on top of blue pill, making it shit contrast",
+        "component_affected": "pill_badges",
+        "previous_behavior": "proper contrast in pill components",
+        "current_behavior": "black text on blue background",
+        "impact": "poor readability, accessibility issue",
+        "severity": "high",
+        "files_to_check": [
+          "src/components/ui/badge.tsx",
+          "src/components/ui/pill.tsx",
+          "tailwind.config.ts"
+        ]
+      },
+      {
+        "id": "drop_shadow_conversation_list",
+        "description": "Drop shadow is not appropriate in conversation list",
+        "component_affected": "conversation_list_items",
+        "previous_behavior": "clean conversation list styling",
+        "current_behavior": "unwanted drop shadows on list items",
+        "impact": "visual clutter, inconsistent design",
+        "severity": "low",
+        "files_to_check": [
+          "src/components/conversation/**/*",
+          "src/components/chat/**/*"
+        ]
+      },
+      {
+        "id": "dropdown_animation_wrong",
+        "description": "Dropdown button shows shitty micro animation where dropdown comes from top left",
+        "component_affected": "dropdown_components",
+        "previous_behavior": "smooth dropdown animations",
+        "current_behavior": "jarring animation from top-left corner",
+        "impact": "poor user experience, feels broken",
+        "severity": "medium",
+        "files_to_check": [
+          "src/components/ui/dropdown-menu.tsx",
+          "src/components/ui/select.tsx",
+          "src/components/ui/popover.tsx"
+        ]
+      }
+    ],
+    "fix_strategy": {
+      "approach": "component_audit_and_revert",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Identify affected components",
+          "method": "grep search for relevant class names and components"
+        },
+        {
+          "step": 2,
+          "action": "Compare with production styles",
+          "method": "inspect production site for correct styles"
+        },
+        {
+          "step": 3,
+          "action": "Fix contrast issues",
+          "method": "update text colors in pill/badge components"
+        },
+        {
+          "step": 4,
+          "action": "Fix animation issues",
+          "method": "update dropdown animation origins and transitions"
+        },
+        {
+          "step": 5,
+          "action": "Restore missing visual elements",
+          "method": "add back speech bubble indicators"
+        },
+        {
+          "step": 6,
+          "action": "Remove inappropriate shadows",
+          "method": "clean up shadow classes in conversation components"
+        }
+      ],
+      "testing_method": "visual_comparison",
+      "success_criteria": [
+        "All visual elements match production behavior",
+        "No contrast issues remain",
+        "Animations feel smooth and natural",
+        "Accessibility standards met"
+      ]
+    },
+    "implementation_plan": {
+      "phase_1": {
+        "name": "Contrast and Text Fixes",
+        "priority": "high",
+        "components": ["badge.tsx", "pill.tsx", "button.tsx"],
+        "estimated_time": "30 minutes"
+      },
+      "phase_2": {
+        "name": "Animation Fixes",
+        "priority": "medium",
+        "components": ["dropdown-menu.tsx", "select.tsx"],
+        "estimated_time": "45 minutes"
+      },
+      "phase_3": {
+        "name": "Visual Element Restoration",
+        "priority": "medium",
+        "components": ["chat/**/*", "conversation/**/*"],
+        "estimated_time": "60 minutes"
+      },
+      "phase_4": {
+        "name": "Shadow and Spacing Cleanup",
+        "priority": "low",
+        "components": ["conversation/**/*", "list/**/*"],
+        "estimated_time": "30 minutes"
+      }
+    }
+  }
+}

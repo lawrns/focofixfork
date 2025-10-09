@@ -3,6 +3,7 @@
  * Handles organization CRUD operations and member management
  */
 
+import { supabase } from '../supabase-client'
 import { supabaseAdmin } from '../supabase-server'
 import type { Organization } from '../models/organizations'
 import { OrganizationModel } from '../models/organizations'
@@ -178,7 +179,7 @@ export class OrganizationsService {
    */
   static async getOrganizationMembers(organizationId: string): Promise<OrganizationsResponse<OrganizationMemberWithDetails[]>> {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('organization_members')
         .select(`
           id,
@@ -447,7 +448,7 @@ export class OrganizationsService {
       }
 
       // Get current member data
-      const { data: currentMember, error: fetchError } = await supabaseAdmin
+      const { data: currentMember, error: fetchError } = await supabase
         .from('organization_members')
         .select('*')
         .eq('id', memberId)
@@ -477,7 +478,7 @@ export class OrganizationsService {
       }
 
       // Update role
-      const { data: updatedMember, error: updateError } = await supabaseAdmin
+      const { data: updatedMember, error: updateError } = await supabase
         .from('organization_members')
         .update({ role: data.role })
         .eq('id', memberId)
@@ -519,7 +520,7 @@ export class OrganizationsService {
        }
 
       // Get member data
-      const { data: member, error: fetchError } = await supabaseAdmin
+      const { data: member, error: fetchError } = await supabase
         .from('organization_members')
         .select('*')
         .eq('id', memberId)
@@ -534,7 +535,7 @@ export class OrganizationsService {
       }
 
       // Get total directors count
-      const { data: directors } = await supabaseAdmin
+      const { data: directors } = await supabase
         .from('organization_members')
         .select('id')
         .eq('organization_id', organizationId)
@@ -551,7 +552,7 @@ export class OrganizationsService {
       }
 
       // Remove member
-      const { error: deleteError } = await supabaseAdmin
+      const { error: deleteError } = await supabase
         .from('organization_members')
         .delete()
         .eq('id', memberId)
@@ -583,7 +584,7 @@ export class OrganizationsService {
    */
   private static async getUserRoleInOrganization(userId: string, organizationId: string): Promise<'director' | 'lead' | 'member'> {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('organization_members')
         .select('role')
         .eq('user_id', userId)

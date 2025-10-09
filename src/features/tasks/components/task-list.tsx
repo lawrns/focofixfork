@@ -300,7 +300,7 @@ export function TaskList({
             <div className="flex items-center gap-2 pb-2 border-b">
               <div className="w-2 h-2 rounded-full bg-blue-500"></div>
               <h3 className="font-semibold">In Progress</h3>
-              <span className="text-sm text-muted-foreground bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+              <span className="text-sm text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
                 {groupedTasks.in_progress.length}
               </span>
             </div>

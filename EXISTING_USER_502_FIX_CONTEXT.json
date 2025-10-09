@@ -1,0 +1,117 @@
+{
+  "issue_analysis": {
+    "problem": "Existing users getting 502 errors on dashboard API calls",
+    "root_cause": "Middleware user setup check using wrong column name in user_profiles query",
+    "affected_users": "All existing users who try to access dashboard after login",
+    "error_symptoms": {
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 () @ https://foco.mx/api/projects",
+        "Failed to load resource: the server responded with a status of 502 () @ https://foco.mx/api/organizations",
+        "Realtime subscription status: CHANNEL_ERROR"
+      ],
+      "user_experience": "Dashboard loads but shows no projects/organizations, appears broken"
+    }
+  },
+  "technical_details": {
+    "middleware_bug": {
+      "file": "src/lib/middleware/user-setup.ts",
+      "wrong_query": "SELECT organization_id FROM user_profiles WHERE id = session.user.id",
+      "correct_query": "SELECT organization_id FROM user_profiles WHERE user_id = session.user.id",
+      "impact": "Query fails because user_profiles.id is the primary key, not the foreign key to users table"
+    },
+    "table_structure": {
+      "user_profiles_columns": [
+        "id (uuid, primary key, auto-generated)",
+        "user_id (uuid, foreign key to users.id)",
+        "organization_id (uuid, nullable)",
+        "display_name, email_notifications, theme_preference (newly added)"
+      ],
+      "middleware_logic": "Checks if user has organization_id set to determine setup completion"
+    },
+    "why_502_not_403": {
+      "expected": "Middleware should return 403 'Organization setup required'",
+      "actual": "Middleware query fails, causing API routes to return 500/502 errors",
+      "browser_interpretation": "Client interprets server errors as 502 Bad Gateway"
+    }
+  },
+  "fix_implementation": {
+    "primary_fix": {
+      "file": "src/lib/middleware/user-setup.ts",
+      "change": "Change .eq('id', session.user.id) to .eq('user_id', session.user.id)",
+      "impact": "Fixes middleware query to use correct foreign key column"
+    },
+    "verification_steps": [
+      {
+        "step": 1,
+        "action": "Deploy the middleware fix",
+        "expected": "userSetupMiddleware now queries correct column"
+      },
+      {
+        "step": 2,
+        "action": "Test existing user dashboard access",
+        "expected": "API calls return 200 instead of 502"
+      },
+      {
+        "step": 3,
+        "action": "Verify organization data loads",
+        "expected": "Projects and organizations appear in dashboard"
+      },
+      {
+        "step": 4,
+        "action": "Check realtime subscriptions",
+        "expected": "CHANNEL_ERROR resolved if table permissions allow"
+      }
+    ],
+    "additional_considerations": {
+      "realtime_issues": {
+        "cause": "May be related to RLS policies or missing table permissions",
+        "severity": "Medium - doesn't break core functionality",
+        "fix_needed": "Investigate Supabase realtime configuration if persists"
+      },
+      "multiple_gotrue_clients": {
+        "cause": "Multiple Supabase client instances in same browser context",
+        "severity": "Low - warning only, no functional impact",
+        "fix_needed": "Consolidate client instances if performance becomes issue"
+      }
+    }
+  },
+  "deployment_plan": {
+    "steps": [
+      {
+        "action": "Fix middleware query in src/lib/middleware/user-setup.ts",
+        "status": "completed",
+        "verification": "Code change applied"
+      },
+      {
+        "action": "Deploy to production",
+        "method": "Git commit and push",
+        "expected": "Middleware fix deployed"
+      },
+      {
+        "action": "Test with existing user (laurence@fyves.com)",
+        "method": "Browser verification",
+        "expected": "Dashboard loads projects/organizations successfully"
+      },
+      {
+        "action": "Monitor console logs",
+        "expected": "No more 502 errors on /api/projects and /api/organizations"
+      }
+    ],
+    "rollback_plan": {
+      "if_fix_fails": "Revert the middleware change - original query might work for some users due to coincidental ID matching",
+      "data_safety": "No data modification - only query logic change"
+    }
+  },
+  "success_criteria": {
+    "functional": [
+      "Existing users can access dashboard without 502 errors",
+      "Projects and organizations load successfully",
+      "No 'Organization setup required' blocks for completed users"
+    ],
+    "technical": [
+      "Middleware userSetupMiddleware returns correct completion status",
+      "API routes /api/projects and /api/organizations return 200 responses",
+      "Console shows successful data loading instead of 502 errors"
+    ]
+  }
+}

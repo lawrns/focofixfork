@@ -44,7 +44,7 @@ export async function userSetupMiddleware(
     const { data: profile, error } = await supabaseClient
       .from('user_profiles')
       .select('organization_id')
-      .eq('id', session.user.id)
+      .eq('user_id', session.user.id)
       .single()
 
     if (error) {

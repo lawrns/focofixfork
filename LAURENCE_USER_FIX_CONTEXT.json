@@ -1,0 +1,33 @@
+{
+  "context": "Complete organization setup for existing user laurence@fyves.com to fix 502 project loading errors",
+  "user": {
+    "email": "laurence@fyves.com",
+    "user_id": "e15af19f-3e2b-4017-8b34-11a84e0898e6"
+  },
+  "issue": "Existing user cannot load projects due to incomplete organization setup. User can login but dashboard shows 'Error loading projects' with 502 API errors.",
+  "current_status": "User bypassed middleware organization check and accessed dashboard directly, but API calls fail due to missing organization setup",
+  "required_actions": [
+    {
+      "action": "Create user_profiles record if missing",
+      "sql": "INSERT INTO user_profiles (user_id, display_name, email_notifications, theme_preference) VALUES ('e15af19f-3e2b-4017-8b34-11a84e0898e6', 'Laurence', true, 'light') ON CONFLICT (user_id) DO NOTHING;"
+    },
+    {
+      "action": "Create organization for user",
+      "sql": "INSERT INTO organizations (name, owner_id, created_at, updated_at) VALUES ('Laurence Workspace', 'e15af19f-3e2b-4017-8b34-11a84e0898e6', NOW(), NOW()) ON CONFLICT (name) DO NOTHING RETURNING id;"
+    },
+    {
+      "action": "Link user to organization",
+      "sql": "UPDATE user_profiles SET organization_id = (SELECT id FROM organizations WHERE owner_id = 'e15af19f-3e2b-4017-8b34-11a84e0898e6' LIMIT 1) WHERE user_id = 'e15af19f-3e2b-4017-8b34-11a84e0898e6';"
+    },
+    {
+      "action": "Add user to organization_members",
+      "sql": "INSERT INTO organization_members (organization_id, user_id, role, joined_at) SELECT o.id, 'e15af19f-3e2b-4017-8b34-11a84e0898e6', 'owner', NOW() FROM organizations o WHERE o.owner_id = 'e15af19f-3e2b-4017-8b34-11a84e0898e6' ON CONFLICT (organization_id, user_id) DO NOTHING;"
+    }
+  ],
+  "verification_queries": [
+    "SELECT up.*, o.name as org_name FROM user_profiles up LEFT JOIN organizations o ON up.organization_id = o.id WHERE up.user_id = 'e15af19f-3e2b-4017-8b34-11a84e0898e6';",
+    "SELECT * FROM organization_members WHERE user_id = 'e15af19f-3e2b-4017-8b34-11a84e0898e6';"
+  ],
+  "expected_result": "User should now be able to access /api/projects successfully and see project list in dashboard",
+  "fallback_organization_name": "Laurence Workspace ${Date.now()}"
+}

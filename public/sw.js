@@ -211,6 +211,11 @@ async function networkFirst(request, fallbackUrl = '/offline.html') {
   try {
     const networkResponse = await fetch(request);
 
+    // Log API errors for debugging
+    if (isApiRequest(request.url) && !networkResponse.ok) {
+      console.warn(`[SW] API request failed: ${request.url} - Status: ${networkResponse.status} ${networkResponse.statusText}`);
+    }
+
     // Only cache if request and response are cacheable
     if (request.method === 'GET' && isCacheable(request, networkResponse)) {
       try {
@@ -225,11 +230,13 @@ async function networkFirst(request, fallbackUrl = '/offline.html') {
     return networkResponse;
   } catch (error) {
     // Network failed, try cache fallback
-    console.debug('[SW] Network failed in networkFirst:', error.message);
+    const errorType = error.name || 'NetworkError';
+    console.warn(`[SW] ${errorType} in networkFirst for ${request.url}:`, error.message);
 
     // Try cache first
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
+      console.debug(`[SW] Serving cached response for ${request.url}`);
       return cachedResponse;
     }
 
@@ -248,8 +255,14 @@ async function networkFirst(request, fallbackUrl = '/offline.html') {
       return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     }
 
-    // For non-navigation requests, throw the error
-    throw error;
+    // For non-navigation requests, return a more informative error response
+    // instead of throwing, to prevent uncaught promise rejections
+    console.debug(`[SW] Returning error response for ${request.url}`);
+    return new Response(JSON.stringify({ error: 'Network request failed', url: request.url }), {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 

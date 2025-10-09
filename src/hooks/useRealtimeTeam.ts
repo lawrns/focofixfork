@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { TeamMember } from '@/lib/validation/schemas/team-member.schema'
 

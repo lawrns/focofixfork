@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { PerformanceService } from '@/lib/services/performance';
 
 export class APIClient {

@@ -1,5 +1,5 @@
 import { RealtimeChannel } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE'
 
@@ -51,7 +51,13 @@ class RealtimeService {
             },
             (payload) => callback(payload as RealtimePayload<T>)
           )
-          .subscribe()
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR') {
+              console.warn(`[RealtimeService] Channel error for table '${table}' with filter. Table may not exist or realtime may not be enabled.`)
+            } else if (status === 'SUBSCRIBED') {
+              console.log(`[RealtimeService] Successfully subscribed to table '${table}' with filter`)
+            }
+          })
       } else {
         channel = channel
           .on(
@@ -63,7 +69,13 @@ class RealtimeService {
             },
             (payload) => callback(payload as RealtimePayload<T>)
           )
-          .subscribe()
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR') {
+              console.warn(`[RealtimeService] Channel error for table '${table}'. Table may not exist or realtime may not be enabled.`)
+            } else if (status === 'SUBSCRIBED') {
+              console.log(`[RealtimeService] Successfully subscribed to table '${table}'`)
+            }
+          })
       }
 
       this.channels.set(channelName, channel)

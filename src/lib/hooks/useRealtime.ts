@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import type { RealTimeEvent } from '@/lib/models/real-time-events'
 
 export interface RealtimeOptions {
@@ -190,7 +190,10 @@ export function useRealtime(
       )
     }
 
-    // Global real-time events
+    // DISABLED: Global real-time events subscription
+    // The 'real_time_events' table does not exist in the current database schema
+    // Uncomment when the table is created and realtime is enabled for it
+    /*
     channel.on(
       'postgres_changes',
       {
@@ -208,9 +211,16 @@ export function useRealtime(
         })
       }
     )
+    */
 
     channel.subscribe((status) => {
-      console.log(`Realtime subscription status: ${status}`)
+      if (status === 'CHANNEL_ERROR') {
+        console.warn(`[useRealtime] Channel subscription error for ${channelName}. This may be due to missing tables or realtime not being enabled.`)
+      } else if (status === 'SUBSCRIBED') {
+        console.log(`[useRealtime] Successfully subscribed to ${channelName}`)
+      } else {
+        console.log(`[useRealtime] Subscription status for ${channelName}: ${status}`)
+      }
     })
 
     channelRef.current = channel

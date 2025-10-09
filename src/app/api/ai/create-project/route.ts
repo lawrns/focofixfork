@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { aiService } from '@/lib/services/openai'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { canManageOrganizationMembers } from '@/lib/middleware/authorization'
 import { z } from 'zod'
 

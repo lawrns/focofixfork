@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import type { Database } from '@/lib/supabase/types'
 
 type Task = Database['public']['Tables']['tasks']['Row']

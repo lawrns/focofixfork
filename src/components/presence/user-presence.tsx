@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/data-display/a
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface PresenceUser {

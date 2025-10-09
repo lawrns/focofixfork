@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { goalsService } from '@/lib/services/goals.service'
 import { CreateGoalProjectLinkSchema } from '@/lib/validation/schemas/goals'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 
 interface RouteParams {
   params: {

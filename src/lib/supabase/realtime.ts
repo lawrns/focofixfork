@@ -1,4 +1,4 @@
-import { supabase } from '../supabase'
+import { supabase } from '../supabase-client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // Real-time subscription configuration for goals and settings
@@ -134,7 +134,28 @@ export class RealtimeManager {
 // Global real-time manager instance
 export const realtimeManager = new RealtimeManager()
 
+/**
+ * DISABLED: Auto-initialization of realtime subscriptions
+ *
+ * The following tables do not exist in the current database schema:
+ * - goals
+ * - goal_milestones
+ * - goal_project_links
+ * - user_notification_preferences
+ * - organization_settings
+ * - project_settings
+ *
+ * Attempting to subscribe to non-existent tables causes CHANNEL_ERROR.
+ *
+ * To re-enable realtime subscriptions:
+ * 1. Create the required tables in the database
+ * 2. Enable realtime for those tables in Supabase dashboard
+ * 3. Uncomment the initialization code below
+ */
+
 // Initialize real-time subscriptions when the app starts
+// DISABLED: Uncomment when tables exist
+/*
 if (typeof window !== 'undefined') {
   // Initialize on app start
   realtimeManager.initialize().catch(console.error)
@@ -144,3 +165,4 @@ if (typeof window !== 'undefined') {
     realtimeManager.cleanup().catch(console.error)
   })
 }
+*/

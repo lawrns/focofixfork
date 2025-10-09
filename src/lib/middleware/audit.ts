@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuditService, AuditAction, EntityType, RiskLevel } from '@/lib/services/audit-log';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 
 // Audit middleware for API routes
 export function withAuditLogging(

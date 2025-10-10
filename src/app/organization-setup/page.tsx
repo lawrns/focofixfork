@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -16,11 +16,20 @@ export default function OrganizationSetupPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
   const [organizationName, setOrganizationName] = useState('')
+  const [description, setDescription] = useState('')
+  const [website, setWebsite] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Store original router.push to restore later
   const originalPush = router.push
+
+  // Store cleanup function reference so it can be called on success
+  const cleanupRef = useRef<(() => void) | null>(null)
+
+  // Store event listener functions so they can be removed
+  const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null)
+  const popStateRef = useRef<((e: PopStateEvent) => void) | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,6 +49,10 @@ export default function OrganizationSetupPage() {
       alert('Please complete organization setup before navigating away.')
     }
 
+    // Store event listeners in refs
+    beforeUnloadRef.current = handleBeforeUnload
+    popStateRef.current = handlePopState
+
     // Override browser back button
     window.history.pushState(null, '', window.location.href)
     window.addEventListener('beforeunload', handleBeforeUnload)
@@ -55,32 +68,56 @@ export default function OrganizationSetupPage() {
       return Promise.resolve(false)
     }
 
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-      window.removeEventListener('popstate', handlePopState)
+    // Store cleanup function in ref so it can be called on success
+    cleanupRef.current = () => {
+      console.log('Running cleanup function')
+      if (beforeUnloadRef.current) {
+        window.removeEventListener('beforeunload', beforeUnloadRef.current)
+      }
+      if (popStateRef.current) {
+        window.removeEventListener('popstate', popStateRef.current)
+      }
       // Restore original router.push
       router.push = originalPush
       navigationBlocked = false
+      console.log('Cleanup completed')
     }
+
+    console.log('Navigation blocking setup complete, cleanupRef.current:', cleanupRef.current)
+
+    return cleanupRef.current
   }, [user, loading, router, originalPush])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log('handleSubmit called')
+
     if (!organizationName.trim()) {
+      console.log('Organization name validation failed')
       setError('Organization name is required')
       return
     }
 
     if (!user) {
+      console.log('User authentication check failed')
       setError('User not authenticated')
       return
     }
 
+    // Validate website URL if provided
+    if (website.trim() && !/^https?:\/\/.+/.test(website.trim())) {
+      console.log('Website URL validation failed')
+      setError('Website must be a valid URL starting with http:// or https://')
+      return
+    }
+
+    console.log('Starting organization setup API call')
     setIsLoading(true)
     setError(null)
 
     try {
+      console.log('Making fetch request to /api/organization-setup')
       const response = await fetch('/api/organization-setup', {
         method: 'POST',
         headers: {
@@ -88,22 +125,39 @@ export default function OrganizationSetupPage() {
         },
         body: JSON.stringify({
           organizationName: organizationName.trim(),
+          description: description.trim(),
+          website: website.trim(),
           userId: user.id
         }),
       })
 
+      console.log('Fetch response status:', response.status)
+
+      if (!response.ok) {
+        console.log('Response not OK, status:', response.status)
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      console.log('Parsing JSON response')
       const result = await response.json()
 
-      if (result.success) {
-        // Clear navigation blocker
-        navigationBlocked = false
+      console.log('Organization setup API response:', result)
 
-        // Restore router.push
-        router.push = originalPush
+      if (result.success) {
+        console.log('Organization setup successful, clearing navigation blockers')
+
+        // Clear all navigation blockers using the cleanup function
+        if (cleanupRef.current) {
+          cleanupRef.current()
+          console.log('Navigation blockers cleared via cleanup function')
+        }
 
         // Redirect to dashboard after successful setup
-        router.push('/dashboard')
+        console.log('Redirecting to dashboard...')
+        // Use window.location to bypass router overrides
+        window.location.href = '/dashboard'
       } else {
+        console.log('Organization setup failed:', result.error)
         setError(result.error || 'Failed to create organization')
       }
     } catch (error) {
@@ -142,7 +196,7 @@ export default function OrganizationSetupPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-3">
               <Label htmlFor="organizationName" className="text-sm font-medium text-foreground">
-                Organization Name
+                Organization Name *
               </Label>
               <Input
                 id="organizationName"
@@ -159,6 +213,48 @@ export default function OrganizationSetupPage() {
                 autoComplete="organization"
                 className="h-12 px-4 text-base"
               />
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="description" className="text-sm font-medium text-foreground">
+                Description
+              </Label>
+              <textarea
+                id="description"
+                name="description"
+                placeholder="Brief description of your organization (optional)"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value)
+                  if (error) setError(null)
+                }}
+                disabled={isLoading}
+                rows={3}
+                className="w-full px-4 py-3 text-base border border-input rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="website" className="text-sm font-medium text-foreground">
+                Website
+              </Label>
+              <Input
+                id="website"
+                name="website"
+                type="url"
+                placeholder="https://your-organization.com"
+                value={website}
+                onChange={(e) => {
+                  setWebsite(e.target.value)
+                  if (error) setError(null)
+                }}
+                disabled={isLoading}
+                autoComplete="url"
+                className="h-12 px-4 text-base"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional: Your organization&apos;s website URL
+              </p>
             </div>
 
             {error && (

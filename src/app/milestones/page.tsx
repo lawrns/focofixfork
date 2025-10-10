@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { projectStore } from '@/lib/stores/project-store'
 import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import DashboardLayout from '@/components/dashboard/layout'
+import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -128,7 +128,7 @@ function MilestonesContent() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <MainLayout>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="animate-pulse">
@@ -157,12 +157,12 @@ function MilestonesContent() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </MainLayout>
     )
   }
 
   return (
-    <DashboardLayout>
+    <MainLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -369,7 +369,7 @@ function MilestonesContent() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </MainLayout>
   )
 }
 

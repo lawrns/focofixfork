@@ -58,42 +58,42 @@ interface TaskCardProps {
 const statusConfig = {
   todo: {
     label: 'To Do',
-    color: 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20',
+    color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600',
     icon: Circle,
-    borderColor: 'border-l-slate-500',
+    borderColor: 'border-l-slate-600',
   },
   in_progress: {
     label: 'In Progress',
-    color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 border border-blue-300 dark:border-blue-600',
     icon: PlayCircle,
-    borderColor: 'border-l-blue-500',
+    borderColor: 'border-l-blue-600',
   },
   review: {
     label: 'Review',
-    color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20',
+    color: 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-600',
     icon: AlertTriangle,
-    borderColor: 'border-l-amber-500',
+    borderColor: 'border-l-amber-600',
   },
   done: {
     label: 'Done',
-    color: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20',
+    color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-600',
     icon: CheckCircle,
-    borderColor: 'border-l-emerald-500',
+    borderColor: 'border-l-emerald-600',
   },
 }
 
 const priorityConfig = {
   low: {
-    color: 'bg-slate-500/10 text-slate-600 hover:bg-slate-500/20',
+    color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600',
   },
   medium: {
-    color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 border border-blue-300 dark:border-blue-600',
   },
   high: {
-    color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20',
+    color: 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-600',
   },
   urgent: {
-    color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20',
+    color: 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600',
   },
 }
 
@@ -270,15 +270,15 @@ export function TaskCard({
 
       <CardContent className="space-y-3">
         {/* Status and Priority Badges */}
-        <div className="flex flex-wrap gap-1">
-          <Badge className={`${statusInfo.color} text-xs`}>
+        <div className="flex flex-wrap gap-2">
+          <Badge className={`${statusInfo.color} text-xs font-semibold`}>
             {statusInfo.label}
           </Badge>
-          <Badge variant="outline" className={`${priorityConfig[currentTask.priority].color} text-xs`}>
+          <Badge className={`${priorityConfig[currentTask.priority].color} text-xs font-semibold`}>
             {currentTask.priority.toUpperCase()}
           </Badge>
           {isOverdue && (
-            <Badge variant="destructive" className="text-xs">
+            <Badge className="bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600 text-xs font-semibold">
               OVERDUE
             </Badge>
           )}

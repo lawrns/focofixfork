@@ -6,6 +6,8 @@
 export interface Organization {
   id: string
   name: string
+  description?: string | null
+  website?: string | null
   created_by: string
   created_at: string
   updated_at: string
@@ -13,6 +15,8 @@ export interface Organization {
 
 export interface CreateOrganizationData {
   name: string
+  description?: string | null
+  website?: string | null
 }
 
 export interface UpdateOrganizationData {
@@ -90,6 +94,8 @@ export class OrganizationModel {
     return {
       id: organization.id,
       name: organization.name,
+      description: organization.description,
+      website: organization.website,
       created_by: organization.created_by,
       created_at: organization.created_at,
       updated_at: organization.updated_at

@@ -90,31 +90,31 @@ interface KanbanViewProps {
 
 const statusColumns = {
   projects: [
-    { key: 'planning', label: 'Planning', color: 'bg-blue-500' },
-    { key: 'active', label: 'Active', color: 'bg-green-500' },
-    { key: 'on_hold', label: 'On Hold', color: 'bg-yellow-500' },
-    { key: 'completed', label: 'Completed', color: 'bg-purple-500' },
-    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500' }
+    { key: 'planning', label: 'Planning', color: 'bg-blue-600' },
+    { key: 'active', label: 'Active', color: 'bg-emerald-600' },
+    { key: 'on_hold', label: 'On Hold', color: 'bg-amber-600' },
+    { key: 'completed', label: 'Completed', color: 'bg-purple-600' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-600' }
   ],
   tasks: [
-    { key: 'todo', label: 'To Do', color: 'bg-gray-500' },
-    { key: 'in_progress', label: 'In Progress', color: 'bg-blue-500' },
-    { key: 'review', label: 'Review', color: 'bg-yellow-500' },
-    { key: 'done', label: 'Done', color: 'bg-green-500' }
+    { key: 'todo', label: 'To Do', color: 'bg-slate-600' },
+    { key: 'in_progress', label: 'In Progress', color: 'bg-blue-600' },
+    { key: 'review', label: 'Review', color: 'bg-amber-600' },
+    { key: 'done', label: 'Done', color: 'bg-emerald-600' }
   ],
   milestones: [
-    { key: 'planned', label: 'Planned', color: 'bg-gray-500' },
-    { key: 'active', label: 'Active', color: 'bg-blue-500' },
-    { key: 'completed', label: 'Completed', color: 'bg-green-500' },
-    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500' }
+    { key: 'planned', label: 'Planned', color: 'bg-slate-600' },
+    { key: 'active', label: 'Active', color: 'bg-blue-600' },
+    { key: 'completed', label: 'Completed', color: 'bg-emerald-600' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-600' }
   ]
 }
 
 const priorityColors = {
-  low: 'bg-gray-100 text-gray-800 border-gray-200',
-  medium: 'bg-blue-500 text-white border-blue-200',
-  high: 'bg-orange-100 text-orange-800 border-orange-200',
-  urgent: 'bg-red-100 text-red-800 border-red-200'
+  low: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600',
+  medium: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-600',
+  high: 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 border-amber-300 dark:border-amber-600',
+  urgent: 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border-red-300 dark:border-red-600'
 }
 
 const KanbanView: React.FC<KanbanViewProps> = ({

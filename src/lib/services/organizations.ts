@@ -14,6 +14,8 @@ import { InvitationModel } from '../models/invitations'
 
 export interface CreateOrganizationData {
   name: string
+  description?: string | null
+  website?: string | null
   created_by: string
 }
 
@@ -111,6 +113,8 @@ export class OrganizationsService {
         .insert({
           name: data.name,
           slug: slug,
+          description: data.description,
+          website: data.website,
           created_by: data.created_by
         })
         .select()

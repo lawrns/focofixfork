@@ -161,22 +161,10 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
           return
         }
 
-        // Success - create user profile
+        // Success - user is registered
         if (data.user.id) {
-          // Create user profile in our database
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: data.user.id,
-              display_name: formData.displayName.trim(),
-              email_notifications: true,
-              theme_preference: 'system',
-            })
-
-          if (profileError) {
-            console.error('Profile creation error:', profileError)
-            // Don't fail registration if profile creation fails, just log it
-          }
+          // Skip profile creation for now - it will be created during organization setup
+          console.log('User registered successfully, skipping profile creation');
 
           // If there's an invitation, accept it
           if (invitationToken) {

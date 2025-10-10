@@ -1,60 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AuthService } from '@/lib/services/auth'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password, organizationName } = body
+    const { userId, displayName, email } = await request.json()
 
-    console.log('📝 Registration request received:', { email, hasPassword: !!password })
-
-    if (!email || !password) {
+    if (!userId || !displayName) {
       return NextResponse.json(
-        { success: false, error: 'Email and password are required' },
+        { success: false, error: 'User ID and display name are required' },
         { status: 400 }
       )
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    console.log('Creating user profile for:', { userId, displayName, email })
+
+    // Create user profile using service role (bypasses RLS)
+    const { error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .insert({
+        id: userId,
+        user_id: userId,
+        display_name: displayName,
+        email_notifications: true,
+        theme_preference: 'system',
+        bio: null,
+        preferences: {},
+        settings: {},
+        timezone: 'UTC'
+      })
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError)
       return NextResponse.json(
-        { success: false, error: 'Please enter a valid email address' },
-        { status: 400 }
+        { success: false, error: profileError.message },
+        { status: 500 }
       )
     }
 
-    // Basic password validation
-    if (password.length < 8) {
-      return NextResponse.json(
-        { success: false, error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      )
-    }
-
-    console.log('✅ Validation passed, calling AuthService.signUp')
-
-    const result = await AuthService.signUp({
-      email,
-      password,
-      organizationName
-    })
-
-    console.log('📊 AuthService.signUp result:', { success: result.success, error: result.error })
-
-    if (!result.success) {
-      return NextResponse.json(result, { status: 400 })
-    }
-
-    return NextResponse.json(result, { status: 201 })
-  } catch (error) {
-    console.error('❌ Auth register API error:', error)
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.log('User profile created successfully for:', userId)
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Registration API error:', error)
     return NextResponse.json(
-      { success: false, error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }
 }
-
-

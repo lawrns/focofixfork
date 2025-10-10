@@ -8,6 +8,7 @@ import { SavedViews } from '@/components/ui/saved-views'
 import { ViewConfig } from '@/lib/hooks/use-saved-views'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiGet } from '@/lib/api-client'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,11 +43,16 @@ export default function Header() {
     try {
       const results: SearchResult[] = []
 
-      // Search projects
-      const projectsRes = await fetch(`/api/projects`)
-      if (projectsRes.ok) {
-        const projectsData = await projectsRes.json()
-        const projects = (projectsData.data || []).filter((p: any) =>
+      // Search with enhanced API client (parallel requests with timeout)
+      const [projectsResult, tasksResult, milestonesResult] = await Promise.allSettled([
+        apiGet('/api/projects?limit=10', { timeout: 5000 }),
+        apiGet('/api/tasks?limit=10', { timeout: 5000 }),
+        apiGet('/api/milestones?limit=10', { timeout: 5000 })
+      ])
+
+      // Process projects
+      if (projectsResult.status === 'fulfilled' && projectsResult.value.ok) {
+        const projects = (projectsResult.value.data?.data || []).filter((p: any) =>
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           (p.description && p.description.toLowerCase().includes(query.toLowerCase()))
         )
@@ -58,11 +64,9 @@ export default function Header() {
         })))
       }
 
-      // Search tasks
-      const tasksRes = await fetch(`/api/tasks`)
-      if (tasksRes.ok) {
-        const tasksData = await tasksRes.json()
-        const tasks = (tasksData.data || []).filter((t: any) =>
+      // Process tasks
+      if (tasksResult.status === 'fulfilled' && tasksResult.value.ok) {
+        const tasks = (tasksResult.value.data?.data || []).filter((t: any) =>
           t.title.toLowerCase().includes(query.toLowerCase()) ||
           (t.description && t.description.toLowerCase().includes(query.toLowerCase()))
         )
@@ -74,11 +78,9 @@ export default function Header() {
         })))
       }
 
-      // Search milestones
-      const milestonesRes = await fetch(`/api/milestones`)
-      if (milestonesRes.ok) {
-        const milestonesData = await milestonesRes.json()
-        const milestones = (milestonesData.data || []).filter((m: any) =>
+      // Process milestones
+      if (milestonesResult.status === 'fulfilled' && milestonesResult.value.ok) {
+        const milestones = (milestonesResult.value.data?.data || []).filter((m: any) =>
           m.title.toLowerCase().includes(query.toLowerCase()) ||
           (m.description && m.description.toLowerCase().includes(query.toLowerCase()))
         )

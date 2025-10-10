@@ -39,17 +39,27 @@ export async function POST(request: NextRequest) {
     // Update user profile to include the organization_id
     console.log('Updating user profile for user:', userId, 'with organization:', orgResult.data!.id)
 
+    // Get user info from auth to get display name
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+    let displayName = 'User'
+    if (!userError && userData.user) {
+      displayName = userData.user.user_metadata?.full_name ||
+                   userData.user.user_metadata?.display_name ||
+                   userData.user.email?.split('@')[0] ||
+                   'User'
+    }
+
     // Always try to upsert the profile - this handles both new and existing profiles
     const profileData = {
       id: userId,  // Use 'id' as the primary key matching the user ID
       user_id: userId,  // Also set user_id for compatibility
       organization_id: orgResult.data!.id,
-      display_name: '', // Will be updated later if needed
+      display_name: displayName,
       email_notifications: true,
       theme_preference: 'system',
       bio: null,
-      preferences: null,
-      settings: null,
+      preferences: {},
+      settings: {},
       timezone: 'UTC',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

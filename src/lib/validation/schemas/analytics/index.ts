@@ -65,9 +65,11 @@ export const AnalyticsSummarySchema = z.object({
   completedProjects: z.number().min(0),
   totalTasks: z.number().min(0),
   completedTasks: z.number().min(0),
+  overdueTasks: z.number().min(0),
   averageCompletionRate: z.number().min(0).max(100),
   totalTeamMembers: z.number().min(0),
   averageWorkload: z.number().min(0).max(100),
+  averageCompletionTime: z.number().min(0),
 })
 
 // Complete Dashboard Analytics

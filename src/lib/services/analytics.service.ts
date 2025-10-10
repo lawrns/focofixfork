@@ -106,12 +106,17 @@ export class AnalyticsService {
     ).length || 0
 
     // Calculate average cycle time (time from creation to completion)
-    const completedTasksWithTimes = tasks?.filter(t => t.status === 'done' && t.updated_at && t.created_at) || []
+    const completedTasksWithTimes = tasks?.filter(t =>
+      t.status === 'done' &&
+      t.updated_at &&
+      t.created_at &&
+      new Date(t.updated_at) > new Date(t.created_at) // Ensure completion is after creation
+    ) || []
     const averageCycleTime = completedTasksWithTimes.length > 0
       ? completedTasksWithTimes.reduce((sum, task) => {
           const created = new Date(task.created_at!)
           const completed = new Date(task.updated_at!)
-          const cycleTime = (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24) // days
+          const cycleTime = Math.max(0, (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) // days, ensure non-negative
           return sum + cycleTime
         }, 0) / completedTasksWithTimes.length
       : 0
@@ -188,12 +193,17 @@ export class AnalyticsService {
     const tasksCompleted = tasks?.filter(t => t.status === 'done').length || 0
 
     // Calculate average cycle time
-    const completedTasks = tasks?.filter(t => t.status === 'done' && t.updated_at && t.created_at) || []
+    const completedTasks = tasks?.filter(t =>
+      t.status === 'done' &&
+      t.updated_at &&
+      t.created_at &&
+      new Date(t.updated_at) > new Date(t.created_at) // Ensure completion is after creation
+    ) || []
     const averageCycleTime = completedTasks.length > 0
       ? completedTasks.reduce((sum, task) => {
           const created = new Date(task.created_at!)
           const completed = new Date(task.updated_at!)
-          const cycleTime = (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+          const cycleTime = Math.max(0, (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) // Ensure non-negative
           return sum + cycleTime
         }, 0) / completedTasks.length
       : 0
@@ -434,7 +444,9 @@ export class AnalyticsService {
         completedTasks: 0,
         averageCompletionRate: 0,
         totalTeamMembers: 0,
-        averageWorkload: 0
+        averageWorkload: 0,
+        overdueTasks: 0,
+        averageCompletionTime: 0
       }
     }
   }
@@ -449,11 +461,18 @@ export class AnalyticsService {
 
     const totalTasks = projectMetrics.reduce((sum, pm) => sum + pm.totalTasks, 0)
     const completedTasks = projectMetrics.reduce((sum, pm) => sum + pm.completedTasks, 0)
+    const overdueTasks = projectMetrics.reduce((sum, pm) => sum + pm.overdueTasks, 0)
     const averageCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
     const totalTeamMembers = teamMetrics.length
     const averageWorkload = totalTeamMembers > 0
       ? teamMetrics.reduce((sum, tm) => sum + tm.workloadScore, 0) / totalTeamMembers
+      : 0
+
+    // Calculate average completion time across all projects
+    const projectsWithCycleTime = projectMetrics.filter(pm => pm.averageCycleTime > 0)
+    const averageCompletionTime = projectsWithCycleTime.length > 0
+      ? projectsWithCycleTime.reduce((sum, pm) => sum + pm.averageCycleTime, 0) / projectsWithCycleTime.length
       : 0
 
     return {
@@ -462,9 +481,11 @@ export class AnalyticsService {
       completedProjects,
       totalTasks,
       completedTasks,
+      overdueTasks,
       averageCompletionRate: Math.round(averageCompletionRate),
       totalTeamMembers,
-      averageWorkload: Math.round(averageWorkload)
+      averageWorkload: Math.round(averageWorkload),
+      averageCompletionTime: Math.round(averageCompletionTime * 10) / 10 // Round to 1 decimal
     }
   }
 
@@ -560,10 +581,14 @@ export class AnalyticsService {
         .gte('updated_at', weekStart.toISOString())
         .lte('updated_at', weekEnd.toISOString())
 
-      const validTasks = tasks?.filter(task => task.created_at && task.updated_at) || []
+      const validTasks = tasks?.filter(task =>
+        task.created_at &&
+        task.updated_at &&
+        new Date(task.updated_at) > new Date(task.created_at) // Ensure completion is after creation
+      ) || []
       const avgCycleTime = validTasks.length > 0
         ? validTasks.reduce((sum, task) => {
-            const cycleTime = (new Date(task.updated_at!).getTime() - new Date(task.created_at!).getTime()) / (1000 * 60 * 60 * 24)
+            const cycleTime = Math.max(0, (new Date(task.updated_at!).getTime() - new Date(task.created_at!).getTime()) / (1000 * 60 * 60 * 24)) // Ensure non-negative
             return sum + cycleTime
           }, 0) / validTasks.length
         : 0

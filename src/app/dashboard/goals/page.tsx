@@ -1,9 +1,11 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
-import { GoalsDashboard } from '@/features/goals'
+
+// Lazy load goals dashboard for better performance
+const GoalsDashboard = lazy(() => import('@/features/goals').then(mod => ({ default: mod.GoalsDashboard })))
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardGoalsPage() {

@@ -40,6 +40,28 @@ class ProjectStore {
     return this.operationInProgress.has(projectId)
   }
 
+  // Refresh projects from API
+  async refreshProjects(): Promise<void> {
+    try {
+      console.log('ProjectStore: Refreshing projects from API')
+      const response = await fetch('/api/projects', {
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        this.setProjects(data.data || [])
+        console.log('ProjectStore: Refreshed projects from API:', data.data?.length || 0)
+      } else {
+        console.error('ProjectStore: Failed to refresh projects from API')
+      }
+    } catch (error) {
+      console.error('ProjectStore: Error refreshing projects:', error)
+    }
+  }
+
   // Mark operation as in progress
   startOperation(projectId: string) {
     console.log('ProjectStore: Starting operation for project:', projectId)

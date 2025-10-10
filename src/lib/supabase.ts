@@ -1,10 +1,10 @@
 /**
- * @deprecated This file is deprecated. Import directly from '@/lib/supabase-client' instead.
+ * @deprecated This file is deprecated and should NOT be used.
  *
- * This re-export file causes multiple Supabase client instances to be created,
- * leading to "Multiple GoTrueClient instances" warnings and potential issues.
+ * Import directly from '@/lib/supabase-client' instead.
  *
- * **DO NOT USE THIS FILE.** Use the canonical import path instead:
+ * This file has been intentionally left empty (except for this warning) to prevent
+ * the bundler from creating multiple Supabase client instances.
  *
  * @example
  * ```typescript
@@ -18,14 +18,11 @@
  * @see {@link ./supabase-client.ts} for the canonical Supabase client singleton
  */
 
-// Re-export for backward compatibility (DEPRECATED - will be removed in future version)
-export * from './supabase-client'
+// This file intentionally left empty to prevent multiple client instances
+// All imports should use '@/lib/supabase-client' directly
 
-// Runtime warning for developers
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.warn(
-    '⚠️ DEPRECATION WARNING: Importing from "@/lib/supabase" is deprecated.\n' +
-    'Please import from "@/lib/supabase-client" instead to avoid multiple client instances.\n' +
-    'See src/lib/supabase.ts for more information.'
-  )
-}
+throw new Error(
+  'DEPRECATED: Do not import from "@/lib/supabase". ' +
+  'Use "@/lib/supabase-client" instead. ' +
+  'See src/lib/supabase.ts for more information.'
+)

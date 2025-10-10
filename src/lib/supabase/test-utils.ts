@@ -1,4 +1,4 @@
-import { supabase } from '../supabase'
+import { supabase } from '../supabase-client'
 
 /**
  * Test utilities for database connectivity and operations

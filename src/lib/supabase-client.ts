@@ -19,13 +19,25 @@
  */
 
 import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from './supabase/types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+// Use a global variable to ensure true singleton across hot module reloads
+// This prevents "Multiple GoTrueClient instances" warnings in development and production
+declare global {
+  var __supabase: SupabaseClient<Database> | undefined
+}
+
 // Create browser client with cookie-based session storage for Next.js App Router
-export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+// Use global variable to ensure singleton even with React Strict Mode and HMR
+export const supabase = globalThis.__supabase ?? createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+
+if (typeof window !== 'undefined') {
+  globalThis.__supabase = supabase
+}
 
 // Re-export Database type from types.ts
 export type { Database } from './supabase/types'

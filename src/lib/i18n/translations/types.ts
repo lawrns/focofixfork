@@ -34,6 +34,7 @@ export interface TranslationSchema {
     none: string;
     clear: string;
     apply: string;
+    noResults: string;
     reset: string;
     submit: string;
     send: string;
@@ -73,6 +74,7 @@ export interface TranslationSchema {
     settings: string;
     profile: string;
     logout: string;
+    signOut: string;
     home: string;
     about: string;
     contact: string;

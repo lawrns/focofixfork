@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useGlobalRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
+import { useProjects } from '@/hooks/useProjects'
 
 interface Project {
   id: string

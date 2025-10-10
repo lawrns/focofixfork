@@ -68,6 +68,9 @@ export class AnalyticsService {
         query = query.eq('organization_id', organizationId);
       }
 
+      // Add limit to prevent excessive data loading
+      query = query.limit(1000);
+
       const { data: projects } = await query;
 
       if (!projects) return this.getEmptyProjectAnalytics();
@@ -208,6 +211,9 @@ export class AnalyticsService {
         query = query.lte('date', endDate);
       }
 
+      // Add limit to prevent excessive data loading
+      query = query.limit(5000);
+
       const { data: timeEntries } = await query;
 
       if (!timeEntries) return this.getEmptyTimeTrackingAnalytics();
@@ -329,6 +335,9 @@ export class AnalyticsService {
       if (organizationId) {
         memberQuery = memberQuery.eq('organization_id', organizationId);
       }
+
+      // Add limit to prevent excessive data loading
+      memberQuery = memberQuery.limit(500);
 
       const { data: members } = await memberQuery;
 

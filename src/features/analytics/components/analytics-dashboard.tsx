@@ -27,7 +27,7 @@ interface AnalyticsDashboardProps {
   organizationId?: string;
 }
 
-export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) {
+export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
@@ -571,4 +571,4 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
       </Tabs>
     </div>
   );
-}
+});

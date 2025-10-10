@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
-import { AnalyticsDashboard } from '@/features/analytics'
+
+// Lazy load analytics dashboard for better performance
+const AnalyticsDashboard = lazy(() => import('@/features/analytics').then(mod => ({ default: mod.AnalyticsDashboard })))
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -18,6 +20,23 @@ import {
   Calendar,
   Clock
 } from 'lucide-react'
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-32 bg-muted rounded-lg animate-pulse"></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-80 bg-muted rounded-lg animate-pulse"></div>
+        <div className="h-80 bg-muted rounded-lg animate-pulse"></div>
+      </div>
+      <div className="h-64 bg-muted rounded-lg animate-pulse"></div>
+    </div>
+  )
+}
 
 export default function ReportsPage() {
   return (
@@ -188,7 +207,9 @@ function ReportsContent() {
         {/* Report Content */}
         <Tabs value={reportType} onValueChange={setReportType}>
           <TabsContent value="overview" className="space-y-6">
-            <AnalyticsDashboard />
+            <Suspense fallback={<AnalyticsSkeleton />}>
+              <AnalyticsDashboard />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-6">
@@ -200,7 +221,9 @@ function ReportsContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsDashboard />
+                <Suspense fallback={<AnalyticsSkeleton />}>
+                  <AnalyticsDashboard />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -214,7 +237,9 @@ function ReportsContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsDashboard />
+                <Suspense fallback={<AnalyticsSkeleton />}>
+                  <AnalyticsDashboard />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -228,7 +253,9 @@ function ReportsContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsDashboard />
+                <Suspense fallback={<AnalyticsSkeleton />}>
+                  <AnalyticsDashboard />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>

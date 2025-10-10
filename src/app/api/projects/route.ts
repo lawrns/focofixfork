@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectsService } from '@/features/projects/services/projectService'
+import { normalizeProjectsData } from '@/lib/utils'
 import { z } from 'zod'
 
 // Schema for project creation
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: normalizeProjectsData(result.data || []),
       pagination: result.pagination,
     })
   } catch (error: any) {
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, data: result.data },
+      { success: true, data: normalizeProjectData(result.data) },
       { status: 201 }
     )
   } catch (error: any) {

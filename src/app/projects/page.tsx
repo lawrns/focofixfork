@@ -54,14 +54,12 @@ function ProjectsContent() {
 
   return (
     <MainLayout>
-      <div className="p-3 sm:p-4 md:p-6">
-        <ProjectList
-          showCreateButton={true}
-          onCreateProject={handleCreateProject}
-          onEditProject={handleEditProject}
-          onDeleteProject={handleDeleteProject}
-        />
-      </div>
+      <ProjectList
+        showCreateButton={true}
+        onCreateProject={handleCreateProject}
+        onEditProject={handleEditProject}
+        onDeleteProject={handleDeleteProject}
+      />
 
       {/* Create/Edit Project Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

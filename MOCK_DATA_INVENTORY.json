@@ -1,0 +1,318 @@
+{
+  "meta": {
+    "generatedAt": "2025-10-10",
+    "description": "Comprehensive inventory of all mock/sample/dummy data found across the Foco codebase",
+    "totalFiles": 3,
+    "scope": "Production source code (excluding tests)"
+  },
+  "mockDataByFile": {
+    "/src/app/milestones/page.tsx": {
+      "type": "Milestones Mock Data",
+      "location": "lines 57-99",
+      "purpose": "Temporary mock data for milestones page until API endpoint is implemented",
+      "status": "ACTIVE - Used in production",
+      "dataStructure": {
+        "variableName": "mockMilestones",
+        "dataType": "Array<Milestone>",
+        "recordCount": 4,
+        "fields": [
+          "id",
+          "name",
+          "description",
+          "status",
+          "priority",
+          "project_id",
+          "assigned_to",
+          "due_date",
+          "completed_at"
+        ]
+      },
+      "records": [
+        {
+          "id": "1",
+          "name": "User Authentication System",
+          "description": "Implement secure login and registration",
+          "status": "completed",
+          "priority": "high",
+          "project_id": "projects[0]?.id || '1'",
+          "assigned_to": "user-1",
+          "due_date": "2024-02-15",
+          "completed_at": "2024-02-10"
+        },
+        {
+          "id": "2",
+          "name": "Dashboard UI Components",
+          "description": "Build reusable dashboard components",
+          "status": "in-progress",
+          "priority": "high",
+          "project_id": "projects[0]?.id || '1'",
+          "assigned_to": "user-2",
+          "due_date": "2024-03-01"
+        },
+        {
+          "id": "3",
+          "name": "API Documentation",
+          "description": "Create comprehensive API documentation",
+          "status": "todo",
+          "priority": "medium",
+          "project_id": "projects[1]?.id || '2'",
+          "assigned_to": "user-1",
+          "due_date": "2024-03-15"
+        },
+        {
+          "id": "4",
+          "name": "Performance Optimization",
+          "description": "Optimize application loading times",
+          "status": "review",
+          "priority": "medium",
+          "project_id": "projects[0]?.id || '1'",
+          "assigned_to": "user-3",
+          "due_date": "2024-02-28"
+        }
+      ],
+      "impact": "HIGH - This mock data is displayed directly to users on the milestones page",
+      "replacementNeeded": true,
+      "replacementStrategy": "Implement /api/milestones endpoint and connect to database"
+    },
+    "/src/app/inbox/page.tsx": {
+      "type": "Notifications Mock Data",
+      "location": "lines 44-81",
+      "purpose": "Temporary mock data for inbox/notifications page",
+      "status": "ACTIVE - Used in production",
+      "dataStructure": {
+        "variableName": "mockNotifications",
+        "dataType": "Array<Notification>",
+        "recordCount": 4,
+        "fields": [
+          "id",
+          "type",
+          "title",
+          "message",
+          "read",
+          "created_at",
+          "action_url"
+        ]
+      },
+      "records": [
+        {
+          "id": "1",
+          "type": "task_assigned",
+          "title": "New task assigned",
+          "message": "You have been assigned to \"Implement user authentication\"",
+          "read": false,
+          "created_at": "new Date().toISOString()",
+          "action_url": "/tasks"
+        },
+        {
+          "id": "2",
+          "type": "comment",
+          "title": "New comment",
+          "message": "John commented on your task \"Update API documentation\"",
+          "read": false,
+          "created_at": "new Date(Date.now() - 3600000).toISOString()",
+          "action_url": "/tasks"
+        },
+        {
+          "id": "3",
+          "type": "milestone_complete",
+          "title": "Milestone completed",
+          "message": "The milestone \"Phase 1 Development\" has been completed",
+          "read": true,
+          "created_at": "new Date(Date.now() - 86400000).toISOString()",
+          "action_url": "/milestones"
+        },
+        {
+          "id": "4",
+          "type": "project_update",
+          "title": "Project updated",
+          "message": "The project \"Mobile App\" has been updated by Sarah",
+          "read": true,
+          "created_at": "new Date(Date.now() - 172800000).toISOString()",
+          "action_url": "/projects"
+        }
+      ],
+      "impact": "HIGH - This mock data is displayed directly to users in the inbox",
+      "replacementNeeded": true,
+      "replacementStrategy": "Implement real-time notifications system with database table and API endpoints"
+    },
+    "/src/components/import/import-dialog.tsx": {
+      "type": "CSV Template Sample Data",
+      "location": "lines 146-163",
+      "purpose": "Sample data for CSV export templates to help users understand import format",
+      "status": "ACTIVE - Used for template generation",
+      "dataStructure": {
+        "variableName": "sampleData",
+        "dataType": "Array<string>",
+        "recordCount": "1 per template type",
+        "templateTypes": ["projects", "milestones", "tasks"]
+      },
+      "records": {
+        "projects": {
+          "headers": [
+            "Name",
+            "Description",
+            "Status",
+            "Priority",
+            "Progress",
+            "Start Date",
+            "Due Date",
+            "Organization ID"
+          ],
+          "sampleData": [
+            "Website Redesign",
+            "Complete overhaul of company website",
+            "active",
+            "high",
+            "25",
+            "2024-01-15",
+            "2024-03-15",
+            ""
+          ]
+        },
+        "milestones": {
+          "headers": [
+            "Name",
+            "Description",
+            "Status",
+            "Priority",
+            "Progress",
+            "Start Date",
+            "Due Date",
+            "Project Name"
+          ],
+          "sampleData": [
+            "Design Phase",
+            "Create wireframes and mockups",
+            "completed",
+            "high",
+            "100",
+            "2024-01-15",
+            "2024-02-15",
+            "Website Redesign"
+          ]
+        },
+        "tasks": {
+          "headers": [
+            "Name",
+            "Description",
+            "Status",
+            "Priority",
+            "Start Date",
+            "Due Date",
+            "Milestone Name",
+            "Assignee Name"
+          ],
+          "sampleData": [
+            "Create homepage wireframe",
+            "Design the main landing page",
+            "in_progress",
+            "medium",
+            "2024-01-15",
+            "2024-01-22",
+            "Design Phase",
+            "John Doe"
+          ]
+        }
+      },
+      "impact": "LOW - Only used for downloadable templates, not displayed as real data",
+      "replacementNeeded": false,
+      "replacementStrategy": "Keep as-is - this is appropriate sample data for templates"
+    }
+  },
+  "testMockData": {
+    "note": "Test files contain extensive mock data but are excluded from this inventory as they are not used in production",
+    "testFileCount": 108,
+    "testMockDataPatterns": [
+      "mockSupabase - Supabase client mocks",
+      "mockUser - User authentication mocks",
+      "mockProject - Project data mocks",
+      "mockTask - Task data mocks",
+      "mockMilestone - Milestone data mocks",
+      "mockOrganization - Organization data mocks",
+      "mockGoal - Goal data mocks",
+      "createMockUser - Test helper functions",
+      "createMockProject - Test helper functions",
+      "localStorageMock - Browser API mocks",
+      "sessionStorageMock - Browser API mocks"
+    ]
+  },
+  "summary": {
+    "totalProductionMockData": 2,
+    "totalSampleDataTemplates": 3,
+    "criticalReplacements": [
+      {
+        "file": "/src/app/milestones/page.tsx",
+        "priority": "HIGH",
+        "reason": "Users see fake milestone data",
+        "effort": "Medium - Need to create milestones API endpoint and database schema"
+      },
+      {
+        "file": "/src/app/inbox/page.tsx",
+        "priority": "HIGH",
+        "reason": "Users see fake notifications",
+        "effort": "High - Need to implement full notifications system with real-time updates"
+      }
+    ],
+    "recommendedActions": [
+      "Create /api/milestones endpoint with full CRUD operations",
+      "Create milestones database table with proper RLS policies",
+      "Implement notifications system with database table and real-time subscriptions",
+      "Create /api/notifications endpoint for fetching and managing notifications",
+      "Add notification triggers for events (task assigned, comments, milestone completed, etc.)",
+      "Update milestones page to fetch real data from API",
+      "Update inbox page to fetch real notifications from API",
+      "Keep CSV template sample data as-is (appropriate use case)"
+    ]
+  },
+  "databaseSchemaNeeded": {
+    "milestones": {
+      "table": "milestones",
+      "columns": [
+        "id (uuid, primary key)",
+        "name (text, not null)",
+        "description (text)",
+        "status (text, not null) - values: 'todo', 'in-progress', 'review', 'completed'",
+        "priority (text, not null) - values: 'low', 'medium', 'high', 'urgent'",
+        "project_id (uuid, foreign key to projects)",
+        "assigned_to (uuid, foreign key to users)",
+        "due_date (timestamp with time zone)",
+        "completed_at (timestamp with time zone)",
+        "progress_percentage (integer, default 0)",
+        "created_at (timestamp with time zone, default now())",
+        "updated_at (timestamp with time zone, default now())",
+        "created_by (uuid, foreign key to users)"
+      ],
+      "rlsPolicies": [
+        "Users can view milestones in their projects",
+        "Project members can create milestones",
+        "Project members can update milestones",
+        "Project admins can delete milestones"
+      ]
+    },
+    "notifications": {
+      "table": "notifications",
+      "columns": [
+        "id (uuid, primary key)",
+        "user_id (uuid, foreign key to users, not null)",
+        "type (text, not null) - values: 'task_assigned', 'comment', 'mention', 'milestone_complete', 'project_update'",
+        "title (text, not null)",
+        "message (text, not null)",
+        "read (boolean, default false)",
+        "action_url (text)",
+        "related_entity_type (text) - e.g., 'task', 'project', 'milestone'",
+        "related_entity_id (uuid)",
+        "created_at (timestamp with time zone, default now())",
+        "read_at (timestamp with time zone)"
+      ],
+      "rlsPolicies": [
+        "Users can only view their own notifications",
+        "Users can update their own notifications (mark as read)",
+        "System can create notifications for users"
+      ],
+      "indexes": [
+        "user_id + created_at (for efficient querying)",
+        "user_id + read (for unread count)"
+      ]
+    }
+  }
+}

@@ -192,15 +192,15 @@ export function TaskList({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Tasks</h2>
+          <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
           <p className="text-muted-foreground">
             {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
           </p>
         </div>
 
         {showCreateButton && onCreateTask && (
-          <Button onClick={onCreateTask}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={onCreateTask} aria-label="Create new task">
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
             New Task
           </Button>
         )}
@@ -215,12 +215,13 @@ export function TaskList({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            aria-label="Search tasks by title or description"
           />
         </div>
 
         <div className="flex gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" aria-label="Filter tasks by status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -233,7 +234,7 @@ export function TaskList({
           </Select>
 
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" aria-label="Filter tasks by priority">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -272,92 +273,94 @@ export function TaskList({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* To Do Column */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-              <h3 className="font-semibold">To Do</h3>
-              <span className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                {groupedTasks.todo.length}
-              </span>
+        <div className="w-full overflow-x-auto pb-4" role="region" aria-label="Task board with four columns">
+          <div className="flex gap-6 min-w-max">
+            {/* To Do Column */}
+            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="todo-heading">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <div className="w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"></div>
+                <h3 id="todo-heading" className="font-semibold text-foreground">To Do</h3>
+                <span className="text-sm text-gray-200 dark:text-gray-200 bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded" aria-label={`${groupedTasks.todo.length} tasks in To Do`}>
+                  {groupedTasks.todo.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {groupedTasks.todo.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={onEditTask}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {groupedTasks.todo.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={onEditTask}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDeleteTask}
-                />
-              ))}
-            </div>
-          </div>
 
-          {/* In Progress Column */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              <h3 className="font-semibold">In Progress</h3>
-              <span className="text-sm text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                {groupedTasks.in_progress.length}
-              </span>
+            {/* In Progress Column */}
+            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="in-progress-heading">
+              <div className="flex items-center gap-2 pb-2 border-b border-blue-200 dark:border-blue-800">
+                <div className="w-2 h-2 rounded-full bg-blue-500" aria-hidden="true"></div>
+                <h3 id="in-progress-heading" className="font-semibold text-foreground">In Progress</h3>
+                <span className="text-sm text-white dark:text-blue-200 bg-blue-600 dark:bg-blue-800 px-2 py-1 rounded" aria-label={`${groupedTasks.in_progress.length} tasks in In Progress`}>
+                  {groupedTasks.in_progress.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {groupedTasks.in_progress.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={onEditTask}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {groupedTasks.in_progress.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={onEditTask}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDeleteTask}
-                />
-              ))}
-            </div>
-          </div>
 
-          {/* Review Column */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-              <h3 className="font-semibold">Review</h3>
-              <span className="text-sm text-muted-foreground bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">
-                {groupedTasks.review.length}
-              </span>
+            {/* Review Column */}
+            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="review-heading">
+              <div className="flex items-center gap-2 pb-2 border-b border-yellow-200 dark:border-yellow-800">
+                <div className="w-2 h-2 rounded-full bg-yellow-500" aria-hidden="true"></div>
+                <h3 id="review-heading" className="font-semibold text-foreground">Review</h3>
+                <span className="text-sm text-white dark:text-yellow-200 bg-yellow-600 dark:bg-yellow-800 px-2 py-1 rounded" aria-label={`${groupedTasks.review.length} tasks in Review`}>
+                  {groupedTasks.review.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {groupedTasks.review.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={onEditTask}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="space-y-3">
-              {groupedTasks.review.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={onEditTask}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDeleteTask}
-                />
-              ))}
-            </div>
-          </div>
 
-          {/* Done Column */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <h3 className="font-semibold">Done</h3>
-              <span className="text-sm text-muted-foreground bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-                {groupedTasks.done.length}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {groupedTasks.done.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={onEditTask}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDeleteTask}
-                />
-              ))}
+            {/* Done Column */}
+            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="done-heading">
+              <div className="flex items-center gap-2 pb-2 border-b border-green-200 dark:border-green-800">
+                <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></div>
+                <h3 id="done-heading" className="font-semibold text-foreground">Done</h3>
+                <span className="text-sm text-white dark:text-green-200 bg-green-600 dark:bg-green-800 px-2 py-1 rounded" aria-label={`${groupedTasks.done.length} tasks in Done`}>
+                  {groupedTasks.done.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {groupedTasks.done.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={onEditTask}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>

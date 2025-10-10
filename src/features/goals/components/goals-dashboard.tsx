@@ -96,12 +96,19 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
         throw new Error('Failed to delete goal');
       }
 
+      // Optimistically update UI immediately
+      setGoals(prevGoals => prevGoals.filter(goal => goal.id !== deleteGoalId));
+      
       toast({
         title: 'Goal deleted',
         description: 'The goal has been successfully deleted.',
       });
+      
       setDeleteGoalId(null);
-      loadGoals();
+      
+      // Reload to ensure consistency
+      await loadGoals();
+      await loadAnalytics();
     } catch (error) {
       console.error('Error deleting goal:', error);
       toast({
@@ -109,6 +116,8 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
         description: 'Failed to delete goal. Please try again.',
         variant: 'destructive',
       });
+      // Reload goals to revert optimistic update
+      await loadGoals();
     }
   };
 
@@ -175,7 +184,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
         </div>
         <div className="flex items-center gap-4">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" aria-label="Filter goals by status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -187,7 +196,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" aria-label="Filter goals by type">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -200,8 +209,8 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
             </SelectContent>
           </Select>
           <CreateGoalDialog onGoalCreated={loadGoals}>
-            <Button className="bg-[#0052CC] hover:bg-[#004299]">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="bg-[#0052CC] hover:bg-[#004299]" aria-label="Create new goal">
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
               New Goal
             </Button>
           </CreateGoalDialog>
@@ -341,19 +350,20 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
 
                       <div className="flex items-center gap-2 ml-4">
                         <GoalProgressDialog goal={goal} onProgressUpdated={loadGoals}>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" aria-label={`Update progress for ${goal.title}`}>
                             Update Progress
                           </Button>
                         </GoalProgressDialog>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
+                        <Button variant="ghost" size="sm" aria-label={`Edit ${goal.title}`}>
+                          <Edit className="w-4 h-4" aria-hidden="true" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteGoalId(goal.id)}
+                          aria-label={`Delete ${goal.title}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </div>

@@ -10,7 +10,7 @@ const badgeVariants = cva(
         default:
           'border-transparent bg-gradient-to-r from-primary to-primary-hover text-white shadow-sm hover:shadow-md',
         secondary:
-          'border-transparent bg-gradient-to-r from-slate-100 to-slate-200 text-slate-900 hover:from-slate-200 hover:to-slate-300',
+          'border-transparent bg-gradient-to-r from-slate-100 to-slate-200 text-slate-900 dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 hover:from-slate-200 hover:to-slate-300 dark:hover:from-slate-600 dark:hover:to-slate-500',
         destructive:
           'border-transparent bg-gradient-to-r from-error to-red-600 text-white shadow-sm hover:shadow-md',
         outline: 'text-foreground border-border hover:bg-primary/5 hover:border-primary/30',
@@ -19,7 +19,7 @@ const badgeVariants = cva(
         warning:
           'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200',
         info:
-          'border-transparent bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200',
+          'border-transparent bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-600 dark:hover:bg-blue-800',
         muted:
           'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300 hover:bg-slate-200',
         glass:

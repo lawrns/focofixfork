@@ -222,8 +222,8 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-hover">
-      <div className="flex h-full flex-col p-4">
+    <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-hover overflow-hidden">
+      <div className="flex h-full flex-col p-4 overflow-y-auto">
         {/* Logo Section */}
         <div className="flex items-center gap-3 p-2">
           <Image
@@ -241,7 +241,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-8 flex flex-1 flex-col gap-1">
+        <nav className="mt-8 flex flex-1 flex-col gap-1" aria-label="Main navigation">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
@@ -255,8 +255,9 @@ export default function Sidebar() {
                     ? 'bg-primary font-semibold text-white'
                     : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'
                 }`}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-5 w-5" aria-hidden="true" />
                 {item.name}
               </Link>
             )
@@ -266,16 +267,18 @@ export default function Sidebar() {
           <div className="mt-6">
             <button
               onClick={() => setProjectsExpanded(!projectsExpanded)}
-              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active transition-colors"
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-expanded={projectsExpanded}
+              aria-label={projectsExpanded ? 'Collapse projects list' : 'Expand projects list'}
             >
               {projectsExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
               )}
-              <Folder className="h-5 w-5" />
+              <Folder className="h-5 w-5" aria-hidden="true" />
               Projects
-              <span className="ml-auto text-xs bg-muted rounded-full px-2 py-0.5">
+              <span className="ml-auto text-xs bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
                 {projects.length}
               </span>
             </button>
@@ -302,6 +305,7 @@ export default function Sidebar() {
                           ? 'bg-primary/20 font-semibold text-primary'
                           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       }`}
+                      aria-current={pathname === `/projects/${project.id}` ? 'page' : undefined}
                     >
                       {project.name}
                     </Link>

@@ -52,59 +52,27 @@ function MilestonesContent() {
         setProjects(projectsData.data || [])
       }
 
-      // Load milestones
-      // For now, we'll create mock milestones since the API might not have this endpoint
-      const mockMilestones = [
-        {
-          id: '1',
-          name: 'User Authentication System',
-          description: 'Implement secure login and registration',
-          status: 'completed',
-          priority: 'high',
-          project_id: projects[0]?.id || '1',
-          assigned_to: 'user-1',
-          due_date: '2024-02-15',
-          completed_at: '2024-02-10'
-        },
-        {
-          id: '2',
-          name: 'Dashboard UI Components',
-          description: 'Build reusable dashboard components',
-          status: 'in-progress',
-          priority: 'high',
-          project_id: projects[0]?.id || '1',
-          assigned_to: 'user-2',
-          due_date: '2024-03-01'
-        },
-        {
-          id: '3',
-          name: 'API Documentation',
-          description: 'Create comprehensive API documentation',
-          status: 'todo',
-          priority: 'medium',
-          project_id: projects[1]?.id || '2',
-          assigned_to: 'user-1',
-          due_date: '2024-03-15'
-        },
-        {
-          id: '4',
-          name: 'Performance Optimization',
-          description: 'Optimize application loading times',
-          status: 'review',
-          priority: 'medium',
-          project_id: projects[0]?.id || '1',
-          assigned_to: 'user-3',
-          due_date: '2024-02-28'
+      // Try to load milestones from API
+      try {
+        const milestonesResponse = await fetch('/api/milestones')
+        if (milestonesResponse.ok) {
+          const milestonesData = await milestonesResponse.json()
+          setMilestones(milestonesData.data || [])
+        } else {
+          // API endpoint doesn't exist yet, show empty state
+          setMilestones([])
         }
-      ]
-
-      setMilestones(mockMilestones)
+      } catch (error) {
+        console.log('Milestones API not available yet:', error)
+        setMilestones([])
+      }
     } catch (error) {
       console.error('Failed to load data:', error)
+      setMilestones([])
     } finally {
       setIsLoading(false)
     }
-  }, [projects])
+  }, [])
 
   useEffect(() => {
     loadData()

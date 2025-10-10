@@ -40,49 +40,18 @@ function InboxContent() {
 
     setIsLoading(true)
     try {
-      // Mock notifications for now
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          type: 'task_assigned',
-          title: 'New task assigned',
-          message: 'You have been assigned to "Implement user authentication"',
-          read: false,
-          created_at: new Date().toISOString(),
-          action_url: '/tasks'
-        },
-        {
-          id: '2',
-          type: 'comment',
-          title: 'New comment',
-          message: 'John commented on your task "Update API documentation"',
-          read: false,
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          action_url: '/tasks'
-        },
-        {
-          id: '3',
-          type: 'milestone_complete',
-          title: 'Milestone completed',
-          message: 'The milestone "Phase 1 Development" has been completed',
-          read: true,
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          action_url: '/milestones'
-        },
-        {
-          id: '4',
-          type: 'project_update',
-          title: 'Project updated',
-          message: 'The project "Mobile App" has been updated by Sarah',
-          read: true,
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          action_url: '/projects'
-        }
-      ]
-
-      setNotifications(mockNotifications)
+      // Try to load notifications from API
+      const response = await fetch('/api/notifications')
+      if (response.ok) {
+        const data = await response.json()
+        setNotifications(data.data || [])
+      } else {
+        // API endpoint doesn't exist yet, show empty state
+        setNotifications([])
+      }
     } catch (error) {
-      console.error('Failed to load notifications:', error)
+      console.log('Notifications API not available yet:', error)
+      setNotifications([])
     } finally {
       setIsLoading(false)
     }

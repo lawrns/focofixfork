@@ -301,7 +301,7 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
             <CardContent>
               <div className="space-y-4">
                 {analytics.timeTracking.topContributors.slice(0, 5).map((contributor, index) => (
-                  <div key={contributor.userId} className="flex items-center justify-between">
+                  <div key={`contributor-${index}-${contributor.userId}`} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-semibold text-sm">
                         {contributor.name.charAt(0)}
@@ -467,8 +467,8 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analytics.team.memberContributions.map((member) => (
-                  <div key={member.userId} className="flex items-center justify-between p-4 border rounded-lg">
+                {analytics.team.memberContributions.map((member, index) => (
+                  <div key={`member-${index}-${member.userId}`} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-semibold">
                         {member.name.charAt(0)}
@@ -536,7 +536,7 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
               <CardContent>
                 <div className="space-y-4">
                   {analytics.timeTracking.topContributors.map((contributor, index) => (
-                    <div key={contributor.userId} className="flex items-center justify-between">
+                    <div key={`time-contributor-${index}-${contributor.userId}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-semibold text-sm">
                           {contributor.name.charAt(0)}
@@ -557,8 +557,8 @@ export function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) 
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analytics.timeTracking.projectHours.map((project) => (
-                    <div key={project.projectId} className="flex items-center justify-between">
+                  {analytics.timeTracking.projectHours.map((project, index) => (
+                    <div key={`project-hours-${index}-${project.projectId}`} className="flex items-center justify-between">
                       <span className="font-medium">{project.name}</span>
                       <Badge variant="outline">{project.hours}h</Badge>
                     </div>

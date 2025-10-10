@@ -1,0 +1,381 @@
+{
+  "analysis_date": "2025-01-XX",
+  "critical_issues": {
+    "milestone_layout_conflict": {
+      "severity": "critical",
+      "location": "src/app/milestones/[id]/page.tsx",
+      "issue": "Milestone page is wrapped in DashboardLayout which conflicts with the expected page structure",
+      "current_code": "Line 220-224: Uses DashboardLayout wrapper",
+      "problem": "DashboardLayout is designed for project dashboard views, not individual milestone detail pages. This creates conflicting UI layers and navigation context.",
+      "impact": "Users see incorrect navigation, wrong sidebar context, and confusing page hierarchy",
+      "fix_required": "Replace DashboardLayout with MainLayout to match other detail pages (tasks, projects)",
+      "files_affected": [
+        "src/app/milestones/[id]/page.tsx"
+      ]
+    },
+    "sidebar_not_scrollable": {
+      "severity": "critical",
+      "location": "src/components/layout/Sidebar.tsx",
+      "issue": "Sidebar lacks overflow-y-auto class, making long project lists inaccessible",
+      "current_code": "Line 225: <aside className=\"hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-hover\">",
+      "problem": "When project list grows beyond viewport height, users cannot scroll to see all projects",
+      "impact": "Projects become inaccessible, navigation broken for users with many projects",
+      "fix_required": "Add overflow-y-auto to sidebar container and ensure proper flex layout",
+      "files_affected": [
+        "src/components/layout/Sidebar.tsx",
+        "src/components/dashboard/sidebar.tsx"
+      ]
+    },
+    "goal_deletion_not_working": {
+      "severity": "critical",
+      "location": "src/features/goals/components/goals-dashboard.tsx",
+      "issue": "Delete button triggers alert dialog but actual deletion may not refresh UI properly",
+      "current_code": "Lines 87-113: handleDeleteGoal function",
+      "problem": "After successful deletion via API, the UI doesn't properly reflect the change. The loadGoals callback is called but state may not update visibly.",
+      "impact": "Users click delete, see confirmation, but goal remains visible in the UI",
+      "fix_required": "Ensure proper state management and add optimistic UI updates",
+      "files_affected": [
+        "src/features/goals/components/goals-dashboard.tsx",
+        "src/app/api/goals/[id]/route.ts"
+      ]
+    },
+    "double_titles_on_goals_page": {
+      "severity": "high",
+      "location": "src/app/dashboard/goals/page.tsx",
+      "issue": "Page has duplicate titles - one in page wrapper and one in GoalsDashboard component",
+      "current_code": "Line 22: <h2>Goals</h2> in wrapper, Line 171: <h1>Goals & Objectives</h1> in component",
+      "problem": "Two separate title elements render on the same page creating visual redundancy",
+      "impact": "Confusing UX, looks unprofessional, violates single-responsibility principle",
+      "fix_required": "Remove title from page wrapper, let GoalsDashboard component handle all content",
+      "files_affected": [
+        "src/app/dashboard/goals/page.tsx",
+        "src/features/goals/components/goals-dashboard.tsx"
+      ]
+    },
+    "task_kanban_layout_broken": {
+      "severity": "critical",
+      "location": "src/features/tasks/components/task-list.tsx",
+      "issue": "Kanban columns are in grid layout (grid-cols-4) which doesn't provide full-width display below header",
+      "current_code": "Line 275: <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6\">",
+      "problem": "User expects horizontal scrollable kanban board with full-width columns, but gets responsive grid that stacks on smaller screens and doesn't match typical kanban UX patterns",
+      "impact": "Cards are unreadable at certain breakpoints, kanban workflow is broken, horizontal scrolling not possible",
+      "fix_required": "Refactor to use flex layout with horizontal scroll and ensure columns have min-width for readability",
+      "files_affected": [
+        "src/features/tasks/components/task-list.tsx"
+      ]
+    }
+  },
+  "wcag_violations": {
+    "dark_text_on_dark_background": {
+      "severity": "critical",
+      "wcag_criterion": "1.4.3 Contrast (Minimum) - Level AA",
+      "locations": [
+        {
+          "file": "src/features/tasks/components/task-list.tsx",
+          "line": 282,
+          "code": "text-muted-foreground bg-gray-100 dark:bg-gray-800",
+          "issue": "muted-foreground on dark gray background fails contrast ratio in dark mode",
+          "fix": "Use text-gray-300 or text-gray-200 for better contrast"
+        },
+        {
+          "file": "src/features/tasks/components/task-list.tsx",
+          "line": 325,
+          "code": "text-muted-foreground bg-yellow-100 dark:bg-yellow-900",
+          "issue": "muted-foreground on dark yellow fails contrast in dark mode",
+          "fix": "Use text-yellow-200 for adequate contrast"
+        },
+        {
+          "file": "src/features/tasks/components/task-list.tsx",
+          "line": 347,
+          "code": "text-muted-foreground bg-green-100 dark:bg-green-900",
+          "issue": "muted-foreground on dark green fails contrast in dark mode",
+          "fix": "Use text-green-200 for adequate contrast"
+        },
+        {
+          "file": "src/components/collaboration/presence-indicator.tsx",
+          "code": "bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300",
+          "issue": "gray-300 text on gray-900/40 background may fail contrast",
+          "fix": "Use text-gray-100 or increase background opacity"
+        }
+      ],
+      "impact": "Text is illegible for users in dark mode, especially those with visual impairments",
+      "global_fix_needed": "Audit all color combinations site-wide and ensure 4.5:1 contrast ratio minimum"
+    },
+    "missing_aria_labels": {
+      "severity": "medium",
+      "wcag_criterion": "4.1.2 Name, Role, Value - Level A",
+      "locations": [
+        {
+          "file": "src/app/milestones/[id]/page.tsx",
+          "issue": "Status change buttons (lines 300-312) lack aria-labels",
+          "fix": "Add aria-label=\"Change status to {status}\" to each button"
+        },
+        {
+          "file": "src/features/tasks/components/task-list.tsx",
+          "issue": "Filter selects lack proper labels for screen readers",
+          "fix": "Add aria-label to Select components"
+        },
+        {
+          "file": "src/components/layout/Sidebar.tsx",
+          "issue": "Navigation links lack aria-current for active state",
+          "fix": "Add aria-current=\"page\" to active navigation items"
+        }
+      ]
+    },
+    "insufficient_color_contrast_badges": {
+      "severity": "high",
+      "wcag_criterion": "1.4.3 Contrast (Minimum) - Level AA",
+      "locations": [
+        {
+          "file": "src/app/projects/[id]/page.tsx",
+          "lines": "125-131",
+          "issue": "Badge colors in dark mode don't meet contrast requirements",
+          "colors_failing": [
+            "bg-blue-500 with text-white in dark mode",
+            "bg-green-100 dark:bg-green-900 dark:text-green-300",
+            "bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300"
+          ],
+          "fix": "Adjust dark mode colors to ensure 4.5:1 minimum contrast ratio"
+        },
+        {
+          "file": "src/features/goals/components/goals-dashboard.tsx",
+          "lines": "126-144",
+          "issue": "Status and priority badge colors fail contrast in dark mode",
+          "fix": "Use lighter text colors with darker backgrounds"
+        }
+      ]
+    },
+    "keyboard_navigation_issues": {
+      "severity": "medium",
+      "wcag_criterion": "2.1.1 Keyboard - Level A",
+      "locations": [
+        {
+          "file": "src/components/layout/Sidebar.tsx",
+          "issue": "Projects expand/collapse button needs better keyboard focus indicators",
+          "fix": "Add focus-visible:ring-2 focus-visible:ring-primary"
+        },
+        {
+          "file": "src/features/tasks/components/task-list.tsx",
+          "issue": "Kanban columns don't support keyboard navigation between cards",
+          "fix": "Implement arrow key navigation and focus management"
+        }
+      ]
+    }
+  },
+  "ux_issues": {
+    "inconsistent_layouts": {
+      "severity": "high",
+      "issue": "Different pages use different layout wrappers inconsistently",
+      "examples": [
+        {
+          "page": "milestones/[id]",
+          "layout": "DashboardLayout",
+          "should_be": "MainLayout"
+        },
+        {
+          "page": "tasks/[id]",
+          "layout": "MainLayout",
+          "correct": true
+        },
+        {
+          "page": "projects/[id]",
+          "layout": "MainLayout",
+          "correct": true
+        },
+        {
+          "page": "dashboard/goals",
+          "layout": "MainLayout",
+          "correct": true
+        }
+      ],
+      "fix": "Standardize all detail pages to use MainLayout"
+    },
+    "kanban_not_horizontal_scrollable": {
+      "severity": "high",
+      "location": "src/features/tasks/components/task-list.tsx",
+      "issue": "Kanban board uses responsive grid instead of horizontal scroll",
+      "expected_behavior": "Full-width horizontal board with scrollable columns",
+      "current_behavior": "Stacking columns on mobile, 2 cols on tablet, 4 cols on desktop",
+      "fix": "Implement proper kanban with flex + overflow-x-auto + min-width columns"
+    },
+    "inconsistent_page_titles": {
+      "severity": "medium",
+      "locations": [
+        "src/app/dashboard/goals/page.tsx - double title",
+        "src/app/projects/[id]/page.tsx - title in layout",
+        "src/app/milestones/[id]/page.tsx - title in component"
+      ],
+      "fix": "Standardize title placement - either in page wrapper OR component, not both"
+    }
+  },
+  "additional_issues_found": {
+    "missing_error_boundaries": {
+      "severity": "medium",
+      "locations": [
+        "src/app/milestones/[id]/page.tsx",
+        "src/features/goals/components/goals-dashboard.tsx"
+      ],
+      "issue": "No error boundaries to catch and display errors gracefully",
+      "fix": "Add React Error Boundaries around major components"
+    },
+    "loading_states_inconsistent": {
+      "severity": "low",
+      "issue": "Different loading patterns across pages",
+      "examples": [
+        "Spinner in center (milestones)",
+        "Skeleton UI (goals)",
+        "Loader with text (tasks)"
+      ],
+      "fix": "Create unified loading component and use consistently"
+    },
+    "responsive_breakpoints_not_optimized": {
+      "severity": "medium",
+      "locations": [
+        "src/features/tasks/components/task-list.tsx",
+        "src/app/projects/[id]/page.tsx"
+      ],
+      "issue": "Breakpoints don't account for tablet landscape or small desktop screens well",
+      "fix": "Review and optimize breakpoint strategy (sm, md, lg, xl, 2xl)"
+    },
+    "z_index_conflicts": {
+      "severity": "low",
+      "locations": [
+        "src/components/dashboard/sidebar.tsx - z-50",
+        "src/components/layout/Header.tsx - z-50"
+      ],
+      "issue": "Multiple components use z-50, potential for z-index conflicts",
+      "fix": "Establish z-index scale and use CSS variables"
+    }
+  },
+  "architectural_concerns": {
+    "duplicate_layout_components": {
+      "severity": "medium",
+      "issue": "Two separate layout systems (MainLayout and DashboardLayout) cause confusion",
+      "files": [
+        "src/components/layout/MainLayout.tsx",
+        "src/components/dashboard/layout.tsx"
+      ],
+      "recommendation": "Consolidate into single layout system with variants"
+    },
+    "duplicate_sidebar_components": {
+      "severity": "medium",
+      "issue": "Two sidebar implementations exist",
+      "files": [
+        "src/components/layout/Sidebar.tsx",
+        "src/components/dashboard/sidebar.tsx"
+      ],
+      "recommendation": "Consolidate into single sidebar component"
+    },
+    "inconsistent_api_patterns": {
+      "severity": "low",
+      "issue": "Some API routes use x-user-id header, others rely on session",
+      "fix": "Standardize authentication pattern across all API routes"
+    }
+  },
+  "priority_fix_order": [
+    {
+      "priority": 1,
+      "issue": "Milestone layout conflict - breaks user flow",
+      "files": ["src/app/milestones/[id]/page.tsx"],
+      "estimated_effort": "5 minutes"
+    },
+    {
+      "priority": 2,
+      "issue": "Sidebar not scrollable - blocks navigation",
+      "files": ["src/components/layout/Sidebar.tsx"],
+      "estimated_effort": "5 minutes"
+    },
+    {
+      "priority": 3,
+      "issue": "Task kanban layout broken - workflow unusable",
+      "files": ["src/features/tasks/components/task-list.tsx"],
+      "estimated_effort": "20 minutes"
+    },
+    {
+      "priority": 4,
+      "issue": "WCAG contrast violations - accessibility blocker",
+      "files": [
+        "src/features/tasks/components/task-list.tsx",
+        "src/app/projects/[id]/page.tsx",
+        "src/features/goals/components/goals-dashboard.tsx"
+      ],
+      "estimated_effort": "30 minutes"
+    },
+    {
+      "priority": 5,
+      "issue": "Goal deletion not reflecting in UI",
+      "files": ["src/features/goals/components/goals-dashboard.tsx"],
+      "estimated_effort": "15 minutes"
+    },
+    {
+      "priority": 6,
+      "issue": "Double titles on goals page",
+      "files": ["src/app/dashboard/goals/page.tsx"],
+      "estimated_effort": "2 minutes"
+    },
+    {
+      "priority": 7,
+      "issue": "Add ARIA labels site-wide",
+      "files": ["Multiple"],
+      "estimated_effort": "45 minutes"
+    },
+    {
+      "priority": 8,
+      "issue": "Consolidate layout components",
+      "files": [
+        "src/components/layout/MainLayout.tsx",
+        "src/components/dashboard/layout.tsx"
+      ],
+      "estimated_effort": "60 minutes"
+    }
+  ],
+  "testing_recommendations": {
+    "accessibility_testing": [
+      "Run axe-core automated tests",
+      "Test with screen reader (NVDA/JAWS/VoiceOver)",
+      "Verify keyboard-only navigation works",
+      "Check color contrast with automated tools"
+    ],
+    "visual_regression_testing": [
+      "Test all pages in light and dark mode",
+      "Verify responsive behavior at all breakpoints",
+      "Check focus states are visible",
+      "Validate badge and button colors"
+    ],
+    "functional_testing": [
+      "Test goal deletion end-to-end",
+      "Verify sidebar scrolling with 20+ projects",
+      "Test kanban drag-and-drop (if implemented)",
+      "Verify all navigation paths work correctly"
+    ]
+  },
+  "quick_wins": [
+    "Fix sidebar scrolling - add overflow-y-auto",
+    "Remove duplicate title from goals page",
+    "Fix milestone page layout wrapper",
+    "Update dark mode text colors for contrast"
+  ],
+  "color_palette_recommendations": {
+    "dark_mode_text_on_colored_backgrounds": {
+      "gray_background": "Use text-gray-100 or text-gray-200 instead of text-muted-foreground",
+      "blue_background": "Use text-blue-100 instead of text-blue-300",
+      "green_background": "Use text-green-100 instead of text-green-300",
+      "yellow_background": "Use text-yellow-100 instead of text-yellow-300",
+      "red_background": "Use text-red-100 instead of text-red-300"
+    },
+    "wcag_aa_compliant_combinations": {
+      "status_badges": {
+        "active": "bg-blue-600 dark:bg-blue-500 text-white",
+        "completed": "bg-green-600 dark:bg-green-500 text-white",
+        "on_hold": "bg-yellow-600 dark:bg-yellow-500 text-white",
+        "cancelled": "bg-red-600 dark:bg-red-500 text-white"
+      },
+      "priority_badges": {
+        "low": "bg-gray-600 dark:bg-gray-500 text-white",
+        "medium": "bg-blue-600 dark:bg-blue-500 text-white",
+        "high": "bg-orange-600 dark:bg-orange-500 text-white",
+        "urgent": "bg-red-600 dark:bg-red-500 text-white"
+      }
+    }
+  }
+}

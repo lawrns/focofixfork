@@ -190,9 +190,9 @@ export function TaskCard({
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="flex-shrink-0 mt-1">
               {isUpdating ? (
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-label="Updating task" />
               ) : (
-                <StatusIcon className={`h-5 w-5 ${task.status === 'done' ? 'text-green-600' : 'text-muted-foreground'}`} />
+                <StatusIcon className={`h-5 w-5 ${task.status === 'done' ? 'text-green-600' : 'text-muted-foreground'}`} aria-hidden="true" />
               )}
             </div>
 
@@ -200,6 +200,7 @@ export function TaskCard({
               <Link
                 href={`/tasks/${currentTask.id}`}
                 className="block"
+                aria-label={`View task: ${currentTask.title}`}
               >
                 <h3 className={`font-semibold text-sm leading-tight hover:text-primary transition-colors truncate ${
                   currentTask.status === 'done' ? 'line-through text-muted-foreground' : ''
@@ -218,33 +219,33 @@ export function TaskCard({
           {showActions && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0" aria-label={`Actions for ${currentTask.title}`}>
+                  <MoreVertical className="h-4 w-4" aria-hidden="true" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
-                  <Circle className="mr-2 h-4 w-4" />
+                  <Circle className="mr-2 h-4 w-4" aria-hidden="true" />
                   Mark as To Do
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
-                  <PlayCircle className="mr-2 h-4 w-4" />
+                  <PlayCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                   Start Progress
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleStatusChange('review')}>
-                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  <AlertTriangle className="mr-2 h-4 w-4" aria-hidden="true" />
                   Move to Review
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleStatusChange('done')}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
+                  <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                   Mark as Done
                 </DropdownMenuItem>
                 {onEdit && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onEdit(currentTask.id)}>
-                      <Edit className="mr-2 h-4 w-4" />
+                      <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
                       Edit Task
                     </DropdownMenuItem>
                   </>
@@ -256,7 +257,7 @@ export function TaskCard({
                       onClick={handleDelete}
                       className="text-red-600 dark:text-red-400"
                     >
-                      <AlertTriangle className="mr-2 h-4 w-4" />
+                      <AlertTriangle className="mr-2 h-4 w-4" aria-hidden="true" />
                       Delete Task
                     </DropdownMenuItem>
                   </>

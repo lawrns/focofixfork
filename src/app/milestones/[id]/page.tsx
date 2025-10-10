@@ -16,11 +16,12 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import Link from 'next/link'
-import DashboardLayout from '@/components/dashboard/layout'
+import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { MilestonesService } from '@/lib/services/milestones'
 import type { MilestoneStatus } from '@/lib/models/milestones'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 
 interface Milestone {
   id: string
@@ -46,6 +47,14 @@ interface Comment {
 }
 
 export default function MilestonePage() {
+  return (
+    <ProtectedRoute>
+      <MilestonePageContent />
+    </ProtectedRoute>
+  )
+}
+
+function MilestonePageContent() {
   const params = useParams()
   const milestoneId = params.id as string
   const { user } = useAuth()
@@ -217,24 +226,24 @@ export default function MilestonePage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-      </DashboardLayout>
+      </MainLayout>
     )
   }
 
   if (error || !milestone) {
     return (
-      <DashboardLayout>
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <h2 className="text-xl font-semibold text-destructive mb-2">Error</h2>
             <p className="text-muted-foreground">{error || 'Milestone not found'}</p>
           </div>
         </div>
-      </DashboardLayout>
+      </MainLayout>
     )
   }
 
@@ -242,8 +251,8 @@ export default function MilestonePage() {
   const priorityInfo = getPriorityInfo(milestone.priority)
 
   return (
-    <DashboardLayout selectedProject={{ id: milestone.project_id, name: 'Project', status: 'active' }}>
-      <div className="p-6 max-w-4xl mx-auto">
+    <MainLayout>
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -264,8 +273,8 @@ export default function MilestonePage() {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" aria-label="Edit milestone">
+                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 Edit
               </Button>
               <Button
@@ -273,8 +282,9 @@ export default function MilestonePage() {
                 size="sm"
                 className="text-destructive hover:text-destructive"
                 onClick={handleDeleteMilestone}
+                aria-label="Delete milestone"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
                 Delete
               </Button>
             </div>
@@ -306,6 +316,8 @@ export default function MilestonePage() {
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted'
                   }`}
+                  aria-label={`Change milestone status to ${getStatusInfo(status).label}`}
+                  aria-pressed={milestone.status === status}
                 >
                   {getStatusInfo(status).label}
                 </button>
@@ -392,6 +404,7 @@ export default function MilestonePage() {
                 placeholder="Add a comment..."
                 className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary/20 bg-background"
                 rows={3}
+                aria-label="Comment text"
               />
               <div className="flex justify-end mt-3">
                 <Button
@@ -429,6 +442,6 @@ export default function MilestonePage() {
           </div>
         </motion.div>
       </div>
-    </DashboardLayout>
+    </MainLayout>
   )
 }

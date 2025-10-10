@@ -104,8 +104,33 @@ export class OrganizationsService {
         }
       }
 
-      // Create organization with slug
-      const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      // Create organization with unique slug
+      let baseSlug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      let slug = baseSlug;
+      let counter = 1;
+
+      // Check if slug exists and generate unique slug
+      while (true) {
+        const { data: existingOrg } = await supabaseAdmin
+          .from('organizations')
+          .select('id')
+          .eq('slug', slug)
+          .single();
+
+        if (!existingOrg) {
+          break; // Slug is unique
+        }
+
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+
+        // Prevent infinite loop
+        if (counter > 100) {
+          slug = `${baseSlug}-${Date.now()}`;
+          break;
+        }
+      }
+
       console.log('Inserting organization:', { name: data.name, slug, created_by: data.created_by })
 
       const { data: organization, error: orgError } = await supabaseAdmin

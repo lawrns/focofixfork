@@ -7,6 +7,7 @@ import { Search, HelpCircle, X, Settings, LogOut, User } from 'lucide-react'
 import { SavedViews } from '@/components/ui/saved-views'
 import { ViewConfig } from '@/lib/hooks/use-saved-views'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useTranslation } from '@/lib/i18n/context'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,10 +28,12 @@ interface SearchResult {
 export default function Header() {
   const router = useRouter()
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
   const performSearch = useCallback(async (query: string) => {
     if (!user || !query.trim()) return
@@ -96,20 +99,14 @@ export default function Header() {
     }
   }, [user])
 
-  // Debounced search
+  // Cleanup debounce timer on unmount
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([])
-      setShowResults(false)
-      return
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer)
+      }
     }
-
-    const timer = setTimeout(() => {
-      performSearch(searchQuery)
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [searchQuery, performSearch])
+  }, [debounceTimer])
 
   const handleResultClick = (result: SearchResult) => {
     setSearchQuery('')
@@ -127,10 +124,43 @@ export default function Header() {
     }
   }
 
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query)
+
+    // Clear previous timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+    }
+
+    // Clear results immediately if query is empty
+    if (!query.trim()) {
+      setSearchResults([])
+      setShowResults(false)
+      setIsSearching(false)
+      return
+    }
+
+    // Show loading state immediately
+    setIsSearching(true)
+    setShowResults(true)
+
+    // Debounce the search
+    const timer = setTimeout(() => {
+      performSearch(query)
+    }, 300) // 300ms debounce
+
+    setDebounceTimer(timer)
+  }
+
   const clearSearch = () => {
     setSearchQuery('')
     setSearchResults([])
     setShowResults(false)
+    setIsSearching(false)
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      setDebounceTimer(null)
+    }
   }
 
   return (
@@ -180,11 +210,15 @@ export default function Header() {
           </div>
           <input
             className="h-9 md:h-11 w-full rounded-lg border border-input bg-background pl-8 md:pl-10 pr-8 md:pr-10 text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder="Search..."
+            placeholder={t('common.search')}
             type="search"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => searchQuery && setShowResults(true)}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => searchQuery.trim() && setShowResults(true)}
+            onBlur={() => {
+              // Delay hiding to allow click events on results
+              setTimeout(() => setShowResults(false), 150)
+            }}
           />
           {searchQuery && (
             <button
@@ -195,38 +229,43 @@ export default function Header() {
             </button>
           )}
 
-          {/* Search Results Dropdown */}
-          {showResults && searchResults.length > 0 && (
-            <div className="absolute top-full mt-2 w-full bg-background border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
-              {searchResults.map((result) => (
-                <button
-                  key={`${result.type}-${result.id}`}
-                  onClick={() => handleResultClick(result)}
-                  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      result.type === 'project' ? 'bg-blue-500 text-white' :
-                      result.type === 'task' ? 'bg-green-100 text-green-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
-                      {result.type}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{result.name}</p>
-                      {result.description && (
-                        <p className="text-sm text-muted-foreground truncate">{result.description}</p>
-                      )}
+          {/* Search Results Dropdown - Always present to prevent layout shifts */}
+          {showResults && (
+            <div className="absolute top-full mt-2 w-full bg-background border border-border rounded-lg shadow-lg z-50 min-h-[60px] max-h-96 overflow-y-auto">
+              {isSearching ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((result) => (
+                  <button
+                    key={`${result.type}-${result.id}`}
+                    onClick={() => handleResultClick(result)}
+                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-1 text-xs rounded ${
+                        result.type === 'project' ? 'bg-blue-500 text-white' :
+                        result.type === 'task' ? 'bg-green-100 text-green-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {result.type}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{result.name}</p>
+                        {result.description && (
+                          <p className="text-sm text-muted-foreground truncate">{result.description}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {showResults && searchQuery && searchResults.length === 0 && !isSearching && (
-            <div className="absolute top-full mt-2 w-full bg-background border border-border rounded-lg shadow-lg p-4 z-50">
-              <p className="text-sm text-muted-foreground text-center">No results found</p>
+                  </button>
+                ))
+              ) : searchQuery.trim() ? (
+                <div className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground">{t('common.noResults')}</p>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
@@ -257,11 +296,11 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
               <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+              <span>{t('navigation.settings')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
               <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>{t('navigation.profile')}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -272,7 +311,7 @@ export default function Header() {
               className="text-destructive"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Sign Out</span>
+              <span>{t('navigation.signOut')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

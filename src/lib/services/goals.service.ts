@@ -27,7 +27,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      let query = (supabase as any)
+      let query = supabaseAdmin
         .from('goals')
         .select('*')
         .order('created_at', { ascending: false })

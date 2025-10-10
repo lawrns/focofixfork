@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectsService } from '@/features/projects/services/projectService'
 import { normalizeProjectsData } from '@/lib/utils'
+import { createSafeErrorResponse, getSecurityHeaders } from '@/lib/api-security'
 import { z } from 'zod'
 
 // Schema for project creation
@@ -55,23 +56,27 @@ export async function GET(request: NextRequest) {
 
     if (!result.success) {
       console.log('API /api/projects: ProjectsService returned error:', result.error)
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
-      )
+      const safeResponse = createSafeErrorResponse(result.error, 500)
+      return NextResponse.json(safeResponse, {
+        status: 500,
+        headers: getSecurityHeaders()
+      })
     }
 
     return NextResponse.json({
       success: true,
       data: normalizeProjectsData(result.data || []),
       pagination: result.pagination,
+    }, {
+      headers: getSecurityHeaders()
     })
   } catch (error: any) {
     console.error('Projects API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    const safeResponse = createSafeErrorResponse(error, 500)
+    return NextResponse.json(safeResponse, {
+      status: 500,
+      headers: getSecurityHeaders()
+    })
   }
 }
 

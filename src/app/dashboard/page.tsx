@@ -180,7 +180,7 @@ export default function DashboardPage() {
     <MainLayout>
       <div className="flex min-h-screen">
         <div className="flex-1">
-          <div className="flex items-end justify-between mb-10 gap-6">
+          <div className="flex items-end justify-between mb-10 gap-6 px-4">
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {

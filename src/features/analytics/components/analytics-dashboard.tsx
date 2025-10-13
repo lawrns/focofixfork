@@ -71,6 +71,9 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
       const data = result.data;
       if (data && !data.projects && data.summary) {
         // New API format - transform to old format
+        const now = new Date();
+        const startDateObj = startDate ? new Date(startDate) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
         setAnalytics({
           projects: {
             totalProjects: data.summary.totalProjects || 0,
@@ -98,7 +101,9 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
           timeTracking: {
             totalHoursTracked: 0,
             averageHoursPerDay: 0,
-            topContributors: []
+            mostProductiveDay: '',
+            topContributors: [],
+            projectHours: []
           },
           milestones: {
             totalMilestones: 0,
@@ -106,6 +111,10 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
             overdueMilestones: 0,
             milestoneCompletionRate: 0,
             averageMilestoneDuration: 0
+          },
+          period: {
+            startDate: startDateObj.toISOString(),
+            endDate: now.toISOString()
           }
         });
       } else {

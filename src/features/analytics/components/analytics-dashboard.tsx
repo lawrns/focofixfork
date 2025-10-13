@@ -66,7 +66,52 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
       }
 
       const result = await response.json();
-      setAnalytics(result.data);
+
+      // Transform new API format to expected format if needed
+      const data = result.data;
+      if (data && !data.projects && data.summary) {
+        // New API format - transform to old format
+        setAnalytics({
+          projects: {
+            totalProjects: data.summary.totalProjects || 0,
+            activeProjects: data.summary.activeProjects || 0,
+            completedProjects: data.summary.completedProjects || 0,
+            overdueProjects: 0,
+            projectCompletionRate: data.summary.completedProjects / (data.summary.totalProjects || 1) * 100,
+            averageProjectDuration: 0
+          },
+          tasks: {
+            totalTasks: data.summary.totalTasks || 0,
+            completedTasks: data.summary.completedTasks || 0,
+            overdueTasks: data.summary.overdueTasks || 0,
+            taskCompletionRate: data.summary.completedTasks / (data.summary.totalTasks || 1) * 100,
+            tasksByPriority: {},
+            tasksByStatus: {}
+          },
+          team: {
+            totalMembers: data.teamMetrics?.length || 0,
+            activeMembers: data.teamMetrics?.filter((m: any) => m.tasksCompleted > 0).length || 0,
+            averageTasksPerMember: 0,
+            teamProductivity: 0,
+            memberContributions: []
+          },
+          timeTracking: {
+            totalHoursTracked: 0,
+            averageHoursPerDay: 0,
+            topContributors: []
+          },
+          milestones: {
+            totalMilestones: 0,
+            completedMilestones: 0,
+            overdueMilestones: 0,
+            milestoneCompletionRate: 0,
+            averageMilestoneDuration: 0
+          }
+        });
+      } else {
+        // Old format or already transformed
+        setAnalytics(data);
+      }
     } catch (error) {
       console.error('Error loading analytics:', error);
       setAnalytics(null);

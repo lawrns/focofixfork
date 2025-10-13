@@ -116,11 +116,11 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   // Helper functions
   const getStatusBadge = (status: Project['status']) => {
     const styles = {
-      'planning': 'bg-muted text-muted-foreground',
-      'active': 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300',
-      'on_hold': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-      'completed': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-      'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+      'planning': 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
+      'active': 'bg-blue-500 text-white dark:bg-blue-600 dark:text-blue-50',
+      'on_hold': 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100',
+      'completed': 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100',
+      'cancelled': 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100'
     }
 
     const labels = {
@@ -140,10 +140,10 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   const getPriorityBadge = (priority: Project['priority']) => {
     const styles = {
-      'low': 'bg-muted text-muted-foreground',
-      'medium': 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300',
-      'high': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
-      'urgent': 'bg-destructive/10 text-destructive'
+      'low': 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
+      'medium': 'bg-blue-500 text-white dark:bg-blue-600 dark:text-blue-50',
+      'high': 'bg-orange-100 text-orange-900 dark:bg-orange-900 dark:text-orange-100',
+      'urgent': 'bg-red-600 text-white dark:bg-red-700 dark:text-red-50'
     }
 
     const labels = {
@@ -1054,10 +1054,10 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
       {/* Sticky Bottom Selection Display */}
       {selectedProjects.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-100 dark:bg-blue-900/40 backdrop-blur-sm border border-blue-200 dark:border-blue-800 p-3 pb-4 shadow-lg rounded-lg max-w-xl w-full mx-4">
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 dark:bg-blue-950 backdrop-blur-sm border-2 border-blue-400 dark:border-blue-600 p-3 pb-4 shadow-lg rounded-lg max-w-xl w-full mx-4">
           <div className="flex flex-row items-center justify-between gap-4">
             <div className="flex items-center flex-1 min-w-0">
-              <span className="text-sm font-medium !text-blue-800 dark:!text-blue-300 whitespace-nowrap">
+              <span className="text-sm font-medium !text-blue-900 dark:!text-blue-100 whitespace-nowrap">
                 {selectedProjects.size} project{selectedProjects.size !== 1 ? 's' : ''} selected
               </span>
             </div>

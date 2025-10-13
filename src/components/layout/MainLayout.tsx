@@ -16,7 +16,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Sidebar />
         <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none border-none">
           <Header />
-          <div className="px-2 sm:px-3 md:px-4 py-4 sm:py-6 outline-none border-none">
+          <div className="py-4 sm:py-6 outline-none border-none">
             {children}
           </div>
         </main>

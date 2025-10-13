@@ -811,7 +811,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     <div className={`mt-6 space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
 
       {/* Advanced Filtering */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <AdvancedFilterBuilder
             fields={[

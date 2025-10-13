@@ -21,7 +21,7 @@ import {
   LineChart,
   Download
 } from 'lucide-react';
-import { AnalyticsService, AnalyticsData } from '@/lib/services/analytics';
+import type { AnalyticsData } from '@/lib/services/analytics';
 
 interface AnalyticsDashboardProps {
   organizationId?: string;
@@ -54,8 +54,19 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
           break;
       }
 
-      const data = await AnalyticsService.getComprehensiveAnalytics(organizationId, startDate, endDate);
-      setAnalytics(data);
+      // Fetch analytics from API instead of direct database access
+      const params = new URLSearchParams();
+      if (organizationId) params.append('organizationId', organizationId);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const response = await fetch(`/api/analytics/dashboard?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+
+      const result = await response.json();
+      setAnalytics(result.data);
     } catch (error) {
       console.error('Error loading analytics:', error);
       setAnalytics(null);

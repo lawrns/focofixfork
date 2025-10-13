@@ -260,15 +260,122 @@ export function ProjectList({
           )}
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onEdit={onEditProject}
-              onDelete={handleDeleteProject}
-            />
-          ))}
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-muted/50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-sm">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300"
+                    aria-label="Select all projects"
+                  />
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-sm">NAME</th>
+                <th className="text-left px-4 py-3 font-medium text-sm hidden md:table-cell">STATUS</th>
+                <th className="text-left px-4 py-3 font-medium text-sm hidden lg:table-cell">PRIORITY</th>
+                <th className="text-left px-4 py-3 font-medium text-sm hidden xl:table-cell">PROGRESS</th>
+                <th className="text-left px-4 py-3 font-medium text-sm hidden xl:table-cell">DUE DATE</th>
+                <th className="text-right px-4 py-3 font-medium text-sm">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProjects.map((project) => (
+                <tr key={project.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300"
+                      aria-label={`Select ${project.name}`}
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <div>
+                      <div className="font-medium text-sm">{project.name}</div>
+                      {project.description && (
+                        <div className="text-xs text-muted-foreground line-clamp-1">
+                          {project.description}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 hidden md:table-cell">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                      project.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                      project.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                      project.status === 'on_hold' ? 'bg-amber-100 text-amber-800' :
+                      project.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {project.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 hidden lg:table-cell">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                      project.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                      project.priority === 'high' ? 'bg-amber-100 text-amber-800' :
+                      project.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                      'bg-slate-100 text-slate-800'
+                    }`}>
+                      {project.priority}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 hidden xl:table-cell">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ width: `${project.progress_percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground min-w-[3ch]">
+                        {project.progress_percentage}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 hidden xl:table-cell">
+                    <span className="text-sm text-muted-foreground">
+                      {project.due_date
+                        ? new Date(project.due_date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })
+                        : '—'
+                      }
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => onEditProject?.(project.id)}
+                        className="p-2 hover:bg-muted rounded-md transition-colors"
+                        aria-label="Edit project"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="p-2 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+                        aria-label="Delete project"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                      <button className="p-2 hover:bg-muted rounded-md transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

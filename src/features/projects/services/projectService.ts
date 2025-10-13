@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabase-client'
+import { supabaseAdmin } from '../../../lib/supabase-server'
 
 type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
 
@@ -64,7 +64,7 @@ export class ProjectsService {
       console.log('ProjectsService.getUserProjects: Building comprehensive query for userId:', userId)
 
       // Get user's organization memberships first
-      const { data: userOrgs, error: orgError } = await supabase
+      const { data: userOrgs, error: orgError } = await supabaseAdmin
         .from('organization_members')
         .select('organization_id')
         .eq('user_id', userId)
@@ -84,7 +84,7 @@ export class ProjectsService {
       // 1. Projects they created
       // 2. Projects in organizations they belong to
       // 3. Projects they're assigned to via project_team_assignments
-      let query = supabase
+      let query = supabaseAdmin
         .from('projects')
         .select(`
           *,
@@ -187,7 +187,7 @@ export class ProjectsService {
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('projects')
         .select('*')
         .eq('id', projectId)
@@ -266,7 +266,7 @@ export class ProjectsService {
 
       console.log('ProjectsService.createProject: Data to insert:', dataToInsert)
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('projects')
         .insert(dataToInsert)
         .select()
@@ -354,7 +354,7 @@ export class ProjectsService {
       }
 
       // Check if user can update this project (user must be creator)
-      const { data: existingProject, error: fetchError } = await supabase
+      const { data: existingProject, error: fetchError } = await supabaseAdmin
         .from('projects')
         .select('id, created_by, name, status, priority')
         .eq('id', projectId)
@@ -391,7 +391,7 @@ export class ProjectsService {
       })
 
       console.log('ProjectsService.updateProject: Permission check passed, proceeding with update')
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('projects')
         .update({
           ...updates,
@@ -491,7 +491,7 @@ export class ProjectsService {
       }
 
       // Check if user can delete this project (user must be creator)
-      const { data: project, error: fetchError } = await supabase
+      const { data: project, error: fetchError } = await supabaseAdmin
         .from('projects')
         .select('created_by')
         .eq('id', projectId)
@@ -526,7 +526,7 @@ export class ProjectsService {
       console.log('ProjectsService.deleteProject: Executing delete query for projectId:', projectId)
 
            // First, check if project exists and belongs to user
-           const { data: existingProject, error: checkError } = await supabase
+           const { data: existingProject, error: checkError } = await supabaseAdmin
              .from('projects')
              .select('id, created_by')
              .eq('id', projectId)
@@ -542,7 +542,7 @@ export class ProjectsService {
       }
 
       // Execute delete
-           const { error: projectError } = await supabase
+           const { error: projectError } = await supabaseAdmin
              .from('projects')
              .delete()
              .eq('id', projectId)
@@ -566,7 +566,7 @@ export class ProjectsService {
           await new Promise(resolve => setTimeout(resolve, 200))
         }
 
-             const { data: verifyData, error: verifyError } = await supabase
+             const { data: verifyData, error: verifyError } = await supabaseAdmin
                .from('projects')
                .select('id')
                .eq('id', projectId)
@@ -626,7 +626,7 @@ export class ProjectsService {
       }
 
       // Get all projects for the user
-      const { data: projects, error } = await supabase
+      const { data: projects, error } = await supabaseAdmin
         .from('projects')
         .select('status, due_date')
         .eq('created_by', userId)

@@ -145,7 +145,7 @@ export class AnalyticsService {
    */
   static async getTeamMetrics(projectIds: string[], dateRange: { start: Date, end: Date }): Promise<TeamMetrics[]> {
     // Get all team members for the projects
-    const { data: projectMembers, error: membersError } = await supabase
+    const { data: projectMembers, error: membersError } = await supabaseAdmin
       .from('project_team_assignments')
       .select('user_id')
       .in('project_id', projectIds)

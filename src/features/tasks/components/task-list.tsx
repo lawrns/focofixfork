@@ -5,8 +5,20 @@ import { TaskCard } from './task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Plus, Search, Filter } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Loader2, Plus, Search, Trash2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 
 interface Task {
   id: string
@@ -62,6 +74,11 @@ export function TaskList({
   const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
   const [priorityFilter, setPriorityFilter] = useState(initialPriority || 'all')
   const [assigneeFilter, setAssigneeFilter] = useState(initialAssignee || 'all')
+
+  // Bulk selection states
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
   const fetchTasks = useCallback(async () => {
     if (!user) return
@@ -159,6 +176,59 @@ export function TaskList({
     }
   }
 
+  const handleSelectTask = (taskId: string, checked: boolean) => {
+    setSelectedTasks(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(taskId)
+      } else {
+        newSet.delete(taskId)
+      }
+      return newSet
+    })
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTasks(new Set(filteredTasks.map(t => t.id)))
+    } else {
+      setSelectedTasks(new Set())
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedTasks.size === 0) return
+
+    setIsBulkDeleting(true)
+    try {
+      const deletePromises = Array.from(selectedTasks).map(taskId =>
+        fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+      )
+
+      const results = await Promise.allSettled(deletePromises)
+
+      const successCount = results.filter(r => r.status === 'fulfilled').length
+      const failCount = results.filter(r => r.status === 'rejected').length
+
+      // Remove successfully deleted tasks from state
+      setTasks(prev => prev.filter(t => !selectedTasks.has(t.id)))
+      setSelectedTasks(new Set())
+
+      if (failCount > 0) {
+        toast.error(`Deleted ${successCount} tasks, but ${failCount} failed`)
+      } else {
+        toast.success(`Successfully deleted ${successCount} task(s)`)
+      }
+
+      setShowBulkDeleteDialog(false)
+    } catch (err) {
+      console.error('Error bulk deleting tasks:', err)
+      toast.error('Failed to delete tasks. Please try again.')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
   // Group tasks by status for Kanban-style display
   const groupedTasks = {
     todo: filteredTasks.filter(task => task.status === 'todo'),
@@ -187,6 +257,9 @@ export function TaskList({
     )
   }
 
+  const allSelected = filteredTasks.length > 0 && selectedTasks.size === filteredTasks.length
+  const someSelected = selectedTasks.size > 0 && selectedTasks.size < filteredTasks.length
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -195,15 +268,30 @@ export function TaskList({
           <h2 className="text-2xl font-bold text-foreground">Tasks</h2>
           <p className="text-muted-foreground">
             {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
+            {selectedTasks.size > 0 && ` (${selectedTasks.size} selected)`}
           </p>
         </div>
 
-        {showCreateButton && onCreateTask && (
-          <Button onClick={onCreateTask} aria-label="Create new task">
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            New Task
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {selectedTasks.size > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+              aria-label={`Delete ${selectedTasks.size} selected tasks`}
+            >
+              <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+              Delete ({selectedTasks.size})
+            </Button>
+          )}
+
+          {showCreateButton && onCreateTask && (
+            <Button onClick={onCreateTask} aria-label="Create new task">
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+              New Task
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -248,6 +336,24 @@ export function TaskList({
         </div>
       </div>
 
+      {/* Bulk Selection Toggle */}
+      {filteredTasks.length > 0 && (
+        <div className="flex items-center gap-2 pb-2">
+          <Checkbox
+            id="select-all"
+            checked={allSelected}
+            onCheckedChange={handleSelectAll}
+            aria-label="Select all tasks"
+          />
+          <label
+            htmlFor="select-all"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            {allSelected ? 'Deselect all' : someSelected ? 'Select all' : 'Select all'}
+          </label>
+        </div>
+      )}
+
       {/* Task Grid - Kanban Style */}
       {filteredTasks.length === 0 ? (
         <div className="text-center py-12">
@@ -286,13 +392,21 @@ export function TaskList({
               </div>
               <div className="space-y-3">
                 {groupedTasks.todo.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={onEditTask}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteTask}
-                  />
+                  <div key={task.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedTasks.has(task.id)}
+                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                        aria-label={`Select ${task.title}`}
+                      />
+                    </div>
+                    <TaskCard
+                      task={task}
+                      onEdit={onEditTask}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteTask}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -308,13 +422,21 @@ export function TaskList({
               </div>
               <div className="space-y-3">
                 {groupedTasks.in_progress.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={onEditTask}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteTask}
-                  />
+                  <div key={task.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedTasks.has(task.id)}
+                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                        aria-label={`Select ${task.title}`}
+                      />
+                    </div>
+                    <TaskCard
+                      task={task}
+                      onEdit={onEditTask}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteTask}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -330,13 +452,21 @@ export function TaskList({
               </div>
               <div className="space-y-3">
                 {groupedTasks.review.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={onEditTask}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteTask}
-                  />
+                  <div key={task.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedTasks.has(task.id)}
+                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                        aria-label={`Select ${task.title}`}
+                      />
+                    </div>
+                    <TaskCard
+                      task={task}
+                      onEdit={onEditTask}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteTask}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -352,19 +482,50 @@ export function TaskList({
               </div>
               <div className="space-y-3">
                 {groupedTasks.done.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={onEditTask}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteTask}
-                  />
+                  <div key={task.id} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedTasks.has(task.id)}
+                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                        aria-label={`Select ${task.title}`}
+                      />
+                    </div>
+                    <TaskCard
+                      task={task}
+                      onEdit={onEditTask}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteTask}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedTasks.size} task(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

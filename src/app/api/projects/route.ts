@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, data: normalizeProjectData(result.data) },
+      { success: true, data: result.data },
       { status: 201 }
     )
   } catch (error: any) {

@@ -107,6 +107,7 @@ function TasksContent() {
               projects={projects}
               onSuccess={handleTaskCreated}
               onCancel={() => setShowCreateModal(false)}
+              isInModal={true}
             />
           </DialogContent>
         </Dialog>
@@ -126,6 +127,7 @@ function TasksContent() {
                   setShowEditModal(false)
                   setSelectedTaskId(null)
                 }}
+                isInModal={true}
               />
             )}
           </DialogContent>

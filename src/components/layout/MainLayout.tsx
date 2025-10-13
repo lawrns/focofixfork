@@ -3,6 +3,7 @@
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { FloatingAIChat } from '@/components/ai/floating-ai-chat'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -10,15 +11,17 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="flex h-screen font-display gradient-mesh overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none border-none">
-        <Header />
-        <div className="px-2 sm:px-3 md:px-4 py-4 sm:py-6 outline-none border-none">
-          {children}
-        </div>
-      </main>
-      <FloatingAIChat />
-    </div>
+    <ErrorBoundary>
+      <div className="flex h-screen font-display gradient-mesh overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none border-none">
+          <Header />
+          <div className="px-2 sm:px-3 md:px-4 py-4 sm:py-6 outline-none border-none">
+            {children}
+          </div>
+        </main>
+        <FloatingAIChat />
+      </div>
+    </ErrorBoundary>
   )
 }

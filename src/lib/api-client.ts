@@ -3,8 +3,9 @@ interface ApiClientOptions {
   timeout?: number
   retries?: number
   retryDelay?: number
-  cache?: boolean
+  useCache?: boolean
   cacheTime?: number
+  headers?: Record<string, string>
 }
 
 class ApiClient {
@@ -15,13 +16,13 @@ class ApiClient {
       timeout = 10000, // 10 second timeout
       retries = 2,
       retryDelay = 1000,
-      cache = false,
+      useCache = false,
       cacheTime = 5 * 60 * 1000, // 5 minutes
       ...fetchOptions
     } = options
 
     // Check cache first
-    if (cache) {
+    if (useCache) {
       const cached = this.cache.get(url)
       if (cached && (Date.now() - cached.timestamp) < cacheTime) {
         return { ok: true, data: cached.data }
@@ -47,7 +48,7 @@ class ApiClient {
           const data = await response.json()
 
           // Cache successful responses
-          if (cache) {
+          if (useCache) {
             this.cache.set(url, { data, timestamp: Date.now() })
           }
 

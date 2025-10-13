@@ -221,15 +221,15 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="relative overflow-hidden group h-14 px-6 py-4 rounded-xl font-semibold text-base shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-blue-500 text-gray-700 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="relative overflow-hidden group h-12 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GoogleIcon />
-            <span>Inicia sesión con Google</span>
+            <span className="hidden sm:inline">Google</span>
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
           </button>
 
@@ -237,10 +237,10 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
             type="button"
             onClick={handleAppleSignIn}
             disabled={isLoading}
-            className="relative overflow-hidden group h-14 px-6 py-4 rounded-xl font-semibold text-base shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 bg-black hover:bg-gray-900 border-2 border-black hover:border-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="relative overflow-hidden group h-12 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 bg-black hover:bg-gray-900 border border-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <AppleIcon />
-            <span>Inicia sesión con Apple</span>
+            <span className="hidden sm:inline">Apple</span>
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
           </button>
         </div>

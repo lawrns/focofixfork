@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -42,6 +42,7 @@ interface TaskFormProps {
   teamMembers?: Array<{ id: string; display_name: string }>
   onSuccess?: () => void
   onCancel?: () => void
+  isInModal?: boolean
 }
 
 export function TaskForm({
@@ -50,7 +51,8 @@ export function TaskForm({
   milestones = [],
   teamMembers = [],
   onSuccess,
-  onCancel
+  onCancel,
+  isInModal = false
 }: TaskFormProps) {
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -138,6 +140,242 @@ export function TaskForm({
     onCancel?.()
   }
 
+  const formContent = (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Task Title */}
+      <div className="space-y-2">
+        <Label htmlFor="title">Task Title *</Label>
+        <Input
+          id="title"
+          {...register('title')}
+          placeholder="Enter task title"
+          disabled={isSubmitting}
+        />
+        {errors.title && (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {errors.title.message}
+          </p>
+        )}
+      </div>
+
+      {/* Description */}
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          {...register('description')}
+          placeholder="Describe the task in detail..."
+          rows={3}
+          disabled={isSubmitting}
+        />
+        {errors.description && (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {errors.description.message}
+          </p>
+        )}
+      </div>
+
+      {/* Project */}
+      <div className="space-y-2">
+        <Label htmlFor="project">Project *</Label>
+        <Select
+          value={watchedProjectId}
+          onValueChange={(value) => {
+            setValue('project_id', value, { shouldDirty: true })
+            // Clear milestone selection if project changes
+            setValue('milestone_id', '')
+          }}
+          disabled={isSubmitting}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select project" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.project_id && (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {errors.project_id.message}
+          </p>
+        )}
+      </div>
+
+      {/* Milestone */}
+      <div className="space-y-2">
+        <Label htmlFor="milestone">Milestone (Optional)</Label>
+        <Select
+          value={watch('milestone_id') ?? 'none'}
+          onValueChange={(value) => setValue('milestone_id', value === 'none' ? null : value, { shouldDirty: true })}
+          disabled={isSubmitting || !watchedProjectId}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select milestone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No milestone</SelectItem>
+            {availableMilestones.map((milestone) => (
+              <SelectItem key={milestone.id} value={milestone.id}>
+                {milestone.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Status and Priority Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={watchedStatus}
+            onValueChange={(value: any) => setValue('status', value, { shouldDirty: true })}
+            disabled={isSubmitting}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todo">To Do</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="review">Review</SelectItem>
+              <SelectItem value="done">Done</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select
+            value={watchedPriority}
+            onValueChange={(value: any) => setValue('priority', value, { shouldDirty: true })}
+            disabled={isSubmitting}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Assignee */}
+      <div className="space-y-2">
+        <Label htmlFor="assignee">Assignee (Optional)</Label>
+        <Select
+          value={watchedAssigneeId ?? 'unassigned'}
+          onValueChange={(value) => setValue('assignee_id', value === 'unassigned' ? null : value, { shouldDirty: true })}
+          disabled={isSubmitting}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unassigned">Unassigned</SelectItem>
+            {teamMembers.map((member) => (
+              <SelectItem key={member.id} value={member.id}>
+                {member.display_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Time Estimates Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="estimated_hours">Estimated Hours</Label>
+          <Input
+            id="estimated_hours"
+            type="number"
+            min="0"
+            step="0.5"
+            {...register('estimated_hours')}
+            placeholder="0.0"
+            disabled={isSubmitting}
+          />
+          {errors.estimated_hours && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {errors.estimated_hours.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="actual_hours">Actual Hours</Label>
+          <Input
+            id="actual_hours"
+            type="number"
+            min="0"
+            step="0.5"
+            {...register('actual_hours')}
+            placeholder="0.0"
+            disabled={isSubmitting}
+          />
+          {errors.actual_hours && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {errors.actual_hours.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Due Date */}
+      <div className="space-y-2">
+        <Label htmlFor="due_date">Due Date (Optional)</Label>
+        <Input
+          id="due_date"
+          type="date"
+          {...register('due_date')}
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-4 pt-6">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        )}
+
+        <Button
+          type="submit"
+          disabled={isSubmitting || !watchedProjectId}
+        >
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isEditing ? 'Update Task' : 'Create Task'}
+        </Button>
+      </div>
+    </form>
+  )
+
+  // If in modal, return bare form without Card wrapper
+  if (isInModal) {
+    return <div className="space-y-4">{formContent}</div>
+  }
+
+  // Otherwise, return form wrapped in Card for standalone pages
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
@@ -147,236 +385,9 @@ export function TaskForm({
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Task Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Task Title *</Label>
-            <Input
-              id="title"
-              {...register('title')}
-              placeholder="Enter task title"
-              disabled={isSubmitting}
-            />
-            {errors.title && (
-              <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.title.message}
-              </p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...register('description')}
-              placeholder="Describe the task in detail..."
-              rows={3}
-              disabled={isSubmitting}
-            />
-            {errors.description && (
-              <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          {/* Project */}
-          <div className="space-y-2">
-            <Label htmlFor="project">Project *</Label>
-            <Select
-              value={watchedProjectId}
-              onValueChange={(value) => {
-                setValue('project_id', value)
-                // Clear milestone selection if project changes
-                setValue('milestone_id', '')
-              }}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.project_id && (
-              <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.project_id.message}
-              </p>
-            )}
-          </div>
-
-          {/* Milestone */}
-          <div className="space-y-2">
-            <Label htmlFor="milestone">Milestone (Optional)</Label>
-            <Select
-              value={watch('milestone_id') ?? 'none'}
-              onValueChange={(value) => setValue('milestone_id', value === 'none' ? null : value)}
-              disabled={isSubmitting || !watchedProjectId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select milestone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No milestone</SelectItem>
-                {availableMilestones.map((milestone) => (
-                  <SelectItem key={milestone.id} value={milestone.id}>
-                    {milestone.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Status and Priority Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={watchedStatus}
-                onValueChange={(value: any) => setValue('status', value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={watchedPriority}
-                onValueChange={(value: any) => setValue('priority', value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Assignee */}
-          <div className="space-y-2">
-            <Label htmlFor="assignee">Assignee (Optional)</Label>
-            <Select
-              value={watchedAssigneeId ?? 'unassigned'}
-              onValueChange={(value) => setValue('assignee_id', value === 'unassigned' ? null : value)}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select assignee" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {teamMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Time Estimates Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="estimated_hours">Estimated Hours</Label>
-              <Input
-                id="estimated_hours"
-                type="number"
-                min="0"
-                step="0.5"
-                {...register('estimated_hours')}
-                placeholder="0.0"
-                disabled={isSubmitting}
-              />
-              {errors.estimated_hours && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {errors.estimated_hours.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="actual_hours">Actual Hours</Label>
-              <Input
-                id="actual_hours"
-                type="number"
-                min="0"
-                step="0.5"
-                {...register('actual_hours')}
-                placeholder="0.0"
-                disabled={isSubmitting}
-              />
-              {errors.actual_hours && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {errors.actual_hours.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Due Date */}
-          <div className="space-y-2">
-            <Label htmlFor="due_date">Due Date (Optional)</Label>
-            <Input
-              id="due_date"
-              type="date"
-              {...register('due_date')}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            )}
-
-            <Button
-              type="submit"
-              disabled={isSubmitting || !watchedProjectId}
-            >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Update Task' : 'Create Task'}
-            </Button>
-          </div>
-        </form>
+        {formContent}
       </CardContent>
     </Card>
   )
 }
-
 

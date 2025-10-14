@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ProjectsService } from '../services/projectService'
-import type { Project, CreateProjectData, UpdateProjectData } from '../types/index'
+import { ProjectClientService } from '../services/projectClientService'
+import type { Project, CreateProjectData, UpdateProjectData, ProjectFilters } from '../types/index'
 
 export function useProjects(organizationId?: string) {
   const [projects, setProjects] = useState<Project[]>([])
@@ -11,7 +11,11 @@ export function useProjects(organizationId?: string) {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.getUserProjects('current-user', { organization_id: organizationId })
+      const filters: ProjectFilters = {}
+      if (organizationId) {
+        filters.organization_id = organizationId
+      }
+      const result = await ProjectClientService.getUserProjects(filters)
       if (result.success && result.data) {
         setProjects(result.data)
       } else {
@@ -30,7 +34,7 @@ export function useProjects(organizationId?: string) {
 
   const createProject = useCallback(async (projectData: CreateProjectData) => {
     try {
-      const result = await ProjectsService.createProject('current-user', projectData)
+      const result = await ProjectClientService.createProject(projectData)
       if (result.success && result.data) {
         setProjects(prev => [result.data!, ...prev])
         return { success: true }
@@ -45,7 +49,7 @@ export function useProjects(organizationId?: string) {
 
   const updateProject = useCallback(async (id: string, updates: UpdateProjectData) => {
     try {
-      const result = await ProjectsService.updateProject('current-user', id, updates)
+      const result = await ProjectClientService.updateProject(id, updates)
       if (result.success && result.data) {
         setProjects(prev => prev.map(project => project.id === id ? result.data! : project))
         return { success: true }
@@ -60,7 +64,7 @@ export function useProjects(organizationId?: string) {
 
   const deleteProject = useCallback(async (id: string) => {
     try {
-      const result = await ProjectsService.deleteProject('current-user', id)
+      const result = await ProjectClientService.deleteProject(id)
       if (result.success) {
         setProjects(prev => prev.filter(project => project.id !== id))
         return { success: true }
@@ -93,7 +97,7 @@ export function useProject(id: string) {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.getProjectById('current-user', id)
+      const result = await ProjectClientService.getProjectById(id)
       if (result.success && result.data) {
         setProject(result.data)
       } else {
@@ -114,7 +118,7 @@ export function useProject(id: string) {
 
   const updateProject = useCallback(async (updates: UpdateProjectData) => {
     try {
-      const result = await ProjectsService.updateProject('current-user', id, updates)
+      const result = await ProjectClientService.updateProject(id, updates)
       if (result.success && result.data) {
         setProject(result.data)
         return { success: true }
@@ -144,7 +148,7 @@ export function useProjectMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.createProject('current-user', projectData)
+      const result = await ProjectClientService.createProject(projectData)
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to create project'
@@ -159,7 +163,7 @@ export function useProjectMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.updateProject('current-user', id, updates)
+      const result = await ProjectClientService.updateProject(id, updates)
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to update project'
@@ -174,7 +178,7 @@ export function useProjectMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await ProjectsService.deleteProject('current-user', id)
+      const result = await ProjectClientService.deleteProject(id)
       return result
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to delete project'

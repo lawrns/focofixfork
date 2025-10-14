@@ -63,7 +63,7 @@ export class ProjectClientService {
       const url = `/api/projects${params.toString() ? `?${params.toString()}` : ''}`
       const response = await apiGet(url)
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Failed to fetch projects'
@@ -72,8 +72,8 @@ export class ProjectClientService {
 
       return {
         success: true,
-        data: response.data,
-        pagination: response.pagination
+        data: response.data?.data || response.data,
+        pagination: response.data?.pagination
       }
     } catch (error: any) {
       console.error('ProjectClientService.getUserProjects error:', error)
@@ -93,7 +93,7 @@ export class ProjectClientService {
     try {
       const response = await apiGet(`/api/projects/${projectId}`)
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Project not found'
@@ -102,7 +102,7 @@ export class ProjectClientService {
 
       return {
         success: true,
-        data: response.data
+        data: response.data?.data || response.data
       }
     } catch (error: any) {
       console.error('ProjectClientService.getProjectById error:', error)
@@ -131,7 +131,7 @@ export class ProjectClientService {
     try {
       const response = await apiPost('/api/projects', projectData)
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Failed to create project'
@@ -140,7 +140,7 @@ export class ProjectClientService {
 
       return {
         success: true,
-        data: response.data
+        data: response.data?.data || response.data
       }
     } catch (error: any) {
       console.error('ProjectClientService.createProject error:', error)
@@ -170,7 +170,7 @@ export class ProjectClientService {
     try {
       const response = await apiPut(`/api/projects/${projectId}`, updates)
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Failed to update project'
@@ -179,7 +179,7 @@ export class ProjectClientService {
 
       return {
         success: true,
-        data: response.data
+        data: response.data?.data || response.data
       }
     } catch (error: any) {
       console.error('ProjectClientService.updateProject error:', error)
@@ -199,7 +199,7 @@ export class ProjectClientService {
     try {
       const response = await apiDelete(`/api/projects/${projectId}`)
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Failed to delete project'
@@ -237,7 +237,7 @@ export class ProjectClientService {
         parameters
       })
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Bulk operation failed'
@@ -246,7 +246,7 @@ export class ProjectClientService {
 
       return {
         success: true,
-        data: response.data
+        data: response.data?.data || response.data
       }
     } catch (error: any) {
       console.error('ProjectClientService.bulkOperation error:', error)
@@ -273,7 +273,7 @@ export class ProjectClientService {
     try {
       const response = await apiGet('/api/projects/stats')
 
-      if (!response.success) {
+      if (!response.ok) {
         return {
           success: false,
           error: response.error || 'Failed to get project statistics'
@@ -282,7 +282,7 @@ export class ProjectClientService {
 
       return {
         success: true,
-        data: response.data
+        data: response.data?.data || response.data
       }
     } catch (error: any) {
       console.error('ProjectClientService.getProjectStats error:', error)

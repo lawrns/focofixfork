@@ -38,7 +38,7 @@ export interface UpdateProjectData {
 }
 
 export interface ProjectFilters {
-  organization_id: string | null;
+  organization_id?: string | null;
   status?: Project['status'];
   priority?: Project['priority'];
   limit?: number;

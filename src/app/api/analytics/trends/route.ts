@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyticsService } from '@/lib/services/analytics.service'
 import { TrendsQueryParamsSchema } from '@/lib/validation/schemas/analytics'
+export const dynamic = 'force-dynamic'
+
 
 // GET /api/analytics/trends - Get trends data for specific metrics
 export async function GET(request: NextRequest) {

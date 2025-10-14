@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { settingsService } from '@/lib/services/settings.service'
+export const dynamic = 'force-dynamic'
+
 
 // GET /api/user/audit-log - Get user audit log
 export async function GET(request: NextRequest) {

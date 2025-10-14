@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyticsService } from '@/lib/services/analytics.service'
 import { TimePeriodSchema } from '@/lib/validation/schemas/analytics'
+export const dynamic = 'force-dynamic'
+
 
 // GET /api/analytics/dashboard - Get dashboard analytics
 export async function GET(request: NextRequest) {

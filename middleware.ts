@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { userSetupMiddleware, redirectToSetupIfNeeded } from '@/lib/middleware/user-setup'
 
 export async function middleware(req: NextRequest) {
@@ -193,14 +192,7 @@ export async function middleware(req: NextRequest) {
     }
     console.log('Middleware: Headers set for API:', headersSet)
 
-    // Create new request with modified headers
-    const modifiedRequest = new NextRequest(req.url, {
-      headers: requestHeaders,
-      method: req.method,
-      body: req.body,
-    })
-
-    // Return response with modified request
+    // Return response with modified headers
     return NextResponse.next({
       request: {
         headers: requestHeaders,

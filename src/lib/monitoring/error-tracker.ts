@@ -39,7 +39,7 @@ class ErrorTracker {
   private reportingEndpoint = '/api/monitoring/errors'
   private batchSize = 10
   private pendingReports: ErrorEvent[] = []
-  private reportingInterval: NodeJS.Timeout | null = null
+  private reportingInterval: ReturnType<typeof setInterval> | null = null
 
   constructor() {
     // Start periodic reporting

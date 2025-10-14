@@ -25,7 +25,7 @@ class ApiClient {
 
     // If service worker is active, reduce client-side retries to avoid duplication
     // Service worker has its own circuit breaker and retry logic
-    const effectiveRetries = 'serviceWorker' in navigator ? 0 : retries
+    const effectiveRetries = (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) ? 0 : retries
 
     // Check cache first
     if (useCache) {

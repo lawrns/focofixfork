@@ -187,18 +187,36 @@ export class ProjectsService {
         }
       }
 
-      const { data, error } = await supabaseAdmin
+      // First check if user has access to this project
+      // User can access if they created it, are in the organization, or are a project member
+      const { data: userOrgs } = await supabaseAdmin
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', userId)
+
+      const orgIds = Array.isArray(userOrgs) ? userOrgs.map(org => org.organization_id) : []
+
+      // Build query with access control
+      let query = supabaseAdmin
         .from('projects')
         .select('*')
         .eq('id', projectId)
-        .single()
+
+      // Add RLS-like filtering for access control
+      if (orgIds.length > 0) {
+        query = query.or(`created_by.eq.${userId},organization_id.in.(${orgIds.join(',')})`)
+      } else {
+        query = query.eq('created_by', userId)
+      }
+
+      const { data, error } = await query.single()
 
       if (error) {
         console.error('Project fetch error:', error)
         if (error.code === 'PGRST116') {
           return {
             success: false,
-            error: 'Project not found'
+            error: 'Project not found or access denied'
           }
         }
         return {

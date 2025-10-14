@@ -14,8 +14,12 @@ export { useProjects } from './hooks/useProjects'
 export { useProjectMutations } from './hooks/useProjects'
 
 // Services
-export { ProjectsService as projectService } from './services/projectService' // Server-side only
-export { ProjectClientService } from './services/projectClientService' // Client-side
+// Server-side only - DO NOT import in client components
+// export { ProjectsService as projectService } from './services/projectService'
+
+// Client-side service - USE THIS in components
+export { ProjectClientService } from './services/projectClientService'
+export { ProjectClientService as projectService } from './services/projectClientService' // Alias for compatibility
 
 // Validation
 export { projectSchema, projectFormSchema } from './validation/projectSchemas'

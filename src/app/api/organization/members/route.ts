@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user details for each member
-    const memberIds = members.map(m => m.user_id)
+    const memberIds = Array.isArray(members) ? members.map(m => m.user_id) : []
     const { data: users, error: usersError } = await supabase
       .from('users')
       .select('id, email, full_name, avatar_url')
@@ -61,15 +61,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Combine member data with user details
-    const enrichedMembers = members.map(member => {
-      const userDetails = users?.find(u => u.id === member.user_id)
-      return {
-        ...member,
-        email: userDetails?.email || '',
-        full_name: userDetails?.full_name || '',
-        avatar_url: userDetails?.avatar_url || null
-      }
-    })
+    const enrichedMembers = Array.isArray(members)
+      ? members.map(member => {
+          const userDetails = users?.find(u => u.id === member.user_id)
+          return {
+            ...member,
+            email: userDetails?.email || '',
+            full_name: userDetails?.full_name || '',
+            avatar_url: userDetails?.avatar_url || null
+          }
+        })
+      : []
 
     return NextResponse.json({ members: enrichedMembers })
 

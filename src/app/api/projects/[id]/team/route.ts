@@ -175,18 +175,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Transform the data to include user profile information
-    const transformedTeamMembers = teamMembers?.map(member => ({
-      id: (member as any).id,
-      user_id: (member as any).user_id,
-      role: (member as any).role,
-      added_by: (member as any).added_by,
-      added_at: (member as any).added_at,
-      user: {
-        email: (member as any).users?.email,
-        name: (member as any).users?.raw_user_meta_data?.full_name || (member as any).users?.raw_user_meta_data?.name,
-        avatar_url: (member as any).users?.raw_user_meta_data?.avatar_url,
-      }
-    })) || []
+    const transformedTeamMembers = Array.isArray(teamMembers)
+      ? teamMembers.map(member => ({
+          id: (member as any).id,
+          user_id: (member as any).user_id,
+          role: (member as any).role,
+          added_by: (member as any).added_by,
+          added_at: (member as any).added_at,
+          user: {
+            email: (member as any).users?.email,
+            name: (member as any).users?.raw_user_meta_data?.full_name || (member as any).users?.raw_user_meta_data?.name,
+            avatar_url: (member as any).users?.raw_user_meta_data?.avatar_url,
+          }
+        }))
+      : []
 
     return NextResponse.json({
       success: true,

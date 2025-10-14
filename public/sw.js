@@ -214,10 +214,13 @@ async function networkFirst(request, fallbackUrl = '/offline.html') {
     // Log API errors for debugging
     if (isApiRequest(request.url) && !networkResponse.ok) {
       console.warn(`[SW] API request failed: ${request.url} - Status: ${networkResponse.status} ${networkResponse.statusText}`);
+      // CRITICAL: Never cache failed API responses
+      // Return the failed response directly without caching
+      return networkResponse;
     }
 
-    // Only cache if request and response are cacheable
-    if (request.method === 'GET' && isCacheable(request, networkResponse)) {
+    // Only cache successful responses
+    if (request.method === 'GET' && networkResponse.ok && isCacheable(request, networkResponse)) {
       try {
         const cache = await caches.open(isApiRequest(request.url) ? API_CACHE : DYNAMIC_CACHE);
         await cache.put(request, networkResponse.clone());

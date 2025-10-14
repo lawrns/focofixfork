@@ -44,7 +44,9 @@ export class FilteringService {
     filters: FilterCondition[] = [],
     sortConditions: SortCondition[] = []
   ): FilterResult<T> {
-    let filteredItems = [...items]
+    // Ensure items is always an array
+    const safeItems = Array.isArray(items) ? items : []
+    let filteredItems = [...safeItems]
 
     // Apply filters
     filteredItems = this.applyFilters(filteredItems, filters)
@@ -54,7 +56,7 @@ export class FilteringService {
 
     return {
       items: filteredItems,
-      totalCount: items.length,
+      totalCount: safeItems.length,
       filteredCount: filteredItems.length,
       appliedFilters: filters,
       appliedSort: sortConditions

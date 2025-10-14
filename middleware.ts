@@ -184,7 +184,7 @@ export async function middleware(req: NextRequest) {
     const requestHeaders = new Headers(req.headers)
     requestHeaders.set('x-user-id', session.user.id)
     requestHeaders.set('x-user-email', session.user.email || '')
-    requestHeaders.set('x-session-expires', session.expires_at || '')
+    requestHeaders.set('x-session-expires', session.expires_at ? String(session.expires_at) : '')
 
     // Verify headers are set
     const headersSet = {

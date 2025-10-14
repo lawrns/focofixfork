@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { GetMilestoneSchema, UpdateMilestoneSchema, DeleteMilestoneSchema } from '@/lib/validation/schemas/milestone-api.schema'
 import { MilestonesService } from '../../../../lib/services/milestones'
 import { z } from 'zod'
 
-// Schema for milestone updates
-const updateMilestoneSchema = z.object({
-  name: z.string().min(1, 'Milestone name is required').max(500, 'Name must be less than 500 characters').optional(),
-  description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
-  project_id: z.string().min(1, 'Project is required').optional(),
-  status: z.enum(['planned', 'active', 'completed', 'cancelled']).optional(),
-  progress_percentage: z.number().min(0).max(100).optional(),
-  due_date: z.string().optional(),
-  completion_date: z.string().optional(),
+// Schema for status updates (PATCH method)
+const UpdateStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(['planned', 'active', 'completed', 'cancelled'])
+  }).strict(),
+  query: z.object({}).optional()
 })
 
-// Schema for status updates
-const updateStatusSchema = z.object({
-  status: z.enum(['planned', 'active', 'completed', 'cancelled']),
-})
-
-interface RouteParams {
+interface RouteContext {
   params: {
     id: string
   }
@@ -27,262 +21,159 @@ interface RouteParams {
 /**
  * GET /api/milestones/[id] - Get a specific milestone
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function GET(request: NextRequest, context: RouteContext) {
+  return wrapRoute(GetMilestoneSchema, async ({ user, correlationId }) => {
+    const milestoneId = context.params.id
 
-    const milestoneId = params.id
     if (!milestoneId) {
-      return NextResponse.json(
-        { success: false, error: 'Milestone ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Milestone ID is required')
+      err.code = 'INVALID_MILESTONE_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const result = await MilestonesService.getMilestoneById(userId, milestoneId)
+    const result = await MilestonesService.getMilestoneById(user.id, milestoneId)
 
     if (!result.success) {
-      const statusCode = result.error === 'Milestone not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      if (result.error === 'Milestone not found') {
+        const err: any = new Error('Milestone not found')
+        err.code = 'MILESTONE_NOT_FOUND'
+        err.statusCode = 404
+        throw err
+      }
+      const err: any = new Error(result.error || 'Failed to fetch milestone')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Milestone detail API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
  * PUT /api/milestones/[id] - Update a specific milestone
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return wrapRoute(UpdateMilestoneSchema, async ({ input, user, correlationId }) => {
+    const milestoneId = context.params.id
 
-    const milestoneId = params.id
     if (!milestoneId) {
-      return NextResponse.json(
-        { success: false, error: 'Milestone ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Milestone ID is required')
+      err.code = 'INVALID_MILESTONE_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const body = await request.json()
-
-    // Validate request body
-    const validationResult = updateMilestoneSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    const result = await MilestonesService.updateMilestone(userId, milestoneId, validationResult.data)
+    const result = await MilestonesService.updateMilestone(user.id, milestoneId, input.body as any)
 
     if (!result.success) {
-      const statusCode = result.error === 'Milestone not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      if (result.error === 'Milestone not found') {
+        const err: any = new Error('Milestone not found')
+        err.code = 'MILESTONE_NOT_FOUND'
+        err.statusCode = 404
+        throw err
+      }
+      const err: any = new Error(result.error || 'Failed to update milestone')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Milestone update API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
- * PATCH /api/milestones/[id]/status - Update milestone status (convenience endpoint)
+ * PATCH /api/milestones/[id] - Update milestone status (convenience endpoint)
+ * Can also handle /status suffix for explicit status updates
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return wrapRoute(UpdateStatusSchema, async ({ input, user, correlationId, req }) => {
+    const milestoneId = context.params.id
 
-    const milestoneId = params.id
     if (!milestoneId) {
-      return NextResponse.json(
-        { success: false, error: 'Milestone ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Milestone ID is required')
+      err.code = 'INVALID_MILESTONE_ID'
+      err.statusCode = 400
+      throw err
     }
 
     // Check if this is a status update
-    const url = new URL(request.url)
+    const url = new URL(req.url)
     const isStatusUpdate = url.pathname.endsWith('/status')
 
-    if (isStatusUpdate) {
-      const body = await request.json()
+    // Handle special status updates
+    if (input.body.status === 'completed') {
+      const result = await MilestonesService.completeMilestone(user.id, milestoneId)
 
-      // Validate status update
-      const validationResult = updateStatusSchema.safeParse(body)
-      if (!validationResult.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Validation failed',
-            details: validationResult.error.issues
-          },
-          { status: 400 }
-        )
+      if (!result.success) {
+        if (result.error === 'Milestone not found') {
+          const err: any = new Error('Milestone not found')
+          err.code = 'MILESTONE_NOT_FOUND'
+          err.statusCode = 404
+          throw err
+        }
+        const err: any = new Error(result.error || 'Failed to complete milestone')
+        err.code = 'DATABASE_ERROR'
+        err.statusCode = 500
+        throw err
       }
 
-      // Handle special status updates
-      if (validationResult.data.status === 'completed') {
-        const result = await MilestonesService.completeMilestone(userId, milestoneId)
-
-        if (!result.success) {
-          const statusCode = result.error === 'Milestone not found' ? 404 : 500
-          return NextResponse.json(
-            { success: false, error: result.error },
-            { status: statusCode }
-          )
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: result.data,
-        })
-      } else {
-        // Regular status update
-        const result = await MilestonesService.updateMilestone(userId, milestoneId, {
-          status: validationResult.data.status
-        })
-
-        if (!result.success) {
-          const statusCode = result.error === 'Milestone not found' ? 404 : 500
-          return NextResponse.json(
-            { success: false, error: result.error },
-            { status: statusCode }
-          )
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: result.data,
-        })
-      }
+      return result.data
     }
 
-    // Regular PATCH for other updates
-    const body = await request.json()
-
-    const validationResult = updateMilestoneSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    const result = await MilestonesService.updateMilestone(userId, milestoneId, validationResult.data)
+    // Regular status update
+    const result = await MilestonesService.updateMilestone(user.id, milestoneId, {
+      status: input.body.status
+    })
 
     if (!result.success) {
-      const statusCode = result.error === 'Milestone not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      if (result.error === 'Milestone not found') {
+        const err: any = new Error('Milestone not found')
+        err.code = 'MILESTONE_NOT_FOUND'
+        err.statusCode = 404
+        throw err
+      }
+      const err: any = new Error(result.error || 'Failed to update milestone status')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Milestone patch API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
  * DELETE /api/milestones/[id] - Delete a specific milestone
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return wrapRoute(DeleteMilestoneSchema, async ({ user, correlationId }) => {
+    const milestoneId = context.params.id
 
-    const milestoneId = params.id
     if (!milestoneId) {
-      return NextResponse.json(
-        { success: false, error: 'Milestone ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Milestone ID is required')
+      err.code = 'INVALID_MILESTONE_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const result = await MilestonesService.deleteMilestone(userId, milestoneId)
+    const result = await MilestonesService.deleteMilestone(user.id, milestoneId)
 
     if (!result.success) {
-      const statusCode = result.error === 'Milestone not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      if (result.error === 'Milestone not found') {
+        const err: any = new Error('Milestone not found')
+        err.code = 'MILESTONE_NOT_FOUND'
+        err.statusCode = 404
+        throw err
+      }
+      const err: any = new Error(result.error || 'Failed to delete milestone')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Milestone deleted successfully',
-    })
-  } catch (error: any) {
-    console.error('Milestone deletion API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return { message: 'Milestone deleted successfully' }
+  })(request)
 }

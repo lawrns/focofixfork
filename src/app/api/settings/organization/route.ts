@@ -1,32 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { GetOrganizationSettingsSchema, UpdateOrganizationSettingsSchema } from '@/lib/validation/schemas/settings-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { ForbiddenError } from '@/server/auth/requireAuth'
+
 export const dynamic = 'force-dynamic'
 
-
 export async function GET(request: NextRequest) {
-  try {
+  return wrapRoute(GetOrganizationSettingsSchema, async ({ input, user, correlationId }) => {
     const supabase = supabaseAdmin
-
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get organization ID from query params or use user's primary organization
-    const { searchParams } = new URL(request.url)
-    const orgId = searchParams.get('organizationId')
+    const orgId = input.query?.organizationId
 
     if (orgId) {
       // Get specific organization
       const { data: orgMember, error: orgError } = await supabase
         .from('organization_members')
         .select('organization_id, role')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .eq('organization_id', orgId)
         .single()
 
       if (orgError || !orgMember) {
-        return NextResponse.json({ error: 'Organization not found or access denied' }, { status: 404 })
+        const err: any = new Error('Organization not found or access denied')
+        err.code = 'ORGANIZATION_NOT_FOUND'
+        err.statusCode = 404
+        throw err
       }
 
       // Get organization details
@@ -37,21 +35,27 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        const err: any = new Error(error.message)
+        err.code = 'DATABASE_ERROR'
+        err.statusCode = 500
+        throw err
       }
 
-      return NextResponse.json({ organization, role: orgMember.role })
+      return { organization, role: orgMember.role }
     } else {
       // Get user's first organization (primary)
       const { data: orgMembers, error: orgError } = await supabase
         .from('organization_members')
         .select('organization_id, role')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(1)
 
       if (orgError || !orgMembers || orgMembers.length === 0) {
-        return NextResponse.json({ error: 'No organization found' }, { status: 404 })
+        const err: any = new Error('No organization found')
+        err.code = 'ORGANIZATION_NOT_FOUND'
+        err.statusCode = 404
+        throw err
       }
 
       const orgMember = orgMembers[0]
@@ -64,50 +68,40 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        const err: any = new Error(error.message)
+        err.code = 'DATABASE_ERROR'
+        err.statusCode = 500
+        throw err
       }
 
-      return NextResponse.json({ organization, role: orgMember.role })
+      return { organization, role: orgMember.role }
     }
-  } catch (error) {
-    console.error('Error fetching organization settings:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  })(request)
 }
 
 export async function PUT(request: NextRequest) {
-  try {
+  return wrapRoute(UpdateOrganizationSettingsSchema, async ({ input, user, correlationId }) => {
     const supabase = supabaseAdmin
-    const body = await request.json()
-    const { organizationId, name, description, slug, logo_url, website } = body
-
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Determine which organization to update
-    const targetOrgId = organizationId
-
-    if (!targetOrgId) {
-      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 })
-    }
+    const { organizationId, name, description, slug, logo_url, website } = input.body
 
     // Get user's organization membership
     const { data: orgMember, error: orgError } = await supabase
       .from('organization_members')
       .select('organization_id, role')
-      .eq('user_id', userId)
-      .eq('organization_id', targetOrgId)
+      .eq('user_id', user.id)
+      .eq('organization_id', organizationId)
       .single()
 
     if (orgError || !orgMember) {
-      return NextResponse.json({ error: 'Organization not found or access denied' }, { status: 404 })
+      const err: any = new Error('Organization not found or access denied')
+      err.code = 'ORGANIZATION_NOT_FOUND'
+      err.statusCode = 404
+      throw err
     }
 
     // Check if user is admin or owner
     if (!['admin', 'owner'].includes(orgMember.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      throw new ForbiddenError('Insufficient permissions')
     }
 
     const updateData: any = {
@@ -123,15 +117,15 @@ export async function PUT(request: NextRequest) {
     const { error } = await supabase
       .from('organizations')
       .update(updateData)
-      .eq('id', targetOrgId)
+      .eq('id', organizationId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      const err: any = new Error(error.message)
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({ success: true, message: 'Organization settings updated successfully' })
-  } catch (error) {
-    console.error('Error updating organization settings:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return { success: true, message: 'Organization settings updated successfully' }
+  })(request)
 }

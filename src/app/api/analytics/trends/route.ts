@@ -1,70 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { GetTrendsAnalyticsSchema } from '@/lib/validation/schemas/analytics-api.schema'
 import { analyticsService } from '@/lib/services/analytics.service'
 import { TrendsQueryParamsSchema } from '@/lib/validation/schemas/analytics'
+
 export const dynamic = 'force-dynamic'
 
-
-// GET /api/analytics/trends - Get trends data for specific metrics
 export async function GET(request: NextRequest) {
-  try {
-    let authUserId = request.headers.get('x-user-id')
-
-    if (!authUserId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const metric = searchParams.get('metric')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-    const projectId = searchParams.get('projectId')
-    const userId = searchParams.get('userId')
-
-    // Validate query parameters
+  return wrapRoute(GetTrendsAnalyticsSchema, async ({ input, user, correlationId }) => {
     const queryParams = {
-      metric,
-      startDate,
-      endDate,
-      projectId,
-      userId
+      metric: input.query?.metric,
+      startDate: input.query?.startDate,
+      endDate: input.query?.endDate,
+      projectId: input.query?.projectId,
+      userId: input.query?.userId
     }
 
     const validationResult = TrendsQueryParamsSchema.safeParse(queryParams)
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Invalid query parameters',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
+      const err: any = new Error('Invalid query parameters')
+      err.code = 'VALIDATION_ERROR'
+      err.statusCode = 400
+      err.details = validationResult.error.issues
+      throw err
     }
 
     try {
       const trendsData = await analyticsService.getTrendsData(validationResult.data)
-      return NextResponse.json({ data: trendsData })
+      return trendsData
     } catch (dbError) {
-      console.warn('Analytics service not available, returning empty data:', dbError)
       // Return empty trends data if database tables don't exist
-      return NextResponse.json({ data: [] })
+      return []
     }
-  } catch (error) {
-    console.error('GET /api/analytics/trends error:', error)
-
-    if (error instanceof Error && error.message === 'User not authenticated') {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch trends data' },
-      { status: 500 }
-    )
-  }
+  })(request)
 }
 

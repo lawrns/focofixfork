@@ -1,40 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { aiService } from '@/lib/services/ai'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { AISuggestMilestoneSchema } from '@/lib/validation/schemas/ai-api.schema'
+import { checkRateLimit } from '@/server/utils/rateLimit'
+import { aiService } from '@/lib/services/openai'
 
+/**
+ * POST /api/ai/suggest-milestone - Suggest milestone using AI
+ * Rate limited: 10 AI requests per minute
+ */
 export async function POST(request: NextRequest) {
-  try {
-    const { project_description, existing_milestones } = await request.json()
+  return wrapRoute(AISuggestMilestoneSchema, async ({ input, user, req, correlationId }) => {
+    // AI rate limit: 10 requests per minute
+    await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'ai')
 
-    if (!project_description || typeof project_description !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'Project description is required' },
-        { status: 400 }
-      )
-    }
-
-    // Get user ID from headers (set by middleware)
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Generate AI suggestions
-    const suggestions = await aiService.suggestMilestones(project_description, existing_milestones || [])
-
-    return NextResponse.json({
-      success: true,
-      data: suggestions,
-      ai_available: true
+    const result = await aiService.suggestMilestone({
+      projectId: input.body.projectId,
+      context: input.body.context,
+      userId: user.id,
+      correlationId
     })
 
-  } catch (error) {
-    console.error('AI milestone suggestion error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to generate milestone suggestions' },
-      { status: 500 }
-    )
-  }
+    if (!result.success) {
+      const err: any = new Error(result.error || 'AI service failed')
+      err.code = 'AI_SERVICE_ERROR'
+      err.statusCode = 500
+      throw err
+    }
+
+    return result.data
+  })(request)
 }

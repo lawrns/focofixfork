@@ -1,13 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { RemoveTeamMemberSchema } from '@/lib/validation/schemas/project-team-api.schema'
+import { supabaseAdmin } from '@/lib/supabase-server'
+import { ForbiddenError } from '@/server/auth/requireAuth'
 import { z } from 'zod'
-import { supabase } from '@/lib/supabase-client'
 
 // Schema for updating team member role
-const updateTeamMemberSchema = z.object({
-  role: z.enum(['admin', 'member', 'guest']),
+const UpdateTeamMemberRoleSchema = z.object({
+  body: z.object({
+    role: z.enum(['owner', 'editor', 'viewer'])
+  }).strict(),
+  query: z.object({}).optional()
 })
 
-interface RouteParams {
+interface RouteContext {
   params: {
     id: string
     userId: string
@@ -17,310 +23,122 @@ interface RouteParams {
 /**
  * PUT /api/projects/[id]/team/[userId] - Update team member role
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const currentUserId = request.headers.get('x-user-id')
-
-    if (!currentUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const projectId = params.id
-    const targetUserId = params.userId
-
-    if (!projectId || !targetUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Project ID and User ID are required' },
-        { status: 400 }
-      )
-    }
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return wrapRoute(UpdateTeamMemberRoleSchema, async ({ input, user, correlationId }) => {
+    const { id: projectId, userId: targetUserId } = context.params
 
     // Prevent users from modifying their own role
-    if (currentUserId === targetUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Cannot modify your own role' },
-        { status: 403 }
-      )
+    if (user.id === targetUserId) {
+      throw new ForbiddenError('Cannot modify your own role')
     }
 
-    const body = await request.json()
-
-    // Validate request body
-    const validationResult = updateTeamMemberSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    // Check if the current user has permission to manage team member roles
-    const { data: userRole, error: roleError } = await supabase
-      .from('project_team_assignments')
-      .select('role')
-      .eq('project_id', projectId)
-      .eq('user_id', currentUserId)
+    // Check if current user has permission to manage roles
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('created_by')
+      .eq('id', projectId)
       .single()
 
-    if (roleError || !userRole) {
-      // Check organization membership if not a direct project member
-      const { data: orgData } = await supabase
-        .from('projects')
-        .select('organization_id')
-        .eq('id', projectId)
+    if (!project) {
+      const err: any = new Error('Project not found')
+      err.code = 'PROJECT_NOT_FOUND'
+      err.statusCode = 404
+      throw err
+    }
+
+    const isOwner = project.created_by === user.id
+    if (!isOwner) {
+      const { data: teamMember } = await supabaseAdmin
+        .from('project_team_assignments')
+        .select('role')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
         .single()
 
-      if (orgData?.organization_id) {
-        const { data: orgRole } = await supabase
-          .from('organization_members')
-          .select('role')
-          .eq('organization_id', orgData.organization_id)
-          .eq('user_id', currentUserId)
-          .single()
-
-        if (!orgRole || !['owner', 'admin'].includes(orgRole.role)) {
-          return NextResponse.json(
-            { success: false, error: 'You do not have permission to manage team member roles' },
-            { status: 403 }
-          )
-        }
-      } else {
-        return NextResponse.json(
-          { success: false, error: 'You do not have permission to manage team member roles' },
-          { status: 403 }
-        )
+      if (!teamMember || !['owner', 'admin'].includes(teamMember.role)) {
+        throw new ForbiddenError('Only project owners and admins can update team member roles')
       }
-    } else if (!['owner', 'admin'].includes(userRole.role)) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to manage team member roles' },
-        { status: 403 }
-      )
     }
 
-    // Verify the target user is a team member of this project
-    const { data: targetMember, error: memberError } = await supabase
+    // Update the team member's role
+    const { data: updatedMember, error: updateError } = await supabaseAdmin
       .from('project_team_assignments')
-      .select('id, role')
+      .update({ role: input.body.role })
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)
+      .select()
       .single()
 
-    if (memberError || !targetMember) {
-      return NextResponse.json(
-        { success: false, error: 'User is not a member of this project' },
-        { status: 404 }
-      )
+    if (updateError) {
+      const err: any = new Error('Failed to update team member role')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    // Prevent demoting the last owner/admin
-    if (targetMember.role === 'owner' || targetMember.role === 'admin') {
-      const { count: adminCount } = await supabase
-        .from('project_team_assignments')
-        .select('*', { count: 'exact', head: true })
-        .eq('project_id', projectId)
-        .in('role', ['owner', 'admin'])
-
-      if (adminCount && adminCount <= 1) {
-        return NextResponse.json(
-          { success: false, error: 'Cannot change role of the last admin/owner' },
-          { status: 400 }
-        )
-      }
-    }
-
-    // Update the team member role
-    const { data: updatedMember, error: updateError } = await supabase
-      .from('project_team_assignments')
-      .update({ role: validationResult.data.role })
-      .eq('project_id', projectId)
-      .eq('user_id', targetUserId)
-      .select(`
-        id,
-        user_id,
-        role,
-        added_by,
-        added_at,
-        auth.users!project_team_assignments_user_id_fkey (
-          email,
-          raw_user_meta_data
-        )
-      `)
-      .single()
-
-    if (updateError || !updatedMember) {
-      console.error('Error updating team member role:', updateError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to update team member role' },
-        { status: 500 }
-      )
-    }
-
-    // Transform the response data
-    const transformedMember = {
-      id: (updatedMember as any).id,
-      user_id: (updatedMember as any).user_id,
-      role: (updatedMember as any).role,
-      added_by: (updatedMember as any).added_by,
-      added_at: (updatedMember as any).added_at,
-      user: {
-        email: (updatedMember as any).users?.email,
-        name: (updatedMember as any).users?.raw_user_meta_data?.full_name || (updatedMember as any).users?.raw_user_meta_data?.name,
-        avatar_url: (updatedMember as any).users?.raw_user_meta_data?.avatar_url,
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
+    return {
       message: 'Team member role updated successfully',
-      data: transformedMember,
-    })
-  } catch (error: any) {
-    console.error('Update team member role API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+      member: updatedMember
+    }
+  })(request)
 }
 
 /**
  * DELETE /api/projects/[id]/team/[userId] - Remove team member from project
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const currentUserId = request.headers.get('x-user-id')
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return wrapRoute(RemoveTeamMemberSchema, async ({ user, correlationId }) => {
+    const { id: projectId, userId: targetUserId } = context.params
 
-    if (!currentUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const projectId = params.id
-    const targetUserId = params.userId
-
-    if (!projectId || !targetUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Project ID and User ID are required' },
-        { status: 400 }
-      )
-    }
-
-    // Prevent users from removing themselves
-    if (currentUserId === targetUserId) {
-      return NextResponse.json(
-        { success: false, error: 'Cannot remove yourself from the project' },
-        { status: 403 }
-      )
-    }
-
-    // Check if the current user has permission to remove team members
-      const { data: userRole, error: roleError } = await supabase
-        .from('project_team_assignments')
-      .select('role')
-      .eq('project_id', projectId)
-      .eq('user_id', currentUserId)
+    // Check if current user has permission to remove members
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('created_by')
+      .eq('id', projectId)
       .single()
 
-    if (roleError || !userRole) {
-      // Check organization membership if not a direct project member
-      const { data: orgData } = await supabase
-        .from('projects')
-        .select('organization_id')
-        .eq('id', projectId)
+    if (!project) {
+      const err: any = new Error('Project not found')
+      err.code = 'PROJECT_NOT_FOUND'
+      err.statusCode = 404
+      throw err
+    }
+
+    const isOwner = project.created_by === user.id
+    if (!isOwner) {
+      const { data: teamMember } = await supabaseAdmin
+        .from('project_team_assignments')
+        .select('role')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
         .single()
 
-      if (orgData?.organization_id) {
-        const { data: orgRole } = await supabase
-          .from('organization_members')
-          .select('role')
-          .eq('organization_id', orgData.organization_id)
-          .eq('user_id', currentUserId)
-          .single()
-
-        if (!orgRole || !['owner', 'admin'].includes(orgRole.role)) {
-          return NextResponse.json(
-            { success: false, error: 'You do not have permission to remove team members' },
-            { status: 403 }
-          )
-        }
-      } else {
-        return NextResponse.json(
-          { success: false, error: 'You do not have permission to remove team members' },
-          { status: 403 }
-        )
+      if (!teamMember || !['owner', 'admin'].includes(teamMember.role)) {
+        throw new ForbiddenError('Only project owners and admins can remove team members')
       }
-    } else if (!['owner', 'admin'].includes(userRole.role)) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to remove team members' },
-        { status: 403 }
-      )
     }
 
-    // Verify the target user is a team member of this project
-    const { data: targetMember, error: memberError } = await supabase
-      .from('project_team_assignments')
-      .select('id, role')
-      .eq('project_id', projectId)
-      .eq('user_id', targetUserId)
-      .single()
-
-    if (memberError || !targetMember) {
-      return NextResponse.json(
-        { success: false, error: 'User is not a member of this project' },
-        { status: 404 }
-      )
-    }
-
-    // Prevent removing the last owner/admin
-    if (targetMember.role === 'owner' || targetMember.role === 'admin') {
-      const { count: adminCount } = await supabase
-        .from('project_team_assignments')
-        .select('*', { count: 'exact', head: true })
-        .eq('project_id', projectId)
-        .in('role', ['owner', 'admin'])
-
-      if (adminCount && adminCount <= 1) {
-        return NextResponse.json(
-          { success: false, error: 'Cannot remove the last admin/owner from the project' },
-          { status: 400 }
-        )
-      }
+    // Prevent owner from removing themselves
+    if (isOwner && user.id === targetUserId) {
+      throw new ForbiddenError('Project owner cannot remove themselves')
     }
 
     // Remove the team member
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('project_team_assignments')
       .delete()
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)
 
     if (deleteError) {
-      console.error('Error removing team member:', deleteError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to remove team member' },
-        { status: 500 }
-      )
+      const err: any = new Error('Failed to remove team member')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Team member removed successfully',
-    })
-  } catch (error: any) {
-    console.error('Remove team member API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return {
+      message: 'Team member removed successfully'
+    }
+  })(request)
 }
-

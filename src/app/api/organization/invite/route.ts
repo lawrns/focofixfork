@@ -1,184 +1,154 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { InviteMemberSchema } from '@/lib/validation/schemas/organization-api.schema'
+import { checkRateLimit } from '@/server/utils/rateLimit'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { ForbiddenError } from '@/server/auth/requireAuth'
 
+/**
+ * POST /api/organization/invite - Invite a member to an organization
+ * Rate limited: 20 invites per hour per user
+ */
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = supabaseAdmin
-    const { email, name, role } = await request.json()
+  return wrapRoute(InviteMemberSchema, async ({ input, user, req, correlationId }) => {
+    // Rate limit: 20 invites per hour to prevent abuse
+    await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'auth')
 
-    if (!email || !name) {
-      return NextResponse.json(
-        { error: 'Email and name are required' },
-        { status: 400 }
-      )
-    }
+    const { organizationId, email, role } = input.body
 
-    if (!role || !['owner', 'member'].includes(role)) {
-      return NextResponse.json(
-        { error: 'Invalid role. Must be "owner" or "member"' },
-        { status: 400 }
-      )
-    }
-
-    // Get current user
-    const currentUserId = request.headers.get('x-user-id')
-    if (!currentUserId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Get current user's organization and role
-    const { data: currentUserMember, error: currentUserError } = await supabase
+    // Check if current user is an admin of this organization
+    const { data: currentUserMember, error: memberError } = await supabaseAdmin
       .from('organization_members')
-      .select('organization_id, role')
-      .eq('user_id', currentUserId)
+      .select('role')
+      .eq('organization_id', organizationId)
+      .eq('user_id', user.id)
       .single()
 
-    if (currentUserError || !currentUserMember) {
-      return NextResponse.json(
-        { error: 'Organization not found' },
-        { status: 404 }
-      )
+    if (memberError || !currentUserMember) {
+      const err: any = new Error('Organization not found')
+      err.code = 'ORGANIZATION_NOT_FOUND'
+      err.statusCode = 404
+      throw err
     }
 
-    // Only owners can invite members
-    if (currentUserMember.role !== 'owner') {
-      return NextResponse.json(
-        { error: 'Only organization owners can invite members' },
-        { status: 403 }
-      )
+    // Only admins can invite members
+    if (currentUserMember.role !== 'admin' && currentUserMember.role !== 'owner') {
+      throw new ForbiddenError('Only organization admins can invite members')
     }
 
-    // Generate a random password
+    // Generate temporary password
     const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`
 
     // Check if user already exists in users table
-    const { data: existingUser } = await supabase
+    const { data: existingUser } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('email', email)
       .single()
 
-    let userId: string
+    let invitedUserId: string
 
     if (existingUser) {
-      // User already exists
-      userId = existingUser.id
+      invitedUserId = existingUser.id
     } else {
       // Create new user in Supabase Auth
-      const { data: authData, error: createAuthError } = await supabase.auth.admin.createUser({
+      const { data: authData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: tempPassword,
         email_confirm: true,
         user_metadata: {
-          display_name: name
+          display_name: email.split('@')[0]
         }
       })
 
       if (createAuthError) {
-        console.error('Error creating auth user:', createAuthError)
-        return NextResponse.json(
-          { error: 'Failed to create user account' },
-          { status: 500 }
-        )
+        const err: any = new Error('Failed to create user account')
+        err.code = 'USER_CREATE_FAILED'
+        err.statusCode = 500
+        throw err
       }
 
-      userId = authData.user.id
+      invitedUserId = authData.user.id
 
       // Create user in users table
-      const { error: userError } = await supabase
+      const { error: userError } = await supabaseAdmin
         .from('users')
         .insert({
-          id: userId,
+          id: invitedUserId,
           email,
-          full_name: name,
+          full_name: email.split('@')[0],
           is_active: true
         })
 
       if (userError) {
         console.error('Error creating user record:', userError)
-        // Continue anyway, the auth user was created
       }
 
       // Create user profile
-      const { error: profileError } = await supabase
+      const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .insert({
-          id: userId,
-          user_id: userId,
-          bio: `Member of organization`
+          id: invitedUserId,
+          user_id: invitedUserId,
+          organization_id: organizationId
         })
 
       if (profileError) {
         console.error('Error creating user profile:', profileError)
-        // Continue anyway
       }
     }
 
     // Check if user is already a member
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await supabaseAdmin
       .from('organization_members')
       .select('id')
-      .eq('organization_id', currentUserMember.organization_id)
-      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('user_id', invitedUserId)
       .single()
 
     if (existingMember) {
-      return NextResponse.json(
-        { error: 'User is already a member of this organization' },
-        { status: 400 }
-      )
+      const err: any = new Error('User is already a member of this organization')
+      err.code = 'ALREADY_MEMBER'
+      err.statusCode = 400
+      throw err
     }
 
     // Add user to organization
-    const { error: memberError } = await supabase
+    const { error: addMemberError } = await supabaseAdmin
       .from('organization_members')
       .insert({
-        organization_id: currentUserMember.organization_id,
-        user_id: userId,
+        organization_id: organizationId,
+        user_id: invitedUserId,
         role,
         is_active: true
       })
 
-    if (memberError) {
-      console.error('Error adding member to organization:', memberError)
-      return NextResponse.json(
-        { error: 'Failed to add member to organization' },
-        { status: 500 }
-      )
+    if (addMemberError) {
+      const err: any = new Error('Failed to add member to organization')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    // Send welcome email
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/send-welcome`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          name,
-          password: tempPassword,
-          organization: 'Your Organization'
-        })
+    // Send welcome email (async, don't block response)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/send-welcome`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-correlation-id': correlationId
+      },
+      body: JSON.stringify({
+        email,
+        name: email.split('@')[0],
+        password: tempPassword,
+        organization: 'Your Organization'
       })
-    } catch (emailError) {
-      console.error('Error sending welcome email:', emailError)
-      // Don't fail the request if email fails
-    }
+    }).catch(err => console.error('Error sending welcome email:', err))
 
-    return NextResponse.json({ 
-      success: true,
+    return {
       message: `Invitation sent to ${email}`,
-      tempPassword // In production, don't return this - only send via email
-    })
-
-  } catch (error) {
-    console.error('Error in POST /api/organization/invite:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+      userId: invitedUserId
+      // SECURITY: Never return password in production response
+    }
+  })(request)
 }
-

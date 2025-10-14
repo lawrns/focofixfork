@@ -21,26 +21,17 @@ export function withAuditLogging(
     let error: any = null;
 
     try {
-      // Get user information
-      const authHeader = request.headers.get('authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        try {
-          const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-          if (user) {
-            userId = user.id;
-            userEmail = user.email;
-          }
-        } catch (e) {
-          // Ignore auth errors, user remains anonymous
+      // Get user information from Supabase session
+      // Note: This audit middleware is being phased out in favor of the wrapRoute pattern
+      // which includes built-in correlation ID tracking and structured logging
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          userId = user.id;
+          userEmail = user.email;
         }
-      }
-
-      // Get user from x-user-id header (set by auth middleware)
-      const headerUserId = request.headers.get('x-user-id');
-      const headerUserEmail = request.headers.get('x-user-email');
-      if (headerUserId) {
-        userId = headerUserId;
-        userEmail = headerUserEmail || undefined;
+      } catch (e) {
+        // Ignore auth errors, user remains anonymous for audit purposes
       }
 
       // Call the original handler

@@ -1,23 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { GetActivitiesSchema } from '@/lib/validation/schemas/activity-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
+
 export const dynamic = 'force-dynamic'
 
-
 export async function GET(request: NextRequest) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('project_id')
-    const organizationId = searchParams.get('organization_id')
-    const limit = parseInt(searchParams.get('limit') || '20', 10)
-    const offset = parseInt(searchParams.get('offset') || '0', 10)
+  return wrapRoute(GetActivitiesSchema, async ({ input, user, correlationId }) => {
+    const projectId = input.query?.project_id
+    const organizationId = input.query?.organization_id
+    const limit = input.query?.limit || 20
+    const offset = input.query?.offset || 0
 
     // Build query for activities
     let query = supabaseAdmin
@@ -43,7 +36,7 @@ export async function GET(request: NextRequest) {
       const { data: userOrgs } = await supabaseAdmin
         .from('organization_members')
         .select('organization_id')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
 
       const orgIds = Array.isArray(userOrgs) ? userOrgs.map(org => org.organization_id) : []
 
@@ -51,32 +44,19 @@ export async function GET(request: NextRequest) {
         query = query.in('organization_id', orgIds)
       } else {
         // User has no organizations, return empty
-        return NextResponse.json({
-          success: true,
-          data: [],
-        })
+        return []
       }
     }
 
     const { data: activities, error } = await query
 
     if (error) {
-      console.error('Error fetching activities:', error)
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch activities' },
-        { status: 500 }
-      )
+      const err: any = new Error('Failed to fetch activities')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: activities || [],
-    })
-  } catch (error: any) {
-    console.error('Activities API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return activities || []
+  })(request)
 }

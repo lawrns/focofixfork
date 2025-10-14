@@ -1,77 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { OpenAIProjectManager } from '@/lib/services/openai-project-manager'
-import { z } from 'zod'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { AICreateMilestoneSchema } from '@/lib/validation/schemas/ai-api.schema'
+import { checkRateLimit } from '@/server/utils/rateLimit'
+import { aiService } from '@/lib/services/openai'
 
-const CreateMilestoneSchema = z.object({
-  specification: z.string().min(5, 'Milestone specification must be at least 5 characters'),
-  projectId: z.string().uuid('Invalid project ID'),
-})
-
+/**
+ * POST /api/ai/create-milestone - Generate milestone using AI
+ * Rate limited: 10 AI requests per minute
+ */
 export async function POST(request: NextRequest) {
-  try {
-    const userId = request.headers.get('x-user-id')
+  return wrapRoute(AICreateMilestoneSchema, async ({ input, user, req, correlationId }) => {
+    // AI rate limit: 10 requests per minute
+    await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'ai')
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
+    const result = await aiService.generateMilestone({
+      projectId: input.body.projectId,
+      context: input.body.context,
+      userId: user.id,
+      correlationId
+    })
+
+    if (!result.success) {
+      const err: any = new Error(result.error || 'AI service failed')
+      err.code = 'AI_SERVICE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
-    const body = await request.json()
-
-    // Validate request body
-    const validation = CreateMilestoneSchema.safeParse(body)
-    if (!validation.success) {
-      return NextResponse.json(
-        { success: false, error: validation.error.errors[0].message },
-        { status: 400 }
-      )
-    }
-
-    const { specification, projectId } = validation.data
-
-    // Check AI service availability
-    const { aiService } = await import('@/lib/services/openai')
-    const connectionTest = await aiService.testConnection()
-    if (!connectionTest.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'AI service is currently unavailable. Please try again later.',
-          details: connectionTest.message
-        },
-        { status: 503 }
-      )
-    }
-
-    // Create the milestone using OpenAI
-    const milestone = await OpenAIProjectManager.createMilestone(
-      projectId,
-      specification,
-      userId
-    )
-
-    return NextResponse.json({
-      success: true,
-      data: { milestone }
-    }, { status: 201 })
-
-  } catch (error) {
-    console.error('AI create milestone error:', error)
-
-    if (error instanceof Error) {
-      if (error.message.includes('Failed to create')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 500 }
-        )
-      }
-    }
-
-    return NextResponse.json(
-      { success: false, error: 'Internal server error while creating milestone' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }

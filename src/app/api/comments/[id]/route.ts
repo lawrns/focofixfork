@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { UpdateCommentApiSchema, DeleteCommentSchema } from '@/lib/validation/schemas/comment-api.schema'
 import { CommentsService } from '@/lib/services/comments'
-import { validateUpdateComment } from '@/lib/validation/schemas/comments'
+import { ForbiddenError } from '@/server/auth/requireAuth'
 
-interface RouteParams {
+interface RouteContext {
   params: {
     id: string
   }
@@ -11,124 +13,63 @@ interface RouteParams {
 /**
  * PUT /api/comments/[id] - Update a specific comment
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return wrapRoute(UpdateCommentApiSchema, async ({ input, user, correlationId }) => {
+    const commentId = context.params.id
 
-    const commentId = params.id
     if (!commentId) {
-      return NextResponse.json(
-        { success: false, error: 'Comment ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Comment ID is required')
+      err.code = 'INVALID_COMMENT_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const body = await request.json()
-
-    // Validate request body
-    const validationResult = validateUpdateComment(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
+    try {
+      const result = await CommentsService.updateComment(commentId, user.id, input.body)
+      return result
+    } catch (error: any) {
+      if (error.message?.includes('permission')) {
+        throw new ForbiddenError('You do not have permission to edit this comment')
+      }
+      if (error.message?.includes('not found')) {
+        const err: any = new Error('Comment not found')
+        err.code = 'COMMENT_NOT_FOUND'
+        err.statusCode = 404
+        throw err
+      }
+      throw error
     }
-
-    // Transform data to match service expectations
-    const updateData = {
-      ...validationResult.data,
-      parent_id: validationResult.data.parent_id || undefined,
-    }
-
-    const result = await CommentsService.updateComment(commentId, userId, updateData)
-
-    return NextResponse.json({
-      success: true,
-      data: result,
-    })
-  } catch (error: any) {
-    console.error('Comment update API error:', error)
-
-    // Handle specific error types
-    if (error.message?.includes('permission')) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to edit this comment' },
-        { status: 403 }
-      )
-    }
-
-    if (error.message?.includes('not found')) {
-      return NextResponse.json(
-        { success: false, error: 'Comment not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+  })(request)
 }
 
 /**
  * DELETE /api/comments/[id] - Delete a specific comment
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return wrapRoute(DeleteCommentSchema, async ({ user, correlationId }) => {
+    const commentId = context.params.id
 
-    const commentId = params.id
     if (!commentId) {
-      return NextResponse.json(
-        { success: false, error: 'Comment ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Comment ID is required')
+      err.code = 'INVALID_COMMENT_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    await CommentsService.deleteComment(commentId, userId)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Comment deleted successfully',
-    })
-  } catch (error: any) {
-    console.error('Comment deletion API error:', error)
-
-    // Handle specific error types
-    if (error.message?.includes('permission')) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to delete this comment' },
-        { status: 403 }
-      )
+    try {
+      await CommentsService.deleteComment(commentId, user.id)
+      return { message: 'Comment deleted successfully' }
+    } catch (error: any) {
+      if (error.message?.includes('permission')) {
+        throw new ForbiddenError('You do not have permission to delete this comment')
+      }
+      if (error.message?.includes('not found')) {
+        const err: any = new Error('Comment not found')
+        err.code = 'COMMENT_NOT_FOUND'
+        err.statusCode = 404
+        throw err
+      }
+      throw error
     }
-
-    if (error.message?.includes('not found')) {
-      return NextResponse.json(
-        { success: false, error: 'Comment not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+  })(request)
 }

@@ -70,7 +70,7 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          const orgs = data.data || []
+          const orgs = Array.isArray(data.data) ? data.data : []
           setOrganizations(orgs)
         }
       }

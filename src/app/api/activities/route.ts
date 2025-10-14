@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         .select('organization_id')
         .eq('user_id', userId)
 
-      const orgIds = userOrgs?.map(org => org.organization_id) || []
+      const orgIds = Array.isArray(userOrgs) ? userOrgs.map(org => org.organization_id) : []
 
       if (orgIds.length > 0) {
         query = query.in('organization_id', orgIds)

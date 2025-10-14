@@ -1,390 +1,390 @@
-// Foco Service Worker - PWA functionality
-const CACHE_NAME = 'foco-v1.0.0';
-const STATIC_CACHE = 'foco-static-v1.0.0';
-const DYNAMIC_CACHE = 'foco-dynamic-v1.0.0';
-const API_CACHE = 'foco-api-v1.0.0';
+// Service Worker Version
+const SW_VERSION = '1.0.21'
+const CACHE_PREFIX = 'foco-cache-'
+const STATIC_CACHE = `${CACHE_PREFIX}static-v${SW_VERSION}`
+const DYNAMIC_CACHE = `${CACHE_PREFIX}dynamic-v${SW_VERSION}`
+const API_CACHE = `${CACHE_PREFIX}api-v${SW_VERSION}`
 
-// Resources to cache immediately
-const STATIC_ASSETS = [
+// Circuit breaker for failing endpoints
+const circuitBreaker = new Map() // URL -> { failures: number, nextRetry: number, isOpen: boolean }
+
+// Circuit breaker settings
+const CIRCUIT_BREAKER_CONFIG = {
+  maxFailures: 3,           // Open circuit after 3 failures
+  resetTimeout: 60000,      // Reset circuit after 1 minute
+  halfOpenTimeout: 30000,   // Try again after 30 seconds
+}
+
+// Files to cache during install
+const STATIC_FILES = [
   '/',
-  '/manifest.json',
   '/offline.html',
-  '/icons/icon.svg',
-  '/icons/manifest-icon-192.maskable.png',
-  '/icons/manifest-icon-512.maskable.png',
-];
-
-// API endpoints to cache (GET requests only)
-const API_ENDPOINTS = [
-  '/api/health',
-  '/api/user/profile',
-  '/api/organizations',
-  '/api/projects',
-  '/api/milestones',
-  '/api/tasks',
-  '/api/goals',
-];
+  '/manifest.json',
+  '/favicon.ico',
+]
 
 // Install event - cache static assets
-self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker');
-  event.waitUntil(
-    Promise.all([
-      caches.open(STATIC_CACHE).then((cache) => {
-        console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      }),
-      // Skip waiting to activate immediately
-      self.skipWaiting()
-    ])
-  );
-});
+self.addEventListener('install', async (event) => {
+  console.log('[SW] Installing service worker version:', SW_VERSION)
 
-// Activate event - clean up old caches
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      // Cache static files individually with error handling
+      for (const file of STATIC_FILES) {
+        try {
+          await cache.add(file)
+        } catch (error) {
+          console.warn(`[SW] Failed to cache ${file}:`, error)
+        }
+      }
+      console.log('[SW] Static files cached')
+
+      // Skip waiting and activate immediately
+      await self.skipWaiting()
+    })
+  )
+})
+
+// Activate event - cleanup old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker');
+  console.log('[SW] Activating service worker version:', SW_VERSION)
+
   event.waitUntil(
-    Promise.all([
+    (async () => {
       // Clean up old caches
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE && cacheName !== API_CACHE) {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      }),
-      // Take control of all clients
-      self.clients.claim()
-    ])
-  );
-});
+      const cacheNames = await caches.keys()
+      const oldCaches = cacheNames.filter(name =>
+        name.startsWith(CACHE_PREFIX) &&
+        !name.includes(`v${SW_VERSION}`)
+      )
 
-// Fetch event - handle requests
+      for (const cacheName of oldCaches) {
+        console.log('[SW] Deleting old cache:', cacheName)
+        await caches.delete(cacheName)
+      }
+
+      // Take control of all clients immediately
+      await self.clients.claim()
+      console.log('[SW] Service worker activated and claimed clients')
+    })()
+  )
+})
+
+// Fetch event - handle network requests
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  const { request } = event
+  const url = new URL(request.url)
 
-  // Handle different types of requests
-  if (request.method === 'GET') {
-    if (isStaticAsset(request.url)) {
-      // Cache-first for static assets
-      event.respondWith(cacheFirst(request));
-    } else if (isApiRequest(request.url)) {
-      // Network-first for API calls
-      event.respondWith(networkFirst(request));
-    } else if (isImageRequest(request.url)) {
-      // Cache-first for images
-      event.respondWith(cacheFirst(request));
-    } else {
-      // Network-first for pages, fallback to offline page
-      event.respondWith(networkFirst(request, '/offline.html'));
+  // Skip chrome-extension and other non-http(s) protocols
+  if (!url.protocol.startsWith('http')) {
+    return
+  }
+
+  // Skip requests to different origins
+  if (url.origin !== self.location.origin) {
+    return
+  }
+
+  // Handle API requests with circuit breaker
+  if (isApiRequest(request.url)) {
+    // Check circuit breaker first
+    const breaker = getCircuitBreakerState(request.url)
+    if (breaker.isOpen) {
+      console.warn(`[SW] Circuit breaker OPEN for ${request.url}`)
+      event.respondWith(
+        new Response(
+          JSON.stringify({
+            error: 'Service temporarily unavailable. Please try again later.',
+            retryAfter: Math.ceil((breaker.nextRetry - Date.now()) / 1000)
+          }),
+          {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      )
+      return
     }
+
+    event.respondWith(networkFirstWithCircuitBreaker(request))
+    return
   }
-});
 
-// Background sync for offline actions
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered:', event.tag);
-
-  if (event.tag === 'background-sync') {
-    event.waitUntil(syncOfflineData());
+  // Handle static assets with cache-first strategy
+  if (isStaticAsset(request.url)) {
+    event.respondWith(cacheFirst(request))
+    return
   }
-});
 
-// Push notifications
-self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
+  // Handle everything else with network-first strategy
+  event.respondWith(networkFirst(request))
+})
 
-  if (event.data) {
-    const data = event.data.json();
+// Circuit breaker functions
+function getCircuitBreakerState(url) {
+  // Normalize URL by removing query params for circuit breaker
+  const baseUrl = url.split('?')[0]
 
-    const options = {
-      body: data.body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      vibrate: [100, 50, 100],
-      data: {
-        url: data.url || '/',
-        action: data.action,
-      },
-      actions: [
-        {
-          action: 'view',
-          title: 'View',
-        },
-        {
-          action: 'dismiss',
-          title: 'Dismiss',
-        },
-      ],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(data.title || 'Foco', options)
-    );
+  if (!circuitBreaker.has(baseUrl)) {
+    circuitBreaker.set(baseUrl, {
+      failures: 0,
+      nextRetry: 0,
+      isOpen: false
+    })
   }
-});
 
-// Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.action);
+  const state = circuitBreaker.get(baseUrl)
 
-  event.notification.close();
-
-  if (event.action === 'view') {
-    const url = event.notification.data?.url || '/';
-    event.waitUntil(
-      clients.openWindow(url)
-    );
+  // Check if circuit should be reset
+  if (state.isOpen && Date.now() >= state.nextRetry) {
+    console.log(`[SW] Circuit breaker entering HALF-OPEN state for ${baseUrl}`)
+    state.isOpen = false
+    state.failures = Math.floor(state.failures / 2) // Reduce failures count when trying again
   }
-  // dismiss action is handled automatically
-});
 
-// Helper functions
-function isStaticAsset(url) {
-  const staticExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2'];
-  return staticExtensions.some(ext => url.includes(ext)) || STATIC_ASSETS.includes(url);
+  return state
 }
 
-function isApiRequest(url) {
-  return url.includes('/api/') && !url.includes('/auth/');
-}
+function recordSuccess(url) {
+  const baseUrl = url.split('?')[0]
+  const state = circuitBreaker.get(baseUrl)
 
-function isImageRequest(url) {
-  return /\.(png|jpg|jpeg|gif|svg|webp|ico)$/i.test(url);
-}
-
-// Validation helper to check if request/response is cacheable
-function isCacheable(request, response) {
-  // Only cache HTTP/HTTPS requests (filter out chrome-extension://, blob:, data:, etc.)
-  if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
-    return false;
+  if (state) {
+    state.failures = 0
+    state.isOpen = false
+    state.nextRetry = 0
+    console.log(`[SW] Circuit breaker CLOSED for ${baseUrl}`)
   }
-
-  // Only cache successful responses (status 200)
-  // Skip partial responses (206), redirects (301, 302), not modified (304), errors (404, 500, etc.)
-  if (!response || response.status !== 200 || response.type === 'error') {
-    return false;
-  }
-
-  return true;
 }
 
-// Cache strategies
-async function cacheFirst(request) {
+function recordFailure(url) {
+  const baseUrl = url.split('?')[0]
+  const state = getCircuitBreakerState(url)
+
+  state.failures++
+
+  if (state.failures >= CIRCUIT_BREAKER_CONFIG.maxFailures) {
+    state.isOpen = true
+    state.nextRetry = Date.now() + CIRCUIT_BREAKER_CONFIG.halfOpenTimeout
+    console.warn(`[SW] Circuit breaker OPEN for ${baseUrl} after ${state.failures} failures`)
+  } else {
+    console.warn(`[SW] Failure ${state.failures}/${CIRCUIT_BREAKER_CONFIG.maxFailures} for ${baseUrl}`)
+  }
+}
+
+// Network strategies with circuit breaker
+async function networkFirstWithCircuitBreaker(request) {
   try {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
+    const response = await fetch(request)
+
+    if (!response.ok) {
+      // Record failure for 5xx errors and 404s (indicating access issues)
+      if (response.status >= 500 || response.status === 404) {
+        recordFailure(request.url)
+      }
+
+      // Log but don't retry failed API requests
+      console.warn(`[SW] API request failed: ${request.url} - Status: ${response.status}`)
+      return response // Return the error response to the client
     }
 
-    const networkResponse = await fetch(request);
+    // Record success
+    recordSuccess(request.url)
 
-    // Only cache if request and response are cacheable
-    if (isCacheable(request, networkResponse)) {
+    // Cache successful GET responses
+    if (request.method === 'GET') {
       try {
-        const cache = await caches.open(STATIC_CACHE);
-        await cache.put(request, networkResponse.clone());
+        const cache = await caches.open(API_CACHE)
+        await cache.put(request, response.clone())
       } catch (cacheError) {
-        // Silently ignore caching errors (e.g., quota exceeded, unsupported schemes)
-        console.debug('[SW] Cache put failed:', cacheError.message);
+        console.debug('[SW] Cache put failed:', cacheError.message)
       }
     }
 
-    return networkResponse;
+    return response
   } catch (error) {
-    // Network failed, try to return cached response
-    console.debug('[SW] Network failed in cacheFirst:', error.message);
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
+    // Network failed, record failure
+    recordFailure(request.url)
+    console.error(`[SW] Network error for ${request.url}:`, error.message)
+
+    // Try cache fallback for GET requests
+    if (request.method === 'GET') {
+      const cachedResponse = await caches.match(request)
+      if (cachedResponse) {
+        console.log(`[SW] Serving cached response for ${request.url}`)
+        return cachedResponse
+      }
     }
-    // Re-throw if no cache available
-    throw error;
+
+    // Return offline response
+    return new Response(
+      JSON.stringify({
+        error: 'Network error. Please check your connection.',
+        offline: true
+      }),
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+}
+
+// Helper functions
+function isApiRequest(url) {
+  return url.includes('/api/') ||
+         url.includes('supabase.co/rest/') ||
+         url.includes('supabase.co/auth/')
+}
+
+function isStaticAsset(url) {
+  return url.includes('/_next/static/') ||
+         url.includes('/images/') ||
+         url.includes('/fonts/') ||
+         url.endsWith('.css') ||
+         url.endsWith('.js') ||
+         url.endsWith('.woff') ||
+         url.endsWith('.woff2') ||
+         url.endsWith('.ttf') ||
+         url.endsWith('.otf')
+}
+
+function isCacheable(request, response) {
+  // Only cache successful GET requests
+  if (request.method !== 'GET') return false
+  if (!response.ok) return false
+
+  // Don't cache auth-related responses
+  if (request.url.includes('/auth/')) return false
+
+  // Check response headers
+  const cacheControl = response.headers.get('cache-control')
+  if (cacheControl) {
+    if (cacheControl.includes('no-store')) return false
+    if (cacheControl.includes('no-cache')) return false
+    if (cacheControl.includes('private')) return false
+  }
+
+  // Don't cache partial content
+  if (response.status === 206) return false
+
+  return true
+}
+
+async function cacheFirst(request) {
+  try {
+    const cachedResponse = await caches.match(request)
+    if (cachedResponse) {
+      return cachedResponse
+    }
+
+    const networkResponse = await fetch(request)
+
+    if (networkResponse.ok && isCacheable(request, networkResponse)) {
+      try {
+        const cache = await caches.open(STATIC_CACHE)
+        await cache.put(request, networkResponse.clone())
+      } catch (cacheError) {
+        console.debug('[SW] Cache put failed:', cacheError.message)
+      }
+    }
+
+    return networkResponse
+  } catch (error) {
+    console.debug('[SW] Network failed in cacheFirst:', error.message)
+    const cachedResponse = await caches.match(request)
+    if (cachedResponse) {
+      return cachedResponse
+    }
+    throw error
   }
 }
 
 async function networkFirst(request, fallbackUrl = '/offline.html') {
   try {
-    const networkResponse = await fetch(request);
-
-    // Log API errors for debugging
-    if (isApiRequest(request.url) && !networkResponse.ok) {
-      console.warn(`[SW] API request failed: ${request.url} - Status: ${networkResponse.status} ${networkResponse.statusText}`);
-      // CRITICAL: Never cache failed API responses
-      // Return the failed response directly without caching
-      return networkResponse;
-    }
+    const networkResponse = await fetch(request)
 
     // Only cache successful responses
     if (request.method === 'GET' && networkResponse.ok && isCacheable(request, networkResponse)) {
       try {
-        const cache = await caches.open(isApiRequest(request.url) ? API_CACHE : DYNAMIC_CACHE);
-        await cache.put(request, networkResponse.clone());
+        const cache = await caches.open(DYNAMIC_CACHE)
+        await cache.put(request, networkResponse.clone())
       } catch (cacheError) {
-        // Silently ignore caching errors (e.g., quota exceeded, partial responses, unsupported schemes)
-        console.debug('[SW] Cache put failed:', cacheError.message);
+        console.debug('[SW] Cache put failed:', cacheError.message)
       }
     }
 
-    return networkResponse;
+    return networkResponse
   } catch (error) {
-    // Network failed, try cache fallback
-    const errorType = error.name || 'NetworkError';
-    console.warn(`[SW] ${errorType} in networkFirst for ${request.url}:`, error.message);
+    const errorType = error.name || 'NetworkError'
+    console.warn(`[SW] ${errorType} in networkFirst for ${request.url}:`, error.message)
 
     // Try cache first
-    const cachedResponse = await caches.match(request);
+    const cachedResponse = await caches.match(request)
     if (cachedResponse) {
-      console.debug(`[SW] Serving cached response for ${request.url}`);
-      return cachedResponse;
+      console.debug(`[SW] Serving cached response for ${request.url}`)
+      return cachedResponse
     }
 
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
       try {
-        const cache = await caches.open(STATIC_CACHE);
-        const offlineResponse = await cache.match(fallbackUrl);
+        const cache = await caches.open(STATIC_CACHE)
+        const offlineResponse = await cache.match(fallbackUrl)
         if (offlineResponse) {
-          return offlineResponse;
+          return offlineResponse
         }
       } catch (cacheError) {
-        console.debug('[SW] Failed to get offline page:', cacheError.message);
+        console.debug('[SW] Failed to retrieve offline page:', cacheError.message)
       }
-      // Final fallback
-      return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     }
 
-    // For non-navigation requests, return a more informative error response
-    // instead of throwing, to prevent uncaught promise rejections
-    console.debug(`[SW] Returning error response for ${request.url}`);
-    return new Response(JSON.stringify({ error: 'Network request failed', url: request.url }), {
+    // Return a basic offline response
+    return new Response('Offline - Please check your connection', {
       status: 503,
       statusText: 'Service Unavailable',
-      headers: { 'Content-Type': 'application/json' }
-    });
+      headers: new Headers({
+        'Content-Type': 'text/plain'
+      })
+    })
   }
 }
 
-// Background sync implementation
-async function syncOfflineData() {
-  console.log('[SW] Syncing offline data');
-
-  try {
-    // Get offline actions from IndexedDB or localStorage
-    const offlineActions = getOfflineActions();
-
-    for (const action of offlineActions) {
-      try {
-        await fetch(action.url, {
-          method: action.method,
-          headers: action.headers,
-          body: action.body,
-        });
-
-        // Remove successful action from offline storage
-        removeOfflineAction(action.id);
-      } catch (error) {
-        console.log('[SW] Failed to sync action:', action.id, error);
-        // Keep failed actions for retry
-      }
-    }
-
-    // Notify client that sync is complete
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({
-        type: 'SYNC_COMPLETE',
-        success: true,
-      });
-    });
-
-  } catch (error) {
-    console.error('[SW] Background sync failed:', error);
-  }
-}
-
-// Offline data management (simplified)
-function getOfflineActions() {
-  try {
-    const actions = localStorage.getItem('foco_offline_actions');
-    return actions ? JSON.parse(actions) : [];
-  } catch {
-    return [];
-  }
-}
-
-function removeOfflineAction(actionId) {
-  try {
-    const actions = getOfflineActions();
-    const filtered = actions.filter(action => action.id !== actionId);
-    localStorage.setItem('foco_offline_actions', JSON.stringify(filtered));
-  } catch (error) {
-    console.error('Failed to remove offline action:', error);
-  }
-}
-
-// Periodic background sync (if supported)
-if ('periodicSync' in self.registration) {
-  self.addEventListener('periodicsync', (event) => {
-    if (event.tag === 'content-sync') {
-      event.waitUntil(syncContent());
-    }
-  });
-}
-
-async function syncContent() {
-  console.log('[SW] Periodic content sync');
-
-  try {
-    // Sync user data, notifications, etc.
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({
-        type: 'CONTENT_SYNC',
-        timestamp: Date.now(),
-      });
-    });
-  } catch (error) {
-    console.error('[SW] Periodic sync failed:', error);
-  }
-}
-
-// Message handling for client communication
+// Message handler for cache operations
 self.addEventListener('message', (event) => {
-  const { type, data } = event.data;
-
-  switch (type) {
-    case 'SKIP_WAITING':
-      self.skipWaiting();
-      break;
-
-    case 'GET_VERSION':
-      event.ports[0].postMessage({ version: CACHE_NAME });
-      break;
-
-    case 'CLEAR_CACHE':
-      clearAllCaches();
-      break;
-
-    default:
-      console.log('[SW] Unknown message type:', type);
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
   }
-});
 
-async function clearAllCaches() {
-  const cacheNames = await caches.keys();
-  await Promise.all(
-    cacheNames.map(cacheName => caches.delete(cacheName))
-  );
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames
+            .filter(name => name.startsWith(CACHE_PREFIX))
+            .map(name => caches.delete(name))
+        )
+      }).then(() => {
+        console.log('[SW] All caches cleared')
+        // Also clear circuit breaker state
+        circuitBreaker.clear()
+      })
+    )
+  }
 
-  const clients = await self.clients.matchAll();
-  clients.forEach(client => {
-    client.postMessage({
-      type: 'CACHE_CLEARED',
-    });
-  });
-}
+  if (event.data && event.data.type === 'RESET_CIRCUIT_BREAKER') {
+    const url = event.data.url
+    if (url) {
+      const baseUrl = url.split('?')[0]
+      circuitBreaker.delete(baseUrl)
+      console.log(`[SW] Circuit breaker reset for ${baseUrl}`)
+    } else {
+      circuitBreaker.clear()
+      console.log('[SW] All circuit breakers reset')
+    }
+  }
+})
+
+console.log('[SW] Service worker loaded, version:', SW_VERSION)

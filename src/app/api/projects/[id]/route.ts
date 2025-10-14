@@ -14,17 +14,29 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const userId = request.headers.get('x-user-id')
+    console.log(`[API] GET /api/projects/${params.id} - userId: ${userId}`)
+
     if (!userId) {
+      console.warn(`[API] Unauthorized access attempt to project ${params.id}`)
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
+        {
+          success: false,
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED'
+        },
         { status: 401 }
       )
     }
 
     const projectId = params.id
-    if (!projectId) {
+    if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      console.error(`[API] Invalid project ID: ${projectId}`)
       return NextResponse.json(
-        { success: false, error: 'Project ID is required' },
+        {
+          success: false,
+          error: 'Valid project ID is required',
+          code: 'INVALID_PROJECT_ID'
+        },
         { status: 400 }
       )
     }
@@ -32,21 +44,47 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const result = await ProjectsService.getProjectById(userId, projectId)
 
     if (!result.success) {
-      const statusCode = result.error === 'Project not found' ? 404 : 500
+      // Better error categorization
+      let statusCode = 500
+      let errorCode = 'INTERNAL_ERROR'
+
+      if (result.error?.includes('not found') || result.error?.includes('access denied')) {
+        statusCode = 404
+        errorCode = 'PROJECT_NOT_FOUND'
+        console.warn(`[API] Project ${projectId} not found or access denied for user ${userId}`)
+      } else if (result.error?.includes('database')) {
+        statusCode = 503
+        errorCode = 'DATABASE_ERROR'
+        console.error(`[API] Database error fetching project ${projectId}:`, result.error)
+      } else {
+        console.error(`[API] Error fetching project ${projectId}:`, result.error)
+      }
+
       return NextResponse.json(
-        { success: false, error: result.error },
+        {
+          success: false,
+          error: result.error || 'Failed to fetch project',
+          code: errorCode,
+          projectId
+        },
         { status: statusCode }
       )
     }
 
+    console.log(`[API] Successfully fetched project ${projectId} for user ${userId}`)
     return NextResponse.json({
       success: true,
       data: result.data,
     })
   } catch (error: any) {
-    console.error('Project detail API error:', error)
+    console.error(`[API] Unexpected error in GET /api/projects/${params.id}:`, error)
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      {
+        success: false,
+        error: 'An unexpected error occurred',
+        code: 'UNEXPECTED_ERROR',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     )
   }

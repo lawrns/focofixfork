@@ -116,7 +116,7 @@ export async function middleware(req: NextRequest) {
 
   // API route protection
   if (pathname.startsWith('/api/')) {
-    console.log('Middleware: API route detected:', pathname, 'Session:', session ? 'present' : 'null')
+    console.log('Middleware: API route detected:', pathname, 'Session:', session ? `present (user: ${session.user.id})` : 'null')
 
     // Allow auth endpoints without authentication
     if (pathname.startsWith('/api/auth/')) {
@@ -129,7 +129,10 @@ export async function middleware(req: NextRequest) {
       if (!session) {
         console.log('Middleware: No session for organization setup API, returning 401')
         return NextResponse.json(
-          { error: 'Authentication required' },
+          {
+            error: 'Authentication required',
+            code: 'AUTH_REQUIRED'
+          },
           { status: 401 }
         )
       }
@@ -148,7 +151,11 @@ export async function middleware(req: NextRequest) {
     if (!session) {
       console.log('Middleware: No session for API route, returning 401')
       return NextResponse.json(
-        { error: 'Authentication required' },
+        {
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          path: pathname
+        },
         { status: 401 }
       )
     }
@@ -156,34 +163,44 @@ export async function middleware(req: NextRequest) {
     // Check organization setup completion for protected API routes
     const setupResult = await userSetupMiddleware(req)
     if (setupResult.error) {
+      console.error('Middleware: Setup check error:', setupResult.error)
       return setupResult.error
     }
 
     if (!setupResult.completed) {
       console.log('Middleware: User has not completed organization setup, blocking API access')
       return NextResponse.json(
-        { error: 'Organization setup required' },
+        {
+          error: 'Organization setup required',
+          code: 'SETUP_REQUIRED'
+        },
         { status: 403 }
       )
     }
 
-    console.log('Middleware: Setting user headers for API route:', session.user.id)
-    // Rate limiting for API routes (basic implementation)
-    const clientIP = req.headers.get('x-forwarded-for') ||
-                     req.headers.get('x-real-ip') ||
-                     'unknown'
-
-    // In a real implementation, you'd check rate limits against Redis/database
-    // For now, we'll just pass through
+    console.log(`Middleware: Setting headers for API route ${pathname} - userId: ${session.user.id}, email: ${session.user.email}`)
 
     // Add user context to request headers for API routes
     const requestHeaders = new Headers(req.headers)
     requestHeaders.set('x-user-id', session.user.id)
     requestHeaders.set('x-user-email', session.user.email || '')
+    requestHeaders.set('x-session-expires', session.expires_at || '')
 
-    console.log('Middleware: Modified headers contain x-user-id:', requestHeaders.has('x-user-id'))
+    // Verify headers are set
+    const headersSet = {
+      'x-user-id': requestHeaders.get('x-user-id'),
+      'x-user-email': requestHeaders.get('x-user-email')
+    }
+    console.log('Middleware: Headers set for API:', headersSet)
 
-    // Return response with modified headers
+    // Create new request with modified headers
+    const modifiedRequest = new NextRequest(req.url, {
+      headers: requestHeaders,
+      method: req.method,
+      body: req.body,
+    })
+
+    // Return response with modified request
     return NextResponse.next({
       request: {
         headers: requestHeaders,

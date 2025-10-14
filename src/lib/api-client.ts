@@ -1,3 +1,5 @@
+import { errorTracker } from './monitoring/error-tracker'
+
 // Enhanced API client with timeout, retry, and caching support
 interface ApiClientOptions {
   timeout?: number
@@ -21,6 +23,10 @@ class ApiClient {
       ...fetchOptions
     } = options
 
+    // If service worker is active, reduce client-side retries to avoid duplication
+    // Service worker has its own circuit breaker and retry logic
+    const effectiveRetries = 'serviceWorker' in navigator ? 0 : retries
+
     // Check cache first
     if (useCache) {
       const cached = this.cache.get(url)
@@ -31,7 +37,7 @@ class ApiClient {
 
     let lastError: Error | null = null
 
-    for (let attempt = 0; attempt <= retries; attempt++) {
+    for (let attempt = 0; attempt <= effectiveRetries; attempt++) {
       try {
         // Create AbortController for timeout
         const controller = new AbortController()
@@ -53,14 +59,23 @@ class ApiClient {
           }
 
           return { ok: true, data }
-        } else if (response.status >= 500 && attempt < retries) {
+        } else if (response.status >= 500 && attempt < effectiveRetries) {
           // Retry on server errors
           lastError = new Error(`HTTP ${response.status}: ${response.statusText}`)
-          if (attempt < retries) {
+          if (attempt < effectiveRetries) {
             await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
             continue
           }
         } else {
+          // Track non-retryable errors
+          errorTracker.trackApiError(
+            url,
+            fetchOptions.method || 'GET',
+            response.status,
+            response.statusText,
+            { headers: fetchOptions.headers }
+          )
+
           // Don't retry on client errors
           return { ok: false, error: `HTTP ${response.status}: ${response.statusText}` }
         }
@@ -71,12 +86,21 @@ class ApiClient {
           lastError = new Error('Request timeout')
         }
 
-        if (attempt < retries) {
+        if (attempt < effectiveRetries) {
           await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
           continue
         }
       }
     }
+
+    // Track final failure after all retries
+    errorTracker.trackApiError(
+      url,
+      fetchOptions.method || 'GET',
+      0,
+      lastError?.message || 'Request failed',
+      { retriesExhausted: true }
+    )
 
     return { ok: false, error: lastError?.message || 'Request failed' }
   }

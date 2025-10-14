@@ -356,7 +356,7 @@ class ErrorTracker {
     })
   }
 
-  private handleGlobalError(event: ErrorEvent) {
+  private handleGlobalError(event: globalThis.ErrorEvent) {
     this.trackJsError(new Error(event.message), {
       type: 'globalError',
       filename: event.filename,

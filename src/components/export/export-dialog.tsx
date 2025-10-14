@@ -179,7 +179,7 @@ export default function ExportDialog({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className={className}>
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4 mr-2 opacity-70" />
             Export Data
           </Button>
         )}
@@ -188,7 +188,7 @@ export default function ExportDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Download className="w-5 h-5" />
+            <Download className="w-5 h-5 opacity-70" />
             Export Data
           </DialogTitle>
         </DialogHeader>

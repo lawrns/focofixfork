@@ -223,7 +223,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Total Projects</CardTitle>
                   <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
-                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary opacity-70" />
                   </div>
                 </div>
               </CardHeader>
@@ -242,7 +242,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Task Completion</CardTitle>
                   <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 flex-shrink-0">
-                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600" />
+                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 opacity-70" />
                   </div>
                 </div>
               </CardHeader>
@@ -259,7 +259,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Team Members</CardTitle>
                   <div className="p-1.5 sm:p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
-                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
+                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 opacity-70" />
                   </div>
                 </div>
               </CardHeader>
@@ -278,7 +278,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Hours Tracked</CardTitle>
                   <div className="p-1.5 sm:p-2 rounded-lg bg-amber-500/10 flex-shrink-0">
-                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600" />
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 opacity-70" />
                   </div>
                 </div>
               </CardHeader>
@@ -299,7 +299,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-primary/10">
-                    <PieChart className="h-4 w-4 text-primary" />
+                    <PieChart className="h-4 w-4 text-primary opacity-70" />
                   </div>
                   <div>
                     <CardTitle>Project Status</CardTitle>
@@ -334,7 +334,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-blue-500/10">
-                    <Target className="h-4 w-4 text-blue-600" />
+                    <Target className="h-4 w-4 text-blue-600 opacity-70" />
                   </div>
                   <div>
                     <CardTitle>Task Priorities</CardTitle>

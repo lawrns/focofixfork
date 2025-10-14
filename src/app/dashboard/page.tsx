@@ -178,9 +178,7 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <div className="flex min-h-screen">
-        <div className="flex-1">
-          <div className="flex items-end justify-between mb-6 gap-6 px-4 pt-4">
+      <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4">
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {
@@ -203,9 +201,10 @@ export default function DashboardPage() {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="opacity-70"
                 >
                   <path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </svg>
@@ -225,7 +224,6 @@ export default function DashboardPage() {
             {activeView === 'analytics' && <AnalyticsDashboard />}
             {activeView === 'goals' && <GoalsDashboard />}
           </Suspense>
-          </div>
 
           {/* Time Tracker Sidebar - disabled until timer_sessions table exists */}
           {/* <div className="w-80 border-l bg-muted/10 p-4">
@@ -234,7 +232,6 @@ export default function DashboardPage() {
               projects={[]} // TODO: Pass actual projects
             />
           </div> */}
-        </div>
 
       {/* New Project Modal */}
       <Dialog open={showNewProjectModal} onOpenChange={setShowNewProjectModal}>

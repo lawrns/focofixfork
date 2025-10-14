@@ -203,7 +203,7 @@ export default function ImportDialog({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className={className}>
-            <Upload className="w-4 h-4 mr-2" />
+            <Upload className="w-4 h-4 mr-2 opacity-70" />
             Import Data
           </Button>
         )}
@@ -212,7 +212,7 @@ export default function ImportDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
+            <Upload className="w-5 h-5 opacity-70" />
             Import Data
           </DialogTitle>
         </DialogHeader>

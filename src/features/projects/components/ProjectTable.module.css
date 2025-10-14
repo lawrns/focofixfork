@@ -1,0 +1,89 @@
+/* Force table visibility - Override any cached styles */
+.projectTable {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.projectTable th,
+.projectTable td {
+  display: table-cell !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Remove any hidden classes that might be cached */
+.projectTable .hidden,
+.projectTable .sm\:hidden,
+.projectTable .md\:hidden,
+.projectTable .lg\:hidden {
+  display: table-cell !important;
+}
+
+/* Ensure all columns are visible */
+.projectTable thead th {
+  display: table-cell !important;
+  visibility: visible !important;
+}
+
+.projectTable tbody td {
+  display: table-cell !important;
+  visibility: visible !important;
+}
+
+/* Force minimum widths */
+.projectTable th:nth-child(1),
+.projectTable td:nth-child(1) {
+  width: 50px !important;
+}
+
+.projectTable th:nth-child(2),
+.projectTable td:nth-child(2) {
+  width: 25% !important;
+  min-width: 200px !important;
+}
+
+.projectTable th:nth-child(3),
+.projectTable td:nth-child(3) {
+  width: 120px !important;
+}
+
+.projectTable th:nth-child(4),
+.projectTable td:nth-child(4) {
+  width: 120px !important;
+}
+
+.projectTable th:nth-child(5),
+.projectTable td:nth-child(5) {
+  width: 140px !important;
+}
+
+.projectTable th:nth-child(6),
+.projectTable td:nth-child(6) {
+  width: 100px !important;
+}
+
+.projectTable th:nth-child(7),
+.projectTable td:nth-child(7) {
+  width: 90px !important;
+}
+
+/* Mobile card view */
+.mobileCardView {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .mobileCardView {
+    display: none;
+  }
+
+  .desktopTableView {
+    display: block !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .desktopTableView {
+    display: none !important;
+  }
+}

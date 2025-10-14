@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { ProjectClientService } from '../services/projectClientService'
 import { useGlobalRealtime, useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
 import { QuickActions, createProjectActions } from '@/components/ui/quick-actions'
@@ -19,6 +20,7 @@ import ProjectSettingsDialog from '@/components/dialogs/project-settings-dialog'
 import { useToast } from '@/components/toast/toast'
 import { UpdateProject } from '@/lib/validation/schemas/project.schema'
 import { usePermissions } from '@/hooks/usePermissions'
+import styles from './ProjectTable.module.css'
 
 interface Project {
   id: string
@@ -115,12 +117,28 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   // Helper functions
   const getStatusBadge = (status: Project['status']) => {
-    const styles = {
-      'planning': 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
-      'active': 'bg-blue-500 text-white dark:bg-blue-600 dark:text-blue-50',
-      'on_hold': 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100',
-      'completed': 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100',
-      'cancelled': 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100'
+    const backgroundColors = {
+      'planning': '#f1f5f9',
+      'active': '#dbeafe',
+      'on_hold': '#fed7aa',
+      'completed': '#bbf7d0',
+      'cancelled': '#fecaca'
+    }
+
+    const textColors = {
+      'planning': '#475569',
+      'active': '#1e40af',
+      'on_hold': '#c2410c',
+      'completed': '#14532d',
+      'cancelled': '#991b1b'
+    }
+
+    const borderColors = {
+      'planning': '#cbd5e1',
+      'active': '#93c5fd',
+      'on_hold': '#fb923c',
+      'completed': '#86efac',
+      'cancelled': '#fca5a5'
     }
 
     const labels = {
@@ -132,18 +150,41 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     }
 
     return (
-      <span className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-medium ${styles[status] || styles.planning}`}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px 12px',
+          minWidth: '85px',
+          borderRadius: '6px',
+          fontSize: '11px',
+          fontWeight: '600',
+          letterSpacing: '0.025em',
+          textTransform: 'uppercase',
+          backgroundColor: backgroundColors[status] || backgroundColors.planning,
+          color: textColors[status] || textColors.planning,
+          border: `1px solid ${borderColors[status] || borderColors.planning}`
+        }}
+      >
         {labels[status] || status}
       </span>
     )
   }
 
   const getPriorityBadge = (priority: Project['priority']) => {
-    const styles = {
-      'low': 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
-      'medium': 'bg-blue-500 text-white dark:bg-blue-600 dark:text-blue-50',
-      'high': 'bg-orange-100 text-orange-900 dark:bg-orange-900 dark:text-orange-100',
-      'urgent': 'bg-red-600 text-white dark:bg-red-700 dark:text-red-50'
+    const backgroundColors = {
+      'low': '#e2e8f0',
+      'medium': '#3b82f6',
+      'high': '#f97316',
+      'urgent': '#dc2626'
+    }
+
+    const textColors = {
+      'low': '#475569',
+      'medium': '#ffffff',
+      'high': '#ffffff',
+      'urgent': '#ffffff'
     }
 
     const labels = {
@@ -154,7 +195,23 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
     }
 
     return (
-      <span className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-medium ${styles[priority] || styles.medium}`}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px 12px',
+          minWidth: '70px',
+          borderRadius: '6px',
+          fontSize: '11px',
+          fontWeight: '600',
+          letterSpacing: '0.025em',
+          textTransform: 'uppercase',
+          backgroundColor: backgroundColors[priority] || backgroundColors.medium,
+          color: textColors[priority] || textColors.medium,
+          border: priority === 'low' ? '1px solid #cbd5e1' : 'none'
+        }}
+      >
         {labels[priority] || priority}
       </span>
     )
@@ -471,30 +528,15 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         projectStore.startOperation(projectId)
       })
 
-      const response = await fetch('/api/projects/bulk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',        },
-        body: JSON.stringify({
-          operation,
-          project_ids: projectIds,
-          ...(force !== undefined && { parameters: { force } }),
-        }),
-      })
+      const result = await ProjectClientService.bulkOperation(operation, projectIds, { force })
 
-      if (!response.ok) {
-        // End operation tracking on error
-        projectIds.forEach(projectId => {
-          projectStore.endOperation(projectId)
-        })
-        throw new Error('Bulk operation failed')
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Bulk operation failed')
       }
 
-      const result = await response.json()
-
       // Update store with successful operations
-      if (result.successful) {
-        result.successful.forEach((projectId: string) => {
+      if (result.data.successful) {
+        result.data.successful.forEach((projectId: string) => {
           if (operation === 'delete') {
             projectStore.removeProject(projectId)
 
@@ -520,8 +562,8 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       }
 
       // End operation tracking for successful operations
-      if (result.successful) {
-        result.successful.forEach((projectId: string) => {
+      if (result.data.successful) {
+        result.data.successful.forEach((projectId: string) => {
           setTimeout(() => {
             projectStore.endOperation(projectId)
           }, 100)
@@ -529,13 +571,16 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       }
 
       // End operation tracking for failed operations
-      if (result.failed) {
-        result.failed.forEach((projectId: string) => {
-          projectStore.endOperation(projectId)
+      if (result.data.failed) {
+        result.data.failed.forEach((failure) => {
+          projectStore.endOperation(failure.id)
         })
       }
 
-      return result
+      return {
+        successful: result.data.successful || [],
+        failed: result.data.failed || []
+      }
     } catch (error) {
       // Ensure operation tracking is ended on error
       projectIds.forEach(projectId => {
@@ -808,7 +853,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   }
 
   return (
-    <div className={`mt-6 space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
+    <div className={`w-full space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
 
       {/* Advanced Filtering */}
       <div className="mb-4 flex items-center justify-between px-4">
@@ -836,12 +881,117 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         </div>
       </div>
 
-      <div className="rounded-xl glass-card hover-lift overflow-hidden border-2">
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="min-w-full divide-y divide-border/50">
-            <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+      {/* Mobile Card View - Only on small screens */}
+      <div className={`${styles.mobileCardView} space-y-4`}>
+        {loading ? (
+          // Loading cards for mobile
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4 animate-pulse">
+              <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-3"></div>
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+            </div>
+          ))
+        ) : projects.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center">
+            <p className="text-lg font-medium text-slate-900 dark:text-slate-100">No projects yet</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Create your first project to get started</p>
+          </div>
+        ) : (
+          filteredProjects.map((project) => (
+            <div
+              key={project.id}
+              className={`bg-white dark:bg-slate-900 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                selectedProjects.has(project.id)
+                  ? 'border-primary bg-primary/5'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-primary/50'
+              }`}
+              onClick={() => handleViewProject(project.id)}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start gap-3 flex-1">
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedProjects.has(project.id)}
+                      onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
+                      aria-label={`Select project ${project.name}`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{project.name}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      {project.organizations?.name || 'Personal'}
+                    </p>
+                  </div>
+                </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <QuickActions
+                    actions={createProjectActions(
+                      project.id,
+                      handleViewProject,
+                      permissions.canEdit ? handleEditProject : () => {
+                        toast({
+                          title: 'Permission Denied',
+                          description: 'You do not have permission to edit projects',
+                          variant: 'destructive',
+                        })
+                      },
+                      handleDuplicateProject,
+                      permissions.canDelete ? handleArchiveProject : () => {
+                        toast({
+                          title: 'Permission Denied',
+                          description: 'You do not have permission to archive projects',
+                          variant: 'destructive',
+                        })
+                      },
+                      permissions.canDelete ? handleDeleteProject : () => {
+                        toast({
+                          title: 'Permission Denied',
+                          description: 'You do not have permission to delete projects',
+                          variant: 'destructive',
+                        })
+                      },
+                      permissions.canManageTeam ? handleManageTeam : () => {
+                        toast({
+                          title: 'Permission Denied',
+                          description: 'You do not have permission to manage teams',
+                          variant: 'destructive',
+                        })
+                      },
+                      permissions.canManageTeam ? handleProjectSettings : () => {
+                        toast({
+                          title: 'Permission Denied',
+                          description: 'You do not have permission to change settings',
+                          variant: 'destructive',
+                        })
+                      }
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {getStatusBadge(project.status)}
+                {getPriorityBadge(project.priority)}
+                {project.due_date && (
+                  <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(project.due_date).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View - Hidden on mobile, visible on sm and up */}
+      <div className={`${styles.desktopTableView} w-full rounded-xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700`}>
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <table className={`${styles.projectTable} w-full min-w-[900px]`} style={{ tableLayout: 'fixed', width: '100%' }}>
+            <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-800/50">
               <tr>
-                <th className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 sm:px-6" scope="col">
+                <th scope="col" style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={handleSelectAll}
@@ -849,57 +999,57 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                     className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
                   />
                 </th>
-                <th className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 sm:px-6" scope="col">
+                <th scope="col" style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Name
                 </th>
-                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 sm:table-cell sm:px-6" scope="col">
+                <th scope="col" style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Status
                 </th>
-                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 md:table-cell md:px-6" scope="col">
+                <th scope="col" style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Due Date
                 </th>
-                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 lg:table-cell lg:px-6" scope="col">
+                <th scope="col" style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Organization
                 </th>
-                <th className="hidden px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 xl:table-cell xl:px-6" scope="col">
+                <th scope="col" style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Priority
                 </th>
-                <th className="px-3 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-700 sm:px-6" scope="col">
+                <th scope="col" style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/30 bg-white">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
               {loading ? (
                 // Loading skeleton
                 [...Array(3)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-3 py-4 sm:px-6">
-                      <div className="h-4 w-4 bg-muted rounded"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-4 w-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
                     </td>
-                    <td className="px-3 py-4 sm:px-6">
-                      <div className="h-4 bg-muted rounded w-32"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
                     </td>
-                    <td className="hidden px-3 py-4 sm:table-cell sm:px-6">
-                      <div className="h-6 bg-muted rounded w-20"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-20"></div>
                     </td>
-                    <td className="hidden px-3 py-4 md:table-cell md:px-6">
-                      <div className="h-4 bg-muted rounded w-24"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div>
                     </td>
-                    <td className="hidden px-3 py-4 lg:table-cell lg:px-6">
-                      <div className="h-4 bg-muted rounded w-28"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28"></div>
                     </td>
-                    <td className="hidden px-3 py-4 xl:table-cell xl:px-6">
-                      <div className="h-6 bg-muted rounded w-16"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
                     </td>
-                    <td className="px-3 py-4 sm:px-6">
-                      <div className="h-8 bg-muted rounded w-8"></div>
+                    <td className="px-3 py-4">
+                      <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-8 ml-auto"></div>
                     </td>
                   </tr>
                 ))
               ) : projects.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 sm:px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-3 py-12 text-center text-slate-500 dark:text-slate-400">
                     <div className="space-y-2 max-w-full overflow-hidden">
                       <p className="text-base sm:text-lg font-medium break-words px-2">No projects yet</p>
                       <p className="text-xs sm:text-sm break-words px-2">Create your first project to get started</p>
@@ -917,36 +1067,31 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
                     }`}
                     onClick={() => handleViewProject(project.id)}
                   >
-                    <td className="px-3 py-5 sm:px-6" onClick={(e) => e.stopPropagation()}>
+                    <td style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-5" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedProjects.has(project.id)}
                         onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
                         aria-label={`Select project ${project.name}`}
                       />
                     </td>
-                    <td className="px-3 py-5 sm:px-6">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-slate-900">{project.name}</span>
-                        {/* Mobile-only additional info */}
-                        <div className="flex items-center space-x-2 sm:hidden mt-1">
-                          {getStatusBadge(project.status)}
-                          {getPriorityBadge(project.priority)}
-                        </div>
+                    <td style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }} className="px-3 py-5">
+                      <div className="flex flex-col w-full">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{project.name}</span>
                       </div>
                     </td>
-                    <td className="hidden px-3 py-5 sm:table-cell sm:px-6">
+                    <td style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-5">
                       {getStatusBadge(project.status)}
                     </td>
-                    <td className="hidden px-3 py-5 text-sm text-slate-600 md:table-cell md:px-6 font-medium">
-                      {project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}
+                    <td style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-5 text-sm text-slate-600 dark:text-slate-400 font-medium">
+                      <span className="block">{project.due_date ? new Date(project.due_date).toLocaleDateString() : '-'}</span>
                     </td>
-                    <td className="hidden px-3 py-5 text-sm text-slate-600 lg:table-cell lg:px-6 font-medium">
-                      {project.organizations?.name || 'Personal'}
+                    <td style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-5 text-sm text-slate-600 dark:text-slate-400 font-medium">
+                      <span className="block truncate">{project.organizations?.name || 'Personal'}</span>
                     </td>
-                    <td className="hidden px-3 py-5 xl:table-cell xl:px-6">
+                    <td style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-5">
                       {getPriorityBadge(project.priority)}
                     </td>
-                    <td className="px-3 py-5 text-right sm:px-6">
+                    <td style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-5 text-right">
                       <div onClick={(e) => e.stopPropagation()}>
                       <QuickActions
                         actions={createProjectActions(

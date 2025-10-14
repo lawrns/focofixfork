@@ -14,7 +14,8 @@ export { useProjects } from './hooks/useProjects'
 export { useProjectMutations } from './hooks/useProjects'
 
 // Services
-export { ProjectsService as projectService } from './services/projectService'
+export { ProjectsService as projectService } from './services/projectService' // Server-side only
+export { ProjectClientService } from './services/projectClientService' // Client-side
 
 // Validation
 export { projectSchema, projectFormSchema } from './validation/projectSchemas'

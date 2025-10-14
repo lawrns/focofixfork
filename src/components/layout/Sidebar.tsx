@@ -258,7 +258,7 @@ export default function Sidebar() {
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-5 w-5" aria-hidden="true" />
+                <Icon className="h-5 w-5 opacity-70" aria-hidden="true" />
                 {item.name}
               </Link>
             )
@@ -273,11 +273,11 @@ export default function Sidebar() {
               aria-label={projectsExpanded ? 'Collapse projects list' : 'Expand projects list'}
             >
               {projectsExpanded ? (
-                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                <ChevronDown className="h-4 w-4 opacity-70" aria-hidden="true" />
               ) : (
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                <ChevronRight className="h-4 w-4 opacity-70" aria-hidden="true" />
               )}
-              <Folder className="h-5 w-5" aria-hidden="true" />
+              <Folder className="h-5 w-5 opacity-70" aria-hidden="true" />
               Projects
               <span className="ml-auto text-xs bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
                 {projects.length}
@@ -329,7 +329,7 @@ export default function Sidebar() {
             onClick={handleNewProject}
             className="flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2 opacity-70" />
             New Project
           </button>
 
@@ -337,7 +337,7 @@ export default function Sidebar() {
             href="/organizations"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <Users className="h-5 w-5" />
+            <Users className="h-5 w-5 opacity-70" />
             Organizations
           </Link>
 
@@ -345,7 +345,7 @@ export default function Sidebar() {
             href="/dashboard/settings"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <Settings className="h-5 w-5" />
+            <Settings className="h-5 w-5 opacity-70" />
             Settings
           </Link>
 
@@ -353,7 +353,7 @@ export default function Sidebar() {
             href="/help"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <HelpCircle className="h-5 w-5" />
+            <HelpCircle className="h-5 w-5 opacity-70" />
             Help & docs
           </Link>
         </div>

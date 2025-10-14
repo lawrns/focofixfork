@@ -180,10 +180,8 @@ export default function OrganizationDetailPage() {
 
   const getRoleIcon = (role: MemberRole) => {
     switch (role) {
-      case 'director':
+      case 'admin':
         return <Crown className="w-4 h-4" />
-      case 'lead':
-        return <Shield className="w-4 h-4" />
       case 'member':
         return <User className="w-4 h-4" />
     }
@@ -191,17 +189,15 @@ export default function OrganizationDetailPage() {
 
   const getRoleColor = (role: MemberRole) => {
     switch (role) {
-      case 'director':
+      case 'admin':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'
-      case 'lead':
-        return 'bg-blue-500 text-white dark:bg-blue-900/40 dark:text-blue-300'
       case 'member':
         return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
     }
   }
 
-  const canManageMembers = currentUserRole === 'director' || currentUserRole === 'lead'
-  const canRemoveMembers = currentUserRole === 'director'
+  const canManageMembers = currentUserRole === 'admin'
+  const canRemoveMembers = currentUserRole === 'admin'
 
   if (isLoading) {
     return (

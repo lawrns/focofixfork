@@ -20,7 +20,7 @@ export interface OrganizationInvitation {
 
 export interface CreateInvitationData {
   email: string
-  role: 'director' | 'lead' | 'member'
+  role: 'admin' | 'member'
 }
 
 export interface InvitationWithDetails extends OrganizationInvitation {
@@ -43,7 +43,7 @@ export class InvitationModel {
       errors.push('Please enter a valid email address')
     }
 
-    if (!data.role || !['director', 'lead', 'member'].includes(data.role)) {
+    if (!data.role || !['admin', 'member'].includes(data.role)) {
       errors.push('Valid role is required')
     }
 

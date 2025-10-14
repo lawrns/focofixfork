@@ -494,7 +494,7 @@ export class OrganizationsService {
       const currentUserRole = await this.getUserRoleInOrganization(userId, organizationId)
       const canUpdate = OrganizationMemberModel.canUpdateRole(
         currentUserRole,
-        currentMember.role as 'director' | 'lead' | 'member',
+        currentMember.role as 'admin' | 'member',
         currentMember.user_id === userId
       )
 
@@ -610,7 +610,7 @@ export class OrganizationsService {
   /**
    * Get user's role in organization
    */
-  private static async getUserRoleInOrganization(userId: string, organizationId: string): Promise<'director' | 'lead' | 'member'> {
+  private static async getUserRoleInOrganization(userId: string, organizationId: string): Promise<'admin' | 'member'> {
     try {
       const { data, error } = await supabaseAdmin
         .from('organization_members')
@@ -623,7 +623,7 @@ export class OrganizationsService {
         return 'member'
       }
 
-      return data.role as 'director' | 'lead' | 'member'
+      return data.role as 'admin' | 'member'
     } catch (error) {
       console.error('Get user role error:', error)
       return 'member'

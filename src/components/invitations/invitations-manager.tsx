@@ -161,7 +161,7 @@ export default function InvitationsManager({
     // TODO: Show toast notification
   }
 
-  const canManageInvitations = currentUserRole === 'director' || currentUserRole === 'lead'
+  const canManageInvitations = currentUserRole === 'admin'
 
   const pendingInvitations = invitations.filter(inv => inv.status === 'pending')
   const acceptedInvitations = invitations.filter(inv => inv.status === 'accepted')

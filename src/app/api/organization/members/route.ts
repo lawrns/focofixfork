@@ -1,37 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { ListOrganizationMembersSchema } from '@/lib/validation/schemas/organization-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
+
 export const dynamic = 'force-dynamic'
 
-
+/**
+ * GET /api/organization/members - List members of user's organization
+ * PII minimization: Emails visible only to admins
+ */
 export async function GET(request: NextRequest) {
-  try {
-    const supabase = supabaseAdmin
-    
-    // Get current user
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Get user's organization
-    const { data: orgMember, error: orgError } = await supabase
+  return wrapRoute(ListOrganizationMembersSchema, async ({ user, correlationId }) => {
+    // Get user's organization membership
+    const { data: orgMember, error: orgError } = await supabaseAdmin
       .from('organization_members')
       .select('organization_id, role')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     if (orgError || !orgMember) {
-      return NextResponse.json(
-        { error: 'Organization not found' },
-        { status: 404 }
-      )
+      const err: any = new Error('Organization not found')
+      err.code = 'ORGANIZATION_NOT_FOUND'
+      err.statusCode = 404
+      throw err
     }
 
+    const isAdmin = orgMember.role === 'admin' || orgMember.role === 'owner'
+
     // Get all members of the organization
-    const { data: members, error: membersError } = await supabase
+    const { data: members, error: membersError } = await supabaseAdmin
       .from('organization_members')
       .select(`
         id,
@@ -44,18 +41,23 @@ export async function GET(request: NextRequest) {
       .order('joined_at', { ascending: false })
 
     if (membersError) {
-      console.error('Error fetching members:', membersError)
-      return NextResponse.json(
-        { error: 'Failed to fetch members' },
-        { status: 500 }
-      )
+      const err: any = new Error('Failed to fetch members')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
     // Get user details for each member
     const memberIds = Array.isArray(members) ? members.map(m => m.user_id) : []
-    const { data: users, error: usersError } = await supabase
+
+    // PII minimization: Only fetch email if requester is admin
+    const selectFields = isAdmin
+      ? 'id, email, full_name, avatar_url'
+      : 'id, full_name, avatar_url'
+
+    const { data: users, error: usersError } = await supabaseAdmin
       .from('users')
-      .select('id, email, full_name, avatar_url')
+      .select(selectFields)
       .in('id', memberIds)
 
     if (usersError) {
@@ -68,21 +70,17 @@ export async function GET(request: NextRequest) {
           const userDetails = users?.find(u => u.id === member.user_id)
           return {
             ...member,
-            email: userDetails?.email || '',
+            // PII: Only include email for admins
+            ...(isAdmin && userDetails && 'email' in userDetails ? { email: userDetails.email } : {}),
             full_name: userDetails?.full_name || '',
             avatar_url: userDetails?.avatar_url || null
           }
         })
       : []
 
-    return NextResponse.json({ members: enrichedMembers })
-
-  } catch (error) {
-    console.error('Error in GET /api/organization/members:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return {
+      members: enrichedMembers,
+      organizationId: orgMember.organization_id
+    }
+  })(request)
 }
-

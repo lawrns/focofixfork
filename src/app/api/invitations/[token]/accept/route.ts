@@ -1,22 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { AcceptInvitationSchema } from '@/lib/validation/schemas/invitation-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { token: string } }
-) {
-  try {
-    const { token } = params
+interface RouteContext {
+  params: {
+    token: string
+  }
+}
 
-    // SECURITY FIX: Get userId from authenticated session, not request body
-    const userId = request.headers.get('x-user-id')
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+/**
+ * POST /api/invitations/[token]/accept - Accept an organization invitation
+ */
+export async function POST(request: NextRequest, context: RouteContext) {
+  return wrapRoute(AcceptInvitationSchema, async ({ user, correlationId }) => {
+    const { token } = context.params
 
     // Get invitation
     const { data: invitation, error: inviteError } = await supabaseAdmin
@@ -27,10 +25,10 @@ export async function POST(
       .single()
 
     if (inviteError || !invitation) {
-      return NextResponse.json(
-        { success: false, error: 'Invitation not found' },
-        { status: 404 }
-      )
+      const err: any = new Error('Invitation not found')
+      err.code = 'INVITATION_NOT_FOUND'
+      err.statusCode = 404
+      throw err
     }
 
     // Check if expired
@@ -40,10 +38,10 @@ export async function POST(
         .update({ status: 'expired' })
         .eq('token', token)
 
-      return NextResponse.json(
-        { success: false, error: 'Invitation has expired' },
-        { status: 410 }
-      )
+      const err: any = new Error('Invitation has expired')
+      err.code = 'INVITATION_EXPIRED'
+      err.statusCode = 410
+      throw err
     }
 
     // Check if user already exists in organization
@@ -51,7 +49,7 @@ export async function POST(
       .from('organization_members')
       .select('id')
       .eq('organization_id', invitation.organization_id)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     if (existingMember) {
@@ -64,10 +62,9 @@ export async function POST(
         })
         .eq('token', token)
 
-      return NextResponse.json({
-        success: true,
-        data: { message: 'You are already a member of this organization' }
-      })
+      return {
+        message: 'You are already a member of this organization'
+      }
     }
 
     // Add user to organization
@@ -75,17 +72,16 @@ export async function POST(
       .from('organization_members')
       .insert({
         organization_id: invitation.organization_id,
-        user_id: userId,
+        user_id: user.id,
         role: invitation.role,
         joined_at: new Date().toISOString()
       })
 
     if (memberError) {
-      console.error('Add member error:', memberError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to add member to organization' },
-        { status: 500 }
-      )
+      const err: any = new Error('Failed to add member to organization')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
     // Update invitation status
@@ -97,18 +93,9 @@ export async function POST(
       })
       .eq('token', token)
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        message: 'Successfully joined organization!',
-        organization_id: invitation.organization_id
-      }
-    })
-  } catch (error) {
-    console.error('Accept invitation error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return {
+      message: 'Successfully joined organization!',
+      organization_id: invitation.organization_id
+    }
+  })(request)
 }

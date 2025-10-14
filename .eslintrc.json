@@ -3,6 +3,13 @@
   "rules": {
     "@typescript-eslint/no-use-before-define": "off",
     "react-hooks/exhaustive-deps": "warn",
-    "jsx-a11y/alt-text": "warn"
+    "jsx-a11y/alt-text": "warn",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/x-user-id/i]",
+        "message": "❌ SECURITY: Identity must come from Supabase session via requireAuth(), not custom headers. Use wrapRoute() pattern for all API routes."
+      }
+    ]
   }
 }

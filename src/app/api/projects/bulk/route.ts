@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { BulkCreateProjectsSchema } from '@/lib/validation/schemas/project-team-api.schema'
+import { checkRateLimit } from '@/server/utils/rateLimit'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase-client'
 
-// Schema for bulk operations
-const bulkOperationSchema = z.object({
-  operation: z.enum(['archive', 'delete', 'update_status']),
-  project_ids: z.array(z.string()).min(1).max(50),
-  parameters: z.object({
-    status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
-    force: z.boolean().optional(), // Allow force deletion of projects with dependencies
-  }).optional(),
+// Schema for bulk operations (update/delete/archive)
+const BulkOperationSchema = z.object({
+  body: z.object({
+    operation: z.enum(['archive', 'delete', 'update_status']),
+    project_ids: z.array(z.string()).min(1).max(50),
+    parameters: z.object({
+      status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
+      force: z.boolean().optional()
+    }).optional()
+  }).strict(),
+  query: z.object({}).optional()
 })
 
 /**
@@ -26,41 +32,14 @@ export async function GET() {
 
 /**
  * POST /api/projects/bulk - Perform bulk operations on projects
+ * Rate limited: 5 bulk operations per minute to prevent abuse
  */
 export async function POST(request: NextRequest) {
-  try {
-    let userId = request.headers.get('x-user-id')
+  return wrapRoute(BulkOperationSchema, async ({ input, user, req, correlationId }) => {
+    // Rate limit bulk operations (expensive, potential for abuse)
+    await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'api')
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
-    // Validate request body
-    const validationResult = bulkOperationSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    const { operation, project_ids, parameters } = validationResult.data
-
-    console.log('Processing bulk operation:', {
-      operation,
-      projectCount: project_ids.length,
-      userId,
-      parameters
-    })
+    const { operation, project_ids, parameters } = input.body
 
     const results = {
       successful: [] as string[],
@@ -68,26 +47,17 @@ export async function POST(request: NextRequest) {
       total_processed: project_ids.length
     }
 
-    // For bulk operations, we'll validate permissions during each operation
-    // to allow partial success/failure handling
-    // Skip permission check for demo projects (they don't have project_members entries)
-    const demoProjectIds = project_ids.filter(id => id.startsWith('demo-'))
-    const realProjectIds = project_ids.filter(id => !id.startsWith('demo-'))
-
-    // Demo projects are always allowed (no permission check needed)
-
     // Process each operation type
     if (operation === 'archive') {
-      // Archive projects (set status to 'cancelled')
       for (const projectId of project_ids) {
         try {
-          // Skip database operations for demo projects
+          // Skip demo projects
           if (projectId.startsWith('demo-')) {
-            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            results.successful.push(projectId)
             continue
           }
 
-          // Check permissions for real projects
+          // Check permissions
           const { data: project, error: fetchError } = await supabase
             .from('projects')
             .select('created_by')
@@ -95,17 +65,17 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (fetchError) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Project not found' })
+            results.failed.push({ id: projectId, error: 'Project not found' })
             continue
           }
 
-          let hasPermission = project.created_by === userId
+          let hasPermission = project.created_by === user.id
           if (!hasPermission) {
             const { data: teamMember } = await supabase
               .from('project_team_assignments')
               .select('role')
               .eq('project_id', projectId)
-              .eq('user_id', userId)
+              .eq('user_id', user.id)
               .eq('is_active', true)
               .single()
 
@@ -113,7 +83,7 @@ export async function POST(request: NextRequest) {
           }
 
           if (!hasPermission) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Permission denied' })
+            results.failed.push({ id: projectId, error: 'Permission denied' })
             continue
           }
 
@@ -125,7 +95,7 @@ export async function POST(request: NextRequest) {
             .neq('status', 'completed')
 
           if (activeTasks && activeTasks > 0) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Project has active tasks and cannot be archived' })
+            results.failed.push({ id: projectId, error: 'Project has active tasks' })
             continue
           }
 
@@ -135,49 +105,44 @@ export async function POST(request: NextRequest) {
             .eq('id', projectId)
 
           if (updateError) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Failed to archive project' })
+            results.failed.push({ id: projectId, error: 'Failed to archive' })
           } else {
-            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            results.successful.push(projectId)
           }
         } catch (error) {
-          if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Unexpected error during archiving' })
+          results.failed.push({ id: projectId, error: 'Unexpected error' })
         }
       }
     } else if (operation === 'delete') {
-      // Import the ProjectsService for proper deletion with cascading
       const { ProjectsService } = await import('@/features/projects/services/projectService')
 
       for (const projectId of project_ids) {
         try {
-          // Skip database operations for demo projects
           if (projectId.startsWith('demo-')) {
-            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            results.successful.push(projectId)
             continue
           }
 
-          // Use the ProjectsService deleteProject method which handles permissions and cascading
-          const result = await ProjectsService.deleteProject(userId, projectId)
+          const result = await ProjectsService.deleteProject(user.id, projectId)
 
           if (result.success) {
-            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            results.successful.push(projectId)
           } else {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: result.error || 'Failed to delete project' })
+            results.failed.push({ id: projectId, error: result.error || 'Failed to delete' })
           }
         } catch (error) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Unexpected error during deletion' })
+          results.failed.push({ id: projectId, error: 'Unexpected error' })
         }
       }
     } else if (operation === 'update_status' && parameters?.status) {
-      // Update project status
       for (const projectId of project_ids) {
         try {
-          // Skip database operations for demo projects
           if (projectId.startsWith('demo-')) {
-            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            results.successful.push(projectId)
             continue
           }
 
-          // Check permissions for real projects
+          // Check permissions
           const { data: project, error: fetchError } = await supabase
             .from('projects')
             .select('created_by')
@@ -185,17 +150,17 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (fetchError) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Project not found' })
+            results.failed.push({ id: projectId, error: 'Project not found' })
             continue
           }
 
-          let hasPermission = project.created_by === userId
+          let hasPermission = project.created_by === user.id
           if (!hasPermission) {
             const { data: teamMember } = await supabase
               .from('project_team_assignments')
               .select('role')
               .eq('project_id', projectId)
-              .eq('user_id', userId)
+              .eq('user_id', user.id)
               .eq('is_active', true)
               .single()
 
@@ -203,7 +168,7 @@ export async function POST(request: NextRequest) {
           }
 
           if (!hasPermission) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Permission denied' })
+            results.failed.push({ id: projectId, error: 'Permission denied' })
             continue
           }
 
@@ -213,43 +178,31 @@ export async function POST(request: NextRequest) {
             .eq('id', projectId)
 
           if (updateError) {
-            if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Failed to update project status' })
+            results.failed.push({ id: projectId, error: 'Failed to update' })
           } else {
-            if (!results.successful.includes(projectId)) results.successful.push(projectId)
+            results.successful.push(projectId)
           }
         } catch (error) {
-          if (!results.failed.find(f => f.id === projectId)) results.failed.push({ id: projectId, error: 'Unexpected error during status update' })
+          results.failed.push({ id: projectId, error: 'Unexpected error' })
         }
       }
     }
 
-    const hasFailures = results.failed.length > 0
     const allFailed = results.successful.length === 0
 
     if (allFailed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'All bulk operations failed',
-          details: results
-        },
-        { status: 400 }
-      )
+      const err: any = new Error('All bulk operations failed')
+      err.code = 'BULK_OPERATION_FAILED'
+      err.statusCode = 400
+      err.details = results
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      message: hasFailures
+    return {
+      message: results.failed.length > 0
         ? `Bulk ${operation} completed with ${results.failed.length} failures`
         : `Bulk ${operation} completed successfully`,
-      data: results
-    })
-  } catch (error: any) {
-    console.error('Bulk operations API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+      results
+    }
+  })(request)
 }
-

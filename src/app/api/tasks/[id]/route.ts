@@ -1,33 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { GetTaskSchema, UpdateTaskSchema, PatchTaskSchema, DeleteTaskSchema } from '@/lib/validation/schemas/task-api.schema'
 import { TasksService } from '@/features/tasks/services/taskService'
-import { z } from 'zod'
 
-// Schema for task updates
-const updateTaskSchema = z.object({
-  title: z.string().min(1, 'Task title is required').max(500, 'Title must be less than 500 characters').optional(),
-  description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
-  project_id: z.string().min(1, 'Project is required').optional(),
-  milestone_id: z.string().nullable().optional(),
-  status: z.enum(['todo', 'in_progress', 'review', 'done']).optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  assignee_id: z.string().nullable().optional(),
-  estimated_hours: z.preprocess(
-    (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
-    z.number().min(0).max(1000).nullable().optional()
-  ),
-  actual_hours: z.preprocess(
-    (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
-    z.number().min(0).max(1000).nullable().optional()
-  ),
-  due_date: z.string().nullable().optional(),
-})
-
-// Schema for status updates
-const updateStatusSchema = z.object({
-  status: z.enum(['todo', 'in_progress', 'review', 'done']),
-})
-
-interface RouteParams {
+interface RouteContext {
   params: {
     id: string
   }
@@ -36,243 +12,132 @@ interface RouteParams {
 /**
  * GET /api/tasks/[id] - Get a specific task
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function GET(request: NextRequest, context: RouteContext) {
+  return wrapRoute(GetTaskSchema, async ({ user, correlationId }) => {
+    const taskId = context.params.id
 
-    const taskId = params.id
     if (!taskId) {
-      return NextResponse.json(
-        { success: false, error: 'Task ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Task ID is required')
+      err.code = 'INVALID_TASK_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const result = await TasksService.getTaskById(userId, taskId)
+    const result = await TasksService.getTaskById(user.id, taskId)
 
     if (!result.success) {
       const statusCode = result.error === 'Task not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      const err: any = new Error(result.error || 'Failed to fetch task')
+      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      err.statusCode = statusCode
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Task detail API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
  * PUT /api/tasks/[id] - Update a specific task
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return wrapRoute(UpdateTaskSchema, async ({ input, user, correlationId }) => {
+    const taskId = context.params.id
 
-    const taskId = params.id
     if (!taskId) {
-      return NextResponse.json(
-        { success: false, error: 'Task ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Task ID is required')
+      err.code = 'INVALID_TASK_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const body = await request.json()
-
-    // Validate request body
-    const validationResult = updateTaskSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    const result = await TasksService.updateTask(userId, taskId, validationResult.data)
+    const result = await TasksService.updateTask(user.id, taskId, input.body)
 
     if (!result.success) {
       const statusCode = result.error === 'Task not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      const err: any = new Error(result.error || 'Failed to update task')
+      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      err.statusCode = statusCode
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Task update API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
- * PATCH /api/tasks/[id]/status - Update task status (convenience endpoint)
+ * PATCH /api/tasks/[id] - Update task (partial update)
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return wrapRoute(PatchTaskSchema, async ({ input, user, correlationId }) => {
+    const taskId = context.params.id
 
-    const taskId = params.id
     if (!taskId) {
-      return NextResponse.json(
-        { success: false, error: 'Task ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Task ID is required')
+      err.code = 'INVALID_TASK_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    // Check if this is a status update
+    // Check if this is a status-only update
     const url = new URL(request.url)
     const isStatusUpdate = url.pathname.endsWith('/status')
 
-    if (isStatusUpdate) {
-      const body = await request.json()
-
-      // Validate status update
-      const validationResult = updateStatusSchema.safeParse(body)
-      if (!validationResult.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Validation failed',
-            details: validationResult.error.issues
-          },
-          { status: 400 }
-        )
-      }
-
-      const result = await TasksService.updateTaskStatus(userId, taskId, validationResult.data.status)
+    if (isStatusUpdate && input.body.status) {
+      const result = await TasksService.updateTaskStatus(user.id, taskId, input.body.status)
 
       if (!result.success) {
         const statusCode = result.error === 'Task not found' ? 404 : 500
-        return NextResponse.json(
-          { success: false, error: result.error },
-          { status: statusCode }
-        )
+        const err: any = new Error(result.error || 'Failed to update task status')
+        err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+        err.statusCode = statusCode
+        throw err
       }
 
-      return NextResponse.json({
-        success: true,
-        data: result.data,
-      })
+      return result.data
     }
 
     // Regular PATCH for other updates
-    const body = await request.json()
-
-    const validationResult = updateTaskSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    const result = await TasksService.updateTask(userId, taskId, validationResult.data)
+    const result = await TasksService.updateTask(user.id, taskId, input.body)
 
     if (!result.success) {
       const statusCode = result.error === 'Task not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      const err: any = new Error(result.error || 'Failed to update task')
+      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      err.statusCode = statusCode
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Task patch API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
  * DELETE /api/tasks/[id] - Delete a specific task
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return wrapRoute(DeleteTaskSchema, async ({ user, correlationId }) => {
+    const taskId = context.params.id
 
-    const taskId = params.id
     if (!taskId) {
-      return NextResponse.json(
-        { success: false, error: 'Task ID is required' },
-        { status: 400 }
-      )
+      const err: any = new Error('Task ID is required')
+      err.code = 'INVALID_TASK_ID'
+      err.statusCode = 400
+      throw err
     }
 
-    const result = await TasksService.deleteTask(userId, taskId)
+    const result = await TasksService.deleteTask(user.id, taskId)
 
     if (!result.success) {
       const statusCode = result.error === 'Task not found' ? 404 : 500
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
+      const err: any = new Error(result.error || 'Failed to delete task')
+      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      err.statusCode = statusCode
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Task deleted successfully',
-    })
-  } catch (error: any) {
-    console.error('Task deletion API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return { message: 'Task deleted successfully' }
+  })(request)
 }
 
 

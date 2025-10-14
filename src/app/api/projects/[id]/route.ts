@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
 import { ProjectsService } from '@/features/projects/services/projectService'
-import { UpdateProjectSchema } from '@/lib/validation/schemas/project.schema'
+import {
+  GetProjectSchema,
+  UpdateProjectApiSchema,
+  DeleteProjectSchema
+} from '@/lib/validation/schemas/project-api.schema'
+import { ForbiddenError } from '@/server/auth/requireAuth'
 
-interface RouteParams {
+interface RouteContext {
   params: {
     id: string
   }
@@ -11,230 +17,146 @@ interface RouteParams {
 /**
  * GET /api/projects/[id] - Get a specific project
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    console.log(`[API] GET /api/projects/${params.id} - userId: ${userId}`)
+export async function GET(
+  request: NextRequest,
+  context: RouteContext
+) {
+  return wrapRoute(GetProjectSchema, async ({ user, correlationId }) => {
+    const projectId = context.params.id
 
-    if (!userId) {
-      console.warn(`[API] Unauthorized access attempt to project ${params.id}`)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Authentication required',
-          code: 'AUTH_REQUIRED'
-        },
-        { status: 401 }
-      )
-    }
-
-    const projectId = params.id
+    // Validate project ID
     if (!projectId || projectId === 'undefined' || projectId === 'null') {
-      console.error(`[API] Invalid project ID: ${projectId}`)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Valid project ID is required',
-          code: 'INVALID_PROJECT_ID'
-        },
-        { status: 400 }
-      )
+      const error: any = new Error('Valid project ID is required')
+      error.code = 'INVALID_PROJECT_ID'
+      error.statusCode = 400
+      throw error
     }
 
-    const result = await ProjectsService.getProjectById(userId, projectId)
+    // Fetch project using user's Supabase client (RLS enforced)
+    const result = await ProjectsService.getProjectById(user.id, projectId)
 
     if (!result.success) {
-      // Better error categorization
-      let statusCode = 500
-      let errorCode = 'INTERNAL_ERROR'
-
-      if (result.error?.includes('not found') || result.error?.includes('access denied')) {
-        statusCode = 404
-        errorCode = 'PROJECT_NOT_FOUND'
-        console.warn(`[API] Project ${projectId} not found or access denied for user ${userId}`)
-      } else if (result.error?.includes('database')) {
-        statusCode = 503
-        errorCode = 'DATABASE_ERROR'
-        console.error(`[API] Database error fetching project ${projectId}:`, result.error)
+      // Determine if 403 (forbidden) or 404 (not found)
+      if (result.error?.includes('not found')) {
+        // Could be either no access or doesn't exist
+        // Check if project exists at all (using service role if needed)
+        const error: any = new Error('Project not found or access denied')
+        error.code = 'PROJECT_NOT_FOUND'
+        error.statusCode = 404
+        throw error
+      } else if (result.error?.includes('access denied')) {
+        // User tried to access a project they don't have permission for
+        throw new ForbiddenError('You do not have permission to access this project')
       } else {
-        console.error(`[API] Error fetching project ${projectId}:`, result.error)
+        // Database or other error
+        const error: any = new Error(result.error || 'Failed to fetch project')
+        error.code = 'INTERNAL_ERROR'
+        error.statusCode = 500
+        throw error
       }
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error || 'Failed to fetch project',
-          code: errorCode,
-          projectId
-        },
-        { status: statusCode }
-      )
     }
 
-    console.log(`[API] Successfully fetched project ${projectId} for user ${userId}`)
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error(`[API] Unexpected error in GET /api/projects/${params.id}:`, error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'An unexpected error occurred',
-        code: 'UNEXPECTED_ERROR',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
  * PUT /api/projects/[id] - Update a specific project
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = request.headers.get('x-user-id')
+export async function PUT(
+  request: NextRequest,
+  context: RouteContext
+) {
+  return wrapRoute(UpdateProjectApiSchema, async ({ input, user, correlationId }) => {
+    const projectId = context.params.id
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
+    // Validate project ID
+    if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      const error: any = new Error('Valid project ID is required')
+      error.code = 'INVALID_PROJECT_ID'
+      error.statusCode = 400
+      throw error
     }
 
-    console.log('API PUT /api/projects/[id]: Starting update for projectId:', params.id)
-    console.log('Using userId:', userId)
-
-    const projectId = params.id
-    if (!projectId) {
-      console.log('API PUT /api/projects/[id]: No projectId provided')
-      return NextResponse.json(
-        { success: false, error: 'Project ID is required' },
-        { status: 400 }
-      )
-    }
-
-    const body = await request.json()
-    console.log('API PUT /api/projects/[id]: Request body:', body)
-    console.log('API PUT /api/projects/[id]: Field types:', {
-      name: typeof body.name,
-      description: typeof body.description,
-      status: typeof body.status,
-      priority: typeof body.priority,
-      start_date: typeof body.start_date,
-      due_date: typeof body.due_date,
-      progress_percentage: typeof body.progress_percentage
-    })
-
-    // Validate request body
-    const validationResult = UpdateProjectSchema.safeParse(body)
-    if (!validationResult.success) {
-      console.log('API PUT /api/projects/[id]: Validation failed:', validationResult.error.issues)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400 }
-      )
-    }
-
-    console.log('API PUT /api/projects/[id]: Validation passed, calling updateProject')
-    // Transform null values to undefined for compatibility with service expectations
+    // Transform null values to undefined for service compatibility
     const updateData = {
-      ...validationResult.data,
-      description: validationResult.data.description === null ? undefined : validationResult.data.description,
-      start_date: validationResult.data.start_date === null ? undefined : validationResult.data.start_date,
-      due_date: validationResult.data.due_date === null ? undefined : validationResult.data.due_date,
+      ...input.body,
+      description: input.body.description === null ? undefined : input.body.description,
+      start_date: input.body.start_date === null ? undefined : input.body.start_date,
+      due_date: input.body.due_date === null ? undefined : input.body.due_date,
     }
-    const result = await ProjectsService.updateProject(userId, projectId, updateData)
-    console.log('API PUT /api/projects/[id]: Update result:', { success: result.success, error: result.error })
+
+    // Update project (permission check happens in service layer via RLS)
+    const result = await ProjectsService.updateProject(user.id, projectId, updateData)
 
     if (!result.success) {
-      // Determine appropriate HTTP status code based on error type
-      let statusCode = 500
+      // Determine appropriate error
       if (result.error === 'Project not found') {
-        statusCode = 404
+        const error: any = new Error('Project not found')
+        error.code = 'PROJECT_NOT_FOUND'
+        error.statusCode = 404
+        throw error
+      } else if (result.error?.includes('access denied') || result.error?.includes('permission')) {
+        throw new ForbiddenError('You do not have permission to update this project')
       } else if (result.error?.includes('already exists')) {
-        statusCode = 409 // Conflict
+        const error: any = new Error(result.error)
+        error.code = 'CONFLICT'
+        error.statusCode = 409
+        throw error
       } else if (result.error?.includes('Invalid') || result.error?.includes('check your')) {
-        statusCode = 400 // Bad Request
+        const error: any = new Error(result.error)
+        error.code = 'VALIDATION_ERROR'
+        error.statusCode = 400
+        throw error
+      } else {
+        const error: any = new Error(result.error || 'Failed to update project')
+        error.code = 'INTERNAL_ERROR'
+        error.statusCode = 500
+        throw error
       }
-
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Project update API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return result.data
+  })(request)
 }
 
 /**
  * DELETE /api/projects/[id] - Delete a specific project
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    console.log('API DELETE /api/projects/[id]: Starting deletion for projectId:', params.id)
-    let userId = request.headers.get('x-user-id')
-    console.log('API DELETE /api/projects/[id]: userId from header:', userId)
+export async function DELETE(
+  request: NextRequest,
+  context: RouteContext
+) {
+  return wrapRoute(DeleteProjectSchema, async ({ user, correlationId }) => {
+    const projectId = context.params.id
 
-    if (!userId) {
-      console.log('API DELETE /api/projects/[id]: No userId provided')
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
+    // Validate project ID
+    if (!projectId || projectId === 'undefined' || projectId === 'null') {
+      const error: any = new Error('Valid project ID is required')
+      error.code = 'INVALID_PROJECT_ID'
+      error.statusCode = 400
+      throw error
     }
 
-    const projectId = params.id
-    if (!projectId) {
-      console.log('API DELETE /api/projects/[id]: No projectId provided')
-      return NextResponse.json(
-        { success: false, error: 'Project ID is required' },
-        { status: 400 }
-      )
-    }
-
-    console.log('API DELETE /api/projects/[id]: Calling deleteProject')
-    const result = await ProjectsService.deleteProject(userId, projectId)
-    console.log('API DELETE /api/projects/[id]: Delete result:', { success: result.success, error: result.error })
+    // Delete project (permission check via RLS)
+    const result = await ProjectsService.deleteProject(user.id, projectId)
 
     if (!result.success) {
-      // Determine appropriate HTTP status code based on error type
-      let statusCode = 500
       if (result.error === 'Project not found') {
-        statusCode = 404
+        const error: any = new Error('Project not found')
+        error.code = 'PROJECT_NOT_FOUND'
+        error.statusCode = 404
+        throw error
+      } else if (result.error?.includes('access denied') || result.error?.includes('permission')) {
+        throw new ForbiddenError('You do not have permission to delete this project')
+      } else {
+        const error: any = new Error(result.error || 'Failed to delete project')
+        error.code = 'INTERNAL_ERROR'
+        error.statusCode = 500
+        throw error
       }
-
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: statusCode }
-      )
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Project deleted successfully',
-    })
-  } catch (error: any) {
-    console.error('Project deletion API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    return { message: 'Project deleted successfully' }
+  })(request)
 }

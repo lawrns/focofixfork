@@ -1,31 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { ResendInvitationSchema } from '@/lib/validation/schemas/organization-api.schema'
+import { checkRateLimit } from '@/server/utils/rateLimit'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { EmailService } from '@/lib/services/email'
+import { ForbiddenError } from '@/server/auth/requireAuth'
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string; invitationId: string } }
-) {
-  try {
-    // Extract user ID from headers (set by middleware)
-    let userId = request.headers.get('x-user-id')
+interface RouteContext {
+  params: {
+    id: string
+    invitationId: string
+  }
+}
 
-    const body = await request.json()
-    const { userId: bodyUserId } = body
+/**
+ * POST /api/organizations/[id]/invitations/[invitationId]/resend - Resend invitation email
+ * Rate limited: 5 resends per 15 minutes to prevent abuse
+ */
+export async function POST(request: NextRequest, context: RouteContext) {
+  return wrapRoute(ResendInvitationSchema, async ({ user, req, correlationId }) => {
+    const { id: organizationId, invitationId } = context.params
 
-    // Fallback to userId from request body if header is not set
-    if (!userId && bodyUserId) {
-      userId = bodyUserId
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const { id: organizationId, invitationId } = params
+    // Rate limit resends to prevent spam
+    await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'auth')
 
     // Get invitation details
     const { data: invitation, error: inviteError } = await supabaseAdmin
@@ -36,10 +33,10 @@ export async function POST(
       .single()
 
     if (inviteError || !invitation) {
-      return NextResponse.json(
-        { success: false, error: 'Invitation not found' },
-        { status: 404 }
-      )
+      const err: any = new Error('Invitation not found')
+      err.code = 'INVITATION_NOT_FOUND'
+      err.statusCode = 404
+      throw err
     }
 
     // Check if user has permission (is member of organization)
@@ -47,22 +44,19 @@ export async function POST(
       .from('organization_members')
       .select('id')
       .eq('organization_id', organizationId)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     if (!memberCheck) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      )
+      throw new ForbiddenError('You do not have permission to resend invitations for this organization')
     }
 
     // Check if invitation is still valid
     if (invitation.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, error: 'Invitation is no longer pending' },
-        { status: 400 }
-      )
+      const err: any = new Error('Invitation is no longer pending')
+      err.code = 'INVITATION_NOT_PENDING'
+      err.statusCode = 400
+      throw err
     }
 
     // Check if expired
@@ -73,21 +67,22 @@ export async function POST(
         .update({ status: 'expired' })
         .eq('id', invitationId)
 
-      return NextResponse.json(
-        { success: false, error: 'Invitation has expired' },
-        { status: 410 }
-      )
+      const err: any = new Error('Invitation has expired')
+      err.code = 'INVITATION_EXPIRED'
+      err.statusCode = 410
+      throw err
     }
 
-    // Get organization and inviter details
-    const { data: orgData, error: orgError } = await supabaseAdmin
+    // Get organization details
+    const { data: orgData } = await supabaseAdmin
       .from('organizations')
       .select('name')
       .eq('id', organizationId)
       .single()
 
-    const { data: inviterData, error: inviterError } = await supabaseAdmin
-      .from('profiles')
+    // Get inviter details
+    const { data: inviterData } = await supabaseAdmin
+      .from('users')
       .select('full_name, email')
       .eq('id', invitation.invited_by)
       .single()
@@ -104,22 +99,14 @@ export async function POST(
     )
 
     if (!emailResult.success) {
-      console.error('Email resend failed:', emailResult.error)
-      return NextResponse.json(
-        { success: false, error: 'Failed to resend invitation email' },
-        { status: 500 }
-      )
+      const err: any = new Error('Failed to resend invitation email')
+      err.code = 'EMAIL_SEND_FAILED'
+      err.statusCode = 500
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
+    return {
       message: 'Invitation email resent successfully'
-    })
-  } catch (error) {
-    console.error('Resend invitation API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    }
+  })(request)
 }

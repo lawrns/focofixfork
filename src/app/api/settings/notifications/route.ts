@@ -1,24 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { GetNotificationSettingsSchema, UpdateNotificationSettingsSchema } from '@/lib/validation/schemas/settings-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
+
 export const dynamic = 'force-dynamic'
 
-
 export async function GET(request: NextRequest) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+  return wrapRoute(GetNotificationSettingsSchema, async ({ user, correlationId }) => {
     // Get notification settings from user_profiles
     const { data: userProfile, error } = await supabaseAdmin
       .from('user_profiles')
       .select('preferences')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error && error.code !== 'PGRST116') {
+      const err: any = new Error(error.message)
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 500
+      throw err
     }
 
     // Default settings
@@ -37,44 +37,19 @@ export async function GET(request: NextRequest) {
     const storedSettings = userProfile?.preferences?.notifications || {}
     const settings = { ...defaultSettings, ...storedSettings }
 
-    return NextResponse.json({ settings })
-  } catch (error) {
-    console.error('Error fetching notification settings:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return { settings }
+  })(request)
 }
 
 export async function PUT(request: NextRequest) {
-  try {
-    const userId = request.headers.get('x-user-id')
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const settings = await request.json()
-
-    // Validate settings structure
-    const validKeys = [
-      'email_notifications',
-      'push_notifications',
-      'task_updates',
-      'project_updates',
-      'milestone_updates',
-      'team_mentions',
-      'daily_digest',
-      'weekly_summary'
-    ]
-
-    const hasValidKeys = Object.keys(settings).every(key => validKeys.includes(key))
-    if (!hasValidKeys) {
-      return NextResponse.json({ error: 'Invalid settings keys' }, { status: 400 })
-    }
+  return wrapRoute(UpdateNotificationSettingsSchema, async ({ input, user, correlationId }) => {
+    const settings = input.body
 
     // Check if user profile exists
     const { data: existingProfile } = await supabaseAdmin
       .from('user_profiles')
       .select('id, preferences')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     const preferences = existingProfile?.preferences || {}
@@ -90,28 +65,31 @@ export async function PUT(request: NextRequest) {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .update(profileUpdateData)
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
 
       if (profileError) {
-        return NextResponse.json({ error: profileError.message }, { status: 500 })
+        const err: any = new Error(profileError.message)
+        err.code = 'DATABASE_ERROR'
+        err.statusCode = 500
+        throw err
       }
     } else {
       // Create new profile
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .insert({
-          user_id: userId,
+          user_id: user.id,
           ...profileUpdateData
         })
 
       if (profileError) {
-        return NextResponse.json({ error: profileError.message }, { status: 500 })
+        const err: any = new Error(profileError.message)
+        err.code = 'DATABASE_ERROR'
+        err.statusCode = 500
+        throw err
       }
     }
 
-    return NextResponse.json({ success: true, message: 'Notification settings updated successfully' })
-  } catch (error) {
-    console.error('Error updating notification settings:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return { success: true, message: 'Notification settings updated successfully' }
+  })(request)
 }

@@ -1,22 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { wrapRoute } from '@/server/http/wrapRoute'
+import { DeleteInvitationSchema } from '@/lib/validation/schemas/organization-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string; invitationId: string } }
-) {
-  try {
-    // Extract user ID from headers (set by middleware)
-    const userId = request.headers.get('x-user-id')
+interface RouteContext {
+  params: {
+    id: string
+    invitationId: string
+  }
+}
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const { id: organizationId, invitationId } = params
+/**
+ * DELETE /api/organizations/[id]/invitations/[invitationId] - Cancel invitation
+ */
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return wrapRoute(DeleteInvitationSchema, async ({ user, correlationId }) => {
+    const { id: organizationId, invitationId } = context.params
 
     // Update invitation status to cancelled
     const { error } = await supabaseAdmin
@@ -26,22 +25,14 @@ export async function DELETE(
       .eq('organization_id', organizationId)
 
     if (error) {
-      console.error('Cancel invitation error:', error)
-      return NextResponse.json(
-        { success: false, error: 'Failed to cancel invitation' },
-        { status: 400 }
-      )
+      const err: any = new Error('Failed to cancel invitation')
+      err.code = 'DATABASE_ERROR'
+      err.statusCode = 400
+      throw err
     }
 
-    return NextResponse.json({
-      success: true,
+    return {
       message: 'Invitation cancelled successfully'
-    })
-  } catch (error) {
-    console.error('Cancel invitation API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    }
+  })(request)
 }

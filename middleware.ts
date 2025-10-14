@@ -1,13 +1,35 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, NextRequest } from 'next/server'
+import { nanoid } from 'nanoid'
 import { userSetupMiddleware, redirectToSetupIfNeeded } from '@/lib/middleware/user-setup'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next({
-    request: {
-      headers: req.headers,
-    },
-  })
+  // Generate correlation ID
+  const correlationId = req.headers.get('x-correlation-id') ?? nanoid()
+
+  // Create base response
+  const res = NextResponse.next()
+
+  // Add correlation ID to response
+  res.headers.set('x-correlation-id', correlationId)
+
+  // Add security headers
+  res.headers.set('x-frame-options', 'DENY')
+  res.headers.set('x-content-type-options', 'nosniff')
+  res.headers.set('referrer-policy', 'no-referrer')
+  res.headers.set('permissions-policy', 'geolocation=(),camera=(),microphone=()')
+
+  // Content Security Policy
+  res.headers.set(
+    'content-security-policy',
+    "default-src 'self'; " +
+    "img-src 'self' data: https:; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
+    "connect-src 'self' https://*.supabase.co https://api.openai.com; " +
+    "font-src 'self' data:; " +
+    "frame-ancestors 'none';"
+  )
 
   // Create Supabase client
   const supabase = createServerClient(
@@ -30,19 +52,19 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  // First try to get existing session
-  let { data: { session }, error } = await supabase.auth.getSession()
+  // Get and refresh session
+  let { data: { session } } = await supabase.auth.getSession()
 
-  // If no session or session is expired, try to refresh
   if (!session || (session.expires_at && new Date(session.expires_at).getTime() < Date.now())) {
-    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-    if (!refreshError && refreshData.session) {
+    const { data: refreshData } = await supabase.auth.refreshSession()
+    if (refreshData.session) {
       session = refreshData.session
     }
   }
 
-  // Define protected routes that require authentication
+  const { pathname } = req.nextUrl
+
+  // Protected page routes
   const protectedRoutes = [
     '/dashboard',
     '/projects',
@@ -53,7 +75,7 @@ export async function middleware(req: NextRequest) {
     '/profile'
   ]
 
-  // Define auth routes that should redirect to dashboard if already authenticated
+  // Auth routes (login, register, etc.)
   const authRoutes = [
     '/login',
     '/register',
@@ -61,149 +83,116 @@ export async function middleware(req: NextRequest) {
     '/reset-password'
   ]
 
-  const { pathname } = req.nextUrl
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
 
-  // Check if current route is protected
-  const isProtectedRoute = protectedRoutes.some(route =>
-    pathname.startsWith(route)
-  )
-
-  // Check if current route is an auth route
-  const isAuthRoute = authRoutes.some(route =>
-    pathname.startsWith(route)
-  )
-
-  // Handle protected routes
+  // Handle protected page routes
   if (isProtectedRoute) {
     if (!session) {
-      // Redirect to login with return URL
       const redirectUrl = new URL('/login', req.url)
       redirectUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Check if user has completed organization setup
     const setupResult = await userSetupMiddleware(req)
     if (setupResult.error) {
       return setupResult.error
     }
 
-    // Redirect to organization setup if not completed
     const redirectResponse = redirectToSetupIfNeeded(req, setupResult.completed)
     if (redirectResponse) {
       return redirectResponse
     }
   }
 
-  // Handle auth routes - redirect authenticated users appropriately
+  // Handle auth routes
   if (isAuthRoute && session) {
-    // Check if user has completed organization setup
     const setupResult = await userSetupMiddleware(req)
     if (setupResult.error) {
       return setupResult.error
     }
 
     if (setupResult.completed) {
-      // User has completed setup, redirect to dashboard or requested page
       const redirectTo = req.nextUrl.searchParams.get('redirect') || '/dashboard'
       return NextResponse.redirect(new URL(redirectTo, req.url))
     } else {
-      // User hasn't completed setup, redirect to organization setup
       return NextResponse.redirect(new URL('/organization-setup', req.url))
     }
   }
 
-  // API route protection
+  // API route handling - NO MORE x-user-id HEADERS
+  // Authentication is now handled by requireAuth() in each route handler
   if (pathname.startsWith('/api/')) {
-    console.log('Middleware: API route detected:', pathname, 'Session:', session ? `present (user: ${session.user.id})` : 'null')
-
-    // Allow auth endpoints without authentication
-    if (pathname.startsWith('/api/auth/')) {
+    // Allow public API endpoints
+    if (
+      pathname.startsWith('/api/auth/') ||
+      pathname === '/api/health' ||
+      pathname.startsWith('/api/invitations/') && pathname.includes('/accept')
+    ) {
       return res
     }
 
-    // Allow organization setup endpoint without organization setup completion
+    // For organization setup, check auth but allow incomplete setup
     if (pathname === '/api/organization-setup') {
-      // Still require authentication
       if (!session) {
-        console.log('Middleware: No session for organization setup API, returning 401')
         return NextResponse.json(
           {
-            error: 'Authentication required',
-            code: 'AUTH_REQUIRED'
+            success: false,
+            error: {
+              code: 'AUTH_REQUIRED',
+              message: 'Authentication required'
+            }
           },
-          { status: 401 }
+          {
+            status: 401,
+            headers: { 'x-correlation-id': correlationId }
+          }
         )
       }
-      // Allow the organization setup API even if setup isn't complete
-      const requestHeaders = new Headers(req.headers)
-      requestHeaders.set('x-user-id', session.user.id)
-      requestHeaders.set('x-user-email', session.user.email || '')
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      })
+      return res
     }
 
-    // Check for valid session on protected API routes
+    // All other API routes: check auth
     if (!session) {
-      console.log('Middleware: No session for API route, returning 401')
       return NextResponse.json(
         {
-          error: 'Authentication required',
-          code: 'AUTH_REQUIRED',
-          path: pathname
+          success: false,
+          error: {
+            code: 'AUTH_REQUIRED',
+            message: 'Authentication required'
+          }
         },
-        { status: 401 }
+        {
+          status: 401,
+          headers: { 'x-correlation-id': correlationId }
+        }
       )
     }
 
-    // Check organization setup completion for protected API routes
+    // Check organization setup completion
     const setupResult = await userSetupMiddleware(req)
     if (setupResult.error) {
-      console.error('Middleware: Setup check error:', setupResult.error)
       return setupResult.error
     }
 
     if (!setupResult.completed) {
-      console.log('Middleware: User has not completed organization setup, blocking API access')
       return NextResponse.json(
         {
-          error: 'Organization setup required',
-          code: 'SETUP_REQUIRED'
+          success: false,
+          error: {
+            code: 'SETUP_REQUIRED',
+            message: 'Organization setup required'
+          }
         },
-        { status: 403 }
+        {
+          status: 403,
+          headers: { 'x-correlation-id': correlationId }
+        }
       )
     }
 
-    console.log(`Middleware: Setting headers for API route ${pathname} - userId: ${session.user.id}, email: ${session.user.email}`)
-
-    // Add user context to request headers for API routes
-    const requestHeaders = new Headers(req.headers)
-    requestHeaders.set('x-user-id', session.user.id)
-    requestHeaders.set('x-user-email', session.user.email || '')
-    requestHeaders.set('x-session-expires', session.expires_at ? String(session.expires_at) : '')
-
-    // Verify headers are set
-    const headersSet = {
-      'x-user-id': requestHeaders.get('x-user-id'),
-      'x-user-email': requestHeaders.get('x-user-email')
-    }
-    console.log('Middleware: Headers set for API:', headersSet)
-
-    // Return response with modified headers
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    })
-  }
-
-  // Organization context middleware for certain routes
-  if (pathname.startsWith('/projects/') || pathname.startsWith('/organizations/')) {
-    // This will be handled by the organization context middleware
-    // For now, just pass through
+    // Continue to route handler (which will use requireAuth() to get user from session)
+    return res
   }
 
   return res
@@ -211,13 +200,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 }

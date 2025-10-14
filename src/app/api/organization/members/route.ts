@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     // Combine member data with user details
     const enrichedMembers = Array.isArray(members)
       ? members.map(member => {
-          const userDetails = users?.find(u => u.id === member.user_id)
+          const userDetails = (users as any)?.find((u: any) => u.id === member.user_id)
           return {
             ...member,
             // PII: Only include email for admins

@@ -17,6 +17,7 @@ export interface CreateOrganizationData {
   name: string
   description?: string | null
   website?: string | null
+  created_by: string
 }
 
 export interface UpdateOrganizationData {

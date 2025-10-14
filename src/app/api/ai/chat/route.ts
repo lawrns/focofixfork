@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const result = await aiService.chat({
       threadId: input.body.threadId,
-      messages: input.body.messages,
+      messages: input.body.messages as Array<{ role: 'user' | 'system' | 'assistant'; content: string }>,
       userId: user.id,
       correlationId
     })

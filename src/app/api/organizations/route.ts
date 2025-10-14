@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
     const result = await OrganizationsService.createOrganization({
       name: input.body.name,
       description: input.body.description,
-      slug: input.body.slug,
       created_by: user.id
     })
 

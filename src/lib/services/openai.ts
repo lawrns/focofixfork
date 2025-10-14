@@ -140,14 +140,58 @@ export class OpenAIService {
   /**
    * Generate chat response
    */
-  async chat(message: string, context?: string): Promise<string> {
-    const response = await this.generate({
-      prompt: message,
-      context,
-      systemPrompt: 'You are a helpful AI assistant for project management. Provide concise, actionable advice.'
-    })
+  async chat(params: {
+    threadId?: string
+    messages: Array<{ role: 'user' | 'system' | 'assistant'; content: string }>
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const systemPrompt = 'You are a helpful AI assistant for project management. Provide concise, actionable advice.'
 
-    return response.content
+      // Convert messages to OpenAI format
+      const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = params.messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))
+
+      // If no system message, add one
+      if (!openaiMessages.some(msg => msg.role === 'system')) {
+        openaiMessages.unshift({
+          role: 'system',
+          content: systemPrompt
+        })
+      }
+
+      const completion = await this.client.chat.completions.create({
+        model: this.config.chatModel,
+        messages: openaiMessages,
+        temperature: 0.7,
+        max_tokens: 2000,
+      })
+
+      const content = completion.choices[0]?.message?.content || ''
+
+      return {
+        success: true,
+        data: {
+          response: content,
+          model: completion.model,
+          usage: completion.usage ? {
+            prompt_tokens: completion.usage.prompt_tokens,
+            completion_tokens: completion.usage.completion_tokens,
+            total_tokens: completion.usage.total_tokens
+          } : undefined,
+          threadId: params.threadId || `thread-${Date.now()}`
+        }
+      }
+    } catch (error: any) {
+      console.error('AI chat error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to generate chat response'
+      }
+    }
   }
 
   /**
@@ -276,6 +320,260 @@ Provide a concise, professional description (2-3 sentences) that explains what t
     })
 
     return response.content
+  }
+
+  /**
+   * Generate content based on type
+   */
+  async generateContent(params: {
+    type: 'summary' | 'requirements' | 'acceptanceCriteria' | 'releaseNotes'
+    input: string
+    style: 'concise' | 'detailed'
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const typePrompts = {
+        summary: 'Create a concise summary of the following content:',
+        requirements: 'Extract and organize the requirements from the following content:',
+        acceptanceCriteria: 'Create acceptance criteria for the following feature or requirement:',
+        releaseNotes: 'Write release notes for the following changes:'
+      }
+
+      const styleInstruction = params.style === 'detailed'
+        ? 'Provide a detailed and comprehensive response.'
+        : 'Keep the response concise and to the point.'
+
+      const prompt = `${typePrompts[params.type]}
+
+${params.input}
+
+${styleInstruction}`
+
+      const response = await this.generate({
+        prompt,
+        systemPrompt: 'You are a professional content writer and technical analyst. Generate clear, well-structured content.',
+        temperature: 0.6,
+        maxTokens: 1500
+      })
+
+      return {
+        success: true,
+        data: {
+          content: response.content,
+          type: params.type,
+          style: params.style,
+          model: response.model,
+          usage: response.usage
+        }
+      }
+    } catch (error: any) {
+      console.error('AI generateContent error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to generate content'
+      }
+    }
+  }
+
+  /**
+   * Generate project from prompt
+   */
+  async generateProject(params: {
+    prompt: string
+    organizationId?: string
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const projectStructure = await this.generateProjectStructure(params.prompt)
+
+      return {
+        success: true,
+        data: {
+          project: projectStructure,
+          organizationId: params.organizationId
+        }
+      }
+    } catch (error: any) {
+      console.error('AI generateProject error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to generate project'
+      }
+    }
+  }
+
+  /**
+   * Suggest tasks for a project
+   */
+  async suggestTask(params: {
+    projectId: string
+    context: string
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const suggestions = await this.suggestTasks(params.context, `Project ID: ${params.projectId}`)
+
+      return {
+        success: true,
+        data: {
+          suggestions,
+          projectId: params.projectId
+        }
+      }
+    } catch (error: any) {
+      console.error('AI suggestTask error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to suggest tasks'
+      }
+    }
+  }
+
+  /**
+   * Suggest milestones for a project
+   */
+  async suggestMilestone(params: {
+    projectId: string
+    context: string
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const suggestions = await this.suggestMilestones(params.context, `Project ID: ${params.projectId}`)
+
+      return {
+        success: true,
+        data: {
+          suggestions,
+          projectId: params.projectId
+        }
+      }
+    } catch (error: any) {
+      console.error('AI suggestMilestone error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to suggest milestones'
+      }
+    }
+  }
+
+  /**
+   * Generate milestones for a project
+   */
+  async generateMilestone(params: {
+    projectId: string
+    context: string
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const suggestions = await this.suggestMilestones(params.context, `Project ID: ${params.projectId}`)
+
+      return {
+        success: true,
+        data: {
+          milestones: suggestions,
+          projectId: params.projectId
+        }
+      }
+    } catch (error: any) {
+      console.error('AI generateMilestone error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to generate milestones'
+      }
+    }
+  }
+
+  /**
+   * Generate tasks for a project
+   */
+  async generateTasks(params: {
+    projectId: string
+    brief: string
+    count: number
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const suggestions = await this.suggestTasks(params.brief, `Project ID: ${params.projectId}`)
+
+      // Limit to requested count
+      const limitedSuggestions = suggestions.slice(0, params.count)
+
+      return {
+        success: true,
+        data: {
+          tasks: limitedSuggestions,
+          projectId: params.projectId,
+          requestedCount: params.count,
+          actualCount: limitedSuggestions.length
+        }
+      }
+    } catch (error: any) {
+      console.error('AI generateTasks error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to generate tasks'
+      }
+    }
+  }
+
+  /**
+   * Analyze text and provide insights
+   */
+  async analyze(params: {
+    projectId?: string
+    text: string
+    userId: string
+    correlationId?: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      let contextPrompt = 'You are an expert project manager and analyst. Analyze the provided text and provide insights.'
+
+      if (params.projectId) {
+        contextPrompt += ' Consider this analysis in the context of project management and execution.'
+      }
+
+      const prompt = `Please analyze this text and provide detailed insights:
+
+Text to analyze:
+${params.text}
+
+Provide your analysis covering:
+1. Key themes and topics
+2. Important findings or insights
+3. Potential implications or recommendations
+4. Any risks or concerns identified
+5. Actionable next steps
+
+Format your response as a structured analysis.`
+
+      const response = await this.generate({
+        prompt,
+        systemPrompt: contextPrompt,
+        temperature: 0.6,
+        maxTokens: 2000
+      })
+
+      return {
+        success: true,
+        data: {
+          analysis: response.content,
+          model: response.model,
+          usage: response.usage
+        }
+      }
+    } catch (error: any) {
+      console.error('AI analyze error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to analyze text'
+      }
+    }
   }
 
   /**

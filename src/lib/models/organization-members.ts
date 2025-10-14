@@ -3,7 +3,7 @@
  * Defines the structure and operations for organization membership data
  */
 
-export type MemberRole = 'director' | 'lead' | 'member'
+export type MemberRole = 'admin' | 'member'
 
 export interface OrganizationMember {
   id: string
@@ -42,7 +42,7 @@ export class OrganizationMemberModel {
       errors.push('Please enter a valid email address')
     }
 
-    if (data.role && !['director', 'lead', 'member'].includes(data.role)) {
+    if (data.role && !['admin', 'member'].includes(data.role)) {
       errors.push('Invalid role specified')
     }
 
@@ -58,7 +58,7 @@ export class OrganizationMemberModel {
   static validateRoleUpdate(data: UpdateMemberRoleData): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
 
-    if (!data.role || !['director', 'lead', 'member'].includes(data.role)) {
+    if (!data.role || !['admin', 'member'].includes(data.role)) {
       errors.push('Valid role is required')
     }
 
@@ -69,7 +69,7 @@ export class OrganizationMemberModel {
   }
 
   /**
-   * Check if user can update member roles (directors can change anyone, leads can change members)
+   * Check if user can update member roles (admins can change anyone, members cannot change roles)
    */
   static canUpdateRole(currentUserRole: MemberRole, targetUserRole: MemberRole, isSelf: boolean): boolean {
     // Users cannot change their own role
@@ -78,10 +78,8 @@ export class OrganizationMemberModel {
     }
 
     switch (currentUserRole) {
-      case 'director':
-        return true // Directors can change any role
-      case 'lead':
-        return targetUserRole === 'member' // Leads can only change members
+      case 'admin':
+        return true // Admins can change any role
       case 'member':
         return false // Members cannot change roles
       default:
@@ -90,11 +88,11 @@ export class OrganizationMemberModel {
   }
 
   /**
-   * Check if organization can remove a member (cannot remove last director)
+   * Check if organization can remove a member (cannot remove last admin)
    */
-  static canRemoveMember(memberRole: MemberRole, totalDirectors: number): boolean {
-    if (memberRole === 'director' && totalDirectors <= 1) {
-      return false // Cannot remove last director
+  static canRemoveMember(memberRole: MemberRole, totalAdmins: number): boolean {
+    if (memberRole === 'admin' && totalAdmins <= 1) {
+      return false // Cannot remove last admin
     }
     return true
   }
@@ -153,9 +151,7 @@ export class OrganizationMemberModel {
    */
   static getRoleLevel(role: MemberRole): number {
     switch (role) {
-      case 'director':
-        return 3
-      case 'lead':
+      case 'admin':
         return 2
       case 'member':
         return 1

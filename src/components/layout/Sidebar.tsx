@@ -72,11 +72,14 @@ export default function Sidebar() {
 
         // Handle different API response formats
         let projectsData: Project[] = []
-        if (data.success && Array.isArray(data.data)) {
+        if (data.success && data.data && Array.isArray(data.data.data)) {
+          // New format: {success: true, data: {data: [...], pagination: {...}}}
+          projectsData = data.data.data
+        } else if (data.success && Array.isArray(data.data)) {
           // Legacy format: {success: true, data: [...]}
           projectsData = data.data
         } else if (Array.isArray(data.data)) {
-          // New format: {data: [...], pagination: {...}}
+          // Alternative new format: {data: [...], pagination: {...}}
           projectsData = data.data
         } else if (Array.isArray(data)) {
           // Direct array format

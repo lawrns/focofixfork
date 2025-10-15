@@ -61,8 +61,11 @@ class ProjectStore {
         } else if (result.success && Array.isArray(result.data)) {
           // Legacy format: {success: true, data: [...]}
           projectsData = result.data
+        } else if (result.success && result.data && Array.isArray(result.data.data)) {
+          // New format: {success: true, data: {data: [...], pagination: {...}}}
+          projectsData = result.data.data
         } else if (Array.isArray(result.data)) {
-          // New format: {data: [...], pagination: {...}}
+          // Alternative new format: {data: [...], pagination: {...}}
           projectsData = result.data
         } else {
           console.error('ProjectStore: Unexpected API response format:', result)

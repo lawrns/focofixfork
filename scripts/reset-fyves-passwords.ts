@@ -26,7 +26,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 // Configuration
 const FYVES_ORG_ID = '4d951a69-8cb0-4556-8201-b85405ce38b9'
-const NEW_PASSWORD = 'Hennie@@18'
+const NEW_PASSWORD = 'hennie12'
 
 interface OrgMember {
   user_id: string

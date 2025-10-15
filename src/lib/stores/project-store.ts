@@ -53,16 +53,16 @@ class ProjectStore {
       if (response.ok) {
         const result = await response.json()
 
-        // Handle both direct array and wrapped response formats
+        // Handle different API response formats
         let projectsData: Project[] = []
         if (Array.isArray(result)) {
           // Direct array response
           projectsData = result
         } else if (result.success && Array.isArray(result.data)) {
-          // Success wrapper with data array
+          // Legacy format: {success: true, data: [...]}
           projectsData = result.data
-        } else if (result.data && Array.isArray(result.data)) {
-          // Data wrapper without success field
+        } else if (Array.isArray(result.data)) {
+          // New format: {data: [...], pagination: {...}}
           projectsData = result.data
         } else {
           console.error('ProjectStore: Unexpected API response format:', result)

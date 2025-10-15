@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Plus, MoreHorizontal } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Plus, MoreHorizontal, X, Check } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { toast } from 'sonner'
 
 interface Task {
   id: string
@@ -36,6 +38,10 @@ export function KanbanBoard() {
     { id: 'done', title: 'Done', tasks: [] },
   ])
   const [isLoading, setIsLoading] = useState(true)
+  const [addingToColumn, setAddingToColumn] = useState<string | null>(null)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const loadTasks = useCallback(async () => {
     if (!user) return
@@ -81,6 +87,64 @@ export function KanbanBoard() {
   useEffect(() => {
     loadTasks()
   }, [loadTasks])
+
+  // Focus input when adding mode is activated
+  useEffect(() => {
+    if (addingToColumn && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [addingToColumn])
+
+  const handleCreateTask = async (columnId: string) => {
+    if (!newTaskTitle.trim() || isCreating) return
+
+    setIsCreating(true)
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newTaskTitle.trim(),
+          status: columnId,
+          priority: 'medium',
+          project_id: 'default', // You may need to get this from context
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create task')
+      }
+
+      const result = await response.json()
+      const newTask = result.data || result
+
+      // Add task to the column optimistically
+      setColumns(prevColumns =>
+        prevColumns.map(col =>
+          col.id === columnId
+            ? { ...col, tasks: [...col.tasks, newTask] }
+            : col
+        )
+      )
+
+      // Reset form
+      setNewTaskTitle('')
+      setAddingToColumn(null)
+      toast.success('Task created successfully')
+    } catch (error) {
+      console.error('Failed to create task:', error)
+      toast.error('Failed to create task')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const handleCancelAdd = () => {
+    setAddingToColumn(null)
+    setNewTaskTitle('')
+  }
 
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result
@@ -189,11 +253,7 @@ export function KanbanBoard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      // Navigate to tasks page to create a new task
-                      // TODO: Replace with task creation dialog when implemented
-                      window.location.href = '/tasks';
-                    }}
+                    onClick={() => setAddingToColumn(column.id)}
                     title={`Add task to ${column.title}`}
                   >
                     <Plus className="h-4 w-4" />
@@ -269,7 +329,51 @@ export function KanbanBoard() {
                       ))}
                       {provided.placeholder}
 
-                      {column.tasks.length === 0 && (
+                      {/* Inline task creation form */}
+                      {addingToColumn === column.id && (
+                        <Card className="border-2 border-primary/50 bg-primary/5">
+                          <CardContent className="p-3">
+                            <div className="space-y-2">
+                              <Input
+                                ref={inputRef}
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
+                                placeholder="Enter task title..."
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleCreateTask(column.id)
+                                  } else if (e.key === 'Escape') {
+                                    handleCancelAdd()
+                                  }
+                                }}
+                                disabled={isCreating}
+                                className="text-sm"
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleCreateTask(column.id)}
+                                  disabled={isCreating || !newTaskTitle.trim()}
+                                  className="flex-1"
+                                >
+                                  <Check className="h-3 w-3 mr-1" />
+                                  {isCreating ? 'Creating...' : 'Add Task'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCancelAdd}
+                                  disabled={isCreating}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {column.tasks.length === 0 && addingToColumn !== column.id && (
                         <div className="text-center py-8 text-sm text-muted-foreground">
                           No tasks yet
                         </div>

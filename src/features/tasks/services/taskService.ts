@@ -36,7 +36,8 @@ export class TasksService {
       assignee_id?: string
       limit?: number
       offset?: number
-    }
+    },
+    supabaseClient?: any // Add optional supabase client parameter
   ): Promise<TasksListResponse> {
     try {
       if (!userId) {
@@ -46,7 +47,10 @@ export class TasksService {
         }
       }
 
-      let query = supabase
+      // Use provided client or default client
+      const client = supabaseClient || supabase
+
+      let query = client
         .from('tasks')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
@@ -159,7 +163,8 @@ export class TasksService {
    */
   static async createTask(
     userId: string,
-    taskData: TaskInsert
+    taskData: TaskInsert,
+    supabaseClient?: any // Add optional supabase client parameter
   ): Promise<TasksResponse<Task>> {
     try {
       if (!userId) {
@@ -169,13 +174,16 @@ export class TasksService {
         }
       }
 
+      // Use provided client or default client
+      const client = supabaseClient || supabase
+
       // Ensure the user is creating the task
       const dataToInsert = {
         ...taskData,
         reporter_id: userId,
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('tasks')
         .insert(dataToInsert)
         .select()

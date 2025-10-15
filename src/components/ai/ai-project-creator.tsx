@@ -51,12 +51,13 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
       return
     }
 
-    if (!organizationId) {
-      sonnerToast.error('Organization Required', {
-        description: 'Please select an organization'
-      })
-      return
-    }
+    // Organization is optional - don't require it
+    // if (!organizationId) {
+    //   sonnerToast.error('Organization Required', {
+    //     description: 'Please select an organization'
+    //   })
+    //   return
+    // }
 
     setLoading(true)
 
@@ -67,8 +68,8 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          specification: specification.trim(),
-          organizationId
+          prompt: specification.trim(),
+          ...(organizationId && { organizationId })
         })
       })
 
@@ -169,7 +170,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={loading || !specification.trim() || !organizationId}
+          disabled={loading || !specification.trim()}
           className="min-w-[140px]"
         >
           {loading ? (

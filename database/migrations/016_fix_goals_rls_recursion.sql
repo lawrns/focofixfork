@@ -89,8 +89,8 @@ CREATE POLICY "Users can create goal-project links"
         is_goal_accessible(goal_id) AND
         project_id IN (
             SELECT p.id FROM projects p
-            JOIN team_members tm ON tm.project_id = p.id
-            WHERE tm.user_id = auth.uid()
+            JOIN project_members pm ON pm.project_id = p.id
+            WHERE pm.user_id = auth.uid()
         )
     );
 

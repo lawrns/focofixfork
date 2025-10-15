@@ -60,7 +60,23 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
         throw new Error('Failed to fetch goals');
       }
       const result = await response.json();
-      setGoals(result.data || []);
+
+      // Handle wrapped response structure: {success: true, data: {data: [...], pagination: {}}}
+      let goalsData: Goal[] = []
+      if (result.success && result.data) {
+        if (Array.isArray(result.data.data)) {
+          goalsData = result.data.data
+        } else if (Array.isArray(result.data)) {
+          goalsData = result.data
+        }
+      } else if (Array.isArray(result.data)) {
+        goalsData = result.data
+      } else if (Array.isArray(result)) {
+        goalsData = result
+      }
+
+      console.log('GoalsDashboard: loaded goals:', goalsData.length)
+      setGoals(goalsData);
     } catch (error) {
       console.error('Error loading goals:', error);
       toast({
@@ -126,7 +142,9 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     loadAnalytics();
   }, [loadGoals, loadAnalytics]);
 
-  const filteredGoals = goals.filter(goal => {
+  // Ensure goals is always an array before filtering
+  const safeGoals = Array.isArray(goals) ? goals : [];
+  const filteredGoals = safeGoals.filter(goal => {
     if (statusFilter !== 'all' && goal.status !== statusFilter) return false;
     if (typeFilter !== 'all' && goal.type !== typeFilter) return false;
     return true;

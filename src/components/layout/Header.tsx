@@ -39,8 +39,8 @@ export default function Header() {
 
   // TEMPORARY: Just return simple text to test rendering
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 md:px-6 py-3 md:py-4 backdrop-blur-sm">
-      <div className="text-sm font-bold text-primary">
+    <header style={{ position: 'sticky', top: 0, zIndex: 10, borderBottom: '1px solid #e5e7eb', backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: '12px 24px', backdropFilter: 'blur(4px)', display: 'block', visibility: 'visible' }}>
+      <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#3b82f6' }}>
         HEADER TEST: User {displayUser?.email} - Logout Button Should Be Here
       </div>
     </header>

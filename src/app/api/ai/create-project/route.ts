@@ -40,7 +40,11 @@ export async function POST(request: NextRequest) {
       description: result.data.project.description,
       priority: result.data.project.priority,
       organization_id: input.body.organizationId,
-      status: 'planning'
+      status: 'planning' as const,
+      created_by: user.id,
+      start_date: new Date().toISOString().split('T')[0], // Today
+      due_date: result.data.project.milestones?.[result.data.project.milestones.length - 1]?.dueDate || null,
+      progress_percentage: 0
     }
 
     const createResult = await ProjectsService.createProject(user.id, projectData)

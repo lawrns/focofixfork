@@ -46,10 +46,25 @@ function MilestonesContent() {
       // Load projects first to get project names
       const projectsResponse = await fetch('/api/projects')
       if (projectsResponse.ok) {
-        const projectsData = await projectsResponse.json()
-        console.log('Milestones page: loaded projects:', projectsData.data?.length || 0)
-        projectStore.setProjects(projectsData.data || [])
-        setProjects(projectsData.data || [])
+        const data = await projectsResponse.json()
+
+        // Handle wrapped response: {success: true, data: {data: [...], pagination: {}}}
+        let projectsData: any[] = []
+        if (data.success && data.data) {
+          if (Array.isArray(data.data.data)) {
+            projectsData = data.data.data
+          } else if (Array.isArray(data.data)) {
+            projectsData = data.data
+          }
+        } else if (Array.isArray(data.data)) {
+          projectsData = data.data
+        } else if (Array.isArray(data)) {
+          projectsData = data
+        }
+
+        console.log('Milestones page: loaded projects:', projectsData.length)
+        projectStore.setProjects(projectsData)
+        setProjects(projectsData)
       }
 
       // Try to load milestones from API

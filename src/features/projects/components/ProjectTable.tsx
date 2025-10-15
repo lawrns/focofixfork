@@ -711,15 +711,29 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
       }
 
       const data = await response.json()
+
+      // Handle wrapped response: {success: true, data: {data: [...], pagination: {}}}
+      let projectsData: ProjectWithOrg[] = []
       if (data.success && data.data) {
-        console.log('ProjectTable: fetched projects from API:', data.data.length)
-        projectStore.setProjects(data.data)
-        setProjects(data.data)
-      } else {
-        console.log('ProjectTable: no projects from API')
-        projectStore.setProjects([])
-        setProjects([])
+        // wrapRoute wraps the response
+        if (Array.isArray(data.data.data)) {
+          // {success: true, data: {data: [...], pagination: {}}}
+          projectsData = data.data.data
+        } else if (Array.isArray(data.data)) {
+          // {success: true, data: [...]}
+          projectsData = data.data
+        }
+      } else if (Array.isArray(data.data)) {
+        // {data: [...]}
+        projectsData = data.data
+      } else if (Array.isArray(data)) {
+        // Direct array
+        projectsData = data
       }
+
+      console.log('ProjectTable: fetched projects from API:', projectsData.length)
+      projectStore.setProjects(projectsData)
+      setProjects(projectsData)
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError('Failed to load projects. Please try again.')

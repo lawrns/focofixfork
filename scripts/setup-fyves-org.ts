@@ -31,29 +31,42 @@ async function setupFyvesOrg() {
 
     const laurenceId = laurenceUser?.id
 
-    // Step 2: Create or update Fyves organization
-    const { data: org, error: orgError } = await supabase
+    // Step 2: Check if Fyves organization already exists
+    let orgId: string
+    const { data: existingOrg, error: checkError } = await supabase
       .from('organizations')
-      .upsert({
-        id: 'fyves-org-001',
-        name: 'Fyves',
-        slug: 'fyves',
-        description: 'Fyves Organization',
-        created_by: laurenceId,
-        is_active: true,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'slug'
-      })
-      .select()
+      .select('id, name, slug')
+      .eq('slug', 'fyves')
       .single()
 
-    if (orgError) {
-      console.error('❌ Error creating organization:', orgError)
-      return
+    if (existingOrg) {
+      console.log('✅ Fyves organization already exists:', existingOrg.id)
+      orgId = existingOrg.id
+    } else {
+      // Create new organization (let database generate UUID)
+      const { data: newOrg, error: createError } = await supabase
+        .from('organizations')
+        .insert({
+          name: 'Fyves',
+          slug: 'fyves',
+          description: 'Fyves Organization',
+          created_by: laurenceId,
+          is_active: true
+        })
+        .select()
+        .single()
+
+      if (createError || !newOrg) {
+        console.error('❌ Error creating organization:', createError)
+        return
+      }
+
+      console.log('✅ Organization created: Fyves')
+      console.log('   ID:', newOrg.id)
+      orgId = newOrg.id
     }
 
-    console.log('✅ Organization created/updated: Fyves\n')
+    console.log()
 
     // Step 3: Add team members
     const teamMembers = [
@@ -79,7 +92,7 @@ async function setupFyvesOrg() {
       const { error: memberError } = await supabase
         .from('organization_members')
         .upsert({
-          organization_id: 'fyves-org-001',
+          organization_id: orgId,
           user_id: user.id,
           role: member.role,
           joined_at: new Date().toISOString(),
@@ -100,7 +113,7 @@ async function setupFyvesOrg() {
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
       .update({
-        organization_id: 'fyves-org-001',
+        organization_id: orgId,
         updated_at: new Date().toISOString()
       })
       .eq('created_by', laurenceId)
@@ -117,7 +130,7 @@ async function setupFyvesOrg() {
     const { data: fyvesProjects } = await supabase
       .from('projects')
       .select('id')
-      .eq('organization_id', 'fyves-org-001')
+      .eq('organization_id', orgId)
 
     if (fyvesProjects) {
       for (const project of fyvesProjects) {
@@ -148,7 +161,7 @@ async function setupFyvesOrg() {
     const { data: orgMembers } = await supabase
       .from('organization_members')
       .select('role, user_id')
-      .eq('organization_id', 'fyves-org-001')
+      .eq('organization_id', orgId)
 
     console.log(`   - Organization members: ${orgMembers?.length || 0}`)
     console.log(`   - Projects in Fyves: ${fyvesProjects?.length || 0}`)

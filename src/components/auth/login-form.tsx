@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase-client'
@@ -36,10 +36,25 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
+
+  // Check for session timeout or expiry messages
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const reason = params.get('reason')
+
+      if (reason === 'timeout') {
+        setInfo('Tu sesión expiró por inactividad. Por favor, inicia sesión nuevamente.')
+      } else if (reason === 'session_expired') {
+        setInfo('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.')
+      }
+    }
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -175,9 +190,21 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
         </div>
 
         <div className="space-y-3">
-          <Label htmlFor="password" className="text-sm font-medium text-foreground">
-            Contraseña
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">
+              Contraseña
+            </Label>
+            <a
+              href="/forgot-password"
+              className="text-sm text-primary hover:underline"
+              onClick={(e) => {
+                e.preventDefault()
+                router.push('/forgot-password')
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
           <Input
             id="password"
             name="password"
@@ -192,6 +219,12 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
             className="h-12 px-4 text-base"
           />
         </div>
+
+        {info && (
+          <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950">
+            <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">{info}</AlertDescription>
+          </Alert>
+        )}
 
         {error && (
           <Alert variant="destructive" className="border-destructive/50">

@@ -46,12 +46,27 @@ export function KanbanBoard() {
 
       if (response.ok) {
         const data = await response.json()
-        const tasks: Task[] = data.data || []
+
+        // Handle wrapped response structure: {success: true, data: {data: [...], pagination: {}}}
+        let tasksData: Task[] = []
+        if (data.success && data.data) {
+          if (Array.isArray(data.data.data)) {
+            tasksData = data.data.data
+          } else if (Array.isArray(data.data)) {
+            tasksData = data.data
+          }
+        } else if (Array.isArray(data.data)) {
+          tasksData = data.data
+        } else if (Array.isArray(data)) {
+          tasksData = data
+        }
+
+        console.log('KanbanBoard: loaded tasks:', tasksData.length)
 
         // Distribute tasks into columns
         setColumns(prevColumns => prevColumns.map(col => ({
           ...col,
-          tasks: tasks.filter(task => task.status === col.id)
+          tasks: tasksData.filter(task => task.status === col.id)
         })))
       } else {
         console.error('Failed to fetch tasks')

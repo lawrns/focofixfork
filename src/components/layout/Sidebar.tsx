@@ -20,7 +20,7 @@ import {
   Settings
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { useGlobalRealtime } from '@/lib/hooks/useRealtime'
+import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
 import { useProjects } from '@/hooks/useProjects'
 
@@ -48,6 +48,7 @@ export default function Sidebar() {
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
   const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
+  const [primaryOrgId, setPrimaryOrgId] = useState<string | null>(null)
   const lastFetchTime = useRef<number>(0)
 
   const fetchProjects = useCallback(async (forceRefresh = false) => {
@@ -179,6 +180,20 @@ export default function Sidebar() {
 
   // Don't auto-refresh on auth changes - rely on store subscription
 
+  // Fetch user's primary organization ID
+  useEffect(() => {
+    if (user) {
+      fetch('/api/organizations')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data?.[0]?.id) {
+            setPrimaryOrgId(data.data[0].id)
+          }
+        })
+        .catch(err => console.error('Failed to fetch organizations:', err))
+    }
+  }, [user])
+
   // Subscribe to global project store
   useEffect(() => {
     console.log('Sidebar: subscribing to project store')
@@ -190,8 +205,8 @@ export default function Sidebar() {
     return unsubscribe
   }, [])
 
-  // Real-time updates for projects in sidebar
-  useGlobalRealtime((payload) => {
+  // Real-time updates for projects in sidebar - use organization-specific subscription
+  useOrganizationRealtime(primaryOrgId || '', (payload) => {
     console.log('Sidebar: Real-time event received:', {
       eventType: payload.eventType,
       table: payload.table,
@@ -227,7 +242,7 @@ export default function Sidebar() {
         }
       }
     }
-  }, true) // Explicitly enable real-time
+  }, !!primaryOrgId) // Only enable when we have an organization ID
 
   const handleNewProject = () => {
     // For now, just navigate to dashboard - we'll implement a modal later

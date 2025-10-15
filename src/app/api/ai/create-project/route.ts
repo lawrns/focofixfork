@@ -16,10 +16,18 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   return wrapRoute(AICreateProjectSchema, async ({ input, user, req, correlationId }) => {
-    console.log('🤖 AI create project API called for user:', user.id, 'with prompt:', input.body.prompt?.substring(0, 50))
+    console.log('[AI Create Project] Request received:', {
+      userId: user.id,
+      promptLength: input.body.prompt?.length,
+      promptPreview: input.body.prompt?.substring(0, 50),
+      organizationId: input.body.organizationId,
+      correlationId
+    })
+
     // AI rate limit: 10 requests per minute
     await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'ai')
 
+    console.log('[AI Create Project] Calling AI service...')
     const result = await aiService.generateProject({
       prompt: input.body.prompt,
       organizationId: input.body.organizationId,
@@ -28,11 +36,22 @@ export async function POST(request: NextRequest) {
     })
 
     if (!result.success) {
+      console.error('[AI Create Project] AI service failed:', {
+        error: result.error,
+        userId: user.id,
+        correlationId
+      })
       const err: any = new Error(result.error || 'AI service failed')
       err.code = 'AI_SERVICE_ERROR'
       err.statusCode = 500
       throw err
     }
+
+    console.log('[AI Create Project] AI generation successful:', {
+      projectName: result.data.project.name,
+      milestonesCount: result.data.project.milestones?.length || 0,
+      tasksCount: result.data.project.milestones?.reduce((sum, m) => sum + (m.tasks?.length || 0), 0) || 0
+    })
 
     // Create the actual project in the database
     const projectData = {
@@ -47,14 +66,33 @@ export async function POST(request: NextRequest) {
       progress_percentage: 0
     }
 
+    console.log('[AI Create Project] Creating project in database:', {
+      name: projectData.name,
+      organizationId: projectData.organization_id,
+      userId: user.id
+    })
+
     const createResult = await ProjectsService.createProject(user.id, projectData)
 
     if (!createResult.success) {
+      console.error('[AI Create Project] Database creation failed:', {
+        error: createResult.error,
+        projectData,
+        userId: user.id,
+        correlationId
+      })
       const err: any = new Error(createResult.error || 'Failed to create project')
       err.code = 'DATABASE_ERROR'
       err.statusCode = 500
       throw err
     }
+
+    console.log('[AI Create Project] Success! Project created:', {
+      projectId: createResult.data.id,
+      projectName: createResult.data.name,
+      userId: user.id,
+      correlationId
+    })
 
     // Return the created project with summary
     return {

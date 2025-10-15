@@ -69,18 +69,27 @@ export default function Sidebar() {
 
       if (response.ok) {
         const data = await response.json()
-        if (data.success) {
-          console.log('Sidebar: fetched projects from API:', data.data?.length || 0)
-          if (data.data && data.data.length > 0) {
-            console.log('Sidebar: project IDs from API:', data.data.map((p: any) => p.id))
-          }
-          projectStore.setProjects(data.data || [])
-          setProjects(data.data || [])
-        } else {
-          console.log('Sidebar: no projects from API')
-          projectStore.setProjects([])
-          setProjects([])
+
+        // Handle different API response formats
+        let projectsData: Project[] = []
+        if (data.success && Array.isArray(data.data)) {
+          // Legacy format: {success: true, data: [...]}
+          projectsData = data.data
+        } else if (Array.isArray(data.data)) {
+          // New format: {data: [...], pagination: {...}}
+          projectsData = data.data
+        } else if (Array.isArray(data)) {
+          // Direct array format
+          projectsData = data
         }
+
+        console.log('Sidebar: fetched projects from API:', projectsData.length)
+        if (projectsData.length > 0) {
+          console.log('Sidebar: project IDs from API:', projectsData.map((p: any) => p.id))
+        }
+
+        projectStore.setProjects(projectsData)
+        setProjects(projectsData)
       } else {
         console.error('Sidebar: failed to fetch projects, status:', response.status)
         projectStore.setProjects([])

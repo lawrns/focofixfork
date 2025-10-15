@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
-import MainLayout from '@/components/layout/MainLayout'
 import { ViewTabs, ProjectTable, KanbanBoard } from '@/features/projects'
 import GanttView from '@/components/views/gantt-view'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -177,8 +176,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <MainLayout>
-      <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4">
+    <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4">
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {
@@ -337,6 +335,6 @@ export default function DashboardPage() {
           />
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </div>
   )
 }

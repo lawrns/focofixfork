@@ -39,6 +39,14 @@ export function useRealtime(
   const subscribe = useCallback(() => {
     if (!options.enabled) return
 
+    // Require at least one context parameter (projectId, organizationId, or userId)
+    if (!options.projectId && !options.organizationId && !options.userId) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[useRealtime] No context provided (projectId, organizationId, or userId), skipping subscription')
+      }
+      return
+    }
+
     // Create a unique channel name based on the options
     const channelName = `realtime:${
       options.projectId || options.organizationId || options.userId || 'global'
@@ -167,9 +175,12 @@ export function useRealtime(
         )
     }
 
-    // Global projects subscription when no specific filters are provided
-    // Note: This creates a global subscription that may conflict with organization-specific ones
-    // Consider using organization-specific subscriptions instead for better consistency
+    // DISABLED: Global projects subscription
+    // This was causing "realtime:global" channel errors because it subscribed to the entire
+    // projects table without filters. Components should use organization-specific or
+    // project-specific subscriptions instead for better performance and reliability.
+    // The early return above (lines 42-48) now prevents this code from ever executing.
+    /*
     if (options.enabled && !options.projectId && !options.organizationId && !options.userId) {
       channel.on(
         'postgres_changes',
@@ -189,6 +200,7 @@ export function useRealtime(
         }
       )
     }
+    */
 
     // DISABLED: Global real-time events subscription
     // The 'real_time_events' table does not exist in the current database schema
@@ -215,13 +227,33 @@ export function useRealtime(
 
     channel.subscribe((status) => {
       if (status === 'CHANNEL_ERROR') {
-        // Only log in development - realtime may not be enabled for all tables in production
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`[useRealtime] Channel subscription error for ${channelName}. This may be due to missing tables or realtime not being enabled.`)
-        }
+        // Log errors in both development and production for debugging
+        console.error(`[useRealtime] Channel subscription error for ${channelName}`, {
+          channelName,
+          projectId: options.projectId,
+          organizationId: options.organizationId,
+          userId: options.userId,
+          status
+        })
       } else if (status === 'SUBSCRIBED') {
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[useRealtime] Successfully subscribed to ${channelName}`)
+          console.log(`[useRealtime] Successfully subscribed to ${channelName}`, {
+            channelName,
+            projectId: options.projectId,
+            organizationId: options.organizationId,
+            userId: options.userId
+          })
+        }
+      } else if (status === 'TIMED_OUT') {
+        console.warn(`[useRealtime] Channel subscription timed out for ${channelName}`, {
+          channelName,
+          projectId: options.projectId,
+          organizationId: options.organizationId,
+          userId: options.userId
+        })
+      } else if (status === 'CLOSED') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[useRealtime] Channel closed for ${channelName}`)
         }
       }
     })

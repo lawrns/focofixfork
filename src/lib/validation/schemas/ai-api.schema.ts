@@ -6,7 +6,14 @@ import { z } from 'zod'
 export const AICreateProjectSchema = z.object({
   body: z.object({
     prompt: z.string().min(5).max(2000),
-    organizationId: z.string().uuid().optional()
+    organizationId: z.string()
+      .nullable()
+      .optional()
+      .transform(val => val === '' || val === null ? undefined : val)
+      .refine(
+        val => val === undefined || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val),
+        { message: 'Organization ID must be a valid UUID' }
+      )
   }).strict(),
   query: z.object({}).optional()
 })

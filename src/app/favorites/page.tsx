@@ -45,9 +45,38 @@ function FavoritesContent() {
         const tasksResponse = await fetch('/api/tasks?limit=5')
         const tasksData = tasksResponse.ok ? await tasksResponse.json() : { data: [] }
 
+        // Handle wrapped response structure: {success: true, data: {data: [...], pagination: {}}}
+        let projects: any[] = []
+        if (projectsData.success && projectsData.data) {
+          if (Array.isArray(projectsData.data.data)) {
+            projects = projectsData.data.data
+          } else if (Array.isArray(projectsData.data)) {
+            projects = projectsData.data
+          }
+        } else if (Array.isArray(projectsData.data)) {
+          projects = projectsData.data
+        } else if (Array.isArray(projectsData)) {
+          projects = projectsData
+        }
+
+        let tasks: any[] = []
+        if (tasksData.success && tasksData.data) {
+          if (Array.isArray(tasksData.data.data)) {
+            tasks = tasksData.data.data
+          } else if (Array.isArray(tasksData.data)) {
+            tasks = tasksData.data
+          }
+        } else if (Array.isArray(tasksData.data)) {
+          tasks = tasksData.data
+        } else if (Array.isArray(tasksData)) {
+          tasks = tasksData
+        }
+
+        console.log('FavoritesPage: loaded projects:', projects.length, 'tasks:', tasks.length)
+
         // Combine and sort by updated_at
         const items: RecentItem[] = [
-          ...projectsData.data.map((p: any) => ({
+          ...projects.map((p: any) => ({
             id: p.id,
             name: p.name,
             type: 'project' as const,
@@ -55,7 +84,7 @@ function FavoritesContent() {
             status: p.status,
             updated_at: p.updated_at
           })),
-          ...tasksData.data.map((t: any) => ({
+          ...tasks.map((t: any) => ({
             id: t.id,
             name: t.title,
             type: 'task' as const,

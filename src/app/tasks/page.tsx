@@ -31,10 +31,25 @@ function TasksContent() {
         const response = await fetch('/api/projects')
         if (response.ok) {
           const data = await response.json()
-          const projectList = data.data?.map((p: any) => ({
+
+          // Handle wrapped response structure: {success: true, data: {data: [...], pagination: {}}}
+          let projectsData: any[] = []
+          if (data.success && data.data) {
+            if (Array.isArray(data.data.data)) {
+              projectsData = data.data.data
+            } else if (Array.isArray(data.data)) {
+              projectsData = data.data
+            }
+          } else if (Array.isArray(data.data)) {
+            projectsData = data.data
+          } else if (Array.isArray(data)) {
+            projectsData = data
+          }
+
+          const projectList = projectsData.map((p: any) => ({
             id: p.id,
             name: p.name
-          })) || []
+          }))
           setProjects(projectList)
         }
       } catch (error) {

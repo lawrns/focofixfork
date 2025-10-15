@@ -43,6 +43,11 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
     loadOrganizations()
   })
 
+  // UUID validation helper
+  const isValidUUID = (str: string) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+  }
+
   const handleSubmit = async () => {
     if (!specification.trim()) {
       sonnerToast.error('Description Required', {
@@ -69,7 +74,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
         },
         body: JSON.stringify({
           prompt: specification.trim(),
-          ...(organizationId && organizationId !== 'lililili' && { organizationId })
+          ...(organizationId && isValidUUID(organizationId) && { organizationId })
         })
       })
 

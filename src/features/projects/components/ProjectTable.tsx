@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ProjectClientService } from '../services/projectClientService'
-import { useGlobalRealtime, useOrganizationRealtime } from '@/lib/hooks/useRealtime'
+import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
 import { QuickActions, createProjectActions } from '@/components/ui/quick-actions'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -752,9 +752,22 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   useEffect(() => {
     // Ensure projects is always an array before filtering
     const safeProjects = Array.isArray(projects) ? projects : []
-    const result = FilteringService.filterAndSort(safeProjects, filters, sortConditions)
+
+    // Apply search term filter first
+    let searchFiltered = safeProjects
+    if (searchTerm && searchTerm.trim()) {
+      searchFiltered = safeProjects.filter(project =>
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (project.organizations?.name && project.organizations.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      console.log('ProjectTable: search applied:', { searchTerm, resultsCount: searchFiltered.length })
+    }
+
+    // Then apply advanced filters and sorting
+    const result = FilteringService.filterAndSort(searchFiltered, filters, sortConditions)
     setFilteredProjects(result.items)
-  }, [projects, filters, sortConditions])
+  }, [projects, filters, sortConditions, searchTerm])
 
   // Real-time updates for projects in table (updates store)
   // Use a single organization subscription if user has organizations, otherwise use global
@@ -844,21 +857,17 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
   // This avoids calling hooks in a loop while still providing real-time updates
   const primaryOrgId = userOrganizations.length > 0 ? userOrganizations[0] : null
 
-  // Always call the hook, but conditionally handle the events
+  // Use organization-specific realtime subscription
+  // This handles all project updates within the user's organization
   useOrganizationRealtime(primaryOrgId || '', (payload: any) => {
     if (primaryOrgId) {
       handleRealtimeEvent(payload, 'organization')
     }
   })
 
-  // Fallback: Also listen for projects created by the user directly
-  useGlobalRealtime((payload) => {
-    // Only process events for projects created by the user directly (not through organizations)
-    const project = payload.new || payload.old
-    if (project && (project.created_by === user?.id || !project.organization_id)) {
-      handleRealtimeEvent(payload, 'global')
-    }
-  })
+  // Note: Removed global realtime subscription to prevent "realtime:global" errors
+  // The organization-specific subscription above handles all necessary updates
+  // Personal projects without organization_id will still sync via the project store
 
   if (error) {
     return (

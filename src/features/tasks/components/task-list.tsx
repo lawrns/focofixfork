@@ -102,7 +102,23 @@ export function TaskList({
       }
 
       const data = await response.json()
-      setTasks(data.data || [])
+
+      // Handle wrapped response structure: {success: true, data: {data: [...], pagination: {}}}
+      let tasksData: Task[] = []
+      if (data.success && data.data) {
+        if (Array.isArray(data.data.data)) {
+          tasksData = data.data.data
+        } else if (Array.isArray(data.data)) {
+          tasksData = data.data
+        }
+      } else if (Array.isArray(data.data)) {
+        tasksData = data.data
+      } else if (Array.isArray(data)) {
+        tasksData = data
+      }
+
+      console.log('TaskList: loaded tasks:', tasksData.length)
+      setTasks(tasksData)
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError('Failed to load tasks. Please try again.')
@@ -115,7 +131,9 @@ export function TaskList({
     fetchTasks()
   }, [fetchTasks])
 
-  const filteredTasks = tasks.filter(task => {
+  // Ensure tasks is always an array before filtering
+  const safeTasks = Array.isArray(tasks) ? tasks : []
+  const filteredTasks = safeTasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
 

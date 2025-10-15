@@ -5,6 +5,11 @@ import { checkRateLimit } from '@/server/utils/rateLimit'
 import { aiService } from '@/lib/services/openai'
 import { ProjectsService } from '@/features/projects/services/projectService'
 
+// Configure route for longer execution time (needed for OpenAI API calls)
+// Netlify free tier: 10s, Pro: 26s, Enterprise: 60s+
+export const maxDuration = 26
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/ai/create-project - Generate project using AI
  * Rate limited: 10 AI requests per minute

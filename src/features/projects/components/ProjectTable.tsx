@@ -79,14 +79,19 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
         console.log('ProjectTable: project IDs from store:', storeProjects.map((p: any) => p.id))
       }
       setProjects(storeProjects as ProjectWithOrg[])
+      setLoading(false)
     })
 
-    // If store is empty on mount, trigger a fetch
+    // If store is empty on mount, use the store's refresh method with built-in debouncing
     const currentProjects = projectStore.getProjects()
     if (currentProjects.length === 0) {
-      console.log('ProjectTable: store is empty on mount, triggering sidebar refresh')
-      // Trigger sidebar to fetch data
-      window.dispatchEvent(new CustomEvent('forceProjectRefresh'))
+      console.log('ProjectTable: store is empty on mount, refreshing via store')
+      // Use store's refresh method which has built-in debouncing
+      projectStore.refreshProjects().then(() => {
+        setLoading(false)
+      })
+    } else {
+      setLoading(false)
     }
 
     return unsubscribe

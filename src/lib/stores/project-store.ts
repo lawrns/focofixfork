@@ -23,6 +23,8 @@ class ProjectStore {
   private listeners: Set<(projects: Project[]) => void> = new Set()
   private projects: Project[] = []
   private operationInProgress: Set<string> = new Set() // Track operations to prevent race conditions
+  private fetchInProgress: boolean = false // Track if fetch is in progress
+  private lastFetchTime: number = 0 // Track when last fetch completed
 
   // Subscribe to project changes
   subscribe(listener: (projects: Project[]) => void): () => void {
@@ -40,9 +42,33 @@ class ProjectStore {
     return this.operationInProgress.has(projectId)
   }
 
+  // Check if fetch is needed (debounce logic)
+  shouldFetch(): boolean {
+    if (this.fetchInProgress) {
+      console.log('ProjectStore: Fetch already in progress, skipping')
+      return false
+    }
+
+    const now = Date.now()
+    const timeSinceLastFetch = now - this.lastFetchTime
+
+    // Debounce: don't fetch if last fetch was within 1 second
+    if (timeSinceLastFetch < 1000) {
+      console.log('ProjectStore: Fetch debounced (last fetch was', timeSinceLastFetch, 'ms ago)')
+      return false
+    }
+
+    return true
+  }
+
   // Refresh projects from API
   async refreshProjects(): Promise<void> {
+    if (!this.shouldFetch()) {
+      return
+    }
+
     try {
+      this.fetchInProgress = true
       console.log('ProjectStore: Refreshing projects from API')
       const response = await fetch('/api/projects', {
         headers: {
@@ -73,12 +99,15 @@ class ProjectStore {
         }
 
         this.setProjects(projectsData)
+        this.lastFetchTime = Date.now()
         console.log('ProjectStore: Refreshed projects from API:', projectsData.length)
       } else {
         console.error('ProjectStore: Failed to refresh projects from API, status:', response.status)
       }
     } catch (error) {
       console.error('ProjectStore: Error refreshing projects:', error)
+    } finally {
+      this.fetchInProgress = false
     }
   }
 

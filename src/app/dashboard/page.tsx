@@ -7,7 +7,7 @@ import MainLayout from '@/components/layout/MainLayout'
 import { ViewTabs, ProjectTable, KanbanBoard } from '@/features/projects'
 import GanttView from '@/components/views/gantt-view'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -324,9 +324,9 @@ export default function DashboardPage() {
               </div>
               <DialogTitle className="text-2xl">AI-Powered Project Creator</DialogTitle>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <DialogDescription className="text-sm text-muted-foreground">
               Describe your project in natural language, and AI will automatically create a complete project structure with milestones and tasks.
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <AIProjectCreator
             onSuccess={(projectId) => {

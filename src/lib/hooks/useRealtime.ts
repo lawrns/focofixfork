@@ -39,10 +39,15 @@ export function useRealtime(
   const subscribe = useCallback(() => {
     if (!options.enabled) return
 
-    // Require at least one context parameter (projectId, organizationId, or userId)
-    if (!options.projectId && !options.organizationId && !options.userId) {
+    // Require at least one valid context parameter (non-empty string)
+    const hasValidContext =
+      (options.projectId && options.projectId.trim() !== '') ||
+      (options.organizationId && options.organizationId.trim() !== '') ||
+      (options.userId && options.userId.trim() !== '')
+
+    if (!hasValidContext) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[useRealtime] No context provided (projectId, organizationId, or userId), skipping subscription')
+        console.warn('[useRealtime] No valid context provided (projectId, organizationId, or userId), skipping subscription')
       }
       return
     }

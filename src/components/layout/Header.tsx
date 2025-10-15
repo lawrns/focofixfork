@@ -32,7 +32,7 @@ export default function Header() {
   const { t } = useTranslation()
 
   // Debug: Force render user avatar even if user is null
-  const displayUser = user || { email: 'test@example.com' }
+  const displayUser = user || { email: 'test@example.com', user_metadata: { full_name: 'Test User' } }
   const avatarText = displayUser?.email?.charAt(0).toUpperCase() || 'U'
 
   console.log('Header component rendering:', { user: !!user, loading, displayUser: displayUser?.email })
@@ -173,117 +173,8 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-3 md:px-6 py-3 md:py-4 backdrop-blur-sm">
-      <div className="flex items-center gap-2 md:gap-6">
-        <div className="flex items-center gap-2 md:gap-3">
-          <Image
-            src="/focologo.png"
-            alt="Foco Logo"
-            width={32}
-            height={32}
-            className="h-6 md:h-8 w-auto"
-          />
-          <h2 className="text-lg md:text-xl font-bold text-foreground">Foco</h2>
-        </div>
-        <div className="hidden sm:flex items-center gap-3">
-          <span className="rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
-            Project Management
-          </span>
-          <span className="rounded-lg bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">
-            Dashboard
-          </span>
-        </div>
-      </div>
-
-      {/* Saved Views */}
-      <div className="hidden md:flex flex-1 justify-center px-8">
-        <SavedViews
-          onViewSelect={(view: ViewConfig) => {
-            console.log('Selected view:', view)
-          }}
-          onViewSave={(name: string) => {
-            console.log('Saving view:', name)
-          }}
-          currentViewConfig={{
-            type: 'table',
-            filters: {},
-          }}
-        />
-      </div>
-
+      {/* TEMPORARY: Just render user avatar */}
       <div className="flex flex-1 justify-end items-center gap-2 md:gap-4">
-        {/* Search */}
-        <div className="relative w-full max-w-[200px] sm:max-w-xs md:w-72">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="h-4 md:h-5 w-4 md:w-5 text-muted-foreground" />
-          </div>
-          <input
-            className="h-9 md:h-11 w-full rounded-lg border border-input bg-background pl-8 md:pl-10 pr-8 md:pr-10 text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder={t('common.search')}
-            type="search"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onFocus={() => searchQuery.trim() && setShowResults(true)}
-            onBlur={() => {
-              // Delay hiding to allow click events on results
-              setTimeout(() => setShowResults(false), 150)
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={clearSearch}
-              className="absolute inset-y-0 right-0 flex items-center pr-2 md:pr-3 hover:text-foreground text-muted-foreground"
-            >
-              <X className="h-3 md:h-4 w-3 md:w-4" />
-            </button>
-          )}
-
-          {/* Search Results Dropdown - Always present to prevent layout shifts */}
-          {showResults && (
-            <div className="absolute top-full mt-2 w-full bg-background border border-border rounded-lg shadow-lg z-50 min-h-[60px] max-h-96 overflow-y-auto">
-              {isSearching ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                  <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
-                </div>
-              ) : searchResults.length > 0 ? (
-                searchResults.map((result) => (
-                  <button
-                    key={`${result.type}-${result.id}`}
-                    onClick={() => handleResultClick(result)}
-                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        result.type === 'project' ? 'bg-blue-500 text-white' :
-                        result.type === 'task' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {result.type}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{result.name}</p>
-                        {result.description && (
-                          <p className="text-sm text-muted-foreground truncate">{result.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))
-              ) : searchQuery.trim() ? (
-                <div className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground">{t('common.noResults')}</p>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
-
-        {/* Help Button */}
-        <button className="hidden sm:flex size-9 md:size-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-          <HelpCircle className="h-4 md:h-5 w-4 md:w-5" />
-        </button>
-
-        {/* User Avatar with Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="size-9 md:size-11 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer">
@@ -326,4 +217,3 @@ export default function Header() {
       </div>
     </header>
   )
-}

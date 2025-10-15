@@ -51,11 +51,28 @@ class ProjectStore {
       })
 
       if (response.ok) {
-        const data = await response.json()
-        this.setProjects(data.data || [])
-        console.log('ProjectStore: Refreshed projects from API:', data.data?.length || 0)
+        const result = await response.json()
+
+        // Handle both direct array and wrapped response formats
+        let projectsData: Project[] = []
+        if (Array.isArray(result)) {
+          // Direct array response
+          projectsData = result
+        } else if (result.success && Array.isArray(result.data)) {
+          // Success wrapper with data array
+          projectsData = result.data
+        } else if (result.data && Array.isArray(result.data)) {
+          // Data wrapper without success field
+          projectsData = result.data
+        } else {
+          console.error('ProjectStore: Unexpected API response format:', result)
+          return
+        }
+
+        this.setProjects(projectsData)
+        console.log('ProjectStore: Refreshed projects from API:', projectsData.length)
       } else {
-        console.error('ProjectStore: Failed to refresh projects from API')
+        console.error('ProjectStore: Failed to refresh projects from API, status:', response.status)
       }
     } catch (error) {
       console.error('ProjectStore: Error refreshing projects:', error)
@@ -75,7 +92,13 @@ class ProjectStore {
   }
 
   // Update projects and notify all listeners
-  setProjects(projects: Project[]) {
+  setProjects(projects: Project[] | any) {
+    // Handle case where projects is not an array (API response wrapped in object)
+    if (!Array.isArray(projects)) {
+      console.error('ProjectStore: setProjects called with non-array:', typeof projects, projects)
+      return
+    }
+
     console.log('ProjectStore: updating projects to', projects.length, 'projects:', projects.map(p => ({ id: p.id, name: p.name })))
     const validProjects = projects.filter(p => p && p.id && p.name)
     if (validProjects.length !== projects.length) {

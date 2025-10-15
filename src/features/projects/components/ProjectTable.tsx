@@ -25,6 +25,7 @@ import styles from './ProjectTable.module.css'
 interface Project {
   id: string
   name: string
+  description?: string | null
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
   due_date?: string
   priority: 'low' | 'medium' | 'high' | 'urgent'

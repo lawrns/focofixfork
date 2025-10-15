@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       assignee_id: assigneeId,
       limit,
       offset,
-    })
+    }, user.supabase)
 
     if (!result.success) {
       const err: any = new Error(result.error || 'Failed to fetch tasks')
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   return wrapRoute(CreateTaskSchema, async ({ input, user, correlationId }) => {
-    const result = await TasksService.createTask(user.id, input.body as any)
+    const result = await TasksService.createTask(user.id, input.body as any, user.supabase)
 
     if (!result.success) {
       const err: any = new Error(result.error || 'Failed to create task')

@@ -8,7 +8,7 @@ import { OrganizationsService } from '@/lib/services/organizations'
  */
 export async function GET(request: NextRequest) {
   return wrapRoute(GetOrganizationsSchema, async ({ user, correlationId }) => {
-    const result = await OrganizationsService.getUserOrganizations(user.id)
+    const result = await OrganizationsService.getUserOrganizations(user.id, user.supabase)
 
     if (!result.success) {
       const err: any = new Error(result.error || 'Failed to fetch organizations')
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       name: input.body.name,
       description: input.body.description,
       created_by: user.id
-    })
+    }, user.supabase)
 
     if (!result.success) {
       const err: any = new Error(result.error || 'Failed to create organization')

@@ -29,7 +29,7 @@ export class OrganizationsService {
   /**
    * Get all organizations for the current user
    */
-  static async getUserOrganizations(userId: string): Promise<OrganizationsResponse<Organization[]>> {
+  static async getUserOrganizations(userId: string, supabaseClient?: any): Promise<OrganizationsResponse<Organization[]>> {
     try {
       if (!userId) {
         return {
@@ -38,8 +38,9 @@ export class OrganizationsService {
         }
       }
 
-      // Get organizations where user is a member (using admin client to bypass RLS)
-      const { data, error } = await supabaseAdmin
+      // Use provided client or admin client for RLS-enforced queries
+      const client = supabaseClient || supabaseAdmin
+      const { data, error } = await client
         .from('organization_members')
         .select(`
           organization_id,
@@ -82,7 +83,7 @@ export class OrganizationsService {
   /**
    * Create a new organization
    */
-  static async createOrganization(data: CreateOrganizationData): Promise<OrganizationsResponse<Organization>> {
+  static async createOrganization(data: CreateOrganizationData, supabaseClient?: any): Promise<OrganizationsResponse<Organization>> {
     try {
       console.log('OrganizationsService.createOrganization called with:', data)
 
@@ -104,6 +105,9 @@ export class OrganizationsService {
         }
       }
 
+      // Use provided client or admin client
+      const client = supabaseClient || supabaseAdmin
+
       // Create organization with unique slug
       let baseSlug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       let slug = baseSlug;
@@ -111,7 +115,7 @@ export class OrganizationsService {
 
       // Check if slug exists and generate unique slug
       while (true) {
-        const { data: existingOrg } = await supabaseAdmin
+        const { data: existingOrg } = await client
           .from('organizations')
           .select('id')
           .eq('slug', slug)
@@ -133,7 +137,7 @@ export class OrganizationsService {
 
       console.log('Inserting organization:', { name: data.name, slug, created_by: data.created_by })
 
-      const { data: organization, error: orgError } = await supabaseAdmin
+      const { data: organization, error: orgError } = await client
         .from('organizations')
         .insert({
           name: data.name,
@@ -169,7 +173,7 @@ export class OrganizationsService {
       // Add creator as member of the organization
       console.log('Adding creator as member:', { organization_id: organization.id, user_id: data.created_by })
 
-      const { error: memberError } = await supabaseAdmin
+      const { error: memberError } = await client
         .from('organization_members')
         .insert({
           organization_id: organization.id,

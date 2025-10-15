@@ -207,7 +207,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -311,19 +311,19 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Active</span>
-                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20">{analytics.projects.activeProjects}</Badge>
+                    <Badge className="bg-primary text-primary-foreground font-semibold hover:bg-primary/90">{analytics.projects.activeProjects}</Badge>
                   </div>
                   <Progress value={(analytics.projects.activeProjects / analytics.projects.totalProjects) * 100} className="h-2" />
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Completed</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20">{analytics.projects.completedProjects}</Badge>
+                    <Badge className="bg-emerald-600 text-white font-semibold hover:bg-emerald-700">{analytics.projects.completedProjects}</Badge>
                   </div>
                   <Progress value={(analytics.projects.completedProjects / analytics.projects.totalProjects) * 100} className="h-2" />
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Overdue</span>
-                    <Badge variant="destructive">{analytics.projects.overdueProjects}</Badge>
+                    <Badge className="bg-red-600 text-white font-semibold hover:bg-red-700">{analytics.projects.overdueProjects}</Badge>
                   </div>
                   <Progress value={(analytics.projects.overdueProjects / analytics.projects.totalProjects) * 100} className="h-2" />
                 </div>

@@ -186,7 +186,16 @@ export function KanbanBoard() {
                       {column.tasks.length} task{column.tasks.length !== 1 ? 's' : ''}
                     </CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // Navigate to tasks page to create a new task
+                      // TODO: Replace with task creation dialog when implemented
+                      window.location.href = '/tasks';
+                    }}
+                    title={`Add task to ${column.title}`}
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>

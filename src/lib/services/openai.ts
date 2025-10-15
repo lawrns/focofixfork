@@ -705,23 +705,23 @@ Format your response as a structured analysis.`
       }
     }
 
-    const systemPrompt = `You are a project management AI assistant. Given a project description, create a comprehensive project structure with milestones and tasks.
+    const systemPrompt = `You are a project management AI assistant. Given a project description, create a focused project structure with milestones and tasks.
 
 Return ONLY a valid JSON object with this exact structure (no additional text):
 {
-  "name": "Project name (max 100 chars)",
-  "description": "Detailed project description (max 500 chars)",
+  "name": "Project name (max 80 chars)",
+  "description": "Project description (max 300 chars)",
   "priority": "medium",
   "milestones": [
     {
-      "name": "Milestone name (max 100 chars)",
-      "description": "What this milestone achieves (max 300 chars)",
+      "name": "Milestone name (max 80 chars)",
+      "description": "What this milestone achieves (max 200 chars)",
       "dueDate": "YYYY-MM-DD",
       "priority": "medium",
       "tasks": [
         {
-          "name": "Task name (max 100 chars)",
-          "description": "What needs to be done (max 300 chars)",
+          "name": "Task name (max 80 chars)",
+          "description": "What needs to be done (max 150 chars)",
           "priority": "medium",
           "estimatedHours": 8
         }
@@ -731,13 +731,13 @@ Return ONLY a valid JSON object with this exact structure (no additional text):
 }
 
 Guidelines:
-- Create 3-5 milestones covering the project lifecycle
-- Each milestone should have 3-7 tasks
-- Use realistic time estimates (1-160 hours per task)
-- Start with planning/research, end with deployment/review
-- Set realistic due dates (start 14 days from now, spread milestones appropriately)
-- Prioritize tasks logically (blockers = high/urgent, normal work = medium)
-- Use descriptive names that clearly indicate what needs to be done`
+- Create 2-3 milestones (focused on key phases)
+- Each milestone should have 2-4 essential tasks
+- Use realistic time estimates (2-40 hours per task)
+- Start with planning, end with completion
+- Set due dates (start 14 days from now, spread evenly)
+- Prioritize: blockers = high, normal = medium
+- Be concise and actionable`
 
     try {
     if (!this.client) {
@@ -750,8 +750,8 @@ Guidelines:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Create a project structure for: ${description}` }
       ],
-      temperature: 0.7,
-      max_tokens: 3500,
+      temperature: 0.6,
+      max_tokens: 1500,
     })
 
       const content = completion.choices[0]?.message?.content

@@ -69,7 +69,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
         },
         body: JSON.stringify({
           prompt: specification.trim(),
-          ...(organizationId && { organizationId })
+          ...(organizationId && organizationId !== 'lililili' && { organizationId })
         })
       })
 

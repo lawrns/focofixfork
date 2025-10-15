@@ -198,7 +198,7 @@ export function SettingsDashboard() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue={initialTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile

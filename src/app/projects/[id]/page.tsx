@@ -249,7 +249,7 @@ function ProjectDetailsContent() {
 
             {/* Project Tabs */}
             <Tabs defaultValue="tasks" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="milestones">Milestones</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>

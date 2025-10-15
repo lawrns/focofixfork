@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
 import { TaskList, TaskForm } from '@/features/tasks'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { projectStore } from '@/lib/stores/project-store'
 
@@ -117,6 +117,9 @@ function TasksContent() {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
+              <DialogDescription>
+                Create a new task for your project. Fill in the details below.
+              </DialogDescription>
             </DialogHeader>
             <TaskForm
               projects={projects}
@@ -132,6 +135,9 @@ function TasksContent() {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Edit Task</DialogTitle>
+              <DialogDescription>
+                Update the task details below.
+              </DialogDescription>
             </DialogHeader>
             {selectedTask && (
               <TaskForm

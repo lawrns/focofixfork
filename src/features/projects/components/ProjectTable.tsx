@@ -632,7 +632,8 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProjects(new Set(filteredProjects.map(p => p.id)))
+      const safeFiltered = Array.isArray(filteredProjects) ? filteredProjects : []
+      setSelectedProjects(new Set(safeFiltered.map(p => p.id)))
     } else {
       setSelectedProjects(new Set())
     }
@@ -735,7 +736,9 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
   // Apply filtering and sorting
   useEffect(() => {
-    const result = FilteringService.filterAndSort(projects, filters, sortConditions)
+    // Ensure projects is always an array before filtering
+    const safeProjects = Array.isArray(projects) ? projects : []
+    const result = FilteringService.filterAndSort(safeProjects, filters, sortConditions)
     setFilteredProjects(result.items)
   }, [projects, filters, sortConditions])
 
@@ -1180,7 +1183,7 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
 
       {(selectedProjects.size > 0 || bulkDialogOpen) && (
         <BulkOperationsDialog
-          selectedProjects={filteredProjects.filter(p => selectedProjects.has(p.id)) as any}
+          selectedProjects={(Array.isArray(filteredProjects) ? filteredProjects : []).filter(p => selectedProjects.has(p.id)) as any}
           operation={bulkOperation}
           open={bulkDialogOpen}
           onOpenChange={setBulkDialogOpen}

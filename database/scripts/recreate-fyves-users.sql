@@ -2,6 +2,25 @@
 -- This script deletes existing users and recreates them with password 'hennie12'
 
 -- Step 1: Delete existing users (if any)
+-- First delete from public.users to avoid trigger conflicts
+DELETE FROM public.users WHERE email IN (
+  'isaac@fyves.com',
+  'jose@fyves.com',
+  'paul@fyves.com',
+  'oscar@fyves.com'
+);
+
+-- Then delete from user_profiles
+DELETE FROM user_profiles WHERE user_id IN (
+  SELECT id FROM auth.users WHERE email IN (
+    'isaac@fyves.com',
+    'jose@fyves.com',
+    'paul@fyves.com',
+    'oscar@fyves.com'
+  )
+);
+
+-- Finally delete from auth.users
 DELETE FROM auth.users WHERE email IN (
   'isaac@fyves.com',
   'jose@fyves.com',
@@ -17,6 +36,7 @@ DELETE FROM auth.users WHERE email IN (
 -- Note: encrypted_password is bcrypt hash of 'hennie12'
 -- Generated with: bcrypt.hashSync('hennie12', 10)
 
+-- Insert the users
 INSERT INTO auth.users (
   instance_id,
   id,
@@ -120,11 +140,7 @@ INSERT INTO auth.users (
   '{"full_name":"Oscar Fyves","display_name":"Oscar Fyves"}',
   false,
   NULL
-)
-ON CONFLICT (email) DO UPDATE SET
-  encrypted_password = EXCLUDED.encrypted_password,
-  updated_at = NOW(),
-  email_confirmed_at = NOW();
+);
 
 -- Step 3: Create user_profiles for new users
 INSERT INTO user_profiles (id, user_id, display_name, email_notifications, theme_preference, created_at, updated_at)
@@ -158,21 +174,19 @@ ON CONFLICT (organization_id, user_id) DO UPDATE SET
   updated_at = NOW();
 
 -- Step 5: Grant project access
-INSERT INTO project_members (project_id, user_id, role, joined_at, created_at, updated_at)
+INSERT INTO project_members (project_id, user_id, role, added_by, added_at)
 SELECT
   p.id,
   au.id,
   'admin',
-  NOW(),
-  NOW(),
+  au.id,
   NOW()
 FROM projects p
 CROSS JOIN auth.users au
 WHERE p.organization_id = '4d951a69-8cb0-4556-8201-b85405ce38b9'
   AND au.email IN ('isaac@fyves.com', 'jose@fyves.com', 'paul@fyves.com', 'oscar@fyves.com')
 ON CONFLICT (project_id, user_id) DO UPDATE SET
-  role = 'admin',
-  updated_at = NOW();
+  role = 'admin';
 
 -- Verification
 SELECT

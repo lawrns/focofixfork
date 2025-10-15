@@ -1,0 +1,1065 @@
+{
+  "meta": {
+    "title": "Complete AI-Assisted User Journey - Foco Project Management",
+    "version": "1.0.0",
+    "purpose": "Comprehensive context for browser-connected AI to understand and execute complex user workflows",
+    "capabilities": [
+      "Natural language project creation",
+      "Intelligent task breakdown and estimation",
+      "Context-aware milestone suggestions",
+      "Automated team coordination",
+      "Proactive risk detection",
+      "Smart deadline management",
+      "Cross-project dependency tracking",
+      "Sentiment analysis on comments",
+      "Automated status reporting"
+    ]
+  },
+
+  "user_journey": {
+    "persona": {
+      "name": "Sarah Chen",
+      "role": "Engineering Manager",
+      "organization": "TechCorp",
+      "goals": [
+        "Launch mobile app redesign in Q2",
+        "Manage distributed team across 3 timezones",
+        "Maintain 85% on-time delivery rate",
+        "Reduce context switching for developers"
+      ],
+      "pain_points": [
+        "Too many meetings to sync status",
+        "Tasks slip through cracks",
+        "Unclear dependencies between projects",
+        "Team burnout from overcommitment"
+      ]
+    },
+
+    "session_start": {
+      "context": {
+        "time": "Monday 9:00 AM PST",
+        "location": "Dashboard view",
+        "active_projects": 4,
+        "overdue_tasks": 3,
+        "team_availability": {
+          "available_now": 5,
+          "in_meetings": 2,
+          "out_of_office": 1
+        }
+      }
+    },
+
+    "workflows": [
+      {
+        "workflow_id": "wf_001",
+        "name": "Strategic Project Initialization",
+        "trigger": "User says: 'I need to plan our mobile app redesign project'",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "contextual_understanding",
+            "description": "AI analyzes user's organization, past projects, team composition",
+            "api_calls": [
+              "GET /api/organizations/{orgId}/projects?status=completed",
+              "GET /api/organization/members",
+              "GET /api/projects?limit=50"
+            ],
+            "insights_gathered": {
+              "past_mobile_projects": ["Mobile App v2.0", "iOS Performance Update"],
+              "avg_project_duration": "12 weeks",
+              "team_velocity": "45 story points per sprint",
+              "common_risks": ["Design-dev handoff delays", "API integration blockers"],
+              "available_team": ["3 frontend devs", "2 backend devs", "1 designer", "1 QA"]
+            }
+          },
+          {
+            "step": 2,
+            "action": "intelligent_project_creation",
+            "description": "AI generates comprehensive project structure",
+            "api_calls": [
+              "POST /api/ai/create-project"
+            ],
+            "payload": {
+              "prompt": "Mobile app redesign project with focus on UX improvements, performance optimization, and accessibility compliance. Team of 7, Q2 deadline.",
+              "organizationId": "org_abc123"
+            },
+            "ai_generated": {
+              "project": {
+                "name": "Mobile App Redesign - Q2 2025",
+                "description": "Comprehensive redesign focusing on improved UX, 60% performance improvement, and WCAG 2.1 AA compliance",
+                "status": "planning",
+                "priority": "high",
+                "estimated_duration": "12 weeks",
+                "start_date": "2025-04-01",
+                "due_date": "2025-06-24"
+              },
+              "initial_phases": [
+                "Discovery & Requirements (2 weeks)",
+                "Design & Prototyping (3 weeks)",
+                "Development Sprint 1-3 (6 weeks)",
+                "QA & Bug Fixes (2 weeks)",
+                "Launch Preparation (1 week)"
+              ]
+            }
+          },
+          {
+            "step": 3,
+            "action": "auto_milestone_generation",
+            "description": "AI creates milestones with dependencies",
+            "api_calls": [
+              "POST /api/ai/suggest-milestone"
+            ],
+            "generated_milestones": [
+              {
+                "title": "Requirements Sign-off",
+                "due_date": "2025-04-15",
+                "acceptance_criteria": [
+                  "User research completed (20 interviews)",
+                  "Persona profiles documented",
+                  "Feature prioritization matrix finalized",
+                  "Stakeholder approval obtained"
+                ],
+                "dependencies": [],
+                "estimated_effort": "80 hours",
+                "confidence": "high"
+              },
+              {
+                "title": "Design System 2.0 Complete",
+                "due_date": "2025-05-06",
+                "acceptance_criteria": [
+                  "Component library v2 published",
+                  "Dark mode support implemented",
+                  "Accessibility audit passed",
+                  "Design tokens documented"
+                ],
+                "dependencies": ["Requirements Sign-off"],
+                "estimated_effort": "120 hours",
+                "confidence": "high"
+              },
+              {
+                "title": "Alpha Release to Beta Users",
+                "due_date": "2025-06-01",
+                "acceptance_criteria": [
+                  "Core features functional (login, home, profile, settings)",
+                  "Performance benchmarks met (< 2s load time)",
+                  "Critical bugs resolved (P0, P1)",
+                  "Beta program enrollment ready"
+                ],
+                "dependencies": ["Design System 2.0 Complete"],
+                "estimated_effort": "240 hours",
+                "confidence": "medium",
+                "risk_factors": [
+                  "API integration complexity",
+                  "Third-party library compatibility"
+                ]
+              }
+            ]
+          },
+          {
+            "step": 4,
+            "action": "intelligent_task_breakdown",
+            "description": "AI breaks milestones into actionable tasks",
+            "api_calls": [
+              "POST /api/ai/create-task"
+            ],
+            "payload": {
+              "projectId": "proj_xyz789",
+              "brief": "Break down 'Requirements Sign-off' milestone into detailed tasks",
+              "count": 12
+            },
+            "generated_tasks": [
+              {
+                "title": "Conduct user interviews (batch 1: 10 users)",
+                "description": "Interview existing mobile app users to understand pain points, feature requests, and usage patterns",
+                "priority": "high",
+                "estimated_hours": 20,
+                "assigned_to": "auto_suggest:product_team",
+                "tags": ["research", "user-interviews"],
+                "acceptance_criteria": [
+                  "10 interviews completed and recorded",
+                  "Notes transcribed and categorized",
+                  "Key insights documented in Notion"
+                ]
+              },
+              {
+                "title": "Analyze competitor apps (top 5 in category)",
+                "description": "Detailed feature comparison and UX analysis of top competitors",
+                "priority": "medium",
+                "estimated_hours": 16,
+                "assigned_to": "auto_suggest:design_team",
+                "tags": ["research", "competitive-analysis"],
+                "dependencies": [],
+                "deliverables": [
+                  "Competitive analysis report",
+                  "Feature gap analysis",
+                  "UX strengths/weaknesses matrix"
+                ]
+              },
+              {
+                "title": "Create persona profiles (3 primary, 2 secondary)",
+                "description": "Synthesize research into actionable user personas",
+                "priority": "high",
+                "estimated_hours": 12,
+                "assigned_to": "auto_suggest:product_team",
+                "tags": ["personas", "documentation"],
+                "dependencies": ["Conduct user interviews (batch 1: 10 users)"]
+              }
+            ]
+          },
+          {
+            "step": 5,
+            "action": "smart_team_assignment",
+            "description": "AI suggests optimal task assignments based on skills, availability, workload",
+            "analysis": {
+              "team_capacity": {
+                "john_doe": {
+                  "role": "Senior Frontend Dev",
+                  "current_workload": "65%",
+                  "skills": ["React", "TypeScript", "UI/UX", "Performance"],
+                  "availability_this_week": "32 hours",
+                  "recommended_tasks": [
+                    "Design System 2.0 - Component Library",
+                    "Implement dark mode toggle"
+                  ],
+                  "reasoning": "High UI/UX skills, available capacity, experience with design systems"
+                },
+                "maria_garcia": {
+                  "role": "Backend Developer",
+                  "current_workload": "90%",
+                  "skills": ["Node.js", "PostgreSQL", "API Design"],
+                  "availability_this_week": "8 hours",
+                  "recommended_tasks": [],
+                  "reasoning": "⚠️ At capacity - suggest deferring new work or redistributing current load"
+                }
+              },
+              "bottleneck_detection": [
+                {
+                  "team_member": "maria_garcia",
+                  "issue": "Backend dev is blocking 3 frontend tasks",
+                  "suggestion": "Consider hiring contractor or pair programming with junior dev",
+                  "impact": "High - could delay Sprint 1 by 1 week"
+                }
+              ]
+            },
+            "api_calls": [
+              "GET /api/projects/{projectId}/team",
+              "POST /api/projects/{projectId}/team (if adding members)"
+            ]
+          },
+          {
+            "step": 6,
+            "action": "proactive_risk_detection",
+            "description": "AI identifies potential risks and suggests mitigations",
+            "risks_identified": [
+              {
+                "risk_id": "risk_001",
+                "category": "dependency",
+                "severity": "high",
+                "description": "Design System 2.0 is on critical path - any delay cascades to dev sprints",
+                "probability": "medium",
+                "impact": "Could delay launch by 2-3 weeks",
+                "mitigation_suggestions": [
+                  "Add 1-week buffer to design phase",
+                  "Parallelize design QA with initial dev setup",
+                  "Prepare fallback plan to use existing design system with incremental updates"
+                ],
+                "monitoring": "Track design milestone daily; escalate if < 80% complete by May 1"
+              },
+              {
+                "risk_id": "risk_002",
+                "category": "resource",
+                "severity": "medium",
+                "description": "Backend developer at 90% capacity - potential burnout and bottleneck",
+                "probability": "high",
+                "impact": "Could slow API integration and testing phases",
+                "mitigation_suggestions": [
+                  "Redistribute 2-3 tasks to senior frontend dev with Node.js experience",
+                  "Engage contractor for 4-week sprint support",
+                  "Schedule 1:1 to discuss workload and priorities"
+                ],
+                "monitoring": "Weekly check-ins on workload and morale"
+              }
+            ]
+          }
+        ],
+        "user_experience": {
+          "input": "Natural language: 'I need to plan our mobile app redesign project'",
+          "ai_response_time": "8 seconds",
+          "output": {
+            "summary": "I've created your Mobile App Redesign project with 3 major milestones, 47 tasks, and assigned them to your team. I detected 2 potential risks and suggested mitigations. Would you like to review the project plan or make adjustments?",
+            "confidence_score": 0.87,
+            "next_actions": [
+              "Review and approve project plan",
+              "Adjust milestone dates",
+              "Add/remove team members",
+              "Customize task priorities"
+            ]
+          }
+        }
+      },
+
+      {
+        "workflow_id": "wf_002",
+        "name": "Intelligent Daily Standup Preparation",
+        "trigger": "User arrives at dashboard Monday morning",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "analyze_weekend_activity",
+            "description": "AI scans all projects for changes since Friday 5pm",
+            "api_calls": [
+              "GET /api/projects?updated_since=2025-04-11T17:00:00Z",
+              "GET /api/tasks?updated_since=2025-04-11T17:00:00Z",
+              "GET /api/comments?created_since=2025-04-11T17:00:00Z"
+            ],
+            "insights": {
+              "completed_tasks": 7,
+              "newly_created_tasks": 3,
+              "blocked_tasks": 2,
+              "comments_needing_response": 5,
+              "urgent_items": [
+                {
+                  "type": "blocker",
+                  "task": "API authentication endpoint failing in staging",
+                  "assignee": "john_doe",
+                  "impact": "Blocks 4 frontend tasks",
+                  "suggested_action": "Escalate to backend team lead; schedule debugging session"
+                }
+              ]
+            }
+          },
+          {
+            "step": 2,
+            "action": "generate_standup_summary",
+            "description": "AI creates personalized standup talking points",
+            "api_calls": [
+              "POST /api/ai/generate-content"
+            ],
+            "payload": {
+              "type": "summary",
+              "input": "Generate standup summary for Sarah Chen covering all active projects",
+              "style": "concise"
+            },
+            "output": {
+              "yesterday_achievements": [
+                "✅ Requirements doc finalized (Mobile Redesign)",
+                "✅ Team assigned to all Sprint 1 tasks",
+                "✅ Resolved 3 P2 bugs in production app"
+              ],
+              "today_focus": [
+                "🎯 Review design mockups with design team (10am)",
+                "🎯 Unblock John on API auth issue",
+                "🎯 Approve budget increase for contractor hire"
+              ],
+              "blockers": [
+                "🚧 Backend dev at capacity - need to redistribute work",
+                "🚧 Staging environment unstable - DevOps investigating"
+              ],
+              "team_morale_check": {
+                "sentiment": "positive",
+                "concerns": ["Maria mentioned workload concerns in Friday's comment"],
+                "celebrations": ["John shipped dark mode ahead of schedule 🎉"]
+              }
+            }
+          },
+          {
+            "step": 3,
+            "action": "proactive_meeting_prep",
+            "description": "AI prepares context for each calendar meeting",
+            "calendar_integration": {
+              "meeting_1": {
+                "title": "Design Review - Mobile Redesign",
+                "time": "10:00 AM",
+                "attendees": ["Sarah Chen", "Alice Designer", "Bob PM"],
+                "ai_prep": {
+                  "relevant_documents": [
+                    "Design System 2.0 Figma files",
+                    "User research insights doc",
+                    "Competitor analysis report"
+                  ],
+                  "open_questions_from_team": [
+                    "Should we support tablets in v1?",
+                    "Dark mode: auto-detect or user toggle?"
+                  ],
+                  "suggested_agenda": [
+                    "Review core screen designs (20 min)",
+                    "Discuss accessibility concerns (15 min)",
+                    "Align on component library priorities (10 min)",
+                    "Action items and next steps (5 min)"
+                  ],
+                  "decision_needed": "Approve design direction for Sprint 1 scope"
+                }
+              }
+            }
+          }
+        ]
+      },
+
+      {
+        "workflow_id": "wf_003",
+        "name": "Context-Aware Task Assistance",
+        "trigger": "User clicks on a task: 'Implement OAuth 2.0 authentication'",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "deep_context_analysis",
+            "description": "AI understands task in full project context",
+            "api_calls": [
+              "GET /api/tasks/{taskId}",
+              "GET /api/projects/{projectId}",
+              "GET /api/tasks?project_id={projectId}&related_to={taskId}"
+            ],
+            "context_gathered": {
+              "task_details": {
+                "title": "Implement OAuth 2.0 authentication",
+                "status": "in_progress",
+                "assignee": "john_doe",
+                "priority": "high",
+                "estimated_hours": 16,
+                "time_spent": 8,
+                "progress": "50%"
+              },
+              "dependencies": {
+                "blocked_by": [],
+                "blocking": [
+                  "Implement social login buttons (UI)",
+                  "Add login analytics tracking",
+                  "Update user profile API"
+                ]
+              },
+              "related_docs": [
+                "API Security Guidelines (internal wiki)",
+                "OAuth 2.0 spec (IETF)",
+                "Previous implementation in legacy app (GitHub)"
+              ],
+              "team_expertise": {
+                "john_doe": "Implemented OAuth in 2 previous projects",
+                "maria_garcia": "Security specialist - can review"
+              }
+            }
+          },
+          {
+            "step": 2,
+            "action": "intelligent_suggestions",
+            "description": "AI provides contextual help",
+            "suggestions": {
+              "code_snippets": {
+                "source": "Internal codebase - similar implementation",
+                "snippet": "// OAuth 2.0 provider setup from project 'API Gateway'",
+                "relevance": "95%"
+              },
+              "documentation": [
+                {
+                  "title": "OAuth 2.0 Best Practices (Internal)",
+                  "url": "/docs/security/oauth-best-practices",
+                  "relevant_section": "Token rotation and refresh flow"
+                },
+                {
+                  "title": "Supabase Auth Documentation",
+                  "url": "https://supabase.com/docs/guides/auth",
+                  "relevant_section": "Third-party OAuth providers"
+                }
+              ],
+              "potential_blockers": [
+                {
+                  "issue": "CORS configuration for OAuth callback",
+                  "likelihood": "medium",
+                  "preemptive_solution": "Add callback URLs to Supabase project settings",
+                  "docs": "/docs/deployment/cors-setup"
+                }
+              ],
+              "testing_checklist": [
+                "✓ Test successful login flow",
+                "✓ Test failed login (invalid credentials)",
+                "✓ Test token expiration and refresh",
+                "✓ Test logout and session cleanup",
+                "✓ Security audit: CSRF protection, XSS prevention"
+              ]
+            }
+          },
+          {
+            "step": 3,
+            "action": "auto_subtask_creation",
+            "description": "AI breaks complex task into subtasks",
+            "api_calls": [
+              "POST /api/ai/create-task"
+            ],
+            "generated_subtasks": [
+              {
+                "title": "Configure OAuth providers in Supabase",
+                "estimated_hours": 2,
+                "status": "completed",
+                "completion_note": "Added Google, GitHub, Apple"
+              },
+              {
+                "title": "Implement auth callback handler",
+                "estimated_hours": 4,
+                "status": "in_progress",
+                "progress_note": "Backend route created, testing in progress"
+              },
+              {
+                "title": "Add error handling for failed auth attempts",
+                "estimated_hours": 3,
+                "status": "todo",
+                "priority": "high"
+              },
+              {
+                "title": "Write integration tests for auth flow",
+                "estimated_hours": 5,
+                "status": "todo",
+                "priority": "medium"
+              },
+              {
+                "title": "Security review with Maria",
+                "estimated_hours": 2,
+                "status": "todo",
+                "priority": "high",
+                "note": "Schedule before marking task as complete"
+              }
+            ]
+          },
+          {
+            "step": 4,
+            "action": "progress_tracking_and_alerts",
+            "description": "AI monitors task progress and sends proactive alerts",
+            "monitoring": {
+              "time_tracking": {
+                "estimated": 16,
+                "spent": 8,
+                "remaining": 8,
+                "status": "on_track"
+              },
+              "velocity_analysis": {
+                "developer_avg_velocity": "6 hours per day",
+                "projected_completion": "2025-04-16 (Wednesday)",
+                "confidence": "high"
+              },
+              "alerts": [
+                {
+                  "type": "info",
+                  "message": "You're 50% through this task and on schedule. Great progress!",
+                  "action": null
+                },
+                {
+                  "type": "reminder",
+                  "message": "3 tasks are blocked waiting for this. Consider prioritizing completion.",
+                  "action": "View blocked tasks"
+                }
+              ]
+            }
+          }
+        ]
+      },
+
+      {
+        "workflow_id": "wf_004",
+        "name": "Automated Status Reporting",
+        "trigger": "Weekly scheduled report (Friday 3pm)",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "comprehensive_project_analysis",
+            "description": "AI analyzes all active projects for the week",
+            "api_calls": [
+              "GET /api/projects?status=active",
+              "GET /api/tasks?completed_since=2025-04-07",
+              "GET /api/milestones?due_within_days=30",
+              "GET /api/activities?since=2025-04-07"
+            ],
+            "metrics_calculated": {
+              "velocity": {
+                "tasks_completed_this_week": 23,
+                "story_points_completed": 47,
+                "avg_task_completion_time": "2.3 days",
+                "velocity_trend": "+8% vs last week"
+              },
+              "health_indicators": {
+                "on_track_projects": 3,
+                "at_risk_projects": 1,
+                "blocked_projects": 0,
+                "overall_health": "good"
+              },
+              "team_metrics": {
+                "utilization_rate": "78%",
+                "overtime_hours": 3,
+                "burnout_risk_members": ["maria_garcia"]
+              }
+            }
+          },
+          {
+            "step": 2,
+            "action": "generate_executive_summary",
+            "description": "AI creates stakeholder-ready report",
+            "api_calls": [
+              "POST /api/ai/generate-content"
+            ],
+            "payload": {
+              "type": "summary",
+              "input": "Generate weekly status report for all active projects",
+              "style": "detailed"
+            },
+            "output": {
+              "executive_summary": "Strong week with 23 tasks completed (+15% vs last week). Mobile Redesign project is on track for Q2 launch. One resource constraint identified (Backend dev at capacity). Mitigation plan in progress.",
+              "project_highlights": [
+                {
+                  "project": "Mobile App Redesign",
+                  "status": "on_track",
+                  "progress": "18% complete",
+                  "this_week": [
+                    "✅ Requirements finalized and approved",
+                    "✅ Design system v2 kickoff completed",
+                    "✅ Team assignments confirmed"
+                  ],
+                  "next_week": [
+                    "🎯 Complete initial design mockups",
+                    "🎯 Set up development environment",
+                    "🎯 Begin API integration planning"
+                  ],
+                  "risks": [
+                    "⚠️ Backend resource constraint - mitigation: contractor hire approved"
+                  ]
+                }
+              ],
+              "team_highlights": [
+                {
+                  "member": "john_doe",
+                  "contribution": "Completed dark mode implementation 2 days ahead of schedule",
+                  "recognition": "🌟 Star performer this week"
+                }
+              ],
+              "action_items": [
+                {
+                  "item": "Approve $8k budget for backend contractor (2 weeks)",
+                  "owner": "Sarah Chen",
+                  "due": "2025-04-18",
+                  "priority": "high"
+                },
+                {
+                  "item": "Schedule 1:1 with Maria re: workload",
+                  "owner": "Sarah Chen",
+                  "due": "2025-04-15",
+                  "priority": "high"
+                }
+              ]
+            }
+          },
+          {
+            "step": 3,
+            "action": "auto_distribute_report",
+            "description": "AI sends report to stakeholders",
+            "distribution": {
+              "email_sent_to": ["cto@techcorp.com", "product_team@techcorp.com"],
+              "slack_posted_to": ["#engineering-updates", "#project-mobile-redesign"],
+              "dashboard_updated": true,
+              "calendar_invite_sent": "Weekly Review Meeting (Mon 10am)"
+            }
+          }
+        ]
+      },
+
+      {
+        "workflow_id": "wf_005",
+        "name": "Intelligent Deadline Management",
+        "trigger": "Milestone due date approaching (3 days warning)",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "deadline_risk_assessment",
+            "description": "AI predicts likelihood of meeting deadline",
+            "api_calls": [
+              "GET /api/milestones/{milestoneId}",
+              "GET /api/tasks?milestone_id={milestoneId}",
+              "POST /api/ai/analyze"
+            ],
+            "analysis": {
+              "milestone": "Design System 2.0 Complete",
+              "due_date": "2025-05-06",
+              "days_remaining": 3,
+              "completion_status": {
+                "tasks_total": 15,
+                "tasks_completed": 11,
+                "tasks_in_progress": 3,
+                "tasks_blocked": 1,
+                "completion_percentage": 73
+              },
+              "risk_assessment": {
+                "likelihood_of_completion": "medium (65%)",
+                "predicted_completion_date": "2025-05-08 (2 days late)",
+                "risk_factors": [
+                  "1 task blocked by external design review",
+                  "3 tasks in progress with 18 hours remaining work",
+                  "2 team members out Thu-Fri"
+                ],
+                "critical_path": [
+                  "Complete component library documentation (8 hrs)",
+                  "Accessibility audit (6 hrs)",
+                  "Design review approval (4 hrs)"
+                ]
+              }
+            }
+          },
+          {
+            "step": 2,
+            "action": "proactive_mitigation_planning",
+            "description": "AI suggests actions to meet deadline",
+            "recommendations": [
+              {
+                "priority": "high",
+                "action": "Request expedited design review",
+                "reasoning": "Blocking 1 critical task; could save 2 days if approved by EOD",
+                "owner": "Sarah Chen",
+                "estimated_time_saved": "2 days",
+                "api_action": "POST /api/comments (notify design review team)"
+              },
+              {
+                "priority": "high",
+                "action": "Redistribute 'component documentation' task",
+                "reasoning": "Current assignee out Thu-Fri; reassign to available team member",
+                "suggested_assignee": "john_doe",
+                "estimated_time_saved": "2 days",
+                "api_action": "PATCH /api/tasks/{taskId} (change assignee)"
+              },
+              {
+                "priority": "medium",
+                "action": "Defer non-critical accessibility items to v2.1",
+                "reasoning": "4 minor accessibility enhancements can be delayed without blocking launch",
+                "impact": "Reduces scope by 12 hours; still meets WCAG 2.1 AA",
+                "api_action": "PATCH /api/milestones/{milestoneId} (update scope)"
+              }
+            ]
+          },
+          {
+            "step": 3,
+            "action": "auto_execute_approved_actions",
+            "description": "With user approval, AI executes mitigations",
+            "user_prompt": "I've identified 3 actions to get Design System 2.0 back on track. Approve to execute?",
+            "user_response": "Approve all except scope reduction - let's try to hit full scope first",
+            "executed_actions": [
+              {
+                "action": "Request expedited design review",
+                "api_call": "POST /api/comments",
+                "payload": {
+                  "task_id": "task_blocked_123",
+                  "content": "🚨 Urgent: This design review is blocking our milestone deadline (due May 6). Can we expedite approval by EOD today? cc: @design-team-lead",
+                  "type": "comment"
+                },
+                "result": "Comment posted, design team notified"
+              },
+              {
+                "action": "Redistribute component documentation task",
+                "api_call": "PATCH /api/tasks/task_doc_456",
+                "payload": {
+                  "assigned_to": "john_doe"
+                },
+                "result": "Task reassigned, John notified via Slack"
+              }
+            ]
+          },
+          {
+            "step": 4,
+            "action": "continuous_monitoring",
+            "description": "AI tracks progress daily until deadline",
+            "monitoring_schedule": {
+              "frequency": "every 6 hours until deadline",
+              "alerts": [
+                "If completion drops below 80% - escalate to urgent",
+                "If new blockers appear - immediate notification",
+                "Daily progress summary sent to Sarah at 5pm"
+              ]
+            }
+          }
+        ]
+      },
+
+      {
+        "workflow_id": "wf_006",
+        "name": "Cross-Project Dependency Intelligence",
+        "trigger": "User is planning Sprint 2 for Mobile Redesign",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "scan_all_projects_for_dependencies",
+            "description": "AI identifies hidden dependencies across organization",
+            "api_calls": [
+              "GET /api/projects?organization_id={orgId}",
+              "GET /api/tasks?organization_id={orgId}",
+              "POST /api/ai/analyze"
+            ],
+            "payload": {
+              "text": "Analyze all projects for dependencies related to Mobile App Redesign",
+              "projectId": "proj_mobile_redesign"
+            },
+            "dependencies_found": [
+              {
+                "type": "hard_dependency",
+                "source_project": "Mobile App Redesign",
+                "source_task": "Integrate new API endpoints",
+                "dependent_project": "API v3 Migration",
+                "dependent_task": "Deploy new user profile endpoints",
+                "status": "in_progress",
+                "blocker_risk": "high",
+                "impact": "Mobile app cannot test profile features until API v3 endpoints are live",
+                "mitigation": "Coordinate with API team to prioritize profile endpoints in their Sprint 1"
+              },
+              {
+                "type": "resource_conflict",
+                "conflict": "john_doe assigned to 2 projects with overlapping sprints",
+                "projects": ["Mobile App Redesign", "Web Dashboard Update"],
+                "total_hours_committed": 52,
+                "available_hours": 40,
+                "impact": "12 hours overcommitted - likely to cause delays",
+                "mitigation": "Redistribute 2 tasks from Web Dashboard to other team members"
+              },
+              {
+                "type": "shared_component",
+                "component": "Design System 2.0",
+                "used_by_projects": [
+                  "Mobile App Redesign",
+                  "Web Dashboard Update",
+                  "Marketing Website Refresh"
+                ],
+                "impact": "Changes to design system affect 3 projects",
+                "recommendation": "Establish design system freeze date (May 15) to prevent scope creep"
+              }
+            ]
+          },
+          {
+            "step": 2,
+            "action": "visualize_dependency_graph",
+            "description": "AI creates interactive dependency map",
+            "visualization": {
+              "format": "mermaid_diagram",
+              "nodes": 12,
+              "edges": 18,
+              "critical_path_highlighted": true,
+              "bottlenecks_marked": ["API v3 Migration", "Design System 2.0"]
+            }
+          },
+          {
+            "step": 3,
+            "action": "recommend_sequencing",
+            "description": "AI suggests optimal project sequencing",
+            "recommendations": [
+              {
+                "recommendation": "Delay Mobile App Sprint 2 by 1 week",
+                "reasoning": "Wait for API v3 profile endpoints to deploy (scheduled May 10)",
+                "impact": "Avoids rework; ensures smooth integration",
+                "alternative": "Proceed with Sprint 2 using mock API endpoints (adds 8 hours testing debt)"
+              },
+              {
+                "recommendation": "Create shared project: 'Design System Governance'",
+                "reasoning": "3 projects depend on design system; needs coordination",
+                "impact": "Prevents conflicts; establishes clear ownership and update process"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "workflow_id": "wf_007",
+        "name": "Team Sentiment Analysis & Morale Monitoring",
+        "trigger": "Weekly automated scan + sentiment change detection",
+        "ai_actions": [
+          {
+            "step": 1,
+            "action": "analyze_team_communication",
+            "description": "AI reads comments, check-ins, and activity patterns",
+            "api_calls": [
+              "GET /api/comments?since=last_week",
+              "GET /api/activities?type=comment&since=last_week",
+              "POST /api/ai/analyze"
+            ],
+            "sentiment_analysis": {
+              "overall_team_sentiment": "positive",
+              "sentiment_score": 7.2,
+              "trend": "stable (±0.3 vs last week)",
+              "individual_analysis": [
+                {
+                  "member": "john_doe",
+                  "sentiment": "very_positive",
+                  "score": 8.5,
+                  "indicators": [
+                    "Frequent use of positive emojis (🎉, ✅, 🚀)",
+                    "Proactive comments offering help to team",
+                    "Completed tasks ahead of schedule"
+                  ],
+                  "recommendation": "Recognize publicly in team meeting"
+                },
+                {
+                  "member": "maria_garcia",
+                  "sentiment": "slightly_negative",
+                  "score": 5.8,
+                  "trend": "declining (-1.5 vs last week)",
+                  "indicators": [
+                    "Shorter, more terse comments",
+                    "Mentioned 'overwhelmed' in comment",
+                    "Missed 2 daily standups this week",
+                    "Working late hours (commits at 10pm, midnight)"
+                  ],
+                  "risk": "burnout",
+                  "recommendation": "Schedule private 1:1 ASAP; discuss workload and support needs",
+                  "urgency": "high"
+                }
+              ],
+              "team_concerns": [
+                {
+                  "theme": "workload_concerns",
+                  "frequency": 4,
+                  "members_mentioning": ["maria_garcia", "alex_junior_dev"],
+                  "sample_quote": "'Feeling stretched thin with API work and mobile integration'",
+                  "recommendation": "Team capacity planning needed; consider hiring or scope reduction"
+                }
+              ]
+            }
+          },
+          {
+            "step": 2,
+            "action": "detect_collaboration_patterns",
+            "description": "AI identifies team dynamics and collaboration health",
+            "collaboration_metrics": {
+              "cross_team_communication": {
+                "design_to_dev": "strong (45 interactions this week)",
+                "backend_to_frontend": "weak (12 interactions, down from 28 last week)",
+                "recommendation": "Facilitate pairing session between backend and frontend teams"
+              },
+              "knowledge_silos": [
+                {
+                  "area": "OAuth implementation",
+                  "experts": ["john_doe"],
+                  "risk": "Single point of failure if John unavailable",
+                  "recommendation": "Schedule knowledge transfer session; document implementation"
+                }
+              ],
+              "collaboration_champions": [
+                {
+                  "member": "alice_designer",
+                  "contribution": "Most helpful comments (15 instances of unblocking teammates)",
+                  "impact": "High - prevents bottlenecks"
+                }
+              ]
+            }
+          },
+          {
+            "step": 3,
+            "action": "generate_manager_insights",
+            "description": "AI provides actionable people management insights",
+            "insights": {
+              "urgent_actions": [
+                {
+                  "action": "Schedule 1:1 with Maria Garcia",
+                  "reason": "Burnout risk detected - sentiment declining, working late hours",
+                  "suggested_talking_points": [
+                    "How are you feeling about your workload?",
+                    "What can I do to support you?",
+                    "Should we redistribute some tasks?",
+                    "Do you need a break or time off?"
+                  ],
+                  "priority": "urgent",
+                  "timeline": "schedule within 24 hours"
+                }
+              ],
+              "team_health_summary": "Overall team morale is positive. One team member (Maria) shows signs of burnout - requires immediate attention. Consider team capacity planning to prevent future overload.",
+              "positive_highlights": [
+                "John is thriving - great opportunity to give him a stretch project",
+                "Alice is a collaboration champion - recognize her impact"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "ai_capabilities_summary": {
+    "natural_language_understanding": {
+      "can_interpret": [
+        "Vague project descriptions → structured plans",
+        "Casual task descriptions → detailed requirements",
+        "Implicit dependencies → explicit relationships",
+        "Team capacity constraints → realistic schedules"
+      ]
+    },
+    "proactive_assistance": {
+      "monitors": [
+        "Deadline risks",
+        "Resource bottlenecks",
+        "Team sentiment",
+        "Cross-project dependencies",
+        "Quality metrics"
+      ],
+      "alerts": [
+        "Before problems become critical",
+        "When patterns indicate issues",
+        "When intervention can prevent delays"
+      ]
+    },
+    "learning_and_adaptation": {
+      "learns_from": [
+        "Past project outcomes",
+        "Team velocity patterns",
+        "Common blockers",
+        "Successful mitigation strategies"
+      ],
+      "improves_over_time": [
+        "More accurate time estimates",
+        "Better task breakdowns",
+        "Smarter team assignments",
+        "Earlier risk detection"
+      ]
+    }
+  },
+
+  "integration_points": {
+    "authentication": {
+      "method": "Supabase session cookies",
+      "api_pattern": "All requests use requireAuth() via wrapRoute()",
+      "security": "Rate limited, PII protected, correlation IDs for tracing"
+    },
+    "api_endpoints": {
+      "projects": [
+        "GET /api/projects - List projects",
+        "POST /api/projects - Create project",
+        "GET /api/projects/{id} - Get project details",
+        "PUT /api/projects/{id} - Update project",
+        "DELETE /api/projects/{id} - Delete project"
+      ],
+      "ai_endpoints": [
+        "POST /api/ai/create-project - Generate project from prompt",
+        "POST /api/ai/create-task - Generate tasks from brief",
+        "POST /api/ai/create-milestone - Generate milestone",
+        "POST /api/ai/suggest-task - Suggest task improvements",
+        "POST /api/ai/suggest-milestone - Suggest milestone",
+        "POST /api/ai/generate-content - Generate summaries, reports",
+        "POST /api/ai/chat - Conversational AI assistant",
+        "POST /api/ai/analyze - Analyze text for insights"
+      ],
+      "rate_limits": {
+        "api": "100 requests/minute",
+        "ai": "10 requests/minute",
+        "auth": "5 requests/15 minutes"
+      }
+    },
+    "real_time_updates": {
+      "websocket_events": [
+        "task.updated",
+        "task.completed",
+        "comment.created",
+        "milestone.approaching",
+        "project.status_changed"
+      ]
+    }
+  },
+
+  "future_enhancements": {
+    "voice_interface": "Natural language voice commands for hands-free project management",
+    "predictive_scheduling": "AI automatically adjusts schedules based on real-time progress",
+    "automated_code_review": "AI suggests code improvements based on task context",
+    "integration_ecosystem": {
+      "github": "Auto-create branches, PRs from tasks",
+      "figma": "Link designs to implementation tasks",
+      "slack": "Two-way sync for updates and commands",
+      "calendar": "Automatic meeting scheduling based on task dependencies"
+    }
+  }
+}

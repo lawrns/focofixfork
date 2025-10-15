@@ -30,6 +30,9 @@ export default function Header() {
   const router = useRouter()
   const { user } = useAuth()
   const { t } = useTranslation()
+
+  // Debug logging
+  console.log('Header render - user:', user?.email)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)

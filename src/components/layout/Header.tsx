@@ -36,6 +36,16 @@ export default function Header() {
   const avatarText = displayUser?.email?.charAt(0).toUpperCase() || 'U'
 
   console.log('Header component rendering:', { user: !!user, loading, displayUser: displayUser?.email })
+
+  // TEMPORARY: Just return simple text to test rendering
+  return (
+    <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-3 md:px-6 py-3 md:py-4 backdrop-blur-sm">
+      <div className="text-sm font-bold text-primary">
+        HEADER TEST: User {displayUser?.email} - Logout Button Should Be Here
+      </div>
+    </header>
+  )
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)

@@ -100,6 +100,26 @@ export function KanbanBoard() {
 
     setIsCreating(true)
     try {
+      // Get the first available project for the user
+      const projectsResponse = await fetch('/api/projects?limit=1')
+      const projectsData = await projectsResponse.json()
+
+      let firstProjectId = null
+      if (projectsData.success && projectsData.data) {
+        const projects = Array.isArray(projectsData.data.data)
+          ? projectsData.data.data
+          : Array.isArray(projectsData.data)
+          ? projectsData.data
+          : []
+        firstProjectId = projects[0]?.id
+      }
+
+      if (!firstProjectId) {
+        toast.error('No project available. Please create a project first.')
+        setIsCreating(false)
+        return
+      }
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
@@ -109,7 +129,7 @@ export function KanbanBoard() {
           title: newTaskTitle.trim(),
           status: columnId,
           priority: 'medium',
-          project_id: 'default', // You may need to get this from context
+          project_id: firstProjectId,
         }),
       })
 

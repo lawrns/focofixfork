@@ -18,12 +18,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <ErrorBoundary>
       <div className="flex h-screen font-display gradient-mesh overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none border-l border-border/50 px-8 py-6">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <div className="outline-none border-none">
-            {children}
-          </div>
-        </main>
+          <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none px-8 py-6">
+            <div className="outline-none border-none">
+              {children}
+            </div>
+          </main>
+        </div>
         <FloatingAIChat />
       </div>
     </ErrorBoundary>

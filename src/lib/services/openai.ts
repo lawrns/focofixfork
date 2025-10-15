@@ -606,6 +606,7 @@ Format your response as a structured analysis.`
     // Mock response when OpenAI is not available (production fallback)
     if (this.isProduction && !this.config.apiKey) {
       console.log('🎭 Using mock AI response for project generation - OpenAI not configured')
+      console.log('🎭 Mock AI: Generating project structure for:', description.substring(0, 50))
       const today = new Date()
       const twoWeeksFromNow = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)
       const sixWeeksFromNow = new Date(today.getTime() + 42 * 24 * 60 * 60 * 1000)

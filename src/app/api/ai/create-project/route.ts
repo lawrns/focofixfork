@@ -11,6 +11,7 @@ import { ProjectsService } from '@/features/projects/services/projectService'
  */
 export async function POST(request: NextRequest) {
   return wrapRoute(AICreateProjectSchema, async ({ input, user, req, correlationId }) => {
+    console.log('🤖 AI create project API called for user:', user.id, 'with prompt:', input.body.prompt?.substring(0, 50))
     // AI rate limit: 10 requests per minute
     await checkRateLimit(user.id, req.headers.get('x-forwarded-for'), 'ai')
 

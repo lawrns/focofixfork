@@ -392,6 +392,7 @@ ${styleInstruction}`
     correlationId?: string
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
+      console.log('🤖 AI generateProject called with prompt:', params.prompt.substring(0, 50) + '...')
       const projectStructure = await this.generateProjectStructure(params.prompt)
 
       return {
@@ -604,7 +605,7 @@ Format your response as a structured analysis.`
   }> {
     // Mock response when OpenAI is not available (production fallback)
     if (this.isProduction && !this.config.apiKey) {
-      console.log('Using mock AI response for project generation')
+      console.log('🎭 Using mock AI response for project generation - OpenAI not configured')
       const today = new Date()
       const twoWeeksFromNow = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)
       const sixWeeksFromNow = new Date(today.getTime() + 42 * 24 * 60 * 60 * 1000)

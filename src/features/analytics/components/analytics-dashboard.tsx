@@ -92,8 +92,8 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
             tasksByStatus: {}
           },
           team: {
-            totalMembers: data.teamMetrics?.length || 0,
-            activeMembers: data.teamMetrics?.filter((m: any) => m.tasksCompleted > 0).length || 0,
+            totalMembers: Array.isArray(data.teamMetrics) ? data.teamMetrics.length : 0,
+            activeMembers: Array.isArray(data.teamMetrics) ? data.teamMetrics.filter((m: any) => m.tasksCompleted > 0).length : 0,
             averageTasksPerMember: 0,
             teamProductivity: 0,
             memberContributions: []

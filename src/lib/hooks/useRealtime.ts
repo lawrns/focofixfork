@@ -215,11 +215,14 @@ export function useRealtime(
 
     channel.subscribe((status) => {
       if (status === 'CHANNEL_ERROR') {
-        console.warn(`[useRealtime] Channel subscription error for ${channelName}. This may be due to missing tables or realtime not being enabled.`)
+        // Only log in development - realtime may not be enabled for all tables in production
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[useRealtime] Channel subscription error for ${channelName}. This may be due to missing tables or realtime not being enabled.`)
+        }
       } else if (status === 'SUBSCRIBED') {
-        console.log(`[useRealtime] Successfully subscribed to ${channelName}`)
-      } else {
-        console.log(`[useRealtime] Subscription status for ${channelName}: ${status}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[useRealtime] Successfully subscribed to ${channelName}`)
+        }
       }
     })
 

@@ -28,11 +28,14 @@ interface SearchResult {
 
 export default function Header() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const { t } = useTranslation()
 
-  // Debug logging
-  console.log('Header render - user:', user?.email)
+  // Debug: Force render user avatar even if user is null
+  const displayUser = user || { email: 'test@example.com' }
+  const avatarText = displayUser?.email?.charAt(0).toUpperCase() || 'U'
+
+  console.log('Header component rendering:', { user: !!user, loading, displayUser: displayUser?.email })
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -285,16 +288,16 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <button className="size-9 md:size-11 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer">
               <span className="text-xs md:text-sm font-semibold text-primary">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
+                {avatarText}
               </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.email}</p>
+                <p className="text-sm font-medium leading-none">{displayUser?.email}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {user?.user_metadata?.full_name || 'User'}
+                  {displayUser?.user_metadata?.full_name || 'User'}
                 </p>
               </div>
             </DropdownMenuLabel>

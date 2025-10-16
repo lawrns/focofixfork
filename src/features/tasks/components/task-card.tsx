@@ -353,7 +353,7 @@ export function TaskCard({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Task</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{currentTask.title}"? This action cannot be undone.
+            Are you sure you want to delete &ldquo;{currentTask.title}&rdquo;? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

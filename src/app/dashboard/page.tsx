@@ -22,8 +22,6 @@ import TimeTracker from '@/components/time-tracking/time-tracker'
 import PresenceIndicator from '@/components/collaboration/presence-indicator'
 import CommentsSection from '@/components/comments/comments-section'
 import NotificationCenter from '@/components/notifications/notification-center'
-import { AnalyticsDashboard } from '@/features/analytics'
-import { GoalsDashboard } from '@/features/goals'
 import { AIProjectCreator } from '@/components/ai/ai-project-creator'
 
 function DashboardSkeleton() {
@@ -54,15 +52,17 @@ export default function DashboardPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
   const { createView, setActiveView } = useSavedViews()
-  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt' | 'analytics' | 'goals'>('table')
+  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [showAIProjectModal, setShowAIProjectModal] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false)
 
   const fetchOrganizations = useCallback(async () => {
     if (!user) return
 
+    setIsLoadingOrganizations(true)
     try {
       const response = await fetch('/api/organizations')
 
@@ -75,6 +75,8 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
+    } finally {
+      setIsLoadingOrganizations(false)
     }
   }, [user])
 
@@ -220,8 +222,6 @@ export default function DashboardPage() {
             {activeView === 'table' && <ProjectTable />}
             {activeView === 'kanban' && <KanbanBoard />}
             {activeView === 'gantt' && <GanttView project={{ id: '', name: '', milestones: [], tasks: [] }} />}
-            {activeView === 'analytics' && <AnalyticsDashboard />}
-            {activeView === 'goals' && <GoalsDashboard />}
           </Suspense>
 
           {/* Time Tracker Sidebar - disabled until timer_sessions table exists */}
@@ -261,16 +261,25 @@ export default function DashboardPage() {
 
             <div className="space-y-2">
               <Label htmlFor="organization_id">Organization (Optional)</Label>
-              <Select name="organization_id">
+              <Select name="organization_id" disabled={isLoadingOrganizations}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select organization (optional)" />
+                  <SelectValue placeholder={isLoadingOrganizations ? "Loading organizations..." : "Select organization (optional)"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
+                  {isLoadingOrganizations ? (
+                    <div className="flex items-center justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span className="text-sm text-muted-foreground">Loading...</span>
+                    </div>
+                  ) : organizations.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">No organizations found</div>
+                  ) : (
+                    organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

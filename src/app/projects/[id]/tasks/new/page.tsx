@@ -147,6 +147,7 @@ function NewTaskContent({ params }: NewTaskPageProps) {
             projects={projects}
             milestones={milestones}
             teamMembers={teamMembers}
+            defaultProjectId={params.id}
             onSuccess={handleSuccess}
             onCancel={handleCancel}
           />

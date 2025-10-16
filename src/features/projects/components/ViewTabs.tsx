@@ -6,8 +6,6 @@ const tabs = [
   { id: 'table', name: 'Table' },
   { id: 'kanban', name: 'Kanban' },
   { id: 'gantt', name: 'Gantt' },
-  { id: 'analytics', name: 'Analytics' },
-  { id: 'goals', name: 'Goals' },
 ]
 
 interface ViewTabsProps {

@@ -40,6 +40,7 @@ interface TaskFormProps {
   projects: Array<{ id: string; name: string }>
   milestones?: Array<{ id: string; title: string; project_id: string }>
   teamMembers?: Array<{ id: string; display_name: string }>
+  defaultProjectId?: string
   onSuccess?: () => void
   onCancel?: () => void
   isInModal?: boolean
@@ -50,6 +51,7 @@ export function TaskForm({
   projects,
   milestones = [],
   teamMembers = [],
+  defaultProjectId,
   onSuccess,
   onCancel,
   isInModal = false
@@ -69,7 +71,7 @@ export function TaskForm({
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
-      project_id: task?.project_id || '',
+      project_id: task?.project_id || defaultProjectId || '',
       milestone_id: task?.milestone_id || '',
       status: task?.status || 'todo',
       priority: task?.priority || 'medium',

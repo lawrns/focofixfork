@@ -1,31 +1,19 @@
 'use client'
 
 import { Suspense } from 'react'
-import { ProtectedRoute } from '@/components/auth/protected-route'
-import MainLayout from '@/components/layout/MainLayout'
 import { AnalyticsDashboard } from '@/features/analytics'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardAnalyticsPage() {
   return (
-    <ProtectedRoute>
-      <DashboardAnalyticsContent />
-    </ProtectedRoute>
-  )
-}
-
-function DashboardAnalyticsContent() {
-  return (
-    <MainLayout>
-      <div className="p-6">
-        <div className="flex items-center justify-between space-y-2 mb-6">
-          <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-        </div>
-        <Suspense fallback={<AnalyticsSkeleton />}>
-          <AnalyticsDashboard />
-        </Suspense>
+    <div className="p-6">
+      <div className="flex items-center justify-between space-y-2 mb-6">
+        <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
       </div>
-    </MainLayout>
+      <Suspense fallback={<AnalyticsSkeleton />}>
+        <AnalyticsDashboard />
+      </Suspense>
+    </div>
   )
 }
 

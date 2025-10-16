@@ -64,6 +64,8 @@ function OrganizationsContent() {
   const [inviteResult, setInviteResult] = useState<{ success: boolean; message: string } | null>(null)
   const [editingMember, setEditingMember] = useState<string | null>(null)
   const [editRole, setEditRole] = useState<MemberRole>('member')
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
+  const [invitationToCancel, setInvitationToCancel] = useState<string | null>(null)
 
   const loadOrganizations = useCallback(async () => {
     try {
@@ -247,11 +249,15 @@ function OrganizationsContent() {
     }
   }
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!selectedOrganization || !confirm('Are you sure you want to remove this member?')) return
+  const handleRemoveMember = (memberId: string) => {
+    setMemberToRemove(memberId)
+  }
+
+  const confirmRemoveMember = async () => {
+    if (!selectedOrganization || !memberToRemove) return
 
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberToRemove}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -271,6 +277,8 @@ function OrganizationsContent() {
       }
     } catch (error) {
       console.error('Failed to remove member:', error)
+    } finally {
+      setMemberToRemove(null)
     }
   }
 
@@ -297,11 +305,15 @@ function OrganizationsContent() {
     }
   }
 
-  const handleCancelInvitation = async (invitationId: string) => {
-    if (!selectedOrganization || !confirm('Are you sure you want to cancel this invitation?')) return
+  const handleCancelInvitation = (invitationId: string) => {
+    setInvitationToCancel(invitationId)
+  }
+
+  const confirmCancelInvitation = async () => {
+    if (!selectedOrganization || !invitationToCancel) return
 
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}`, {
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`, {
         method: 'DELETE',
       })
 
@@ -317,6 +329,8 @@ function OrganizationsContent() {
       }
     } catch (error) {
       console.error('Failed to cancel invitation:', error)
+    } finally {
+      setInvitationToCancel(null)
     }
   }
 
@@ -1073,6 +1087,48 @@ function OrganizationsContent() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Remove Member Confirmation Dialog */}
+        <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove this member from the organization? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmRemoveMember}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remove Member
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Cancel Invitation Confirmation Dialog */}
+        <AlertDialog open={!!invitationToCancel} onOpenChange={(open) => !open && setInvitationToCancel(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to cancel this invitation? The recipient will no longer be able to join using this invitation link.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmCancelInvitation}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Cancel Invitation
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   )

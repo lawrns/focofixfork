@@ -176,7 +176,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4">
+    <div className="space-y-6">
+      <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4">
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {
@@ -222,6 +223,7 @@ export default function DashboardPage() {
             {activeView === 'analytics' && <AnalyticsDashboard />}
             {activeView === 'goals' && <GoalsDashboard />}
           </Suspense>
+        </div>
 
           {/* Time Tracker Sidebar - disabled until timer_sessions table exists */}
           {/* <div className="w-80 border-l bg-muted/10 p-4">

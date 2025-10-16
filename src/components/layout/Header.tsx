@@ -39,9 +39,19 @@ export default function Header() {
 
   // TEMPORARY: Just return simple text to test rendering
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 10, borderBottom: '1px solid #e5e7eb', backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: '12px 24px', backdropFilter: 'blur(4px)', display: 'block', visibility: 'visible' }}>
-      <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#3b82f6' }}>
-        HEADER TEST: User {displayUser?.email} - Logout Button Should Be Here
-      </div>
-    </header>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 9999,
+      backgroundColor: 'red',
+      color: 'white',
+      padding: '20px',
+      fontSize: '24px',
+      fontWeight: 'bold',
+      border: '5px solid yellow'
+    }}>
+      🚨 HEADER IS HERE 🚨 User: {displayUser?.email} 🚨 LOGOUT BUTTON SHOULD BE HERE 🚨
+    </div>
   )

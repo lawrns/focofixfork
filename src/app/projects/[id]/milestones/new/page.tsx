@@ -103,6 +103,7 @@ export default function NewMilestonePage({ params }: NewMilestonePageProps) {
 
       <MilestoneForm
         projects={projects}
+        defaultProjectId={params.id}
         onSuccess={handleSuccess}
         onCancel={handleCancel}
       />

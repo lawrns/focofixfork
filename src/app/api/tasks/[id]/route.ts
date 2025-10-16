@@ -26,9 +26,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const result = await TasksService.getTaskById(user.id, taskId)
 
     if (!result.success) {
-      const statusCode = result.error === 'Task not found' ? 404 : 500
-      const err: any = new Error(result.error || 'Failed to fetch task')
-      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      // When RLS is enabled, "not found" usually means no permission (403), not truly missing (404)
+      // Return 403 for authenticated users trying to access resources they don't own
+      const statusCode = result.error === 'Task not found' ? 403 : 500
+      const err: any = new Error(
+        result.error === 'Task not found'
+          ? 'You do not have permission to access this task'
+          : result.error || 'Failed to fetch task'
+      )
+      err.code = statusCode === 403 ? 'TASK_FORBIDDEN' : 'DATABASE_ERROR'
       err.statusCode = statusCode
       throw err
     }
@@ -54,9 +60,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const result = await TasksService.updateTask(user.id, taskId, input.body)
 
     if (!result.success) {
-      const statusCode = result.error === 'Task not found' ? 404 : 500
-      const err: any = new Error(result.error || 'Failed to update task')
-      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      const statusCode = result.error === 'Task not found' ? 403 : 500
+      const err: any = new Error(
+        result.error === 'Task not found'
+          ? 'You do not have permission to update this task'
+          : result.error || 'Failed to update task'
+      )
+      err.code = statusCode === 403 ? 'TASK_FORBIDDEN' : 'DATABASE_ERROR'
       err.statusCode = statusCode
       throw err
     }
@@ -87,9 +97,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       const result = await TasksService.updateTaskStatus(user.id, taskId, input.body.status)
 
       if (!result.success) {
-        const statusCode = result.error === 'Task not found' ? 404 : 500
-        const err: any = new Error(result.error || 'Failed to update task status')
-        err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+        const statusCode = result.error === 'Task not found' ? 403 : 500
+        const err: any = new Error(
+          result.error === 'Task not found'
+            ? 'You do not have permission to update this task'
+            : result.error || 'Failed to update task status'
+        )
+        err.code = statusCode === 403 ? 'TASK_FORBIDDEN' : 'DATABASE_ERROR'
         err.statusCode = statusCode
         throw err
       }
@@ -101,9 +115,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const result = await TasksService.updateTask(user.id, taskId, input.body)
 
     if (!result.success) {
-      const statusCode = result.error === 'Task not found' ? 404 : 500
-      const err: any = new Error(result.error || 'Failed to update task')
-      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      const statusCode = result.error === 'Task not found' ? 403 : 500
+      const err: any = new Error(
+        result.error === 'Task not found'
+          ? 'You do not have permission to update this task'
+          : result.error || 'Failed to update task'
+      )
+      err.code = statusCode === 403 ? 'TASK_FORBIDDEN' : 'DATABASE_ERROR'
       err.statusCode = statusCode
       throw err
     }
@@ -129,9 +147,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const result = await TasksService.deleteTask(user.id, taskId)
 
     if (!result.success) {
-      const statusCode = result.error === 'Task not found' ? 404 : 500
-      const err: any = new Error(result.error || 'Failed to delete task')
-      err.code = statusCode === 404 ? 'TASK_NOT_FOUND' : 'DATABASE_ERROR'
+      const statusCode = result.error === 'Task not found' ? 403 : 500
+      const err: any = new Error(
+        result.error === 'Task not found'
+          ? 'You do not have permission to delete this task'
+          : result.error || 'Failed to delete task'
+      )
+      err.code = statusCode === 403 ? 'TASK_FORBIDDEN' : 'DATABASE_ERROR'
       err.statusCode = statusCode
       throw err
     }

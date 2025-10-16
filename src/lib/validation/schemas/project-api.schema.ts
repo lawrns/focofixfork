@@ -27,7 +27,21 @@ export const CreateProjectApiSchema = z.object({
     start_date: z.string().nullable().optional(),
     due_date: z.string().nullable().optional(),
     progress_percentage: z.number().min(0).max(100).optional()
-  }).strict(),
+  }).strict().refine(
+    (data) => {
+      // If both dates are provided, ensure due_date >= start_date
+      if (data.start_date && data.due_date) {
+        const start = new Date(data.start_date)
+        const due = new Date(data.due_date)
+        return due >= start
+      }
+      return true
+    },
+    {
+      message: 'Due date must be on or after the start date',
+      path: ['due_date']
+    }
+  ),
   query: z.object({}).optional()
 })
 
@@ -52,7 +66,21 @@ export const UpdateProjectApiSchema = z.object({
     due_date: z.string().datetime().nullable().optional(),
     progress_percentage: z.number().min(0).max(100).optional(),
     organization_id: z.string().uuid().nullable().optional()
-  }).strict(),
+  }).strict().refine(
+    (data) => {
+      // If both dates are provided, ensure due_date >= start_date
+      if (data.start_date && data.due_date) {
+        const start = new Date(data.start_date)
+        const due = new Date(data.due_date)
+        return due >= start
+      }
+      return true
+    },
+    {
+      message: 'Due date must be on or after the start date',
+      path: ['due_date']
+    }
+  ),
   query: z.object({}).optional()
 })
 

@@ -28,6 +28,7 @@ type MilestoneFormData = z.infer<typeof milestoneSchema>
 interface MilestoneFormProps {
   milestone?: MilestoneFormData & { id?: string }
   projects: Array<{ id: string; name: string }>
+  defaultProjectId?: string
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -35,6 +36,7 @@ interface MilestoneFormProps {
 export function MilestoneForm({
   milestone,
   projects,
+  defaultProjectId,
   onSuccess,
   onCancel
 }: MilestoneFormProps) {
@@ -53,7 +55,7 @@ export function MilestoneForm({
     defaultValues: {
       title: milestone?.title || '',
       description: milestone?.description || '',
-      project_id: milestone?.project_id || '',
+      project_id: milestone?.project_id || defaultProjectId || '',
       status: milestone?.status || 'planned',
       due_date: milestone?.due_date || '',
       progress_percentage: milestone?.progress_percentage || 0,

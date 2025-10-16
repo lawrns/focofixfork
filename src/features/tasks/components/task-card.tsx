@@ -26,6 +26,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useRealtime } from '@/lib/hooks/useRealtime'
 import { motion } from 'framer-motion'
 
@@ -108,6 +118,7 @@ export function TaskCard({
   const [currentTask, setCurrentTask] = useState(task)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUpdated, setIsUpdated] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   // Real-time updates for this task
   useRealtime(
@@ -160,13 +171,19 @@ export function TaskCard({
     }
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDelete = async () => {
     if (!onDelete) return
 
     try {
       await onDelete(currentTask.id)
+      setShowDeleteDialog(false)
     } catch (error) {
       console.error('Failed to delete task:', error)
+      setShowDeleteDialog(false)
     }
   }
 
@@ -179,6 +196,7 @@ export function TaskCard({
     : currentTask.status === 'done' ? 100 : 0
 
   return (
+    <>
     <motion.div
       initial={false}
       animate={isUpdated ? { scale: [1, 1.02, 1] } : { scale: 1 }}
@@ -329,6 +347,27 @@ export function TaskCard({
       </CardContent>
     </Card>
     </motion.div>
+
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Task</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{currentTask.title}"? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={confirmDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   )
 }
 

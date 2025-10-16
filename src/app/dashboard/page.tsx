@@ -223,7 +223,6 @@ export default function DashboardPage() {
             {activeView === 'analytics' && <AnalyticsDashboard />}
             {activeView === 'goals' && <GoalsDashboard />}
           </Suspense>
-        </div>
 
           {/* Time Tracker Sidebar - disabled until timer_sessions table exists */}
           {/* <div className="w-80 border-l bg-muted/10 p-4">
@@ -233,7 +232,7 @@ export default function DashboardPage() {
             />
           </div> */}
 
-      {/* New Project Modal */}
+          {/* New Project Modal */}
       <Dialog open={showNewProjectModal} onOpenChange={setShowNewProjectModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

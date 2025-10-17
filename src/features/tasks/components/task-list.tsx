@@ -336,6 +336,7 @@ export function TaskList({
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="review">Review</SelectItem>
               <SelectItem value="done">Done</SelectItem>
+              <SelectItem value="blocked">Blocked</SelectItem>
             </SelectContent>
           </Select>
 

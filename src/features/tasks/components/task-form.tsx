@@ -19,7 +19,7 @@ const taskSchema = z.object({
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   project_id: z.string().min(1, 'Project is required'),
   milestone_id: z.string().nullable().optional(),
-  status: z.enum(['todo', 'in_progress', 'review', 'done']).default('todo'),
+  status: z.enum(['todo', 'in_progress', 'review', 'done', 'blocked']).default('todo'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   assignee_id: z.string().nullable().optional(),
   estimated_hours: z.preprocess(
@@ -252,6 +252,7 @@ export function TaskForm({
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="review">Review</SelectItem>
               <SelectItem value="done">Done</SelectItem>
+              <SelectItem value="blocked">Blocked</SelectItem>
             </SelectContent>
           </Select>
         </div>

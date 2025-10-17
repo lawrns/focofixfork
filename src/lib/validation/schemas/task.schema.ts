@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // Task status enum
-export const TaskStatusSchema = z.enum(['todo', 'in_progress', 'review', 'completed', 'cancelled'])
+export const TaskStatusSchema = z.enum(['todo', 'in_progress', 'review', 'done', 'blocked', 'completed', 'cancelled'])
 
 // Task priority enum (shared with projects)
 export const TaskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent'])

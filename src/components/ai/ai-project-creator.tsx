@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -23,7 +23,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
   const { user } = useAuth()
 
   // Load organizations on mount
-  useState(() => {
+  useEffect(() => {
     async function loadOrganizations() {
       try {
         const response = await fetch('/api/organizations')
@@ -41,7 +41,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
       }
     }
     loadOrganizations()
-  })
+  }, [])
 
   // UUID validation helper
   const isValidUUID = (str: string) => {

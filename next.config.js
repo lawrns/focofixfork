@@ -28,22 +28,20 @@ const nextConfig = {
   },
 
   // Bundle analyzer (conditionally)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config) => {
-      if (process.env.NODE_ENV === 'production') {
-        // Enable bundle analyzer for production builds
-        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
-        config.plugins.push(
-          new BundleAnalyzerPlugin({
-            analyzerMode: 'static',
-            reportFilename: './analyze/client.html',
-            openAnalyzer: false,
-          })
-        )
-      }
-      return config
-    },
-  }),
+  webpack: (config, { isServer }) => {
+    if (process.env.ANALYZE === 'true' && !isServer) {
+      // Enable bundle analyzer for production builds
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: './analyze/client.html',
+          openAnalyzer: false,
+        })
+      )
+    }
+    return config
+  },
 
   // Headers for security, performance, and mobile optimization
   async headers() {

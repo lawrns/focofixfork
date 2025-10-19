@@ -274,7 +274,7 @@ function ProjectDetailsContent() {
               </TabsContent>
 
               <TabsContent value="activity" className="space-y-4">
-                <ActivityFeed projectId={projectId} limit={20} />
+                <ActivityFeed activities={[]} />
               </TabsContent>
 
               <TabsContent value="team" className="space-y-4">

@@ -1,14 +1,16 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
+import { Suspense, useEffect, useState, useMemo, useCallback, lazy } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
-import { ViewTabs, KanbanBoard } from '@/features/projects'
-import ProjectTable from '@/features/projects/components/ProjectTable'
-import GanttView from '@/components/views/gantt-view'
+// Lazy load heavy components
+const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
+const KanbanBoard = lazy(() => import('@/features/projects').then(m => ({ default: m.KanbanBoard })))
+const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
+const GanttView = lazy(() => import('@/components/views/gantt-view'))
 import { Skeleton } from '@/components/ui/skeleton'
 import { Loading, LoadingCard, LoadingTable } from '@/components/ui/loading'
-import { useToastHelpers } from '@/components/ui/toast'
+import { useToastHelpers, useToast } from '@/components/ui/toast'
 import { SkipToMainContent } from '@/components/ui/accessibility'
 import { DashboardEmpty } from '@/components/empty-states/dashboard-empty'
 import { ProductTour, useProductTour, defaultTourSteps } from '@/components/onboarding/product-tour'
@@ -23,14 +25,18 @@ import { Loader2, Plus } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
 import { projectStore } from '@/lib/stores/project-store'
+import { Project } from '@/features/projects/types'
 
-import ExportDialog from '@/components/export/export-dialog'
-import ImportDialog from '@/components/import/import-dialog'
-import TimeTracker from '@/components/time-tracking/time-tracker'
-import PresenceIndicator from '@/components/collaboration/presence-indicator'
-import CommentsSection from '@/components/comments/comments-section'
-import NotificationCenter from '@/components/notifications/notification-center'
-import { AIProjectCreator } from '@/components/ai/ai-project-creator'
+// Lazy load additional heavy components
+const ExportDialog = lazy(() => import('@/components/export/export-dialog'))
+const ImportDialog = lazy(() => import('@/components/import/import-dialog'))
+const TimeTracker = lazy(() => import('@/components/time-tracking/time-tracker'))
+const PresenceIndicator = lazy(() => import('@/components/collaboration/presence-indicator'))
+const CommentsSection = lazy(() => import('@/components/comments/comments-section'))
+const NotificationCenter = lazy(() => import('@/components/notifications/notification-center'))
+const AIProjectCreator = lazy(() => import('@/components/ai/ai-project-creator').then(m => ({ default: m.AIProjectCreator })))
+const QuickActionsMenu = lazy(() => import('@/components/ui/quick-actions-menu').then(m => ({ default: m.QuickActionsMenu })))
+const ImportExportModal = lazy(() => import('@/components/import-export/import-export-modal').then(m => ({ default: m.ImportExportModal })))
 
 function DashboardSkeleton() {
   return (
@@ -68,6 +74,9 @@ function DashboardSkeleton() {
 interface Organization {
   id: string
   name: string
+  created_by: string
+  created_at: string
+  updated_at: string
 }
 
 export default function DashboardPage() {
@@ -81,6 +90,7 @@ export default function DashboardPage() {
   const { user, loading } = useAuth()
   const { createView, setActiveView } = useSavedViews()
   const toast = useToastHelpers()
+  const toastNotification = useToast()
   const { shouldShowTour, markTourComplete } = useOnboarding()
   const { isOpen: isTourOpen, startTour, closeTour, completeTour } = useProductTour()
 
@@ -108,8 +118,10 @@ export default function DashboardPage() {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [showAIProjectModal, setShowAIProjectModal] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false)
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
 
   const fetchOrganizations = useCallback(async () => {
     if (!user) return
@@ -133,6 +145,28 @@ export default function DashboardPage() {
     }
   }, [user, toast])
 
+  const fetchProjects = useCallback(async () => {
+    if (!user) return
+
+    setIsLoadingProjects(true)
+    try {
+      const response = await fetch('/api/projects')
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          const projs = data.data || []
+          setProjects(projs)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+      toast.error('Error al cargar proyectos', 'No se pudieron cargar los proyectos. Inténtalo de nuevo.')
+    } finally {
+      setIsLoadingProjects(false)
+    }
+  }, [user, toast])
+
   // ALL useEffect hooks here
   useEffect(() => {
     if (!loading && !user) {
@@ -149,11 +183,62 @@ export default function DashboardPage() {
       router.replace('/dashboard', undefined)
     }
 
-    // Load organizations
+    // Load organizations and projects
     if (user) {
       fetchOrganizations()
+      fetchProjects()
     }
-  }, [user, router, fetchOrganizations])
+  }, [user, router, fetchOrganizations, fetchProjects])
+
+  // Listen for quick action events
+  useEffect(() => {
+    const handleOpenCreateProject = () => {
+      setShowNewProjectModal(true)
+    }
+
+    const handleOpenCreateTask = () => {
+      // For now, just show a toast. In a real implementation, this would open a task creation modal
+      toast.success('Task creation coming soon!')
+    }
+
+    const handleOpenCreateOrganization = () => {
+      router.push('/organizations')
+    }
+
+    const handleToggleView = (event: CustomEvent) => {
+      const { view } = event.detail
+      if (view === 'board') {
+        setActiveViewState('kanban')
+      } else if (view === 'table') {
+        setActiveViewState('table')
+      }
+    }
+
+    const handleToggleTheme = () => {
+      // Toggle theme logic would go here
+      toast.success('Theme toggle coming soon!')
+    }
+
+    const handleShowShortcuts = () => {
+      toast.success('Keyboard shortcuts: Press "/" to open quick actions, "?" for help')
+    }
+
+    window.addEventListener('open-create-project', handleOpenCreateProject)
+    window.addEventListener('open-create-task', handleOpenCreateTask)
+    window.addEventListener('open-create-organization', handleOpenCreateOrganization)
+    window.addEventListener('toggle-view', handleToggleView as EventListener)
+    window.addEventListener('toggle-theme', handleToggleTheme)
+    window.addEventListener('show-shortcuts', handleShowShortcuts)
+
+    return () => {
+      window.removeEventListener('open-create-project', handleOpenCreateProject)
+      window.removeEventListener('open-create-task', handleOpenCreateTask)
+      window.removeEventListener('open-create-organization', handleOpenCreateOrganization)
+      window.removeEventListener('toggle-view', handleToggleView as EventListener)
+      window.removeEventListener('toggle-theme', handleToggleTheme)
+      window.removeEventListener('show-shortcuts', handleShowShortcuts)
+    }
+  }, [router, toast])
 
   // TODO: Load projects data for Gantt view when needed
 
@@ -233,15 +318,17 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4" data-tour="dashboard-header">
-            <ViewTabs
-              activeTab={activeView}
-              onTabChange={(tabId) => {
+            <Suspense fallback={<Skeleton className="h-10 w-64" />}>
+              <ViewTabs
+                activeTab={activeView}
+                onTabChange={(tabId) => {
                 if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
                   setActiveViewState(tabId as typeof activeView)
                 }
               }}
               data-tour="view-tabs"
             />
+            </Suspense>
 
             <div className="flex items-center gap-3 pb-4">
               <Button
@@ -425,6 +512,28 @@ export default function DashboardPage() {
         onClose={closeTour}
         onComplete={handleTourComplete}
         steps={defaultTourSteps}
+      />
+
+      {/* Quick Actions Menu */}
+      <QuickActionsMenu />
+
+      {/* Import/Export Modal */}
+      <ImportExportModal
+        projects={projects}
+        tasks={[]} // TODO: Add tasks data
+        organizations={organizations}
+        labels={[]} // TODO: Add labels data
+        onImportComplete={(result) => {
+          if (result.success) {
+            toastNotification.addToast({ type: 'success', title: 'Success', description: `Successfully imported ${result.imported.projects + result.imported.tasks} items` })
+            // Refresh data
+            fetchOrganizations()
+            fetchProjects()
+          }
+        }}
+        onExportComplete={() => {
+          toastNotification.addToast({ type: 'success', title: 'Success', description: 'Export completed successfully' })
+        }}
       />
     </div>
   )

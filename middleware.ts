@@ -132,8 +132,8 @@ export async function middleware(req: NextRequest) {
       return res
     }
 
-    // For organization setup, check auth but allow incomplete setup
-    if (pathname === '/api/organization-setup') {
+    // For organization setup and organizations API, check auth but allow incomplete setup
+    if (pathname === '/api/organization-setup' || pathname === '/api/organizations') {
       if (!session) {
         return NextResponse.json(
           {

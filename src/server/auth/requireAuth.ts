@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { env } from '@/env'
 
@@ -28,10 +28,20 @@ export class ForbiddenError extends AuthError {
 
 /**
  * Get authenticated user from Supabase session
+ * Supports both cookie-based and Bearer token authentication
  * Throws UnauthorizedError if not authenticated
  */
 export async function requireAuth() {
   const cookieStore = cookies()
+  const headersList = headers()
+  
+  // Check for Bearer token in Authorization header
+  const authHeader = headersList.get('authorization')
+  let accessToken: string | null = null
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    accessToken = authHeader.substring(7)
+  }
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -54,7 +64,20 @@ export async function requireAuth() {
     }
   )
 
-  const { data: { user }, error } = await supabase.auth.getUser()
+  let user: any = null
+  let error: any = null
+
+  if (accessToken) {
+    // Use Bearer token authentication
+    const { data, error: tokenError } = await supabase.auth.getUser(accessToken)
+    user = data.user
+    error = tokenError
+  } else {
+    // Use cookie-based authentication
+    const { data, error: cookieError } = await supabase.auth.getUser()
+    user = data.user
+    error = cookieError
+  }
 
   if (error || !user) {
     throw new UnauthorizedError('Authentication required')

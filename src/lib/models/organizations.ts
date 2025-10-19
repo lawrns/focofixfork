@@ -82,6 +82,8 @@ export class OrganizationModel {
     return {
       id: data.id,
       name: data.name,
+      description: data.description,
+      website: data.website,
       created_by: data.created_by,
       created_at: data.created_at,
       updated_at: data.updated_at

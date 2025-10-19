@@ -1,6 +1,11 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { ToastProvider } from "@/components/ui/toast";
+import { OfflineBanner } from "@/components/pwa/offline-banner";
+import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import type { Metadata } from "next";
 
 // Debug server-side environment variables
 console.log('🌍 Server-side env check:', {
@@ -12,6 +17,52 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: {
+    default: "Foco - Gestión de Proyectos con IA",
+    template: "%s | Foco"
+  },
+  description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
+  keywords: ["project management", "AI", "collaboration", "productivity", "team management"],
+  authors: [{ name: "Foco Team" }],
+  creator: "Foco",
+  publisher: "Foco",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://foco.mx"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_MX",
+    url: "https://foco.mx",
+    title: "Foco - Gestión de Proyectos con IA",
+    description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
+    siteName: "Foco",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Foco - Gestión de Proyectos con IA",
+    description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
+    creator: "@foco",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+};
 
 export default function RootLayout({
   children,
@@ -44,7 +95,13 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className={`${inter.variable} antialiased`}>
-        <Providers>{children}</Providers>
+        <ErrorBoundary>
+          <ToastProvider>
+            <OfflineBanner />
+            <Providers>{children}</Providers>
+            <ServiceWorkerRegistration />
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

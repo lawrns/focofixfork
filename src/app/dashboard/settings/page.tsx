@@ -1,11 +1,15 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { SettingsDashboard } from '@/components/settings/settings-dashboard'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardSettingsPage() {
+  // Set page title
+  useEffect(() => {
+    document.title = 'Configuración | Foco'
+  }, [])
   return (
     <ProtectedRoute>
       <DashboardSettingsContent />

@@ -3,16 +3,23 @@
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
-import { ViewTabs, ProjectTable, KanbanBoard } from '@/features/projects'
+import { ViewTabs, KanbanBoard } from '@/features/projects'
+import ProjectTable from '@/features/projects/components/ProjectTable'
 import GanttView from '@/components/views/gantt-view'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Loading, LoadingCard, LoadingTable } from '@/components/ui/loading'
+import { useToastHelpers } from '@/components/ui/toast'
+import { SkipToMainContent } from '@/components/ui/accessibility'
+import { DashboardEmpty } from '@/components/empty-states/dashboard-empty'
+import { ProductTour, useProductTour, defaultTourSteps } from '@/components/onboarding/product-tour'
+import { useOnboarding } from '@/lib/hooks/use-onboarding'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
 import { projectStore } from '@/lib/stores/project-store'
@@ -27,13 +34,33 @@ import { AIProjectCreator } from '@/components/ai/ai-project-creator'
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-8 w-64" />
-      <div className="space-y-3">
-        {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
+    <div className="space-y-6">
+      <SkipToMainContent />
+      <main id="main-content" className="space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        
+        {/* Stats cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <LoadingCard key={i} />
+          ))}
+        </div>
+        
+        {/* Main content skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <LoadingTable rows={5} columns={4} />
+          </div>
+          <div className="space-y-4">
+            <LoadingCard />
+            <LoadingCard />
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
@@ -46,13 +73,37 @@ interface Organization {
 export default function DashboardPage() {
   // Disable static generation for this page since it requires authentication
   noStore()
-
+  
   console.log('DashboardPage render')
 
   // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
   const { user, loading } = useAuth()
   const { createView, setActiveView } = useSavedViews()
+  const toast = useToastHelpers()
+  const { shouldShowTour, markTourComplete } = useOnboarding()
+  const { isOpen: isTourOpen, startTour, closeTour, completeTour } = useProductTour()
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'Dashboard | Foco'
+  }, [])
+
+  // Auto-start tour for new users
+  useEffect(() => {
+    if (shouldShowTour() && !isTourOpen) {
+      // Delay tour start to ensure page is fully loaded
+      const timer = setTimeout(() => {
+        startTour()
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [shouldShowTour, isTourOpen, startTour])
+
+  const handleTourComplete = () => {
+    markTourComplete()
+    completeTour()
+  }
   const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [showAIProjectModal, setShowAIProjectModal] = useState(false)
@@ -76,10 +127,11 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
+      toast.error('Error al cargar organizaciones', 'No se pudieron cargar las organizaciones. Inténtalo de nuevo.')
     } finally {
       setIsLoadingOrganizations(false)
     }
-  }, [user])
+  }, [user, toast])
 
   // ALL useEffect hooks here
   useEffect(() => {
@@ -180,7 +232,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4">
+      <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4" data-tour="dashboard-header">
             <ViewTabs
               activeTab={activeView}
               onTabChange={(tabId) => {
@@ -188,13 +240,24 @@ export default function DashboardPage() {
                   setActiveViewState(tabId as typeof activeView)
                 }
               }}
+              data-tour="view-tabs"
             />
 
             <div className="flex items-center gap-3 pb-4">
               <Button
-                onClick={() => setShowAIProjectModal(true)}
+                onClick={() => setShowNewProjectModal(true)}
                 variant="default"
                 className="flex flex-row items-center gap-2"
+                data-tour="create-project-button"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Project</span>
+              </Button>
+              <Button
+                onClick={() => setShowAIProjectModal(true)}
+                variant="outline"
+                className="flex flex-row items-center gap-2"
+                data-tour="ai-button"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -220,7 +283,16 @@ export default function DashboardPage() {
           </div>
 
           <Suspense fallback={<DashboardSkeleton />}>
-            {activeView === 'table' && <ProjectTable />}
+            {activeView === 'table' && (
+              <ProjectTable 
+                onCreateProject={() => setShowNewProjectModal(true)}
+                onTakeTour={startTour}
+                onImportProjects={() => {
+                  // TODO: Trigger import dialog
+                  console.log('Opening import dialog')
+                }}
+              />
+            )}
             {activeView === 'kanban' && <KanbanBoard />}
             {activeView === 'gantt' && <GanttView project={{ id: '', name: '', milestones: [], tasks: [] }} />}
           </Suspense>
@@ -346,6 +418,14 @@ export default function DashboardPage() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Product Tour */}
+      <ProductTour
+        isOpen={isTourOpen}
+        onClose={closeTour}
+        onComplete={handleTourComplete}
+        steps={defaultTourSteps}
+      />
     </div>
   )
 }

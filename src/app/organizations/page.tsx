@@ -31,8 +31,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import { InvitationWithDetails } from '@/lib/models/invitations'
 import { InvitationModel } from '@/lib/models/invitations'
+import { OrganizationsEmpty } from '@/components/empty-states/organizations-empty'
 
 export default function OrganizationsPage() {
+  // Set page title
+  useEffect(() => {
+    document.title = 'Organizaciones | Foco'
+  }, [])
+
   return (
     <ProtectedRoute>
       <OrganizationsContent />
@@ -471,69 +477,13 @@ function OrganizationsContent() {
         </div>
 
         {organizations.length === 0 ? (
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Building className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No organizations yet</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  Create your first organization to start collaborating with your team.
-                </p>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Organization
-                  </Button>
-                </DialogTrigger>
-              </CardContent>
-            </Card>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Organization</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="org-name">Organization Name</Label>
-                  <Input
-                    id="org-name"
-                    placeholder="Enter organization name"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                  />
-                </div>
-                {createResult && (
-                  <Alert variant={createResult.success ? 'default' : 'destructive'}>
-                    <AlertDescription>{createResult.message}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowCreateDialog(false)}
-                    disabled={isCreating}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateOrganization}
-                    disabled={!orgName.trim() || isCreating}
-                  >
-                    {isCreating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Organization
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <OrganizationsEmpty
+            onCreateOrganization={() => setShowCreateDialog(true)}
+            onJoinOrganization={() => {
+              // TODO: Implement join organization flow
+              console.log('Join organization clicked')
+            }}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {organizations.map((org) => (
@@ -1139,6 +1089,56 @@ function OrganizationsContent() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Create Organization Dialog */}
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Organization</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="org-name">Organization Name</Label>
+                <Input
+                  id="org-name"
+                  placeholder="Enter organization name"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                />
+              </div>
+              {createResult && (
+                <Alert variant={createResult.success ? 'default' : 'destructive'}>
+                  <AlertDescription>{createResult.message}</AlertDescription>
+                </Alert>
+              )}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCreateDialog(false)}
+                  disabled={isCreating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateOrganization}
+                  disabled={!orgName.trim() || isCreating}
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Organization
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

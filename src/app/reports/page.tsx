@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense, lazy } from 'react'
+import { useState, Suspense, lazy, useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
 
@@ -39,6 +39,11 @@ function AnalyticsSkeleton() {
 }
 
 export default function ReportsPage() {
+  // Set page title
+  useEffect(() => {
+    document.title = 'Reportes | Foco'
+  }, [])
+
   return (
     <ProtectedRoute>
       <ReportsContent />

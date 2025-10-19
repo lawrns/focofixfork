@@ -1,124 +1,81 @@
-/**
- * Health Check API Route
- *
- * Provides health status information for monitoring and load balancers.
- * This endpoint checks database connectivity and system status.
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase-server'
+import { databaseOptimizer } from '@/lib/database/optimizer'
+import { monitoring } from '@/lib/monitoring'
+import { userCache, projectCache, apiCache } from '@/lib/cache'
 
 export async function GET(request: NextRequest) {
-  const startTime = Date.now()
-
   try {
+    const startTime = Date.now()
+    
     // Check database connectivity
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: { autoRefreshToken: false, persistSession: false }
-      }
-    )
-
-    // Simple health check query
-    const { data, error } = await supabase
-      .from('users')
+    const { data: dbTest, error: dbError } = await supabaseAdmin
+      .from('organizations')
       .select('count')
       .limit(1)
-      .single()
 
-    const dbHealthy = !error
+    if (dbError) {
+      throw new Error(`Database error: ${dbError.message}`)
+    }
+
+    // Get database statistics
+    const dbStats = await databaseOptimizer.getDatabaseStats()
+    
+    // Get monitoring statistics
+    const monitoringStats = monitoring.getAnalyticsSummary()
+    
+    // Get cache statistics
+    const cacheStats = {
+      userCache: userCache.getStats(),
+      projectCache: projectCache.getStats(),
+      apiCache: apiCache.getStats()
+    }
+
     const responseTime = Date.now() - startTime
 
-    // Check environment variables
-    const requiredEnvVars = [
-      'NEXT_PUBLIC_SUPABASE_URL',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY'
-    ]
+    // Record health check metric
+    monitoring.recordMetric('health-check-response-time', responseTime)
 
-    const missingEnvVars = requiredEnvVars.filter(
-      envVar => !process.env[envVar]
-    )
-
-    const envHealthy = missingEnvVars.length === 0
-
-    // Determine overall health
-    const overallHealthy = dbHealthy && envHealthy && responseTime < 5000
-
-    const healthStatus = {
-      status: overallHealthy ? 'healthy' : 'unhealthy',
+    const health = {
+      status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0',
-      uptime: process.uptime(),
-      response_time_ms: responseTime,
-      checks: {
-        database: {
-          status: dbHealthy ? 'healthy' : 'unhealthy',
-          response_time_ms: responseTime,
-          details: dbHealthy ? 'Connected' : error?.message || 'Connection failed'
-        },
+      responseTime,
+      database: {
+        connected: true,
+        stats: dbStats
+      },
+      monitoring: monitoringStats,
+      cache: cacheStats,
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      }
+    }
+
+    return NextResponse.json(health)
+  } catch (error) {
+    console.error('Health check failed:', error)
+    
+    // Record health check error
+    monitoring.recordError(error as Error, 'high', {
+      endpoint: 'health-check'
+    })
+
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
         environment: {
-          status: envHealthy ? 'healthy' : 'unhealthy',
-          details: envHealthy ? 'All required variables present' : `Missing: ${missingEnvVars.join(', ')}`
+          nodeEnv: process.env.NODE_ENV,
+          hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
         }
       },
-      environment: {
-        node_version: process.version,
-        platform: process.platform,
-        arch: process.arch,
-        memory: {
-          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-          external: Math.round(process.memoryUsage().external / 1024 / 1024)
-        }
-      }
-    }
-
-    // Return appropriate HTTP status
-    const statusCode = overallHealthy ? 200 : 503 // Service Unavailable
-
-    return NextResponse.json(healthStatus, {
-      status: statusCode,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Content-Type': 'application/json'
-      }
-    })
-
-  } catch (error) {
-    const responseTime = Date.now() - startTime
-
-    const errorHealthStatus = {
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      response_time_ms: responseTime,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      checks: {
-        general: {
-          status: 'unhealthy',
-          details: 'Unexpected error occurred'
-        }
-      }
-    }
-
-    return NextResponse.json(errorHealthStatus, {
-      status: 503,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Content-Type': 'application/json'
-      }
-    })
+      { status: 500 }
+    )
   }
 }
-
-// Also support HEAD requests for load balancers
-export async function HEAD(request: NextRequest) {
-  const response = await GET(request)
-  return new Response(null, {
-    status: response.status,
-    headers: response.headers
-  })
-}
-
-

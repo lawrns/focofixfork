@@ -1,82 +1,44 @@
-'use client'
-
 import Link from 'next/link'
 import Image from 'next/image'
-import Head from 'next/head'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, PlayCircle, Flag, Users, BarChart3, Sparkles, Zap, Target, Check, Download, Smartphone } from 'lucide-react'
-import { motion, useScroll, useTransform, useInView } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
-import { useInstallPrompt } from '@/components/pwa/install-prompt'
-import { useAuth } from '@/lib/contexts/auth-context'
+import { ArrowRight, Flag, Users, Check, Download, Smartphone, Sparkles, Zap, Target } from 'lucide-react'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: "Foco - Gestión de Proyectos con IA",
+  description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows. Free for everyone.",
+  keywords: ["project management", "AI", "collaboration", "productivity", "team management", "gestión de proyectos"],
+  openGraph: {
+    title: "Foco - Gestión de Proyectos con IA",
+    description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
+    url: "https://foco.mx",
+    siteName: "Foco",
+    locale: "es_MX",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Foco - Gestión de Proyectos con IA",
+    description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
+  },
+}
 
 export default function Home() {
-  const { canInstall, isInstalled, promptInstall } = useInstallPrompt()
-  const [isMobile, setIsMobile] = useState(false)
-  const { user } = useAuth()
-
-  useEffect(() => {
-    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
-  }, [])
-  useEffect(() => {
-    document.title = 'Foco - Gestión de Proyectos con IA'
-  }, [])
-  const { scrollYProgress } = useScroll()
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%'])
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-
   return (
     <div className="min-h-screen bg-white font-[Inter] overflow-x-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10">
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-[#667eea] via-[#764ba2] to-[#f093fb]"
-          style={{ y, opacity }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#667eea] via-[#764ba2] to-[#f093fb]" />
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm" />
-
-        {/* Floating Shapes */}
-        <motion.div
-          className="absolute top-20 left-20 w-32 h-32 bg-[#0066FF]/10 rounded-full blur-xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute bottom-40 right-20 w-24 h-24 bg-[#00D4AA]/10 rounded-full blur-lg"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.4, 0.2, 0.4],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
-        />
+        <div className="absolute top-20 left-20 w-32 h-32 bg-[#0066FF]/10 rounded-full blur-xl animate-pulse" />
+        <div className="absolute bottom-40 right-20 w-24 h-24 bg-[#00D4AA]/10 rounded-full blur-lg animate-pulse" />
       </div>
 
-      {/* Navbar - Exclusive */}
-      <motion.nav
-        className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-50 border-b border-[#E5E5E5]"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-50 border-b border-[#E5E5E5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <motion.div
-              className="flex items-center"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
+            <div className="flex items-center hover:scale-105 transition-transform">
               <Image
                 src="/focologo.png"
                 alt="Foco Logo"
@@ -85,242 +47,134 @@ export default function Home() {
                 className="w-10 h-10 object-contain"
               />
               <span className="ml-3 text-2xl font-bold text-[#0A0A0A]">Foco</span>
-            </motion.div>
+            </div>
 
-            {/* Navigation */}
             <div className="flex items-center space-x-8">
               <Link href="#features">
-                <Button
-                  variant="ghost"
-                  className="hidden md:inline-flex text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5"
-                >
+                <Button variant="ghost" className="hidden md:inline-flex text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5">
                   Características
                 </Button>
               </Link>
               <Link href="#pricing">
-                <Button
-                  variant="ghost"
-                  className="hidden md:inline-flex text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5"
-                >
+                <Button variant="ghost" className="hidden md:inline-flex text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5">
                   Precios
                 </Button>
               </Link>
               <Link href="/login">
-                <Button
-                  variant="ghost"
-                  className="text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5"
-                >
+                <Button variant="ghost" className="text-[#404040] hover:text-[#0052CC] hover:bg-[#0052CC]/5">
                   Iniciar sesión
                 </Button>
               </Link>
             </div>
           </div>
         </div>
+      </nav>
 
-      </motion.nav>
-
-      {/* Hero Section - Premium Flow Start */}
-      <section className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden" suppressHydrationWarning>
-        {/* Premium Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50/30" suppressHydrationWarning></div>
-        <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,rgba(59,130,246,0.1)_0px,transparent_50%)]" suppressHydrationWarning></div>
-        <div className="absolute inset-0 bg-[radial-gradient(at_100%_100%,rgba(168,85,247,0.08)_0px,transparent_50%)]" suppressHydrationWarning></div>
+      {/* Hero Section */}
+      <section className="relative py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50/30"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,rgba(59,130,246,0.1)_0px,transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_100%_100%,rgba(168,85,247,0.08)_0px,transparent_50%)]"></div>
 
         <div className="max-w-7xl mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left Column - Exclusive Typography */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-            >
-              {/* Refined Headline */}
-              <motion.h1
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 sm:mb-8 text-[#0A0A0A] leading-[1.1] tracking-tight"
-                style={{ fontFamily: 'Inter Display, Inter, sans-serif' }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-              >
+            {/* Left Column */}
+            <div className="animate-fade-in">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 sm:mb-8 text-[#0A0A0A] leading-[1.1] tracking-tight">
                 Concéntrate en lo{' '}
                 <span className="bg-gradient-to-r from-[#0052CC] to-[#667eea] bg-clip-text text-transparent">que importa</span>
-              </motion.h1>
+              </h1>
 
-              <motion.p
-                className="text-lg sm:text-xl md:text-2xl text-[#404040] leading-relaxed mb-8 sm:mb-12 max-w-xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-              >
+              <p className="text-lg sm:text-xl md:text-2xl text-[#404040] leading-relaxed mb-8 sm:mb-12 max-w-xl">
                 Gestión de proyectos con IA que es <span className="font-semibold bg-gradient-to-r from-[#0052CC] to-[#667eea] bg-clip-text text-transparent">gratis para todos</span>—desde ahora.
-              </motion.p>
+              </p>
 
-              {/* Exclusive CTA Buttons - Enhanced for mobile */}
-              <motion.div
-                className="flex flex-col sm:flex-row gap-4 sm:gap-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-              >
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto"
-                >
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                <div className="w-full sm:w-auto hover:scale-105 transition-transform">
                   <Link href="/register">
                     <Button className="w-full sm:w-auto bg-[#0052CC] hover:bg-[#004299] text-white px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-semibold text-lg sm:text-xl shadow-[0_4px_16px_rgba(0,82,204,0.2)] hover:shadow-[0_6px_20px_rgba(0,82,204,0.25)] transition-all duration-400 min-h-[56px]">
                       Comenzar gratis
                       <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6" />
                     </Button>
                   </Link>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto"
-                >
+                <div className="w-full sm:w-auto hover:scale-105 transition-transform">
                   <Link href="#demo">
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto border-2 border-[#E5E5E5] hover:border-[#6B6B6B] text-[#404040] hover:text-[#0A0A0A] bg-white hover:bg-[#F8F9FA] px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-semibold text-lg sm:text-xl transition-all duration-400 min-h-[56px]"
-                    >
+                    <Button variant="outline" className="w-full sm:w-auto border-2 border-[#E5E5E5] hover:border-[#6B6B6B] text-[#404040] hover:text-[#0A0A0A] bg-white hover:bg-[#F8F9FA] px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-semibold text-lg sm:text-xl transition-all duration-400 min-h-[56px]">
                       Ver Foco →
                     </Button>
                   </Link>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </div>
+              </div>
+            </div>
 
-            {/* Right Column - Glass Video Container - Enhanced for mobile */}
-            <motion.div
-              className="relative order-first lg:order-last"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-            >
-              <motion.div
-                className="relative backdrop-blur-sm bg-white/90 border border-black/8 rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.08)] mx-auto"
-                whileHover={{ y: -4 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                style={{ maxWidth: 'calc(100% - 20px)' }} // Reduced margin on mobile
-              >
-                {/* Video Content - Responsive aspect ratio */}
+            {/* Right Column - Video */}
+            <div className="relative order-first lg:order-last animate-fade-in">
+              <div className="relative backdrop-blur-sm bg-white/90 border border-black/8 rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.08)] mx-auto hover:-translate-y-1 transition-transform" style={{ maxWidth: 'calc(100% - 20px)' }}>
                 <div className="relative bg-[#0A0A0A] overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  {/* Actual Video Element */}
-                  <video
-                    className="w-full h-full object-cover"
-                    controls
-                    preload="metadata"
-                    playsInline
-                    poster="/video/introo.mp4" // Add poster for mobile performance
-                  >
+                  <video className="w-full h-full object-cover" controls preload="metadata" playsInline poster="/video/introo.mp4">
                     <source src="/video/introo.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
-
-                  {/* Optional overlay gradient for better text readability */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[#0052CC]/5 via-transparent to-[#00B894]/5 pointer-events-none" />
                 </div>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section - Seamless Flow */}
+      {/* Features Section */}
       <section id="features" className="relative py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#FAFAFA]">
         <div className="max-w-7xl mx-auto">
-          {/* Section Divider */}
           <div className="w-full h-px bg-[#E5E5E5] mb-12 sm:mb-20" />
 
-          {/* Feature 1 - Clean Layout */}
-          <motion.div
-            className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-20 sm:mb-40"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          >
-            {/* Left Side - Monochrome Illustration */}
-            <motion.div
-              className="relative"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
+          {/* Feature 1 */}
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-20 sm:mb-40">
+            <div className="relative hover:scale-105 transition-transform">
               <div className="relative bg-white rounded-2xl p-12 shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-[#E5E5E5]">
                 <div className="relative h-80 flex items-center justify-center">
-                  <motion.div
-                    className="w-full max-w-sm"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                  >
-                    {/* Monochrome Timeline with Accent */}
+                  <div className="w-full max-w-sm">
                     <div className="space-y-6">
-                      {/* Timeline Line */}
                       <div className="absolute left-6 top-12 bottom-12 w-0.5 bg-[#E5E5E5]" />
-
-                      {/* Timeline Items */}
                       {[
                         { icon: Flag, progress: 85, accent: true },
                         { icon: Target, progress: 60, accent: false },
                         { icon: Zap, progress: 30, accent: false }
                       ].map((item, index) => (
-                        <motion.div
-                          key={index}
-                          className="relative flex items-center gap-4"
-                          initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.6, delay: index * 0.2 }}
-                        >
+                        <div key={index} className="relative flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm border-2 ${item.accent ? 'bg-[#0052CC] border-[#0052CC]' : 'bg-white border-[#E5E5E5]'}`}>
                             <item.icon className={`w-6 h-6 ${item.accent ? 'text-white' : 'text-[#6B6B6B]'}`} />
                           </div>
-
                           <div className="flex-1 bg-white rounded-xl p-4 shadow-sm border border-[#F0F0F0]">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-semibold text-[#0A0A0A]">Hito {index + 1}</span>
                               <span className="text-xs text-[#6B6B6B]">{item.progress}%</span>
                             </div>
                             <div className="w-full h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
-                              <motion.div
-                                className={`h-full rounded-full ${item.accent ? 'bg-[#0052CC]' : 'bg-[#E5E5E5]'}`}
-                                initial={{ width: "0%" }}
-                                whileInView={{ width: `${item.progress}%` }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 2, delay: index * 0.3 }}
-                              />
+                              <div className={`h-full rounded-full ${item.accent ? 'bg-[#0052CC]' : 'bg-[#E5E5E5]'}`} style={{ width: `${item.progress}%` }} />
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       ))}
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Right Side - Content */}
-            <motion.div
-              className="space-y-6 sm:space-y-8"
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-            >
+            <div className="space-y-6 sm:space-y-8">
               <div className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-full border border-[#E5E5E5] min-h-[32px]">
                 <Flag className="w-4 h-4 text-[#0052CC] flex-shrink-0" />
                 <span className="text-xs font-semibold text-[#0052CC] uppercase tracking-[0.1em]">Seguimiento de hitos</span>
               </div>
 
-              <h2 className="heading-mobile-h2 font-bold text-[#0A0A0A] mobile-typography">
+              <h2 className="text-4xl font-bold text-[#0A0A0A]">
                 Cronogramas adaptativos con IA
               </h2>
 
-              <p className="text-mobile-lg text-[#404040] leading-responsive-relaxed max-w-xl mobile-typography">
+              <p className="text-lg text-[#404040] leading-relaxed max-w-xl">
                 Nunca pierdas el ritmo. Nuestra IA analiza tu progreso y ajusta automáticamente los plazos,
                 identificando cuellos de botella antes de que se conviertan en problemas críticos.
               </p>
@@ -328,38 +182,25 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-sm border border-[#E5E5E5] min-h-[48px]">
                   <Check className="w-5 h-5 text-[#0052CC] flex-shrink-0" />
-                  <span className="text-[#404040] font-medium text-mobile-base mobile-typography">Predicciones automáticas</span>
+                  <span className="text-[#404040] font-medium">Predicciones automáticas</span>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-sm border border-[#E5E5E5] min-h-[48px]">
                   <Check className="w-5 h-5 text-[#0052CC] flex-shrink-0" />
-                  <span className="text-[#404040] font-medium text-mobile-base mobile-typography">Alertas inteligentes</span>
+                  <span className="text-[#404040] font-medium">Alertas inteligentes</span>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
-          {/* Feature 2 - Reversed */}
-          <motion.div
-            className="grid lg:grid-cols-2 gap-20 items-center"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          >
-            {/* Left Side - Content */}
-            <motion.div
-              className="space-y-8 lg:order-2"
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
+          {/* Feature 2 */}
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <div className="space-y-8 lg:order-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-[#E5E5E5]">
                 <Users className="w-4 h-4 text-[#00B894]" />
                 <span className="text-xs font-semibold text-[#00B894] uppercase tracking-[0.1em]">Colaboración</span>
               </div>
 
-              <h2 className="text-[clamp(2.5rem,6vw,4rem)] font-bold text-[#0A0A0A] leading-[110%] tracking-[-0.01em]">
+              <h2 className="text-4xl font-bold text-[#0A0A0A] leading-tight">
                 Trabajo en equipo sin fricciones
               </h2>
 
@@ -382,24 +223,12 @@ export default function Home() {
                   <span className="text-[#404040]">Roles y permisos avanzados</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Right Side - Collaboration Illustration */}
-            <motion.div
-              className="relative lg:order-1"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
+            <div className="relative lg:order-1 hover:scale-105 transition-transform">
               <div className="relative bg-white rounded-2xl p-12 shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-[#E5E5E5]">
                 <div className="relative h-80 flex items-center justify-center">
-                  <motion.div
-                    className="w-full max-w-sm"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                  >
-                    {/* Monochrome Chat Interface */}
+                  <div className="w-full max-w-sm">
                     <div className="bg-[#F8F9FA] rounded-xl p-4 space-y-3">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm border border-[#E5E5E5]">
@@ -434,157 +263,28 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Social Proof - Light Glassmorphism + Premium Flow */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#FAFAFA]">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="text-4xl font-bold text-[#0A0A0A] mb-6">
-              Confiado por equipos en todas partes
-            </h2>
-            <p className="text-xl text-[#404040] max-w-2xl mx-auto">
-              Únete a miles de equipos que ya han transformado su productividad con Foco
-            </p>
-          </motion.div>
-
-          {/* Monochrome Logo Strip */}
-          <div className="flex justify-center items-center gap-16 mb-20 flex-wrap">
-            {[
-              { name: 'Google', color: '#4285F4' },
-              { name: 'Spotify', color: '#1DB954' },
-              { name: 'Meta', color: '#1877F2' },
-              { name: 'Atlassian', color: '#0052CC' },
-              { name: 'Slack', color: '#4A154B' },
-              { name: 'Notion', color: '#000000' },
-              { name: 'Figma', color: '#F24E1E' },
-              { name: 'Adobe', color: '#FF0000' },
-            ].map((logo, index) => (
-              <motion.div
-                key={logo.name}
-                className="flex items-center justify-center w-32 h-16 grayscale hover:grayscale-0 transition-all duration-400 cursor-pointer"
-                whileHover={{ scale: 1.02 }}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-              >
-                <span className="font-bold text-xl tracking-wide text-[#6B6B6B] hover:text-current transition-colors" style={{ color: 'inherit' }}>
-                  {logo.name}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Section Divider */}
-          <div className="w-full h-px bg-[#E5E5E5] mb-20" />
-
-          {/* Light Glassmorphism Testimonials */}
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                quote: "Foco nos mantiene alineados sin el ruido. La IA nos ayuda a predecir cuellos de botella antes de que ocurran.",
-                author: "Sarah Taylor",
-                role: "Gerente de Producto",
-                company: "TechFlow",
-                avatar: "ST",
-                accentColor: "#0052CC",
-                delay: 0
-              },
-              {
-                quote: "La asignación inteligente de recursos aumentó nuestra productividad en un 40%. Es como tener un gerente de proyecto IA.",
-                author: "Carlos Rodríguez",
-                role: "Director de Ingeniería",
-                company: "InnovateLab",
-                avatar: "CR",
-                accentColor: "#00B894",
-                delay: 0.2
-              },
-              {
-                quote: "Finalmente tenemos visibilidad completa del progreso de nuestros proyectos. Las actualizaciones en tiempo real son un game changer.",
-                author: "Maria González",
-                role: "COO",
-                company: "GrowthCo",
-                avatar: "MG",
-                accentColor: "#0052CC",
-                delay: 0.4
-              }
-            ].map((testimonial, index) => (
-              <motion.div
-                key={index}
-                className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-[0_4px_16px_rgba(0,0,0,0.04)]"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: testimonial.delay }}
-                whileHover={{ y: -4, boxShadow: '0_8px_32px_rgba(0,0,0,0.08)' }}
-              >
-                {/* Avatar */}
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mb-6 text-white font-bold text-sm"
-                  style={{ backgroundColor: testimonial.accentColor }}
-                >
-                  {testimonial.avatar}
-                </div>
-
-                {/* Quote */}
-                <blockquote className="text-[#0A0A0A] mb-8 leading-relaxed text-lg font-medium">
-                  &ldquo;{testimonial.quote}&rdquo;
-                </blockquote>
-
-                {/* Author */}
-                <div>
-                  <cite className="text-[#0A0A0A] font-semibold block">{testimonial.author}</cite>
-                  <p className="text-[#6B6B6B] text-sm">{testimonial.role}</p>
-                  <p className="text-[#6B6B6B] text-xs mt-1">{testimonial.company}</p>
-                </div>
-              </motion.div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section - Seamless Flow */}
+      {/* Pricing Section */}
       <section id="pricing" className="py-32 px-4 sm:px-6 lg:px-8 bg-[#F5F5F7]">
         <div className="max-w-4xl mx-auto">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
+          <div className="text-center mb-20">
             <h2 className="text-4xl font-bold text-[#0A0A0A] mb-6">
               Precios simples y transparentes
             </h2>
             <p className="text-xl text-[#404040] max-w-2xl mx-auto">
               Foco es <span className="font-semibold text-[#0052CC]">gratis para todos</span>—sin límites, sin tarifas ocultas, sin sorpresas.
             </p>
-          </motion.div>
+          </div>
 
-          {/* Clean Pricing Card */}
-          <motion.div
-            className="max-w-lg mx-auto"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            whileHover={{ y: -4 }}
-          >
+          <div className="max-w-lg mx-auto hover:-translate-y-1 transition-transform">
             <div className="bg-white rounded-2xl p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-[#E5E5E5]">
-              {/* Subtle badge */}
               <div className="bg-[#0052CC] text-white px-4 py-2 rounded-full text-sm font-semibold inline-block mb-6">
                 GRATIS PARA SIEMPRE
               </div>
@@ -607,386 +307,82 @@ export default function Home() {
                   "Soporte prioritario",
                   "Actualizaciones automáticas"
                 ].map((feature, index) => (
-                  <motion.div
-                    key={feature}
-                    className="flex items-center gap-3"
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
+                  <div key={feature} className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-[#0052CC] rounded-full flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
                     </div>
                     <span className="text-[#404040] font-medium">{feature}</span>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
 
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
+              <div className="hover:scale-105 transition-transform">
                 <Link href="/register">
                   <Button className="w-full bg-[#0052CC] hover:bg-[#004299] text-white py-4 rounded-xl font-semibold text-lg shadow-[0_4px_16px_rgba(0,82,204,0.2)] hover:shadow-[0_6px_20px_rgba(0,82,204,0.25)] transition-all duration-400">
                     Comenzar gratis ahora
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
-
-          {/* Clean CTA Bar */}
-          <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] p-4 sm:p-6 z-50 shadow-lg"
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            transition={{ delay: 1, duration: 0.8, type: "spring", stiffness: 100 }}
-          >
-            <div className="max-w-4xl mx-auto">
-              {/* Mobile: PWA Install Button */}
-              {isMobile ? (
-                <motion.button
-                  onClick={async () => {
-                    if (canInstall) {
-                      await promptInstall()
-                    } else if (isInstalled) {
-                      alert('¡Foco ya está instalado en tu dispositivo!')
-                    } else {
-                      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-                      if (isIOS) {
-                        alert('Para instalar en iOS:\n\n1. Toca el botón de compartir (⬆️)\n2. Selecciona "Añadir a pantalla de inicio"\n3. Toca "Añadir"')
-                      } else {
-                        alert('Para instalar:\n\n1. Toca el menú (⋮) en tu navegador\n2. Selecciona "Instalar app" o "Añadir a pantalla de inicio"')
-                      }
-                    }
-                  }}
-                  className="w-full"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  <div className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#004299] hover:to-[#0052CC] rounded-xl p-4 flex items-center gap-3 transition-all duration-300 shadow-md">
-                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Download className="w-6 h-6 text-[#0052CC]" />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="text-base font-bold text-white">
-                        {isInstalled ? '✓ Foco instalado' : 'Instalar Foco'}
-                      </div>
-                      <div className="text-xs text-white/80">
-                        {isInstalled ? 'Listo para usar' : 'Acceso rápido desde tu pantalla de inicio'}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-white/70 flex-shrink-0" />
-                  </div>
-                </motion.button>
-              ) : (
-                /* Desktop: Original CTA */
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-[#0A0A0A] text-lg">¿Listo para comenzar?</h3>
-                    <p className="text-[#6B6B6B]">Únete gratis hoy mismo • Sin tarjeta de crédito</p>
-                  </div>
-                  <Link href="/register">
-                    <Button className="bg-[#0052CC] hover:bg-[#004299] text-white px-6 py-3 rounded-lg font-semibold shadow-lg">
-                      Comenzar gratis
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Download PWA Section - Premium Mobile Experience */}
-      <section className="relative py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0052CC]/5 via-white to-[#00B894]/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left: Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="space-y-8"
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-[#E5E5E5] shadow-sm">
-                <Sparkles className="w-4 h-4 text-[#0052CC]" />
-                <span className="text-xs font-semibold text-[#0052CC] uppercase tracking-[0.1em]">NUEVA EXPERIENCIA</span>
-              </div>
-
-              <h2 className="text-4xl lg:text-5xl font-bold text-[#0A0A0A] leading-tight tracking-[-0.02em]">
-                Lleva Foco en tu bolsillo
-              </h2>
-
-              <p className="text-xl text-[#404040] leading-relaxed max-w-xl">
-                Instala nuestra Progressive Web App y disfruta de una experiencia nativa en cualquier dispositivo.
-                <span className="font-semibold text-[#0052CC]"> Offline, rápido y sin descargas pesadas.</span>
-              </p>
-
-              {/* Features List */}
-              <div className="space-y-4">
-                {[
-                  { icon: Zap, text: "Funciona sin conexión", color: "#0052CC" },
-                  { icon: Target, text: "Notificaciones en tiempo real", color: "#00B894" },
-                  { icon: Check, text: "Acceso instantáneo desde tu pantalla de inicio", color: "#0052CC" }
-                ].map((feature, index) => (
-                  <motion.div
-                    key={index}
-                    className="flex items-center gap-4"
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-[#E5E5E5] bg-white">
-                      <feature.icon className="w-5 h-5" style={{ color: feature.color }} />
-                    </div>
-                    <span className="text-[#404040] font-medium text-lg">{feature.text}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Right: App Store Buttons */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-[#E5E5E5]">
-                <div className="space-y-6">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-[#0A0A0A] mb-2">
-                      Instala Foco
-                    </h3>
-                    <p className="text-sm text-[#6B6B6B]">
-                      Progressive Web App • Sin tiendas de apps
-                    </p>
-                  </div>
-
-                  {/* Mobile Install Button - Shows on mobile devices */}
-                  {isMobile && (
-                    <motion.button
-                      onClick={async () => {
-                        if (canInstall) {
-                          await promptInstall()
-                        } else if (isInstalled) {
-                          // Already installed
-                          alert('¡Foco ya está instalado en tu dispositivo!')
-                        } else {
-                          // Show manual instructions
-                          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-                          if (isIOS) {
-                            alert('Para instalar en iOS:\n\n1. Toca el botón de compartir (⬆️)\n2. Selecciona "Añadir a pantalla de inicio"\n3. Toca "Añadir"')
-                          } else {
-                            alert('Para instalar:\n\n1. Toca el menú (⋮) en tu navegador\n2. Selecciona "Instalar app" o "Añadir a pantalla de inicio"')
-                          }
-                        }
-                      }}
-                      className="w-full group"
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#004299] hover:to-[#0052CC] rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
-                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Download className="w-8 h-8 text-[#0052CC]" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="text-sm text-white/90 font-medium">
-                            {isInstalled ? '✓ Instalado' : canInstall ? 'Instalar ahora' : 'Añadir a inicio'}
-                          </div>
-                          <div className="text-xl font-bold text-white">
-                            {isInstalled ? 'Foco está listo' : 'Instalar Foco'}
-                          </div>
-                          <div className="text-xs text-white/70 mt-1">
-                            Sin App Store • Instalación instantánea
-                          </div>
-                        </div>
-                        <ArrowRight className="w-6 h-6 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all flex-shrink-0" />
-                      </div>
-                    </motion.button>
-                  )}
-
-                  {/* Desktop/All Devices - PWA Info */}
-                  {!isMobile && (
-                    <motion.div
-                      className="block group"
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 shadow-lg hover:shadow-xl">
-                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Download className="w-8 h-8 text-[#0052CC]" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="text-sm text-white/90 font-medium">Instalar en cualquier dispositivo</div>
-                          <div className="text-xl font-bold text-white">Progressive Web App</div>
-                          <div className="text-xs text-white/70 mt-1">
-                            Busca el ícono de instalación en tu navegador
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Features */}
-                  <div className="grid grid-cols-3 gap-3 pt-4">
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <Zap className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div className="text-xs font-medium text-[#404040]">Instantáneo</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <Smartphone className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="text-xs font-medium text-[#404040]">Todos los dispositivos</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <Sparkles className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="text-xs font-medium text-[#404040]">Siempre actualizado</div>
-                    </div>
-                  </div>
-
-                  {/* Info Text */}
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-4">
-                    <p className="text-xs text-blue-900 text-center leading-relaxed">
-                      <strong className="font-semibold">¿Qué es una PWA?</strong><br />
-                      Una Progressive Web App funciona como una app nativa pero sin necesidad de descargarla desde una tienda.
-                      Instálala directamente desde tu navegador en segundos.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Device Mockup (Optional) */}
-              <motion.div
-                className="absolute -right-8 -bottom-8 w-32 h-32 bg-gradient-to-br from-[#0052CC]/20 to-[#00B894]/20 rounded-full blur-3xl -z-10"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.3, 0.5, 0.3],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section - Integrated and Premium */}
+      {/* Final CTA Section */}
       <section className="relative py-32 px-4 sm:px-6 lg:px-8">
-        {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#F8F9FA]/50 via-[#F0F0F0]/30 to-[#E8E8E8]/20" />
 
         <div className="relative max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <motion.h2
-              className="text-4xl lg:text-6xl font-bold text-[#0A0A0A] mb-8 leading-tight tracking-[-0.02em]"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              ¿Listo para revolucionar{' '}
-              <span className="text-[#0052CC]">tu gestión</span> de proyectos?
-            </motion.h2>
+          <h2 className="text-4xl lg:text-6xl font-bold text-[#0A0A0A] mb-8 leading-tight tracking-tight">
+            ¿Listo para revolucionar{' '}
+            <span className="text-[#0052CC]">tu gestión</span> de proyectos?
+          </h2>
 
-            <motion.p
-              className="text-xl text-[#404040] mb-12 max-w-3xl mx-auto leading-relaxed"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              Únete a miles de equipos que ya han transformado su productividad con Foco.
-              Comienza gratis hoy y descubre el poder de la IA aplicada a la gestión de proyectos.
-            </motion.p>
+          <p className="text-xl text-[#404040] mb-12 max-w-3xl mx-auto leading-relaxed">
+            Únete a miles de equipos que ya han transformado su productividad con Foco.
+            Comienza gratis hoy y descubre el poder de la IA aplicada a la gestión de proyectos.
+          </p>
 
-            <motion.div
-              className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Link href="/register">
-                  <Button className="bg-[#0052CC] hover:bg-[#004299] text-white px-12 py-5 rounded-xl font-semibold text-lg shadow-[0_4px_16px_rgba(0,82,204,0.2)] hover:shadow-[0_6px_20px_rgba(0,82,204,0.25)] transition-all duration-400">
-                    Comenzar gratis
-                  </Button>
-                </Link>
-              </motion.div>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
+            <div className="hover:scale-105 transition-transform">
+              <Link href="/register">
+                <Button className="bg-[#0052CC] hover:bg-[#004299] text-white px-12 py-5 rounded-xl font-semibold text-lg shadow-[0_4px_16px_rgba(0,82,204,0.2)] hover:shadow-[0_6px_20px_rgba(0,82,204,0.25)] transition-all duration-400">
+                  Comenzar gratis
+                </Button>
+              </Link>
+            </div>
 
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Link href="#demo">
-                  <Button
-                    variant="outline"
-                    className="border-2 border-[#6B6B6B] text-[#404040] hover:bg-[#F8F9FA] px-12 py-5 rounded-xl font-semibold text-lg transition-all duration-400"
-                  >
-                    Ver demo
-                  </Button>
-                </Link>
-              </motion.div>
-            </motion.div>
+            <div className="hover:scale-105 transition-transform">
+              <Link href="#demo">
+                <Button variant="outline" className="border-2 border-[#6B6B6B] text-[#404040] hover:bg-[#F8F9FA] px-12 py-5 rounded-xl font-semibold text-lg transition-all duration-400">
+                  Ver demo
+                </Button>
+              </Link>
+            </div>
+          </div>
 
-            {/* Premium Trust indicators */}
-            <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-8 text-[#6B6B6B]"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-            >
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-[#0052CC]" />
-                <span>Sin tarjetas de crédito</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-[#0052CC]" />
-                <span>Configuración en 5 minutos</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-[#0052CC]" />
-                <span>Soporte 24/7</span>
-              </div>
-            </motion.div>
-          </motion.div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-[#6B6B6B]">
+            <div className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-[#0052CC]" />
+              <span>Sin tarjetas de crédito</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-[#0052CC]" />
+              <span>Configuración en 5 minutos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-[#0052CC]" />
+              <span>Soporte 24/7</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer - Exclusive Dark */}
+      {/* Footer */}
       <footer className="bg-[#0A0A0A] py-16 px-4 sm:px-6 lg:px-8 border-t border-[#E5E5E5]/10">
-
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-5 gap-8 mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+            <div>
               <div className="flex items-center mb-4">
                 <Image
                   src="/focologo.png"
@@ -997,87 +393,55 @@ export default function Home() {
                 />
                 <span className="ml-3 text-xl font-bold text-white">Foco</span>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
+            <div>
               <h4 className="font-semibold text-white mb-4">Producto</h4>
               <ul className="space-y-2 text-white/70">
                 <li><a href="#features" className="hover:text-[#0052CC] transition-colors duration-300">Características</a></li>
                 <li><a href="#pricing" className="hover:text-[#0052CC] transition-colors duration-300">Precios</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Estado del sistema</a></li>
               </ul>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
+            <div>
               <h4 className="font-semibold text-white mb-4">Compañía</h4>
               <ul className="space-y-2 text-white/70">
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Acerca de</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Blog</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Carreras</a></li>
               </ul>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
+            <div>
               <h4 className="font-semibold text-white mb-4">Recursos</h4>
               <ul className="space-y-2 text-white/70">
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Centro de ayuda</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Comunidad</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">API Docs</a></li>
               </ul>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
+            <div>
               <h4 className="font-semibold text-white mb-4">Legal</h4>
               <ul className="space-y-2 text-white/70">
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Privacidad</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Términos</a></li>
                 <li><a href="#" className="hover:text-[#0052CC] transition-colors duration-300">Seguridad</a></li>
               </ul>
-            </motion.div>
+            </div>
           </div>
 
-          <motion.div
-            className="border-t border-white/10 pt-8 text-center"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
+          <div className="border-t border-white/10 pt-8 text-center">
             <p className="text-white/70">© 2025 Foco. <span className="font-semibold text-[#0052CC]">Gratis para todos.</span></p>
-            <motion.div
-              className="mt-4 flex items-center justify-center gap-6 text-sm text-white/50"
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
+            <div className="mt-4 flex items-center justify-center gap-6 text-sm text-white/50">
               <span>Desarrollado con precisión</span>
               <span>•</span>
               <span>IA integrada</span>
               <span>•</span>
               <span>Open Source</span>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

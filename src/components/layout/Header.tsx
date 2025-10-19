@@ -31,9 +31,9 @@ export default function Header() {
   const { user } = useAuth()
   const { t } = useTranslation()
 
-  // Debug: Force render user avatar even if user is null
-  const displayUser = user || { email: 'test@example.com', user_metadata: { full_name: 'Test User' } }
-  const avatarText = displayUser?.email?.charAt(0).toUpperCase() || 'U'
+  // Use actual user or null - no fallback to prevent confusion
+  const displayUser = user
+  const avatarText = displayUser?.email?.charAt(0).toUpperCase() || '?'
 
   console.log('Header component rendering:', { user: !!user, displayUser: displayUser?.email })
 

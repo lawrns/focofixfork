@@ -20,6 +20,7 @@ import ProjectSettingsDialog from '@/components/dialogs/project-settings-dialog'
 import { useToast } from '@/components/toast/toast'
 import { UpdateProject } from '@/lib/validation/schemas/project.schema'
 import { usePermissions } from '@/hooks/usePermissions'
+import { ProjectsEmpty } from '@/components/empty-states/projects-empty'
 import styles from './ProjectTable.module.css'
 
 interface Project {
@@ -42,9 +43,17 @@ interface ProjectWithOrg extends Project {
 
 interface ProjectTableProps {
   searchTerm?: string
+  onCreateProject?: () => void
+  onTakeTour?: () => void
+  onImportProjects?: () => void
 }
 
-export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
+export default function ProjectTable({ 
+  searchTerm = '', 
+  onCreateProject, 
+  onTakeTour, 
+  onImportProjects 
+}: ProjectTableProps) {
   const { user } = useAuth()
   const router = useRouter()
   const [projects, setProjects] = useState<ProjectWithOrg[]>([])
@@ -924,10 +933,15 @@ export default function ProjectTable({ searchTerm = '' }: ProjectTableProps) {
             </div>
           ))
         ) : projects.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center">
-            <p className="text-lg font-medium text-slate-900 dark:text-slate-100">No projects yet</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Create your first project to get started</p>
-          </div>
+          <ProjectsEmpty
+            onCreateProject={onCreateProject || (() => console.log('Create project clicked'))}
+            onImportProjects={onImportProjects || (() => console.log('Import projects clicked'))}
+            onResetFilters={() => {
+              setFilters([])
+              setSortConditions([])
+            }}
+            isFiltered={filters.length > 0 || searchTerm.length > 0}
+          />
         ) : (
           filteredProjects.map((project) => (
             <div

@@ -404,7 +404,7 @@ export function TaskList({
                     <TaskCard
                       task={{
                         ...task,
-                        created_by: task.reporter_id || ''
+                        created_by: task.created_by || ''
                       }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
@@ -437,7 +437,7 @@ export function TaskList({
                     <TaskCard
                       task={{
                         ...task,
-                        created_by: task.reporter_id || ''
+                        created_by: task.created_by || ''
                       }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
@@ -470,7 +470,7 @@ export function TaskList({
                     <TaskCard
                       task={{
                         ...task,
-                        created_by: task.reporter_id || ''
+                        created_by: task.created_by || ''
                       }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
@@ -503,7 +503,7 @@ export function TaskList({
                     <TaskCard
                       task={{
                         ...task,
-                        created_by: task.reporter_id || ''
+                        created_by: task.created_by || ''
                       }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}

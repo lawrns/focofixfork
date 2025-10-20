@@ -341,8 +341,8 @@ export default function ProjectTable({
       }
 
       const result = await response.json()
-      toast({
-        title: 'Success',
+      addToast({
+        type: 'success', title: 'Success',
         description: `Project "${project.name}" has been duplicated.`,
       })
 
@@ -350,10 +350,10 @@ export default function ProjectTable({
       fetchProjects()
     } catch (error) {
       console.error('Error duplicating project:', error)
-      toast({
-        title: 'Error',
+      addToast({
+        type: 'error', title: 'Error',
         description: 'Failed to duplicate project. Please try again.',
-        variant: 'destructive',
+        type: 'error',
       })
     }
   }
@@ -403,10 +403,10 @@ export default function ProjectTable({
     } catch (error) {
       console.error('Error fetching team members:', error)
       setTeamMembers([])
-      toast({
-        title: 'Error',
+      addToast({
+        type: 'error', title: 'Error',
         description: 'Failed to load team members',
-        variant: 'destructive',
+        type: 'error',
       })
     } finally {
       setLoadingTeamMembers(false)
@@ -528,8 +528,8 @@ export default function ProjectTable({
 
       const result = await response.json()
 
-      toast({
-        title: 'Success',
+      addToast({
+        type: 'success', title: 'Success',
         description: 'Team member added successfully',
       })
 
@@ -538,10 +538,10 @@ export default function ProjectTable({
         // This would trigger a refresh of the team dialog
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      addToast({
+        type: 'error', title: 'Error',
         description: error.message || 'Failed to add team member',
-        variant: 'destructive',
+        type: 'error',
       })
       throw error
     }
@@ -558,8 +558,8 @@ export default function ProjectTable({
         throw new Error(errorData.error || 'Failed to remove team member')
       }
 
-      toast({
-        title: 'Success',
+      addToast({
+        type: 'success', title: 'Success',
         description: 'Team member removed successfully',
       })
 
@@ -568,10 +568,10 @@ export default function ProjectTable({
         // This would trigger a refresh of the team dialog
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      addToast({
+        type: 'error', title: 'Error',
         description: error.message || 'Failed to remove team member',
-        variant: 'destructive',
+        type: 'error',
       })
       throw error
     }
@@ -591,8 +591,8 @@ export default function ProjectTable({
         throw new Error(errorData.error || 'Failed to update team member role')
       }
 
-      toast({
-        title: 'Success',
+      addToast({
+        type: 'success', title: 'Success',
         description: 'Team member role updated successfully',
       })
 
@@ -601,10 +601,10 @@ export default function ProjectTable({
         // This would trigger a refresh of the team dialog
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      addToast({
+        type: 'error', title: 'Error',
         description: error.message || 'Failed to update team member role',
-        variant: 'destructive',
+        type: 'error',
       })
       throw error
     }
@@ -693,15 +693,15 @@ export default function ProjectTable({
         throw new Error(errorData.error || 'Failed to save project settings')
       }
 
-      toast({
-        title: 'Success',
+      addToast({
+        type: 'success', title: 'Success',
         description: 'Project settings saved successfully',
       })
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      addToast({
+        type: 'error', title: 'Error',
         description: error.message || 'Failed to save project settings',
-        variant: 'destructive',
+        type: 'error',
       })
       throw error
     }
@@ -757,10 +757,10 @@ export default function ProjectTable({
 
   const handleBulkManageTeam = async () => {
     if (selectedProjects.size === 0) {
-      toast({
+      addToast({
         title: 'No Projects Selected',
         description: 'Please select at least one project to manage team members.',
-        variant: 'destructive',
+        type: 'error',
       })
       return
     }
@@ -773,7 +773,7 @@ export default function ProjectTable({
     }
 
     // For multiple projects, show a dialog to manage team across all selected projects
-    toast({
+    addToast({
       title: 'Bulk Team Management',
       description: `Managing team for ${selectedProjects.size} projects. Opening team management interface...`,
     })
@@ -1043,39 +1043,39 @@ export default function ProjectTable({
                       project.id,
                       handleViewProject,
                       permissions.canEdit ? handleEditProject : () => {
-                        toast({
+                        addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to edit projects',
-                          variant: 'destructive',
+                          type: 'error',
                         })
                       },
                       handleDuplicateProject,
                       permissions.canDelete ? handleArchiveProject : () => {
-                        toast({
+                        addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to archive projects',
-                          variant: 'destructive',
+                          type: 'error',
                         })
                       },
                       permissions.canDelete ? handleDeleteProject : () => {
-                        toast({
+                        addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to delete projects',
-                          variant: 'destructive',
+                          type: 'error',
                         })
                       },
                       permissions.canManageTeam ? handleManageTeam : () => {
-                        toast({
+                        addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to manage teams',
-                          variant: 'destructive',
+                          type: 'error',
                         })
                       },
                       permissions.canManageTeam ? handleProjectSettings : () => {
-                        toast({
+                        addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to change settings',
-                          variant: 'destructive',
+                          type: 'error',
                         })
                       }
                     )}
@@ -1218,39 +1218,39 @@ export default function ProjectTable({
                           project.id,
                           handleViewProject,
                           permissions.canEdit ? handleEditProject : () => {
-                            toast({
+                            addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to edit projects',
-                              variant: 'destructive',
+                              type: 'error',
                             })
                           },
                           handleDuplicateProject,
                           permissions.canDelete ? handleArchiveProject : () => {
-                            toast({
+                            addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to archive projects',
-                              variant: 'destructive',
+                              type: 'error',
                             })
                           },
                           permissions.canDelete ? handleDeleteProject : () => {
-                            toast({
+                            addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to delete projects',
-                              variant: 'destructive',
+                              type: 'error',
                             })
                           },
                           permissions.canManageTeam ? handleManageTeam : () => {
-                            toast({
+                            addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to manage teams',
-                              variant: 'destructive',
+                              type: 'error',
                             })
                           },
                           permissions.canManageTeam ? handleProjectSettings : () => {
-                            toast({
+                            addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to change settings',
-                              variant: 'destructive',
+                              type: 'error',
                             })
                           }
                         )}

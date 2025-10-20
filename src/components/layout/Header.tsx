@@ -11,6 +11,8 @@ import { useTranslation } from '@/lib/i18n/context'
 import { apiGet } from '@/lib/api-client'
 import { LanguageSelectorCompact } from '@/components/ui/language-selector'
 import { HeyMenu } from '@/components/notifications/hey-menu'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -236,6 +238,9 @@ export default function Header() {
 
         {/* Language Selector */}
         <LanguageSelectorCompact />
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* User Avatar with Dropdown */}
         <DropdownMenu>

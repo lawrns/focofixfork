@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
   Zap, 
-  Template, 
+  FileText, 
   BarChart3, 
   Settings, 
   Play, 
@@ -68,7 +68,7 @@ export default function ProjectAutomationPage() {
                 variant="outline"
                 onClick={() => setShowTemplates(true)}
               >
-                <Template className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-2" />
                 {t('automation.browseTemplates')}
               </Button>
             </div>
@@ -137,7 +137,7 @@ export default function ProjectAutomationPage() {
                 {t('automation.rules')}
               </TabsTrigger>
               <TabsTrigger value="templates" className="flex items-center gap-2">
-                <Template className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 {t('automation.templates')}
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex items-center gap-2">
@@ -159,11 +159,11 @@ export default function ProjectAutomationPage() {
 
             <TabsContent value="templates" className="space-y-4">
               <div className="text-center py-12">
-                <Template className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">{t('automation.templatesComingSoon')}</h3>
                 <p className="text-muted-foreground mb-4">{t('automation.templatesDescription')}</p>
                 <Button onClick={() => setShowTemplates(true)}>
-                  <Template className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 mr-2" />
                   {t('automation.browseTemplates')}
                 </Button>
               </div>

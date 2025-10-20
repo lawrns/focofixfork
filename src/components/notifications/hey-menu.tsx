@@ -348,7 +348,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
                           <div className="text-center py-8 text-muted-foreground">
                             <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
                             <p className="text-sm">No notifications yet</p>
-                            <p className="text-xs">You'll see updates here</p>
+                            <p className="text-xs">You&apos;ll see updates here</p>
                           </div>
                         ) : (
                           notifications.map((notification) => (

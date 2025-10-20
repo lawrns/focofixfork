@@ -57,7 +57,7 @@ export function AutomationRuleBuilder({
   onRuleSaved
 }: AutomationRuleBuilderProps) {
   const { t } = useTranslation()
-  const { toast } = useToast()
+  const toast = useToast()
 
   const [formData, setFormData] = useState({
     name: '',

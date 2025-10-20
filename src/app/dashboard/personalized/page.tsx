@@ -243,7 +243,7 @@ export default function PersonalizedDashboardPage() {
               Welcome back, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}!
             </h1>
             <p className="text-muted-foreground mt-1">
-              Here's what's happening with your projects today.
+              Here&apos;s what&apos;s happening with your projects today.
             </p>
           </div>
           <div className="flex items-center gap-2">

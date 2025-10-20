@@ -308,7 +308,6 @@ export const en: TranslationSchema = {
     estimated: 'Estimated: {{time}}',
     spent: 'Spent: {{time}}',
     remaining: 'Remaining: {{time}}',
-    overdue: 'Overdue',
     dueSoon: 'Due soon',
     dueToday: 'Due today',
     completed: 'Completed',

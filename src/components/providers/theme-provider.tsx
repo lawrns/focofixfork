@@ -41,8 +41,13 @@ export function ThemeProvider({
 
     root.classList.remove('light', 'dark')
 
-    // Always use light theme
-    const resolved: 'light' = 'light'
+    let resolved: 'light' | 'dark'
+    
+    if (theme === 'system') {
+      resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    } else {
+      resolved = theme
+    }
 
     root.classList.add(resolved)
     setResolvedTheme(resolved)

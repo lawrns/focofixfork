@@ -21,7 +21,7 @@ interface CalendarViewProps {
 export function CalendarView({ className }: CalendarViewProps) {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const { toast } = useToast()
+  const { addToast } = useToast()
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewType, setViewType] = useState<CalendarViewType['type']>('month')
@@ -59,10 +59,10 @@ export function CalendarView({ className }: CalendarViewProps) {
       setEvents(eventsData)
     } catch (error: any) {
       console.error('Failed to load calendar events:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
         description: error.message || t('calendar.loadError'),
-        variant: 'destructive'
       })
     } finally {
       setIsLoading(false)

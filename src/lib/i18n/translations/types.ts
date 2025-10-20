@@ -245,6 +245,8 @@ export interface TranslationSchema {
     archiveTask: string;
     addToFavorites: string;
     removeFromFavorites: string;
+    progress: string;
+    dueTomorrow: string;
     taskName: string;
     taskDescription: string;
     taskStatus: string;

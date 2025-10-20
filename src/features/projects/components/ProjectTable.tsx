@@ -768,6 +768,7 @@ export default function ProjectTable({
 
     // For multiple projects, show a dialog to manage team across all selected projects
     addToast({
+      type: 'info',
       title: 'Bulk Team Management',
       description: `Managing team for ${selectedProjects.size} projects. Opening team management interface...`,
     })

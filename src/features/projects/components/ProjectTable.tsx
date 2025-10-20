@@ -353,7 +353,7 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: 'Failed to duplicate project. Please try again.',
-        // type: 'error',
+        type: 'error',
       })
     }
   }
@@ -406,7 +406,7 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: 'Failed to load team members',
-        // type: 'error',
+        type: 'error',
       })
     } finally {
       setLoadingTeamMembers(false)
@@ -541,7 +541,7 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to add team member',
-        // type: 'error',
+        type: 'error',
       })
       throw error
     }
@@ -571,7 +571,7 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to remove team member',
-        // type: 'error',
+        type: 'error',
       })
       throw error
     }
@@ -604,7 +604,7 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to update team member role',
-        // type: 'error',
+        type: 'error',
       })
       throw error
     }
@@ -701,7 +701,7 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to save project settings',
-        // type: 'error',
+        type: 'error',
       })
       throw error
     }
@@ -760,7 +760,7 @@ export default function ProjectTable({
       addToast({
         title: 'No Projects Selected',
         description: 'Please select at least one project to manage team members.',
-        // type: 'error',
+        type: 'error',
       })
       return
     }
@@ -1046,7 +1046,7 @@ export default function ProjectTable({
                         addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to edit projects',
-                          // type: 'error',
+                          type: 'error',
                         })
                       },
                       handleDuplicateProject,
@@ -1054,28 +1054,28 @@ export default function ProjectTable({
                         addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to archive projects',
-                          // type: 'error',
+                          type: 'error',
                         })
                       },
                       permissions.canDelete ? handleDeleteProject : () => {
                         addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to delete projects',
-                          // type: 'error',
+                          type: 'error',
                         })
                       },
                       permissions.canManageTeam ? handleManageTeam : () => {
                         addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to manage teams',
-                          // type: 'error',
+                          type: 'error',
                         })
                       },
                       permissions.canManageTeam ? handleProjectSettings : () => {
                         addToast({
                           title: 'Permission Denied',
                           description: 'You do not have permission to change settings',
-                          // type: 'error',
+                          type: 'error',
                         })
                       }
                     )}
@@ -1221,7 +1221,7 @@ export default function ProjectTable({
                             addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to edit projects',
-                              // type: 'error',
+                              type: 'error',
                             })
                           },
                           handleDuplicateProject,
@@ -1229,28 +1229,28 @@ export default function ProjectTable({
                             addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to archive projects',
-                              // type: 'error',
+                              type: 'error',
                             })
                           },
                           permissions.canDelete ? handleDeleteProject : () => {
                             addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to delete projects',
-                              // type: 'error',
+                              type: 'error',
                             })
                           },
                           permissions.canManageTeam ? handleManageTeam : () => {
                             addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to manage teams',
-                              // type: 'error',
+                              type: 'error',
                             })
                           },
                           permissions.canManageTeam ? handleProjectSettings : () => {
                             addToast({
                               title: 'Permission Denied',
                               description: 'You do not have permission to change settings',
-                              // type: 'error',
+                              type: 'error',
                             })
                           }
                         )}

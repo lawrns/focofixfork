@@ -62,10 +62,10 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
       setIntegrations(integrationsData)
     } catch (error: any) {
       console.error('Failed to load calendar integrations:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
         description: error.message || t('calendar.loadIntegrationsError'),
-        variant: 'destructive'
       })
     } finally {
       setIsLoading(false)

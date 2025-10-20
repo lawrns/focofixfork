@@ -240,6 +240,11 @@ export interface TranslationSchema {
     createTask: string;
     editTask: string;
     deleteTask: string;
+    deleteConfirmation: string;
+    duplicateTask: string;
+    archiveTask: string;
+    addToFavorites: string;
+    removeFromFavorites: string;
     taskName: string;
     taskDescription: string;
     taskStatus: string;

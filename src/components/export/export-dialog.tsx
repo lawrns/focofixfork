@@ -180,7 +180,8 @@ export default function ExportDialog({
         {trigger || (
           <Button variant="outline" className={className}>
             <Download className="w-4 h-4 mr-2 opacity-70" />
-            Export Data
+            <span className="hidden sm:inline">Export Data</span>
+            <span className="sm:hidden">Export</span>
           </Button>
         )}
       </DialogTrigger>

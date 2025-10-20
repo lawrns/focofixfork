@@ -309,7 +309,6 @@ export const en: TranslationSchema = {
     spent: 'Spent: {{time}}',
     remaining: 'Remaining: {{time}}',
     dueSoon: 'Due soon',
-    dueToday: 'Due today',
     completed: 'Completed',
     // inProgress: 'In progress',
     notStarted: 'Not started',

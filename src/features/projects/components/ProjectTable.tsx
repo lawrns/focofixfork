@@ -151,7 +151,7 @@ export default function ProjectTable({
   const [filters, setFilters] = useState<FilterCondition[]>([])
   const [sortConditions, setSortConditions] = useState<SortCondition[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithOrg[]>([])
-  const { toast } = useToast()
+  const { addToast } = useToast()
 
   // Subscribe to global project store
   useEffect(() => {

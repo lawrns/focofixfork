@@ -220,7 +220,7 @@ export function TaskEditDialog({
                   <SelectValue placeholder={t('task.selectMilestone')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('task.noMilestone')}</SelectItem>
+                  <SelectItem value="none">{t('task.noMilestone')}</SelectItem>
                   {filteredMilestones.map(milestone => (
                     <SelectItem key={milestone.id} value={milestone.id}>
                       {milestone.title}
@@ -245,7 +245,7 @@ export function TaskEditDialog({
                   <SelectValue placeholder={t('task.selectAssignee')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('task.unassigned')}</SelectItem>
+                  <SelectItem value="unassigned">{t('task.unassigned')}</SelectItem>
                   {assignees.map(assignee => (
                     <SelectItem key={assignee.id} value={assignee.id}>
                       {assignee.name}

@@ -48,6 +48,8 @@ export function SettingsDashboard() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') || 'profile'
+  
+  const [isSaving, setIsSaving] = useState(false)
 
   const [userSettings, setUserSettings] = useState<UserSettings>({
     theme: 'system',

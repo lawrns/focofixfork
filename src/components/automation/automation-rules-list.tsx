@@ -46,7 +46,7 @@ interface AutomationRulesListProps {
 
 export function AutomationRulesList({ projectId, userId, className }: AutomationRulesListProps) {
   const { t } = useTranslation()
-  const { toast } = useToast()
+  const { addToast } = useToast()
 
   const [rules, setRules] = useState<AutomationRule[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -65,10 +65,10 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
       setRules(rulesData)
     } catch (error: any) {
       console.error('Failed to load automation rules:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.loadError'),
-        variant: 'destructive'
+        description: error.message || t('automation.loadError')
       })
     } finally {
       setIsLoading(false)
@@ -81,16 +81,17 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
       setRules(prev => prev.map(rule => 
         rule.id === ruleId ? { ...rule, is_active: isActive } : rule
       ))
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: isActive ? t('automation.ruleActivated') : t('automation.ruleDeactivated')
       })
     } catch (error: any) {
       console.error('Failed to toggle rule:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.toggleError'),
-        variant: 'destructive'
+        description: error.message || t('automation.toggleError')
       })
     }
   }
@@ -100,16 +101,17 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
       await AutomationService.deleteRule(ruleId)
       setRules(prev => prev.filter(rule => rule.id !== ruleId))
       setShowDeleteDialog(null)
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: t('automation.ruleDeleted')
       })
     } catch (error: any) {
       console.error('Failed to delete rule:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.deleteError'),
-        variant: 'destructive'
+        description: error.message || t('automation.deleteError')
       })
     }
   }
@@ -136,21 +138,21 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
       const duplicatedRule = await AutomationService.createRule({
         ...rule,
         name: `${rule.name} (Copy)`,
-        execution_count: 0,
         last_executed_at: undefined,
         next_execution_at: undefined
       })
       setRules(prev => [duplicatedRule, ...prev])
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: t('automation.ruleDuplicated')
       })
     } catch (error: any) {
       console.error('Failed to duplicate rule:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.duplicateError'),
-        variant: 'destructive'
+        description: error.message || t('automation.duplicateError')
       })
     }
   }

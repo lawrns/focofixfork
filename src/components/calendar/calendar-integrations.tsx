@@ -40,7 +40,7 @@ interface CalendarIntegrationsProps {
 export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const { toast } = useToast()
+  const { addToast } = useToast()
 
   const [integrations, setIntegrations] = useState<CalendarIntegration[]>([])
   const [isLoading, setIsLoading] = useState(true)

@@ -57,7 +57,7 @@ export function AutomationRuleBuilder({
   onRuleSaved
 }: AutomationRuleBuilderProps) {
   const { t } = useTranslation()
-  const toast = useToast()
+  const { addToast } = useToast()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -105,19 +105,19 @@ export function AutomationRuleBuilder({
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: t('automation.ruleNameRequired'),
-        variant: 'destructive'
+        description: t('automation.ruleNameRequired')
       })
       return
     }
 
     if (actions.length === 0) {
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: t('automation.atLeastOneActionRequired'),
-        variant: 'destructive'
+        description: t('automation.atLeastOneActionRequired')
       })
       return
     }
@@ -140,7 +140,8 @@ export function AutomationRuleBuilder({
         savedRule = await AutomationService.createRule(ruleData)
       }
 
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: t('automation.ruleSaved')
       })
@@ -149,10 +150,10 @@ export function AutomationRuleBuilder({
       onClose()
     } catch (error: any) {
       console.error('Failed to save automation rule:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.saveError'),
-        variant: 'destructive'
+        description: error.message || t('automation.saveError')
       })
     } finally {
       setIsLoading(false)
@@ -363,7 +364,7 @@ export function AutomationRuleBuilder({
                           <SelectValue placeholder={t('automation.anyPriority')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">{t('automation.anyPriority')}</SelectItem>
+                          <SelectItem value="any">{t('automation.anyPriority')}</SelectItem>
                           <SelectItem value="low">{t('priority.low')}</SelectItem>
                           <SelectItem value="medium">{t('priority.medium')}</SelectItem>
                           <SelectItem value="high">{t('priority.high')}</SelectItem>

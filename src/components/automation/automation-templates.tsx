@@ -48,7 +48,7 @@ export function AutomationTemplates({
   onTemplateSelected
 }: AutomationTemplatesProps) {
   const { t } = useTranslation()
-  const { toast } = useToast()
+  const { addToast } = useToast()
 
   const [templates, setTemplates] = useState<AutomationTemplate[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<AutomationTemplate[]>([])
@@ -83,10 +83,10 @@ export function AutomationTemplates({
       setTemplates(templatesData)
     } catch (error: any) {
       console.error('Failed to load automation templates:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.loadTemplatesError'),
-        variant: 'destructive'
+        description: error.message || t('automation.loadTemplatesError')
       })
     } finally {
       setIsLoading(false)
@@ -115,7 +115,8 @@ export function AutomationTemplates({
   const handleSelectTemplate = async (template: AutomationTemplate) => {
     try {
       await AutomationService.createRuleFromTemplate(template.id, projectId, userId)
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: t('automation.templateApplied')
       })
@@ -123,10 +124,10 @@ export function AutomationTemplates({
       onClose()
     } catch (error: any) {
       console.error('Failed to apply template:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
-        description: error.message || t('automation.applyTemplateError'),
-        variant: 'destructive'
+        description: error.message || t('automation.applyTemplateError')
       })
     }
   }

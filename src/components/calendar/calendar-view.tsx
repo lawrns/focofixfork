@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Settings, Filter, Download, Upload, RefreshCw as Sync, Clock, Users, MapPin, Bell } from 'lucide-react'
-import { CalendarEvent, CalendarView, CalendarFilter } from '@/lib/models/calendar'
+import { CalendarEvent, CalendarView as CalendarViewType, CalendarFilter } from '@/lib/models/calendar'
 import { CalendarService } from '@/lib/services/calendar-service'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useToast } from '@/components/ui/toast'
@@ -24,12 +24,12 @@ export function CalendarView({ className }: CalendarViewProps) {
   const { toast } = useToast()
 
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewType, setViewType] = useState<CalendarView['type']>('month')
+  const [viewType, setViewType] = useState<CalendarViewType['type']>('month')
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<CalendarFilter>({})
 
-  const viewConfig: CalendarView = {
+  const viewConfig: CalendarViewType = {
     type: viewType,
     date: currentDate,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

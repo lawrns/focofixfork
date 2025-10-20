@@ -25,7 +25,9 @@ import { useTranslation } from '@/lib/i18n/context'
 import { cn } from '@/lib/utils'
 
 interface TaskQuickActionsProps {
-  task: Task
+  task: Task & {
+    is_favorite?: boolean
+  }
   onEdit?: (taskId: string) => void
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void

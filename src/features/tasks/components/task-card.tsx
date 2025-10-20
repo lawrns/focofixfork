@@ -41,26 +41,12 @@ import { motion } from 'framer-motion'
 import { useTranslation } from '@/lib/i18n/context'
 import { TaskQuickActions } from './task-quick-actions'
 import { TaskEditDialog } from './task-edit-dialog'
+import { Task } from '../types'
 
 interface TaskCardProps {
-  task: {
-    id: string
-    title: string
-    description: string | null
-    status: 'todo' | 'in_progress' | 'review' | 'done'
-    priority: 'low' | 'medium' | 'high' | 'urgent'
-    assignee_id: string | null
+  task: Task & {
     assignee_name?: string
-    reporter_id: string
     reporter_name?: string
-    created_by: string
-    estimated_hours: number | null
-    actual_hours: number | null
-    due_date: string | null
-    created_at: string
-    updated_at: string
-    project_id: string
-    milestone_id: string | null
   }
   onEdit?: (taskId: string) => void
   onStatusChange?: (taskId: string, newStatus: string) => void

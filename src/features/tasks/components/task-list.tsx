@@ -19,25 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-
-interface Task {
-  id: string
-  title: string
-  description: string | null
-  status: 'todo' | 'in_progress' | 'review' | 'done'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  assignee_id: string | null
-  assignee_name?: string
-  reporter_id: string
-  reporter_name?: string
-  estimated_hours: number | null
-  actual_hours: number | null
-  due_date: string | null
-  created_at: string
-  updated_at: string
-  project_id: string
-  milestone_id: string | null
-}
+import { Task } from '../types'
 
 interface TaskListProps {
   projectId?: string
@@ -420,7 +402,10 @@ export function TaskList({
                       />
                     </div>
                     <TaskCard
-                      task={task}
+                      task={{
+                        ...task,
+                        created_by: task.reporter_id || ''
+                      }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
                       onDelete={handleDeleteTask}
@@ -450,7 +435,10 @@ export function TaskList({
                       />
                     </div>
                     <TaskCard
-                      task={task}
+                      task={{
+                        ...task,
+                        created_by: task.reporter_id || ''
+                      }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
                       onDelete={handleDeleteTask}
@@ -480,7 +468,10 @@ export function TaskList({
                       />
                     </div>
                     <TaskCard
-                      task={task}
+                      task={{
+                        ...task,
+                        created_by: task.reporter_id || ''
+                      }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
                       onDelete={handleDeleteTask}
@@ -510,7 +501,10 @@ export function TaskList({
                       />
                     </div>
                     <TaskCard
-                      task={task}
+                      task={{
+                        ...task,
+                        created_by: task.reporter_id || ''
+                      }}
                       onEdit={onEditTask}
                       onStatusChange={handleStatusChange}
                       onDelete={handleDeleteTask}

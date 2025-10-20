@@ -1,48 +1,20 @@
-import pino from 'pino'
-
-export const logger = pino({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  redact: {
-    paths: [
-      'req.headers.authorization',
-      'req.headers.cookie',
-      'body.password',
-      'body.token',
-      'body.secret',
-      'body.api_key',
-      'query.token',
-      'query.password',
-      'query.email',
-      'user.email',
-      'email',
-      'password',
-      'token',
-      'secret',
-      'apiKey',
-      'api_key'
-    ],
-    censor: '[REDACTED]'
-  },
-  formatters: {
-    level: (label) => {
-      return { level: label }
+// Simple console logger to avoid worker thread issues
+export const logger = {
+  debug: (msg: string, ...args: any[]) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEBUG] ${msg}`, ...args)
     }
   },
-  ...(process.env.NODE_ENV === 'production'
-    ? {}
-    : {
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            ignore: 'pid,hostname',
-            translateTime: 'HH:MM:ss Z',
-            singleLine: false
-          }
-        }
-      }
-  )
-})
+  info: (msg: string, ...args: any[]) => {
+    console.log(`[INFO] ${msg}`, ...args)
+  },
+  warn: (msg: string, ...args: any[]) => {
+    console.warn(`[WARN] ${msg}`, ...args)
+  },
+  error: (msg: string, ...args: any[]) => {
+    console.error(`[ERROR] ${msg}`, ...args)
+  }
+}
 
 // Helper for structured error logging
 export function logError(error: unknown, context?: Record<string, unknown>) {

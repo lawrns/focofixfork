@@ -65,13 +65,8 @@ export function ProjectList({
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (priorityFilter !== 'all') params.append('priority', priorityFilter)
 
-      const response = await fetch(`/api/projects?${params}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects')
-      }
-
-      const data = await response.json()
+      const { apiClient } = await import('@/lib/api-client')
+      const data = await apiClient.get(`/api/projects?${params}`)
 
       // Handle wrapped response: {success: true, data: {data: [...], pagination: {}}}
       let projectsData: any[] = []

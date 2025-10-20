@@ -72,6 +72,20 @@ export function ProductTour({
     }
   }, [targetElement])
 
+  // Handle escape key to close tour
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSkip()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen])
+
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1)
@@ -90,6 +104,13 @@ export function ProductTour({
     onClose()
   }
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // Only close if clicking directly on the backdrop, not on child elements
+    if (e.target === e.currentTarget) {
+      handleSkip()
+    }
+  }
+
   if (!isOpen || typeof window === 'undefined') {
     return null
   }
@@ -102,7 +123,7 @@ export function ProductTour({
       <div 
         ref={overlayRef}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleSkip}
+        onClick={handleOverlayClick}
       />
 
       {/* Spotlight */}

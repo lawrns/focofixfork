@@ -35,25 +35,73 @@ function TaskDetailContent() {
         const response = await fetch(`/api/tasks/${taskId}`)
         if (response.ok) {
           const data = await response.json()
-          setTask(data.data)
+          
+          // Handle wrapped response structure: {success: true, data: taskData}
+          let taskData = null
+          if (data.success && data.data) {
+            taskData = data.data
+          } else if (data.data) {
+            taskData = data.data
+          } else {
+            taskData = data
+          }
+          
+          if (!taskData) {
+            toast.error('Task not found')
+            router.push('/tasks')
+            return
+          }
+          
+          setTask(taskData)
 
           // Load related data
           const projectsResponse = await fetch('/api/projects')
           if (projectsResponse.ok) {
             const projectsData = await projectsResponse.json()
-            setProjects(projectsData.map((p: any) => ({ id: p.id, name: p.name })))
+            
+            // Handle wrapped response structure for projects
+            let projectsList: any[] = []
+            if (projectsData.success && projectsData.data) {
+              if (Array.isArray(projectsData.data.data)) {
+                projectsList = projectsData.data.data
+              } else if (Array.isArray(projectsData.data)) {
+                projectsList = projectsData.data
+              }
+            } else if (Array.isArray(projectsData.data)) {
+              projectsList = projectsData.data
+            } else if (Array.isArray(projectsData)) {
+              projectsList = projectsData
+            }
+            
+            setProjects(projectsList.map((p: any) => ({ id: p.id, name: p.name })))
           }
 
           // Load milestones for the task's project
-          if (data.data.project_id) {
-            const milestonesResponse = await fetch(`/api/milestones?project_id=${data.data.project_id}`)
+          if (taskData.project_id) {
+            const milestonesResponse = await fetch(`/api/milestones?project_id=${taskData.project_id}`)
             if (milestonesResponse.ok) {
               const milestonesData = await milestonesResponse.json()
-              setMilestones(milestonesData.map((m: any) => ({ id: m.id, title: m.name, project_id: m.project_id })))
+              
+              // Handle wrapped response structure for milestones
+              let milestonesList: any[] = []
+              if (milestonesData.success && milestonesData.data) {
+                if (Array.isArray(milestonesData.data.data)) {
+                  milestonesList = milestonesData.data.data
+                } else if (Array.isArray(milestonesData.data)) {
+                  milestonesList = milestonesData.data
+                }
+              } else if (Array.isArray(milestonesData.data)) {
+                milestonesList = milestonesData.data
+              } else if (Array.isArray(milestonesData)) {
+                milestonesList = milestonesData
+              }
+              
+              setMilestones(milestonesList.map((m: any) => ({ id: m.id, title: m.name, project_id: m.project_id })))
             }
           }
         } else {
-          toast.error('Failed to load task')
+          const errorData = await response.json()
+          toast.error(errorData.error?.message || 'Failed to load task')
           router.push('/tasks')
         }
       } catch (error) {
@@ -84,7 +132,7 @@ function TaskDetailContent() {
         router.push(`/projects/${task.project_id}`)
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Failed to update task')
+        toast.error(error.error?.message || 'Failed to update task')
       }
     } catch (error) {
       console.error('Failed to update task:', error)

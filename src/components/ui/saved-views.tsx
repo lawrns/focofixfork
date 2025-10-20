@@ -87,12 +87,12 @@ export function SavedViews({
       {/* Saved Views Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="flex items-center space-x-2">
+          <Button variant="outline" size="compact" className="flex items-center space-x-2 whitespace-nowrap">
             <Eye className="h-4 w-4" />
-            <span className="hidden sm:inline">
+            <span className="hidden lg:inline text-sm">
               {activeView?.name || 'All Projects'}
             </span>
-            <span className="sm:hidden">
+            <span className="lg:hidden text-sm">
               Views
             </span>
             <ChevronDown className="h-4 w-4" />

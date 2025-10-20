@@ -94,6 +94,13 @@ export default function DashboardPage() {
   const { shouldShowTour, markTourComplete } = useOnboarding()
   const { isOpen: isTourOpen, startTour, closeTour, completeTour } = useProductTour()
 
+  // Redirect to personalized dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/dashboard/personalized')
+    }
+  }, [loading, user, router])
+
   // Set page title
   useEffect(() => {
     document.title = 'Dashboard | Foco'
@@ -128,18 +135,19 @@ export default function DashboardPage() {
 
     setIsLoadingOrganizations(true)
     try {
-      const response = await fetch('/api/organizations')
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          const orgs = data.data || []
-          setOrganizations(orgs)
-        }
+      const { apiClient } = await import('@/lib/api-client')
+      const data = await apiClient.get('/api/organizations')
+      
+      if (data.success) {
+        const orgs = data.data || []
+        setOrganizations(orgs)
+      } else {
+        throw new Error(data.error || 'Failed to load organizations')
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
-      toast.error('Error al cargar organizaciones', 'No se pudieron cargar las organizaciones. Inténtalo de nuevo.')
+      const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar las organizaciones'
+      toast.error('Error al cargar organizaciones', errorMessage)
     } finally {
       setIsLoadingOrganizations(false)
     }
@@ -150,18 +158,19 @@ export default function DashboardPage() {
 
     setIsLoadingProjects(true)
     try {
-      const response = await fetch('/api/projects')
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          const projs = data.data || []
-          setProjects(projs)
-        }
+      const { apiClient } = await import('@/lib/api-client')
+      const data = await apiClient.get('/api/projects')
+      
+      if (data.success) {
+        const projs = data.data?.data || data.data || []
+        setProjects(projs)
+      } else {
+        throw new Error(data.error || 'Failed to load projects')
       }
     } catch (error) {
       console.error('Error fetching projects:', error)
-      toast.error('Error al cargar proyectos', 'No se pudieron cargar los proyectos. Inténtalo de nuevo.')
+      const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los proyectos'
+      toast.error('Error al cargar proyectos', errorMessage)
     } finally {
       setIsLoadingProjects(false)
     }

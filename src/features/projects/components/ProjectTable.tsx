@@ -792,14 +792,8 @@ export default function ProjectTable({
 
     try {
       setLoading(true)
-      const response = await fetch('/api/projects', {
-              })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects')
-      }
-
-      const data = await response.json()
+      const { apiClient } = await import('@/lib/api-client')
+      const data = await apiClient.get('/api/projects')
 
       // Handle wrapped response: {success: true, data: {data: [...], pagination: {}}}
       let projectsData: ProjectWithOrg[] = []

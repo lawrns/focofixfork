@@ -9,6 +9,8 @@ import { ViewConfig } from '@/lib/hooks/use-saved-views'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useTranslation } from '@/lib/i18n/context'
 import { apiGet } from '@/lib/api-client'
+import { LanguageSelectorCompact } from '@/components/ui/language-selector'
+import { HeyMenu } from '@/components/notifications/hey-menu'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,37 +133,39 @@ export default function Header() {
           />
           <h2 className="text-lg md:text-xl font-bold text-foreground">Foco</h2>
         </div>
-        <div className="hidden sm:flex items-center gap-3">
-          <span className="rounded-lg bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary">
+        <div className="hidden lg:flex items-center gap-2">
+          <span className="rounded-lg bg-primary/20 px-3 py-2 text-sm font-medium text-primary whitespace-nowrap">
             Project Management
           </span>
-          <span className="rounded-lg bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">
+          <span className="rounded-lg bg-muted px-3 py-2 text-sm font-medium text-muted-foreground whitespace-nowrap">
             Dashboard
           </span>
         </div>
       </div>
 
-      <SavedViews
-        onViewSelect={(view: ViewConfig) => {
-          console.log('Selected view:', view)
-        }}
-        onViewSave={(name: string) => {
-          console.log('Saving view:', name)
-        }}
-        currentViewConfig={{
-          type: 'table',
-          filters: {},
-        }}
-      />
+      <div className="hidden md:block">
+        <SavedViews
+          onViewSelect={(view: ViewConfig) => {
+            console.log('Selected view:', view)
+          }}
+          onViewSave={(name: string) => {
+            console.log('Saving view:', name)
+          }}
+          currentViewConfig={{
+            type: 'table',
+            filters: {},
+          }}
+        />
+      </div>
 
-      <div className="flex flex-1 justify-end items-center gap-2 md:gap-4">
+      <div className="flex flex-1 justify-end items-center gap-2 md:gap-3">
         {/* Search */}
         <div className="relative w-full max-w-[200px] sm:max-w-xs md:w-72">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="h-4 md:h-5 w-4 md:w-5 text-muted-foreground" />
+            <Search className="h-4 w-4 text-muted-foreground" />
           </div>
           <input
-            className="h-9 md:h-11 w-full rounded-lg border border-input bg-background pl-8 md:pl-10 pr-8 md:pr-10 text-xs md:text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             placeholder={t('common.search')}
             type="search"
             value={searchQuery}
@@ -175,9 +179,9 @@ export default function Header() {
           {searchQuery && (
             <button
               onClick={clearSearch}
-              className="absolute inset-y-0 right-0 flex items-center pr-2 md:pr-3 hover:text-foreground text-muted-foreground"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 hover:text-foreground text-muted-foreground"
             >
-              <X className="h-3 md:h-4 w-3 md:w-4" />
+              <X className="h-4 w-4" />
             </button>
           )}
 
@@ -223,18 +227,24 @@ export default function Header() {
         </div>
 
         {/* Help Button */}
-        <button className="hidden sm:flex size-9 md:size-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-          <HelpCircle className="h-4 md:h-5 w-4 md:w-5" />
-        </button>
+        <Button variant="ghost" size="compact" className="hidden sm:flex">
+          <HelpCircle className="h-4 w-4" />
+        </Button>
+
+        {/* Hey Menu (Notifications) */}
+        <HeyMenu />
+
+        {/* Language Selector */}
+        <LanguageSelectorCompact />
 
         {/* User Avatar with Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="size-9 md:size-11 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer">
-              <span className="text-xs md:text-sm font-semibold text-primary">
+            <Button variant="ghost" size="compact" className="rounded-full bg-primary/20 hover:bg-primary/30">
+              <span className="text-sm font-semibold text-primary">
                 {avatarText}
               </span>
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>

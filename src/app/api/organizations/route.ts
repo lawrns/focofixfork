@@ -3,6 +3,9 @@ import { wrapRoute } from '@/server/http/wrapRoute'
 import { GetOrganizationsSchema, CreateOrganizationApiSchema } from '@/lib/validation/schemas/organization-api.schema'
 import { OrganizationsService } from '@/lib/services/organizations'
 
+// Ensure Node runtime for Netlify compatibility
+export const runtime = 'nodejs'
+
 /**
  * GET /api/organizations - List user's organizations
  */

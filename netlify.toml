@@ -26,5 +26,11 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Headers for service worker
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+
 # Build processing and headers are handled automatically by @netlify/plugin-nextjs
 # HTTPS redirects are handled automatically by Netlify

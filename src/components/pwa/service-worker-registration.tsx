@@ -5,7 +5,13 @@ import { useEffect } from 'react'
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      registerServiceWorker()
+      // Gate registration behind environment variable
+      if (process.env.NEXT_PUBLIC_SW_ENABLED !== 'false') {
+        registerServiceWorker()
+      } else {
+        // When disabled, unregister any existing service workers
+        unregisterServiceWorker()
+      }
     }
   }, [])
 

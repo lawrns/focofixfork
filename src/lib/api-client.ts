@@ -1,155 +1,161 @@
-import { errorTracker } from './monitoring/error-tracker'
+/**
+ * Centralized API client with retry logic and error handling
+ */
 
-// Enhanced API client with timeout, retry, and caching support
 interface ApiClientOptions {
+  baseUrl?: string
   timeout?: number
   retries?: number
   retryDelay?: number
-  useCache?: boolean
-  cacheTime?: number
-  headers?: Record<string, string>
+  onError?: (error: Error) => void
+}
+
+interface RequestOptions extends RequestInit {
+  retries?: number
+  timeout?: number
+  silent?: boolean // Don't trigger error callbacks
 }
 
 class ApiClient {
-  private cache = new Map<string, { data: any; timestamp: number }>()
+  private baseUrl: string
+  private timeout: number
+  private defaultRetries: number
+  private retryDelay: number
+  private onError?: (error: Error) => void
 
-  async fetch(url: string, options: RequestInit & ApiClientOptions = {}) {
-    const {
-      timeout = 10000, // 10 second timeout
-      retries = 2,
-      retryDelay = 1000,
-      useCache = false,
-      cacheTime = 5 * 60 * 1000, // 5 minutes
-      ...fetchOptions
-    } = options
+  constructor(options: ApiClientOptions = {}) {
+    this.baseUrl = options.baseUrl || ''
+    this.timeout = options.timeout || 10000
+    this.defaultRetries = options.retries || 1
+    this.retryDelay = options.retryDelay || 1000
+    this.onError = options.onError
+  }
 
-    // If service worker is active, reduce client-side retries to avoid duplication
-    // Service worker has its own circuit breaker and retry logic
-    const effectiveRetries = (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) ? 0 : retries
-
-    // Check cache first
-    if (useCache) {
-      const cached = this.cache.get(url)
-      if (cached && (Date.now() - cached.timestamp) < cacheTime) {
-        return { ok: true, data: cached.data }
-      }
-    }
+  async request<T = any>(
+    endpoint: string, 
+    options: RequestOptions = {}
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`
+    const retries = options.retries ?? this.defaultRetries
+    const timeout = options.timeout ?? this.timeout
 
     let lastError: Error | null = null
 
-    for (let attempt = 0; attempt <= effectiveRetries; attempt++) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        // Create AbortController for timeout
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), timeout)
 
         const response = await fetch(url, {
-          ...fetchOptions,
+          ...options,
           signal: controller.signal,
         })
 
         clearTimeout(timeoutId)
 
-        if (response.ok) {
-          const data = await response.json()
-
-          // Cache successful responses
-          if (useCache) {
-            this.cache.set(url, { data, timestamp: Date.now() })
+        if (!response.ok) {
+          // Don't retry on client errors (4xx)
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
-
-          return { ok: true, data }
-        } else if (response.status >= 500 && attempt < effectiveRetries) {
-          // Retry on server errors
-          lastError = new Error(`HTTP ${response.status}: ${response.statusText}`)
-          if (attempt < effectiveRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
-            continue
-          }
-        } else {
-          // Track non-retryable errors
-          errorTracker.trackApiError(
-            url,
-            fetchOptions.method || 'GET',
-            response.status,
-            response.statusText,
-            { headers: fetchOptions.headers }
-          )
-
-          // Don't retry on client errors
-          return { ok: false, error: `HTTP ${response.status}: ${response.statusText}` }
+          
+          // Retry on server errors (5xx)
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         }
+
+        const data = await response.json()
+        return data
       } catch (error) {
         lastError = error as Error
-
-        if (error instanceof Error && error.name === 'AbortError') {
-          lastError = new Error('Request timeout')
+        
+        // Don't retry on abort (timeout) or client errors
+        if (error instanceof Error && (
+          error.name === 'AbortError' || 
+          error.message.includes('HTTP 4')
+        )) {
+          // Call error handler if not silent
+          if (this.onError && !options.silent) {
+            this.onError(error)
+          }
+          throw error
         }
 
-        if (attempt < effectiveRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
-          continue
+        // Wait before retrying (exponential backoff)
+        if (attempt < retries) {
+          const delay = this.retryDelay * Math.pow(2, attempt)
+          await new Promise(resolve => setTimeout(resolve, delay))
         }
       }
     }
 
-    // Track final failure after all retries
-    errorTracker.trackApiError(
-      url,
-      fetchOptions.method || 'GET',
-      0,
-      lastError?.message || 'Request failed',
-      { retriesExhausted: true }
-    )
-
-    return { ok: false, error: lastError?.message || 'Request failed' }
+    const finalError = lastError || new Error('Request failed after all retries')
+    
+    // Call error handler if not silent
+    if (this.onError && !options.silent) {
+      this.onError(finalError)
+    }
+    
+    throw finalError
   }
 
-  // Clear cache
-  clearCache() {
-    this.cache.clear()
+  async get<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'GET' })
   }
 
-  // Get cache size for debugging
-  getCacheSize() {
-    return this.cache.size
+  async post<T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async put<T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async patch<T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async delete<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'DELETE' })
   }
 }
 
-export const apiClient = new ApiClient()
+// Default API client instance
+export const apiClient = new ApiClient({
+  timeout: 10000,
+  retries: 1,
+  retryDelay: 1000,
+})
 
-// Convenience function for GET requests
-export async function apiGet(url: string, options?: ApiClientOptions) {
-  return apiClient.fetch(url, { ...options, method: 'GET' })
-}
+// Export the class for custom instances
+export { ApiClient }
 
-// Convenience function for POST requests
-export async function apiPost(url: string, data: any, options?: ApiClientOptions) {
-  return apiClient.fetch(url, {
-    ...options,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    body: JSON.stringify(data),
-  })
-}
-
-// Convenience function for PUT requests
-export async function apiPut(url: string, data: any, options?: ApiClientOptions) {
-  return apiClient.fetch(url, {
-    ...options,
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    body: JSON.stringify(data),
-  })
-}
-
-// Convenience function for DELETE requests
-export async function apiDelete(url: string, options?: ApiClientOptions) {
-  return apiClient.fetch(url, { ...options, method: 'DELETE' })
-}
+// Convenience exports for common HTTP methods
+export const apiGet = apiClient.get.bind(apiClient)
+export const apiPost = apiClient.post.bind(apiClient)
+export const apiPut = apiClient.put.bind(apiClient)
+export const apiPatch = apiClient.patch.bind(apiClient)
+export const apiDelete = apiClient.delete.bind(apiClient)

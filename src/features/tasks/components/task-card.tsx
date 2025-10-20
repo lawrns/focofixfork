@@ -38,6 +38,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useRealtime } from '@/lib/hooks/useRealtime'
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/lib/i18n/context'
+import { TaskQuickActions } from './task-quick-actions'
+import { TaskEditDialog } from './task-edit-dialog'
 
 interface TaskCardProps {
   task: {
@@ -115,10 +118,12 @@ export function TaskCard({
   showActions = true,
   showAssignee = true,
 }: TaskCardProps) {
+  const { t } = useTranslation()
   const [currentTask, setCurrentTask] = useState(task)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUpdated, setIsUpdated] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
 
   // Real-time updates for this task
   useRealtime(
@@ -220,14 +225,14 @@ export function TaskCard({
                 className="block"
                 aria-label={`View task: ${currentTask.title}`}
               >
-                <h3 className={`font-semibold text-sm leading-tight hover:text-primary transition-colors truncate ${
+                <h3 className={`font-semibold text-base leading-tight hover:text-primary transition-colors truncate ${
                   currentTask.status === 'done' ? 'line-through text-muted-foreground' : ''
                 }`}>
                   {currentTask.title}
                 </h3>
               </Link>
               {currentTask.description && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                   {currentTask.description}
                 </p>
               )}
@@ -237,8 +242,8 @@ export function TaskCard({
           {showActions && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0" aria-label={`Actions for ${currentTask.title}`}>
-                  <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0" aria-label={`Actions for ${currentTask.title}`}>
+                  <MoreVertical className="h-5 w-5" aria-hidden="true" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
@@ -289,15 +294,15 @@ export function TaskCard({
       <CardContent className="space-y-3">
         {/* Status and Priority Badges */}
         <div className="flex flex-wrap gap-2">
-          <Badge className={`${statusInfo.color} text-xs font-semibold`}>
-            {statusInfo.label}
+          <Badge className={`${statusInfo.color} text-sm font-semibold`}>
+            {t(`status.${currentTask.status.replace('_', '')}`)}
           </Badge>
-          <Badge className={`${priorityConfig[currentTask.priority].color} text-xs font-semibold`}>
-            {currentTask.priority.toUpperCase()}
+          <Badge className={`${priorityConfig[currentTask.priority].color} text-sm font-semibold`}>
+            {t(`priority.${currentTask.priority}`)}
           </Badge>
           {isOverdue && (
-            <Badge className="bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600 text-xs font-semibold">
-              OVERDUE
+            <Badge className="bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600 text-sm font-semibold">
+              {t('task.overdue')}
             </Badge>
           )}
         </div>
@@ -306,7 +311,7 @@ export function TaskCard({
         {currentTask.estimated_hours && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs">
-              <span>Progress</span>
+              <span>{t('task.progress')}</span>
               <span>
                 {currentTask.actual_hours || 0}h / {currentTask.estimated_hours}h
               </span>
@@ -331,7 +336,7 @@ export function TaskCard({
                     <span className="truncate max-w-16">{currentTask.assignee_name}</span>
                   </div>
                 ) : (
-                  <span>Unassigned</span>
+                  <span>{t('task.unassigned')}</span>
                 )}
               </div>
             )}
@@ -351,22 +356,34 @@ export function TaskCard({
     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Task</AlertDialogTitle>
+          <AlertDialogTitle>{t('task.deleteTask')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &ldquo;{currentTask.title}&rdquo;? This action cannot be undone.
+            {t('task.deleteConfirmation', { taskTitle: currentTask.title })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={confirmDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Task Edit Dialog */}
+    <TaskEditDialog
+      isOpen={showEditDialog}
+      onClose={() => setShowEditDialog(false)}
+      task={currentTask}
+      onTaskUpdated={(updatedTask) => {
+        setCurrentTask(updatedTask)
+        setIsUpdated(true)
+        setTimeout(() => setIsUpdated(false), 3000)
+      }}
+    />
   </>
   )
 }

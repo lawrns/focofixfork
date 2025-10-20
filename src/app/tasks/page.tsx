@@ -72,7 +72,18 @@ function TasksContent() {
         const response = await fetch(`/api/tasks/${selectedTaskId}`)
         if (response.ok) {
           const data = await response.json()
-          setSelectedTask(data.data)
+          
+          // Handle wrapped response structure: {success: true, data: taskData}
+          let taskData = null
+          if (data.success && data.data) {
+            taskData = data.data
+          } else if (data.data) {
+            taskData = data.data
+          } else {
+            taskData = data
+          }
+          
+          setSelectedTask(taskData)
         }
       } catch (error) {
         console.error('Failed to load task:', error)
@@ -102,6 +113,31 @@ function TasksContent() {
     window.location.reload()
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        alert('Task deleted successfully')
+        // Refresh the page to update the task list
+        window.location.reload()
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to delete task:', response.statusText, errorData)
+        alert(`Failed to delete task: ${errorData.error || response.statusText}`)
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      alert('Error deleting task')
+    }
+  }
+
   return (
     <MainLayout>
       <div className="flex-1 space-y-4 p-8 pt-6">
@@ -109,6 +145,7 @@ function TasksContent() {
           showCreateButton={true}
           onCreateTask={handleCreateTask}
           onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
           initialAssignee={user?.id}
         />
 

@@ -16,7 +16,8 @@ import {
   Users,
   Target,
   Clock,
-  Loader2
+  Loader2,
+  Zap
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import ProjectEditDialog from '@/components/dialogs/project-edit-dialog'
@@ -25,6 +26,7 @@ import { UpdateProject, Project } from '@/lib/validation/schemas/project.schema'
 import { TaskList } from '@/features/tasks'
 import { MilestoneTimeline } from '@/components/milestones/milestone-timeline'
 import { ActivityFeed } from '@/components/activity/activity-feed'
+import { AutomationRulesList } from '@/components/automation/automation-rules-list'
 
 interface ProjectDetails extends Project {
   progress_percentage: number
@@ -249,11 +251,15 @@ function ProjectDetailsContent() {
 
             {/* Project Tabs */}
             <Tabs defaultValue="tasks" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="milestones">Milestones</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
                 <TabsTrigger value="team">Team</TabsTrigger>
+                <TabsTrigger value="automation" className="flex items-center gap-1">
+                  <Zap className="h-4 w-4" />
+                  Automation
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="tasks" className="space-y-4">
@@ -296,6 +302,15 @@ function ProjectDetailsContent() {
                     </p>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="automation" className="space-y-4">
+                {user && (
+                  <AutomationRulesList
+                    projectId={projectId}
+                    userId={user.id}
+                  />
+                )}
               </TabsContent>
             </Tabs>
           </div>

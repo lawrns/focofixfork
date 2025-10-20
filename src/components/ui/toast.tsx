@@ -41,8 +41,22 @@ interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [lastToastTimes, setLastToastTimes] = useState<Map<string, number>>(new Map())
 
   const addToast = (toast: Omit<Toast, 'id'>) => {
+    // Create a key for deduplication based on type and title
+    const dedupeKey = `${toast.type}:${toast.title}`
+    const now = Date.now()
+    const lastTime = lastToastTimes.get(dedupeKey) || 0
+    
+    // Prevent duplicate toasts within 5 seconds
+    if (now - lastTime < 5000) {
+      return
+    }
+    
+    // Update last toast time
+    setLastToastTimes(prev => new Map(prev).set(dedupeKey, now))
+    
     const id = Math.random().toString(36).substr(2, 9)
     const newToast = { ...toast, id }
     

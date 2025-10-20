@@ -22,7 +22,8 @@ import {
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
-import { useProjects } from '@/hooks/useProjects'
+import { useProjects } from '@/features/projects/hooks/useProjects'
+import { useTranslation } from '@/lib/i18n/context'
 
 interface Project {
   id: string
@@ -31,25 +32,29 @@ interface Project {
   organization_id: string | null
 }
 
-const navigation = [
-  { name: 'Home', href: '/dashboard', icon: Home },
-  { name: 'Inbox', href: '/inbox', icon: Inbox },
-  { name: 'My Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Favorites', href: '/favorites', icon: Star },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Goals', href: '/dashboard/goals', icon: Target },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+const getNavigation = (t: any) => [
+  { name: t('navigation.home'), href: '/dashboard/personalized', icon: Home },
+  { name: t('navigation.inbox'), href: '/inbox', icon: Inbox },
+  { name: t('navigation.myTasks'), href: '/tasks', icon: CheckSquare },
+  // { name: t('navigation.calendar'), href: '/calendar', icon: CalendarIcon }, // Temporarily disabled
+  { name: t('navigation.favorites'), href: '/favorites', icon: Star },
+  { name: t('navigation.reports'), href: '/reports', icon: BarChart3 },
+  { name: t('navigation.goals'), href: '/dashboard/goals', icon: Target },
+  { name: t('navigation.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
   const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
   const [primaryOrgId, setPrimaryOrgId] = useState<string | null>(null)
   const lastFetchTime = useRef<number>(0)
+  
+  const navigation = getNavigation(t)
 
   const fetchProjects = useCallback(async (forceRefresh = false) => {
     if (!user) return
@@ -264,7 +269,7 @@ export default function Sidebar() {
           />
           <div className="flex flex-col">
             <h1 className="text-base font-bold text-sidebar-text-active">Foco</h1>
-            <p className="text-xs font-medium text-sidebar-text">Focus on what matters</p>
+            <p className="text-sm font-medium text-sidebar-text">Focus on what matters</p>
           </div>
         </div>
 
@@ -305,8 +310,8 @@ export default function Sidebar() {
                 <ChevronRight className="h-4 w-4 opacity-70" aria-hidden="true" />
               )}
               <Folder className="h-5 w-5 opacity-70" aria-hidden="true" />
-              Projects
-              <span className="ml-auto text-xs bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
+              {t('navigation.projects')}
+              <span className="ml-auto text-sm bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
                 {projects.length}
               </span>
             </button>
@@ -320,8 +325,8 @@ export default function Sidebar() {
                     ))}
                   </div>
                 ) : projects.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-3 py-2">
-                    No projects yet
+                  <p className="text-sm text-muted-foreground px-3 py-2">
+                    {t('projects.noProjects')}
                   </p>
                 ) : (
                   projects.slice(0, 10).map((project) => (
@@ -341,7 +346,7 @@ export default function Sidebar() {
                 )}
 
                 {projects.length > 10 && (
-                  <p className="text-xs text-muted-foreground px-3 py-1">
+                  <p className="text-sm text-muted-foreground px-3 py-1">
                     +{projects.length - 10} more
                   </p>
                 )}

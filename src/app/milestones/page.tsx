@@ -20,8 +20,18 @@ import {
   CheckCircle,
   Clock,
   AlertTriangle,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
 
 export default function MilestonesPage() {
@@ -139,6 +149,37 @@ function MilestonesContent() {
   const getProjectName = (projectId: string) => {
     const project = projects.find(p => p.id === projectId)
     return project?.name || 'Unknown Project'
+  }
+
+  const handleEditMilestone = (milestoneId: string) => {
+    // TODO: Implement milestone editing
+    console.log('Edit milestone:', milestoneId)
+    alert('Milestone editing functionality will be implemented soon')
+  }
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    if (!confirm('Are you sure you want to delete this milestone? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/milestones/${milestoneId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        alert('Milestone deleted successfully')
+        // Refresh the page to update the milestone list
+        window.location.reload()
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to delete milestone:', response.statusText, errorData)
+        alert(`Failed to delete milestone: ${errorData.error || response.statusText}`)
+      }
+    } catch (error) {
+      console.error('Error deleting milestone:', error)
+      alert('Error deleting milestone')
+    }
   }
 
   if (isLoading) {
@@ -275,9 +316,33 @@ function MilestonesContent() {
                           {getProjectName(milestone.project_id)}
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm" className="ml-2">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="ml-2">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/milestones/${milestone.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditMilestone(milestone.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Milestone
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteMilestone(milestone.id)}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Milestone
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
 

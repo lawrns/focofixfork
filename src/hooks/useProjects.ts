@@ -47,19 +47,11 @@ export function useProjects(options?: UseProjectsOptions) {
       if (options?.priority) params.append('priority', options.priority)
       if (options?.limit) params.append('limit', options.limit?.toString() || '50')
 
-      const response = await fetch(`/api/projects?${params}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const { apiClient } = await import('@/lib/api-client')
+      const data = await apiClient.get(`/api/projects?${params}`)
+      
       if (data.success) {
-        const projectData = data.data || []
+        const projectData = data.data?.data || data.data || []
         setProjects(projectData)
         // Update the global store for consistency across components
         projectStore.setProjects(projectData)

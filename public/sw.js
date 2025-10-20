@@ -1,9 +1,9 @@
 // Service Worker for Foco PWA
-// Version 1.0.0
+// Version 1.0.1
 
-const CACHE_NAME = 'foco-v1.0.0'
-const STATIC_CACHE = 'foco-static-v1.0.0'
-const DYNAMIC_CACHE = 'foco-dynamic-v1.0.0'
+const CACHE_NAME = 'foco-v1.0.1'
+const STATIC_CACHE = 'foco-static-v1.0.1'
+const DYNAMIC_CACHE = 'foco-dynamic-v1.0.1'
 
 // Critical resources to cache immediately
 const CRITICAL_RESOURCES = [
@@ -63,6 +63,9 @@ self.addEventListener('activate', (event) => {
         console.log('[SW] Service worker activated')
         return self.clients.claim()
       })
+      .then(() => {
+        return self.skipWaiting()
+      })
   )
 })
 
@@ -92,42 +95,10 @@ self.addEventListener('fetch', (event) => {
   }
 })
 
-// API request handler - Network first with cache fallback
+// API request handler - Bypass caching for now (hotfix)
 async function handleApiRequest(request) {
-  try {
-    // Try network first
-    const networkResponse = await fetch(request)
-    
-    if (networkResponse.ok) {
-      // Cache successful responses
-      const cache = await caches.open(DYNAMIC_CACHE)
-      cache.put(request, networkResponse.clone())
-      return networkResponse
-    }
-    
-    throw new Error('Network response not ok')
-  } catch (error) {
-    console.log('[SW] Network failed for API request, trying cache:', request.url)
-    
-    // Fallback to cache
-    const cachedResponse = await caches.match(request)
-    if (cachedResponse) {
-      return cachedResponse
-    }
-    
-    // Return offline response for API requests
-    return new Response(
-      JSON.stringify({ 
-        error: 'Offline', 
-        message: 'This request is not available offline' 
-      }),
-      {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-  }
+  // Temporarily bypass all caching for API requests
+  return fetch(request)
 }
 
 // Static asset handler - Cache first

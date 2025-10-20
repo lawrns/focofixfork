@@ -4,6 +4,9 @@ import { GetProjectsSchema, CreateProjectApiSchema } from '@/lib/validation/sche
 import { ProjectsService } from '@/features/projects/services/projectService'
 import { normalizeProjectsData } from '@/lib/utils'
 
+// Ensure Node runtime for Netlify compatibility
+export const runtime = 'nodejs'
+
 /**
  * GET /api/projects - List projects for the authenticated user
  */

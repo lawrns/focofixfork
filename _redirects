@@ -1,0 +1,9 @@
+# Netlify redirects for Next.js App Router
+# Note: Netlify Next.js plugin handles most routing automatically
+
+# Force HTTPS
+http://foco.mx/* https://foco.mx/:splat 301!
+
+# Health check endpoint
+/health /api/health 200
+

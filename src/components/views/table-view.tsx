@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -100,6 +101,7 @@ interface TableViewProps {
   onCreate?: () => void
   onStatusChange?: (item: TableItem, newStatus: string) => void
   onPriorityChange?: (item: TableItem, newPriority: string) => void
+  onReorder?: (items: TableItem[]) => void
   loading?: boolean
   className?: string
 }
@@ -142,6 +144,7 @@ const TableView: React.FC<TableViewProps> = ({
   onCreate,
   onStatusChange,
   onPriorityChange,
+  onReorder,
   loading = false,
   className
 }) => {
@@ -150,6 +153,30 @@ const TableView: React.FC<TableViewProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [sortField, setSortField] = useState<string>('updated_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [localData, setLocalData] = useState<TableItem[]>(data)
+
+  // Update local data when props change
+  React.useEffect(() => {
+    setLocalData(data)
+  }, [data])
+
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source } = result
+
+    // Dropped outside a droppable area
+    if (!destination) return
+
+    // Dropped in the same position
+    if (destination.index === source.index) return
+
+    // Reorder items
+    const newData = Array.from(localData)
+    const [reorderedItem] = newData.splice(source.index, 1)
+    newData.splice(destination.index, 0, reorderedItem)
+
+    setLocalData(newData)
+    onReorder?.(newData)
+  }
 
   // Get table columns based on type
   const getColumns = () => {
@@ -192,7 +219,7 @@ const TableView: React.FC<TableViewProps> = ({
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = data.filter(item => {
+    let filtered = localData.filter(item => {
       // Search filter
       const searchText = type === 'projects'
         ? (item as ProjectTableItem).name + ' ' + (item as ProjectTableItem).description || ''
@@ -451,70 +478,86 @@ const TableView: React.FC<TableViewProps> = ({
 
       {/* Table */}
       <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {getColumns().map((column) => (
-                <TableHead
-                  key={column.key}
-                  className={cn(
-                    column.sortable && 'cursor-pointer hover:bg-muted/50 select-none',
-                    'transition-colors'
-                  )}
-                  onClick={() => column.sortable && handleSort(column.key)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{column.label}</span>
-                    {column.sortable && sortField === column.key && (
-                      sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
-                    )}
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <AnimatePresence>
-              {processedData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={getColumns().length} className="text-center py-12">
-                    <div className="text-muted-foreground">
-                      <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg mb-2">No {type} found</p>
-                      <p className="text-sm">
-                        {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
-                          ? 'Try adjusting your filters'
-                          : `Create your first ${type.slice(0, -1)} to get started`}
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                processedData.map((item, index) => (
-                  <motion.tr
-                    key={item.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ delay: index * 0.02 }}
-                    className="hover:bg-muted/50 transition-colors"
-                  >
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="table-droppable">
+            {(provided) => (
+              <Table {...provided.droppableProps} ref={provided.innerRef}>
+                <TableHeader>
+                  <TableRow>
                     {getColumns().map((column) => (
-                      <TableCell key={column.key} className="py-3">
-                        {renderCell(item, column.key)}
-                      </TableCell>
+                      <TableHead
+                        key={column.key}
+                        className={cn(
+                          column.sortable && 'cursor-pointer hover:bg-muted/50 select-none',
+                          'transition-colors'
+                        )}
+                        onClick={() => column.sortable && handleSort(column.key)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{column.label}</span>
+                          {column.sortable && sortField === column.key && (
+                            sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
+                          )}
+                        </div>
+                      </TableHead>
                     ))}
-                  </motion.tr>
-                ))
-              )}
-            </AnimatePresence>
-          </TableBody>
-        </Table>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <AnimatePresence initial={false}>
+                    {processedData.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={getColumns().length} className="text-center py-12">
+                          <div className="text-muted-foreground">
+                            <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="text-lg mb-2">No {type} found</p>
+                            <p className="text-sm">
+                              {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
+                                ? 'Try adjusting your filters'
+                                : `Create your first ${type.slice(0, -1)} to get started`}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      processedData.map((item, index) => (
+                        <Draggable key={item.id} draggableId={item.id} index={index}>
+                          {(provided, snapshot) => (
+                            <motion.tr
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                              className={cn(
+                                "hover:bg-muted/50 transition-colors",
+                                snapshot.isDragging && "bg-accent/50"
+                              )}
+                            >
+                              {getColumns().map((column) => (
+                                <TableCell key={column.key} className="py-3">
+                                  {renderCell(item, column.key)}
+                                </TableCell>
+                              ))}
+                            </motion.tr>
+                          )}
+                        </Draggable>
+                      ))
+                    )}
+                    {provided.placeholder}
+                  </AnimatePresence>
+                </TableBody>
+              </Table>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
 
       {/* Footer with count */}
       <div className="text-sm text-muted-foreground">
-        Showing {processedData.length} of {data.length} {type}
+        Showing {processedData.length} of {localData.length} {type}
         {searchTerm && ` matching "${searchTerm}"`}
       </div>
     </div>

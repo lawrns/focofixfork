@@ -83,8 +83,8 @@ export function LanguageSelectorCompact() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
+          size="compact"
+          className="p-0"
           aria-label={`Current language: ${currentLanguage.name}`}
         >
           <span className="text-lg">{currentLanguage.flag}</span>

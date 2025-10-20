@@ -353,7 +353,6 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: 'Failed to duplicate project. Please try again.',
-        type: 'error',
       })
     }
   }
@@ -406,7 +405,6 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: 'Failed to load team members',
-        type: 'error',
       })
     } finally {
       setLoadingTeamMembers(false)
@@ -541,7 +539,6 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to add team member',
-        type: 'error',
       })
       throw error
     }
@@ -571,7 +568,6 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to remove team member',
-        type: 'error',
       })
       throw error
     }
@@ -604,7 +600,6 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to update team member role',
-        type: 'error',
       })
       throw error
     }
@@ -701,7 +696,6 @@ export default function ProjectTable({
       addToast({
         type: 'error', title: 'Error',
         description: error.message || 'Failed to save project settings',
-        type: 'error',
       })
       throw error
     }

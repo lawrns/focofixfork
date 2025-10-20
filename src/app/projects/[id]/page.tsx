@@ -268,6 +268,27 @@ function ProjectDetailsContent() {
                   showCreateButton={true}
                   onCreateTask={() => router.push(`/projects/${projectId}/tasks/new`)}
                   onEditTask={(taskId) => router.push(`/tasks/${taskId}`)}
+                  onDeleteTask={async (taskId) => {
+                    try {
+                      const response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'DELETE',
+                      })
+                      if (!response.ok) {
+                        throw new Error('Failed to delete task')
+                      }
+                      toast({
+                        title: 'Success',
+                        description: 'Task deleted successfully',
+                      })
+                      window.location.reload()
+                    } catch (error) {
+                      toast({
+                        title: 'Error',
+                        description: 'Failed to delete task',
+                        variant: 'destructive',
+                      })
+                    }
+                  }}
                 />
               </TabsContent>
 

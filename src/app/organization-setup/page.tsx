@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { Button } from '@/components/ui/button'
@@ -8,9 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
-
-// Global navigation blocker for organization setup
-let navigationBlocked = false
 
 export default function OrganizationSetupPage() {
   const router = useRouter()
@@ -21,103 +18,36 @@ export default function OrganizationSetupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Store original router.push to restore later
-  const originalPush = router.push
-
-  // Store cleanup function reference so it can be called on success
-  const cleanupRef = useRef<(() => void) | null>(null)
-
-  // Store event listener functions so they can be removed
-  const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null)
-  const popStateRef = useRef<((e: PopStateEvent) => void) | null>(null)
-
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login')
       return
     }
-
-    // Prevent navigation away from this page
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = 'You must complete organization setup to continue using Foco.'
-    }
-
-    const handlePopState = (e: PopStateEvent) => {
-      // Prevent back/forward navigation
-      window.history.pushState(null, '', window.location.href)
-      alert('Please complete organization setup before navigating away.')
-    }
-
-    // Store event listeners in refs
-    beforeUnloadRef.current = handleBeforeUnload
-    popStateRef.current = handlePopState
-
-    // Override browser back button
-    window.history.pushState(null, '', window.location.href)
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    window.addEventListener('popstate', handlePopState)
-
-    // Block navigation globally
-    navigationBlocked = true
-
-    // Override router.push to prevent navigation
-    router.push = (...args: any[]) => {
-      console.warn('Navigation blocked: Please complete organization setup first')
-      alert('Please complete organization setup before navigating away.')
-      return Promise.resolve(false)
-    }
-
-    // Store cleanup function in ref so it can be called on success
-    cleanupRef.current = () => {
-      console.log('Running cleanup function')
-      if (beforeUnloadRef.current) {
-        window.removeEventListener('beforeunload', beforeUnloadRef.current)
-      }
-      if (popStateRef.current) {
-        window.removeEventListener('popstate', popStateRef.current)
-      }
-      // Restore original router.push
-      router.push = originalPush
-      navigationBlocked = false
-      console.log('Cleanup completed')
-    }
-
-    console.log('Navigation blocking setup complete, cleanupRef.current:', cleanupRef.current)
-
-    return cleanupRef.current
-  }, [user, loading, router, originalPush])
+  }, [user, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    console.log('handleSubmit called')
-
     if (!organizationName.trim()) {
-      console.log('Organization name validation failed')
       setError('Organization name is required')
       return
     }
 
     if (!user) {
-      console.log('User authentication check failed')
       setError('User not authenticated')
       return
     }
 
     // Validate website URL if provided
     if (website.trim() && !/^https?:\/\/.+/.test(website.trim())) {
-      console.log('Website URL validation failed')
       setError('Website must be a valid URL starting with http:// or https://')
       return
     }
 
-    console.log('Starting organization setup API call')
     setIsLoading(true)
     setError(null)
 
     try {
-      console.log('Making fetch request to /api/organization-setup')
       const response = await fetch('/api/organization-setup', {
         method: 'POST',
         headers: {
@@ -131,33 +61,16 @@ export default function OrganizationSetupPage() {
         }),
       })
 
-      console.log('Fetch response status:', response.status)
-
       if (!response.ok) {
-        console.log('Response not OK, status:', response.status)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      console.log('Parsing JSON response')
       const result = await response.json()
 
-      console.log('Organization setup API response:', result)
-
       if (result.success) {
-        console.log('Organization setup successful, clearing navigation blockers')
-
-        // Clear all navigation blockers using the cleanup function
-        if (cleanupRef.current) {
-          cleanupRef.current()
-          console.log('Navigation blockers cleared via cleanup function')
-        }
-
         // Redirect to dashboard after successful setup
-        console.log('Redirecting to dashboard...')
-        // Use window.location to bypass router overrides
-        window.location.href = '/dashboard'
+        router.push('/dashboard')
       } else {
-        console.log('Organization setup failed:', result.error)
         setError(result.error || 'Failed to create organization')
       }
     } catch (error) {

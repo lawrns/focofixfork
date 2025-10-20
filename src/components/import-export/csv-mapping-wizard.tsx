@@ -189,7 +189,7 @@ export function CSVMappingWizard({ csvHeaders, onMappingComplete, onCancel }: CS
                       <SelectValue placeholder="Select field..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">
+                      <SelectItem value="none">
                         <div className="flex items-center gap-2">
                           <X className="w-4 h-4 text-gray-400" />
                           Skip this field
@@ -256,7 +256,7 @@ export function CSVMappingWizard({ csvHeaders, onMappingComplete, onCancel }: CS
                           <SelectValue placeholder="Select field..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">
+                          <SelectItem value="none">
                             <div className="flex items-center gap-2">
                               <X className="w-4 h-4 text-gray-400" />
                               Skip

@@ -136,9 +136,9 @@ export default function Header() {
           <h2 className="text-lg md:text-xl font-bold text-foreground">Foco</h2>
         </div>
         <div className="hidden lg:flex items-center gap-2">
-          <span className="rounded-lg bg-primary/20 px-3 py-2 text-sm font-medium text-primary whitespace-nowrap">
-            Project Management
-          </span>
+            <span className="rounded-lg bg-primary/20 px-3 py-2 text-sm font-medium text-primary whitespace-nowrap">
+              Project Management
+            </span>
           <span className="rounded-lg bg-muted px-3 py-2 text-sm font-medium text-muted-foreground whitespace-nowrap">
             Dashboard
           </span>

@@ -4,6 +4,7 @@ import React from 'react'
 import { HelpCircle } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip'
 import { IconButton } from './accessible-button'
+import { cn } from '@/lib/utils'
 
 interface HelpTooltipProps {
   content: React.ReactNode

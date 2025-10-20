@@ -83,6 +83,9 @@ export interface TranslationSchema {
     myTasks: string;
     calendar: string;
     favorites: string;
+    reports: string;
+    goals: string;
+    analytics: string;
     about: string;
     contact: string;
     help: string;

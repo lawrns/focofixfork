@@ -706,7 +706,7 @@ export interface TranslationSchema {
     deleteRuleConfirmation: string;
     ruleName: string;
     ruleNamePlaceholder: string;
-    description: string;
+    ruleDescription: string;
     descriptionPlaceholder: string;
     active: string;
     priority: string;

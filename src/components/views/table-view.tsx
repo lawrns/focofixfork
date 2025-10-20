@@ -526,7 +526,6 @@ const TableView: React.FC<TableViewProps> = ({
                             <motion.tr
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              {...provided.dragHandleProps}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
@@ -538,7 +537,14 @@ const TableView: React.FC<TableViewProps> = ({
                             >
                               {getColumns().map((column) => (
                                 <TableCell key={column.key} className="py-3">
-                                  {renderCell(item, column.key)}
+                                  {column.key === 'title' ? (
+                                    <div {...provided.dragHandleProps} className="flex items-center gap-2">
+                                      <div className="cursor-grab text-muted-foreground">⋮⋮</div>
+                                      {renderCell(item, column.key)}
+                                    </div>
+                                  ) : (
+                                    renderCell(item, column.key)
+                                  )}
                                 </TableCell>
                               ))}
                             </motion.tr>

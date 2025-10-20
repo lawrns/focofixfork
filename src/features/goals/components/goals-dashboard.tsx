@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/components/toast/toast';
+import { useToast } from '@/components/ui/toast';
 import {
   Target,
   Plus,
@@ -49,7 +49,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [analytics, setAnalytics] = useState<any>(null);
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { addToast } = useToast();
 
   const loadGoals = useCallback(async () => {
     setIsLoading(true);
@@ -79,16 +79,16 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
       setGoals(goalsData);
     } catch (error) {
       console.error('Error loading goals:', error);
-      toast({
+      addToast({
+        type: 'error',
         title: 'Error',
         description: 'Failed to load goals. Please try again.',
-        variant: 'destructive',
       });
       setGoals([]);
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [addToast]);
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -115,7 +115,8 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
       // Optimistically update UI immediately
       setGoals(prevGoals => prevGoals.filter(goal => goal.id !== deleteGoalId));
       
-      toast({
+      addToast({
+        type: 'success',
         title: 'Goal deleted',
         description: 'The goal has been successfully deleted.',
       });

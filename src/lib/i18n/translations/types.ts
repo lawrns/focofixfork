@@ -18,6 +18,9 @@ export interface TranslationSchema {
     warning: string;
     info: string;
     confirm: string;
+    confirmDelete: string;
+    deleteWarning: string;
+    deleting: string;
     yes: string;
     no: string;
     ok: string;

@@ -639,6 +639,7 @@ export interface TranslationSchema {
     title: string;
     subtitle: string;
     getStarted: string;
+    goToDashboard: string;
     watchDemo: string;
     features: string;
     pricing: string;

@@ -711,7 +711,7 @@ export const en: TranslationSchema = {
     deleteRuleConfirmation: 'Are you sure you want to delete this automation rule? This action cannot be undone.',
     ruleName: 'Rule Name',
     ruleNamePlaceholder: 'Enter rule name',
-    description: 'Description',
+    ruleDescription: 'Description',
     descriptionPlaceholder: 'Enter rule description',
     active: 'Active',
     priority: 'Priority',

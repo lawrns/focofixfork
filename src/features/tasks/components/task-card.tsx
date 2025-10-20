@@ -53,6 +53,7 @@ interface TaskCardProps {
     assignee_name?: string
     reporter_id: string
     reporter_name?: string
+    created_by: string
     estimated_hours: number | null
     actual_hours: number | null
     due_date: string | null

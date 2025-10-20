@@ -247,6 +247,10 @@ export interface TranslationSchema {
     removeFromFavorites: string;
     progress: string;
     dueTomorrow: string;
+    dueNextWeek: string;
+    removeDueDate: string;
+    editTaskDescription: string;
+    titlePlaceholder: string;
     taskName: string;
     taskDescription: string;
     taskStatus: string;

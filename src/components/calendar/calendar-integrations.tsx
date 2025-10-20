@@ -80,16 +80,17 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
           ? { ...integration, syncEnabled: enabled }
           : integration
       ))
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: enabled ? t('calendar.syncEnabled') : t('calendar.syncDisabled')
       })
     } catch (error: any) {
       console.error('Failed to toggle sync:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
         description: error.message || t('calendar.toggleSyncError'),
-        variant: 'destructive'
       })
     }
   }
@@ -98,16 +99,17 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
     try {
       setSyncingIntegrations(prev => new Set(prev).add(integrationId))
       await CalendarService.startSync(integrationId, 'manual')
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: t('calendar.syncStarted')
       })
     } catch (error: any) {
       console.error('Failed to start sync:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
         description: error.message || t('calendar.syncStartError'),
-        variant: 'destructive'
       })
     } finally {
       setSyncingIntegrations(prev => {
@@ -123,16 +125,17 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
       await CalendarService.deleteIntegration(integrationId)
       setIntegrations(prev => prev.filter(integration => integration.id !== integrationId))
       setShowDeleteDialog(null)
-      toast({
+      addToast({
+        type: 'success',
         title: t('common.success'),
         description: t('calendar.integrationDeleted')
       })
     } catch (error: any) {
       console.error('Failed to delete integration:', error)
-      toast({
+      addToast({
+        type: 'error',
         title: t('common.error'),
         description: error.message || t('calendar.deleteIntegrationError'),
-        variant: 'destructive'
       })
     }
   }

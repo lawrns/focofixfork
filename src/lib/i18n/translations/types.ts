@@ -79,6 +79,10 @@ export interface TranslationSchema {
     logout: string;
     signOut: string;
     home: string;
+    inbox: string;
+    myTasks: string;
+    calendar: string;
+    favorites: string;
     about: string;
     contact: string;
     help: string;

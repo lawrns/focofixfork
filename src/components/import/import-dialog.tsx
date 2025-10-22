@@ -204,8 +204,8 @@ export default function ImportDialog({
         {trigger || (
           <Button variant="outline" className={className}>
             <Upload className="w-4 h-4 mr-2 opacity-70" />
-            <span className="hidden sm:inline">Import Data</span>
-            <span className="sm:hidden">Import</span>
+            <span className="hidden md:inline">Import Data</span>
+            <span className="md:hidden">Import</span>
           </Button>
         )}
       </DialogTrigger>

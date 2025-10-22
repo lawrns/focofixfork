@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect, ReactNode } from 'react';
 import { AuthProvider } from '@/lib/contexts/auth-context';
 import { I18nProvider } from '@/lib/i18n/context';
 import { ThemeProvider } from '@/components/providers/theme-provider';
@@ -14,9 +13,26 @@ interface ProvidersProps {
   children: React.ReactNode;
 }
 
-export function Providers({ children }: ProvidersProps) {
-  const pathname = usePathname();
+function ConditionalMobileNav() {
+  const pathname = usePathnameClient();
+  
+  if (!pathname || ['/login', '/register', '/organization-setup'].includes(pathname)) {
+    return null;
+  }
+  
+  return <MobileBottomNav showFab={false} />;
+}
 
+function usePathnameClient() {
+  try {
+    const { usePathname } = require('next/navigation');
+    return usePathname();
+  } catch {
+    return null;
+  }
+}
+
+export function Providers({ children }: ProvidersProps) {
   // Initialize PWA
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
@@ -33,8 +49,7 @@ export function Providers({ children }: ProvidersProps) {
           <ToastProvider>
             <AuthProvider>
               {children}
-              {/* <MobilePerformanceMonitor /> */}
-              {pathname !== '/login' && pathname !== '/register' && pathname !== '/organization-setup' && <MobileBottomNav showFab={false} />}
+              <ConditionalMobileNav />
               <Toaster />
               <ToastViewport />
             </AuthProvider>

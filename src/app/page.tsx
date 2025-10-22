@@ -47,8 +47,10 @@ export default function Home() {
                 width={40}
                 height={40}
                 className="w-10 h-10 object-contain"
+                priority
+                quality={100}
               />
-              <span className="ml-3 text-2xl font-bold text-[#0A0A0A]">Foco</span>
+              <span className="ml-3 text-xl font-bold text-gray-900">Foco</span>
             </div>
 
             <div className="flex items-center space-x-4">

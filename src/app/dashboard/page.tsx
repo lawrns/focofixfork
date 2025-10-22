@@ -339,7 +339,7 @@ export default function DashboardPage() {
             />
             </Suspense>
 
-            <div className="flex items-center gap-2 sm:gap-3 pb-4">
+            <div className="flex items-center gap-2 md:gap-3 pb-4">
               <Button
                 onClick={() => setShowNewProjectModal(true)}
                 variant="default"
@@ -347,8 +347,8 @@ export default function DashboardPage() {
                 data-tour="create-project-button"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Create Project</span>
-                <span className="sm:hidden">Create</span>
+                <span className="hidden md:inline">Create Project</span>
+                <span className="md:hidden">Create</span>
               </Button>
               <Button
                 onClick={() => setShowAIProjectModal(true)}
@@ -370,8 +370,8 @@ export default function DashboardPage() {
                 >
                   <path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                 </svg>
-                <span className="hidden sm:inline">Create with AI</span>
-                <span className="sm:hidden">AI</span>
+                <span className="hidden md:inline">Create with AI</span>
+                <span className="md:hidden">AI</span>
               </Button>
               <ImportDialog
                 onImportComplete={() => window.location.reload()}

@@ -1,8 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { ErrorBoundary } from "@/components/error-boundary";
-import { ToastProvider } from "@/components/ui/toast";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import type { Metadata } from "next";
@@ -95,13 +93,9 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className={`${inter.variable} antialiased`}>
-        <ErrorBoundary>
-          <ToastProvider>
-            <OfflineBanner />
-            <Providers>{children}</Providers>
-            <ServiceWorkerRegistration />
-          </ToastProvider>
-        </ErrorBoundary>
+        <OfflineBanner />
+        <Providers>{children}</Providers>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

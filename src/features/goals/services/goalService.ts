@@ -57,8 +57,16 @@ export class GoalsService {
    */
   static async getGoals(organizationId?: string, projectId?: string, userId?: string): Promise<Goal[]> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('User not authenticated');
+        return [];
+      }
+
       let query = supabase.from('goals' as any).select('*');
 
+      // Apply filters
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
       }

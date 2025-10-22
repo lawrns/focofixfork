@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/toast/toast';
 import {
   Target,
   Plus,
@@ -49,7 +49,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [analytics, setAnalytics] = useState<any>(null);
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
-  const { addToast } = useToast();
+  const { toast } = useToast();
 
   const loadGoals = useCallback(async () => {
     setIsLoading(true);
@@ -79,8 +79,8 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
       setGoals(goalsData);
     } catch (error) {
       console.error('Error loading goals:', error);
-      addToast({
-        type: 'error',
+      toast({
+        variant: 'destructive',
         title: 'Error',
         description: 'Failed to load goals. Please try again.',
       });
@@ -88,7 +88,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [toast]);
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -109,32 +109,29 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete goal');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete goal');
       }
 
-      // Optimistically update UI immediately
-      setGoals(prevGoals => prevGoals.filter(goal => goal.id !== deleteGoalId));
-      
-      addToast({
-        type: 'success',
+      // Only update UI after successful API response
+      toast({
+        variant: 'success',
         title: 'Goal deleted',
         description: 'The goal has been successfully deleted.',
       });
       
       setDeleteGoalId(null);
       
-      // Reload to ensure consistency
-      await loadGoals();
-      await loadAnalytics();
+      // Reload data to ensure consistency
+      await Promise.all([loadGoals(), loadAnalytics()]);
     } catch (error) {
       console.error('Error deleting goal:', error);
-      addToast({
-        type: 'error',
+      toast({
+        variant: 'destructive',
         title: 'Error',
-        description: 'Failed to delete goal. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to delete goal. Please try again.',
       });
-      // Reload goals to revert optimistic update
-      await loadGoals();
+      setDeleteGoalId(null);
     }
   };
 

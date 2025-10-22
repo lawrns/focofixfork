@@ -50,18 +50,22 @@ export function I18nProvider({
 
   // Load language from storage on mount
   useEffect(() => {
-    const savedLanguage = localStorage.getItem(storageKey) as LanguageCode;
-    if (savedLanguage && SUPPORTED_LANGUAGES[savedLanguage]) {
-      setLanguage(savedLanguage);
+    if (typeof window !== 'undefined') {
+      const savedLanguage = localStorage.getItem(storageKey) as LanguageCode;
+      if (savedLanguage && SUPPORTED_LANGUAGES[savedLanguage]) {
+        setLanguage(savedLanguage);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
   // Update document direction for RTL languages
   useEffect(() => {
-    const dir = SUPPORTED_LANGUAGES[language]?.direction || 'ltr';
-    document.documentElement.dir = dir;
-    document.documentElement.lang = language;
+    if (typeof window !== 'undefined') {
+      const dir = SUPPORTED_LANGUAGES[language]?.direction || 'ltr';
+      document.documentElement.dir = dir;
+      document.documentElement.lang = language;
+    }
   }, [language]);
 
   const setLanguage = async (lang: LanguageCode) => {
@@ -86,7 +90,9 @@ export function I18nProvider({
       }
 
       setLanguageState(lang);
-      localStorage.setItem(storageKey, lang);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(storageKey, lang);
+      }
     } catch (error) {
       console.error('Failed to load language:', error);
     } finally {

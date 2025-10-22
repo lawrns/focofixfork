@@ -268,7 +268,11 @@ export function useRealtime(
 
   const unsubscribe = useCallback(() => {
     if (channelRef.current) {
-      supabase.removeChannel(channelRef.current)
+      try {
+        supabase.removeChannel(channelRef.current)
+      } catch (error) {
+        console.warn('[useRealtime] Error removing channel:', error)
+      }
       channelRef.current = null
     }
   }, [])

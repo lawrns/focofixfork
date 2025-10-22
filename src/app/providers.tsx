@@ -50,7 +50,6 @@ export function Providers({ children }: ProvidersProps) {
             <AuthProvider>
               {children}
               <ConditionalMobileNav />
-              <Toaster />
               <ToastViewport />
             </AuthProvider>
           </ToastProvider>

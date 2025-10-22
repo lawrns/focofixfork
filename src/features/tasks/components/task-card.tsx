@@ -282,7 +282,7 @@ export function TaskCard({
         {/* Status and Priority Badges */}
         <div className="flex flex-wrap gap-2">
           <Badge className={`${statusInfo.color} text-sm font-semibold`}>
-            {t(`status.${currentTask.status.replace('_', '')}`)}
+            {t(`status.${currentTask.status}`)}
           </Badge>
           <Badge className={`${priorityConfig[currentTask.priority].color} text-sm font-semibold`}>
             {t(`priority.${currentTask.priority}`)}

@@ -84,7 +84,11 @@ class RealtimeService {
     return {
       channel,
       unsubscribe: () => {
-        supabase.removeChannel(channel!)
+        try {
+          supabase.removeChannel(channel!)
+        } catch (error) {
+          console.warn(`[RealtimeService] Error removing channel ${channelName}:`, error)
+        }
         this.channels.delete(channelName)
       },
     }

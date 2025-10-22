@@ -156,7 +156,7 @@ export function TaskEditDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todo">{t('status.todo')}</SelectItem>
-                  <SelectItem value="in_progress">{t('status.inProgress')}</SelectItem>
+                  <SelectItem value="in_progress">{t('status.in_progress')}</SelectItem>
                   <SelectItem value="review">{t('status.review')}</SelectItem>
                   <SelectItem value="done">{t('status.done')}</SelectItem>
                 </SelectContent>

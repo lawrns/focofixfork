@@ -357,20 +357,54 @@ export class AnalyticsService {
    * Get project IDs accessible to the current user
    */
   private static async getAccessibleProjectIds(userId: string, organizationId?: string): Promise<string[]> {
-    let query = supabaseAdmin
-      .from('project_members')
-      .select('project_id')
-      .eq('user_id', userId)
+    const projectIds = new Set<string>()
 
-    if (organizationId) {
-      // Filter by organization
-      query = query.eq('projects.organization_id', organizationId)
+    try {
+      // Get projects where user is a member
+      let membersQuery = supabaseAdmin
+        .from('project_members')
+        .select(`
+          project_id,
+          projects!inner(
+            id,
+            organization_id
+          )
+        `)
+        .eq('user_id', userId)
+
+      if (organizationId) {
+        membersQuery = membersQuery.eq('projects.organization_id', organizationId)
+      }
+
+      const { data: memberData, error: memberError } = await membersQuery
+      if (memberError) {
+        console.error('Error fetching project memberships:', memberError)
+      } else {
+        memberData?.forEach(pm => projectIds.add(pm.project_id))
+      }
+
+      // Get projects created by the user
+      let createdQuery = supabaseAdmin
+        .from('projects')
+        .select('id, organization_id')
+        .eq('created_by', userId)
+
+      if (organizationId) {
+        createdQuery = createdQuery.eq('organization_id', organizationId)
+      }
+
+      const { data: createdData, error: createdError } = await createdQuery
+      if (createdError) {
+        console.error('Error fetching created projects:', createdError)
+      } else {
+        createdData?.forEach(p => projectIds.add(p.id))
+      }
+
+      return Array.from(projectIds)
+    } catch (error) {
+      console.error('Error fetching accessible projects:', error)
+      return []
     }
-
-    const { data, error } = await query
-    if (error) throw error
-
-    return data?.map(pm => pm.project_id) || []
   }
 
   /**

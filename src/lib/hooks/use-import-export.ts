@@ -17,7 +17,7 @@ import { Project } from '@/features/projects/types'
 import { Task } from '@/features/tasks/types'
 import { Organization } from '@/lib/models/organizations'
 import { Label } from '@/lib/models/labels'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/toast/toast'
 
 interface UseImportExportOptions {
   projects?: Project[]
@@ -39,7 +39,7 @@ export function useImportExport({
   const [exportProgress, setExportProgress] = useState(0)
   const [importProgress, setImportProgress] = useState(0)
   const [lastImportResult, setLastImportResult] = useState<ImportResult | null>(null)
-  const toastNotification = useToast()
+  const { toast: toastNotification } = useToast()
 
   // Export data
   const exportDataToFile = useCallback(async (format: ExportFormat, filename?: string) => {
@@ -71,12 +71,20 @@ export function useImportExport({
       await downloadExport(content, exportFilename, format)
       setExportProgress(100)
       
-      toastNotification.addToast({ type: 'success', title: 'Export Complete', description: `Successfully exported ${format.toUpperCase()} file` })
+      toastNotification({
+        variant: 'success',
+        title: 'Export Complete',
+        description: `Successfully exported ${format.toUpperCase()} file`
+      })
       
       return { success: true, content }
       
     } catch (error) {
-      toastNotification.addToast({ type: 'error', title: 'Export Failed', description: `Export failed: ${error}` })
+      toastNotification({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: `Export failed: ${error}`
+      })
       return { success: false, error: error as Error }
     } finally {
       setIsExporting(false)
@@ -113,10 +121,18 @@ export function useImportExport({
       
       if (result.success) {
         const totalImported = result.imported.projects + result.imported.tasks + result.imported.organizations + result.imported.labels
-        toastNotification.addToast({ type: 'success', title: 'Import Complete', description: `Successfully imported ${totalImported} items` })
+        toastNotification({
+          variant: 'success',
+          title: 'Import Complete',
+          description: `Successfully imported ${totalImported} items`
+        })
         onDataChange?.()
       } else {
-        toastNotification.addToast({ type: 'error', title: 'Import Failed', description: `Import failed: ${result.errors.join(', ')}` })
+        toastNotification({
+          variant: 'destructive',
+          title: 'Import Failed',
+          description: `Import failed: ${result.errors.join(', ')}`
+        })
       }
       
       return result
@@ -130,7 +146,11 @@ export function useImportExport({
       }
       
       setLastImportResult(errorResult)
-      toastNotification.addToast({ type: 'error', title: 'Import Failed', description: `Import failed: ${error}` })
+      toastNotification({
+        variant: 'destructive',
+        title: 'Import Failed',
+        description: `Import failed: ${error}`
+      })
       return errorResult
       
     } finally {

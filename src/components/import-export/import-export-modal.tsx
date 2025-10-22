@@ -40,7 +40,7 @@ import { Project } from '@/features/projects/types'
 import { Task } from '@/features/tasks/types'
 import { Organization } from '@/lib/models/organizations'
 import { Label as LabelType } from '@/lib/models/labels'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/toast/toast'
 
 interface ImportExportModalProps {
   projects?: Project[]
@@ -68,7 +68,7 @@ export function ImportExportModal({
   const [progress, setProgress] = useState(0)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [showMapping, setShowMapping] = useState(false)
-  const toastNotification = useToast()
+  const { toast: toastNotification } = useToast()
 
   // Export handlers
   const handleExport = useCallback(async () => {
@@ -100,11 +100,19 @@ export function ImportExportModal({
       await downloadExport(content, filename, exportFormat)
       setProgress(100)
       
-      toastNotification.addToast({ type: 'success', title: 'Export Complete', description: `Successfully exported ${exportFormat.toUpperCase()} file` })
+      toastNotification({
+        variant: 'success',
+        title: 'Export Complete',
+        description: `Successfully exported ${exportFormat.toUpperCase()} file`
+      })
       onExportComplete?.()
       
     } catch (error) {
-      toastNotification.addToast({ type: 'error', title: 'Export Failed', description: `Export failed: ${error}` })
+      toastNotification({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: `Export failed: ${error}`
+      })
     } finally {
       setIsProcessing(false)
       setProgress(0)
@@ -136,14 +144,26 @@ export function ImportExportModal({
       setImportResult(result)
       
       if (result.success) {
-        toastNotification.addToast({ type: 'success', title: 'Import Complete', description: `Successfully imported ${result.imported.projects + result.imported.tasks} items` })
+        toastNotification({
+          variant: 'success',
+          title: 'Import Complete',
+          description: `Successfully imported ${result.imported.projects + result.imported.tasks} items`
+        })
         onImportComplete?.(result)
       } else {
-        toastNotification.addToast({ type: 'error', title: 'Import Failed', description: `Import failed: ${result.errors.join(', ')}` })
+        toastNotification({
+          variant: 'destructive',
+          title: 'Import Failed',
+          description: `Import failed: ${result.errors.join(', ')}`
+        })
       }
       
     } catch (error) {
-      toastNotification.addToast({ type: 'error', title: 'Import Failed', description: `Import failed: ${error}` })
+      toastNotification({
+        variant: 'destructive',
+        title: 'Import Failed',
+        description: `Import failed: ${error}`
+      })
     } finally {
       setIsProcessing(false)
       setProgress(0)

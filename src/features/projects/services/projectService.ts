@@ -52,16 +52,12 @@ export class ProjectsService {
     }
   ): Promise<ProjectsListResponse> {
     try {
-      console.log('ProjectsService.getUserProjects: Starting with userId:', userId)
       if (!userId) {
-        console.log('ProjectsService.getUserProjects: No userId provided')
         return {
           success: false,
           error: 'User not authenticated'
         }
       }
-
-      console.log('ProjectsService.getUserProjects: Building comprehensive query for userId:', userId)
 
       // Get user's organization memberships first
       const { data: userOrgs, error: orgError } = await supabaseAdmin
@@ -78,20 +74,14 @@ export class ProjectsService {
       }
 
       const userOrgIds = userOrgs?.map(org => org.organization_id) || []
-      console.log('ProjectsService.getUserProjects: User belongs to organizations:', userOrgIds)
 
       // Build query to get all projects user has access to:
       // 1. Projects they created
       // 2. Projects in organizations they belong to
-      // 3. Projects they're assigned to via project_team_assignments
+      // Simplified query without nested joins for better performance
       let query = supabaseAdmin
         .from('projects')
-        .select(`
-          *,
-          organizations (
-            name
-          )
-        `)
+        .select('*')
 
       // Apply access filters - user can see projects if:
       // - They created it, OR
@@ -127,10 +117,7 @@ export class ProjectsService {
         query = query.range(options.offset, (options.offset + (options.limit || 10)) - 1)
       }
 
-      console.log('ProjectsService.getUserProjects: Executing query...')
       const { data, error, count } = await query
-
-      console.log('ProjectsService.getUserProjects: Query result:', { error: error?.message, dataCount: data?.length, count })
 
       if (error) {
         console.error('Projects fetch error:', error)
@@ -154,8 +141,7 @@ export class ProjectsService {
           due_date: project.due_date,
           progress_percentage: project.progress_percentage,
           created_at: project.created_at,
-          updated_at: project.updated_at,
-          organizations: project.organizations ? { name: project.organizations.name } : undefined
+          updated_at: project.updated_at
         })) || [],
         pagination: {
           total: count || data?.length || 0,

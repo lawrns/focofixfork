@@ -133,17 +133,17 @@ export default function PersonalizedDashboardPage() {
         setProjects(projectsList)
       }
 
-      // Calculate stats
+      // Calculate stats - use the fetched data, not stale state
       const now = new Date()
-      const totalTasks = tasks.length
-      const completedTasks = tasks.filter(t => t.status === 'done').length
-      const overdueTasks = tasks.filter(t => 
+      const totalTasks = tasksList.length
+      const completedTasks = tasksList.filter(t => t.status === 'done').length
+      const overdueTasks = tasksList.filter(t => 
         t.due_date && new Date(t.due_date) < now && t.status !== 'done'
       ).length
 
-      const totalProjects = projects.length
-      const activeProjects = projects.filter(p => p.status === 'active').length
-      const completedProjects = projects.filter(p => p.status === 'completed').length
+      const totalProjects = projectsList.length
+      const activeProjects = projectsList.filter(p => p.status === 'active').length
+      const completedProjects = projectsList.filter(p => p.status === 'completed').length
 
       setStats({
         totalTasks,
@@ -162,12 +162,13 @@ export default function PersonalizedDashboardPage() {
     }
   }, [user])
 
-  // Load data on mount
+  // Load data on mount or when user changes
   useEffect(() => {
     if (user && !loading) {
       fetchUserData()
     }
-  }, [user, loading, fetchUserData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading])
 
   // Event handlers
   const handleViewTask = (taskId: string) => {

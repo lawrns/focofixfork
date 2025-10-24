@@ -133,17 +133,21 @@ export default function Sidebar() {
     if (!user) return
     
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchProjects(true) // Force refresh
+      if (!document.hidden && fetchProjectsRef.current) {
+        fetchProjectsRef.current(true) // Force refresh using ref
       }
     }
 
     const handleFocus = () => {
-      fetchProjects(true) // Force refresh
+      if (fetchProjectsRef.current) {
+        fetchProjectsRef.current(true) // Force refresh using ref
+      }
     }
 
     const handleProjectDeleted = (event: CustomEvent) => {
-      fetchProjects(true) // Force refresh
+      if (fetchProjectsRef.current) {
+        fetchProjectsRef.current(true) // Force refresh using ref
+      }
     }
 
     const handleProjectUpdated = () => {
@@ -154,7 +158,9 @@ export default function Sidebar() {
     }
 
     const handleForceProjectRefresh = () => {
-      fetchProjects(true) // Force fresh data from API
+      if (fetchProjectsRef.current) {
+        fetchProjectsRef.current(true) // Force fresh data from API using ref
+      }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -181,7 +187,9 @@ export default function Sidebar() {
       const timeSinceLastUpdate = now - lastRealtimeUpdate
 
       if (timeSinceLastUpdate > 300000) { // 5 minutes (300000ms)
-        fetchProjects(true) // Force refresh
+        if (fetchProjectsRef.current) {
+          fetchProjectsRef.current(true) // Force refresh using ref
+        }
         setLastRealtimeUpdate(now) // Reset timer
       }
     }, 60000) // Check every 60 seconds

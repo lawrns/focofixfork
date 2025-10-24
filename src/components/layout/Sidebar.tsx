@@ -114,7 +114,7 @@ export default function Sidebar() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id]) // Only depend on user.id to prevent unnecessary recreations
+  }, []) // No dependencies - use user from closure
 
   useEffect(() => {
     fetchProjects(true) // Always force refresh on mount

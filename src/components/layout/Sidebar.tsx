@@ -165,20 +165,19 @@ export default function Sidebar() {
     }
   }, [user, fetchProjects, projects])
 
-  // Fallback: If no real-time updates received in 30 seconds, force refresh
+  // Fallback: If no real-time updates received in 5 minutes, force refresh
   useEffect(() => {
     const checkRealtimeHealth = () => {
       const now = Date.now()
       const timeSinceLastUpdate = now - lastRealtimeUpdate
 
-      if (timeSinceLastUpdate > 30000) { // 30 seconds
-        console.log('Sidebar: No real-time updates received in 30s, forcing refresh')
+      if (timeSinceLastUpdate > 300000) { // 5 minutes (300000ms)
         fetchProjects(true) // Force refresh
         setLastRealtimeUpdate(now) // Reset timer
       }
     }
 
-    const interval = setInterval(checkRealtimeHealth, 10000) // Check every 10 seconds
+    const interval = setInterval(checkRealtimeHealth, 60000) // Check every 60 seconds
 
     return () => clearInterval(interval)
   }, [lastRealtimeUpdate, user, fetchProjects])

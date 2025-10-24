@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -19,6 +19,7 @@ import {
   type DashboardStats
 } from '@/components/dashboard/widgets/dashboard-widgets'
 import { toast } from 'sonner'
+import { apiCache } from '@/lib/api-cache'
 
 // Disable static generation for this page since it requires authentication
 noStore()
@@ -57,12 +58,14 @@ function PersonalizedDashboardSkeleton() {
 }
 
 export default function PersonalizedDashboardPage() {
-  console.log('PersonalizedDashboardPage render')
-
   // Hooks
   const router = useRouter()
   const { user, loading } = useAuth()
   const { t } = useTranslation()
+  
+  // Use ref to prevent unnecessary re-renders
+  const isFetchingRef = useRef(false)
+  const lastFetchRef = useRef<number>(0)
 
   // State
   const [tasks, setTasks] = useState<Task[]>([])
@@ -82,12 +85,53 @@ export default function PersonalizedDashboardPage() {
     document.title = 'Personalized Dashboard | Foco'
   }, [])
 
-  // Fetch user data
-  const fetchUserData = useCallback(async () => {
-    if (!user) return
+  // Fetch user data with caching and debouncing
+  const fetchUserData = useCallback(async (force = false) => {
+    if (!user || isFetchingRef.current) return
+
+    // Debounce - prevent rapid successive calls
+    const now = Date.now()
+    if (!force && (now - lastFetchRef.current) < 2000) {
+      return
+    }
+    lastFetchRef.current = now
+    isFetchingRef.current = true
 
     try {
       setIsLoading(true)
+
+      // Check cache first
+      const cacheKey = `dashboard-${user.id}`
+      const cachedData = apiCache.get<{ tasks: Task[], projects: Project[] }>(cacheKey)
+      
+      if (cachedData && !force) {
+        setTasks(cachedData.tasks)
+        setProjects(cachedData.projects)
+        
+        // Calculate stats from cached data
+        const now = new Date()
+        const totalTasks = cachedData.tasks.length
+        const completedTasks = cachedData.tasks.filter(t => t.status === 'done').length
+        const overdueTasks = cachedData.tasks.filter(t =>
+          t.due_date && new Date(t.due_date) < now && t.status !== 'done'
+        ).length
+        const totalProjects = cachedData.projects.length
+        const activeProjects = cachedData.projects.filter(p => p.status === 'active').length
+        const completedProjects = cachedData.projects.filter(p => p.status === 'completed').length
+
+        setStats({
+          totalTasks,
+          completedTasks,
+          overdueTasks,
+          totalProjects,
+          activeProjects,
+          completedProjects
+        })
+        
+        setIsLoading(false)
+        isFetchingRef.current = false
+        return
+      }
 
       // Initialize lists at function scope
       let tasksList: Task[] = []
@@ -135,6 +179,9 @@ export default function PersonalizedDashboardPage() {
         setProjects(projectsList)
       }
 
+      // Cache the results
+      apiCache.set(cacheKey, { tasks: tasksList, projects: projectsList }, 30000)
+
       // Calculate stats - use the fetched data, not stale state
       const now = new Date()
       const totalTasks = tasksList.length
@@ -157,10 +204,10 @@ export default function PersonalizedDashboardPage() {
       })
 
     } catch (error) {
-      console.error('Failed to fetch user data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
       setIsLoading(false)
+      isFetchingRef.current = false
     }
   }, [user])
 
@@ -251,7 +298,7 @@ export default function PersonalizedDashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchUserData}
+              onClick={() => fetchUserData(true)}
               className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4"
             >
               Refresh

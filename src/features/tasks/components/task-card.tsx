@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -97,7 +97,7 @@ const priorityConfig = {
   },
 }
 
-export function TaskCard({
+function TaskCardComponent({
   task,
   onEdit,
   onStatusChange,
@@ -375,4 +375,16 @@ export function TaskCard({
   )
 }
 
-
+// Memoize TaskCard to prevent unnecessary re-renders
+export const TaskCard = memo(TaskCardComponent, (prevProps, nextProps) => {
+  // Custom comparison function - only re-render if task data actually changed
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.priority === nextProps.task.priority &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.description === nextProps.task.description &&
+    prevProps.showActions === nextProps.showActions &&
+    prevProps.showAssignee === nextProps.showAssignee
+  )
+})

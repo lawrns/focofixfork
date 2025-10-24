@@ -6,7 +6,7 @@ import { I18nProvider } from '@/lib/i18n/context';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import ErrorBoundary from '@/components/error/error-boundary';
 import { Toaster } from 'sonner';
-import { ToastProvider, ToastViewport } from '@/components/toast/toast';
+import { ToastProvider } from '@/components/ui/toast';
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav';
 
 interface ProvidersProps {
@@ -50,7 +50,6 @@ export function Providers({ children }: ProvidersProps) {
             <AuthProvider>
               {children}
               <ConditionalMobileNav />
-              <ToastViewport />
             </AuthProvider>
           </ToastProvider>
         </I18nProvider>

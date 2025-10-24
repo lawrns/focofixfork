@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ProjectClientService } from '../services/projectClientService'
@@ -783,6 +783,8 @@ export default function ProjectTable({
   const someSelected = selectedProjects.size > 0 && selectedProjects.size < projects.length
 
   // Fetch projects function
+  const fetchProjectsRef = useRef<(() => Promise<void>) | null>(null)
+  
   const fetchProjects = useCallback(async () => {
     if (!user) return
 
@@ -820,12 +822,19 @@ export default function ProjectTable({
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user?.id]) // Only depend on user.id
+
+  // Store latest fetchProjects in ref
+  useEffect(() => {
+    fetchProjectsRef.current = fetchProjects
+  }, [fetchProjects])
 
   // Initial fetch
   useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
+    if (user && fetchProjectsRef.current) {
+      fetchProjectsRef.current()
+    }
+  }, [user?.id]) // Only depend on user.id, not fetchProjects
 
   // Apply filtering and sorting
   useEffect(() => {

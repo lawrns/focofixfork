@@ -39,8 +39,6 @@ export default function Header() {
   const displayUser = user
   const avatarText = displayUser?.email?.charAt(0).toUpperCase() || '?'
 
-  console.log('Header component rendering:', { user: !!user, displayUser: displayUser?.email })
-
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -66,7 +64,6 @@ export default function Header() {
 
       setSearchResults(results)
     } catch (error) {
-      console.error('Search error:', error)
       setSearchResults([])
     } finally {
       setIsSearching(false)
@@ -148,10 +145,10 @@ export default function Header() {
       <div className="hidden md:block">
         <SavedViews
           onViewSelect={(view: ViewConfig) => {
-            console.log('Selected view:', view)
+            // Handle view selection
           }}
           onViewSave={(name: string) => {
-            console.log('Saving view:', name)
+            // Handle view save
           }}
           currentViewConfig={{
             type: 'table',

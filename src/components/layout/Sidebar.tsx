@@ -114,7 +114,7 @@ export default function Sidebar() {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user?.id]) // Only depend on user.id to prevent unnecessary recreations
 
   useEffect(() => {
     fetchProjects(true) // Always force refresh on mount
@@ -122,6 +122,8 @@ export default function Sidebar() {
 
   // Refresh projects when navigating back to dashboard or when component becomes visible
   useEffect(() => {
+    if (!user) return
+    
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchProjects(true) // Force refresh
@@ -160,10 +162,12 @@ export default function Sidebar() {
       window.removeEventListener('projectUpdated', handleProjectUpdated)
       window.removeEventListener('forceProjectRefresh', handleForceProjectRefresh)
     }
-  }, [user, fetchProjects, projects])
+  }, [user?.id, fetchProjects]) // Removed 'projects' from deps to prevent infinite loop
 
   // Fallback: If no real-time updates received in 5 minutes, force refresh
   useEffect(() => {
+    if (!user) return
+    
     const checkRealtimeHealth = () => {
       const now = Date.now()
       const timeSinceLastUpdate = now - lastRealtimeUpdate
@@ -177,7 +181,7 @@ export default function Sidebar() {
     const interval = setInterval(checkRealtimeHealth, 60000) // Check every 60 seconds
 
     return () => clearInterval(interval)
-  }, [lastRealtimeUpdate, user, fetchProjects])
+  }, [lastRealtimeUpdate, user?.id, fetchProjects])
 
   // Don't auto-refresh on auth changes - rely on store subscription
 

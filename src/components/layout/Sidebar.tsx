@@ -24,6 +24,7 @@ import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
 import { useProjects } from '@/features/projects/hooks/useProjects'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiCache } from '@/lib/api-cache'
 
 interface Project {
   id: string
@@ -62,12 +63,22 @@ export default function Sidebar() {
     // Debounce rapid successive calls
     const now = Date.now()
     if (!forceRefresh && lastFetchTime.current && (now - lastFetchTime.current) < 1000) {
-      console.log('Sidebar: skipping fetch due to debouncing')
       return
     }
     lastFetchTime.current = now
 
-    console.log('Sidebar: fetching fresh projects from API')
+    // Check cache first
+    const cacheKey = `sidebar-projects-${user.id}`
+    if (!forceRefresh) {
+      const cachedProjects = apiCache.get<Project[]>(cacheKey)
+      if (cachedProjects) {
+        projectStore.setProjects(cachedProjects)
+        setProjects(cachedProjects)
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       const response = await fetch(`/api/projects?t=${Date.now()}`, {
         cache: 'no-cache',
@@ -79,33 +90,25 @@ export default function Sidebar() {
         // Handle different API response formats
         let projectsData: Project[] = []
         if (data.success && data.data && Array.isArray(data.data.data)) {
-          // New format: {success: true, data: {data: [...], pagination: {...}}}
           projectsData = data.data.data
         } else if (data.success && Array.isArray(data.data)) {
-          // Legacy format: {success: true, data: [...]}
           projectsData = data.data
         } else if (Array.isArray(data.data)) {
-          // Alternative new format: {data: [...], pagination: {...}}
           projectsData = data.data
         } else if (Array.isArray(data)) {
-          // Direct array format
           projectsData = data
         }
 
-        console.log('Sidebar: fetched projects from API:', projectsData.length)
-        if (projectsData.length > 0) {
-          console.log('Sidebar: project IDs from API:', projectsData.map((p: any) => p.id))
-        }
+        // Cache the results
+        apiCache.set(cacheKey, projectsData, 30000)
 
         projectStore.setProjects(projectsData)
         setProjects(projectsData)
       } else {
-        console.error('Sidebar: failed to fetch projects, status:', response.status)
         projectStore.setProjects([])
         setProjects([])
       }
     } catch (error) {
-      console.error('Error fetching projects:', error)
       projectStore.setProjects([])
       setProjects([])
     } finally {
@@ -121,24 +124,19 @@ export default function Sidebar() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Sidebar: Page became visible, refreshing projects')
         fetchProjects(true) // Force refresh
       }
     }
 
     const handleFocus = () => {
-      console.log('Sidebar: Window focused, refreshing projects')
       fetchProjects(true) // Force refresh
     }
 
     const handleProjectDeleted = (event: CustomEvent) => {
-      console.log('Sidebar: Project deleted event received:', event.detail?.projectId)
-      console.log('Sidebar: Projects before deletion:', projects.map(p => ({ id: p.id, name: p.name })))
       fetchProjects(true) // Force refresh
     }
 
     const handleProjectUpdated = () => {
-      console.log('Sidebar: Project updated, ensuring latest data')
       // For updates, we don't need to force refresh since the store should be updated
       // But we can ensure the sidebar reflects the latest store state
       const latestProjects = projectStore.getProjects()
@@ -146,7 +144,6 @@ export default function Sidebar() {
     }
 
     const handleForceProjectRefresh = () => {
-      console.log('Sidebar: Force project refresh requested, fetching from API')
       fetchProjects(true) // Force fresh data from API
     }
 
@@ -194,15 +191,13 @@ export default function Sidebar() {
             setPrimaryOrgId(data.data[0].id)
           }
         })
-        .catch(err => console.error('Failed to fetch organizations:', err))
+        .catch(() => {})
     }
   }, [user])
 
   // Subscribe to global project store
   useEffect(() => {
-    console.log('Sidebar: subscribing to project store')
     const unsubscribe = projectStore.subscribe((storeProjects) => {
-      console.log('Sidebar: received projects from store:', storeProjects.length, 'projects:', storeProjects.map(p => ({ id: p.id, name: p.name })))
       setProjects(storeProjects as Project[])
     })
 
@@ -211,38 +206,21 @@ export default function Sidebar() {
 
   // Real-time updates for projects in sidebar - use organization-specific subscription
   useOrganizationRealtime(primaryOrgId || '', (payload) => {
-    console.log('Sidebar: Real-time event received:', {
-      eventType: payload.eventType,
-      table: payload.table,
-      projectId: payload.new?.id || payload.old?.id,
-      newData: payload.new,
-      oldData: payload.old
-    })
-
     // Track that we received a real-time update
     setLastRealtimeUpdate(Date.now())
 
     if (payload.table === 'projects') {
       if (payload.eventType === 'INSERT') {
-        console.log('Sidebar: Adding project via real-time:', payload.new?.id)
         if (payload.new?.id && payload.new?.name) {
           projectStore.addProject(payload.new)
-        } else {
-          console.warn('Sidebar: Invalid INSERT payload, missing id or name:', payload.new)
         }
       } else if (payload.eventType === 'UPDATE') {
-        console.log('Sidebar: Updating project via real-time:', payload.new?.id, 'with data:', payload.new)
         if (payload.new?.id && payload.new?.name) {
           projectStore.updateProject(payload.new.id, payload.new, true) // isFromRealtime = true
-        } else {
-          console.warn('Sidebar: Invalid UPDATE payload, missing id or name:', payload.new)
         }
       } else if (payload.eventType === 'DELETE') {
-        console.log('Sidebar: Removing project via real-time:', payload.old?.id)
         if (payload.old?.id) {
           projectStore.removeProject(payload.old.id)
-        } else {
-          console.warn('Sidebar: Invalid DELETE payload, missing old.id:', payload.old)
         }
       }
     }

@@ -54,6 +54,7 @@ export default function Sidebar() {
   const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
   const [primaryOrgId, setPrimaryOrgId] = useState<string | null>(null)
   const lastFetchTime = useRef<number>(0)
+  const fetchProjectsRef = useRef<((forceRefresh?: boolean) => Promise<void>) | null>(null)
   
   const navigation = getNavigation(t)
 
@@ -114,11 +115,18 @@ export default function Sidebar() {
     } finally {
       setLoading(false)
     }
-  }, []) // No dependencies - use user from closure
+  }, [user?.id]) // Only depend on user.id to prevent unnecessary recreations
+
+  // Store latest fetchProjects in ref
+  useEffect(() => {
+    fetchProjectsRef.current = fetchProjects
+  }, [fetchProjects])
 
   useEffect(() => {
-    fetchProjects(true) // Always force refresh on mount
-  }, [fetchProjects])
+    if (user && fetchProjectsRef.current) {
+      fetchProjectsRef.current(true) // Always force refresh on mount
+    }
+  }, [user?.id]) // Only depend on user.id
 
   // Refresh projects when navigating back to dashboard or when component becomes visible
   useEffect(() => {
@@ -162,7 +170,7 @@ export default function Sidebar() {
       window.removeEventListener('projectUpdated', handleProjectUpdated)
       window.removeEventListener('forceProjectRefresh', handleForceProjectRefresh)
     }
-  }, [user?.id, fetchProjects]) // Removed 'projects' from deps to prevent infinite loop
+  }, [user?.id]) // Removed fetchProjects to prevent infinite loop
 
   // Fallback: If no real-time updates received in 5 minutes, force refresh
   useEffect(() => {
@@ -179,7 +187,7 @@ export default function Sidebar() {
     }, 60000) // Check every 60 seconds
 
     return () => clearInterval(interval)
-  }, [user?.id, fetchProjects]) // Removed lastRealtimeUpdate from deps to prevent recreation
+  }, [user?.id]) // Removed fetchProjects to prevent infinite loop
 
   // Don't auto-refresh on auth changes - rely on store subscription
 

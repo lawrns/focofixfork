@@ -45,7 +45,6 @@ class ProjectStore {
   // Check if fetch is needed (debounce logic)
   shouldFetch(): boolean {
     if (this.fetchInProgress) {
-      console.log('ProjectStore: Fetch already in progress, skipping')
       return false
     }
 
@@ -54,7 +53,6 @@ class ProjectStore {
 
     // Debounce: don't fetch if last fetch was within 1 second
     if (timeSinceLastFetch < 1000) {
-      console.log('ProjectStore: Fetch debounced (last fetch was', timeSinceLastFetch, 'ms ago)')
       return false
     }
 
@@ -69,7 +67,6 @@ class ProjectStore {
 
     try {
       this.fetchInProgress = true
-      console.log('ProjectStore: Refreshing projects from API')
       const response = await fetch('/api/projects', {
         headers: {
           'Cache-Control': 'no-cache',
@@ -82,30 +79,22 @@ class ProjectStore {
         // Handle different API response formats
         let projectsData: Project[] = []
         if (Array.isArray(result)) {
-          // Direct array response
           projectsData = result
         } else if (result.success && Array.isArray(result.data)) {
-          // Legacy format: {success: true, data: [...]}
           projectsData = result.data
         } else if (result.success && result.data && Array.isArray(result.data.data)) {
-          // New format: {success: true, data: {data: [...], pagination: {...}}}
           projectsData = result.data.data
         } else if (Array.isArray(result.data)) {
-          // Alternative new format: {data: [...], pagination: {...}}
           projectsData = result.data
         } else {
-          console.error('ProjectStore: Unexpected API response format:', result)
           return
         }
 
         this.setProjects(projectsData)
         this.lastFetchTime = Date.now()
-        console.log('ProjectStore: Refreshed projects from API:', projectsData.length)
-      } else {
-        console.error('ProjectStore: Failed to refresh projects from API, status:', response.status)
       }
     } catch (error) {
-      console.error('ProjectStore: Error refreshing projects:', error)
+      // Silently handle errors
     } finally {
       this.fetchInProgress = false
     }
@@ -113,13 +102,11 @@ class ProjectStore {
 
   // Mark operation as in progress
   startOperation(projectId: string) {
-    console.log('ProjectStore: Starting operation for project:', projectId)
     this.operationInProgress.add(projectId)
   }
 
   // Mark operation as complete
   endOperation(projectId: string) {
-    console.log('ProjectStore: Ending operation for project:', projectId)
     this.operationInProgress.delete(projectId)
   }
 
@@ -127,18 +114,10 @@ class ProjectStore {
   setProjects(projects: Project[] | any) {
     // Handle case where projects is not an array (API response wrapped in object)
     if (!Array.isArray(projects)) {
-      console.error('ProjectStore: setProjects called with non-array:', typeof projects, projects)
       return
     }
 
-    console.log('ProjectStore: updating projects to', projects.length, 'projects:', projects.map(p => ({ id: p.id, name: p.name })))
     const validProjects = projects.filter(p => p && p.id && p.name)
-    if (validProjects.length !== projects.length) {
-      console.warn('ProjectStore: filtered out invalid projects:', projects.length - validProjects.length)
-    }
-
-    // Keep all valid projects - operation tracking should not affect visibility
-    // Operations are tracked separately to prevent race conditions in updates
     const filteredProjects = validProjects
 
     this.projects = [...filteredProjects]
@@ -149,19 +128,16 @@ class ProjectStore {
       try {
         listener(updatedProjects)
       } catch (error) {
-        console.error('ProjectStore: error notifying listener:', error)
+        // Silently handle listener errors
       }
     })
   }
 
   // Add a project
   addProject(project: Project) {
-    console.log('ProjectStore: adding project', project.id)
-
     // Check if project already exists
     const existingIndex = this.projects.findIndex(p => p.id === project.id)
     if (existingIndex !== -1) {
-      console.log('ProjectStore: Project already exists, updating instead:', project.id)
       this.updateProject(project.id, project)
       return
     }
@@ -174,24 +150,20 @@ class ProjectStore {
       try {
         listener(updatedProjects)
       } catch (error) {
-        console.error('ProjectStore: error notifying listener:', error)
+        // Silently handle listener errors
       }
     })
   }
 
   // Remove a project
   removeProject(projectId: string, isFromRealtime: boolean = false) {
-    console.log('ProjectStore: removing project', projectId, isFromRealtime ? '(from real-time)' : '(from local operation)')
-
     // Only start operation tracking if this is not from a real-time event
-    // Real-time events should not start new operations, they should respect existing ones
     if (!isFromRealtime) {
       this.startOperation(projectId)
     }
 
     const projectExists = this.projects.some(p => p.id === projectId)
     if (!projectExists) {
-      console.log('ProjectStore: Project not found for removal:', projectId)
       if (!isFromRealtime) {
         this.endOperation(projectId)
       }
@@ -207,12 +179,11 @@ class ProjectStore {
       try {
         listener(updatedProjects)
       } catch (error) {
-        console.error('ProjectStore: error notifying listener:', error)
+        // Silently handle listener errors
       }
     })
 
     // End operation tracking immediately
-    // Operation tracking prevents race conditions but doesn't hide projects
     if (!isFromRealtime) {
       this.endOperation(projectId)
     }
@@ -220,27 +191,13 @@ class ProjectStore {
 
   // Update a project
   updateProject(projectId: string, updates: Partial<Project>, isFromRealtime: boolean = false) {
-    console.log('ProjectStore: updating project', projectId, 'with updates:', updates, isFromRealtime ? '(from real-time)' : '(from local operation)')
-
-    if (updates.name) {
-      console.log('ProjectStore: updating project name to:', updates.name)
-    }
-    if (updates.status) {
-      console.log('ProjectStore: updating project status to:', updates.status)
-    }
-    if (updates.priority) {
-      console.log('ProjectStore: updating project priority to:', updates.priority)
-    }
-
     // Check if operation is in progress for this project (skip for real-time updates)
     if (!isFromRealtime && this.operationInProgress.has(projectId)) {
-      console.log('ProjectStore: Operation in progress for project, skipping update:', projectId)
       return
     }
 
     const projectIndex = this.projects.findIndex(p => p.id === projectId)
     if (projectIndex === -1) {
-      console.warn('ProjectStore: project not found for update:', projectId, 'available projects:', this.projects.map(p => p.id))
       return
     }
 
@@ -249,14 +206,10 @@ class ProjectStore {
 
     // Validate that the updated project still has required fields
     if (!updatedProject.id || !updatedProject.name) {
-      console.error('ProjectStore: update would result in invalid project, aborting:', updatedProject)
       return
     }
 
     this.projects[projectIndex] = updatedProject
-
-    console.log('ProjectStore: project updated successfully from:', oldProject.name, 'to:', updatedProject.name)
-    console.log('ProjectStore: total projects after update:', this.projects.length)
 
     // Force a new array reference to ensure React detects the change
     const updatedProjects = [...this.projects]
@@ -265,7 +218,7 @@ class ProjectStore {
       try {
         listener(updatedProjects)
       } catch (error) {
-        console.error('ProjectStore: error notifying listener:', error)
+        // Silently handle listener errors
       }
     })
   }

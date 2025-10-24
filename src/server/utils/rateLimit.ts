@@ -60,7 +60,7 @@ export async function rateLimit(
     })
 
     if (!incrRes.ok) {
-      logger.error({ message: 'Rate limit increment failed', status: incrRes.status })
+      logger.error(JSON.stringify({ message: 'Rate limit increment failed', status: incrRes.status }))
       // On error, allow the request
       return {
         allowed: true,
@@ -93,7 +93,7 @@ export async function rateLimit(
       reset
     }
   } catch (error) {
-    logger.error({ message: 'Rate limit error', error })
+    logger.error(JSON.stringify({ message: 'Rate limit error', error: String(error) }))
     // On error, allow the request (fail open)
     return {
       allowed: true,

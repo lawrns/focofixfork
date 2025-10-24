@@ -42,12 +42,12 @@ export function wrapRoute<I extends z.ZodTypeAny>(
       const user = await requireAuth()
 
       // Log request
-      logger.info({
+      logger.info(JSON.stringify({
         correlationId,
         method: req.method,
         url: req.url,
         userId: user.id
-      })
+      }))
 
       // Execute handler
       const data = await handler({ input, req, user, correlationId })
@@ -90,7 +90,7 @@ export function wrapRoute<I extends z.ZodTypeAny>(
       }
 
       // Log error with correlation ID
-      logger.error({
+      logger.error(JSON.stringify({
         correlationId,
         error: {
           code,
@@ -99,7 +99,7 @@ export function wrapRoute<I extends z.ZodTypeAny>(
         },
         method: req.method,
         url: req.url
-      })
+      }))
 
       // Return error response
       return NextResponse.json(
@@ -142,11 +142,11 @@ export function wrapPublicRoute<I extends z.ZodTypeAny>(
       const query = Object.fromEntries(new URL(req.url).searchParams)
       const input = schema.parse({ body, query })
 
-      logger.info({
+      logger.info(JSON.stringify({
         correlationId,
         method: req.method,
         url: req.url
-      })
+      }))
 
       const data = await handler({ input, req, correlationId })
 
@@ -174,14 +174,14 @@ export function wrapPublicRoute<I extends z.ZodTypeAny>(
         message = err?.message || 'Request failed'
       }
 
-      logger.error({
+      logger.error(JSON.stringify({
         correlationId,
         error: {
           code,
           message: err?.message,
           stack: err?.stack
         }
-      })
+      }))
 
       return NextResponse.json(
         {

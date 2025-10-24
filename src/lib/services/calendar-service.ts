@@ -19,7 +19,7 @@ export class CalendarService {
   // Event Management
   static async createEvent(eventData: CreateCalendarEventData, userId: string): Promise<CalendarEvent> {
     const { data, error } = await supabase
-      .from('calendar_events')
+      .from('calendar_events' as any)
       .insert({
         ...eventData,
         created_by: userId,
@@ -31,7 +31,7 @@ export class CalendarService {
       .single()
 
     if (error) throw error
-    return data
+    return data as any
   }
 
   static async getEvents(
@@ -41,7 +41,7 @@ export class CalendarService {
     filter?: CalendarFilter
   ): Promise<CalendarEvent[]> {
     let query = supabase
-      .from('calendar_events')
+      .from('calendar_events' as any)
       .select('*')
       .gte('start', startDate.toISOString())
       .lte('end', endDate.toISOString())
@@ -65,12 +65,12 @@ export class CalendarService {
     const { data, error } = await query.order('start', { ascending: true })
 
     if (error) throw error
-    return data || []
+    return data as any || []
   }
 
   static async getEvent(eventId: string): Promise<CalendarEvent | null> {
     const { data, error } = await supabase
-      .from('calendar_events')
+      .from('calendar_events' as any)
       .select('*')
       .eq('id', eventId)
       .single()
@@ -80,12 +80,12 @@ export class CalendarService {
       throw error
     }
 
-    return data
+    return data as any
   }
 
   static async updateEvent(eventId: string, updates: UpdateCalendarEventData): Promise<CalendarEvent> {
     const { data, error } = await supabase
-      .from('calendar_events')
+      .from('calendar_events' as any)
       .update({
         ...updates,
         updated_at: new Date().toISOString()
@@ -95,12 +95,12 @@ export class CalendarService {
       .single()
 
     if (error) throw error
-    return data
+    return data as any
   }
 
   static async deleteEvent(eventId: string): Promise<void> {
     const { error } = await supabase
-      .from('calendar_events')
+      .from('calendar_events' as any)
       .delete()
       .eq('id', eventId)
 
@@ -110,29 +110,29 @@ export class CalendarService {
   // Integration Management
   static async createIntegration(integration: Omit<CalendarIntegration, 'id' | 'created_at' | 'updated_at'>): Promise<CalendarIntegration> {
     const { data, error } = await supabase
-      .from('calendar_integrations')
+      .from('calendar_integrations' as any)
       .insert(integration)
       .select()
       .single()
 
     if (error) throw error
-    return data
+    return data as any
   }
 
   static async getIntegrations(userId: string): Promise<CalendarIntegration[]> {
     const { data, error } = await supabase
-      .from('calendar_integrations')
+      .from('calendar_integrations' as any)
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data || []
+    return data as any || []
   }
 
   static async getIntegration(integrationId: string): Promise<CalendarIntegration | null> {
     const { data, error } = await supabase
-      .from('calendar_integrations')
+      .from('calendar_integrations' as any)
       .select('*')
       .eq('id', integrationId)
       .single()
@@ -142,12 +142,12 @@ export class CalendarService {
       throw error
     }
 
-    return data
+    return data as any
   }
 
   static async updateIntegration(integrationId: string, updates: Partial<CalendarIntegration>): Promise<CalendarIntegration> {
     const { data, error } = await supabase
-      .from('calendar_integrations')
+      .from('calendar_integrations' as any)
       .update({
         ...updates,
         updated_at: new Date().toISOString()
@@ -157,12 +157,12 @@ export class CalendarService {
       .single()
 
     if (error) throw error
-    return data
+    return data as any
   }
 
   static async deleteIntegration(integrationId: string): Promise<void> {
     const { error } = await supabase
-      .from('calendar_integrations')
+      .from('calendar_integrations' as any)
       .delete()
       .eq('id', integrationId)
 
@@ -191,7 +191,7 @@ export class CalendarService {
 
   static async updateExternalCalendarSelection(integrationId: string, calendarIds: string[]): Promise<void> {
     await this.updateIntegration(integrationId, {
-      selected_calendars: calendarIds
+      selectedCalendars: calendarIds
     })
   }
 
@@ -203,47 +203,49 @@ export class CalendarService {
     }
 
     const syncJob: Omit<CalendarSyncJob, 'id'> = {
-      integration_id: integrationId,
-      user_id: integration.userId,
+      integrationId: integrationId,
+      userId: integration.userId,
       status: 'pending',
       type,
-      total_events: 0,
-      processed_events: 0,
-      created_events: 0,
-      updated_events: 0,
-      deleted_events: 0,
-      error_events: 0,
-      started_at: new Date().toISOString(),
+      totalEvents: 0,
+      processedEvents: 0,
+      createdEvents: 0,
+      updatedEvents: 0,
+      deletedEvents: 0,
+      errorEvents: 0,
+      startedAt: new Date().toISOString(),
       errors: [],
-      retry_count: 0,
-      max_retries: 3
+      retryCount: 0,
+      maxRetries: 3
     }
 
     const { data, error } = await supabase
-      .from('calendar_sync_jobs')
+      .from('calendar_sync_jobs' as any)
       .insert(syncJob)
       .select()
       .single()
 
     if (error) throw error
 
-    // Start the actual sync process
-    this.executeSync(data.id)
+    const syncJobData = data as any
 
-    return data
+    // Start the actual sync process
+    this.executeSync(syncJobData.id)
+
+    return syncJobData
   }
 
   private static async executeSync(jobId: string): Promise<void> {
     try {
       // Update job status to running
       await supabase
-        .from('calendar_sync_jobs')
+        .from('calendar_sync_jobs' as any)
         .update({ status: 'running' })
         .eq('id', jobId)
 
       // Get job details
       const { data: job, error: jobError } = await supabase
-        .from('calendar_sync_jobs')
+        .from('calendar_sync_jobs' as any)
         .select('*')
         .eq('id', jobId)
         .single()
@@ -252,17 +254,18 @@ export class CalendarService {
         throw new Error('Sync job not found')
       }
 
-      const integration = await this.getIntegration(job.integration_id)
+      const jobData = job as any
+      const integration = await this.getIntegration(jobData.integration_id)
       if (!integration) {
         throw new Error('Integration not found')
       }
 
       // Perform the actual sync based on provider
-      await this.performProviderSync(integration, job)
+      await this.performProviderSync(integration, jobData)
 
       // Mark job as completed
       await supabase
-        .from('calendar_sync_jobs')
+        .from('calendar_sync_jobs' as any)
         .update({
           status: 'completed',
           completed_at: new Date().toISOString()
@@ -271,7 +274,7 @@ export class CalendarService {
 
       // Update integration last sync time
       await this.updateIntegration(integration.id, {
-        last_sync_at: new Date().toISOString()
+        lastSyncAt: new Date().toISOString()
       })
 
     } catch (error: any) {
@@ -279,7 +282,7 @@ export class CalendarService {
       
       // Mark job as failed
       await supabase
-        .from('calendar_sync_jobs')
+        .from('calendar_sync_jobs' as any)
         .update({
           status: 'failed',
           completed_at: new Date().toISOString(),
@@ -325,7 +328,7 @@ export class CalendarService {
     
     // Update job progress
     await supabase
-      .from('calendar_sync_jobs')
+      .from('calendar_sync_jobs' as any)
       .update({
         total_events: 10,
         processed_events: 10,
@@ -345,7 +348,7 @@ export class CalendarService {
     
     // Update job progress
     await supabase
-      .from('calendar_sync_jobs')
+      .from('calendar_sync_jobs' as any)
       .update({
         total_events: 8,
         processed_events: 8,
@@ -365,7 +368,7 @@ export class CalendarService {
     
     // Update job progress
     await supabase
-      .from('calendar_sync_jobs')
+      .from('calendar_sync_jobs' as any)
       .update({
         total_events: 6,
         processed_events: 6,
@@ -385,7 +388,7 @@ export class CalendarService {
     
     // Update job progress
     await supabase
-      .from('calendar_sync_jobs')
+      .from('calendar_sync_jobs' as any)
       .update({
         total_events: 4,
         processed_events: 4,
@@ -413,7 +416,7 @@ export class CalendarService {
 
     // Get sync statistics
     const { data: syncJobs, error: syncError } = await supabase
-      .from('calendar_sync_jobs')
+      .from('calendar_sync_jobs' as any)
       .select('*')
       .eq('user_id', userId)
       .gte('started_at', startDate.toISOString())
@@ -421,9 +424,10 @@ export class CalendarService {
 
     if (syncError) throw syncError
 
-    const syncOperations = syncJobs?.length || 0
-    const successfulSyncs = syncJobs?.filter(job => job.status === 'completed').length || 0
-    const failedSyncs = syncJobs?.filter(job => job.status === 'failed').length || 0
+    const syncJobsData = (syncJobs || []) as any[]
+    const syncOperations = syncJobsData.length
+    const successfulSyncs = syncJobsData.filter((job: any) => job.status === 'completed').length
+    const failedSyncs = syncJobsData.filter((job: any) => job.status === 'failed').length
     const syncSuccessRate = syncOperations > 0 ? (successfulSyncs / syncOperations) * 100 : 0
 
     // Get integration statistics
@@ -433,7 +437,7 @@ export class CalendarService {
     const mostUsedProvider = this.getMostUsedProvider(integrations)
 
     // Calculate performance metrics
-    const completedJobs = syncJobs?.filter(job => job.status === 'completed') || []
+    const completedJobs = syncJobsData.filter((job: any) => job.status === 'completed')
     const syncTimes = completedJobs.map(job => {
       const start = new Date(job.started_at)
       const end = new Date(job.completed_at || job.started_at)
@@ -549,9 +553,14 @@ export class CalendarService {
       return acc
     }, {} as Record<number, number>)
 
-    return Object.entries(hourCounts).reduce((a, b) => 
+    const entries = Object.entries(hourCounts)
+    if (entries.length === 0) return 0
+
+    const mostActiveEntry = entries.reduce((a, b) =>
       hourCounts[Number(a[0])] > hourCounts[Number(b[0])] ? a : b
-    )[0] as number || 0
+    )
+
+    return Number(mostActiveEntry[0])
   }
 
   private static getLongestEventDuration(events: CalendarEvent[]): number {

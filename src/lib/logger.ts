@@ -22,17 +22,17 @@ export function logError(error: unknown, context?: Record<string, unknown>) {
     ? { message: error.message, stack: error.stack, name: error.name }
     : { message: String(error) }
 
-  logger.error({
+  logger.error(JSON.stringify({
     ...context,
     error: errorObj
-  })
+  }))
 }
 
 // Helper for correlation ID logging
 export function logWithCorrelation(level: 'info' | 'warn' | 'error', message: string, correlationId: string, data?: Record<string, unknown>) {
-  logger[level]({
+  logger[level](JSON.stringify({
     correlationId,
     message,
     ...data
-  })
+  }))
 }

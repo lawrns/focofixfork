@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { AuthProvider } from '@/lib/contexts/auth-context';
 import { I18nProvider } from '@/lib/i18n/context';
 import { ThemeProvider } from '@/components/providers/theme-provider';
@@ -14,22 +15,13 @@ interface ProvidersProps {
 }
 
 function ConditionalMobileNav() {
-  const pathname = usePathnameClient();
-  
+  const pathname = usePathname();
+
   if (!pathname || ['/login', '/register', '/organization-setup'].includes(pathname)) {
     return null;
   }
-  
-  return <MobileBottomNav showFab={false} />;
-}
 
-function usePathnameClient() {
-  try {
-    const { usePathname } = require('next/navigation');
-    return usePathname();
-  } catch {
-    return null;
-  }
+  return <MobileBottomNav showFab={false} />;
 }
 
 export function Providers({ children }: ProvidersProps) {

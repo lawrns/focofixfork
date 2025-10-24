@@ -5,7 +5,7 @@ export class AutomationService {
   // Rule Management
   static async createRule(rule: Omit<AutomationRule, 'id' | 'created_at' | 'updated_at' | 'execution_count'>): Promise<AutomationRule> {
     const { data, error } = await supabase
-      .from('automation_rules')
+      .from('automation_rules' as any)
       .insert({
         ...rule,
         execution_count: 0
@@ -14,11 +14,11 @@ export class AutomationService {
       .single()
 
     if (error) throw error
-    return data
+    return data as any as unknown as AutomationRule
   }
 
   static async getRules(projectId?: string, userId?: string): Promise<AutomationRule[]> {
-    let query = supabase.from('automation_rules').select('*')
+    let query = supabase.from('automation_rules' as any).select('*')
 
     if (projectId) {
       query = query.eq('project_id', projectId)
@@ -31,12 +31,12 @@ export class AutomationService {
     const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) throw error
-    return data || []
+    return (data || []) as unknown as AutomationRule[]
   }
 
   static async getRule(ruleId: string): Promise<AutomationRule | null> {
     const { data, error } = await supabase
-      .from('automation_rules')
+      .from('automation_rules' as any)
       .select('*')
       .eq('id', ruleId)
       .single()
@@ -46,12 +46,12 @@ export class AutomationService {
       throw error
     }
 
-    return data
+    return data as any
   }
 
   static async updateRule(ruleId: string, updates: Partial<AutomationRule>): Promise<AutomationRule> {
     const { data, error } = await supabase
-      .from('automation_rules')
+      .from('automation_rules' as any)
       .update({
         ...updates,
         updated_at: new Date().toISOString()
@@ -61,12 +61,12 @@ export class AutomationService {
       .single()
 
     if (error) throw error
-    return data
+    return data as any
   }
 
   static async deleteRule(ruleId: string): Promise<void> {
     const { error } = await supabase
-      .from('automation_rules')
+      .from('automation_rules' as any)
       .delete()
       .eq('id', ruleId)
 
@@ -98,19 +98,21 @@ export class AutomationService {
 
     // Create execution record
     const { data: executionRecord, error: createError } = await supabase
-      .from('automation_executions')
+      .from('automation_executions' as any)
       .insert(execution)
       .select()
       .single()
 
     if (createError) throw createError
 
+    const execRecord = executionRecord as any
+
     try {
       // Update execution status to running
       await supabase
-        .from('automation_executions')
+        .from('automation_executions' as any)
         .update({ status: 'running' })
-        .eq('id', executionRecord.id)
+        .eq('id', execRecord.id)
 
       const startTime = Date.now()
 
@@ -118,15 +120,15 @@ export class AutomationService {
       const conditionsMet = await this.checkConditions(rule.conditions, triggerData)
       if (!conditionsMet) {
         await supabase
-          .from('automation_executions')
+          .from('automation_executions' as any)
           .update({
             status: 'completed',
             completed_at: new Date().toISOString(),
             execution_time_ms: Date.now() - startTime
           })
-          .eq('id', executionRecord.id)
+          .eq('id', execRecord.id)
 
-        return { ...executionRecord, status: 'completed', completed_at: new Date().toISOString(), execution_time_ms: Date.now() - startTime }
+        return { ...execRecord, status: 'completed', completed_at: new Date().toISOString(), execution_time_ms: Date.now() - startTime }
       }
 
       // Execute actions
@@ -134,7 +136,7 @@ export class AutomationService {
 
       // Update execution record with results
       await supabase
-        .from('automation_executions')
+        .from('automation_executions' as any)
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
@@ -144,11 +146,11 @@ export class AutomationService {
           actions_failed: results.failed,
           affected_entities: results.affectedEntities
         })
-        .eq('id', executionRecord.id)
+        .eq('id', execRecord.id)
 
       // Update rule execution count
       await supabase
-        .from('automation_rules')
+        .from('automation_rules' as any)
         .update({
           execution_count: rule.execution_count + 1,
           last_executed_at: new Date().toISOString()
@@ -156,7 +158,7 @@ export class AutomationService {
         .eq('id', ruleId)
 
       return {
-        ...executionRecord,
+        ...execRecord,
         status: 'completed',
         completed_at: new Date().toISOString(),
         execution_time_ms: Date.now() - startTime,
@@ -169,14 +171,14 @@ export class AutomationService {
     } catch (error: any) {
       // Update execution record with error
       await supabase
-        .from('automation_executions')
+        .from('automation_executions' as any)
         .update({
           status: 'failed',
           completed_at: new Date().toISOString(),
           error_message: error.message,
           error_details: error
         })
-        .eq('id', executionRecord.id)
+        .eq('id', execRecord.id)
 
       throw error
     }
@@ -362,7 +364,7 @@ export class AutomationService {
         ...action.task_updates,
         project_id: triggerData.project_id,
         created_by: triggerData.user_id
-      })
+      } as any)
 
     if (error) throw error
   }
@@ -510,17 +512,17 @@ export class AutomationService {
   // Analytics
   static async getRuleAnalytics(ruleId: string): Promise<any> {
     const { data, error } = await supabase
-      .from('automation_executions')
+      .from('automation_executions' as any)
       .select('*')
       .eq('rule_id', ruleId)
       .order('started_at', { ascending: false })
 
     if (error) throw error
 
-    const executions = data || []
+    const executions = (data || []) as any[]
     const total = executions.length
-    const successful = executions.filter(e => e.status === 'completed').length
-    const failed = executions.filter(e => e.status === 'failed').length
+    const successful = executions.filter((e: any) => e.status === 'completed').length
+    const failed = executions.filter((e: any) => e.status === 'failed').length
 
     return {
       total_executions: total,
@@ -534,13 +536,13 @@ export class AutomationService {
   // Scheduled Execution
   static async getScheduledRules(): Promise<AutomationRule[]> {
     const { data, error } = await supabase
-      .from('automation_rules')
+      .from('automation_rules' as any)
       .select('*')
       .eq('is_active', true)
       .eq('trigger.type', 'schedule')
 
     if (error) throw error
-    return data || []
+    return (data || []) as unknown as AutomationRule[]
   }
 
   static async executeScheduledRules(): Promise<void> {

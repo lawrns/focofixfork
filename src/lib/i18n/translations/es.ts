@@ -315,7 +315,6 @@ export const es: TranslationSchema = {
     statusBlocked: 'Bloqueado',
   },
 
-
   // Milestones
   milestones: {
     title: 'Hitos',

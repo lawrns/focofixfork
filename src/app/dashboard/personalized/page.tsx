@@ -89,12 +89,15 @@ export default function PersonalizedDashboardPage() {
     try {
       setIsLoading(true)
 
+      // Initialize lists at function scope
+      let tasksList: Task[] = []
+      let projectsList: Project[] = []
+
       // Fetch tasks
       const tasksResponse = await fetch('/api/tasks')
       if (tasksResponse.ok) {
         const tasksData = await tasksResponse.json()
-        let tasksList: Task[] = []
-        
+
         // Handle wrapped response structure
         if (tasksData.success && tasksData.data) {
           if (Array.isArray(tasksData.data.data)) {
@@ -115,8 +118,7 @@ export default function PersonalizedDashboardPage() {
       const projectsResponse = await fetch('/api/projects')
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json()
-        let projectsList: Project[] = []
-        
+
         // Handle wrapped response structure
         if (projectsData.success && projectsData.data) {
           if (Array.isArray(projectsData.data.data)) {
@@ -137,7 +139,7 @@ export default function PersonalizedDashboardPage() {
       const now = new Date()
       const totalTasks = tasksList.length
       const completedTasks = tasksList.filter(t => t.status === 'done').length
-      const overdueTasks = tasksList.filter(t => 
+      const overdueTasks = tasksList.filter(t =>
         t.due_date && new Date(t.due_date) < now && t.status !== 'done'
       ).length
 

@@ -168,7 +168,7 @@ export default function Sidebar() {
   useEffect(() => {
     if (!user) return
     
-    const checkRealtimeHealth = () => {
+    const interval = setInterval(() => {
       const now = Date.now()
       const timeSinceLastUpdate = now - lastRealtimeUpdate
 
@@ -176,12 +176,10 @@ export default function Sidebar() {
         fetchProjects(true) // Force refresh
         setLastRealtimeUpdate(now) // Reset timer
       }
-    }
-
-    const interval = setInterval(checkRealtimeHealth, 60000) // Check every 60 seconds
+    }, 60000) // Check every 60 seconds
 
     return () => clearInterval(interval)
-  }, [lastRealtimeUpdate, user?.id, fetchProjects])
+  }, [user?.id, fetchProjects]) // Removed lastRealtimeUpdate from deps to prevent recreation
 
   // Don't auto-refresh on auth changes - rely on store subscription
 

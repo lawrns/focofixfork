@@ -313,7 +313,6 @@ export const en: TranslationSchema = {
     statusBlocked: 'Blocked',
   },
 
-
   // Milestones
   milestones: {
     title: 'Milestones',

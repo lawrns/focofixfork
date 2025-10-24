@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { TaskCard } from './task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, Plus, Search, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Search, Trash2, GripVertical } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import {
   AlertDialog,
@@ -229,6 +230,61 @@ export function TaskList({
     }
   }
 
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result
+
+    // Dropped outside a droppable area
+    if (!destination) return
+
+    // Dropped in the same position
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return
+    }
+
+    // Get the task being dragged
+    const taskId = draggableId
+    const sourceStatus = source.droppableId as 'todo' | 'in_progress' | 'review' | 'done'
+    const destStatus = destination.droppableId as 'todo' | 'in_progress' | 'review' | 'done'
+
+    // Find the task
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+
+    // If moving between columns, update status
+    if (sourceStatus !== destStatus) {
+      try {
+        // Optimistically update local state
+        setTasks(prev => prev.map(t =>
+          t.id === taskId
+            ? { ...t, status: destStatus, updated_at: new Date().toISOString() }
+            : t
+        ))
+
+        // Update on server
+        const response = await fetch(`/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: destStatus }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update task status')
+        }
+
+        toast.success('Task moved successfully')
+        onStatusChange?.(taskId, destStatus)
+      } catch (err) {
+        console.error('Error updating task:', err)
+        toast.error('Failed to move task. Please try again.')
+        // Revert optimistic update
+        await fetchTasks()
+      }
+    }
+  }
+
   // Group tasks by status for Kanban-style display
   const groupedTasks = {
     todo: filteredTasks.filter(task => task.status === 'todo'),
@@ -355,7 +411,7 @@ export function TaskList({
         </div>
       )}
 
-      {/* Task Grid - Kanban Style */}
+      {/* Task Grid - Kanban Style with Drag and Drop */}
       {filteredTasks.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
@@ -380,141 +436,231 @@ export function TaskList({
           )}
         </div>
       ) : (
-        <div className="w-full overflow-x-auto pb-4" role="region" aria-label="Task board with four columns">
-          <div className="flex gap-6 min-w-max">
-            {/* To Do Column */}
-            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="todo-heading">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <div className="w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"></div>
-                <h3 id="todo-heading" className="font-semibold text-foreground">To Do</h3>
-                <span className="text-sm text-gray-200 dark:text-gray-200 bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded" aria-label={`${groupedTasks.todo.length} tasks in To Do`}>
-                  {groupedTasks.todo.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {groupedTasks.todo.map((task) => (
-                  <div key={task.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedTasks.has(task.id)}
-                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
-                        aria-label={`Select ${task.title}`}
-                      />
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="w-full overflow-x-auto pb-4" role="region" aria-label="Task board with four columns - drag tasks to change status">
+            <div className="flex gap-6 min-w-max">
+              {/* To Do Column */}
+              <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="todo-heading">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"></div>
+                  <h3 id="todo-heading" className="font-semibold text-foreground">To Do</h3>
+                  <span className="text-sm text-gray-200 dark:text-gray-200 bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded" aria-label={`${groupedTasks.todo.length} tasks in To Do`}>
+                    {groupedTasks.todo.length}
+                  </span>
+                </div>
+                <Droppable droppableId="todo">
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-gray-100 dark:bg-gray-800' : ''
+                      }`}
+                    >
+                      {groupedTasks.todo.map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                </div>
+                                <Checkbox
+                                  checked={selectedTasks.has(task.id)}
+                                  onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                                  aria-label={`Select ${task.title}`}
+                                />
+                              </div>
+                              <TaskCard
+                                task={{
+                                  ...task,
+                                  created_by: task.created_by || ''
+                                }}
+                                onEdit={onEditTask}
+                                onStatusChange={handleStatusChange}
+                                onDelete={handleDeleteTask}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
-                    <TaskCard
-                      task={{
-                        ...task,
-                        created_by: task.created_by || ''
-                      }}
-                      onEdit={onEditTask}
-                      onStatusChange={handleStatusChange}
-                      onDelete={handleDeleteTask}
-                    />
-                  </div>
-                ))}
+                  )}
+                </Droppable>
               </div>
-            </div>
 
-            {/* In Progress Column */}
-            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="in-progress-heading">
-              <div className="flex items-center gap-2 pb-2 border-b border-blue-200 dark:border-blue-800">
-                <div className="w-2 h-2 rounded-full bg-blue-500" aria-hidden="true"></div>
-                <h3 id="in-progress-heading" className="font-semibold text-foreground">In Progress</h3>
-                <span className="text-sm text-white dark:text-blue-200 bg-blue-600 dark:bg-blue-800 px-2 py-1 rounded" aria-label={`${groupedTasks.in_progress.length} tasks in In Progress`}>
-                  {groupedTasks.in_progress.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {groupedTasks.in_progress.map((task) => (
-                  <div key={task.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedTasks.has(task.id)}
-                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
-                        aria-label={`Select ${task.title}`}
-                      />
+              {/* In Progress Column */}
+              <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="in-progress-heading">
+                <div className="flex items-center gap-2 pb-2 border-b border-blue-200 dark:border-blue-800">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" aria-hidden="true"></div>
+                  <h3 id="in-progress-heading" className="font-semibold text-foreground">In Progress</h3>
+                  <span className="text-sm text-white dark:text-blue-200 bg-blue-600 dark:bg-blue-800 px-2 py-1 rounded" aria-label={`${groupedTasks.in_progress.length} tasks in In Progress`}>
+                    {groupedTasks.in_progress.length}
+                  </span>
+                </div>
+                <Droppable droppableId="in_progress">
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      }`}
+                    >
+                      {groupedTasks.in_progress.map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                </div>
+                                <Checkbox
+                                  checked={selectedTasks.has(task.id)}
+                                  onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                                  aria-label={`Select ${task.title}`}
+                                />
+                              </div>
+                              <TaskCard
+                                task={{
+                                  ...task,
+                                  created_by: task.created_by || ''
+                                }}
+                                onEdit={onEditTask}
+                                onStatusChange={handleStatusChange}
+                                onDelete={handleDeleteTask}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
-                    <TaskCard
-                      task={{
-                        ...task,
-                        created_by: task.created_by || ''
-                      }}
-                      onEdit={onEditTask}
-                      onStatusChange={handleStatusChange}
-                      onDelete={handleDeleteTask}
-                    />
-                  </div>
-                ))}
+                  )}
+                </Droppable>
               </div>
-            </div>
 
-            {/* Review Column */}
-            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="review-heading">
-              <div className="flex items-center gap-2 pb-2 border-b border-yellow-200 dark:border-yellow-800">
-                <div className="w-2 h-2 rounded-full bg-yellow-500" aria-hidden="true"></div>
-                <h3 id="review-heading" className="font-semibold text-foreground">Review</h3>
-                <span className="text-sm text-white dark:text-yellow-200 bg-yellow-600 dark:bg-yellow-800 px-2 py-1 rounded" aria-label={`${groupedTasks.review.length} tasks in Review`}>
-                  {groupedTasks.review.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {groupedTasks.review.map((task) => (
-                  <div key={task.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedTasks.has(task.id)}
-                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
-                        aria-label={`Select ${task.title}`}
-                      />
+              {/* Review Column */}
+              <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="review-heading">
+                <div className="flex items-center gap-2 pb-2 border-b border-yellow-200 dark:border-yellow-800">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500" aria-hidden="true"></div>
+                  <h3 id="review-heading" className="font-semibold text-foreground">Review</h3>
+                  <span className="text-sm text-white dark:text-yellow-200 bg-yellow-600 dark:bg-yellow-800 px-2 py-1 rounded" aria-label={`${groupedTasks.review.length} tasks in Review`}>
+                    {groupedTasks.review.length}
+                  </span>
+                </div>
+                <Droppable droppableId="review">
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''
+                      }`}
+                    >
+                      {groupedTasks.review.map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                </div>
+                                <Checkbox
+                                  checked={selectedTasks.has(task.id)}
+                                  onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                                  aria-label={`Select ${task.title}`}
+                                />
+                              </div>
+                              <TaskCard
+                                task={{
+                                  ...task,
+                                  created_by: task.created_by || ''
+                                }}
+                                onEdit={onEditTask}
+                                onStatusChange={handleStatusChange}
+                                onDelete={handleDeleteTask}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
-                    <TaskCard
-                      task={{
-                        ...task,
-                        created_by: task.created_by || ''
-                      }}
-                      onEdit={onEditTask}
-                      onStatusChange={handleStatusChange}
-                      onDelete={handleDeleteTask}
-                    />
-                  </div>
-                ))}
+                  )}
+                </Droppable>
               </div>
-            </div>
 
-            {/* Done Column */}
-            <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="done-heading">
-              <div className="flex items-center gap-2 pb-2 border-b border-green-200 dark:border-green-800">
-                <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></div>
-                <h3 id="done-heading" className="font-semibold text-foreground">Done</h3>
-                <span className="text-sm text-white dark:text-green-200 bg-green-600 dark:bg-green-800 px-2 py-1 rounded" aria-label={`${groupedTasks.done.length} tasks in Done`}>
-                  {groupedTasks.done.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {groupedTasks.done.map((task) => (
-                  <div key={task.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedTasks.has(task.id)}
-                        onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
-                        aria-label={`Select ${task.title}`}
-                      />
+              {/* Done Column */}
+              <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="done-heading">
+                <div className="flex items-center gap-2 pb-2 border-b border-green-200 dark:border-green-800">
+                  <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></div>
+                  <h3 id="done-heading" className="font-semibold text-foreground">Done</h3>
+                  <span className="text-sm text-white dark:text-green-200 bg-green-600 dark:bg-green-800 px-2 py-1 rounded" aria-label={`${groupedTasks.done.length} tasks in Done`}>
+                    {groupedTasks.done.length}
+                  </span>
+                </div>
+                <Droppable droppableId="done">
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-green-50 dark:bg-green-900/20' : ''
+                      }`}
+                    >
+                      {groupedTasks.done.map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                </div>
+                                <Checkbox
+                                  checked={selectedTasks.has(task.id)}
+                                  onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                                  aria-label={`Select ${task.title}`}
+                                />
+                              </div>
+                              <TaskCard
+                                task={{
+                                  ...task,
+                                  created_by: task.created_by || ''
+                                }}
+                                onEdit={onEditTask}
+                                onStatusChange={handleStatusChange}
+                                onDelete={handleDeleteTask}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
-                    <TaskCard
-                      task={{
-                        ...task,
-                        created_by: task.created_by || ''
-                      }}
-                      onEdit={onEditTask}
-                      onStatusChange={handleStatusChange}
-                      onDelete={handleDeleteTask}
-                    />
-                  </div>
-                ))}
+                  )}
+                </Droppable>
               </div>
             </div>
           </div>
-        </div>
+        </DragDropContext>
       )}
 
       {/* Bulk Delete Confirmation Dialog */}

@@ -298,7 +298,7 @@ export function CalendarSync({ context, api }: { context: any; api: any }) {
       }
     }
     loadData()
-  }, [api, calendarService])
+  }, [api])
 
   // Handle settings update
   const handleSettingsUpdate = async (newSettings: CalendarSettings) => {
@@ -497,7 +497,7 @@ export function CalendarWidget({ context, api }: { context: any; api: any }) {
       }
     }
     loadTodayEvents()
-  }, [api, calendarService])
+  }, [api])
 
   if (loading) {
     return (

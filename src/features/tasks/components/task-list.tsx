@@ -466,8 +466,8 @@ export function TaskList({
                               className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
                             >
                               <div className="flex items-center gap-2">
-                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors" title="Drag to reorder">
+                                  <GripVertical className="h-5 w-5 text-foreground" aria-label="Drag to reorder" />
                                 </div>
                                 <Checkbox
                                   checked={selectedTasks.has(task.id)}
@@ -521,8 +521,8 @@ export function TaskList({
                               className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
                             >
                               <div className="flex items-center gap-2">
-                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors" title="Drag to reorder">
+                                  <GripVertical className="h-5 w-5 text-foreground" aria-label="Drag to reorder" />
                                 </div>
                                 <Checkbox
                                   checked={selectedTasks.has(task.id)}
@@ -576,8 +576,8 @@ export function TaskList({
                               className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
                             >
                               <div className="flex items-center gap-2">
-                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors" title="Drag to reorder">
+                                  <GripVertical className="h-5 w-5 text-foreground" aria-label="Drag to reorder" />
                                 </div>
                                 <Checkbox
                                   checked={selectedTasks.has(task.id)}
@@ -631,8 +631,8 @@ export function TaskList({
                               className={`space-y-2 ${snapshot.isDragging ? 'opacity-50' : ''}`}
                             >
                               <div className="flex items-center gap-2">
-                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                  <GripVertical className="h-4 w-4 text-muted-foreground" aria-label="Drag to reorder" />
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors" title="Drag to reorder">
+                                  <GripVertical className="h-5 w-5 text-foreground" aria-label="Drag to reorder" />
                                 </div>
                                 <Checkbox
                                   checked={selectedTasks.has(task.id)}

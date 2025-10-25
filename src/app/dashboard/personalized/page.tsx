@@ -73,6 +73,7 @@ export default function PersonalizedDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalTasks: 0,
     completedTasks: 0,
+    inProgressTasks: 0,
     overdueTasks: 0,
     totalProjects: 0,
     activeProjects: 0,
@@ -107,11 +108,12 @@ export default function PersonalizedDashboardPage() {
       if (cachedData && !force) {
         setTasks(cachedData.tasks)
         setProjects(cachedData.projects)
-        
+
         // Calculate stats from cached data
         const now = new Date()
         const totalTasks = cachedData.tasks.length
         const completedTasks = cachedData.tasks.filter(t => t.status === 'done').length
+        const inProgressTasks = cachedData.tasks.filter(t => t.status === 'in_progress').length
         const overdueTasks = cachedData.tasks.filter(t =>
           t.due_date && new Date(t.due_date) < now && t.status !== 'done'
         ).length
@@ -122,12 +124,13 @@ export default function PersonalizedDashboardPage() {
         setStats({
           totalTasks,
           completedTasks,
+          inProgressTasks,
           overdueTasks,
           totalProjects,
           activeProjects,
           completedProjects
         })
-        
+
         setIsLoading(false)
         isFetchingRef.current = false
         return
@@ -186,6 +189,7 @@ export default function PersonalizedDashboardPage() {
       const now = new Date()
       const totalTasks = tasksList.length
       const completedTasks = tasksList.filter(t => t.status === 'done').length
+      const inProgressTasks = tasksList.filter(t => t.status === 'in_progress').length
       const overdueTasks = tasksList.filter(t =>
         t.due_date && new Date(t.due_date) < now && t.status !== 'done'
       ).length
@@ -197,6 +201,7 @@ export default function PersonalizedDashboardPage() {
       setStats({
         totalTasks,
         completedTasks,
+        inProgressTasks,
         overdueTasks,
         totalProjects,
         activeProjects,
@@ -306,7 +311,7 @@ export default function PersonalizedDashboardPage() {
           </div>
         </div>
 
-        {/* Stats Overview */}
+        {/* Stats Overview - 4 individual stat cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsOverviewWidget stats={stats} />
         </div>

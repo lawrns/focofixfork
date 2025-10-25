@@ -48,6 +48,7 @@ interface Project {
 interface DashboardStats {
   totalTasks: number
   completedTasks: number
+  inProgressTasks: number
   overdueTasks: number
   totalProjects: number
   activeProjects: number
@@ -73,69 +74,86 @@ export function Widget({ className, children }: WidgetProps) {
   )
 }
 
-// Stats Overview Widget
-interface StatsOverviewWidgetProps {
-  stats: DashboardStats
+// Individual Stat Card Component
+interface StatCardProps {
+  icon: React.ReactNode
+  label: string
+  value: number
+  subLabel?: string
+  subValue?: number
+  color?: 'blue' | 'green' | 'orange' | 'red'
   className?: string
 }
 
-export function StatsOverviewWidget({ stats, className }: StatsOverviewWidgetProps) {
-  const taskCompletionRate = stats.totalTasks > 0 
-    ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
-    : 0
-
-  const projectCompletionRate = stats.totalProjects > 0 
-    ? Math.round((stats.completedProjects / stats.totalProjects) * 100) 
-    : 0
+function StatCard({ icon, label, value, subLabel, subValue, color = 'blue', className }: StatCardProps) {
+  const colorClasses = {
+    blue: 'text-blue-600',
+    green: 'text-green-600',
+    orange: 'text-orange-600',
+    red: 'text-red-600',
+  }
 
   return (
     <Widget className={className}>
       <Card className="h-full">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Task Stats */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Tasks</span>
-              <span className="text-sm font-semibold">{stats.totalTasks}</span>
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground mb-1">{label}</p>
+              <p className="text-3xl font-bold">{value}</p>
+              {subLabel && subValue !== undefined && (
+                <p className={`text-xs mt-3 ${colorClasses[color]}`}>
+                  {subLabel}: {subValue}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-green-600">Completed</span>
-                <span>{stats.completedTasks}</span>
-              </div>
-              <Progress value={taskCompletionRate} className="h-2" />
-            </div>
-            {stats.overdueTasks > 0 && (
-              <div className="flex items-center justify-between text-xs text-red-600">
-                <span>Overdue</span>
-                <span>{stats.overdueTasks}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Project Stats */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Projects</span>
-              <span className="text-sm font-semibold">{stats.totalProjects}</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-600">Active</span>
-                <span>{stats.activeProjects}</span>
-              </div>
-              <Progress value={projectCompletionRate} className="h-2" />
+            <div className={`${colorClasses[color]} opacity-20`}>
+              {icon}
             </div>
           </div>
         </CardContent>
       </Card>
     </Widget>
+  )
+}
+
+// Stats Overview Widget - renders 4 individual stat cards
+interface StatsOverviewWidgetProps {
+  stats: DashboardStats
+}
+
+export function StatsOverviewWidget({ stats }: StatsOverviewWidgetProps) {
+  return (
+    <>
+      <StatCard
+        icon={<CheckSquare className="h-8 w-8" />}
+        label="Total Tasks"
+        value={stats.totalTasks}
+        subLabel="Completed"
+        subValue={stats.completedTasks}
+        color="green"
+      />
+      <StatCard
+        icon={<Clock className="h-8 w-8" />}
+        label="In Progress"
+        value={stats.inProgressTasks}
+        color="blue"
+      />
+      <StatCard
+        icon={<AlertTriangle className="h-8 w-8" />}
+        label="Overdue Tasks"
+        value={stats.overdueTasks}
+        color="red"
+      />
+      <StatCard
+        icon={<Target className="h-8 w-8" />}
+        label="Active Projects"
+        value={stats.activeProjects}
+        subLabel="Total"
+        subValue={stats.totalProjects}
+        color="orange"
+      />
+    </>
   )
 }
 

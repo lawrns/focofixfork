@@ -250,7 +250,9 @@ export interface TranslationSchema {
     dueNextWeek: string;
     removeDueDate: string;
     editTaskDescription: string;
+    taskTitle: string;
     titlePlaceholder: string;
+    taskDescription: string;
     descriptionPlaceholder: string;
     selectStatus: string;
     selectPriority: string;
@@ -266,7 +268,7 @@ export interface TranslationSchema {
     actionsFor: string;
     openMenu: string;
     taskName: string;
-    taskDescription: string;
+    taskDetailsDescription: string;
     taskStatus: string;
     taskPriority: string;
     assignee: string;

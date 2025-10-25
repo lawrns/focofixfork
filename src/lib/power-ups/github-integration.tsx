@@ -203,7 +203,7 @@ export function GitHubCard({ context, api }: { context: any; api: any }) {
     } finally {
       setLoading(false)
     }
-  }, [repository, githubService, api])
+  }, [repository, api])
 
   // Load issues when repository changes
   useEffect(() => {
@@ -225,7 +225,7 @@ export function GitHubCard({ context, api }: { context: any; api: any }) {
     } catch (err) {
       api.showToast(`Failed to create issue: ${err}`, 'error')
     }
-  }, [repository, githubService, loadIssues, api])
+  }, [repository, loadIssues, api])
 
   if (!repository) {
     return (
@@ -351,7 +351,7 @@ export function GitHubBoard({ context, api }: { context: any; api: any }) {
     } finally {
       setLoading(false)
     }
-  }, [githubService, api])
+  }, [api])
 
   // Load issues for selected repository
   const loadIssues = useCallback(async (repo: string) => {
@@ -365,7 +365,7 @@ export function GitHubBoard({ context, api }: { context: any; api: any }) {
     } finally {
       setLoading(false)
     }
-  }, [githubService, api])
+  }, [api])
 
   useEffect(() => {
     loadRepositories()
@@ -450,7 +450,7 @@ export function GitHubProject({ context, api }: { context: any; api: any }) {
     } finally {
       setLoading(false)
     }
-  }, [githubService, api])
+  }, [api])
 
   // Load stats for selected repository
   const loadStats = useCallback(async (repo: string) => {
@@ -475,7 +475,7 @@ export function GitHubProject({ context, api }: { context: any; api: any }) {
     } finally {
       setLoading(false)
     }
-  }, [githubService, api])
+  }, [api])
 
   useEffect(() => {
     loadRepositories()

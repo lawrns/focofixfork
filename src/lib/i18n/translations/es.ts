@@ -280,7 +280,7 @@ export const es: TranslationSchema = {
     actionsFor: 'Acciones para {taskTitle}',
     openMenu: 'Abrir menú',
     taskName: 'Nombre de la Tarea',
-    taskDescription: 'Descripción',
+    taskDetailsDescription: 'Descripción',
     taskStatus: 'Estado',
     taskPriority: 'Prioridad',
     reporter: 'Reportado por',

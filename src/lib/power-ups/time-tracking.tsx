@@ -496,6 +496,9 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
   )
 }
 
+// Singleton instance for time tracking service
+const timeServiceInstance = new TimeTrackingService()
+
 // Time Reports Component
 export function TimeReports({ context, api }: { context: any; api: any }) {
   const [report, setReport] = useState<TimeReport | null>(null)
@@ -509,15 +512,13 @@ export function TimeReports({ context, api }: { context: any; api: any }) {
     end: new Date()
   })
 
-  const timeService = new TimeTrackingService()
-
   // Load report
   const loadReport = useCallback(async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const reportData = await timeService.generateReport(api, period, context.userId)
+      const reportData = await timeServiceInstance.generateReport(api, period, context.userId)
       setReport(reportData)
     } catch (err) {
       setError(`Failed to generate report: ${err}`)
@@ -960,24 +961,24 @@ function TimeTracker({ context, api }) {
 }
 
 // Time Reports Component
+const timeServiceInstance = new TimeTrackingService()
+
 function TimeReports({ context, api }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const timeService = new TimeTrackingService()
-
   // Load report
   const loadReport = useCallback(async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const period = {
         start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
         end: new Date()
       }
-      const reportData = await timeService.generateReport(api, period, context.userId)
+      const reportData = await timeServiceInstance.generateReport(api, period, context.userId)
       setReport(reportData)
     } catch (err) {
       setError(\`Failed to generate report: \${err}\`)

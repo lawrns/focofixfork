@@ -161,6 +161,9 @@ class GitHubService {
   }
 }
 
+// Singleton instance for GitHub service
+const githubServiceInstance = new GitHubService()
+
 // GitHub Card Component
 export function GitHubCard({ context, api }: { context: any; api: any }) {
   const [issues, setIssues] = useState<GitHubIssue[]>([])
@@ -168,15 +171,13 @@ export function GitHubCard({ context, api }: { context: any; api: any }) {
   const [error, setError] = useState<string | null>(null)
   const [repository, setRepository] = useState<string | null>(null)
 
-  const githubService = new GitHubService()
-
   // Load GitHub token from storage
   useEffect(() => {
     const loadToken = async () => {
       try {
         const token = await api.getStorage('github-token')
         if (token) {
-          githubService.setToken(token)
+          githubServiceInstance.setToken(token)
         }
       } catch (err) {
         api.log(`Failed to load GitHub token: ${err}`, 'error')
@@ -194,7 +195,7 @@ export function GitHubCard({ context, api }: { context: any; api: any }) {
 
     try {
       const [owner, repo] = repository.split('/')
-      const issues = await githubService.getIssues(owner, repo)
+      const issues = await githubServiceInstance.getIssues(owner, repo)
       setIssues(issues)
     } catch (err) {
       setError(`Failed to load issues: ${err}`)
@@ -215,7 +216,7 @@ export function GitHubCard({ context, api }: { context: any; api: any }) {
 
     try {
       const [owner, repo] = repository.split('/')
-      const issue = await githubService.createIssue(owner, repo, title, body)
+      const issue = await githubServiceInstance.createIssue(owner, repo, title, body)
       
       // Refresh issues
       await loadIssues()
@@ -337,13 +338,13 @@ export function GitHubBoard({ context, api }: { context: any; api: any }) {
   const [issues, setIssues] = useState<GitHubIssue[]>([])
   const [loading, setLoading] = useState(false)
 
-  const githubService = new GitHubService()
+  // Using singleton instance below
 
   // Load repositories
   const loadRepositories = useCallback(async () => {
     setLoading(true)
     try {
-      const repos = await githubService.getRepositories()
+      const repos = await githubServiceInstance.getRepositories()
       setRepositories(repos)
     } catch (err) {
       api.log(`Failed to load repositories: ${err}`, 'error')
@@ -357,7 +358,7 @@ export function GitHubBoard({ context, api }: { context: any; api: any }) {
     setLoading(true)
     try {
       const [owner, repoName] = repo.split('/')
-      const issues = await githubService.getIssues(owner, repoName)
+      const issues = await githubServiceInstance.getIssues(owner, repoName)
       setIssues(issues)
     } catch (err) {
       api.log(`Failed to load issues: ${err}`, 'error')
@@ -436,13 +437,13 @@ export function GitHubProject({ context, api }: { context: any; api: any }) {
   } | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const githubService = new GitHubService()
+  // Using singleton instance below
 
   // Load repositories
   const loadRepositories = useCallback(async () => {
     setLoading(true)
     try {
-      const repos = await githubService.getRepositories()
+      const repos = await githubServiceInstance.getRepositories()
       setRepositories(repos)
     } catch (err) {
       api.log(`Failed to load repositories: ${err}`, 'error')
@@ -457,10 +458,10 @@ export function GitHubProject({ context, api }: { context: any; api: any }) {
     try {
       const [owner, repoName] = repo.split('/')
       const [openIssues, closedIssues, openPRs, closedPRs] = await Promise.all([
-        githubService.getIssues(owner, repoName, 'open'),
-        githubService.getIssues(owner, repoName, 'closed'),
-        githubService.getPullRequests(owner, repoName, 'open'),
-        githubService.getPullRequests(owner, repoName, 'closed')
+        githubServiceInstance.getIssues(owner, repoName, 'open'),
+        githubServiceInstance.getIssues(owner, repoName, 'closed'),
+        githubServiceInstance.getPullRequests(owner, repoName, 'open'),
+        githubServiceInstance.getPullRequests(owner, repoName, 'closed')
       ])
 
       setStats({
@@ -622,6 +623,9 @@ class GitHubService {
   }
 }
 
+// Singleton instance for GitHub service
+const githubServiceInstance = new GitHubService()
+
 // GitHub Card Component
 function GitHubCard({ context, api }) {
   const [issues, setIssues] = useState([])
@@ -629,15 +633,13 @@ function GitHubCard({ context, api }) {
   const [error, setError] = useState(null)
   const [repository, setRepository] = useState(null)
 
-  const githubService = new GitHubService()
-
   // Load GitHub token from storage
   useEffect(() => {
     const loadToken = async () => {
       try {
         const token = await api.getStorage('github-token')
         if (token) {
-          githubService.setToken(token)
+          githubServiceInstance.setToken(token)
         }
       } catch (err) {
         api.log(\`Failed to load GitHub token: \${err}\`, 'error')
@@ -655,7 +657,7 @@ function GitHubCard({ context, api }) {
 
     try {
       const [owner, repo] = repository.split('/')
-      const issues = await githubService.getIssues(owner, repo)
+      const issues = await githubServiceInstance.getIssues(owner, repo)
       setIssues(issues)
     } catch (err) {
       setError(\`Failed to load issues: \${err}\`)

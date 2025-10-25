@@ -180,7 +180,7 @@ export class TasksService {
       // Ensure the user is creating the task
       const dataToInsert = {
         ...taskData,
-        reporter_id: userId,
+        created_by: userId,
       }
 
       const { data, error } = await client

@@ -6,7 +6,7 @@ export interface Task {
   description?: string;
   project_id: string;
   milestone_id?: string;
-  status: 'todo' | 'in_progress' | 'review' | 'done';
+  status: 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignee_id?: string;
   estimated_hours?: number;
@@ -28,7 +28,6 @@ export interface CreateTaskData {
   estimated_hours?: number;
   actual_hours?: number;
   due_date?: string;
-  created_by: string;
 }
 
 export interface UpdateTaskData {

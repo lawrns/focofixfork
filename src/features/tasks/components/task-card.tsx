@@ -17,7 +17,8 @@ import {
   Circle,
   AlertTriangle,
   PlayCircle,
-  Loader2
+  Loader2,
+  GripVertical
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -196,7 +197,13 @@ function TaskCardComponent({
     >
       <Card className={`glass-card hover-lift border-l-4 ${statusConfig[currentTask.status].borderColor} ${isOverdue ? 'ring-2 ring-red-500/20' : ''} ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
+          {/* Drag Handle - Left Side */}
+          <div className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors" title="Drag to reorder">
+            <GripVertical className="h-5 w-5 text-foreground" aria-label="Drag handle" />
+          </div>
+
+          {/* Status Icon and Task Content - Middle */}
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="flex-shrink-0 mt-1">
               {isUpdating ? (
@@ -226,10 +233,11 @@ function TaskCardComponent({
             </div>
           </div>
 
+          {/* Actions Menu - Right Side */}
           {showActions && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0" aria-label={`Actions for ${currentTask.title}`}>
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0 hover:bg-muted" aria-label={`Actions for ${currentTask.title}`}>
                   <MoreVertical className="h-5 w-5" aria-hidden="true" />
                   <span className="sr-only">Open menu</span>
                 </Button>

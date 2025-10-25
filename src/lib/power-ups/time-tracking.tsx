@@ -444,7 +444,7 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
         {currentEntry ? (
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl font-mono font-bold text-green-600 mb-2">
-              {timeService.formatDuration(duration)}
+              {timeServiceInstance.formatDuration(duration)}
             </div>
             <div className="text-sm text-gray-600 mb-3">
               Started at {currentEntry.startTime.toLocaleTimeString()}
@@ -574,15 +574,15 @@ export function TimeReports({ context, api }: { context: any; api: any }) {
         <div className="grid grid-cols-3 gap-3">
           <div className="p-3 bg-blue-50 rounded">
             <div className="text-sm text-blue-600 font-medium">Total Time</div>
-            <div className="text-lg font-bold">{timeService.formatDuration(report.totalTime)}</div>
+            <div className="text-lg font-bold">{timeServiceInstance.formatDuration(report.totalTime)}</div>
           </div>
           <div className="p-3 bg-green-50 rounded">
             <div className="text-sm text-green-600 font-medium">Billable Time</div>
-            <div className="text-lg font-bold">{timeService.formatDuration(report.billableTime)}</div>
+            <div className="text-lg font-bold">{timeServiceInstance.formatDuration(report.billableTime)}</div>
           </div>
           <div className="p-3 bg-purple-50 rounded">
             <div className="text-sm text-purple-600 font-medium">Earnings</div>
-            <div className="text-lg font-bold">{timeService.formatEarnings(report.totalEarnings)}</div>
+            <div className="text-lg font-bold">{timeServiceInstance.formatEarnings(report.totalEarnings)}</div>
           </div>
         </div>
 
@@ -594,8 +594,8 @@ export function TimeReports({ context, api }: { context: any; api: any }) {
               <div key={item.projectId} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
                 <span>{item.projectName}</span>
                 <div className="text-right">
-                  <div>{timeService.formatDuration(item.time)}</div>
-                  <div className="text-xs text-gray-600">{timeService.formatEarnings(item.earnings)}</div>
+                  <div>{timeServiceInstance.formatDuration(item.time)}</div>
+                  <div className="text-xs text-gray-600">{timeServiceInstance.formatEarnings(item.earnings)}</div>
                 </div>
               </div>
             ))}
@@ -610,8 +610,8 @@ export function TimeReports({ context, api }: { context: any; api: any }) {
               <div key={item.date} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
                 <span>{new Date(item.date).toLocaleDateString()}</span>
                 <div className="text-right">
-                  <div>{timeService.formatDuration(item.time)}</div>
-                  <div className="text-xs text-gray-600">{timeService.formatEarnings(item.earnings)}</div>
+                  <div>{timeServiceInstance.formatDuration(item.time)}</div>
+                  <div className="text-xs text-gray-600">{timeServiceInstance.formatEarnings(item.earnings)}</div>
                 </div>
               </div>
             ))}
@@ -815,6 +815,9 @@ class TimeTrackingService {
   }
 }
 
+// Singleton instance for time tracking service
+const timeServiceInstance = new TimeTrackingService()
+
 // Time Tracker Component
 function TimeTracker({ context, api }) {
   const [settings, setSettings] = useState(null)
@@ -823,17 +826,15 @@ function TimeTracker({ context, api }) {
   const [error, setError] = useState(null)
   const [duration, setDuration] = useState(0)
 
-  const timeService = new TimeTrackingService()
-
   // Load settings and current entry
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const loadedSettings = await timeService.loadSettings(api)
+        const loadedSettings = await timeServiceInstance.loadSettings(api)
         setSettings(loadedSettings)
-        
-        const current = timeService.getCurrentEntry()
+
+        const current = timeServiceInstance.getCurrentEntry()
         setCurrentEntry(current)
         
         if (current) {
@@ -864,7 +865,7 @@ function TimeTracker({ context, api }) {
     }
 
     try {
-      const entry = await timeService.startTracking(
+      const entry = await timeServiceInstance.startTracking(
         api,
         context.taskId,
         context.projectId,
@@ -882,11 +883,11 @@ function TimeTracker({ context, api }) {
   // Handle stop tracking
   const handleStop = async () => {
     try {
-      const entry = await timeService.stopTracking(api)
+      const entry = await timeServiceInstance.stopTracking(api)
       if (entry) {
         setCurrentEntry(null)
         setDuration(0)
-        api.showToast(\`Time tracking stopped. Duration: \${timeService.formatDuration(entry.duration)}\`, 'success')
+        api.showToast(\`Time tracking stopped. Duration: \${timeServiceInstance.formatDuration(entry.duration)}\`, 'success')
       }
     } catch (err) {
       api.showToast(\`Failed to stop tracking: \${err}\`, 'error')
@@ -916,7 +917,7 @@ function TimeTracker({ context, api }) {
         {currentEntry ? (
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl font-mono font-bold text-green-600 mb-2">
-              {timeService.formatDuration(duration)}
+              {timeServiceInstance.formatDuration(duration)}
             </div>
             <div className="text-sm text-gray-600 mb-3">
               Started at {currentEntry.startTime.toLocaleTimeString()}
@@ -1025,15 +1026,15 @@ function TimeReports({ context, api }) {
         <div className="grid grid-cols-3 gap-3">
           <div className="p-3 bg-blue-50 rounded">
             <div className="text-sm text-blue-600 font-medium">Total Time</div>
-            <div className="text-lg font-bold">{timeService.formatDuration(report.totalTime)}</div>
+            <div className="text-lg font-bold">{timeServiceInstance.formatDuration(report.totalTime)}</div>
           </div>
           <div className="p-3 bg-green-50 rounded">
             <div className="text-sm text-green-600 font-medium">Billable Time</div>
-            <div className="text-lg font-bold">{timeService.formatDuration(report.billableTime)}</div>
+            <div className="text-lg font-bold">{timeServiceInstance.formatDuration(report.billableTime)}</div>
           </div>
           <div className="p-3 bg-purple-50 rounded">
             <div className="text-sm text-purple-600 font-medium">Earnings</div>
-            <div className="text-lg font-bold">{timeService.formatEarnings(report.totalEarnings)}</div>
+            <div className="text-lg font-bold">{timeServiceInstance.formatEarnings(report.totalEarnings)}</div>
           </div>
         </div>
       </div>

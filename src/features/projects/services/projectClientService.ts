@@ -63,7 +63,7 @@ export class ProjectClientService {
       const url = `/api/projects${params.toString() ? `?${params.toString()}` : ''}`
       const response = await apiGet(url)
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Failed to fetch projects'
@@ -93,7 +93,7 @@ export class ProjectClientService {
     try {
       const response = await apiGet(`/api/projects/${projectId}`)
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Project not found'
@@ -131,7 +131,7 @@ export class ProjectClientService {
     try {
       const response = await apiPost('/api/projects', projectData)
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Failed to create project'
@@ -170,7 +170,7 @@ export class ProjectClientService {
     try {
       const response = await apiPut(`/api/projects/${projectId}`, updates)
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Failed to update project'
@@ -199,7 +199,7 @@ export class ProjectClientService {
     try {
       const response = await apiDelete(`/api/projects/${projectId}`)
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Failed to delete project'
@@ -237,7 +237,7 @@ export class ProjectClientService {
         parameters
       })
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Bulk operation failed'
@@ -273,7 +273,7 @@ export class ProjectClientService {
     try {
       const response = await apiGet('/api/projects/stats')
 
-      if (!response.ok) {
+      if (!response.success) {
         return {
           success: false,
           error: response.error || 'Failed to get project statistics'

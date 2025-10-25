@@ -259,6 +259,9 @@ class CalendarService {
 }
 
 // Calendar Sync Component
+// Singleton instance for calendar service
+const calendarServiceInstance = new CalendarService()
+
 export function CalendarSync({ context, api }: { context: any; api: any }) {
   const [settings, setSettings] = useState<CalendarSettings | null>(null)
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -266,21 +269,21 @@ export function CalendarSync({ context, api }: { context: any; api: any }) {
   const [error, setError] = useState<string | null>(null)
   const [calendars, setCalendars] = useState<Array<{ id: string; name: string; description?: string; color: string }>>([])
 
-  const calendarService = new CalendarService()
+  // Using singleton instance below
 
   // Load settings and events
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const loadedSettings = await calendarService.loadSettings(api)
+        const loadedSettings = await calendarServiceInstance.loadSettings(api)
         setSettings(loadedSettings)
         
         if (loadedSettings?.syncEnabled) {
-          const loadedCalendars = await calendarService.getCalendars()
+          const loadedCalendars = await calendarServiceInstance.getCalendars()
           setCalendars(loadedCalendars)
           
-          const loadedEvents = await calendarService.getEvents(
+          const loadedEvents = await calendarServiceInstance.getEvents(
             loadedSettings.calendarId || 'primary',
             new Date(),
             new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Next 30 days
@@ -300,7 +303,7 @@ export function CalendarSync({ context, api }: { context: any; api: any }) {
   // Handle settings update
   const handleSettingsUpdate = async (newSettings: CalendarSettings) => {
     try {
-      await calendarService.saveSettings(api, newSettings)
+      await calendarServiceInstance.saveSettings(api, newSettings)
       setSettings(newSettings)
       api.showToast('Calendar settings updated', 'success')
     } catch (err) {
@@ -313,7 +316,7 @@ export function CalendarSync({ context, api }: { context: any; api: any }) {
     if (!settings) return
 
     try {
-      const event = await calendarService.createEvent(
+      const event = await calendarServiceInstance.createEvent(
         settings.calendarId || 'primary',
         eventData
       )
@@ -329,7 +332,7 @@ export function CalendarSync({ context, api }: { context: any; api: any }) {
     if (!settings) return
 
     try {
-      const updatedEvent = await calendarService.updateEvent(
+      const updatedEvent = await calendarServiceInstance.updateEvent(
         settings.calendarId || 'primary',
         eventId,
         updates
@@ -346,7 +349,7 @@ export function CalendarSync({ context, api }: { context: any; api: any }) {
     if (!settings) return
 
     try {
-      await calendarService.deleteEvent(settings.calendarId || 'primary', eventId)
+      await calendarServiceInstance.deleteEvent(settings.calendarId || 'primary', eventId)
       setEvents(prev => prev.filter(e => e.id !== eventId))
       api.showToast('Event deleted successfully', 'success')
     } catch (err) {
@@ -466,20 +469,20 @@ export function CalendarWidget({ context, api }: { context: any; api: any }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const calendarService = new CalendarService()
+  // Using singleton instance below
 
   // Load today's events
   useEffect(() => {
     const loadTodayEvents = async () => {
       setLoading(true)
       try {
-        const settings = await calendarService.loadSettings(api)
+        const settings = await calendarServiceInstance.loadSettings(api)
         if (settings?.syncEnabled) {
           const today = new Date()
           const tomorrow = new Date(today)
           tomorrow.setDate(tomorrow.getDate() + 1)
           
-          const events = await calendarService.getEvents(
+          const events = await calendarServiceInstance.getEvents(
             settings.calendarId || 'primary',
             today,
             tomorrow
@@ -712,18 +715,18 @@ function CalendarSync({ context, api }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const calendarService = new CalendarService()
+  // Using singleton instance below
 
   // Load settings and events
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const loadedSettings = await calendarService.loadSettings(api)
+        const loadedSettings = await calendarServiceInstance.loadSettings(api)
         setSettings(loadedSettings)
         
         if (loadedSettings?.syncEnabled) {
-          const loadedEvents = await calendarService.getEvents(
+          const loadedEvents = await calendarServiceInstance.getEvents(
             loadedSettings.calendarId || 'primary',
             new Date(),
             new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Next 30 days
@@ -815,20 +818,20 @@ function CalendarWidget({ context, api }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const calendarService = new CalendarService()
+  // Using singleton instance below
 
   // Load today's events
   useEffect(() => {
     const loadTodayEvents = async () => {
       setLoading(true)
       try {
-        const settings = await calendarService.loadSettings(api)
+        const settings = await calendarServiceInstance.loadSettings(api)
         if (settings?.syncEnabled) {
           const today = new Date()
           const tomorrow = new Date(today)
           tomorrow.setDate(tomorrow.getDate() + 1)
           
-          const events = await calendarService.getEvents(
+          const events = await calendarServiceInstance.getEvents(
             settings.calendarId || 'primary',
             today,
             tomorrow

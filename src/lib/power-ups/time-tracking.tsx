@@ -333,19 +333,17 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
   const [error, setError] = useState<string | null>(null)
   const [duration, setDuration] = useState(0)
 
-  const timeService = new TimeTrackingService()
-
   // Load settings and current entry
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const loadedSettings = await timeService.loadSettings(api)
+        const loadedSettings = await timeServiceInstance.loadSettings(api)
         setSettings(loadedSettings)
-        
-        const current = timeService.getCurrentEntry()
+
+        const current = timeServiceInstance.getCurrentEntry()
         setCurrentEntry(current)
-        
+
         if (current) {
           // Start duration update timer
           const timer = setInterval(() => {
@@ -353,7 +351,7 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
             const elapsed = now - current.startTime.getTime()
             setDuration(elapsed)
           }, 1000)
-          
+
           return () => clearInterval(timer)
         }
       } catch (err) {
@@ -374,7 +372,7 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
     }
 
     try {
-      const entry = await timeService.startTracking(
+      const entry = await timeServiceInstance.startTracking(
         api,
         context.taskId,
         context.projectId,
@@ -392,11 +390,11 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
   // Handle stop tracking
   const handleStop = async () => {
     try {
-      const entry = await timeService.stopTracking(api)
+      const entry = await timeServiceInstance.stopTracking(api)
       if (entry) {
         setCurrentEntry(null)
         setDuration(0)
-        api.showToast(`Time tracking stopped. Duration: ${timeService.formatDuration(entry.duration)}`, 'success')
+        api.showToast(`Time tracking stopped. Duration: ${timeServiceInstance.formatDuration(entry.duration)}`, 'success')
       }
     } catch (err) {
       api.showToast(`Failed to stop tracking: ${err}`, 'error')
@@ -406,7 +404,7 @@ export function TimeTracker({ context, api }: { context: any; api: any }) {
   // Handle settings update
   const handleSettingsUpdate = async (newSettings: TimeTrackingSettings) => {
     try {
-      await timeService.saveSettings(api, newSettings)
+      await timeServiceInstance.saveSettings(api, newSettings)
       setSettings(newSettings)
       api.showToast('Time tracking settings updated', 'success')
     } catch (err) {

@@ -237,6 +237,12 @@ export interface TranslationSchema {
   // Tasks
   tasks: Record<string, string>;
 
+  // Task statuses
+  status: Record<string, string>;
+
+  // Task priorities
+  priority: Record<string, string>;
+
   // Milestones
   milestones: {
     title: string;

@@ -300,6 +300,9 @@ class CustomFieldsService {
 }
 
 // Custom Fields Component
+// Singleton instance for custom fields service
+const fieldsServiceInstance = new CustomFieldsService()
+
 export function CustomFields({ context, api }: { context: any; api: any }) {
   const [fields, setFields] = useState<CustomField[]>([])
   const [values, setValues] = useState<CustomFieldValue[]>([])
@@ -307,21 +310,21 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
   const [error, setError] = useState<string | null>(null)
   const [editingField, setEditingField] = useState<string | null>(null)
 
-  const fieldsService = new CustomFieldsService()
+  // Using singleton instance below
 
   // Load fields and values
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const loadedFields = await fieldsService.getFields(api, context.projectId)
+        const loadedFields = await fieldsServiceInstance.getFields(api, context.projectId)
         setFields(loadedFields)
         
         if (context.taskId) {
-          const loadedValues = await fieldsService.getFieldValues(api, context.taskId, 'task')
+          const loadedValues = await fieldsServiceInstance.getFieldValues(api, context.taskId, 'task')
           setValues(loadedValues)
         } else if (context.projectId) {
-          const loadedValues = await fieldsService.getFieldValues(api, context.projectId, 'project')
+          const loadedValues = await fieldsServiceInstance.getFieldValues(api, context.projectId, 'project')
           setValues(loadedValues)
         }
       } catch (err) {
@@ -341,7 +344,7 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
       if (!field) return
 
       // Validate value
-      const validation = fieldsService.validateFieldValue(field, value)
+      const validation = fieldsServiceInstance.validateFieldValue(field, value)
       if (!validation.valid) {
         api.showToast(validation.error!, 'error')
         return
@@ -357,7 +360,7 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
         updatedAt: new Date()
       }
 
-      await fieldsService.saveFieldValue(api, fieldValue)
+      await fieldsServiceInstance.saveFieldValue(api, fieldValue)
       
       // Update local state
       setValues(prev => {
@@ -398,7 +401,7 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
             projectId: context.projectId,
             onFieldUpdate: () => {
               // Reload fields
-              fieldsService.getFields(api, context.projectId).then(setFields)
+              fieldsServiceInstance.getFields(api, context.projectId).then(setFields)
             }
           })}
           className="text-gray-400 hover:text-gray-600"
@@ -419,7 +422,7 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
               onClick={() => api.showModal('CustomFieldManager', { 
                 projectId: context.projectId,
                 onFieldUpdate: () => {
-                  fieldsService.getFields(api, context.projectId).then(setFields)
+                  fieldsServiceInstance.getFields(api, context.projectId).then(setFields)
                 }
               })}
               className="text-blue-600 hover:underline text-sm mt-2"
@@ -431,7 +434,7 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
           fields.map(field => (
             <div key={field.id} className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm">{fieldsService.getFieldTypeIcon(field.type)}</span>
+                <span className="text-sm">{fieldsServiceInstance.getFieldTypeIcon(field.type)}</span>
                 <label className="text-sm font-medium">
                   {field.name}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -548,19 +551,22 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
 }
 
 // Field Manager Component
+// Singleton instance for custom fields service
+const fieldsServiceInstance = new CustomFieldsService()
+
 export function FieldManager({ context, api }: { context: any; api: any }) {
   const [fields, setFields] = useState<CustomField[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fieldsService = new CustomFieldsService()
+  // Using singleton instance below
 
   // Load fields
   useEffect(() => {
     const loadFields = async () => {
       setLoading(true)
       try {
-        const loadedFields = await fieldsService.getFields(api, context.projectId)
+        const loadedFields = await fieldsServiceInstance.getFields(api, context.projectId)
         setFields(loadedFields)
       } catch (err) {
         setError(`Failed to load fields: ${err}`)
@@ -582,7 +588,7 @@ export function FieldManager({ context, api }: { context: any; api: any }) {
         updatedAt: new Date()
       }
 
-      await fieldsService.saveField(api, field)
+      await fieldsServiceInstance.saveField(api, field)
       setFields(prev => [...prev, field])
       api.showToast('Custom field created', 'success')
     } catch (err) {
@@ -597,7 +603,7 @@ export function FieldManager({ context, api }: { context: any; api: any }) {
       if (!field) return
 
       const updatedField = { ...field, ...updates, updatedAt: new Date() }
-      await fieldsService.saveField(api, updatedField)
+      await fieldsServiceInstance.saveField(api, updatedField)
       setFields(prev => prev.map(f => f.id === fieldId ? updatedField : f))
       api.showToast('Custom field updated', 'success')
     } catch (err) {
@@ -608,7 +614,7 @@ export function FieldManager({ context, api }: { context: any; api: any }) {
   // Handle field deletion
   const handleDeleteField = async (fieldId: string) => {
     try {
-      await fieldsService.deleteField(api, fieldId)
+      await fieldsServiceInstance.deleteField(api, fieldId)
       setFields(prev => prev.filter(f => f.id !== fieldId))
       api.showToast('Custom field deleted', 'success')
     } catch (err) {
@@ -652,7 +658,7 @@ export function FieldManager({ context, api }: { context: any; api: any }) {
           fields.map(field => (
             <div key={field.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
               <div className="flex items-center gap-3">
-                <span className="text-lg">{fieldsService.getFieldTypeIcon(field.type)}</span>
+                <span className="text-lg">{fieldsServiceInstance.getFieldTypeIcon(field.type)}</span>
                 <div>
                   <div className="font-medium">{field.name}</div>
                   <div className="text-sm text-gray-600">
@@ -929,27 +935,30 @@ class CustomFieldsService {
 }
 
 // Custom Fields Component
+// Singleton instance for custom fields service
+const fieldsServiceInstance = new CustomFieldsService()
+
 function CustomFields({ context, api }) {
   const [fields, setFields] = useState([])
   const [values, setValues] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fieldsService = new CustomFieldsService()
+  // Using singleton instance below
 
   // Load fields and values
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const loadedFields = await fieldsService.getFields(api, context.projectId)
+        const loadedFields = await fieldsServiceInstance.getFields(api, context.projectId)
         setFields(loadedFields)
         
         if (context.taskId) {
-          const loadedValues = await fieldsService.getFieldValues(api, context.taskId, 'task')
+          const loadedValues = await fieldsServiceInstance.getFieldValues(api, context.taskId, 'task')
           setValues(loadedValues)
         } else if (context.projectId) {
-          const loadedValues = await fieldsService.getFieldValues(api, context.projectId, 'project')
+          const loadedValues = await fieldsServiceInstance.getFieldValues(api, context.projectId, 'project')
           setValues(loadedValues)
         }
       } catch (err) {
@@ -969,7 +978,7 @@ function CustomFields({ context, api }) {
       if (!field) return
 
       // Validate value
-      const validation = fieldsService.validateFieldValue(field, value)
+      const validation = fieldsServiceInstance.validateFieldValue(field, value)
       if (!validation.valid) {
         api.showToast(validation.error, 'error')
         return
@@ -985,7 +994,7 @@ function CustomFields({ context, api }) {
         updatedAt: new Date()
       }
 
-      await fieldsService.saveFieldValue(api, fieldValue)
+      await fieldsServiceInstance.saveFieldValue(api, fieldValue)
       
       // Update local state
       setValues(prev => {
@@ -1036,7 +1045,7 @@ function CustomFields({ context, api }) {
           fields.map(field => (
             <div key={field.id} className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm">{fieldsService.getFieldTypeIcon(field.type)}</span>
+                <span className="text-sm">{fieldsServiceInstance.getFieldTypeIcon(field.type)}</span>
                 <label className="text-sm font-medium">
                   {field.name}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -1116,14 +1125,14 @@ function FieldManager({ context, api }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fieldsService = new CustomFieldsService()
+  // Using singleton instance below
 
   // Load fields
   useEffect(() => {
     const loadFields = async () => {
       setLoading(true)
       try {
-        const loadedFields = await fieldsService.getFields(api, context.projectId)
+        const loadedFields = await fieldsServiceInstance.getFields(api, context.projectId)
         setFields(loadedFields)
       } catch (err) {
         setError(\`Failed to load fields: \${err}\`)
@@ -1170,7 +1179,7 @@ function FieldManager({ context, api }) {
           fields.map(field => (
             <div key={field.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
               <div className="flex items-center gap-3">
-                <span className="text-lg">{fieldsService.getFieldTypeIcon(field.type)}</span>
+                <span className="text-lg">{fieldsServiceInstance.getFieldTypeIcon(field.type)}</span>
                 <div>
                   <div className="font-medium">{field.name}</div>
                   <div className="text-sm text-gray-600">

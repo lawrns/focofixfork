@@ -552,7 +552,6 @@ export function CustomFields({ context, api }: { context: any; api: any }) {
 
 // Field Manager Component
 // Singleton instance for custom fields service
-const fieldsServiceInstance = new CustomFieldsService()
 
 export function FieldManager({ context, api }: { context: any; api: any }) {
   const [fields, setFields] = useState<CustomField[]>([])
@@ -936,7 +935,6 @@ class CustomFieldsService {
 
 // Custom Fields Component
 // Singleton instance for custom fields service
-const fieldsServiceInstance = new CustomFieldsService()
 
 function CustomFields({ context, api }) {
   const [fields, setFields] = useState([])

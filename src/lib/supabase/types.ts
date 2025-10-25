@@ -2257,14 +2257,14 @@ export type Database = {
           actual_hours: number | null
           assignee_id: string | null
           created_at: string | null
-          created_by: string | null
+          created_by: string
           description: string | null
           due_date: string | null
           estimated_hours: number | null
           id: string
           milestone_id: string | null
           priority: string | null
-          project_id: string | null
+          project_id: string
           reporter_id: string | null
           status: string | null
           title: string

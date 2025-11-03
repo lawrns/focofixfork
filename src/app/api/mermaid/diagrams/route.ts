@@ -1,37 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mermaidService } from '@/lib/services/mermaid';
-import { CreateMermaidDiagramRequestSchema } from '@/lib/models/mermaid';
+import { mermaidPublicService } from '@/lib/services/mermaid-public';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId') || undefined;
-    const isPublic = searchParams.get('isPublic') === 'true' ? true : searchParams.get('isPublic') === 'false' ? false : undefined;
-    const sharedWithMe = searchParams.get('sharedWithMe') === 'true';
-    const search = searchParams.get('search') || undefined;
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
-    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined;
+    const options = {
+      organizationId: searchParams.get('organizationId') || undefined,
+      isPublic: searchParams.get('isPublic') === 'true' ? true : undefined,
+      sharedWithMe: searchParams.get('sharedWithMe') === 'true' ? true : undefined,
+      search: searchParams.get('search') || undefined,
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+      offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined,
+    };
 
-    const result = await mermaidService.listDiagrams({
-      organizationId,
-      isPublic,
-      sharedWithMe,
-      search,
-      limit,
-      offset,
-    });
-
+    const result = await mermaidPublicService.listDiagrams(options);
+    
     return NextResponse.json({
       success: true,
-      data: result.diagrams,
-      pagination: {
-        total: result.total,
-        limit,
-        offset,
-      },
+      data: result,
     });
   } catch (error: any) {
-    console.error('Mermaid diagrams GET error:', error);
+    console.error('Failed to list diagrams:', error);
     return NextResponse.json(
       {
         success: false,
@@ -48,9 +37,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = CreateMermaidDiagramRequestSchema.parse(body);
 
-    const diagram = await mermaidService.createDiagram(validatedData);
+    const diagram = await mermaidPublicService.createDiagram(body);
 
     return NextResponse.json({
       success: true,
@@ -59,20 +47,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Mermaid diagrams POST error:', error);
     
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request data',
-            details: error.errors,
-          },
-        },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
       {
         success: false,

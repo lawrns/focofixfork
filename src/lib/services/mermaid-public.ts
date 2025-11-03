@@ -192,7 +192,7 @@ export class MermaidPublicService {
       throw new Error(`Failed to get public diagram: ${error.message}`);
     }
 
-    return mapDatabaseToMermaidDiagram(data);
+    return mapDatabaseToMermaidDiagramSimple(data);
   }
 }
 

@@ -221,8 +221,7 @@ export default function PersonalizedDashboardPage() {
     if (user && !loading) {
       fetchUserData()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading])
+  }, [user, loading, fetchUserData])
 
   // Event handlers
   const handleViewTask = (taskId: string) => {

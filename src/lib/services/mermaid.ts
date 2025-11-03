@@ -10,12 +10,49 @@ import {
   ExportMermaidDiagramRequest,
   MermaidDiagramListItem,
   MermaidDiagramWithVersions,
-  mapDatabaseToMermaidDiagram,
-  mapDatabaseToMermaidDiagramVersion,
-  mapDatabaseToMermaidDiagramShare,
   validateMermaidCode,
   generateShareToken
 } from '@/lib/models/mermaid';
+
+// Simple mapping function without Zod validation
+const mapDatabaseToMermaidDiagramSimple = (row: any): MermaidDiagram => {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    mermaid_code: row.mermaid_code,
+    created_by: row.created_by,
+    organization_id: row.organization_id,
+    is_public: row.is_public,
+    share_token: row.share_token,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    version: row.version,
+  };
+};
+
+const mapDatabaseToMermaidDiagramVersionSimple = (row: any): MermaidDiagramVersion => {
+  return {
+    id: row.id,
+    diagram_id: row.diagram_id,
+    mermaid_code: row.mermaid_code,
+    version_number: row.version_number,
+    created_by: row.created_by,
+    created_at: row.created_at,
+    change_description: row.change_description,
+  };
+};
+
+const mapDatabaseToMermaidDiagramShareSimple = (row: any): MermaidDiagramShare => {
+  return {
+    id: row.id,
+    diagram_id: row.diagram_id,
+    shared_with_user_id: row.shared_with_user_id,
+    permission: row.permission,
+    shared_by: row.shared_by,
+    created_at: row.created_at,
+  };
+};
 
 export class MermaidService {
   private supabase = supabaseClient;
@@ -48,7 +85,7 @@ export class MermaidService {
       throw new Error(`Failed to create diagram: ${error.message}`);
     }
 
-    return mapDatabaseToMermaidDiagram(result);
+    return mapDatabaseToMermaidDiagramSimple(result);
   }
 
   async getDiagram(id: string, shareToken?: string): Promise<MermaidDiagramWithVersions> {
@@ -73,9 +110,9 @@ export class MermaidService {
     }
 
     return {
-      ...mapDatabaseToMermaidDiagram(data),
-      versions: data.versions?.map(mapDatabaseToMermaidDiagramVersion) || [],
-      shares: data.shares?.map(mapDatabaseToMermaidDiagramShare) || [],
+      ...mapDatabaseToMermaidDiagramSimple(data),
+      versions: data.versions?.map(mapDatabaseToMermaidDiagramVersionSimple) || [],
+      shares: data.shares?.map(mapDatabaseToMermaidDiagramShareSimple) || [],
     };
   }
 
@@ -103,7 +140,7 @@ export class MermaidService {
       throw new Error(`Failed to update diagram: ${error.message}`);
     }
 
-    return mapDatabaseToMermaidDiagram(result);
+    return mapDatabaseToMermaidDiagramSimple(result);
   }
 
   async deleteDiagram(id: string): Promise<void> {
@@ -175,7 +212,7 @@ export class MermaidService {
     }
 
     const diagrams: MermaidDiagramListItem[] = data.map((row: any) => {
-      const baseDiagram = mapDatabaseToMermaidDiagram(row);
+      const baseDiagram = mapDatabaseToMermaidDiagramSimple(row);
       return {
         id: baseDiagram.id,
         title: baseDiagram.title,
@@ -262,7 +299,7 @@ export class MermaidService {
       throw new Error(`Failed to get versions: ${error.message}`);
     }
 
-    return data.map(mapDatabaseToMermaidDiagramVersion);
+    return data.map(mapDatabaseToMermaidDiagramVersionSimple);
   }
 
   async createVersion(diagramId: string, data: CreateVersionRequest): Promise<MermaidDiagramVersion> {
@@ -303,7 +340,7 @@ export class MermaidService {
       mermaid_code: data.mermaid_code,
     });
 
-    return mapDatabaseToMermaidDiagramVersion(result);
+    return mapDatabaseToMermaidDiagramVersionSimple(result);
   }
 
   async restoreVersion(diagramId: string, versionNumber: number): Promise<MermaidDiagram> {
@@ -382,7 +419,7 @@ export class MermaidService {
       throw new Error(`Public diagram not found: ${error.message}`);
     }
 
-    return mapDatabaseToMermaidDiagram(data);
+    return mapDatabaseToMermaidDiagramSimple(data);
   }
 }
 

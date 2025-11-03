@@ -127,11 +127,7 @@ export class MermaidService {
   } = {}): Promise<{ diagrams: MermaidDiagramListItem[]; total: number }> {
     let query = this.supabase
       .from('mermaid_diagrams')
-      .select(`
-        *,
-        creator:auth.users(email),
-        organization:organizations(name)
-      `, { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     // Apply filters
     if (options.organizationId) {
@@ -189,8 +185,8 @@ export class MermaidService {
         version: baseDiagram.version,
         created_by: baseDiagram.created_by,
         organization_id: baseDiagram.organization_id,
-        owner_name: row.creator?.email,
-        organization_name: row.organization?.name,
+        owner_name: 'Loading...', // Would be fetched separately
+        organization_name: 'Loading...', // Would be fetched separately
         can_edit: true, // This would be determined by actual permissions
         can_delete: true, // This would be determined by actual permissions
         can_share: true, // This would be determined by actual permissions

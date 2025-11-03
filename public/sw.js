@@ -155,6 +155,14 @@ async function handleImageRequest(request) {
 // Page request handler - Network first with cache fallback
 async function handlePageRequest(request) {
   try {
+    // Skip caching for chrome-extension and other non-http schemes
+    if (request.url.startsWith('chrome-extension://') || 
+        request.url.startsWith('moz-extension://') || 
+        request.url.startsWith('safari-web-extension://') ||
+        !request.url.startsWith('http')) {
+      return await fetch(request)
+    }
+    
     const networkResponse = await fetch(request)
     
     if (networkResponse.ok) {

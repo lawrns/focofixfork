@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mermaidService } from '@/lib/services/mermaid';
+import { mermaidPublicService } from '@/lib/services/mermaid-public';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { token: string } }
 ) {
   try {
-    const diagram = await mermaidService.getPublicDiagramByToken(params.token);
+    const diagram = await mermaidPublicService.getPublicDiagramByToken(params.token);
 
     return NextResponse.json({
       success: true,

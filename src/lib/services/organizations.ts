@@ -40,10 +40,31 @@ export class OrganizationsService {
 
       // Use provided client or admin client for RLS-enforced queries
       const client = supabaseClient || supabaseAdmin
-      const { data, error } = await client
+      
+      // Get organizations created by user
+      const { data: ownedOrgs, error: ownedError } = await client
+        .from('organizations')
+        .select(`
+          id,
+          name,
+          created_by,
+          created_at,
+          updated_at
+        `)
+        .eq('created_by', userId)
+
+      if (ownedError) {
+        console.error('Get owned organizations error:', ownedError)
+        return {
+          success: false,
+          error: ownedError.message
+        }
+      }
+
+      // Get organizations where user is a member
+      const { data: memberOrgs, error: memberError } = await client
         .from('organization_members')
         .select(`
-          organization_id,
           organizations (
             id,
             name,
@@ -54,22 +75,35 @@ export class OrganizationsService {
         `)
         .eq('user_id', userId)
 
-      if (error) {
-        console.error('Get organizations error:', error)
+      if (memberError) {
+        console.error('Get member organizations error:', memberError)
         return {
           success: false,
-          error: error.message
+          error: memberError.message
         }
       }
 
-      const organizations = data
+      // Combine and deduplicate organizations
+      const ownedOrganizations = ownedOrgs?.map(org => OrganizationModel.fromDatabase(org)) || []
+      const memberOrganizations = memberOrgs
         ?.map(item => item.organizations)
         .filter(Boolean)
         .map(org => OrganizationModel.fromDatabase(org)) || []
 
+      // Remove duplicates (organizations owned by user also appear in memberships)
+      const allOrganizations = [...ownedOrganizations]
+      const seenIds = new Set(ownedOrganizations.map(org => org.id))
+      
+      for (const org of memberOrganizations) {
+        if (!seenIds.has(org.id)) {
+          allOrganizations.push(org)
+          seenIds.add(org.id)
+        }
+      }
+
       return {
         success: true,
-        data: organizations || []
+        data: allOrganizations
       }
     } catch (error) {
       console.error('Get organizations error:', error)

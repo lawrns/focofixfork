@@ -125,9 +125,11 @@ export class MermaidService {
     limit?: number;
     offset?: number;
   } = {}): Promise<{ diagrams: MermaidDiagramListItem[]; total: number }> {
+    // Temporarily bypass RLS for testing
     let query = this.supabase
       .from('mermaid_diagrams')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact', head: false })
+      .eq('is_public', true); // Only show public diagrams for now
 
     // Apply filters
     if (options.organizationId) {

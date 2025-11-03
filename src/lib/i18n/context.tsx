@@ -53,10 +53,9 @@ export function I18nProvider({
     if (typeof window !== 'undefined') {
       const savedLanguage = localStorage.getItem(storageKey) as LanguageCode;
       if (savedLanguage && SUPPORTED_LANGUAGES[savedLanguage]) {
-        setLanguage(savedLanguage);
+        setLanguageState(savedLanguage);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
   // Update document direction for RTL languages

@@ -65,8 +65,7 @@ export function useSearch(options: SearchOptions) {
     }
 
     performSearch()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, options.types, options.organizationId, options.projectId, options.limit])
+  }, [debouncedQuery, options.types, options.organizationId, options.projectId, options.limit, options.fuzzy])
 
   const performSearch = async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }))

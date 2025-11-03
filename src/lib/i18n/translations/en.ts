@@ -237,7 +237,35 @@ export const en: TranslationSchema = {
     dayOverdue: '1 day overdue',
   },
 
-  // Tasks
+  // Tasks (singular form for task.* keys)
+  task: {
+    title: 'Title',
+    titlePlaceholder: 'Enter task title',
+    description: 'Description',
+    descriptionPlaceholder: 'Enter task description',
+    status: 'Status',
+    selectStatus: 'Select status',
+    priority: 'Priority',
+    selectPriority: 'Select priority',
+    project: 'Project',
+    selectProject: 'Select project',
+    milestone: 'Milestone',
+    selectMilestone: 'Select milestone',
+    noMilestone: 'No milestone',
+    assignee: 'Assignee',
+    selectAssignee: 'Select assignee',
+    unassigned: 'Unassigned',
+    dueDate: 'Due Date',
+    selectDueDate: 'Select due date',
+    estimatedHours: 'Estimated Hours',
+    actualHours: 'Actual Hours',
+    deleteTask: 'Delete Task',
+    deleteConfirmation: 'Are you sure you want to delete this task? This action cannot be undone.',
+    editTask: 'Edit Task',
+    editTaskDescription: 'Edit task details and properties',
+  },
+
+  // Tasks (plural form for tasks.* keys)
   tasks: {
     title: 'Tasks',
     createTask: 'Create Task',

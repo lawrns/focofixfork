@@ -1,0 +1,740 @@
+name: Comprehensive Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run comprehensive tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+          - accessibility
+          - performance
+          - security
+
+env:
+  NODE_VERSION: '18'
+  CACHE_VERSION: 'v1'
+  TEST_RESULTS_DIR: 'test-results'
+  COVERAGE_DIR: 'coverage'
+
+jobs:
+  # Static Code Analysis and Security Scanning
+  static-analysis:
+    name: Static Analysis & Security
+    runs-on: ubuntu-latest
+    outputs:
+      security-scan-passed: ${{ steps.security.outputs.passed }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type checking
+        run: npm run type-check
+
+      - name: ESLint analysis
+        run: npm run lint -- --format=json --output-file=eslint-report.json
+
+      - name: Prettier formatting check
+        run: npm run format:check
+
+      - name: Security audit (npm)
+        run: npm audit --audit-level=moderate
+
+      - name: Run Snyk security scan
+        id: security
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Upload ESLint report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eslint-report
+          path: eslint-report.json
+          retention-days: 30
+
+  # Unit and Integration Tests
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: static-analysis
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests with coverage
+        run: npm run test:unit -- --coverage --reporter=json --reporter=html --outputFile=${{ env.TEST_RESULTS_DIR }}/unit-results.json
+
+      - name: Run integration tests
+        run: npm run test:integration -- --reporter=json --outputFile=${{ env.TEST_RESULTS_DIR }}/integration-results.json
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-${{ matrix.node-version }}
+          path: |
+            ${{ env.TEST_RESULTS_DIR }}/unit-results.json
+            ${{ env.COVERAGE_DIR }}
+          retention-days: 30
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-${{ matrix.node-version }}
+          path: ${{ env.TEST_RESULTS_DIR }}/integration-results.json
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = './coverage/coverage-summary.json';
+            
+            if (fs.existsSync(path)) {
+              const coverage = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const total = coverage.total;
+              
+              const comment = `
+              ## 📊 Coverage Report
+              
+              - **Lines**: ${total.lines.pct}% (${total.lines.covered}/${total.lines.total})
+              - **Functions**: ${total.functions.pct}% (${total.functions.covered}/${total.functions.total})
+              - **Branches**: ${total.branches.pct}% (${total.branches.covered}/${total.branches.total})
+              - **Statements**: ${total.statements.pct}% (${total.statements.covered}/${total.statements.total})
+              
+              ${total.lines.pct >= 80 ? '✅ Coverage meets requirements (≥80%)' : '❌ Coverage below requirements (≥80%)'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # API Contract Tests
+  contract-tests:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+    needs: static-analysis
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        run: |
+          npm run db:migrate:test
+          npm run db:seed:test
+
+      - name: Start application
+        run: |
+          npm run build
+          npm run start:test &
+          sleep 30
+
+      - name: Run API contract tests
+        run: npm run test:contract -- --reporter=json --outputFile=${{ env.TEST_RESULTS_DIR }}/contract-results.json
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+
+      - name: Upload contract test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-test-results
+          path: ${{ env.TEST_RESULTS_DIR }}/contract-results.json
+          retention-days: 30
+
+  # E2E Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        viewport: [desktop, mobile, tablet]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Setup test database
+        run: |
+          npm run db:migrate:test
+          npm run db:seed:test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application for E2E tests
+        run: |
+          npm run start:test &
+          sleep 45
+
+      - name: Run E2E tests
+        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          VIEWPORT: ${{ matrix.viewport }}
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+  # Accessibility Tests
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+
+      - name: Run accessibility tests
+        run: npx playwright test tests/accessibility/ --reporter=html
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload accessibility report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Generate accessibility summary
+        if: always()
+        run: |
+          npx playwright test-results merge --reporter=json
+          node scripts/generate-a11y-summary.js
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+
+      - name: Run performance tests
+        run: npx playwright test tests/performance/ --reporter=json
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-report
+          path: test-results/
+          retention-days: 30
+
+      - name: Compare with baseline
+        run: node scripts/compare-performance.js
+
+  # Security Tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+
+      - name: Run security tests
+        run: npx playwright test tests/security/ --reporter=json
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-report
+          path: test-results/
+          retention-days: 30
+
+  # Visual Regression Tests
+  visual-tests:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+
+      - name: Run visual tests
+        run: npx playwright test tests/visual/ --reporter=html
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload visual test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+  # Load Testing
+  load-tests:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+
+      - name: Run load tests
+        run: npm run test:load
+        env:
+          LOAD_TEST_URL: http://localhost:3000
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-results
+          path: load-test-results/
+          retention-days: 30
+
+  # Cross-browser Compatibility Tests
+  cross-browser-tests:
+    name: Cross-browser Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, unit-tests]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        browser: [chromium, firefox, webkit]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+
+      - name: Run cross-browser tests
+        run: npx playwright test --project=${{ matrix.browser }} --grep="Cross-browser"
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload cross-browser results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-browser-results-${{ matrix.os }}-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 30
+
+  # Test Results Aggregation and Reporting
+  aggregate-results:
+    name: Aggregate Test Results
+    runs-on: ubuntu-latest
+    needs: [
+      static-analysis,
+      unit-tests,
+      contract-tests,
+      e2e-tests,
+      accessibility-tests,
+      performance-tests,
+      security-tests,
+      visual-tests,
+      load-tests,
+      cross-browser-tests
+    ]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+
+      - name: Generate comprehensive test report
+        run: |
+          npm install -g @actions/core
+          node scripts/generate-test-report.js
+
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-test-report
+          path: comprehensive-test-report.html
+          retention-days: 90
+
+      - name: Comment test summary on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (fs.existsSync('test-summary.json')) {
+              const summary = JSON.parse(fs.readFileSync('test-summary.json', 'utf8'));
+              
+              const comment = `
+              ## 🧪 Comprehensive Test Results
+              
+              ### ✅ Passed Tests
+              - **Unit Tests**: ${summary.unit.passed}/${summary.unit.total}
+              - **Integration Tests**: ${summary.integration.passed}/${summary.integration.total}
+              - **Contract Tests**: ${summary.contract.passed}/${summary.contract.total}
+              - **E2E Tests**: ${summary.e2e.passed}/${summary.e2e.total}
+              - **Accessibility Tests**: ${summary.accessibility.passed}/${summary.accessibility.total}
+              
+              ### 📊 Coverage
+              - **Overall Coverage**: ${summary.coverage.percentage}%
+              - **Lines**: ${summary.coverage.lines}%
+              - **Functions**: ${summary.coverage.functions}%
+              
+              ### 🔒 Security
+              - **Security Scan**: ${summary.security.passed ? '✅ Passed' : '❌ Failed'}
+              - **Vulnerabilities**: ${summary.security.vulnerabilities}
+              
+              ### ⚡ Performance
+              - **Performance Score**: ${summary.performance.score}/100
+              - **Page Load Time**: ${summary.performance.pageLoad}ms
+              
+              ${summary.overall.passed ? '✅ All tests passed!' : '❌ Some tests failed. Please review the details.'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # Deployment to Staging (if all tests pass)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: aggregate-results
+    if: github.ref == 'refs/heads/develop' && needs.aggregate-results.result == 'success'
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your deployment commands here
+          # For example: npm run deploy:staging
+
+      - name: Run smoke tests on staging
+        run: npm run test:smoke -- --baseUrl=https://staging.foco.com
+
+  # Deployment to Production (if all tests pass and manually approved)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [aggregate-results, deploy-staging]
+    if: github.ref == 'refs/heads/main' && needs.aggregate-results.result == 'success'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          # Add your deployment commands here
+          # For example: npm run deploy:production
+
+      - name: Run smoke tests on production
+        run: npm run test:smoke -- --baseUrl=https://foco.com
+
+      - name: Notify deployment success
+        run: |
+          # Add notification logic (Slack, email, etc.)
+          echo "Deployment to production completed successfully!"
+
+  # Cleanup and Notifications
+  cleanup:
+    name: Cleanup and Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Cleanup test environments
+        run: |
+          echo "Cleaning up test environments..."
+          # Add cleanup commands
+
+      - name: Send notifications
+        if: failure()
+        run: |
+          echo "Sending failure notifications..."
+          # Add notification logic for failed tests/deployments
+
+      - name: Archive old test results
+        run: |
+          echo "Archiving old test results..."
+          # Add archiving logic

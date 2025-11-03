@@ -318,6 +318,10 @@ export const en: TranslationSchema = {
     completed: 'Completed',
     notStarted: 'Not started',
     statusBlocked: 'Blocked',
+    // Additional keys for task modals/forms to fix warnings (flat structure)
+    taskUnassigned: 'Unassigned',
+    taskDeleteConfirmation: 'Are you sure you want to delete this task? This action cannot be undone.',
+    taskEditTaskDescription: 'Edit task description and properties',
   },
 
   // Task statuses

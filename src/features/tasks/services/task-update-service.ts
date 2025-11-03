@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase-client'
 export interface TaskUpdateData {
   title?: string
   description?: string | null
-  status?: 'todo' | 'in_progress' | 'review' | 'done'
+  status?: 'todo' | 'in_progress' | 'review' | 'done' | 'blocked' | 'completed' | 'cancelled'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
   assignee_id?: string | null
   estimated_hours?: number | null

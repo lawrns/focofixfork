@@ -75,6 +75,13 @@ export async function middleware(req: NextRequest) {
     '/profile'
   ]
 
+  // Public routes (accessible without authentication)
+  const publicRoutes = [
+    '/mermaid',
+    '/mermaid/new',
+    '/mermaid/share'
+  ]
+
   // Auth routes (login, register, etc.)
   const authRoutes = [
     '/login',
@@ -84,6 +91,7 @@ export async function middleware(req: NextRequest) {
   ]
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
 
   // Handle protected page routes
@@ -127,7 +135,9 @@ export async function middleware(req: NextRequest) {
     if (
       pathname.startsWith('/api/auth/') ||
       pathname === '/api/health' ||
-      pathname.startsWith('/api/invitations/') && pathname.includes('/accept')
+      pathname.startsWith('/api/invitations/') && pathname.includes('/accept') ||
+      pathname.startsWith('/api/mermaid/share/') ||
+      (pathname.startsWith('/api/mermaid/diagrams') && req.method === 'POST')
     ) {
       return res
     }

@@ -17,7 +17,22 @@ import {
   generateShareToken
 } from '@/lib/models/mermaid';
 
-// Service role client to bypass RLS for public operations
+// Simple mapping function without Zod validation
+const mapDatabaseToMermaidDiagramSimple = (row: any): MermaidDiagram => {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    mermaid_code: row.mermaid_code,
+    created_by: row.created_by,
+    organization_id: row.organization_id,
+    is_public: row.is_public,
+    share_token: row.share_token,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    version: row.version,
+  };
+};
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -77,7 +92,7 @@ export class MermaidPublicService {
     }
 
     const diagrams: MermaidDiagramListItem[] = data.map((row: any) => {
-      const baseDiagram = mapDatabaseToMermaidDiagram(row);
+      const baseDiagram = mapDatabaseToMermaidDiagramSimple(row);
       return {
         id: baseDiagram.id,
         title: baseDiagram.title,
@@ -142,7 +157,7 @@ export class MermaidPublicService {
       throw new Error(`Failed to create diagram: ${error.message}`);
     }
 
-    return mapDatabaseToMermaidDiagram(result);
+    return mapDatabaseToMermaidDiagramSimple(result);
   }
 
   async getDiagram(id: string): Promise<MermaidDiagram> {

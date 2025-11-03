@@ -399,7 +399,7 @@ export const createTestDataFactory = () => {
 
 // Error boundary testing utility
 export const createErrorBoundary = () => {
-  return class ErrorBoundary extends React.Component {
+  return class ErrorBoundary extends React.Component<{ children: React.ReactNode }> {
     state = { hasError: false, error: null };
     
     static getDerivedStateFromError(error: any) {

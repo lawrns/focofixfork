@@ -3123,6 +3123,157 @@ export type Database = {
         }
         Relationships: []
       }
+      mermaid_diagrams: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          mermaid_code: string
+          created_by: string | null
+          organization_id: string | null
+          is_public: boolean
+          share_token: string | null
+          created_at: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          mermaid_code: string
+          created_by?: string | null
+          organization_id?: string | null
+          is_public?: boolean
+          share_token?: string | null
+          created_at?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          mermaid_code?: string
+          created_by?: string | null
+          organization_id?: string | null
+          is_public?: boolean
+          share_token?: string | null
+          created_at?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mermaid_diagrams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mermaid_diagrams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      mermaid_diagram_versions: {
+        Row: {
+          id: string
+          diagram_id: string
+          mermaid_code: string
+          version_number: number
+          created_by: string | null
+          created_at: string
+          change_description: string | null
+        }
+        Insert: {
+          id?: string
+          diagram_id: string
+          mermaid_code: string
+          version_number: number
+          created_by?: string | null
+          created_at?: string
+          change_description?: string | null
+        }
+        Update: {
+          id?: string
+          diagram_id?: string
+          mermaid_code?: string
+          version_number?: number
+          created_by?: string | null
+          created_at?: string
+          change_description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mermaid_diagram_versions_diagram_id_fkey"
+            columns: ["diagram_id"]
+            isOneToOne: false
+            referencedRelation: "mermaid_diagrams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mermaid_diagram_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      mermaid_diagram_shares: {
+        Row: {
+          id: string
+          diagram_id: string
+          shared_with_user_id: string | null
+          permission: "view" | "edit"
+          shared_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          diagram_id: string
+          shared_with_user_id?: string | null
+          permission: "view" | "edit"
+          shared_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          diagram_id?: string
+          shared_with_user_id?: string | null
+          permission?: "view" | "edit"
+          shared_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mermaid_diagram_shares_diagram_id_fkey"
+            columns: ["diagram_id"]
+            isOneToOne: false
+            referencedRelation: "mermaid_diagrams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mermaid_diagram_shares_shared_with_user_id_fkey"
+            columns: ["shared_with_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mermaid_diagram_shares_shared_by_fkey"
+            columns: ["shared_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       session_analytics: {

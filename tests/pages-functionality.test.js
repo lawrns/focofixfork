@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import React from 'react'
 import { ProjectsPage } from '../src/app/projects/page'
 import { TasksPage } from '../src/app/tasks/page'
 import { MilestonesPage } from '../src/app/milestones/page'

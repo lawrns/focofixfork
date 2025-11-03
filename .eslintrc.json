@@ -11,5 +11,6 @@
         "message": "❌ SECURITY: Identity must come from Supabase session via requireAuth(), not custom headers. Use wrapRoute() pattern for all API routes."
       }
     ]
-  }
+  },
+  "ignorePatterns": ["tests/", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.js", "scripts/"]
 }

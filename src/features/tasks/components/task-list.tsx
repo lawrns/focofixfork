@@ -67,6 +67,7 @@ export function TaskList({
     if (!user) return
 
     try {
+      console.log('[TaskFetch] Fetching tasks for user', user.id, 'Project:', projectId, 'Filters:', { statusFilter, priorityFilter, assigneeFilter })
       setLoading(true)
       setError(null)
 
@@ -78,10 +79,22 @@ export function TaskList({
       if (priorityFilter !== 'all') params.append('priority', priorityFilter)
       if (assigneeFilter !== 'all') params.append('assignee_id', assigneeFilter)
 
-      const response = await fetch(`/api/tasks?${params}`)
+      const response = await fetch(`/api/tasks?${params}`, {
+        credentials: 'include', // Include cookies for session auth
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch tasks')
+        const errorBody = await response.text()
+        console.error('[TaskFetch] Failed with status', response.status, 'Body:', errorBody)
+        if (response.status === 403) {
+          setError('Permission denied. You may not have access to view these tasks.')
+        } else if (response.status === 401) {
+          setError('Authentication required. Please sign in again.')
+          window.location.reload()
+        } else {
+          throw new Error(`Failed to fetch tasks: ${response.status} - ${errorBody}`)
+        }
+        return
       }
 
       const data = await response.json()
@@ -127,18 +140,32 @@ export function TaskList({
     if (!user) return
 
     try {
+      console.log('[TaskUpdate] Attempting status change for task', taskId, 'to', newStatus, 'User:', user.id)
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for session auth
         body: JSON.stringify({ status: newStatus }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update task status')
+        const errorBody = await response.text()
+        console.error('[TaskUpdate] Failed with status', response.status, 'Body:', errorBody)
+        if (response.status === 403) {
+          toast.error('Permission denied. You may not have access to update this task.')
+        } else if (response.status === 401) {
+          toast.error('Authentication required. Please sign in again.')
+          // Trigger re-auth
+          window.location.reload()
+        } else {
+          throw new Error(`Failed to update task status: ${response.status} - ${errorBody}`)
+        }
+        return // Don't update local state on error
       }
 
+      console.log('[TaskUpdate] Success for task', taskId)
       // Update local state
       setTasks(prev => prev.map(task =>
         task.id === taskId
@@ -146,10 +173,14 @@ export function TaskList({
           : task
       ))
 
+      toast.success('Task status updated')
       // Call optional callback
       onStatusChange?.(taskId, newStatus)
     } catch (err) {
       console.error('Error updating task status:', err)
+      toast.error('Failed to update task. Please try again.')
+      // Revert optimistic update if any
+      await fetchTasks()
       throw err // Re-throw to let TaskCard handle the error
     }
   }
@@ -158,21 +189,36 @@ export function TaskList({
     if (!user) return
 
     try {
+      console.log('[TaskDelete] Deleting task', taskId, 'by user', user.id)
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
+        credentials: 'include', // Include cookies for session auth
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete task')
+        const errorBody = await response.text()
+        console.error('[TaskDelete] Failed with status', response.status, 'Body:', errorBody)
+        if (response.status === 403) {
+          toast.error('Permission denied. You may not have access to delete this task.')
+        } else if (response.status === 401) {
+          toast.error('Authentication required. Please sign in again.')
+          window.location.reload()
+        } else {
+          throw new Error(`Failed to delete task: ${response.status} - ${errorBody}`)
+        }
+        return
       }
 
+      console.log('[TaskDelete] Success for task', taskId)
       // Remove from local state
       setTasks(prev => prev.filter(t => t.id !== taskId))
+      toast.success('Task deleted successfully')
 
       // Call optional callback
       onDeleteTask?.(taskId)
     } catch (err) {
       console.error('Error deleting task:', err)
+      toast.error('Failed to delete task. Please try again.')
       throw err // Re-throw to let TaskCard handle the error
     }
   }
@@ -256,6 +302,7 @@ export function TaskList({
     // If moving between columns, update status
     if (sourceStatus !== destStatus) {
       try {
+        console.log('[TaskDrag] Moving task', taskId, 'from', sourceStatus, 'to', destStatus)
         // Optimistically update local state
         setTasks(prev => prev.map(t =>
           t.id === taskId
@@ -267,13 +314,25 @@ export function TaskList({
         const response = await fetch(`/api/tasks/${taskId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // Include cookies for session auth
           body: JSON.stringify({ status: destStatus }),
         })
 
         if (!response.ok) {
-          throw new Error('Failed to update task status')
+          const errorBody = await response.text()
+          console.error('[TaskDrag] Failed with status', response.status, 'Body:', errorBody)
+          if (response.status === 403) {
+            toast.error('Permission denied. You may not have access to move this task.')
+          } else if (response.status === 401) {
+            toast.error('Authentication required. Please sign in again.')
+            window.location.reload()
+          } else {
+            throw new Error(`Failed to move task: ${response.status} - ${errorBody}`)
+          }
+          return // Don't call callback on error
         }
 
+        console.log('[TaskDrag] Success for task', taskId)
         toast.success('Task moved successfully')
         onStatusChange?.(taskId, destStatus)
       } catch (err) {

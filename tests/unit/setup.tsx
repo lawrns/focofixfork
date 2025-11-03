@@ -286,7 +286,7 @@ export const createMockOrganization = (overrides = {}) => ({
   ...overrides,
 });
 
-// Test helpers
+// Enhanced test utilities
 export const waitForNextTick = () => new Promise(resolve => setTimeout(resolve, 0));
 
 export const mockSupabaseResponse = (data: any, error = null) => ({
@@ -296,8 +296,193 @@ export const mockSupabaseResponse = (data: any, error = null) => ({
 
 export const mockSupabaseQuery = (response: any) => vi.fn(() => response);
 
-export const renderWithProviders = (component: React.ReactElement) => {
+// Mock API responses for testing
+export const createMockApiResponse = (data: any, status = 200, error = null) => ({
+  data,
+  status,
+  error,
+  success: status >= 200 && status < 300,
+});
+
+// Performance testing utilities
+import { render } from '@testing-library/react';
+
+export const measureRenderTime = async (component: React.ReactElement): Promise<number> => {
+  const start = performance.now();
+  render(component);
+  const end = performance.now();
+  return end - start;
+};
+
+// Accessibility testing helpers
+export const checkAccessibility = async (container: HTMLElement) => {
+  const violations = [];
+  // Basic accessibility checks
+  const interactiveElements = container.querySelectorAll('button, input, select, textarea, a');
+  
+  interactiveElements.forEach((element) => {
+    if (!element.getAttribute('aria-label') && !element.getAttribute('aria-labelledby') && !element.textContent?.trim()) {
+      violations.push(`${element.tagName} missing accessible name`);
+    }
+  });
+  
+  return violations;
+};
+
+// Mobile testing utilities
+export const mockMobileViewport = (width = 375, height = 667) => {
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true,
+    configurable: true,
+    value: width,
+  });
+  
+  Object.defineProperty(window, 'innerHeight', {
+    writable: true,
+    configurable: true,
+    value: height,
+  });
+};
+
+// Network testing utilities
+export const mockNetworkCondition = (condition: 'slow' | 'offline' | 'fast') => {
+  const conditions = {
+    slow: { effectiveType: 'slow-2g', downlink: 0.1, rtt: 2000 },
+    offline: { effectiveType: 'slow-2g', downlink: 0, rtt: 9999 },
+    fast: { effectiveType: '4g', downlink: 10, rtt: 100 },
+  };
+  
+  Object.defineProperty(navigator, 'connection', {
+    value: conditions[condition],
+  });
+};
+
+// AI/LLM testing utilities
+export const createMockAIResponse = (prompt: string, response: string) => ({
+  prompt,
+  response,
+  timestamp: new Date().toISOString(),
+  model: 'llama2',
+  tokens_used: Math.floor(Math.random() * 1000) + 100,
+});
+
+// Data factory for comprehensive testing
+export const createTestDataFactory = () => {
+  const users = Array.from({ length: 10 }, (_, i) => createMockUser({
+    id: `user-${i + 1}`,
+    email: `user${i + 1}@example.com`,
+    full_name: `User ${i + 1}`,
+  }));
+  
+  const organizations = Array.from({ length: 5 }, (_, i) => createMockOrganization({
+    id: `org-${i + 1}`,
+    name: `Organization ${i + 1}`,
+    slug: `org-${i + 1}`,
+  }));
+  
+  const projects = Array.from({ length: 20 }, (_, i) => createMockProject({
+    id: `project-${i + 1}`,
+    name: `Project ${i + 1}`,
+    organization_id: organizations[i % organizations.length].id,
+    created_by: users[i % users.length].id,
+  }));
+  
+  const tasks = Array.from({ length: 50 }, (_, i) => createMockTask({
+    id: `task-${i + 1}`,
+    title: `Task ${i + 1}`,
+    project_id: projects[i % projects.length].id,
+    assigned_to: users[i % users.length].id,
+  }));
+  
+  return { users, organizations, projects, tasks };
+};
+
+// Error boundary testing utility
+export const createErrorBoundary = () => {
+  return class ErrorBoundary extends React.Component {
+    state = { hasError: false, error: null };
+    
+    static getDerivedStateFromError(error: any) {
+      return { hasError: true, error };
+    }
+    
+    componentDidCatch(error: any, errorInfo: any) {
+      console.error('Error caught by boundary:', error, errorInfo);
+    }
+    
+    render() {
+      if (this.state.hasError) {
+        return <div data-testid="error-boundary">Error: {this.state.error?.message}</div>;
+      }
+      return this.props.children;
+    }
+  };
+};
+
+// Form testing utilities
+export const fillForm = async (user: any, formData: Record<string, string>) => {
+  for (const [field, value] of Object.entries(formData)) {
+    const element = user.getByLabelText(field) || user.getByPlaceholderText(field) || user.getByTestId(field);
+    await user.clear(element);
+    await user.type(element, value);
+  }
+};
+
+// Drag and drop testing utilities
+export const dragAndDrop = async (source: any, target: any) => {
+  const dataTransfer = {
+    data: new Map(),
+    setData: function(key: string, value: string) { this.data.set(key, value); },
+    getData: function(key: string) { return this.data.get(key); },
+  };
+  
+  await source.drag(dataTransfer);
+  await target.drop(dataTransfer);
+};
+
+// Real-time testing utilities
+export const createMockWebSocket = () => {
+  const listeners = new Map();
+  
+  return {
+    addEventListener: vi.fn((event, callback) => {
+      if (!listeners.has(event)) listeners.set(event, []);
+      listeners.get(event).push(callback);
+    }),
+    
+    removeEventListener: vi.fn((event, callback) => {
+      if (listeners.has(event)) {
+        const callbacks = listeners.get(event);
+        const index = callbacks.indexOf(callback);
+        if (index > -1) callbacks.splice(index, 1);
+      }
+    }),
+    
+    // Helper to simulate events
+    simulateEvent: (event: string, data: any) => {
+      if (listeners.has(event)) {
+        listeners.get(event).forEach((callback: Function) => callback(data));
+      }
+    },
+    
+    close: vi.fn(),
+    send: vi.fn(),
+  };
+};
+
+export const renderWithProviders = (component: React.ReactElement, options = {}) => {
   // This would typically wrap with all necessary providers
   // For now, we'll just return the component as-is
   return component;
+};
+
+// Export all mocks for easy access in tests
+export const mocks = {
+  localStorage: localStorageMock,
+  sessionStorage: sessionStorageMock,
+  resizeObserver: global.ResizeObserver,
+  intersectionObserver: global.IntersectionObserver,
+  matchMedia: window.matchMedia,
+  notification: global.Notification,
+  serviceWorker: navigator.serviceWorker,
 };

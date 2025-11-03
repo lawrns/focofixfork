@@ -19,6 +19,7 @@ interface InstallPromptProps {
   className?: string
   autoShow?: boolean
   showDelay?: number
+  t?: (key: string, defaultValue?: string) => string // Translation function
 }
 
 export function InstallPrompt({
@@ -164,10 +165,10 @@ export function InstallPrompt({
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-1">
-                      Instala Foco en tu dispositivo
+                      Install Foco on your device
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Acceso instantáneo, funciona sin conexión, y notificaciones en tiempo real. Sin necesidad de App Store.
+                      Instant access, works offline, and real-time notifications. No App Store needed.
                     </p>
                   </div>
 
@@ -210,7 +211,7 @@ export function InstallPrompt({
                     size="sm"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Instalar App
+                    Install App
                   </Button>
 
                   <Button
@@ -219,7 +220,7 @@ export function InstallPrompt({
                     className="flex-1"
                     size="sm"
                   >
-                    Más tarde
+                    Later
                   </Button>
                 </div>
               </div>

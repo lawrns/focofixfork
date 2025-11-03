@@ -31,35 +31,62 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Get initial session
     const getInitialSession = async () => {
       try {
+        // Log initial token state from localStorage
+        const tokenExists = !!localStorage.getItem('supabase.auth.token')
+        console.log('[AuthInit] Loading initial session. Token in localStorage:', tokenExists ? 'exists (checking validity)' : 'none')
+
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (!mounted) return
 
         if (error) {
-          console.error('Error getting session:', error)
+          console.error('[AuthInit] Error getting session:', error.message)
           setUser(null)
           setSession(null)
         } else if (session) {
+          console.log('[AuthInit] Session loaded from storage. User ID:', session.user?.id, 'Token expiry:', session.expires_at)
           setSession(session)
           setUser(session.user)
 
           // Refresh the session to ensure it's valid
           try {
+            console.log('[AuthRefresh] Attempting refresh at', new Date().toISOString())
             const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
-            if (!refreshError && refreshedSession && mounted) {
+            
+            if (refreshError) {
+              console.error('[AuthRefresh] Failed with status:', refreshError.status, 'Message:', refreshError.message)
+              if (refreshError.status === 400 || refreshError.message.includes('Invalid Refresh Token')) {
+                console.log('[AuthRefresh] Invalid token detected - clearing localStorage')
+                localStorage.removeItem('supabase.auth.token')
+                setUser(null)
+                setSession(null)
+              }
+              throw refreshError
+            }
+            
+            if (refreshedSession && mounted) {
+              console.log('[AuthRefresh] Success. New expiry:', refreshedSession.expires_at)
               setSession(refreshedSession)
               setUser(refreshedSession.user)
             }
           } catch (refreshError) {
-            console.warn('Session refresh failed:', refreshError)
+            console.warn('[AuthRefresh] Exception during refresh:', refreshError)
+            // Ensure cleared on any refresh failure
+            if (localStorage.getItem('supabase.auth.token')) {
+              console.log('[AuthRefresh] Clearing stale token after failure')
+              localStorage.removeItem('supabase.auth.token')
+              setUser(null)
+              setSession(null)
+            }
           }
         } else {
           // No session exists - user is not authenticated
+          console.log('[AuthInit] No session found - user not authenticated')
           setUser(null)
           setSession(null)
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error)
+        console.error('[AuthInit] Error in getInitialSession:', error)
         if (mounted) {
           // On error, ensure user is not authenticated
           setUser(null)
@@ -79,7 +106,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return
 
-        console.log('Auth state changed:', event, session?.user?.id)
+        const timestamp = new Date().toISOString()
+        console.log(`[AuthState] ${timestamp} - Event: ${event}, User: ${session?.user?.id || 'null'}, Session valid: ${!!session && !!session.user}`)
 
         setSession(session)
         setUser(session?.user ?? null)
@@ -88,12 +116,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Handle specific auth events
         if (event === 'SIGNED_IN' && session?.user) {
           // User signed in
-          console.log('User signed in:', session.user.id)
+          console.log(`[AuthState] ${timestamp} - User signed in: ${session.user.id}, Email: ${session.user.email}`)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Token was refreshed
-          console.log('Token refreshed for user:', session.user.id)
+          console.log(`[AuthState] ${timestamp} - Token refreshed for user: ${session.user.id}, New expiry: ${session.expires_at}`)
+        } else if (event === 'SIGNED_OUT') {
+          console.log(`[AuthState] ${timestamp} - User signed out, clearing storage`)
+          localStorage.removeItem('supabase.auth.token')
         }
-        // Note: SIGNED_OUT is handled by the state setting above (setSession/setUser)
+        // Note: Other events handled by state updates
       }
     )
 
@@ -154,17 +185,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshSession = async () => {
     try {
+      console.log('[ManualRefresh] Starting manual session refresh at', new Date().toISOString())
       const { data, error } = await supabase.auth.refreshSession()
+      
       if (error) {
-        console.error('Error refreshing session:', error)
+        console.error('[ManualRefresh] Failed:', error.status, error.message)
+        if (error.status === 400 || error.message.includes('Invalid Refresh Token')) {
+          console.log('[ManualRefresh] Invalid token - clearing localStorage and forcing sign-out')
+          localStorage.removeItem('supabase.auth.token')
+          setUser(null)
+          setSession(null)
+          await supabase.auth.signOut() // Force clean sign-out
+        }
         throw error
       }
+      
       if (data.session) {
+        console.log('[ManualRefresh] Success. User:', data.session.user.id)
         setSession(data.session)
         setUser(data.session.user)
+      } else {
+        console.warn('[ManualRefresh] No session returned - user may need to sign in')
+        setUser(null)
+        setSession(null)
       }
     } catch (error) {
-      console.error('Session refresh error:', error)
+      console.error('[ManualRefresh] Exception:', error)
       throw error
     }
   }

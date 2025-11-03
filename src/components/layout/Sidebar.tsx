@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Folder,
   Users,
-  Settings
+  Settings,
+  GitBranch
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
@@ -42,6 +43,7 @@ const getNavigation = (t: any) => [
   { name: t('navigation.reports'), href: '/reports', icon: BarChart3 },
   { name: t('navigation.goals'), href: '/dashboard/goals', icon: Target },
   { name: t('navigation.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Diagrams', href: '/mermaid', icon: GitBranch },
 ]
 
 export default function Sidebar() {

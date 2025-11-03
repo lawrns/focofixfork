@@ -234,7 +234,35 @@ export interface TranslationSchema {
     dayOverdue: string;
   };
 
-  // Tasks
+  // Tasks (singular form for task.* keys)
+  task: {
+    title: string;
+    titlePlaceholder: string;
+    description: string;
+    descriptionPlaceholder: string;
+    status: string;
+    selectStatus: string;
+    priority: string;
+    selectPriority: string;
+    project: string;
+    selectProject: string;
+    milestone: string;
+    selectMilestone: string;
+    noMilestone: string;
+    assignee: string;
+    selectAssignee: string;
+    unassigned: string;
+    dueDate: string;
+    selectDueDate: string;
+    estimatedHours: string;
+    actualHours: string;
+    deleteTask: string;
+    deleteConfirmation: string;
+    editTask: string;
+    editTaskDescription: string;
+  };
+
+  // Tasks (plural form for tasks.* keys)
   tasks: Record<string, string>;
 
   // Task statuses

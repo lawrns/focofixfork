@@ -103,23 +103,38 @@ export class MermaidPublicService {
     };
   }
 
-  async createDiagram(data: CreateMermaidDiagramRequest): Promise<MermaidDiagram> {
+  async createDiagram(data: any): Promise<MermaidDiagram> {
     const validation = validateMermaidCode(data.mermaid_code);
     if (!validation.isValid) {
       throw new Error(validation.error);
     }
 
+    // Basic validation
+    if (!data.title || typeof data.title !== 'string') {
+      throw new Error('Title is required and must be a string');
+    }
+    
+    if (!data.mermaid_code || typeof data.mermaid_code !== 'string') {
+      throw new Error('Mermaid code is required and must be a string');
+    }
+
+    const insertData: any = {
+      title: data.title,
+      description: data.description || null,
+      mermaid_code: data.mermaid_code,
+      created_by: null, // Anonymous creation
+      organization_id: data.organization_id || null,
+      is_public: data.is_public || false,
+    };
+
+    // Only add share_token if is_public is true
+    if (data.is_public) {
+      insertData.share_token = generateShareToken();
+    }
+
     const { data: result, error } = await this.supabase
       .from('mermaid_diagrams')
-      .insert({
-        title: data.title,
-        description: data.description || null,
-        mermaid_code: data.mermaid_code,
-        created_by: null, // Anonymous creation
-        organization_id: data.organization_id || null,
-        is_public: data.is_public || false,
-        share_token: data.is_public ? generateShareToken() : null,
-      })
+      .insert(insertData)
       .select()
       .single();
 

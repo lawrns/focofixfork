@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, MoreHorizontal, X, Check } from 'lucide-react'
+import { Plus, MoreHorizontal, X, Check, GripVertical, MessageSquare, Paperclip, Calendar } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface Task {
   id: string
@@ -18,9 +19,13 @@ interface Task {
   status: 'todo' | 'in_progress' | 'review' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   assignee_id?: string
+  assignee_name?: string
+  assignee_avatar?: string
   project_id: string
   milestone_id?: string
   due_date?: string
+  comment_count?: number
+  attachment_count?: number
 }
 
 interface Column {
@@ -31,6 +36,7 @@ interface Column {
 
 export function KanbanBoard() {
   const { user } = useAuth()
+  const router = useRouter()
   const [columns, setColumns] = useState<Column[]>([
     { id: 'todo', title: 'To Do', tasks: [] },
     { id: 'in_progress', title: 'In Progress', tasks: [] },
@@ -234,16 +240,50 @@ export function KanbanBoard() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return 'bg-red-500'
+        return 'border-l-red-500'
       case 'high':
-        return 'bg-orange-500'
+        return 'border-l-orange-500'
       case 'medium':
-        return 'bg-yellow-500'
+        return 'border-l-yellow-500'
       case 'low':
-        return 'bg-green-500'
+        return 'border-l-green-500'
       default:
-        return 'bg-gray-500'
+        return 'border-l-gray-500'
     }
+  }
+
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return 'bg-red-100 text-red-800 border-red-200'
+      case 'high':
+        return 'bg-orange-100 text-orange-800 border-orange-200'
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'low':
+        return 'bg-green-100 text-green-800 border-green-200'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const handleCardClick = (taskId: string) => {
+    router.push(`/tasks/${taskId}`)
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const diffTime = date.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Tomorrow'
+    if (diffDays === -1) return 'Yesterday'
+    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} days`
+    if (diffDays < 0) return `${Math.abs(diffDays)} days overdue`
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
   if (isLoading) {
@@ -256,153 +296,203 @@ export function KanbanBoard() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-6 overflow-x-auto pb-4 h-full">
         {columns.map((column) => (
-          <div key={column.id} className="flex-shrink-0 w-80">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-sm font-medium">
-                      {column.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1">
-                      {column.tasks.length} task{column.tasks.length !== 1 ? 's' : ''}
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAddingToColumn(column.id)}
-                    title={`Add task to ${column.title}`}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+          <div key={column.id} className="flex-shrink-0 w-80 flex flex-col h-full">
+            {/* Column Header */}
+            <div className="bg-gray-50 rounded-t-lg px-4 py-3 border border-b-0 border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    {column.title}
+                  </h3>
+                  <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+                    {column.tasks.length}
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Droppable droppableId={column.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`space-y-2 min-h-[200px] rounded-lg p-2 transition-colors ${
-                        snapshot.isDraggingOver ? 'bg-muted/50' : ''
-                      }`}
-                    >
-                      {column.tasks.map((task, index) => (
-                        <Draggable
-                          key={task.id}
-                          draggableId={task.id}
-                          index={index}
-                        >
-                          {(provided, snapshot) => (
-                            <Card
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAddingToColumn(column.id)}
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title={`Add task to ${column.title}`}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Column Content */}
+            <div className="flex-1 bg-gray-50 rounded-b-lg border border-gray-200 overflow-hidden">
+              <Droppable droppableId={column.id}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`h-full overflow-y-auto p-3 space-y-3 transition-colors ${
+                      snapshot.isDraggingOver ? 'bg-blue-50/50' : ''
+                    }`}
+                  >
+                    {column.tasks.map((task, index) => (
+                      <Draggable
+                        key={task.id}
+                        draggableId={task.id}
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`group relative bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer ${
+                              snapshot.isDragging ? 'shadow-lg rotate-2' : ''
+                            } ${getPriorityColor(task.priority)} border-l-4`}
+                            onClick={() => handleCardClick(task.id)}
+                          >
+                            {/* Drag Handle - Only visible on hover */}
+                            <div
                               {...provided.dragHandleProps}
-                              className={`cursor-grab active:cursor-grabbing ${
-                                snapshot.isDragging ? 'shadow-lg' : ''
-                              }`}
+                              className="absolute left-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <CardHeader className="p-4">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-sm truncate">
-                                      {task.title}
-                                    </h4>
-                                    {task.description && (
-                                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                        {task.description}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                    <MoreHorizontal className="h-3 w-3" />
-                                  </Button>
-                                </div>
+                              <GripVertical className="h-4 w-4 text-gray-400" />
+                            </div>
 
-                                <div className="flex items-center gap-2 mt-3">
-                                  <div
-                                    className={`h-2 w-2 rounded-full ${getPriorityColor(
-                                      task.priority
-                                    )}`}
-                                    title={`Priority: ${task.priority}`}
-                                  />
-                                  {task.due_date && (
-                                    <span className="text-xs text-muted-foreground">
-                                      Due: {new Date(task.due_date).toLocaleDateString()}
-                                    </span>
-                                  )}
-                                  {task.assignee_id && (
-                                    <Avatar className="h-6 w-6 ml-auto">
-                                      <AvatarFallback className="text-xs">
-                                        {task.assignee_id.slice(0, 2).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
+                            <div className="p-4 pl-8">
+                              {/* Card Header */}
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm text-gray-900 leading-5">
+                                    {task.title}
+                                  </h4>
+                                  {task.description && (
+                                    <p className="text-xs text-gray-600 mt-1 line-clamp-2 leading-4">
+                                      {task.description}
+                                    </p>
                                   )}
                                 </div>
-                              </CardHeader>
-                            </Card>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-
-                      {/* Inline task creation form */}
-                      {addingToColumn === column.id && (
-                        <Card className="border-2 border-primary/50 bg-primary/5">
-                          <CardContent className="p-3">
-                            <div className="space-y-2">
-                              <Input
-                                ref={inputRef}
-                                value={newTaskTitle}
-                                onChange={(e) => setNewTaskTitle(e.target.value)}
-                                placeholder="Enter task title..."
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleCreateTask(column.id)
-                                  } else if (e.key === 'Escape') {
-                                    handleCancelAdd()
-                                  }
-                                }}
-                                disabled={isCreating}
-                                className="text-sm"
-                              />
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleCreateTask(column.id)}
-                                  disabled={isCreating || !newTaskTitle.trim()}
-                                  className="flex-1"
+                                
+                                {/* Menu Button - Only visible on hover */}
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    // TODO: Open context menu
+                                  }}
                                 >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  {isCreating ? 'Creating...' : 'Add Task'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={handleCancelAdd}
-                                  disabled={isCreating}
-                                >
-                                  <X className="h-3 w-3" />
+                                  <MoreHorizontal className="h-3 w-3" />
                                 </Button>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
 
-                      {column.tasks.length === 0 && addingToColumn !== column.id && (
-                        <div className="text-center py-8 text-sm text-muted-foreground">
-                          No tasks yet
+                              {/* Card Footer - Metadata */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {/* Priority Badge */}
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs ${getPriorityBadgeColor(task.priority)}`}
+                                >
+                                  {task.priority}
+                                </Badge>
+
+                                {/* Due Date */}
+                                {task.due_date && (
+                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{formatDate(task.due_date)}</span>
+                                  </div>
+                                )}
+
+                                {/* Comments */}
+                                {task.comment_count && task.comment_count > 0 && (
+                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <MessageSquare className="h-3 w-3" />
+                                    <span>{task.comment_count}</span>
+                                  </div>
+                                )}
+
+                                {/* Attachments */}
+                                {task.attachment_count && task.attachment_count > 0 && (
+                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <Paperclip className="h-3 w-3" />
+                                    <span>{task.attachment_count}</span>
+                                  </div>
+                                )}
+
+                                {/* Assignee */}
+                                {task.assignee_id && (
+                                  <div className="ml-auto">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarFallback className="text-xs">
+                                        {task.assignee_name?.slice(0, 2).toUpperCase() || 
+                                         task.assignee_id.slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+
+                    {/* Inline task creation form */}
+                    {addingToColumn === column.id && (
+                      <div className="bg-white rounded-lg shadow-sm border-2 border-blue-400">
+                        <div className="p-3">
+                          <Input
+                            ref={inputRef}
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            placeholder="Enter task title..."
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleCreateTask(column.id)
+                              } else if (e.key === 'Escape') {
+                                handleCancelAdd()
+                              }
+                            }}
+                            disabled={isCreating}
+                            className="text-sm border-0 focus:ring-0 shadow-none resize-none"
+                            autoFocus
+                          />
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              size="sm"
+                              onClick={() => handleCreateTask(column.id)}
+                              disabled={isCreating || !newTaskTitle.trim()}
+                              className="flex-1"
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              {isCreating ? 'Creating...' : 'Add Task'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleCancelAdd}
+                              disabled={isCreating}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              </CardContent>
-            </Card>
+                      </div>
+                    )}
+
+                    {/* Empty State */}
+                    {column.tasks.length === 0 && addingToColumn !== column.id && (
+                      <button
+                        onClick={() => setAddingToColumn(column.id)}
+                        className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        + Add task
+                      </button>
+                    )}
+                  </div>
+                )}
+              </Droppable>
+            </div>
           </div>
         ))}
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { CalendarView } from '@/components/calendar/calendar-view'
@@ -39,13 +39,7 @@ function CalendarPageContent() {
   const [activeTab, setActiveTab] = useState('calendar')
   const [analytics, setAnalytics] = useStateEffect<any>(null)
 
-  useEffect(() => {
-    if (user) {
-      loadAnalytics()
-    }
-  }, [user])
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     if (!user) return
 
     try {
@@ -54,7 +48,13 @@ function CalendarPageContent() {
     } catch (error) {
       console.error('Failed to load calendar analytics:', error)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      loadAnalytics()
+    }
+  }, [user, loadAnalytics])
 
   if (!user) {
     return (

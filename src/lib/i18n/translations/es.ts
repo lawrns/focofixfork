@@ -346,6 +346,10 @@ export const es: TranslationSchema = {
     completed: 'Completado',
     notStarted: 'No iniciado',
     statusBlocked: 'Bloqueado',
+    // Additional keys for task modals/forms to fix warnings (flat structure)
+    taskUnassigned: 'Sin Asignar',
+    taskDeleteConfirmation: '¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.',
+    taskEditTaskDescription: 'Editar descripción y propiedades de la tarea',
   },
 
   // Task statuses

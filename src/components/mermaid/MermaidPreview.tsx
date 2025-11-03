@@ -40,6 +40,11 @@ export const MermaidPreview: React.FC<MermaidPreviewProps> = ({
     if (!code || !containerRef.current) return;
 
     const renderDiagram = async () => {
+      if (!containerRef.current) {
+        setError('Container not found');
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
@@ -57,15 +62,19 @@ export const MermaidPreview: React.FC<MermaidPreviewProps> = ({
         }
 
         const { svg } = await mermaid.render(id, code);
-        containerRef.current.innerHTML = svg;
+        
+        // Double check container still exists before setting innerHTML
+        if (containerRef.current) {
+          containerRef.current.innerHTML = svg;
 
-        // Make SVG responsive
-        const svgElement = containerRef.current.querySelector('svg');
-        if (svgElement) {
-          svgElement.setAttribute('width', '100%');
-          svgElement.setAttribute('height', 'auto');
-          svgElement.style.maxWidth = '100%';
-          svgElement.style.height = 'auto';
+          // Make SVG responsive
+          const svgElement = containerRef.current.querySelector('svg');
+          if (svgElement) {
+            svgElement.setAttribute('width', '100%');
+            svgElement.setAttribute('height', 'auto');
+            svgElement.style.maxWidth = '100%';
+            svgElement.style.height = 'auto';
+          }
         }
       } catch (err: any) {
         console.error('Mermaid rendering error:', err);

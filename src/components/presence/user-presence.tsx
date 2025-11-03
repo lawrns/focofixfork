@@ -131,7 +131,7 @@ const UserPresence: React.FC<UserPresenceProps> = ({
         supabase.removeChannel(channel)
       }
     }
-  }, [projectId, milestoneId, organizationId, updatePresence])
+  }, [projectId, milestoneId, organizationId, updatePresence]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayUsers = presenceUsers.slice(0, maxDisplay)
   const remainingCount = Math.max(0, presenceUsers.length - maxDisplay)

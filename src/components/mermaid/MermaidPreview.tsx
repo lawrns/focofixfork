@@ -75,6 +75,8 @@ export const MermaidPreview: React.FC<MermaidPreviewProps> = ({
             svgElement.style.maxWidth = '100%';
             svgElement.style.height = 'auto';
           }
+        } else {
+          setError('Container disappeared during rendering');
         }
       } catch (err: any) {
         console.error('Mermaid rendering error:', err);

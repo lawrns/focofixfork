@@ -237,7 +237,35 @@ export const es: TranslationSchema = {
     dayOverdue: '1 día vencido',
   },
 
-  // Tasks
+  // Tasks (singular form for task.* keys)
+  task: {
+    title: 'Título',
+    titlePlaceholder: 'Ingrese el título de la tarea',
+    description: 'Descripción',
+    descriptionPlaceholder: 'Ingrese la descripción de la tarea',
+    status: 'Estado',
+    selectStatus: 'Seleccionar estado',
+    priority: 'Prioridad',
+    selectPriority: 'Seleccionar prioridad',
+    project: 'Proyecto',
+    selectProject: 'Seleccionar proyecto',
+    milestone: 'Hito',
+    selectMilestone: 'Seleccionar hito',
+    noMilestone: 'Sin hito',
+    assignee: 'Asignado a',
+    selectAssignee: 'Seleccionar asignado',
+    unassigned: 'Sin asignar',
+    dueDate: 'Fecha de vencimiento',
+    selectDueDate: 'Seleccionar fecha de vencimiento',
+    estimatedHours: 'Horas estimadas',
+    actualHours: 'Horas reales',
+    deleteTask: 'Eliminar Tarea',
+    deleteConfirmation: '¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.',
+    editTask: 'Editar Tarea',
+    editTaskDescription: 'Editar detalles y propiedades de la tarea',
+  },
+
+  // Tasks (plural form for tasks.* keys)
   tasks: {
     title: 'Tareas',
     createTask: 'Crear Tarea',

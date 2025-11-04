@@ -1,5 +1,6 @@
 'use client';
 
+// Mermaid diagrams page - production verified
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MermaidDiagramListItem } from '@/lib/models/mermaid';

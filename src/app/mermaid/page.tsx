@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { MermaidDiagramListItem } from '@/lib/models/mermaid';
 import { mermaidService } from '@/lib/services/mermaid';
 
+// Mermaid diagrams list page component
 export default function MermaidPage() {
   const router = useRouter();
   const [diagrams, setDiagrams] = useState<MermaidDiagramListItem[]>([]);

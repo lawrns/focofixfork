@@ -1,0 +1,63 @@
+🚀 Starting Mermaid Production Tests on foco.mx
+
+Domain: https://foco.mx
+Credentials: laurence@fyves.com / hennie12
+
+1️⃣ Navigating to foco.mx...
+✅ foco.mx loaded
+
+2️⃣ Checking authentication status...
+✅ Already authenticated
+
+4️⃣ Navigating to /mermaid...
+❌ Mermaid page title not found. Got: Foco
+
+5️⃣ Checking layout components...
+✅ Sidebar visible
+✅ Header visible
+✅ Main content visible
+
+6️⃣ Checking for New Diagram button...
+✅ New Diagram button found
+
+7️⃣ Creating new diagram...
+❌ Test error: page.waitForTimeout is not a function
+
+📋 Full Results:
+{
+  "timestamp": "2025-11-04T03:53:05.306Z",
+  "environment": "production",
+  "domain": "https://foco.mx",
+  "credentials": "laurence@fyves.com / hennie12",
+  "tests": [
+    {
+      "name": "Navigate to foco.mx",
+      "status": "✅"
+    },
+    {
+      "name": "Authentication",
+      "status": "✅ Already authenticated"
+    },
+    {
+      "name": "Navigate to /mermaid",
+      "status": "❌",
+      "title": "Foco"
+    },
+    {
+      "name": "Layout components",
+      "status": "✅",
+      "components": {
+        "sidebar": true,
+        "header": true,
+        "main": true
+      }
+    },
+    {
+      "name": "New Diagram button",
+      "status": "✅"
+    }
+  ],
+  "summary": {
+    "error": "page.waitForTimeout is not a function"
+  }
+}

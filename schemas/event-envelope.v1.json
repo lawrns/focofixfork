@@ -1,0 +1,294 @@
+{
+  "$id": "https://foco.mx/schemas/event-envelope.v1.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FOCO Event Envelope v1.0.0",
+  "description": "Standardized event format for real-time FOCO system events",
+  "type": "object",
+  "required": ["event", "version", "occurred_at", "org_id", "payload"],
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": [
+        "voice.session_started",
+        "voice.session_ended",
+        "voice.audio_uploaded",
+        "voice.transcript_ready",
+        "voice.transcription_failed",
+        "voice.intent_extracted",
+        "plan.draft_ready",
+        "plan.draft_failed",
+        "plan.refined",
+        "plan.commit_started",
+        "plan.commit_success",
+        "plan.commit_error",
+        "plan.rollback_success",
+        "plan.rollback_error",
+        "project.created",
+        "project.updated",
+        "project.deleted",
+        "milestone.created",
+        "milestone.updated",
+        "milestone.deleted",
+        "milestone.completed",
+        "task.created",
+        "task.updated",
+        "task.deleted",
+        "task.completed",
+        "task.status_changed",
+        "dependency.created",
+        "dependency.deleted",
+        "dependency.cycle_detected",
+        "user.joined_organization",
+        "user.left_organization",
+        "ai.suggestion_generated",
+        "ai.suggestion_applied",
+        "ai.suggestion_rejected",
+        "system.feature_flag_changed",
+        "system.migration_started",
+        "system.migration_completed",
+        "system.migration_failed",
+        "monitoring.health_check",
+        "monitoring.alert_triggered",
+        "monitoring.alert_resolved",
+        "analytics.usage_recorded",
+        "analytics.performance_metric",
+        "security.auth_attempt",
+        "security.auth_success",
+        "security.auth_failure",
+        "security.suspicious_activity",
+        "audit.data_accessed",
+        "audit.data_modified",
+        "audit.data_exported",
+        "backup.started",
+        "backup.completed",
+        "backup.failed",
+        "restore.started",
+        "restore.completed",
+        "restore.failed"
+      ],
+      "description": "Event type identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Event schema version for compatibility"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event occurred (ISO 8601)"
+    },
+    "org_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Organization ID the event belongs to"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Voice session ID (for voice-related events)"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User ID who triggered the event"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data",
+      "additionalProperties": true
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for tracking related events"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the event that caused this event"
+    },
+    "metadata": {
+      "type": "object",
+      "title": "Event Metadata",
+      "properties": {
+        "latency_ms": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 300000,
+          "description": "Processing latency in milliseconds"
+        },
+        "source_service": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Service that generated the event"
+        },
+        "source_ip": {
+          "type": "string",
+          "maxLength": 45,
+          "description": "Client IP address (IPv4 or IPv6)"
+        },
+        "user_agent": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Client user agent string"
+        },
+        "request_id": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Internal request identifier"
+        },
+        "trace_id": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Distributed tracing identifier"
+        },
+        "span_id": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Distributed tracing span identifier"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "description": "Environment where the event occurred"
+        },
+        "region": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Geographic region or data center"
+        },
+        "feature_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "description": "Feature flags that were active during the event"
+        },
+        "experimental_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "description": "Experimental features that were active"
+        },
+        "retry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of retry attempts for this operation"
+        },
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Size of the batch being processed"
+        },
+        "queue_position": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Position in processing queue (if applicable)"
+        },
+        "worker_id": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "ID of the worker processing the event"
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Payload schema version"
+        }
+      },
+      "additionalProperties": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50,
+        "pattern": "^[a-z0-9\\-_]+$"
+      },
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "Event tags for filtering and routing"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "event": "voice.session_started",
+      "version": "1.0.0",
+      "occurred_at": "2025-01-15T10:30:00Z",
+      "org_id": "123e4567-e89b-12d3-a456-426614174000",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "789e0123-e89b-12d3-a456-426614174111",
+      "correlationId": "550e8400-e29b-41d4-a716-446655440001",
+      "payload": {
+        "language": "en",
+        "max_duration_seconds": 300,
+        "audio_format": "webm",
+        "sample_rate": 16000
+      },
+      "metadata": {
+        "source_service": "voice-api",
+        "source_ip": "192.168.1.100",
+        "user_agent": "Mozilla/5.0 (WebRTC)",
+        "environment": "production",
+        "region": "us-east-1"
+      },
+      "tags": ["voice", "session", "api"]
+    },
+    {
+      "event": "plan.commit_success",
+      "version": "1.0.0",
+      "occurred_at": "2025-01-15T10:35:45Z",
+      "org_id": "123e4567-e89b-12d3-a456-426614174000",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "789e0123-e89b-12d3-a456-426614174111",
+      "correlationId": "550e8400-e29b-41d4-a716-446655440001",
+      "payload": {
+        "project_id": "999e0123-e89b-12d3-a456-426614174999",
+        "milestone_count": 5,
+        "task_count": 42,
+        "confidence_score": 0.87,
+        "processing_time_ms": 4500
+      },
+      "metadata": {
+        "latency_ms": 4500,
+        "source_service": "plan-commit-service",
+        "environment": "production",
+        "feature_flags": ["voice_capture", "plan_commit"],
+        "trace_id": "trace-123456",
+        "span_id": "span-789012"
+      },
+      "tags": ["plan", "commit", "success", "voice"]
+    },
+    {
+      "event": "task.status_changed",
+      "version": "1.0.0",
+      "occurred_at": "2025-01-15T10:40:12Z",
+      "org_id": "123e4567-e89b-12d3-a456-426614174000",
+      "user_id": "789e0123-e89b-12d3-a456-426614174111",
+      "correlationId": "550e8400-e29b-41d4-a716-446655440002",
+      "payload": {
+        "task_id": "111e0123-e89b-12d3-a456-426614174111",
+        "project_id": "999e0123-e89b-12d3-a456-426614174999",
+        "milestone_id": "222e0123-e89b-12d3-a456-426614174222",
+        "old_status": "todo",
+        "new_status": "in_progress",
+        "changed_by": "789e0123-e89b-12d3-a456-426614174111",
+        "reason": "User manually updated status"
+      },
+      "metadata": {
+        "source_service": "task-api",
+        "source_ip": "192.168.1.100",
+        "environment": "production"
+      },
+      "tags": ["task", "status", "update"]
+    }
+  ]
+}

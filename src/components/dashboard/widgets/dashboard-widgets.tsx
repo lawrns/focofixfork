@@ -18,7 +18,8 @@ import {
   BarChart3,
   Plus,
   Eye,
-  Edit
+  Edit,
+  Mic
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -87,27 +88,34 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, subLabel, subValue, color = 'blue', className }: StatCardProps) {
   const colorClasses = {
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    orange: 'text-orange-600',
-    red: 'text-red-600',
+    blue: 'from-blue-500 to-blue-600 text-blue-600 dark:from-blue-400 dark:to-blue-500 dark:text-blue-400',
+    green: 'from-green-500 to-green-600 text-green-600 dark:from-green-400 dark:to-green-500 dark:text-green-400',
+    orange: 'from-orange-500 to-orange-600 text-orange-600 dark:from-orange-400 dark:to-orange-500 dark:text-orange-400',
+    red: 'from-red-500 to-red-600 text-red-600 dark:from-red-400 dark:to-red-500 dark:text-red-400',
+  }
+
+  const bgColors = {
+    blue: 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 dark:from-blue-500/20 dark:to-blue-600/20 border-blue-200/50 dark:border-blue-700/50',
+    green: 'bg-gradient-to-br from-green-500/10 to-green-600/10 dark:from-green-500/20 dark:to-green-600/20 border-green-200/50 dark:border-green-700/50',
+    orange: 'bg-gradient-to-br from-orange-500/10 to-orange-600/10 dark:from-orange-500/20 dark:to-orange-600/20 border-orange-200/50 dark:border-orange-700/50',
+    red: 'bg-gradient-to-br from-red-500/10 to-red-600/10 dark:from-red-500/20 dark:to-red-600/20 border-red-200/50 dark:border-red-700/50',
   }
 
   return (
     <Widget className={className}>
-      <Card className="h-full">
+      <Card className={`h-full ${bgColors[color]} backdrop-blur-sm border-2 hover:shadow-lg transition-all duration-200`}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground mb-1">{label}</p>
-              <p className="text-3xl font-bold">{value}</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{label}</p>
+              <p className="text-3xl font-bold text-foreground">{value}</p>
               {subLabel && subValue !== undefined && (
-                <p className={`text-xs mt-3 ${colorClasses[color]}`}>
+                <p className={`text-sm mt-3 font-medium bg-gradient-to-r ${colorClasses[color]} bg-clip-text text-transparent`}>
                   {subLabel}: {subValue}
                 </p>
               )}
             </div>
-            <div className={`${colorClasses[color]} opacity-20`}>
+            <div className={`bg-gradient-to-br ${colorClasses[color]} p-3 rounded-xl shadow-sm`}>
               {icon}
             </div>
           </div>
@@ -168,20 +176,20 @@ interface RecentTasksWidgetProps {
 export function RecentTasksWidget({ tasks, onViewTask, onEditTask, className }: RecentTasksWidgetProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
-      case 'high': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300'
-      case 'medium': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700/40 dark:text-gray-300'
+      case 'urgent': return 'bg-gradient-to-r from-red-500 to-red-600 text-white border border-red-200 dark:border-red-700 shadow-sm'
+      case 'high': return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border border-orange-200 dark:border-orange-700 shadow-sm'
+      case 'medium': return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border border-blue-200 dark:border-blue-700 shadow-sm'
+      case 'low': return 'bg-gradient-to-r from-green-500 to-green-600 text-white border border-green-200 dark:border-green-700 shadow-sm'
+      default: return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white border border-gray-200 dark:border-gray-700 shadow-sm'
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'done': return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-      case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-      case 'todo': return 'bg-gray-100 text-gray-800 dark:bg-gray-700/40 dark:text-gray-300'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700/40 dark:text-gray-300'
+      case 'done': return 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border border-emerald-200 dark:border-emerald-700 shadow-sm'
+      case 'in_progress': return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border border-blue-200 dark:border-blue-700 shadow-sm'
+      case 'todo': return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
+      default: return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
     }
   }
 
@@ -210,81 +218,85 @@ export function RecentTasksWidget({ tasks, onViewTask, onEditTask, className }: 
             tasks.slice(0, 5).map((task) => (
               <motion.div
                 key={task.id}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
-                whileHover={{ scale: 1.02 }}
+                className="flex items-start gap-4 p-4 rounded-xl border border-border/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-900/80 hover:border-primary/30 hover:shadow-md transition-all duration-200"
+                whileHover={{ scale: 1.01, y: -1 }}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-medium text-foreground truncate">
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="text-base font-semibold text-foreground leading-tight truncate">
                       {task.title}
                     </h4>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Badge className={cn('text-xs', getPriorityColor(task.priority))}>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Badge className={cn('text-xs font-medium px-2.5 py-1', getPriorityColor(task.priority))}>
                         {task.priority}
                       </Badge>
-                      <Badge className={cn('text-xs', getStatusColor(task.status))}>
+                      <Badge className={cn('text-xs font-medium px-2.5 py-1', getStatusColor(task.status))}>
                         {task.status.replace('_', ' ')}
                       </Badge>
                     </div>
                   </div>
                   
                   {task.description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
                       {task.description}
                     </p>
                   )}
 
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-6 text-sm text-muted-foreground">
                     {task.project_name && (
-                      <span className="truncate">Project: {task.project_name}</span>
+                      <span className="flex items-center gap-2 font-medium">
+                        <Target className="h-4 w-4 text-primary" />
+                        {task.project_name}
+                      </span>
                     )}
                     {task.due_date && (
-                      <span className={cn(
-                        'flex items-center gap-1',
-                        isOverdue(task.due_date) && 'text-red-600 font-medium'
-                      )}>
-                        <Calendar className="h-3 w-3" />
+                      <span className={cn('flex items-center gap-2 font-medium', isOverdue(task.due_date) && 'text-destructive')}>
+                        <Calendar className="h-4 w-4" />
                         {new Date(task.due_date).toLocaleDateString()}
                       </span>
                     )}
                     {task.assignee_name && (
-                      <div className="flex items-center gap-1">
-                        <Avatar className="h-4 w-4">
-                          <AvatarFallback className="text-xs">
+                      <span className="flex items-center gap-2 font-medium">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs font-medium">
                             {task.assignee_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="truncate">{task.assignee_name}</span>
-                      </div>
+                        {task.assignee_name}
+                      </span>
                     )}
                   </div>
 
                   {task.progress_percentage !== undefined && (
-                    <div className="mt-2">
-                      <Progress value={task.progress_percentage} className="h-1.5" />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm font-medium text-foreground">
+                        <span>Progress</span>
+                        <span className="text-primary">{task.progress_percentage}%</span>
+                      </div>
+                      <Progress value={task.progress_percentage} className="h-3" />
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-1 flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0">
                   {onViewTask && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => onViewTask(task.id)}
-                      className="h-7 w-7 p-0"
+                      className="h-8 w-8 p-0 border-border/60 hover:border-primary hover:bg-primary/10"
                     >
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-4 w-4" />
                     </Button>
                   )}
                   {onEditTask && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => onEditTask(task.id)}
-                      className="h-7 w-7 p-0"
+                      className="h-8 w-8 p-0 border-border/60 hover:border-primary hover:bg-primary/10"
                     >
-                      <Edit className="h-3 w-3" />
+                      <Edit className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
@@ -451,11 +463,11 @@ export function ActiveProjectsWidget({ projects, onViewProject, onEditProject, c
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-      case 'planning': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-      case 'on_hold': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-      case 'completed': return 'bg-gray-100 text-gray-800 dark:bg-gray-700/40 dark:text-gray-300'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700/40 dark:text-gray-300'
+      case 'active': return 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border border-emerald-200 dark:border-emerald-700 shadow-sm'
+      case 'planning': return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border border-blue-200 dark:border-blue-700 shadow-sm'
+      case 'on_hold': return 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border border-amber-200 dark:border-amber-700 shadow-sm'
+      case 'completed': return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
+      default: return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
     }
   }
 
@@ -470,70 +482,71 @@ export function ActiveProjectsWidget({ projects, onViewProject, onEditProject, c
         </CardHeader>
         <CardContent className="space-y-3">
           {activeProjects.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No active projects</p>
-              <p className="text-xs">Start a new project to get going</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <Target className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <p className="text-base font-medium">No active projects</p>
+              <p className="text-sm">Start a new project to get going</p>
             </div>
           ) : (
             activeProjects.slice(0, 5).map((project) => (
               <motion.div
                 key={project.id}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
-                whileHover={{ scale: 1.02 }}
+                className="flex items-start gap-4 p-4 rounded-xl border border-border/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-900/80 hover:border-primary/30 hover:shadow-md transition-all duration-200"
+                whileHover={{ scale: 1.01, y: -1 }}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-medium text-foreground truncate">
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="text-base font-semibold text-foreground leading-tight truncate">
                       {project.name}
                     </h4>
-                    <Badge className={cn('text-xs', getStatusColor(project.status))}>
+                    <Badge className={cn('text-xs font-medium px-2.5 py-1', getStatusColor(project.status))}>
                       {project.status.replace('_', ' ')}
                     </Badge>
                   </div>
                   
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-6 text-sm text-muted-foreground">
                     {project.task_count !== undefined && (
-                      <span>
+                      <span className="flex items-center gap-2 font-medium">
+                        <CheckSquare className="h-4 w-4 text-primary" />
                         {project.completed_tasks || 0} / {project.task_count} tasks
                       </span>
                     )}
                     {project.due_date && (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                      <span className="flex items-center gap-2 font-medium">
+                        <Calendar className="h-4 w-4" />
                         {new Date(project.due_date).toLocaleDateString()}
                       </span>
                     )}
                   </div>
 
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm font-medium text-foreground">
                       <span>Progress</span>
-                      <span>{project.progress_percentage}%</span>
+                      <span className="text-primary">{project.progress_percentage}%</span>
                     </div>
-                    <Progress value={project.progress_percentage} className="h-2" />
+                    <Progress value={project.progress_percentage} className="h-3" />
                   </div>
                 </div>
 
-                <div className="flex gap-1 flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0">
                   {onViewProject && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => onViewProject(project.id)}
-                      className="h-7 w-7 p-0"
+                      className="h-8 w-8 p-0 border-border/60 hover:border-primary hover:bg-primary/10"
                     >
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-4 w-4" />
                     </Button>
                   )}
                   {onEditProject && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => onEditProject(project.id)}
-                      className="h-7 w-7 p-0"
+                      className="h-8 w-8 p-0 border-border/60 hover:border-primary hover:bg-primary/10"
                     >
-                      <Edit className="h-3 w-3" />
+                      <Edit className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
@@ -551,6 +564,7 @@ interface QuickActionsWidgetProps {
   onCreateTask?: () => void
   onCreateProject?: () => void
   onCreateMilestone?: () => void
+  onVoicePlanning?: () => void
   className?: string
 }
 
@@ -558,9 +572,16 @@ export function QuickActionsWidget({
   onCreateTask, 
   onCreateProject, 
   onCreateMilestone, 
+  onVoicePlanning,
   className 
 }: QuickActionsWidgetProps) {
   const actions = [
+    {
+      label: 'Voice Planning',
+      icon: Mic,
+      onClick: onVoicePlanning,
+      color: 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700'
+    },
     {
       label: 'New Task',
       icon: CheckSquare,

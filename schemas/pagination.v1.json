@@ -1,0 +1,356 @@
+{
+  "$id": "https://foco.mx/schemas/pagination.v1.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FOCO Pagination Contract v1.0.0",
+  "description": "Standardized pagination format for all FOCO list endpoints",
+  "type": "object",
+  "required": ["data", "pagination"],
+  "properties": {
+    "data": {
+      "type": "array",
+      "description": "Array of items for the current page"
+    },
+    "pagination": {
+      "type": "object",
+      "title": "Pagination Metadata",
+      "required": ["total_items", "total_pages", "current_page", "page_size", "has_next", "has_prev"],
+      "properties": {
+        "total_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "Total number of items across all pages"
+        },
+        "total_pages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "description": "Total number of pages"
+        },
+        "current_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Current page number (1-based)"
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Number of items per page"
+        },
+        "has_next": {
+          "type": "boolean",
+          "description": "Whether there are more pages after the current one"
+        },
+        "has_prev": {
+          "type": "boolean",
+          "description": "Whether there are pages before the current one"
+        },
+        "next_page": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Next page number (null if no next page)"
+        },
+        "prev_page": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Previous page number (null if no previous page)"
+        },
+        "first_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1,
+          "const": 1,
+          "description": "First page number (always 1)"
+        },
+        "last_page": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Last page number (null if no pages)"
+        },
+        "items_on_page": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Number of items on the current page"
+        },
+        "start_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999999,
+          "description": "Zero-based index of the first item on this page"
+        },
+        "end_index": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 1000000,
+          "description": "Zero-based index of the last item on this page (-1 if no items)"
+        },
+        "cursor": {
+          "type": ["string", "null"],
+          "maxLength": 500,
+          "description": "Cursor for cursor-based pagination (base64 encoded)"
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "Whether there are more items (for cursor-based pagination)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "filters": {
+      "type": "object",
+      "title": "Applied Filters",
+      "properties": {
+        "search": {
+          "type": ["string", "null"],
+          "maxLength": 500,
+          "description": "Search query that was applied"
+        },
+        "status": {
+          "type": ["string", "null"],
+          "description": "Status filter that was applied"
+        },
+        "priority": {
+          "type": ["string", "null"],
+          "description": "Priority filter that was applied"
+        },
+        "date_range": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Start date of the range"
+            },
+            "end": {
+              "type": "string",
+              "format": "date-time",
+              "description": "End date of the range"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Date range filter that was applied"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "maxItems": 10,
+          "description": "Tags that were filtered"
+        },
+        "custom_filters": {
+          "type": "object",
+          "description": "Additional custom filters that were applied"
+        }
+      },
+      "additionalProperties": true
+    },
+    "sort": {
+      "type": "object",
+      "title": "Sorting Information",
+      "properties": {
+        "field": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Field that was used for sorting"
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "description": "Sort direction"
+        },
+        "multiple_sort": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "direction": {
+                "type": "string",
+                "enum": ["asc", "desc"]
+              }
+            },
+            "required": ["field", "direction"],
+            "additionalProperties": false
+          },
+          "maxItems": 5,
+          "description": "Multiple sort fields (when applicable)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "title": "Response Metadata",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Unique identifier for this request"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this response was generated"
+        },
+        "processing_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30000,
+          "description": "Time taken to process the request in milliseconds"
+        },
+        "cache_hit": {
+          "type": "boolean",
+          "description": "Whether this response was served from cache"
+        },
+        "total_items_estimate": {
+          "type": "boolean",
+          "description": "Whether the total_items count is an estimate (for performance)"
+        },
+        "max_page_size_reached": {
+          "type": "boolean",
+          "description": "Whether the requested page size exceeded the maximum allowed"
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "Whether the results were truncated due to limits"
+        },
+        "rate_limit": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "description": "Rate limit for this endpoint"
+            },
+            "remaining": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000,
+              "description": "Remaining requests in the current window"
+            },
+            "reset_time": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the rate limit window resets"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Rate limit information"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "data": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "title": "Mobile App Launch",
+          "description": "Launch a new mobile application",
+          "status": "active",
+          "priority": "high",
+          "created_at": "2025-01-15T10:30:00Z"
+        },
+        {
+          "id": "456e7890-e89b-12d3-a456-426614174111",
+          "title": "Website Redesign",
+          "description": "Redesign the company website",
+          "status": "planning",
+          "priority": "medium",
+          "created_at": "2025-01-14T15:45:00Z"
+        }
+      ],
+      "pagination": {
+        "total_items": 25,
+        "total_pages": 13,
+        "current_page": 1,
+        "page_size": 2,
+        "has_next": true,
+        "has_prev": false,
+        "next_page": 2,
+        "prev_page": null,
+        "first_page": 1,
+        "last_page": 13,
+        "items_on_page": 2,
+        "start_index": 0,
+        "end_index": 1,
+        "cursor": null,
+        "has_more": false
+      },
+      "filters": {
+        "search": null,
+        "status": null,
+        "priority": null,
+        "date_range": null,
+        "tags": null
+      },
+      "sort": {
+        "field": "created_at",
+        "direction": "desc"
+      },
+      "metadata": {
+        "request_id": "req_123456",
+        "generated_at": "2025-01-15T10:35:00Z",
+        "processing_time_ms": 45,
+        "cache_hit": false,
+        "total_items_estimate": false,
+        "max_page_size_reached": false,
+        "truncated": false,
+        "rate_limit": {
+          "limit": 100,
+          "remaining": 99,
+          "reset_time": "2025-01-15T11:00:00Z"
+        }
+      }
+    },
+    {
+      "data": [],
+      "pagination": {
+        "total_items": 0,
+        "total_pages": 0,
+        "current_page": 1,
+        "page_size": 10,
+        "has_next": false,
+        "has_prev": false,
+        "next_page": null,
+        "prev_page": null,
+        "first_page": 1,
+        "last_page": null,
+        "items_on_page": 0,
+        "start_index": 0,
+        "end_index": -1,
+        "cursor": "eyJjdXJzb3IiOiIxMjM0NTY3ODkwMTIzNDU2Nzg5MCJ9",
+        "has_more": false
+      },
+      "filters": {
+        "search": "nonexistent",
+        "status": "completed"
+      },
+      "sort": {
+        "field": "title",
+        "direction": "asc"
+      },
+      "metadata": {
+        "request_id": "req_789012",
+        "generated_at": "2025-01-15T10:40:00Z",
+        "processing_time_ms": 12,
+        "cache_hit": true
+      }
+    }
+  ]
+}

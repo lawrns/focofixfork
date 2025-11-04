@@ -1,0 +1,366 @@
+{
+  "$id": "https://foco.mx/schemas/plan-draft.v1.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FOCO Plan Draft Schema v1.0.0",
+  "description": "Canonical schema for AI-generated project plans from voice input",
+  "type": "object",
+  "required": ["schema_version", "project", "milestones"],
+  "properties": {
+    "schema_version": { 
+      "const": "1.0.0",
+      "description": "Schema version for compatibility and validation"
+    },
+    "project": {
+      "type": "object",
+      "title": "Project Definition",
+      "required": ["title", "description"],
+      "properties": {
+        "title": { 
+          "type": "string", 
+          "minLength": 3,
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9\\s\\-_()&]+$",
+          "description": "Project title (maps to projects.name)"
+        },
+        "description": { 
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Project description"
+        },
+        "start_date": { 
+          "type": ["string", "null"], 
+          "format": "date-time",
+          "description": "Project start date (ISO 8601)"
+        },
+        "due_date": { 
+          "type": ["string", "null"], 
+          "format": "date-time",
+          "description": "Project due date (ISO 8601)"
+        },
+        "priority": {
+          "enum": ["low", "medium", "high", "critical"],
+          "default": "medium",
+          "description": "Project priority level"
+        },
+        "estimated_budget": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 999999999,
+          "description": "Estimated project budget in USD"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "pattern": "^[a-z0-9\\-_]+$"
+          },
+          "maxItems": 10,
+          "uniqueItems": true,
+          "description": "Project tags for categorization"
+        }
+      },
+      "additionalProperties": false
+    },
+    "milestones": {
+      "type": "array",
+      "title": "Project Milestones",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "title": "Milestone Definition",
+        "required": ["title", "tasks"],
+        "properties": {
+          "title": { 
+            "type": "string", 
+            "minLength": 3,
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9\\s\\-_()&]+$",
+            "description": "Milestone title (maps to milestones.name/title)"
+          },
+          "description": { 
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Milestone description"
+          },
+          "start_date": { 
+            "type": ["string", "null"], 
+            "format": "date-time",
+            "description": "Milestone start date (ISO 8601)"
+          },
+          "due_date": { 
+            "type": ["string", "null"], 
+            "format": "date-time",
+            "description": "Milestone due date (ISO 8601)"
+          },
+          "priority": {
+            "enum": ["low", "medium", "high", "critical"],
+            "default": "medium",
+            "description": "Milestone priority level"
+          },
+          "status": {
+            "enum": ["todo", "in_progress", "review", "done", "blocked"],
+            "default": "todo",
+            "description": "Milestone status"
+          },
+          "progress_percentage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 0,
+            "description": "Milestone progress percentage"
+          },
+          "tasks": {
+            "type": "array",
+            "title": "Milestone Tasks",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": {
+              "type": "object",
+              "title": "Task Definition",
+              "required": ["title", "status", "priority"],
+              "properties": {
+                "title": { 
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "pattern": "^[A-Za-z0-9\\s\\-_()&]+$",
+                  "description": "Task title"
+                },
+                "description": { 
+                  "type": "string",
+                  "maxLength": 2000,
+                  "description": "Task description"
+                },
+                "status": { 
+                  "enum": ["todo", "in_progress", "review", "done", "blocked"],
+                  "default": "todo",
+                  "description": "Task status"
+                },
+                "priority": {
+                  "enum": ["low", "medium", "high", "critical"],
+                  "default": "medium",
+                  "description": "Task priority"
+                },
+                "assignee_hint": { 
+                  "type": ["string", "null"],
+                  "maxLength": 100,
+                  "description": "Hint for task assignment (email, name, or role)"
+                },
+                "estimate_hours": { 
+                  "type": ["number", "null"], 
+                  "minimum": 0,
+                  "maximum": 1000,
+                  "multipleOf": 0.5,
+                  "description": "Estimated effort in hours"
+                },
+                "actual_hours": {
+                  "type": ["number", "null"],
+                  "minimum": 0,
+                  "maximum": 1000,
+                  "multipleOf": 0.5,
+                  "description": "Actual hours spent (populated after task completion)"
+                },
+                "due_date": {
+                  "type": ["string", "null"],
+                  "format": "date-time",
+                  "description": "Task due date (ISO 8601)"
+                },
+                "depends_on": { 
+                  "type": "array",
+                  "items": { 
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Title of task this depends on"
+                  },
+                  "maxItems": 10,
+                  "uniqueItems": true,
+                  "description": "List of task titles this task depends on"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "pattern": "^[a-z0-9\\-_]+$"
+                  },
+                  "maxItems": 10,
+                  "uniqueItems": true,
+                  "description": "Task tags"
+                },
+                "acceptance_criteria": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "maxItems": 10,
+                  "description": "Task acceptance criteria"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "risks": { 
+      "type": "array",
+      "title": "Project Risks",
+      "items": { 
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "Identified project risks"
+    },
+    "assumptions": { 
+      "type": "array",
+      "title": "Project Assumptions",
+      "items": { 
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "Key assumptions made during planning"
+    },
+    "open_questions": { 
+      "type": "array",
+      "title": "Open Questions",
+      "items": { 
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "Questions that need clarification"
+    },
+    "metadata": {
+      "type": "object",
+      "title": "Plan Metadata",
+      "properties": {
+        "confidence_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Overall confidence in plan quality (0.0-1.0)"
+        },
+        "processing_time_ms": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60000,
+          "description": "Time taken to generate plan in milliseconds"
+        },
+        "ai_model_version": {
+          "type": "string",
+          "pattern": "^[a-z0-9\\-\\.]+$",
+          "description": "AI model version used for generation"
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+          "description": "Language code of input transcript"
+        },
+        "transcript_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Length of original transcript in characters"
+        },
+        "complexity_score": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Plan complexity score (1=simple, 10=complex)"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "schema_version": "1.0.0",
+      "project": {
+        "title": "Mobile App Launch",
+        "description": "Launch a new mobile application for iOS and Android platforms",
+        "start_date": "2025-01-15T09:00:00Z",
+        "due_date": "2025-06-30T17:00:00Z",
+        "priority": "high",
+        "tags": ["mobile", "launch", "q1-2025"]
+      },
+      "milestones": [
+        {
+          "title": "Design & Planning",
+          "description": "Complete UI/UX design and technical planning",
+          "start_date": "2025-01-15T09:00:00Z",
+          "due_date": "2025-02-15T17:00:00Z",
+          "priority": "high",
+          "status": "todo",
+          "progress_percentage": 0,
+          "tasks": [
+            {
+              "title": "Create wireframes and mockups",
+              "description": "Design all user interface screens",
+              "status": "todo",
+              "priority": "high",
+              "assignee_hint": "design-team",
+              "estimate_hours": 40,
+              "depends_on": [],
+              "acceptance_criteria": [
+                "All screens designed",
+                "Design system established",
+                "Stakeholder approval received"
+              ]
+            },
+            {
+              "title": "Technical architecture planning",
+              "description": "Define system architecture and technology stack",
+              "status": "todo",
+              "priority": "high",
+              "assignee_hint": "tech-lead",
+              "estimate_hours": 24,
+              "depends_on": ["Create wireframes and mockups"],
+              "acceptance_criteria": [
+                "Architecture documented",
+                "Technology stack selected",
+                "API contracts defined"
+              ]
+            }
+          ]
+        }
+      ],
+      "risks": [
+        "Third-party API integration delays",
+        "App store approval process uncertainty"
+      ],
+      "assumptions": [
+        "Development team available full-time",
+        "Design requirements stable"
+      ],
+      "open_questions": [
+        "Which payment gateway to integrate?",
+        "Target market prioritization?"
+      ],
+      "metadata": {
+        "confidence_score": 0.85,
+        "processing_time_ms": 3200,
+        "ai_model_version": "gpt-4o-2024-08-06",
+        "language": "en",
+        "transcript_length": 245,
+        "complexity_score": 6
+      }
+    }
+  ]
+}

@@ -261,6 +261,10 @@ export default function PersonalizedDashboardPage() {
     router.push('/projects')
   }
 
+  const handleVoicePlanning = () => {
+    router.push('/voice')
+  }
+
   // Show loading state
   if (loading || isLoading) {
     return <PersonalizedDashboardSkeleton />
@@ -342,6 +346,7 @@ export default function PersonalizedDashboardPage() {
               onCreateTask={handleCreateTask}
               onCreateProject={handleCreateProject}
               onCreateMilestone={handleCreateMilestone}
+              onVoicePlanning={handleVoicePlanning}
             />
           </div>
         </div>

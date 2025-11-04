@@ -1,0 +1,291 @@
+{
+  "$id": "https://foco.mx/schemas/api-error.v1.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FOCO API Error Response v1.0.0",
+  "description": "Uniform error response format for all FOCO API endpoints",
+  "type": "object",
+  "required": ["error"],
+  "properties": {
+    "error": {
+      "type": "object",
+      "title": "Error Details",
+      "required": ["code", "message", "retriable", "correlationId"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "PLAN_SCHEMA_INVALID",
+            "RATE_LIMIT_EXCEEDED", 
+            "TRANSIENT_ASR_ERROR",
+            "VOICE_SESSION_EXPIRED",
+            "ORGANIZATION_NOT_FOUND",
+            "INSUFFICIENT_PERMISSIONS",
+            "DEPENDENCY_CYCLE",
+            "VALIDATION_FAILED",
+            "COMMIT_FAILED",
+            "IDEMPOTENCY_CONFLICT",
+            "AUDIO_FORMAT_UNSUPPORTED",
+            "TRANSCRIPTION_FAILED",
+            "AI_MODEL_UNAVAILABLE",
+            "PLAN_GENERATION_FAILED",
+            "TASK_DEPENDENCY_INVALID",
+            "MILESTONE_DATE_CONFLICT",
+            "PROJECT_DATE_CONFLICT",
+            "DUPLICATE_PROJECT_NAME",
+            "RESOURCE_NOT_FOUND",
+            "QUOTA_EXCEEDED",
+            "AUDIO_PROCESSING_TIMEOUT",
+            "WEBSOCKET_CONNECTION_FAILED",
+            "FEATURE_FLAG_DISABLED",
+            "DATABASE_CONNECTION_FAILED",
+            "EXTERNAL_SERVICE_ERROR",
+            "INTERNAL_SERVER_ERROR",
+            "INVALID_REQUEST_FORMAT",
+            "MISSING_REQUIRED_FIELD",
+            "FIELD_VALUE_INVALID",
+            "UNAUTHORIZED_ACCESS",
+            "FORBIDDEN_OPERATION",
+            "METHOD_NOT_ALLOWED",
+            "ENDPOINT_NOT_FOUND",
+            "REQUEST_TIMEOUT",
+            "PAYLOAD_TOO_LARGE",
+            "UNSUPPORTED_MEDIA_TYPE",
+            "INVALID_QUERY_PARAMETER",
+            "INVALID_PATH_PARAMETER",
+            "CORS_POLICY_VIOLATION",
+            "CSRF_TOKEN_INVALID",
+            "SESSION_EXPIRED",
+            "INVALID_API_KEY",
+            "API_KEY_EXPIRED",
+            "BRAINTREE_PAYMENT_FAILED",
+            "STRIPE_PAYMENT_FAILED",
+            "EMAIL_SENDING_FAILED",
+            "FILE_UPLOAD_FAILED",
+            "FILE_TYPE_NOT_ALLOWED",
+            "FILE_SIZE_EXCEEDED",
+            "IMAGE_PROCESSING_FAILED",
+            "PDF_GENERATION_FAILED",
+            "EXPORT_FAILED",
+            "IMPORT_FAILED",
+            "BACKUP_FAILED",
+            "RESTORE_FAILED",
+            "MIGRATION_FAILED",
+            "INDEX_REBUILD_FAILED",
+            "CACHE_MISS",
+            "CACHE_WRITE_FAILED",
+            "REDIS_CONNECTION_FAILED",
+            "QUEUE_MESSAGE_FAILED",
+            "WEBHOOK_DELIVERY_FAILED",
+            "NOTIFICATION_SENDING_FAILED",
+            "SLACK_INTEGRATION_FAILED",
+            "GITHUB_INTEGRATION_FAILED",
+            "JIRA_INTEGRATION_FAILED",
+            "GOOGLE_CALENDAR_FAILED",
+            "OUTLOOK_CALENDAR_FAILED",
+            "ZOOM_INTEGRATION_FAILED",
+            "TEAMS_INTEGRATION_FAILED",
+            "DISCORD_INTEGRATION_FAILED"
+          ],
+          "description": "Machine-readable error code for programmatic handling"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Human-readable error description"
+        },
+        "retriable": {
+          "type": "boolean",
+          "description": "Whether the client should retry the request"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for tracking the error across systems"
+        },
+        "details": {
+          "type": "object",
+          "title": "Additional Error Details",
+          "properties": {
+            "field": {
+              "type": "string",
+              "description": "Field name that caused the error (for validation errors)"
+            },
+            "value": {
+              "description": "Invalid value that caused the error"
+            },
+            "expected": {
+              "description": "Expected value or format"
+            },
+            "validation_errors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Path to the invalid field"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Validation error message"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Validation error code"
+                  }
+                }
+              },
+              "description": "Detailed validation errors (for schema validation failures)"
+            },
+            "retry_after": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600,
+              "description": "Suggested retry delay in seconds"
+            },
+            "max_retries": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Maximum number of retry attempts"
+            },
+            "retry_backoff": {
+              "type": "string",
+              "enum": ["linear", "exponential", "fixed"],
+              "description": "Recommended retry backoff strategy"
+            },
+            "service_name": {
+              "type": "string",
+              "description": "Name of the service that generated the error"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the error occurred"
+            },
+            "request_id": {
+              "type": "string",
+              "description": "Internal request identifier"
+            },
+            "user_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "User ID (if available and relevant)"
+            },
+            "organization_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization ID (if available and relevant)"
+            },
+            "session_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Voice session ID (for voice-related errors)"
+            },
+            "audio_duration_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Duration of audio file in milliseconds (for audio errors)"
+            },
+            "transcript_length": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Length of transcript in characters (for transcription errors)"
+            },
+            "plan_complexity_score": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Complexity score of the plan (for plan generation errors)"
+            },
+            "dependency_chain": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Chain of dependencies that caused a cycle error"
+            },
+            "quota_limit": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Current quota limit"
+            },
+            "quota_usage": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Current quota usage"
+            },
+            "quota_reset_time": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When quota resets"
+            }
+          },
+          "additionalProperties": true,
+          "description": "Additional context-specific error information"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "error": {
+        "code": "PLAN_SCHEMA_INVALID",
+        "message": "The generated plan does not conform to the required schema",
+        "retriable": false,
+        "correlationId": "550e8400-e29b-41d4-a716-446655440000",
+        "details": {
+          "validation_errors": [
+            {
+              "path": ["project", "title"],
+              "message": "Project title must be at least 3 characters long",
+              "code": "STRING_TOO_SHORT"
+            },
+            {
+              "path": ["milestones", 0, "tasks", 0, "estimate_hours"],
+              "message": "Estimate must be in 0.5 hour increments",
+              "code": "INVALID_MULTIPLE"
+            }
+          ],
+          "session_id": "123e4567-e89b-12d3-a456-426614174000",
+          "plan_complexity_score": 7
+        }
+      }
+    },
+    {
+      "error": {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "You have exceeded the rate limit for voice transcription",
+        "retriable": true,
+        "correlationId": "550e8400-e29b-41d4-a716-446655440001",
+        "details": {
+          "retry_after": 60,
+          "max_retries": 3,
+          "retry_backoff": "exponential",
+          "quota_limit": 100,
+          "quota_usage": 100,
+          "quota_reset_time": "2025-01-15T10:00:00Z"
+        }
+      }
+    },
+    {
+      "error": {
+        "code": "DEPENDENCY_CYCLE",
+        "message": "Circular dependency detected in task relationships",
+        "retriable": false,
+        "correlationId": "550e8400-e29b-41d4-a716-446655440002",
+        "details": {
+          "dependency_chain": [
+            "Task A",
+            "Task B", 
+            "Task C",
+            "Task A"
+          ],
+          "session_id": "123e4567-e89b-12d3-a456-426614174001"
+        }
+      }
+    }
+  ]
+}

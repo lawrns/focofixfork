@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-11-04T03:59:31.317Z",
+  "domain": "https://foco.mx",
+  "credentials": "laurence@fyves.com / hennie12",
+  "tests": [
+    {
+      "name": "Navigate to foco.mx",
+      "status": "✅",
+      "screenshot": "test-1-homepage.png"
+    },
+    {
+      "name": "Authentication",
+      "status": "✅ Already authenticated"
+    },
+    {
+      "name": "Navigate to /mermaid",
+      "status": "❌",
+      "title": "Foco",
+      "screenshot": "test-3-mermaid-page.png"
+    },
+    {
+      "name": "Layout components",
+      "status": "✅",
+      "components": {
+        "sidebar": true,
+        "header": true,
+        "main": true
+      }
+    },
+    {
+      "name": "New Diagram button",
+      "status": "✅"
+    }
+  ],
+  "screenshots": [],
+  "summary": {
+    "error": "page.waitForTimeout is not a function"
+  }
+}

@@ -149,7 +149,7 @@ export default function MermaidDiagramPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -157,7 +157,7 @@ export default function MermaidDiagramPage() {
 
   if (!diagram) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <h2 className="text-lg font-medium text-gray-900 mb-2">Diagram not found</h2>
           <button
@@ -172,150 +172,144 @@ export default function MermaidDiagramPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/mermaid')}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div>
-                {editing ? (
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="text-xl font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-500"
-                  />
-                ) : (
-                  <h1 className="text-xl font-semibold text-gray-900">{diagram.title}</h1>
-                )}
-                {diagram.is_public && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
-                    Public
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {editing ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditing(false);
-                      setTitle(diagram.title);
-                      setDescription(diagram.description || '');
-                      setMermaidCode(diagram.mermaid_code);
-                    }}
-                    className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-1"
-                  >
-                    {saving && (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                    )}
-                    <span>Save</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setShowShareDialog(true)}
-                    className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                  >
-                    Share
-                  </button>
-                  <button
-                    onClick={() => setShowVersionHistory(true)}
-                    className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                  >
-                    Versions
-                  </button>
-                  <button
-                    onClick={() => handleExport('svg')}
-                    className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                  >
-                    Export
-                  </button>
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="px-3 py-1 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
+    <div>
+      {/* Page Title and Controls */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => router.push('/mermaid')}
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            {editing ? (
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="text-2xl font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-500"
+              />
+            ) : (
+              <h1 className="text-2xl font-semibold text-gray-900">{diagram.title}</h1>
+            )}
+            {diagram.is_public && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                Public
+              </span>
+            )}
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          {editing ? (
+            <>
+              <button
+                onClick={() => {
+                  setEditing(false);
+                  setTitle(diagram.title);
+                  setDescription(diagram.description || '');
+                  setMermaidCode(diagram.mermaid_code);
+                }}
+                className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-1"
+              >
+                {saving && (
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                )}
+                <span>Save</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setShowShareDialog(true)}
+                className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+              >
+                Share
+              </button>
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+              >
+                Versions
+              </button>
+              <button
+                onClick={() => handleExport('svg')}
+                className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+              >
+                Export
+              </button>
+              <button
+                onClick={() => setEditing(true)}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1 text-sm text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+              >
+                Delete
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Editor */}
-          <div className="space-y-6">
-            {editing && (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Description</h2>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Describe your diagram (optional)"
-                />
-              </div>
-            )}
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Editor */}
+        <div className="space-y-6">
+          {editing && (
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Mermaid Code</h2>
-                {editing && (
-                  <button
-                    onClick={handleCreateVersion}
-                    className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                  >
-                    Save Version
-                  </button>
-                )}
-              </div>
-              <MermaidEditor
-                value={mermaidCode}
-                onChange={setMermaidCode}
-                theme="light"
-                readonly={!editing}
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Description</h2>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Describe your diagram (optional)"
               />
             </div>
-          </div>
+          )}
 
-          {/* Right Column - Preview */}
-          <div className="lg:sticky lg:top-6 lg:h-fit">
-            <div className="bg-white rounded-lg shadow-sm border">
-              <MermaidPreview
-                code={mermaidCode}
-                theme="light"
-                className="h-full"
-              />
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900">Mermaid Code</h2>
+              {editing && (
+                <button
+                  onClick={handleCreateVersion}
+                  className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                >
+                  Save Version
+                </button>
+              )}
             </div>
+            <MermaidEditor
+              value={mermaidCode}
+              onChange={setMermaidCode}
+              theme="light"
+              readonly={!editing}
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Preview */}
+        <div className="lg:sticky lg:top-6 lg:h-fit">
+          <div className="bg-white rounded-lg shadow-sm border">
+            <MermaidPreview
+              code={mermaidCode}
+              theme="light"
+              className="h-full"
+            />
           </div>
         </div>
       </div>

@@ -184,35 +184,6 @@ export const RATE_LIMITS = {
 // Create rate limiter instance
 export const rateLimiter = new RateLimiter()
 
-// Helper function to create rate limit middleware
-export function createRateLimitMiddleware(config: RateLimitConfig) {
-  return (req: any, res: any, next: any) => {
-    const key = config.keyGenerator 
-      ? config.keyGenerator(req) 
-      : req.ip || req.connection.remoteAddress || 'unknown'
-
-    const { allowed, info } = rateLimiter.checkLimit(key, config)
-
-    // Set rate limit headers
-    res.set({
-      'X-RateLimit-Limit': info.limit.toString(),
-      'X-RateLimit-Remaining': info.remaining.toString(),
-      'X-RateLimit-Reset': new Date(info.reset).toISOString()
-    })
-
-    if (!allowed) {
-      res.set('Retry-After', info.retryAfter?.toString() || '60')
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        message: `Too many requests. Try again in ${info.retryAfter} seconds.`,
-        retryAfter: info.retryAfter
-      })
-    }
-
-    next()
-  }
-}
-
 // Helper function for Next.js API routes
 export function withRateLimit(
   handler: any,

@@ -1,0 +1,209 @@
+{
+  "serverStarted": true,
+  "serverStartupTime": "1325ms",
+  "port": 3001,
+  "tests": [
+    {
+      "name": "Home page loads",
+      "status": "PASS",
+      "statusCode": 200,
+      "loadTime": "1111ms"
+    },
+    {
+      "name": "Critical HTML elements present",
+      "status": "PASS",
+      "details": "HTML: true, Body: true"
+    },
+    {
+      "name": "Login page loads",
+      "status": "PASS",
+      "title": "Iniciar sesión | Foco"
+    },
+    {
+      "name": "Settings page accessible",
+      "status": "PASS",
+      "title": "404: This page could not be found."
+    },
+    {
+      "name": "Organizations page accessible",
+      "status": "PASS",
+      "title": "Foco - Gestión de Proyectos con IA"
+    },
+    {
+      "name": "Analytics page accessible",
+      "status": "PASS",
+      "title": "404: This page could not be found."
+    },
+    {
+      "name": "Voice planning page accessible",
+      "status": "PASS",
+      "title": "404: This page could not be found."
+    },
+    {
+      "name": "No network failures",
+      "status": "FAIL",
+      "errorCount": 25
+    },
+    {
+      "name": "No console errors",
+      "status": "FAIL",
+      "errorCount": 41
+    },
+    {
+      "name": "Page load time < 3 seconds",
+      "status": "PASS",
+      "actualTime": "1111ms",
+      "threshold": "3000ms"
+    }
+  ],
+  "consoleErrors": [
+    "Refused to apply style from 'http://localhost:3001/_next/static/css/app/layout.css?v=1767910078079' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/main-app.js?v=1767910078079' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app/page.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Refused to apply style from 'http://localhost:3001/_next/static/css/app/layout.css?v=1767910079619' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/main-app.js?v=1767910079619' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to apply style from 'http://localhost:3001/_next/static/css/app/layout.css?v=1767910080552' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/main-app.js?v=1767910080552' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Refused to apply style from 'http://localhost:3001/_next/static/css/app/layout.css?v=1767910082142' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/main-app.js?v=1767910082142' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to apply style from 'http://localhost:3001/_next/static/css/app/layout.css?v=1767910083193' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/main-app.js?v=1767910083193' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to apply style from 'http://localhost:3001/_next/static/css/app/layout.css?v=1767910083745' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/main-app.js?v=1767910083745' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:3001/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled."
+  ],
+  "consoleWarnings": [],
+  "networkErrors": [
+    {
+      "url": "http://localhost:3001/_next/static/css/app/layout.css?v=1767910078079",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app-pages-internals.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/main-app.js?v=1767910078079",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app/page.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/css/app/layout.css?v=1767910079619",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/main-app.js?v=1767910079619",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app-pages-internals.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/css/app/layout.css?v=1767910080552",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app-pages-internals.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/main-app.js?v=1767910080552",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/css/app/layout.css?v=1767910082142",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/main-app.js?v=1767910082142",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app-pages-internals.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/css/app/layout.css?v=1767910083193",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app-pages-internals.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/main-app.js?v=1767910083193",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/css/app/layout.css?v=1767910083745",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/main-app.js?v=1767910083745",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:3001/_next/static/chunks/app-pages-internals.js",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "performance": {
+    "homePageLoadTime": "1111ms"
+  },
+  "timestamp": "2026-01-08T22:07:58.023Z"
+}

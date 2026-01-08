@@ -112,8 +112,8 @@ export function SettingsDashboard() {
         language: userSettings.language
       })
 
-      const response = await fetch('/api/settings/profile', {
-        method: 'PUT',
+      const response = await fetch('/api/user/settings', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: user.user_metadata?.full_name || user.email,
@@ -133,7 +133,7 @@ export function SettingsDashboard() {
       console.log('[Settings] Profile updated successfully')
 
       // Also save notification settings
-      await fetch('/api/settings/notifications', {
+      await fetch('/api/user/settings/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,7 +154,13 @@ export function SettingsDashboard() {
   const saveOrgSettings = async () => {
     setSaving(true)
     try {
-      const response = await fetch('/api/settings/organization', {
+      // Get organization ID first
+      const orgResponse = await fetch('/api/user/organization')
+      if (!orgResponse.ok) throw new Error('Failed to get organization')
+      const orgData = await orgResponse.json()
+      const orgId = orgData.organization_id
+
+      const response = await fetch(`/api/organizations/${orgId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

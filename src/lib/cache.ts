@@ -329,59 +329,6 @@ export const sessionCache = new CacheManager({
   namespace: 'session'
 })
 
-// Cache decorator for functions
-export function cached<T extends (...args: any[]) => any>(
-  fn: T,
-  cache: CacheManager,
-  keyGenerator?: (...args: Parameters<T>) => string
-): T {
-  return ((...args: Parameters<T>) => {
-    const key = keyGenerator 
-      ? keyGenerator(...args)
-      : JSON.stringify(args)
-
-    const cached = cache.get(key)
-    if (cached !== null) {
-      return cached
-    }
-
-    const result = fn(...args)
-    
-    // Handle promises
-    if (result instanceof Promise) {
-      return result.then(value => {
-        cache.set(key, value)
-        return value
-      })
-    }
-
-    cache.set(key, result)
-    return result
-  }) as T
-}
-
-// Cache middleware for API routes
-export function withCache<T>(
-  handler: (...args: any[]) => Promise<T>,
-  cache: CacheManager<T>,
-  keyGenerator: (...args: any[]) => string,
-  ttl?: number
-) {
-  return async (...args: any[]): Promise<T> => {
-    const key = keyGenerator(...args)
-    
-    const cached = cache.get(key)
-    if (cached !== null) {
-      return cached
-    }
-
-    const result = await handler(...args)
-    cache.set(key, result, ttl)
-    
-    return result
-  }
-}
-
 // Cache invalidation utilities
 export class CacheInvalidator {
   private static invalidators: Array<() => void> = []

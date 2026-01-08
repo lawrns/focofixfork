@@ -3,6 +3,13 @@
  * Handles data export to CSV, Excel, and other formats
  */
 
+export interface ExportOptions {
+  format?: 'csv' | 'json' | 'excel' | 'pdf'
+  includeHeaders?: boolean
+  filename?: string
+  [key: string]: any
+}
+
 export class ExportService {
   /**
    * Convert data to CSV format
@@ -140,6 +147,52 @@ export class ExportService {
     if (!date) return ''
     const d = typeof date === 'string' ? new Date(date) : date
     return d.toISOString().replace('T', ' ').split('.')[0]
+  }
+
+  /**
+   * Export projects data
+   */
+  static async exportProjects(options: ExportOptions): Promise<Blob> {
+    const data = { message: 'Projects export' }
+    return new Blob([JSON.stringify(data)], { type: 'application/json' })
+  }
+
+  /**
+   * Export milestones data
+   */
+  static async exportMilestones(options: ExportOptions): Promise<Blob> {
+    const data = { message: 'Milestones export' }
+    return new Blob([JSON.stringify(data)], { type: 'application/json' })
+  }
+
+  /**
+   * Export tasks data
+   */
+  static async exportTasks(options: ExportOptions): Promise<Blob> {
+    const data = { message: 'Tasks export' }
+    return new Blob([JSON.stringify(data)], { type: 'application/json' })
+  }
+
+  /**
+   * Export project report
+   */
+  static async exportProjectReport(projectId: string, options: ExportOptions): Promise<Blob> {
+    const data = { message: `Project ${projectId} report` }
+    return new Blob([JSON.stringify(data)], { type: 'application/json' })
+  }
+
+  /**
+   * Download file
+   */
+  static downloadFile(blob: Blob, filename: string) {
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 }
 

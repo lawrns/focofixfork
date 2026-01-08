@@ -694,3 +694,6 @@ export class AnalyticsService {
 
 // Export singleton instance
 export const analyticsService = AnalyticsService
+
+// Type aliases for compatibility
+export type AnalyticsData = DashboardAnalytics

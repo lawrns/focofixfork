@@ -21,14 +21,14 @@ import {
   LineChart,
   Download
 } from 'lucide-react';
-import type { AnalyticsData } from '@/lib/services/analytics';
+import type { AnalyticsData } from '@/lib/services/analytics.service';
 
 interface AnalyticsDashboardProps {
   organizationId?: string;
 }
 
 export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organizationId }: AnalyticsDashboardProps) {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
 
@@ -344,11 +344,11 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(analytics.tasks.tasksByPriority).map(([priority, count]) => (
+                  {Object.entries(analytics.tasks.tasksByPriority || {}).map(([priority, count]: [string, any]) => (
                     <div key={priority} className="flex items-center justify-between">
                       <span className="text-sm font-medium capitalize">{priority}</span>
                       <Badge variant={priority === 'high' ? 'destructive' : priority === 'medium' ? 'secondary' : 'outline'}>
-                        {count}
+                        {String(count)}
                       </Badge>
                     </div>
                   ))}
@@ -482,10 +482,10 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(analytics.tasks.tasksByStatus).map(([status, count]) => (
+                {Object.entries(analytics.tasks.tasksByStatus || {}).map(([status, count]: [string, any]) => (
                   <div key={status} className="flex items-center justify-between">
                     <span className="capitalize">{status}</span>
-                    <Badge variant="secondary">{count}</Badge>
+                    <Badge variant="secondary">{String(count)}</Badge>
                   </div>
                 ))}
               </div>

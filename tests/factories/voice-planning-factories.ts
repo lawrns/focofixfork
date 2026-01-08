@@ -1,4 +1,4 @@
-import { Task, Milestone, PlanDraft } from '@/components/voice/VoicePlanningWorkbench'
+import { Task, Milestone, PlanDraft } from '@/features/voice/components/VoicePlanningWorkbench'
 
 // Factory for creating test tasks
 export const createTask = (overrides: Partial<Task> = {}): Task => {

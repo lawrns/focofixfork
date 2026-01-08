@@ -7,9 +7,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button'
 import Script from 'next/script'
 
-const Workbench = dynamic(() => import('@/components/voice/VoicePlanningWorkbench'), { ssr: false })
-const ReviewPanel = dynamic(() => import('@/components/voice/PlanReviewPanel'), { ssr: false })
-const Timeline = dynamic(() => import('@/components/voice/PlanTimeline'), { ssr: false })
+const Workbench = dynamic(() => import('@/features/voice/components/VoicePlanningWorkbench'), { ssr: false })
+const ReviewPanel = dynamic(() => import('@/features/voice/components/PlanReviewPanel'), { ssr: false })
+const Timeline = dynamic(() => import('@/features/voice/components/PlanTimeline'), { ssr: false })
 
 export default function VoicePage() {
   const [mounted, setMounted] = useState(false)

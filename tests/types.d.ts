@@ -1,5 +1,5 @@
 // Type declarations for test environment
-declare module '@/components/voice/VoicePlanningWorkbench' {
+declare module '@/features/voice/components/VoicePlanningWorkbench' {
   const VoicePlanningWorkbench: React.ComponentType<any>
   export default VoicePlanningWorkbench
 }

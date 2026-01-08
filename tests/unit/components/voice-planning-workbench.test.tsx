@@ -3,7 +3,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DndContext, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core'
-import VoicePlanningWorkbench from '@/components/voice/VoicePlanningWorkbench'
+import VoicePlanningWorkbench from '@/features/voice/components/VoicePlanningWorkbench'
 
 // Mock Web Audio API
 const mockAudioContext = {

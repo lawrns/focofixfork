@@ -252,7 +252,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-hover overflow-hidden">
+    <aside className="hidden md:flex w-72 flex-col bg-background border-r border-border overflow-hidden">
       <div className="flex h-full flex-col p-4 overflow-y-auto">
         {/* Logo Section */}
         <div className="flex items-center gap-3 p-2">
@@ -265,8 +265,8 @@ export default function Sidebar() {
             style={{ filter: 'brightness(0) invert(1)' }}
           />
           <div className="flex flex-col">
-            <h1 className="text-base font-bold text-sidebar-text-active">Foco</h1>
-            <p className="text-sm font-medium text-sidebar-text">Focus on what matters</p>
+            <h1 className="text-base font-bold text-foreground">Foco</h1>
+            <p className="text-sm font-medium text-muted-foreground">Focus on what matters</p>
           </div>
         </div>
 
@@ -282,8 +282,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary font-semibold text-white'
-                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'
+                    ? 'bg-primary font-semibold text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -308,7 +308,7 @@ export default function Sidebar() {
               )}
               <Folder className="h-5 w-5 opacity-70" aria-hidden="true" />
               {t('navigation.projects')}
-              <span className="ml-auto text-sm bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
+              <span className="ml-auto text-xs bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
                 {projects.length}
               </span>
             </button>

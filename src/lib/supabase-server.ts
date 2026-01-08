@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 // Detect if we're running in the browser
 const isBrowser = typeof window !== 'undefined'
@@ -11,13 +12,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 let supabaseAdmin: any = null
 
 if (isBrowser) {
-  console.warn(
-    '⚠️ supabase-server.ts is being imported in the browser. ' +
-    'This should only be used in server-side code (API routes, server components). ' +
-    'Client-side code should use supabase-client.ts instead.'
-  )
-  
-  // Set to null for browser environment to prevent usage
   supabaseAdmin = null
 } else {
   // Server environment: Validate required environment variables
@@ -28,11 +22,12 @@ if (isBrowser) {
     )
   }
 
-  // Debug logging (server-side only)
-  console.log('🌍 Server-side env check:', {
-    SUPABASE_URL: supabaseUrl ? '✅ SET' : '❌ NOT SET',
-    SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey ? '✅ SET' : '❌ NOT SET'
-  })
+  if (process.env.NODE_ENV !== 'production') {
+    logger.debug('Server-side env check', {
+      SUPABASE_URL: supabaseUrl ? 'SET' : 'NOT_SET',
+      SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey ? 'SET' : 'NOT_SET'
+    } as any)
+  }
 
   // Server-side client that bypasses RLS for authenticated API routes
   supabaseAdmin = createClient(

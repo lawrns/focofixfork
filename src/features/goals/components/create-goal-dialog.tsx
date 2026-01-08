@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
-import { GoalsService, Goal } from '@/lib/services/goals';
+import { goalsService, type Goal } from '@/lib/services/goals.service';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/hooks/use-auth';
 

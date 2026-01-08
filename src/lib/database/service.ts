@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '../supabase/types'
 import { getDatabase } from './connection'
+import { logger } from '@/lib/logger'
 
 type OrganizationInsert = Database['public']['Tables']['organizations']['Insert']
 type ProjectInsert = Database['public']['Tables']['projects']['Insert']
@@ -31,7 +32,7 @@ export class DatabaseService {
     try {
       this.client = await getDatabase()
     } catch (error) {
-      console.error('Failed to initialize database client:', error)
+      logger.error('Database client init failed', error as any)
     }
   }
 
@@ -51,10 +52,10 @@ export class DatabaseService {
       const { data, error } = await operation(client)
 
       if (error) {
-        console.error('Database query error:', error)
+        logger.error('Database query error', error as any)
         return {
           data: null,
-          error: error.message || 'Database operation failed',
+          error: (error as any)?.message || 'Database operation failed',
           success: false
         }
       }
@@ -65,7 +66,7 @@ export class DatabaseService {
         success: true
       }
     } catch (error) {
-      console.error('Database service error:', error)
+      logger.error('Database service error', error as any)
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown database error',

@@ -24,7 +24,7 @@ import {
   AlertTriangle,
   Loader2
 } from 'lucide-react'
-import { ExportService, ExportOptions } from '@/lib/services/export'
+import { exportService, type ExportOptions } from '@/lib/services/export.service'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 

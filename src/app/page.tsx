@@ -33,11 +33,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="ml-3 text-xl font-semibold text-slate-900">Foco</span>
-              <div className="ml-2 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full font-medium">
+              <div className="ml-2 px-2 py-1 bg-primary/15 text-primary text-xs rounded-full font-medium border border-primary/30">
                 Voice → Plan
               </div>
             </div>
@@ -45,30 +45,30 @@ export default function Home() {
             <div className="flex items-center space-x-4">
               <LanguageSelectorCompact />
               <Link href="/voice">
-                <Button variant="ghost" className="hidden md:inline-flex text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                <Button variant="ghost" className="hidden md:inline-flex">
                   <Mic className="w-4 h-4 mr-2" />
                   Voice Planning
                 </Button>
               </Link>
               <Link href="#features">
-                <Button variant="ghost" className="hidden md:inline-flex text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                <Button variant="ghost" className="hidden md:inline-flex">
                   {t('homepage.features')}
                 </Button>
               </Link>
               <Link href="#pricing">
-                <Button variant="ghost" className="hidden md:inline-flex text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                <Button variant="ghost" className="hidden md:inline-flex">
                   {t('homepage.pricing')}
                 </Button>
               </Link>
               {!user ? (
                 <Link href="/auth">
-                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
+                  <Button variant="default" className="font-medium">
                     {t('homepage.getStarted')}
                   </Button>
                 </Link>
               ) : (
                 <Link href="/dashboard">
-                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
+                  <Button variant="default" className="font-medium">
                     {t('homepage.dashboard')}
                   </Button>
                 </Link>
@@ -83,27 +83,27 @@ export default function Home() {
         <div className="max-w-7xl mx-auto text-center">
           
           <div className="relative">
-            <div className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700 border border-emerald-200 mb-6">
+            <div className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium bg-primary/15 text-primary border border-primary/30 mb-6">
               <Brain className="w-4 h-4 mr-2" />
               Voice-Powered Project Management
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight">
               Transform Ideas into
-              <span className="text-emerald-600"> Projects</span>
+              <span className="text-primary"> Projects</span>
               <br />with Your Voice
             </h1>
             
             <p className="text-xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               Simply speak your project ideas and watch AI create complete project plans with tasks, timelines, and team assignments. 
-              <span className="font-semibold text-emerald-600"> Completely free</span> —no limits, no credit cards required.
+              <span className="font-semibold text-primary"> Completely free</span> —no limits, no credit cards required.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               {user ? (
                 <div className="w-full sm:w-auto">
                   <Link href="/dashboard">
-                    <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-lg px-10 py-4 rounded-xl">
+                    <Button className="w-full sm:w-auto text-lg px-10 py-4 rounded-xl" variant="default">
                       <Mic className="w-5 h-5 mr-2" />
                       Go to Dashboard
                       <ArrowRight className="ml-2 w-5 h-5" />
@@ -113,7 +113,7 @@ export default function Home() {
               ) : (
                 <div className="w-full sm:w-auto">
                   <Link href="/register">
-                    <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-lg px-10 py-4 rounded-xl">
+                    <Button className="w-full sm:w-auto text-lg px-10 py-4 rounded-xl" variant="default">
                       <Mic className="w-5 h-5 mr-2" />
                       Start Voice Planning
                       <ArrowRight className="ml-2 w-5 h-5" />
@@ -125,7 +125,7 @@ export default function Home() {
               <div className="w-full sm:w-auto">
                 <Button 
                   onClick={() => setShowDemo(true)}
-                  className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-lg px-10 py-4 rounded-xl"
+                  className="w-full sm:w-auto text-lg px-10 py-4 rounded-xl" variant="outline"
                 >
                   <Play className="w-5 h-5 mr-2" />
                   Watch Demo
@@ -135,15 +135,15 @@ export default function Home() {
             
             <div className="flex items-center justify-center space-x-8 text-slate-500">
               <div className="flex items-center space-x-2">
-                <Check className="w-5 h-5 text-emerald-600" />
+                <Check className="w-5 h-5 text-primary" />
                 <span>No credit card required</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Check className="w-5 h-5 text-emerald-600" />
+                <Check className="w-5 h-5 text-primary" />
                 <span>Setup in 2 minutes</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Check className="w-5 h-5 text-emerald-600" />
+                <Check className="w-5 h-5 text-primary" />
                 <span>Cancel anytime</span>
               </div>
             </div>
@@ -155,13 +155,13 @@ export default function Home() {
       <section id="voice" className="relative py-24 px-6">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700 border border-emerald-200 mb-4">
+            <div className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium bg-primary/15 text-primary border border-primary/30 mb-4">
               <Mic className="w-4 h-4 mr-2" />
               Voice-Powered Innovation
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
               Speak Your Ideas,
-              <span className="text-emerald-600"> AI Creates</span>
+              <span className="text-primary"> AI Creates</span>
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Transform natural language into comprehensive project plans with intelligent task breakdown, timeline estimation, and team coordination—all powered by advanced AI.
@@ -170,8 +170,8 @@ export default function Home() {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
             <div className="bg-white border border-slate-200 rounded-xl p-8 hover:shadow-md transition-shadow">
-              <div className="h-14 w-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
-                <Mic className="h-7 w-7 text-emerald-600" />
+              <div className="h-14 w-14 bg-primary/15 rounded-xl flex items-center justify-center mb-4">
+                <Mic className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">Voice Capture</h3>
               <p className="text-slate-600 text-lg mb-4">
@@ -179,23 +179,23 @@ export default function Home() {
               </p>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Multi-language support</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Noise cancellation</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Real-time processing</span>
                 </div>
               </div>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl p-8 hover:shadow-md transition-shadow">
-              <div className="h-14 w-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
-                <Brain className="h-7 w-7 text-emerald-600" />
+              <div className="h-14 w-14 bg-primary/15 rounded-xl flex items-center justify-center mb-4">
+                <Brain className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">AI Intelligence</h3>
               <p className="text-slate-600 text-lg mb-4">
@@ -203,23 +203,23 @@ export default function Home() {
               </p>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Context understanding</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Smart task breakdown</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Timeline estimation</span>
                 </div>
               </div>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl p-8 hover:shadow-md transition-shadow">
-              <div className="h-14 w-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
-                <Target className="h-7 w-7 text-emerald-600" />
+              <div className="h-14 w-14 bg-primary/15 rounded-xl flex items-center justify-center mb-4">
+                <Target className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">Smart Planning</h3>
               <p className="text-slate-600 text-lg mb-4">
@@ -227,15 +227,15 @@ export default function Home() {
               </p>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Task decomposition</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Dependency mapping</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full"></div>
                   <span className="text-slate-700 text-sm">Resource allocation</span>
                 </div>
               </div>
@@ -379,10 +379,10 @@ export default function Home() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-700 text-sm">Planning Latency p95</span>
-                    <span className="text-emerald-600 text-sm font-medium">62%</span>
+                    <span className="text-primary text-sm font-medium">62%</span>
                   </div>
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{width: '62%'}}></div>
+                    <div className="h-full bg-primary rounded-full" style={{width: '62%'}}></div>
                   </div>
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function Home() {
             
             <div className="text-center">
               <Link href="/voice">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white text-lg px-10 py-4 rounded-xl">
+                <Button variant="default" className="text-lg px-10 py-4 rounded-xl">
                   <Mic className="w-5 h-5 mr-2" />
                   Experience Voice Planning Workbench
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -577,7 +577,7 @@ export default function Home() {
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
-              <TrendingUp className="h-8 w-8 text-green-400 mx-auto mb-4" />
+              <TrendingUp className="h-8 w-8 text-primary mx-auto mb-4" />
               <div className="text-5xl font-bold text-white mb-2">75%</div>
               <div className="text-white/70">Faster project delivery</div>
             </div>
@@ -630,35 +630,35 @@ export default function Home() {
               
               <div className="space-y-4 mb-8">
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Unlimited projects</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Unlimited team members</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Voice-powered planning</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">AI project generation</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Real-time collaboration</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Advanced analytics</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Priority support</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
                   <span className="text-white/90">Enterprise security</span>
                 </div>
               </div>
@@ -724,7 +724,7 @@ export default function Home() {
                 <div className="px-2 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs rounded-full font-medium">
                   AI Powered
                 </div>
-                <div className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs rounded-full font-medium">
+                <div className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full font-medium">
                   Voice Enabled
                 </div>
               </div>

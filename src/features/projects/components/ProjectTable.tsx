@@ -24,6 +24,9 @@ import { ProjectsEmpty } from '@/components/empty-states/projects-empty'
 import { useInlineEdit } from '@/lib/hooks/use-inline-edit'
 import { DateInput } from '@/components/ui/date-input'
 import styles from './ProjectTable.module.css'
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react'
 
 interface Project {
   id: string
@@ -857,6 +860,27 @@ export default function ProjectTable({
     setFilteredProjects(result.items)
   }, [projects, filters, sortConditions, searchTerm])
 
+  const toggleSort = (field: string) => {
+    const existing = sortConditions.find((s) => s.field === field)
+    if (!existing) {
+      setSortConditions([{ field, direction: 'asc' }])
+    } else if (existing.direction === 'asc') {
+      setSortConditions([{ field, direction: 'desc' }])
+    } else {
+      setSortConditions([])
+    }
+  }
+
+  const sortIcon = (field: string) => {
+    const existing = sortConditions.find((s) => s.field === field)
+    if (!existing) return <ArrowUpDown className="h-3 w-3" />
+    return existing.direction === 'asc' ? (
+      <ArrowUp className="h-3 w-3" />
+    ) : (
+      <ArrowDown className="h-3 w-3" />
+    )
+  }
+
   // Real-time updates for projects in table (updates store)
   // Use a single organization subscription if user has organizations, otherwise use global
   const [userOrganizations, setUserOrganizations] = useState<string[]>([])
@@ -993,6 +1017,24 @@ export default function ProjectTable({
             </span>
           )}
         </div>
+        {(filters.length > 0) && (
+          <div className="flex flex-wrap gap-2">
+            {filters.map((f, idx) => (
+              <Badge key={idx} variant="outline" className="gap-1">
+                <span className="capitalize">{f.field}</span>
+                <span>:</span>
+                <span className="truncate max-w-[12ch]">{String(f.value)}</span>
+                <button
+                  onClick={() => setFilters(filters.filter((_, i) => i !== idx))}
+                  className="ml-1 inline-flex items-center justify-center rounded-full hover:bg-muted"
+                  aria-label="Remove filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Mobile Card View - Only on small screens */}
@@ -1086,78 +1128,103 @@ export default function ProjectTable({
 
       {/* Desktop Table View - Hidden on mobile, visible on sm and up */}
       <div className={`${styles.desktopTableView} w-full rounded-xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700`}>
-        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <table className={`${styles.projectTable} w-full min-w-[900px]`} style={{ tableLayout: 'fixed', width: '100%' }}>
-            <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-800/50">
-              <tr>
-                <th scope="col" style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <Table className={`${styles.projectTable} min-w-[900px]`}>
+            <TableHeader className="sticky top-0 z-10 bg-muted/50">
+              <TableRow>
+                <TableHead style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-3">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={handleSelectAll}
                     aria-label="Select all projects"
                     className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
                   />
-                </th>
-                <th scope="col" style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  Name
-                </th>
-                <th scope="col" style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  Status
-                </th>
-                <th scope="col" style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  Due Date
-                </th>
-                <th scope="col" style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  Organization
-                </th>
-                <th scope="col" style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  Priority
-                </th>
-                <th scope="col" style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                </TableHead>
+                <TableHead
+                  style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }}
+                  className="px-3 py-3 cursor-pointer select-none"
+                  onClick={() => toggleSort('name')}
+                >
+                  <div className="inline-flex items-center gap-1">Name {sortIcon('name')}</div>
+                </TableHead>
+                <TableHead
+                  style={{ width: '120px', display: 'table-cell !important' }}
+                  className="px-3 py-3 cursor-pointer select-none"
+                  onClick={() => toggleSort('status')}
+                >
+                  <div className="inline-flex items-center gap-1">Status {sortIcon('status')}</div>
+                </TableHead>
+                <TableHead
+                  style={{ width: '120px', display: 'table-cell !important' }}
+                  className="px-3 py-3 cursor-pointer select-none"
+                  onClick={() => toggleSort('due_date')}
+                >
+                  <div className="inline-flex items-center gap-1">Due Date {sortIcon('due_date')}</div>
+                </TableHead>
+                <TableHead
+                  style={{ width: '140px', display: 'table-cell !important' }}
+                  className="px-3 py-3 cursor-pointer select-none"
+                  onClick={() => toggleSort('organizations.name')}
+                >
+                  <div className="inline-flex items-center gap-1">Organization {sortIcon('organizations.name')}</div>
+                </TableHead>
+                <TableHead
+                  style={{ width: '100px', display: 'table-cell !important' }}
+                  className="px-3 py-3 cursor-pointer select-none"
+                  onClick={() => toggleSort('priority')}
+                >
+                  <div className="inline-flex items-center gap-1">Priority {sortIcon('priority')}</div>
+                </TableHead>
+                <TableHead style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-3 text-right">
                   Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="bg-white dark:bg-slate-900">
               {loading ? (
                 // Loading skeleton
                 [...Array(3)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-3 py-4">
+                  <TableRow key={i} className="animate-pulse">
+                    <TableCell className="px-3 py-3">
                       <div className="h-4 w-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                    </td>
-                    <td className="px-3 py-4">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
-                    </td>
-                    <td className="px-3 py-4">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-20"></div>
-                    </td>
-                    <td className="px-3 py-4">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div>
-                    </td>
-                    <td className="px-3 py-4">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28"></div>
-                    </td>
-                    <td className="px-3 py-4">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
-                    </td>
-                    <td className="px-3 py-4">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-8 ml-auto"></div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : projects.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 py-12 text-center text-slate-500 dark:text-slate-400">
-                    <div className="space-y-2 max-w-full overflow-hidden">
-                      <p className="text-base sm:text-lg font-medium break-words px-2">No projects yet</p>
-                      <p className="text-xs sm:text-sm break-words px-2">Create your first project to get started</p>
-                    </div>
-                  </td>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={7} className="px-3 py-12">
+                    <ProjectsEmpty
+                      onCreateProject={onCreateProject || (() => {})}
+                      onImportProjects={onImportProjects || (() => {})}
+                      onResetFilters={() => {
+                        setFilters([])
+                        setSortConditions([])
+                      }}
+                      isFiltered={filters.length > 0 || searchTerm.length > 0}
+                    />
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredProjects.map((project) => (
-                  <tr
+                  <TableRow
                     key={project.id}
                     className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent transition-all duration-200 cursor-pointer border-l-4 ${
                       selectedProjects.has(project.id)
@@ -1166,37 +1233,37 @@ export default function ProjectTable({
                     }`}
                     onClick={() => handleViewProject(project.id)}
                   >
-                    <td style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-5" onClick={(e) => e.stopPropagation()}>
+                    <TableCell style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedProjects.has(project.id)}
                         onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
                         aria-label={`Select project ${project.name}`}
                       />
-                    </td>
-                    <td style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }} className="px-3 py-5">
+                    </TableCell>
+                    <TableCell style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }} className="px-3 py-3">
                       <div className="flex flex-col w-full">
                         <InlineEditableProjectName 
                           project={project} 
                           onSave={handleSaveProject}
                         />
                       </div>
-                    </td>
-                    <td style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-5">
+                    </TableCell>
+                    <TableCell style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-3">
                       {getStatusBadge(project.status)}
-                    </td>
-                    <td style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-5 text-sm text-slate-600 dark:text-slate-400 font-medium">
+                    </TableCell>
+                    <TableCell style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
                       <InlineEditableDueDate 
                         project={project} 
                         onSave={handleSaveProject}
                       />
-                    </td>
-                    <td style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-5 text-sm text-slate-600 dark:text-slate-400 font-medium">
+                    </TableCell>
+                    <TableCell style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
                       <span className="block truncate">{project.organizations?.name || 'Personal'}</span>
-                    </td>
-                    <td style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-5">
+                    </TableCell>
+                    <TableCell style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-3">
                       {getPriorityBadge(project.priority)}
-                    </td>
-                    <td style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-5 text-right">
+                    </TableCell>
+                    <TableCell style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-3 text-right">
                       <div onClick={(e) => e.stopPropagation()}>
                       <QuickActions
                         actions={createProjectActions(
@@ -1221,12 +1288,12 @@ export default function ProjectTable({
                         )}
                       />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 

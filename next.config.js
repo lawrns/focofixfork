@@ -110,6 +110,14 @@ const nextConfig = {
 
   // Enable SWC minification for better performance
   swcMinify: true,
+  async redirects() {
+    const fs = require('fs')
+    const path = require('path')
+    const file = path.join(__dirname, 'legacy-redirects.json')
+    if (!fs.existsSync(file)) return []
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'))
+    return data.map((r) => ({ source: r.source, destination: r.destination, permanent: !!r.permanent }))
+  }
 }
 
 module.exports = nextConfig

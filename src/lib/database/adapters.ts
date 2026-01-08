@@ -10,8 +10,8 @@ import { PaginationQuery, PaginatedResponse, createPaginatedResponse } from '../
 
 // Database connection configuration
 const DB_CONFIG = {
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:Hennie@@12Hennie@@12@db.czijxfbkihrauyjwcgfn.supabase.co:5432/postgres',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 }
 
 // Create database pool

@@ -669,6 +669,28 @@ WHERE schemaname = 'public'
 ORDER BY tablename, indexname;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- SECTION 11: ADDITIONAL PERFORMANCE INDEXES AND DATE VALIDATION
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Updated_at indexes for faster recency queries
+CREATE INDEX IF NOT EXISTS idx_projects_updated_at_desc ON projects(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tasks_updated_at_desc ON tasks(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_milestones_updated_at_desc ON milestones(updated_at DESC);
+
+-- Ensure task due_date is not before creation
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'check_task_due_date_after_created'
+  ) THEN
+    ALTER TABLE tasks
+    ADD CONSTRAINT check_task_due_date_after_created
+    CHECK (due_date IS NULL OR due_date >= created_at);
+  END IF;
+END $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- COMPLETION MESSAGE
 -- ═══════════════════════════════════════════════════════════════════════════
 

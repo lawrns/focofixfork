@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { analyticsService } from '../services/analyticsService'
+import { analyticsService } from '@/lib/services/analytics.service'
 import type { AnalyticsData, AnalyticsFilters } from '../types'
 
 export function useAnalytics(filters?: AnalyticsFilters) {

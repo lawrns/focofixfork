@@ -9,30 +9,19 @@ export const FeatureFlagEnum = z.enum([
   // Voice capture features
   'voice_capture_enabled',
   'voice_capture_shadow_mode',
-  'voice_capture_real_time_transcription',
-  'voice_capture_multi_language',
-  'voice_capture_noise_reduction',
-  
+
   // Plan orchestration features
   'plan_orchestration_enabled',
   'plan_orchestration_shadow_mode',
-  'plan_orchestration_ai_refinement',
-  'plan_orchestration_dependency_detection',
-  'plan_orchestration_smart_suggestions',
-  
+
   // Plan commit features
   'plan_commit_enabled',
   'plan_commit_shadow_mode',
   'plan_commit_dual_write',
-  'plan_commit_validation_strict',
-  'plan_commit_auto_approve',
-  
+
   // AI and ML features
   'ai_whisper_integration',
   'ai_gpt4_integration',
-  'ai_intent_extraction',
-  'ai_confidence_scoring',
-  'ai_error_recovery',
   
   // UI/UX features
   'ui_voice_button',
@@ -40,6 +29,8 @@ export const FeatureFlagEnum = z.enum([
   'ui_gantt_timeline',
   'ui_dependency_visualization',
   'ui_drag_drop_editing',
+  'ui_modernization',
+  'voice_monitoring_enabled',
   
   // System features
   'system_dual_write_mode',
@@ -254,6 +245,30 @@ export class FeatureFlagsService {
           tags: ['ui', 'planning', 'review']
         }
       },
+      ui_modernization: {
+        enabled: true,
+        rollout_percentage: 100,
+        environments: ['development', 'staging'],
+        metadata: {
+          description: 'Gate modernized UI templates (tables, tabs, cards)',
+          owner: 'frontend-team',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          tags: ['ui', 'modernization']
+        }
+      },
+      voice_monitoring_enabled: {
+        enabled: true,
+        rollout_percentage: 100,
+        environments: ['development', 'staging'],
+        metadata: {
+          description: 'Enable voice monitoring and metrics tracking in shadow mode',
+          owner: 'voice-team',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          tags: ['voice', 'monitoring']
+        }
+      },
       
       // System features - enabled for rollout
       system_dual_write_mode: {
@@ -385,28 +400,31 @@ export class FeatureFlagsService {
     }
 
     // Check environment
-    if (context?.environment && !flagValue.environments.includes(context.environment)) {
+    const envs = Array.isArray(flagValue.environments) ? flagValue.environments : ['development','staging','production']
+    if (context?.environment && !envs.includes(context.environment)) {
       return false
     }
 
     // Check specific user inclusion
-    if (context?.userId && flagValue.user_ids.length > 0) {
-      return flagValue.user_ids.includes(context.userId)
+    const userIds = Array.isArray(flagValue.user_ids) ? flagValue.user_ids : []
+    if (context?.userId && userIds.length > 0) {
+      return userIds.includes(context.userId)
     }
 
     // Check specific organization inclusion
-    if (context?.organizationId && flagValue.organization_ids.length > 0) {
-      return flagValue.organization_ids.includes(context.organizationId)
+    const orgIds = Array.isArray(flagValue.organization_ids) ? flagValue.organization_ids : []
+    if (context?.organizationId && orgIds.length > 0) {
+      return orgIds.includes(context.organizationId)
     }
 
     // Check rollout percentage (simple hash-based rollout)
-    if (flagValue.rollout_percentage < 100) {
+    if ((flagValue.rollout_percentage ?? 100) < 100) {
       if (!context?.userId) {
         return false // Need user ID for percentage-based rollout
       }
 
       const hash = this.hashUserId(context.userId)
-      const rolloutThreshold = (flagValue.rollout_percentage / 100) * 1000000
+      const rolloutThreshold = ((flagValue.rollout_percentage ?? 0) / 100) * 1000000
       return hash < rolloutThreshold
     }
 

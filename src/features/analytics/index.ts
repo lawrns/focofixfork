@@ -8,7 +8,7 @@ export { AnalyticsDashboard } from './components/analytics-dashboard'
 export { useAnalytics } from './hooks/useAnalytics'
 
 // Services
-export { analyticsService } from './services/analyticsService'
+export { analyticsService } from '@/lib/services/analytics.service'
 
 // Types
 export type {

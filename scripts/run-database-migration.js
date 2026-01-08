@@ -2,14 +2,13 @@ const { Client } = require('pg')
 const fs = require('fs')
 const path = require('path')
 
-const client = new Client({
-  host: 'db.czijxfbkihrauyjwcgfn.supabase.co',
-  port: 5432,
-  user: 'postgres',
-  password: 'Hennie@@12Hennie@@12',
-  database: 'postgres',
-  ssl: { rejectUnauthorized: false }
-})
+function getClient() {
+  const dsn = process.env.DATABASE_URL
+  if (!dsn) throw new Error('DATABASE_URL is not set')
+  return new Client({ connectionString: dsn, ssl: { rejectUnauthorized: false } })
+}
+
+const client = getClient()
 
 async function runQuery(description, sql) {
   console.log(`\n📊 ${description}...`)
@@ -33,15 +32,17 @@ async function main() {
 
   try {
     await client.connect()
-    console.log('✅ Connected to database\n')
+    console.log(`✅ Connected to database at ${new Date().toISOString()}\n`)
 
-    // Read migration file
     const migrationPath = path.join(__dirname, '../database/migrations/999_comprehensive_database_fixes.sql')
     const migrationSQL = fs.readFileSync(migrationPath, 'utf-8')
 
     console.log('📋 PRE-MIGRATION ANALYSIS\n')
     
-    // Check current RLS status
+    await runQuery('Current Role', 'SELECT current_user AS user, current_database() AS db')
+    await runQuery('Role Capabilities', `SELECT rolname, rolcreatedb, rolcreaterole, rolsuper FROM pg_roles WHERE rolname = current_user`)
+    await runQuery('Database Privileges', `SELECT has_database_privilege(current_user, current_database(), 'CONNECT') AS can_connect, has_database_privilege(current_user, current_database(), 'CREATE') AS can_create`)
+    await runQuery('Schema Privileges', `SELECT has_schema_privilege(current_user, 'public', 'USAGE') AS public_usage`)
     await runQuery('Current RLS Status', `
       SELECT
         tablename,
@@ -67,9 +68,15 @@ async function main() {
     console.log('  🚀 APPLYING MIGRATION')
     console.log('═══════════════════════════════════════════════════════════════════════════\n')
 
-    // Execute the full migration
-    await client.query(migrationSQL)
-    console.log('✅ Migration applied successfully!\n')
+    const dryRun = process.env.DRY_RUN === 'true'
+    if (!dryRun) {
+      await client.query('BEGIN')
+      await client.query(migrationSQL)
+      await client.query('COMMIT')
+      console.log('✅ Migration applied successfully!\n')
+    } else {
+      console.log('ℹ️ Dry run: migration execution skipped\n')
+    }
 
     console.log('═══════════════════════════════════════════════════════════════════════════')
     console.log('  ✅ POST-MIGRATION VERIFICATION')
@@ -163,6 +170,7 @@ async function main() {
     console.log('  ✓ Auto-update triggers configured\n')
 
   } catch (error) {
+    try { await client.query('ROLLBACK') } catch {}
     console.error('\n❌ MIGRATION FAILED:', error.message)
     process.exit(1)
   } finally {

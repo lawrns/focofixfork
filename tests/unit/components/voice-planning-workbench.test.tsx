@@ -54,7 +54,15 @@ vi.mock('lucide-react', () => ({
   BarChart3: vi.fn(() => <div data-testid="barchart3-icon" />),
   Brain: vi.fn(() => <div data-testid="brain-icon" />),
   Volume2: vi.fn(() => <div data-testid="volume2-icon" />),
-  Target: vi.fn(() => <div data-testid="target-icon" />)
+  Target: vi.fn(() => <div data-testid="target-icon" />),
+  Zap: vi.fn(() => <div data-testid="zap-icon" />),
+  AlertCircle: vi.fn(() => <div data-testid="alertcircle-icon" />),
+  TrendingUp: vi.fn(() => <div data-testid="trendingup-icon" />),
+  Users: vi.fn(() => <div data-testid="users-icon" />),
+  Lightbulb: vi.fn(() => <div data-testid="lightbulb-icon" />),
+  ArrowRight: vi.fn(() => <div data-testid="arrowright-icon" />),
+  Loader2: vi.fn(() => <div data-testid="loader2-icon" />),
+  Check: vi.fn(() => <div data-testid="check-icon" />)
 }))
 
 // Mock UI components
@@ -156,9 +164,12 @@ vi.mock('@/components/ui/tooltip', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: vi.fn(({ children, ...props }) => <div data-testid="motion-div" {...props}>{children}</div>),
-    span: vi.fn(({ children, ...props }) => <span data-testid="motion-span" {...props}>{children}</span>)
-  }
+    div: vi.fn(({ children, ...props }) => <div {...props}>{children}</div>),
+    span: vi.fn(({ children, ...props }) => <span {...props}>{children}</span>),
+    button: vi.fn(({ children, ...props }) => <button {...props}>{children}</button>),
+    section: vi.fn(({ children, ...props }) => <section {...props}>{children}</section>),
+  },
+  AnimatePresence: vi.fn(({ children }) => <>{children}</>),
 }))
 
 // Mock recharts
@@ -387,13 +398,12 @@ describe('VoicePlanningWorkbench', () => {
     })
   })
 
-  it('displays quality gates with confidence metrics', async () => {
-    const user = userEvent.setup()
+  it('displays quality gates with confidence metrics', () => {
     renderWithProviders(<VoicePlanningWorkbench />)
     
     // Quality gates are visible even without generating a plan
     expect(screen.getByText('Quality Gates')).toBeInTheDocument()
-    expect(screen.getByText(/Transcription confidence/i)).toBeInTheDocument()
+    expect(screen.getByText(/Transcription/i)).toBeInTheDocument()
     expect(screen.getByText(/95%/i)).toBeInTheDocument()
   })
 

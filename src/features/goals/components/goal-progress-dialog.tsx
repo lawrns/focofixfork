@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Target, TrendingUp, Calendar } from 'lucide-react';
-import { GoalsService, Goal, GoalProgress } from '@/lib/services/goals';
+import { goalsService, type Goal, type GoalProgress } from '@/lib/services/goals.service';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { toast } from 'sonner';
 

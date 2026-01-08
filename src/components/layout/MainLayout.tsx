@@ -16,12 +16,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen font-display gradient-mesh overflow-hidden">
+      <div className="flex min-h-screen font-display bg-gradient-to-b from-neutral-50 to-white overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 overflow-y-auto pb-24 sm:pb-20 md:pb-0 outline-none px-8 py-6">
-            <div className="outline-none border-none">
+          <main className="flex-1 overflow-y-auto outline-none px-6 py-6">
+            <div className="mx-auto max-w-7xl outline-none border-none">
               {children}
             </div>
           </main>

@@ -9,6 +9,7 @@ const KanbanBoard = lazy(() => import('@/features/projects').then(m => ({ defaul
 const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
 const GanttView = lazy(() => import('@/components/views/gantt-view'))
 import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Loading, LoadingCard, LoadingTable } from '@/components/ui/loading'
 import { useToastHelpers, useToast } from '@/components/ui/toast'
 import { SkipToMainContent } from '@/components/ui/accessibility'
@@ -326,59 +327,43 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between mb-6 gap-6 px-6 pt-4" data-tour="dashboard-header">
-            <Suspense fallback={<Skeleton className="h-10 w-64" />}>
-              <ViewTabs
-                activeTab={activeView}
-                onTabChange={(tabId) => {
-                if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
-                  setActiveViewState(tabId as typeof activeView)
-                }
-              }}
-              data-tour="view-tabs"
-            />
-            </Suspense>
-
-            <div className="flex items-center gap-2 md:gap-3 pb-4">
-              <Button
-                onClick={() => setShowNewProjectModal(true)}
-                variant="default"
-                className="flex flex-row items-center gap-2"
-                data-tour="create-project-button"
-              >
+      <Card className="mx-6">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Dashboard</span>
+            <div className="flex items-center gap-2 md:gap-3" data-tour="dashboard-actions">
+              <Button onClick={() => setShowNewProjectModal(true)} variant="default" className="flex flex-row items-center gap-2" data-tour="create-project-button">
                 <Plus className="w-4 h-4" />
                 <span className="hidden md:inline">Create Project</span>
                 <span className="md:hidden">Create</span>
               </Button>
-              <Button
-                onClick={() => setShowAIProjectModal(true)}
-                variant="outline"
-                className="flex flex-row items-center gap-2"
-                data-tour="ai-button"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="opacity-70"
-                >
-                  <path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
+              <Button onClick={() => setShowAIProjectModal(true)} variant="outline" className="flex flex-row items-center gap-2" data-tour="ai-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-70"><path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
                 <span className="hidden md:inline">Create with AI</span>
                 <span className="md:hidden">AI</span>
               </Button>
-              <ImportDialog
-                onImportComplete={() => window.location.reload()}
-              />
-              <ExportDialog />
             </div>
+          </CardTitle>
+          <CardDescription>Overview of your projects and work. Switch views to table, kanban, or gantt.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<Skeleton className="h-10 w-64" />}>
+            <ViewTabs
+              activeTab={activeView}
+              onTabChange={(tabId) => {
+              if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
+                setActiveViewState(tabId as typeof activeView)
+              }
+            }}
+            data-tour="view-tabs"
+          />
+          </Suspense>
+          <div className="flex items-center gap-2 md:gap-3 pt-2">
+            <ImportDialog onImportComplete={() => window.location.reload()} />
+            <ExportDialog />
           </div>
+        </CardContent>
+      </Card>
 
           <Suspense fallback={<DashboardSkeleton />}>
             {activeView === 'table' && (

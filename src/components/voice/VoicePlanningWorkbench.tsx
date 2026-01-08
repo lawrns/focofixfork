@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Mic, Square, Sparkles, Wand2, Calendar, User, Clock, CheckCircle2,
   ListChecks, Layers, Link as LinkIcon, Rocket, Save, PlayCircle, PauseCircle,
   Search, Plus, ChevronRight, ClipboardList, Settings, FileText, Workflow,
-  Activity, BarChart3, Brain, Volume2, Target
+  Activity, BarChart3, Brain, Volume2, Target, Zap, AlertCircle, TrendingUp,
+  Users, Lightbulb, ArrowRight, Loader2, Check
 } from "lucide-react";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -143,65 +144,91 @@ interface SortableTaskProps {
 }
 
 function SortableTask({ task, onToggle }: SortableTaskProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
-  const pill = {
-    low: "bg-emerald-100 text-emerald-700",
-    medium: "bg-amber-100 text-amber-700",
-    high: "bg-orange-100 text-orange-700",
-    critical: "bg-rose-100 text-rose-700",
-  }[task.priority];
+  const priorityColors = {
+    low: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    medium: "bg-amber-100 text-amber-700 border-amber-100",
+    high: "bg-orange-100 text-orange-700 border-orange-100",
+    critical: "bg-rose-100 text-rose-700 border-rose-100",
+  };
+
+  const statusIcons = {
+    todo: <div className="h-3 w-3 rounded-full border-2 border-slate-300" />,
+    in_progress: <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />,
+    review: <AlertCircle className="h-3 w-3 text-amber-500" />,
+    done: <CheckCircle2 className="h-3 w-3 text-emerald-600" />,
+    blocked: <Square className="h-3 w-3 text-rose-500 rotate-45" />,
+  };
 
   return (
-    <div 
+    <motion.div 
       ref={setNodeRef} 
       style={style} 
-      className="group rounded-xl border bg-white/70 backdrop-blur p-3 flex items-center justify-between hover:shadow-sm"
+      className={cn(
+        "group rounded-xl border bg-white/80 backdrop-blur-sm p-4 shadow-sm hover:shadow-md transition-all duration-200",
+        "hover:border-emerald-200 hover:bg-gradient-to-r hover:from-white hover:to-emerald-50/30",
+        isDragging && "shadow-lg rotate-2 scale-105"
+      )}
+      layout
+      
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-4">
         <div 
           {...attributes} 
           {...listeners} 
-          className="cursor-grab active:cursor-grabbing select-none text-slate-400"
+          className="cursor-grab active:cursor-grabbing select-none text-slate-400 hover:text-slate-600 transition-colors mt-1"
         >
-          ⋮⋮
-        </div>
-        <button 
-          onClick={() => onToggle(task.id)} 
-          className="h-5 w-5 rounded border flex items-center justify-center"
-          aria-label={task.title}
-        >
-          {task.status === "done" ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          ) : (
-            <span className="block h-3 w-3 rounded-full bg-slate-300" />
-          )}
-        </button>
-        <div>
-          <p className="font-medium text-slate-800 leading-5">{task.title}</p>
-          {task.description && (
-            <p className="text-xs text-slate-500">{task.description}</p>
-          )}
-          <div className="mt-1 flex gap-2 items-center">
-            <Badge variant="secondary" className={`${pill} border-0`}>{task.priority}</Badge>
-            {Number.isFinite(task.estimate_hours) && (
-              <span className="text-xs text-slate-500 inline-flex items-center gap-1">
-                <Clock className="h-3 w-3" /> {task.estimate_hours}h
-              </span>
-            )}
+          <div className="flex flex-col gap-1">
+            <div className="w-1 h-4 rounded-full bg-slate-300" />
+            <div className="w-1 h-4 rounded-full bg-slate-300" />
           </div>
         </div>
-      </div>
-      {task.assignee_hint && (
-        <div className="text-xs text-slate-500 flex items-center gap-1">
-          <User className="h-3 w-3" /> {task.assignee_hint}
+        
+        <motion.button 
+          onClick={() => onToggle(task.id)} 
+          className="flex-shrink-0 h-6 w-6 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:border-emerald-400 transition-all duration-200 mt-0.5"
+          aria-label={task.title}
+          
+        >
+          {statusIcons[task.status]}
+        </motion.button>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-slate-800 leading-tight truncate">{task.title}</h4>
+              {task.description && (
+                <p className="text-sm text-slate-600 mt-1 line-clamp-2">{task.description}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2 items-end flex-shrink-0">
+              <Badge className={cn("text-xs font-medium px-2 py-1 border", priorityColors[task.priority])}>
+                {task.priority}
+              </Badge>
+              {Number.isFinite(task.estimate_hours) && (
+                <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <Clock className="h-3 w-3" /> 
+                  <span className="font-medium">{task.estimate_hours}h</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {task.assignee_hint && (
+            <div className="flex items-center gap-2 mt-3 text-xs text-slate-500">
+              <User className="h-3 w-3" /> 
+              <span className="font-medium">{task.assignee_hint}</span>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -211,18 +238,27 @@ interface AudioVisualizerProps {
 
 function AudioVisualizer({ isRecording }: AudioVisualizerProps) {
   return (
-    <div className="flex items-end gap-1 h-10">
-      {new Array(32).fill(0).map((_, i) => (
-        <motion.div
-          key={i}
-          animate={{ 
-            height: isRecording ? Math.max(6, Math.random() * 40) : 6,
-            backgroundColor: isRecording ? "rgb(16 185 129)" : "rgb(148 163 184)"
-          }}
-          transition={{ duration: 0.25 }}
-          className="w-1 rounded-full"
-        />
-      ))}
+    <div className="flex items-end justify-center gap-1 h-12 px-4">
+      <AnimatePresence>
+        {new Array(24).fill(0).map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ height: 4 }}
+            animate={{ 
+              height: isRecording ? Math.max(8, Math.random() * 32) : 4,
+              backgroundColor: isRecording ? "rgb(16 185 129)" : "rgb(148 163 184)"
+            }}
+            exit={{ height: 4 }}
+            transition={{ 
+              duration: 0.3, 
+              delay: i * 0.02,
+              repeat: isRecording ? Infinity : 0,
+              repeatType: "reverse"
+            }}
+            className="w-1.5 rounded-full shadow-sm"
+          />
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
@@ -234,38 +270,112 @@ interface QualityGatesProps {
 }
 
 function QualityGates({ transcriptionConfidence, intentExtraction, planningLatency }: QualityGatesProps) {
+  const getQualityColor = (value: number) => {
+    if (value >= 90) return "text-emerald-600 bg-emerald-100 border-emerald-200";
+    if (value >= 70) return "text-amber-600 bg-amber-100 border-amber-100";
+    return "text-rose-600 bg-rose-100 border-rose-100";
+  };
+
+  const getQualityIcon = (value: number) => {
+    if (value >= 90) return <CheckCircle2 className="h-4 w-4" />;
+    if (value >= 70) return <AlertCircle className="h-4 w-4" />;
+    return <TrendingUp className="h-4 w-4" />;
+  };
+
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Activity className="h-4 w-4" />
-          Quality Gates
-        </div>
-      </CardHeader>
-      <CardContent className="grid sm:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Transcription confidence</span>
-            <span className="text-muted-foreground">{transcriptionConfidence}%</span>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800">Quality Gates</h3>
+                <p className="text-sm text-slate-500">Real-time performance metrics</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              Live
+            </Badge>
           </div>
-          <Progress value={transcriptionConfidence} className="h-2" />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Intent extraction</span>
-            <span className="text-muted-foreground">{intentExtraction}%</span>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid sm:grid-cols-3 gap-6">
+            <motion.div 
+              className="space-y-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-slate-500" />
+                  <span className="font-medium text-slate-700">Transcription</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-slate-800">{transcriptionConfidence}%</span>
+                  {getQualityIcon(transcriptionConfidence)}
+                </div>
+              </div>
+              <div className="relative">
+                <Progress value={transcriptionConfidence} className="h-2" />
+                <div className={cn("absolute top-0 right-0 h-2 w-2 rounded-full", getQualityColor(transcriptionConfidence))} />
+              </div>
+            </motion.div>
+            
+            <motion.div 
+              className="space-y-3"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-slate-500" />
+                  <span className="font-medium text-slate-700">Intent Extraction</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-slate-800">{intentExtraction}%</span>
+                  {getQualityIcon(intentExtraction)}
+                </div>
+              </div>
+              <div className="relative">
+                <Progress value={intentExtraction} className="h-2" />
+                <div className={cn("absolute top-0 right-0 h-2 w-2 rounded-full", getQualityColor(intentExtraction))} />
+              </div>
+            </motion.div>
+            
+            <motion.div 
+              className="space-y-3"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-slate-500" />
+                  <span className="font-medium text-slate-700">Planning Speed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-slate-800">{planningLatency}%</span>
+                  {getQualityIcon(planningLatency)}
+                </div>
+              </div>
+              <div className="relative">
+                <Progress value={planningLatency} className="h-2" />
+                <div className={cn("absolute top-0 right-0 h-2 w-2 rounded-full", getQualityColor(planningLatency))} />
+              </div>
+            </motion.div>
           </div>
-          <Progress value={intentExtraction} className="h-2" />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Planning latency (p95)</span>
-            <span className="text-muted-foreground">{planningLatency}%</span>
-          </div>
-          <Progress value={planningLatency} className="h-2" />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -471,133 +581,333 @@ export default function VoicePlanningWorkbench() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
-        {/* Header */}
-        <header className="sticky top-0 z-30 backdrop-blur bg-white/70 border-b">
-          <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-emerald-600 shadow-inner" />
-              <div>
-                <h1 className="text-base font-semibold tracking-tight">FOCO</h1>
-                <p className="text-xs text-slate-500 -mt-1">Speak your roadmap. Ship your future.</p>
-              </div>
-            </div>
-            <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="gap-2"><Search className="h-4 w-4"/>Search</Button>
-              <Button variant="outline" size="sm" className="gap-2"><Settings className="h-4 w-4"/>Settings</Button>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">New Project</Button>
-            </div>
-          </div>
-        </header>
+      <div className="text-slate-900">
+        <AnimatePresence>
+          {statusMessage && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mx-auto max-w-3xl px-6 py-4 text-sm text-emerald-900 bg-emerald-100 border border-emerald-200 rounded-xl shadow-sm flex items-center gap-3"
+            >
+              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+              {statusMessage}
+            </motion.div>
+          )}
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mx-auto max-w-3xl px-6 py-4 text-sm text-red-900 bg-red-100 border border-red-200 rounded-xl shadow-sm flex items-center gap-3"
+            >
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {statusMessage && (
-          <div className="mx-auto max-w-3xl px-6 py-3 text-sm text-emerald-900 bg-emerald-100 border border-emerald-200">
-            {statusMessage}
-          </div>
-        )}
-        {error && (
-          <div className="mx-auto max-w-3xl px-6 py-3 text-sm text-red-900 bg-red-100 border border-red-200">
-            {error}
-          </div>
-        )}
-
-        {/* Content */}
         <main className="mx-auto max-w-7xl px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <aside className="lg:col-span-3 space-y-3">
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="text-sm font-medium text-slate-500">Quick Nav</div>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                {[
-                  { icon: <ClipboardList className="h-4 w-4"/>, label: "Dashboard" },
-                  { icon: <Workflow className="h-4 w-4"/>, label: "Projects" },
-                  { icon: <Mic className="h-4 w-4"/>, label: "Voice → Plan (Beta)" },
-                  { icon: <FileText className="h-4 w-4"/>, label: "Reports" },
-                ].map((item, idx) => (
-                  <Button key={idx} variant={idx===2?"secondary":"ghost"} className="justify-start gap-2">{item.icon}{item.label}</Button>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="text-sm font-medium text-slate-500">Highlights</div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-sm"><span>Latency p95</span><Badge variant="outline">~5.1s</Badge></div>
-                <div className="flex items-center justify-between text-sm"><span>Draft accept rate</span><Badge className="bg-emerald-600">72%</Badge></div>
-                <div className="flex items-center justify-between text-sm"><span>Voice sessions today</span><Badge variant="secondary">38</Badge></div>
-              </CardContent>
-            </Card>
-          </aside>
-
-          <section className="lg:col-span-9 space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-3 max-w-xl">
-                <TabsTrigger value="voice" className="gap-2"><Mic className="h-4 w-4"/> Voice Input</TabsTrigger>
-                <TabsTrigger value="review" className="gap-2" disabled={!draft}><ListChecks className="h-4 w-4"/> Review & Edit</TabsTrigger>
-                <TabsTrigger value="timeline" className="gap-2" disabled={!draft}><Calendar className="h-4 w-4"/> Timeline</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="voice" className="space-y-6">
-                <Card className="overflow-hidden border-0 shadow-sm">
-                  <div className="p-6 grid md:grid-cols-2 gap-6 items-center bg-gradient-to-br from-emerald-50 to-white">
-                    <div className="space-y-4">
-                      <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2"><Sparkles className="h-5 w-5 text-emerald-600"/> Voice → Plan</h2>
-                      <p className="text-slate-600">Press and hold to speak your brief. We&apos;ll parse intents, highlight key details, and draft a full plan you can edit before committing.</p>
-
-                      <div className="flex items-center gap-3">
-                        <Button onClick={handleRecordToggle} size="lg" className={`gap-2 rounded-full px-6 ${recording?"bg-rose-600 hover:bg-rose-700":"bg-emerald-600 hover:bg-emerald-700"}`} disabled={loading}>
-                          {recording ? <Square className="h-4 w-4"/> : <Mic className="h-4 w-4"/>}
-                          {recording ? "Stop Recording" : "Start Recording"}
-                        </Button>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" onClick={generatePlan} className="gap-2" disabled={loading}><Wand2 className="h-4 w-4"/> {loading ? "Generating plan..." : "Generate Plan"}</Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Use current transcript to generate a plan</TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      <div className="flex gap-2 mt-2">
-                        {chips.map((chip, i) => (
-                          <Badge key={i} className={cn("border-0 text-xs font-medium px-3 py-1", {
-                            date: "bg-emerald-100 text-emerald-800",
-                            team: "bg-amber-100 text-amber-800",
-                            scope: "bg-sky-100 text-sky-800",
-                            platform: "bg-purple-100 text-purple-800",
-                            priority: "bg-rose-100 text-rose-800",
-                          }[chip.kind])}>
-                            {chip.label}
-                          </Badge>
-                        ))}
-                      </div>
+          <aside className="lg:col-span-3 space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+                      <ClipboardList className="h-5 w-5" />
                     </div>
-
-                    <div className="relative">
-                      <Card className="border border-emerald-100 bg-white/60 backdrop-blur">
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                          <div className="text-sm font-medium text-slate-500">Live Transcript</div>
-                          <div className="flex gap-2">
-                            {recording ? <PauseCircle className="h-4 w-4 text-rose-600"/> : <PlayCircle className="h-4 w-4 text-slate-400"/>}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Textarea value={transcript} onChange={(e)=>setTranscript(e.target.value)} className="min-h-[140px]"/>
-                          <div className="mt-3">
-                            <div className="text-xs text-slate-500 mb-1">Signal</div>
-                            <div className="flex items-end gap-1 h-10">
-                              {new Array(32).fill(0).map((_, i) => (
-                                <motion.div key={i} animate={{ height: recording ? Math.max(6, Math.random()*40) : 6 }} transition={{ duration: 0.25 }} className="w-1 rounded bg-emerald-500/60" />
-                              ))}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                    <div>
+                      <h3 className="font-semibold text-slate-800">Quick Nav</h3>
+                      <p className="text-sm text-slate-500">Jump to any section</p>
                     </div>
                   </div>
-                </Card>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  {[
+                    { icon: <ClipboardList className="h-4 w-4"/>, label: "Dashboard", shortcut: "D" },
+                    { icon: <Workflow className="h-4 w-4"/>, label: "Projects", shortcut: "P" },
+                    { icon: <Mic className="h-4 w-4"/>, label: "Voice → Plan (Beta)", shortcut: "V", active: true },
+                    { icon: <FileText className="h-4 w-4"/>, label: "Reports", shortcut: "R" },
+                  ].map((item, idx) => (
+                    <motion.div key={idx}>
+                      <Button 
+                        variant={item.active ? "secondary" : "ghost"} 
+                        className={cn(
+                          "justify-start gap-3 h-12 px-4 rounded-xl transition-all duration-200",
+                          item.active && "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200",
+                          !item.active && "hover:bg-slate-100 hover:text-slate-700"
+                        )}
+                      >
+                        <div className={cn("flex items-center gap-3 flex-1")}>
+                          <span className={cn(item.active && "text-emerald-600")}>{item.icon}</span>
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                        <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs font-mono bg-slate-100 text-slate-500 rounded">
+                          {item.shortcut}
+                        </kbd>
+                      </Button>
+                    </motion.div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-800">Performance</h3>
+                      <p className="text-sm text-slate-500">Today&apos;s metrics</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <motion.div 
+                    className="flex items-center justify-between p-3 rounded-lg bg-slate-50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700">Latency p95</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs font-mono bg-white">~5.1s</Badge>
+                  </motion.div>
+                  <motion.div 
+                    className="flex items-center justify-between p-3 rounded-lg bg-emerald-50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span className="text-sm font-medium text-slate-700">Accept rate</span>
+                    </div>
+                    <Badge className="text-xs font-mono bg-emerald-600 text-white border-emerald-600">72%</Badge>
+                  </motion.div>
+                  <motion.div 
+                    className="flex items-center justify-between p-3 rounded-lg bg-blue-50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-slate-700">Sessions</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs font-mono bg-blue-100 text-blue-700 border-blue-200">38</Badge>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </aside>
+
+          <motion.section 
+            className="lg:col-span-9 space-y-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <TabsList className="grid grid-cols-3 max-w-2xl p-1 bg-slate-100 rounded-xl shadow-inner">
+                  <TabsTrigger 
+                    value="voice" 
+                    className="gap-3 h-12 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 font-medium"
+                  >
+                    <Mic className="h-4 w-4" /> 
+                    <span>Voice Input</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="review" 
+                    disabled={!draft} 
+                    className="gap-3 h-12 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 font-medium disabled:opacity-50"
+                  >
+                    <ListChecks className="h-4 w-4" /> 
+                    <span>Review & Edit</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="timeline" 
+                    disabled={!draft} 
+                    className="gap-3 h-12 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 font-medium disabled:opacity-50"
+                  >
+                    <Calendar className="h-4 w-4" /> 
+                    <span>Timeline</span>
+                  </TabsTrigger>
+                </TabsList>
+              </motion.div>
+
+              <TabsContent value="voice" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-blue-50">
+                    <div className="p-8 grid md:grid-cols-2 gap-8 items-center">
+                      <motion.div 
+                        className="space-y-6"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-xl bg-emerald-600 text-white shadow-lg">
+                              <Sparkles className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h2 className="text-2xl font-bold text-slate-800">Voice → Plan</h2>
+                              <p className="text-slate-600">Transform your ideas into actionable plans</p>
+                            </div>
+                          </div>
+                          <p className="text-slate-600 leading-relaxed">Speak your project brief naturally. Our AI will parse intents, extract key details, and generate a comprehensive plan you can edit and refine.</p>
+                        </div>
+
+                        <motion.div 
+                          className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <div>
+                            <Button 
+                              onClick={handleRecordToggle} 
+                              size="lg" 
+                              variant={recording ? 'destructive' : 'default'}
+                              className={cn("gap-3 rounded-full px-8 py-6 text-base font-semibold")}
+                              disabled={loading}
+                            >
+                              {recording ? (
+                                <><Square className="h-5 w-5" /><span>Stop Recording</span></>
+                              ) : (
+                                <><Mic className="h-5 w-5" /><span>Start Recording</span></>
+                              )}
+                            </Button>
+                          </div>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                onClick={generatePlan} 
+                                className={cn(
+                                  "gap-2 rounded-full px-6 py-3 border-2 transition-all duration-200",
+                                  loading ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50 hover:bg-primary/5"
+                                )} 
+                                disabled={loading}
+                              >
+                                {loading ? (
+                                  <><Loader2 className="h-4 w-4 animate-spin" /><span>Generating...</span></>
+                                ) : (
+                                  <><Wand2 className="h-4 w-4" /><span>Generate Plan</span></>
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-800 text-white border-slate-700">
+                              <p>Use current transcript to generate a plan</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </motion.div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {chips.map((chip, i) => (
+                            <motion.div
+                              key={i}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.3 + i * 0.05 }}
+                            >
+                              <Badge className={cn("border-0 text-xs font-medium px-3 py-1 shadow-sm", {
+                                date: "bg-emerald-100 text-emerald-800",
+                                team: "bg-amber-100 text-amber-800",
+                                platform: "bg-blue-100 text-blue-800",
+                                feature: "bg-purple-100 text-purple-800",
+                                timeline: "bg-rose-100 text-rose-800"
+                              }[chip.kind])}>
+                                {chip.label}
+                              </Badge>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        className="space-y-6"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                      >
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-2xl blur-xl opacity-20"></div>
+                          <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-slate-200">
+                            <AudioVisualizer isRecording={recording} />
+                            <div className="mt-4 text-center">
+                              <p className="text-sm font-medium text-slate-700">
+                                {recording ? "Listening... Speak clearly" : "Ready to record"}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {recording ? "Click Stop when finished" : "Click Start to begin"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-800">Transcript</h3>
+                          <p className="text-sm text-slate-500">Edit or paste your project brief</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Textarea 
+                        value={transcript} 
+                        onChange={(e)=>setTranscript(e.target.value)} 
+                        className="min-h-[140px] border-slate-200 focus:border-emerald-400 focus:ring-emerald-100 resize-none"
+                        placeholder="Describe your project, timeline, team, and key requirements..."
+                      />
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>{transcript.length} characters</span>
+                        <Button variant="ghost" size="sm" onClick={() => setTranscript(demoBrief)}>
+                          <Lightbulb className="h-3 w-3 mr-1" />
+                          Use example
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 <QualityGates 
                   transcriptionConfidence={transcriptionConfidence}
@@ -677,19 +987,10 @@ export default function VoicePlanningWorkbench() {
                 <TimelineVisualization draft={draft} />
               </TabsContent>
             </Tabs>
-          </section>
+          </motion.section>
         </main>
 
-        <footer className="py-8 border-t">
-          <div className="mx-auto max-w-7xl px-6 text-xs text-slate-500 flex items-center justify-between">
-            <span>© {new Date().getFullYear()} FOCO — Voice → Plan Prototype</span>
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3"/> P95 plan: <b className="ml-1">~6s</b></span>
-              <Separator orientation="vertical" className="h-4"/>
-              <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3"/> Accept rate: <b className="ml-1">72%</b></span>
-            </div>
-          </div>
-        </footer>
+        
       </div>
     </TooltipProvider>
   )

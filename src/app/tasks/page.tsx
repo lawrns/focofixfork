@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import MainLayout from '@/components/layout/MainLayout'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import Script from 'next/script'
 import { TaskList, TaskForm } from '@/features/tasks'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -140,7 +144,16 @@ function TasksContent() {
 
   return (
     <MainLayout>
-      <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="space-y-4 p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Tasks</span>
+              <Button onClick={handleCreateTask}><Plus className="w-4 h-4 mr-2" />New Task</Button>
+            </CardTitle>
+            <CardDescription>View and manage tasks. Create, edit, and organize work.</CardDescription>
+          </CardHeader>
+        </Card>
         <TaskList
           showCreateButton={true}
           onCreateTask={handleCreateTask}
@@ -148,6 +161,15 @@ function TasksContent() {
           onDeleteTask={handleDeleteTask}
           initialAssignee={user?.id}
         />
+
+        <Script id="jsonld-tasks" type="application/ld+json" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Dashboard', item: '/dashboard' },
+            { '@type': 'ListItem', position: 2, name: 'Tasks', item: '/tasks' }
+          ]
+        }) }} />
 
         {/* Create Task Modal */}
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>

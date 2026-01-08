@@ -8,6 +8,9 @@ import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { motion } from 'framer-motion'
+import Script from 'next/script'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -220,19 +223,17 @@ function MilestonesContent() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Milestones</h1>
-            <p className="text-muted-foreground mt-2">
-              Track and manage all your project milestones
-            </p>
-          </div>
-          <Button size="lg">
-            <Plus className="w-4 h-4 mr-2" />
-            New Milestone
-          </Button>
-        </div>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Milestones</h1>
+                <p className="text-muted-foreground mt-1">Track and manage all your project milestones</p>
+              </div>
+              <Button size="sm"><Plus className="w-4 h-4 mr-2" />New Milestone</Button>
+            </div>
+          </CardHeader>
+        </Card>
 
         {/* Filters and Search */}
         <div className="flex flex-col lg:flex-row gap-4">
@@ -247,28 +248,25 @@ function MilestonesContent() {
           </div>
 
           <div className="flex gap-2">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md bg-background text-sm"
-            >
-              <option value="all">All Status</option>
-              <option value="todo">To Do</option>
-              <option value="in-progress">In Progress</option>
-              <option value="review">In Review</option>
-              <option value="completed">Completed</option>
-            </select>
-
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md bg-background text-sm"
-            >
-              <option value="all">All Priority</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="review">In Review</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v)}>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Priority" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priority</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -304,7 +302,8 @@ function MilestonesContent() {
               const StatusIcon = statusInfo.icon
 
               return (
-                <Card key={milestone.id} className="hover:shadow-lg transition-shadow cursor-pointer"
+                <motion.div key={milestone.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => router.push(`/milestones/${milestone.id}`)}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -387,6 +386,7 @@ function MilestonesContent() {
                     </div>
                   </CardContent>
                 </Card>
+                </motion.div>
               )
             })}
           </div>
@@ -448,9 +448,16 @@ function MilestonesContent() {
             </CardContent>
           </Card>
         </div>
+        <Script id="jsonld-milestones" type="application/ld+json" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Dashboard', item: '/dashboard' },
+            { '@type': 'ListItem', position: 2, name: 'Milestones', item: '/milestones' }
+          ]
+        }) }} />
       </div>
     </MainLayout>
   )
 }
-
 

@@ -1,0 +1,5 @@
+[
+  { "source": "/blog/:slug", "destination": "/articles/:slug", "permanent": true },
+  { "source": "/pricing", "destination": "/plans", "permanent": true },
+  { "source": "/docs/:path*", "destination": "/guide/:path*", "permanent": true }
+]

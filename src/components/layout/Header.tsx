@@ -200,11 +200,7 @@ export default function Header() {
                     className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        result.type === 'project' ? 'bg-blue-500 text-white' :
-                        result.type === 'task' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
+                      <span className="px-2 py-1 text-xs rounded bg-primary/15 text-primary">
                         {result.type}
                       </span>
                       <div className="flex-1 min-w-0">

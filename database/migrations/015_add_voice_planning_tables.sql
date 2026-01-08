@@ -202,14 +202,41 @@ ADD COLUMN IF NOT EXISTS voice_commit_status VARCHAR(50) DEFAULT 'none' CHECK (v
 ADD COLUMN IF NOT EXISTS voice_committed_at TIMESTAMP WITH TIME ZONE;
 
 -- Add constraints for new columns
-ALTER TABLE projects 
-ADD CONSTRAINT IF NOT EXISTS projects_voice_confidence_check CHECK (voice_confidence IS NULL OR (voice_confidence >= 0 AND voice_confidence <= 1));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'projects_voice_confidence_check'
+  ) THEN
+    ALTER TABLE projects
+    ADD CONSTRAINT projects_voice_confidence_check
+    CHECK (voice_confidence IS NULL OR (voice_confidence >= 0 AND voice_confidence <= 1));
+  END IF;
+END $$;
 
-ALTER TABLE milestones
-ADD CONSTRAINT IF NOT EXISTS milestones_voice_confidence_check CHECK (voice_confidence IS NULL OR (voice_confidence >= 0 AND voice_confidence <= 1));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'milestones_voice_confidence_check'
+  ) THEN
+    ALTER TABLE milestones
+    ADD CONSTRAINT milestones_voice_confidence_check
+    CHECK (voice_confidence IS NULL OR (voice_confidence >= 0 AND voice_confidence <= 1));
+  END IF;
+END $$;
 
-ALTER TABLE tasks  
-ADD CONSTRAINT IF NOT EXISTS tasks_voice_confidence_check CHECK (voice_confidence IS NULL OR (voice_confidence >= 0 AND voice_confidence <= 1));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'tasks_voice_confidence_check'
+  ) THEN
+    ALTER TABLE tasks
+    ADD CONSTRAINT tasks_voice_confidence_check
+    CHECK (voice_confidence IS NULL OR (voice_confidence >= 0 AND voice_confidence <= 1));
+  END IF;
+END $$;
 
 -- Create indexes for performance
 
@@ -295,7 +322,9 @@ CREATE POLICY "Users can insert their own voice sessions" ON voice_sessions FOR 
 CREATE POLICY "Users can update their own voice sessions" ON voice_sessions FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own voice sessions" ON voice_sessions FOR DELETE USING (auth.uid() = user_id);
 CREATE POLICY "Organization members can view org voice sessions" ON voice_sessions FOR SELECT USING (
-    organization_id IN (SELECT organization_id FROM user_organizations WHERE user_id = auth.uid())
+    organization_id IN (
+      SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
+    )
 );
 
 -- Enable RLS on voice_audio_chunks

@@ -5,6 +5,10 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
+// CONSOLIDATE: Merge into /api/organizations/[id]/members
+// This route is deprecated. Use the standardized /api/organizations/[id]/members endpoint instead.
+// Migration: GET /api/organizations/[orgId]/members (requires orgId in path)
+
 /**
  * GET /api/organization/members - List members of user's organization
  * PII minimization: Emails visible only to admins

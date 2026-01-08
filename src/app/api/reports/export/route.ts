@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 
+// CONSOLIDATE: Merge into /api/import-export/export?type=reports
+// This route is deprecated. Use GET /api/import-export/export with type parameter.
+// Migration: GET /api/import-export/export?type=reports&format=csv&range=30d
 
 export async function GET(request: NextRequest) {
   try {

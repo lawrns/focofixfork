@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// CONSOLIDATE: Merge into /api/organizations/[id]/members/[userId]
+// This route is deprecated. Use PUT /api/organizations/[id]/members/[userId] with role in body.
+// Migration: PUT /api/organizations/[orgId]/members/[userId] body: { role: 'admin' }
+
 interface RouteParams {
   params: {
     userId: string

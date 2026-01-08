@@ -4,6 +4,10 @@ import { GetProjectsAnalyticsSchema } from '@/lib/validation/schemas/analytics-a
 import { analyticsService } from '@/lib/services/analytics.service'
 import { TimePeriodSchema } from '@/lib/validation/schemas/analytics'
 
+// CONSOLIDATE: Merge into /api/analytics?type=projects
+// This route can be consolidated into a unified analytics endpoint with query parameters.
+// Migration: GET /api/analytics?type=projects&timePeriod=30d&organizationId=...
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {

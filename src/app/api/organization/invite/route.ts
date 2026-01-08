@@ -5,6 +5,10 @@ import { checkRateLimit } from '@/server/utils/rateLimit'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { ForbiddenError } from '@/server/auth/requireAuth'
 
+// CONSOLIDATE: Merge into /api/organizations/[id]/invitations
+// This route is deprecated. Use POST /api/organizations/[id]/invitations instead.
+// Migration: POST /api/organizations/[orgId]/invitations (requires orgId in path)
+
 /**
  * POST /api/organization/invite - Invite a member to an organization
  * Rate limited: 20 invites per hour per user

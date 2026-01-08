@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { OrganizationsService } from '@/lib/services/organizations'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// CONSOLIDATE: Merge into /api/organizations POST
+// This route is deprecated. Use POST /api/organizations with setup flag.
+// Migration: POST /api/organizations body: { name, description, setup: true }
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🔍 API Route - Environment check:', {

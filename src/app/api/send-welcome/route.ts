@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// CONSOLIDATE: Merge into /api/auth/register
+// This route is deprecated. Welcome emails should be sent automatically on registration.
+// Migration: Remove explicit calls - handle automatically in /api/auth/register
+
 export async function POST(request: NextRequest) {
   try {
     const { email, name, password, organization } = await request.json()

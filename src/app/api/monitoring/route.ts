@@ -3,6 +3,10 @@ import { rateLimiter, RATE_LIMITS, getClientIP } from '@/lib/rate-limiter'
 import { monitoring } from '@/lib/monitoring'
 import { userCache, projectCache, apiCache } from '@/lib/cache'
 
+// CONSOLIDATE: Merge into /api/health?detailed=true
+// This route is deprecated. Use GET /api/health with detailed query param.
+// Migration: GET /api/health?detailed=true (for monitoring data)
+
 export async function POST(request: NextRequest) {
   try {
     // Apply rate limiting

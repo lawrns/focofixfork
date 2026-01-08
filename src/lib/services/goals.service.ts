@@ -414,3 +414,6 @@ export class GoalsService {
 
 // Export singleton instance
 export const goalsService = GoalsService
+
+// Re-export types for convenience
+export type { Goal, CreateGoal, UpdateGoal, GoalMilestone, CreateMilestone, UpdateMilestone, GoalProjectLink, CreateGoalProjectLink, GoalWithDetails, GoalProgress } from '@/lib/validation/schemas/goals'

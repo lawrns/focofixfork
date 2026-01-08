@@ -84,10 +84,18 @@ export default function TeamManagementDialog({
   useEffect(() => {
     const fetchOrgUsers = async () => {
       try {
-        const response = await fetch('/api/organization/members')
+        // Get organization ID first
+        const orgResponse = await fetch('/api/user/organization')
+        if (!orgResponse.ok) return
+
+        const orgData = await orgResponse.json()
+        const orgId = orgData.organization_id
+
+        const response = await fetch(`/api/organizations/${orgId}/members`)
         if (response.ok) {
           const data = await response.json()
-          const users = data.members.map((member: any) => ({
+          const members = data.members || data || []
+          const users = members.map((member: any) => ({
             id: member.user_id,
             name: member.full_name || member.email.split('@')[0],
             email: member.email

@@ -46,11 +46,19 @@ export function RoleManagement() {
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/organization/members')
+      // TODO: Need to get organizationId from user context
+      // For now, this will need to be updated once we have org context
+      const response = await fetch('/api/user/organization')
       if (!response.ok) throw new Error('Failed to load members')
 
       const data = await response.json()
-      setMembers(data.members || [])
+      const orgId = data.organization_id
+
+      const membersResponse = await fetch(`/api/organizations/${orgId}/members`)
+      if (!membersResponse.ok) throw new Error('Failed to load members')
+
+      const membersData = await membersResponse.json()
+      setMembers(membersData.members || membersData || [])
     } catch (error) {
       console.error('Error loading members:', error)
       toast({
@@ -69,15 +77,21 @@ export function RoleManagement() {
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'member') => {
     try {
-      const response = await fetch(`/api/organization/members/${userId}/role`, {
-        method: 'PATCH',
+      // Get organization ID first
+      const orgResponse = await fetch('/api/user/organization')
+      if (!orgResponse.ok) throw new Error('Failed to get organization')
+      const orgData = await orgResponse.json()
+      const orgId = orgData.organization_id
+
+      const response = await fetch(`/api/organizations/${orgId}/members/${userId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole })
       })
 
       if (!response.ok) throw new Error('Failed to update role')
 
-      setMembers(prev => prev.map(member => 
+      setMembers(prev => prev.map(member =>
         member.user_id === userId ? { ...member, role: newRole } : member
       ))
 
@@ -107,7 +121,14 @@ export function RoleManagement() {
 
     try {
       setInviting(true)
-      const response = await fetch('/api/organization/invite', {
+
+      // Get organization ID first
+      const orgResponse = await fetch('/api/user/organization')
+      if (!orgResponse.ok) throw new Error('Failed to get organization')
+      const orgData = await orgResponse.json()
+      const orgId = orgData.organization_id
+
+      const response = await fetch(`/api/organizations/${orgId}/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(inviteForm)
@@ -137,7 +158,13 @@ export function RoleManagement() {
 
   const handleRemoveMember = async (userId: string, memberName: string) => {
     try {
-      const response = await fetch(`/api/organization/members/${userId}`, {
+      // Get organization ID first
+      const orgResponse = await fetch('/api/user/organization')
+      if (!orgResponse.ok) throw new Error('Failed to get organization')
+      const orgData = await orgResponse.json()
+      const orgId = orgData.organization_id
+
+      const response = await fetch(`/api/organizations/${orgId}/members/${userId}`, {
         method: 'DELETE'
       })
 

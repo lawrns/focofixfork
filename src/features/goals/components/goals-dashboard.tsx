@@ -33,7 +33,8 @@ import {
   MoreHorizontal,
   Filter
 } from 'lucide-react';
-import { goalService, type Goal } from '../services/goalService';
+import { goalService } from '../services/goalService';
+import type { Goal } from '../types';
 import { CreateGoalDialog } from './create-goal-dialog';
 import { GoalProgressDialog } from './goal-progress-dialog';
 

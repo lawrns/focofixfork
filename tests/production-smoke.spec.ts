@@ -34,9 +34,7 @@ test.describe('Production Smoke Tests', () => {
     await page.waitForLoadState('networkidle')
     
     // Check for critical errors
-    const criticalErrors = consoleErrors.filter(error => 
-      !error.includes('orderbook') && 
-      !error.includes('market-data') &&
+    const criticalErrors = consoleErrors.filter(error =>
       !error.includes('bursts') &&
       !error.includes('favicon')
     )
@@ -63,9 +61,7 @@ test.describe('Production Smoke Tests', () => {
     await page.waitForLoadState('networkidle')
     
     // Check for critical errors
-    const criticalErrors = consoleErrors.filter(error => 
-      !error.includes('orderbook') && 
-      !error.includes('market-data') &&
+    const criticalErrors = consoleErrors.filter(error =>
       !error.includes('bursts') &&
       !error.includes('favicon')
     )
@@ -78,8 +74,6 @@ test.describe('Production Smoke Tests', () => {
 
   test('crypto API stubs return 204', async ({ request }) => {
     const cryptoEndpoints = [
-      '/api/orderbook/stream?symbol=BTC&exchange=binance',
-      '/api/market-data?symbol=BTC',
       '/api/bursts?symbol=BTCUSDT&hours=24&minMagnitude=100000'
     ]
 

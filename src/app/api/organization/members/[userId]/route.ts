@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// CONSOLIDATE: Merge into /api/organizations/[id]/members/[userId]
+// This route is deprecated. Use DELETE /api/organizations/[id]/members/[userId] instead.
+// Migration: DELETE /api/organizations/[orgId]/members/[userId] (requires orgId in path)
+
 interface RouteParams {
   params: {
     userId: string

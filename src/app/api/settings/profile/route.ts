@@ -3,6 +3,10 @@ import { wrapRoute } from '@/server/http/wrapRoute'
 import { GetProfileSchema, UpdateProfileSchema } from '@/lib/validation/schemas/settings-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// CONSOLIDATE: Merge into /api/user/profile
+// This route is deprecated. Use GET/PUT /api/user/profile instead.
+// Migration: GET /api/user/profile, PUT /api/user/profile
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {

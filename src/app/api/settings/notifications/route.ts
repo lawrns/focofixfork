@@ -3,6 +3,10 @@ import { wrapRoute } from '@/server/http/wrapRoute'
 import { GetNotificationSettingsSchema, UpdateNotificationSettingsSchema } from '@/lib/validation/schemas/settings-api.schema'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// CONSOLIDATE: Merge into /api/user/settings/notifications
+// This route is deprecated. Use /api/user/settings/notifications instead.
+// Migration: GET/PUT /api/user/settings/notifications
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {

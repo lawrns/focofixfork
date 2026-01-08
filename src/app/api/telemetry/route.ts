@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// CONSOLIDATE: Merge into /api/analytics/events
+// This route is deprecated. Use POST /api/analytics/events for tracking events.
+// Migration: POST /api/analytics/events (telemetry is a type of analytics event)
+
 interface TelemetryEvent {
   id: string
   type: string

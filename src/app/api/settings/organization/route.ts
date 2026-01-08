@@ -4,6 +4,10 @@ import { GetOrganizationSettingsSchema, UpdateOrganizationSettingsSchema } from 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { ForbiddenError } from '@/server/auth/requireAuth'
 
+// CONSOLIDATE: Merge into /api/organizations/[id]/settings
+// This route is deprecated. Use /api/organizations/[id]/settings instead.
+// Migration: GET/PUT /api/organizations/[orgId]/settings
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {

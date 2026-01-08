@@ -4,6 +4,10 @@ import { GetTrendsAnalyticsSchema } from '@/lib/validation/schemas/analytics-api
 import { analyticsService } from '@/lib/services/analytics.service'
 import { TrendsQueryParamsSchema } from '@/lib/validation/schemas/analytics'
 
+// CONSOLIDATE: Merge into /api/analytics?type=trends
+// This route can be consolidated into a unified analytics endpoint with query parameters.
+// Migration: GET /api/analytics?type=trends&metric=...&startDate=...&endDate=...
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {

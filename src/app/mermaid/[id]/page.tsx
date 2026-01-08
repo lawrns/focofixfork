@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MermaidDiagramWithVersions, MermaidDiagramVersion } from '@/lib/models/mermaid';
-import { MermaidEditor } from '@/components/mermaid/MermaidEditor';
-import { MermaidPreview } from '@/components/mermaid/MermaidPreview';
-import { ShareDialog } from '@/components/mermaid/ShareDialog';
+import { MermaidEditor } from '@/features/mermaid/components/MermaidEditor';
+import { MermaidPreview } from '@/features/mermaid/components/MermaidPreview';
+import { ShareDialog } from '@/features/mermaid/components/ShareDialog';
 import { mermaidService } from '@/lib/services/mermaid';
 
 export default function MermaidDiagramPage() {

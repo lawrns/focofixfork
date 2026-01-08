@@ -1,6 +1,6 @@
 'use client'
 
-import VoicePlanningWorkbench from '@/components/voice/VoicePlanningWorkbench'
+import VoicePlanningWorkbench from '@/features/voice/components/VoicePlanningWorkbench'
 
 export default function VoiceDemoPage() {
   return (

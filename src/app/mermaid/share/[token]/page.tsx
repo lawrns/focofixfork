@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MermaidDiagram } from '@/lib/models/mermaid';
-import { MermaidPreview } from '@/components/mermaid/MermaidPreview';
+import { MermaidPreview } from '@/features/mermaid/components/MermaidPreview';
 import { mermaidService } from '@/lib/services/mermaid';
 
 export default function MermaidSharePage() {

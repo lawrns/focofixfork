@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MermaidEditor } from '@/components/mermaid/MermaidEditor';
-import { MermaidPreview } from '@/components/mermaid/MermaidPreview';
+import { MermaidEditor } from '@/features/mermaid/components/MermaidEditor';
+import { MermaidPreview } from '@/features/mermaid/components/MermaidPreview';
 import { CreateMermaidDiagramRequest } from '@/lib/models/mermaid';
 import { mermaidService } from '@/lib/services/mermaid';
 

@@ -8,16 +8,16 @@ import { useTranslation } from '@/lib/i18n/context'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadingCard } from '@/components/ui/loading'
 import { SkipToMainContent } from '@/components/ui/accessibility'
-import { 
-  StatsOverviewWidget, 
-  RecentTasksWidget, 
-  UpcomingDeadlinesWidget, 
-  ActiveProjectsWidget, 
+import {
+  StatsOverviewWidget,
+  RecentTasksWidget,
+  UpcomingDeadlinesWidget,
+  ActiveProjectsWidget,
   QuickActionsWidget,
   type Task,
   type Project,
   type DashboardStats
-} from '@/components/dashboard/widgets/dashboard-widgets'
+} from '@/features/dashboard/components/widgets/dashboard-widgets'
 import { toast } from 'sonner'
 import { apiCache } from '@/lib/api-cache'
 

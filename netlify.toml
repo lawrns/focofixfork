@@ -22,6 +22,12 @@
   NEXT_PUBLIC_OPENAI_MODEL = "gpt-4o-mini"
   NEXT_PUBLIC_OPENAI_CHAT_MODEL = "gpt-4o-mini"
 
+  # Demo mode configuration for comprehensive testing
+  NEXT_PUBLIC_DEMO_MODE = "true"
+  NEXT_PUBLIC_ALLOW_UNRESTRICTED_ACCESS = "true"
+  NEXT_PUBLIC_BYPASS_ROLE_CHECKS = "true"
+  NEXT_PUBLIC_DEMO_SEED_DATA = "true"
+
 # Next.js plugin
 [[plugins]]
   package = "@netlify/plugin-nextjs"

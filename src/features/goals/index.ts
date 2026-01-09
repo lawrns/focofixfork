@@ -6,24 +6,24 @@ export { GoalsDashboard } from './components/goals-dashboard'
 export { CreateGoalDialog } from './components/create-goal-dialog'
 
 // Hooks
-export { useGoals } from './hooks/useGoals'
+export { useGoals, useGoal } from './hooks/useGoals'
 export { useGoalMutations } from './hooks/useGoalMutations'
 
 // Services
 export { goalService } from './services/goalService'
 
-// Validation
-export { goalSchema, goalFormSchema } from './validation/goalSchemas'
-
-// Types
+// Types - Re-export from canonical schema
 export type {
   Goal,
-  GoalStatus,
-  GoalType,
-  GoalPriority,
-  CreateGoalData,
-  UpdateGoalData,
-  GoalFilters,
-  GoalProgress,
-  GoalComment
-} from './types'
+  CreateGoal,
+  UpdateGoal,
+  GoalMilestone,
+  CreateMilestone,
+  UpdateMilestone,
+  GoalProjectLink,
+  CreateGoalProjectLink,
+  GoalWithDetails,
+  GoalProgress
+} from '@/lib/validation/schemas/goals'
+
+export type { GoalFilters } from './types'

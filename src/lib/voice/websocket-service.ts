@@ -280,14 +280,9 @@ export class WebSocketAudioService {
    */
   private validateFeatureFlags(context: FeatureFlagContext): void {
     const voiceCaptureEnabled = this.featureFlags.isEnabled('voice_capture_enabled', context)
-    const realTimeEnabled = this.featureFlags.isEnabled('voice_capture_real_time_transcription', context)
 
     if (!voiceCaptureEnabled) {
       throw new Error('Voice capture is not enabled')
-    }
-
-    if (!realTimeEnabled) {
-      throw new Error('Real-time transcription is not enabled')
     }
   }
 
@@ -460,9 +455,7 @@ export class WebSocketAudioService {
         organizationId: context.organizationId,
         config: this.config,
         features: {
-          realTimeTranscription: this.featureFlags.isEnabled('voice_capture_real_time_transcription', context),
-          noiseReduction: this.featureFlags.isEnabled('voice_capture_noise_reduction', context),
-          multiLanguage: this.featureFlags.isEnabled('voice_capture_multi_language', context)
+          shadowMode: this.featureFlags.isEnabled('voice_capture_shadow_mode', context)
         }
       }
     }

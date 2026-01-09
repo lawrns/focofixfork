@@ -282,10 +282,7 @@ export class VoiceCaptureService {
   private getActiveFlags(context: FeatureFlagContext): string[] {
     const flags = [
       'voice_capture_enabled',
-      'voice_capture_shadow_mode',
-      'voice_capture_real_time_transcription',
-      'voice_capture_noise_reduction',
-      'voice_capture_multi_language'
+      'voice_capture_shadow_mode'
     ]
 
     return flags.filter(flag => this.featureFlags.isEnabled(flag as any, context))

@@ -347,20 +347,9 @@ export class FeatureFlagsService {
           tags: ['experimental', 'ai', 'planning']
         }
       },
-      
-      // All other flags default to disabled
-      voice_capture_real_time_transcription: { enabled: false, rollout_percentage: 0, environments: [] },
-      voice_capture_multi_language: { enabled: false, rollout_percentage: 0, environments: [] },
-      voice_capture_noise_reduction: { enabled: false, rollout_percentage: 0, environments: [] },
-      plan_orchestration_ai_refinement: { enabled: false, rollout_percentage: 0, environments: [] },
-      plan_orchestration_dependency_detection: { enabled: false, rollout_percentage: 0, environments: [] },
-      plan_orchestration_smart_suggestions: { enabled: false, rollout_percentage: 0, environments: [] },
+
+      // All other defined flags default to disabled
       plan_commit_dual_write: { enabled: false, rollout_percentage: 0, environments: [] },
-      plan_commit_validation_strict: { enabled: false, rollout_percentage: 0, environments: [] },
-      plan_commit_auto_approve: { enabled: false, rollout_percentage: 0, environments: [] },
-      ai_intent_extraction: { enabled: false, rollout_percentage: 0, environments: [] },
-      ai_confidence_scoring: { enabled: false, rollout_percentage: 0, environments: [] },
-      ai_error_recovery: { enabled: false, rollout_percentage: 0, environments: [] },
       ui_gantt_timeline: { enabled: false, rollout_percentage: 0, environments: [] },
       ui_dependency_visualization: { enabled: false, rollout_percentage: 0, environments: [] },
       ui_drag_drop_editing: { enabled: false, rollout_percentage: 0, environments: [] },
@@ -639,9 +628,7 @@ export class FeatureFlagUtils {
     return [
       'voice_capture_enabled',
       'voice_capture_shadow_mode',
-      'voice_capture_real_time_transcription',
-      'voice_capture_multi_language',
-      'voice_capture_noise_reduction'
+      'voice_monitoring_enabled'
     ]
   }
 
@@ -651,10 +638,7 @@ export class FeatureFlagUtils {
   static getAIFlags(): FeatureFlag[] {
     return [
       'ai_whisper_integration',
-      'ai_gpt4_integration',
-      'ai_intent_extraction',
-      'ai_confidence_scoring',
-      'ai_error_recovery'
+      'ai_gpt4_integration'
     ]
   }
 

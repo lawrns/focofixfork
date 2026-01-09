@@ -30,6 +30,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // Use test-specific TypeScript configuration
-  configFile: './tsconfig.test.json',
 })

@@ -1,35 +1,51 @@
 import { useState } from 'react'
 import { goalService } from '../services/goalService'
+import type { CreateGoal, UpdateGoal } from '@/lib/validation/schemas/goals'
 
 export function useGoalMutations() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const updateProgress = async (goalId: string, value: number, note?: string) => {
+  const createGoal = async (goalData: CreateGoal & { userId: string }) => {
     try {
       setLoading(true)
       setError(null)
-      const result = await goalService.updateGoalProgress(goalId, value, note)
+      const result = await goalService.createGoal(goalData)
       return result
     } catch (err) {
-      const error = err instanceof Error ? err.message : 'Failed to update progress'
-      setError(error)
-      return { success: false, error }
+      const errMsg = err instanceof Error ? err.message : 'Failed to create goal'
+      setError(errMsg)
+      return { success: false, error: errMsg }
     } finally {
       setLoading(false)
     }
   }
 
-  const addComment = async (goalId: string, content: string, userId: string) => {
+  const updateGoal = async (goalId: string, updates: UpdateGoal & { userId: string }) => {
     try {
       setLoading(true)
       setError(null)
-      const result = await goalService.addGoalComment(goalId, content, userId)
+      const result = await goalService.updateGoal(goalId, updates)
       return result
     } catch (err) {
-      const error = err instanceof Error ? err.message : 'Failed to add comment'
-      setError(error)
-      return { success: false, error }
+      const errMsg = err instanceof Error ? err.message : 'Failed to update goal'
+      setError(errMsg)
+      return { success: false, error: errMsg }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteGoal = async (goalId: string, userId: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await goalService.deleteGoal(goalId, userId)
+      return result
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to delete goal'
+      setError(errMsg)
+      return { success: false, error: errMsg }
     } finally {
       setLoading(false)
     }
@@ -38,7 +54,8 @@ export function useGoalMutations() {
   return {
     loading,
     error,
-    updateProgress,
-    addComment
+    createGoal,
+    updateGoal,
+    deleteGoal
   }
 }

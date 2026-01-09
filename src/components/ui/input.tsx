@@ -1,48 +1,96 @@
 import * as React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
-const inputVariants = cva(
-  'flex h-11 w-full rounded-lg border-2 border-border bg-white px-4 py-2.5 text-sm font-medium ring-offset-background transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:shadow-sm hover:border-border-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
-  {
-    variants: {
-      variant: {
-        default: '',
-        error: 'border-error/50 focus-visible:border-error focus-visible:ring-error/20 bg-error/5',
-        success: 'border-success/50 focus-visible:border-success focus-visible:ring-success/20 bg-success/5'
-      }
-    },
-    defaultVariants: {
-      variant: 'default'
-    }
-  }
-)
-
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
-    VariantProps<typeof inputVariants> {
-  'aria-describedby'?: string
-  'aria-invalid'?: boolean | 'true' | 'false'
-  'aria-required'?: boolean | 'true' | 'false'
+  extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  helperText?: string
+  error?: string
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant, type, 'aria-describedby': ariaDescribedBy, 'aria-invalid': ariaInvalid, 'aria-required': ariaRequired, ...props }, ref) => {
+  (
+    {
+      className,
+      type,
+      label,
+      helperText,
+      error,
+      leftIcon,
+      rightIcon,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    const id = React.useId()
+
     return (
-      <input
-        type={type}
-        className={cn(inputVariants({ variant, className }))}
-        ref={ref}
-        aria-describedby={ariaDescribedBy}
-        aria-invalid={ariaInvalid}
-        aria-required={ariaRequired}
-        {...props}
-      />
+      <div className="w-full">
+        {label && (
+          <label
+            htmlFor={id}
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+          >
+            {label}
+          </label>
+        )}
+
+        <div className="relative">
+          {leftIcon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              {leftIcon}
+            </div>
+          )}
+
+          <input
+            id={id}
+            type={type}
+            disabled={disabled}
+            className={cn(
+              `w-full rounded-lg border bg-white px-3 py-2.5
+               text-gray-900 placeholder:text-gray-400
+               transition-all duration-150
+               focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500
+               disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60
+               dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500
+               dark:border-gray-700 dark:disabled:bg-gray-800`,
+              error
+                ? 'border-red-500 focus:ring-red-500/30 focus:border-red-500'
+                : 'border-gray-300 dark:border-gray-700',
+              leftIcon && 'pl-10',
+              rightIcon && 'pr-10',
+              className
+            )}
+            ref={ref}
+            {...props}
+          />
+
+          {rightIcon && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              {rightIcon}
+            </div>
+          )}
+        </div>
+
+        {(helperText || error) && (
+          <p
+            className={cn(
+              'mt-1.5 text-xs',
+              error ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+            )}
+          >
+            {error || helperText}
+          </p>
+        )}
+      </div>
     )
   }
 )
 Input.displayName = 'Input'
 
-export { Input, inputVariants }
+export { Input }
 
 

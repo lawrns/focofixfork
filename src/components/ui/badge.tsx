@@ -1,57 +1,104 @@
 import * as React from 'react'
 import { memo } from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
-const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-  {
-    variants: {
-      variant: {
-        default:
-          'border-transparent bg-gradient-to-r from-primary to-primary-hover text-white shadow-sm hover:shadow-md',
-        secondary:
-          'border-transparent bg-gradient-to-r from-slate-100 to-slate-200 text-slate-900 dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 hover:from-slate-200 hover:to-slate-300 dark:hover:from-slate-600 dark:hover:to-slate-500',
-        destructive:
-          'border-transparent bg-gradient-to-r from-error to-red-600 text-white shadow-sm hover:shadow-md',
-        outline: 'text-foreground border-border hover:bg-primary/5 hover:border-primary/30',
-        success:
-          'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 hover:bg-emerald-200',
-        warning:
-          'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200',
-        info:
-          'border-transparent bg-blue-500 text-white dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-600 dark:hover:bg-blue-800',
-        muted:
-          'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300 hover:bg-slate-200',
-        glass:
-          'bg-white/80 backdrop-blur-sm border-white/20 text-slate-900 shadow-sm hover:bg-white/90'
-      },
-      size: {
-        sm: 'px-2 py-0.5 text-xs',
-        default: 'px-3 py-1 text-xs',
-        lg: 'px-4 py-1.5 text-sm'
-      }
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default'
-    }
+interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'solid' | 'soft' | 'outline' | 'dot' | 'secondary' | 'destructive' | 'success' | 'warning' | 'info' | 'muted' | 'glass' | 'default'
+  color?: 'gray' | 'indigo' | 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'pink'
+  size?: 'xs' | 'sm' | 'md'
+}
+
+const badgeStyles = {
+  solid: {
+    gray: 'bg-gray-900 text-white',
+    indigo: 'bg-primary-500 text-white',
+    green: 'bg-green-500 text-white',
+    yellow: 'bg-yellow-500 text-white',
+    red: 'bg-red-500 text-white',
+    blue: 'bg-blue-500 text-white',
+    purple: 'bg-purple-500 text-white',
+    pink: 'bg-pink-500 text-white',
+  },
+  soft: {
+    gray: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    indigo: 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300',
+    green: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
+    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+    red: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300',
+    pink: 'bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300',
+  },
+  outline: {
+    gray: 'border border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300',
+    indigo: 'border border-primary-300 text-primary-700 dark:border-primary-700 dark:text-primary-300',
+    green: 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-300',
+    yellow: 'border border-yellow-300 text-yellow-700 dark:border-yellow-700 dark:text-yellow-300',
+    red: 'border border-red-300 text-red-700 dark:border-red-700 dark:text-red-300',
+    blue: 'border border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300',
+    purple: 'border border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300',
+    pink: 'border border-pink-300 text-pink-700 dark:border-pink-700 dark:text-pink-300',
+  },
+  dot: {
+    gray: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    indigo: 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300',
+    green: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
+    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+    red: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300',
+    pink: 'bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300',
+  },
+}
+
+const sizes = {
+  xs: 'px-1.5 py-0.5 text-[10px] leading-none',
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-2.5 py-1 text-sm',
+}
+
+const legacyVariantMap: Record<string, { variant: keyof typeof badgeStyles; color: keyof typeof badgeStyles.soft }> = {
+  secondary: { variant: 'soft', color: 'gray' },
+  destructive: { variant: 'solid', color: 'red' },
+  success: { variant: 'soft', color: 'green' },
+  warning: { variant: 'soft', color: 'yellow' },
+  info: { variant: 'soft', color: 'blue' },
+  muted: { variant: 'soft', color: 'gray' },
+  glass: { variant: 'soft', color: 'gray' },
+  default: { variant: 'solid', color: 'indigo' },
+}
+
+const BadgeComponent = ({
+  className,
+  variant = 'soft',
+  color = 'gray',
+  size = 'sm',
+  ...props
+}: BadgeProps) => {
+  let finalVariant = variant as keyof typeof badgeStyles
+  let finalColor = color as keyof typeof badgeStyles.soft
+
+  if (variant && variant in legacyVariantMap) {
+    const mapped = legacyVariantMap[variant]
+    finalVariant = mapped.variant
+    finalColor = mapped.color
   }
-)
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
-
-const BadgeComponent = ({ className, variant, size, ...props }: BadgeProps) => {
   return (
-    <div className={cn(badgeVariants({ variant, size }), className)} {...props} />
+    <div
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full font-medium transition-colors',
+        badgeStyles[finalVariant][finalColor],
+        sizes[size],
+        className
+      )}
+      {...props}
+    />
   )
 }
 
-// Memoize Badge to prevent unnecessary re-renders
 const Badge = memo(BadgeComponent)
 
-export { Badge, badgeVariants }
+export { Badge }
 
 

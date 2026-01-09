@@ -1,45 +1,46 @@
 import * as React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
-const cardVariants = cva(
-  'rounded-xl border bg-card text-card-foreground transition-all duration-200',
-  {
-    variants: {
-      variant: {
-        default: 'shadow-md hover:shadow-lg border-border/50',
-        elevated: 'shadow-lg hover:shadow-xl border-border/50 hover:-translate-y-0.5',
-        outlined: 'border-2 border-border hover:border-primary/30 hover:shadow-md',
-        ghost: 'border-0 shadow-none bg-transparent',
-        glass: 'bg-white/80 backdrop-blur-md border-white/20 shadow-glass hover:shadow-glass-lg',
-        gradient: 'bg-gradient-to-br from-white to-primary-50 border-0 shadow-md hover:shadow-lg'
-      },
-      padding: {
-        none: 'p-0',
-        sm: 'p-4',
-        default: 'p-6',
-        lg: 'p-8'
-      }
-    },
-    defaultVariants: {
-      variant: 'default',
-      padding: 'default'
-    }
-  }
-)
-
-export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {}
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'elevated' | 'outlined' | 'ghost' | 'interactive'
+  padding?: 'none' | 'sm' | 'md' | 'lg'
+}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, padding, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(cardVariants({ variant, padding, className }))}
-      {...props}
-    />
-  )
+  ({ className, variant = 'default', padding = 'md', ...props }, ref) => {
+    const variantStyles = {
+      default: 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm',
+      elevated: 'bg-white dark:bg-gray-900 shadow-lg dark:shadow-gray-950/50',
+      outlined: 'bg-transparent border border-gray-200 dark:border-gray-800',
+      ghost: 'bg-gray-50 dark:bg-gray-900/50',
+      interactive: `
+        bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm
+        cursor-pointer transition-all duration-200
+        hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700
+        hover:-translate-y-0.5 active:scale-[0.99]
+      `,
+    }
+
+    const paddingStyles = {
+      none: 'p-0',
+      sm: 'p-4',
+      md: 'p-6',
+      lg: 'p-8',
+    }
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'rounded-xl overflow-hidden',
+          variantStyles[variant],
+          paddingStyles[padding],
+          className
+        )}
+        {...props}
+      />
+    )
+  }
 )
 Card.displayName = 'Card'
 

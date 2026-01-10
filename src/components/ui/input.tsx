@@ -32,7 +32,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={id}
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5"
           >
             {label}
           </label>
@@ -40,7 +40,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
               {leftIcon}
             </div>
           )}
@@ -51,15 +51,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             className={cn(
               `w-full rounded-lg border bg-white px-3 py-2.5
-               text-gray-900 placeholder:text-gray-400
-               transition-all duration-150
-               focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500
-               disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60
-               dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500
-               dark:border-gray-700 dark:disabled:bg-gray-800`,
+               text-zinc-900 placeholder:text-zinc-400
+               transition-colors duration-150
+               focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400
+               disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:opacity-60
+               dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500
+               dark:border-zinc-700 dark:disabled:bg-zinc-800
+               dark:focus:ring-zinc-100/10 dark:focus:border-zinc-500`,
               error
-                ? 'border-red-500 focus:ring-red-500/30 focus:border-red-500'
-                : 'border-gray-300 dark:border-gray-700',
+                ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
+                : 'border-zinc-200 dark:border-zinc-700',
               leftIcon && 'pl-10',
               rightIcon && 'pr-10',
               className
@@ -69,7 +70,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           />
 
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
               {rightIcon}
             </div>
           )}
@@ -79,7 +80,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p
             className={cn(
               'mt-1.5 text-xs',
-              error ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+              error ? 'text-red-500' : 'text-zinc-500 dark:text-zinc-400'
             )}
           >
             {error || helperText}

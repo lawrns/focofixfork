@@ -10,6 +10,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Core design system colors (HSL-based)
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        border: "hsl(var(--border))",
         // Primary colors - Indigo gradient
         primary: {
           50: "rgb(var(--color-primary-50) / <alpha-value>)",
@@ -22,6 +26,8 @@ const config: Config = {
           700: "rgb(var(--color-primary-700) / <alpha-value>)",
           800: "rgb(var(--color-primary-800) / <alpha-value>)",
           900: "rgb(var(--color-primary-900) / <alpha-value>)",
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         // Neutral gray scale
         gray: {
@@ -38,7 +44,6 @@ const config: Config = {
           950: "rgb(var(--color-gray-950) / <alpha-value>)",
         },
         // Backgrounds
-        background: "rgb(var(--color-background) / <alpha-value>)",
         surface: {
           DEFAULT: "rgb(var(--color-surface) / <alpha-value>)",
           hover: "rgb(var(--color-surface-hover) / <alpha-value>)",
@@ -51,7 +56,6 @@ const config: Config = {
           'text-active': "rgb(var(--color-sidebar-text-active) / <alpha-value>)",
         },
         // Text
-        foreground: "rgb(var(--color-text-primary) / <alpha-value>)",
         'text-secondary': "rgb(var(--color-text-secondary) / <alpha-value>)",
         'text-tertiary': "rgb(var(--color-text-tertiary) / <alpha-value>)",
         'text-disabled': "rgb(var(--color-text-disabled) / <alpha-value>)",
@@ -61,7 +65,6 @@ const config: Config = {
         error: "rgb(var(--color-error) / <alpha-value>)",
         info: "rgb(var(--color-info) / <alpha-value>)",
         // Borders
-        border: "rgb(var(--color-border) / <alpha-value>)",
         'border-light': "rgb(var(--color-border-light) / <alpha-value>)",
         'border-dark': "rgb(var(--color-border-dark) / <alpha-value>)",
         // Shadcn compatibility
@@ -126,17 +129,37 @@ const config: Config = {
         full: "var(--radius-full)",
       },
       boxShadow: {
-        sm: "var(--shadow-sm)",
-        DEFAULT: "var(--shadow-md)",
-        md: "var(--shadow-md)",
-        lg: "var(--shadow-lg)",
-        xl: "var(--shadow-xl)",
+        xs: "0 1px 2px 0 rgb(0 0 0 / 0.03)",
+        sm: "0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
+        DEFAULT: "0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)",
+        md: "0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)",
+        lg: "0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05)",
+        xl: "0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08)",
         "2xl": "var(--shadow-2xl)",
       },
       transitionDuration: {
         fast: "var(--transition-fast)",
         DEFAULT: "var(--transition-base)",
         slow: "var(--transition-slow)",
+      },
+      animation: {
+        "fade-in": "fadeIn 150ms ease-out",
+        "slide-up": "slideUp 200ms ease-out",
+        "slide-down": "slideDown 200ms ease-out",
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        slideUp: {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        slideDown: {
+          from: { opacity: "0", transform: "translateY(-10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
     },
   },

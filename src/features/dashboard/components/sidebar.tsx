@@ -93,32 +93,32 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         />
       )}
 
-      {/* Sidebar - Enhanced touch targets */}
+      {/* Sidebar - Clean Linear-inspired design */}
       <motion.aside
         className={cn(
-          'fixed left-0 top-0 z-50 h-full w-64 bg-card border-r border-border flex flex-col',
+          'fixed left-0 top-0 z-50 h-full w-64 flex flex-col',
+          'bg-zinc-50/50 dark:bg-zinc-900',
+          'border-r border-zinc-100 dark:border-zinc-800',
           'lg:relative lg:translate-x-0',
-          // Mobile-specific enhancements
-          'sm:w-72' // Slightly wider on larger mobile devices
+          'sm:w-72'
         )}
         variants={sidebarVariants}
         initial="closed"
         animate={sidebarOpen ? 'open' : 'closed'}
       >
         {/* Header */}
-        <div className="flex h-16 items-center justify-between px-4 border-b border-border">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
             <Image
               src="/focologo.png"
               alt="Foco Logo"
-              width={40}
-              height={40}
-              className="h-10 w-auto brightness-0 invert"
-              style={{ filter: 'brightness(0) invert(1)' }}
+              width={32}
+              height={32}
+              className="h-8 w-auto dark:brightness-0 dark:invert"
             />
             <div className="flex flex-col">
-              <h1 className="text-base font-bold text-foreground">Foco</h1>
-              <p className="text-xs font-medium text-muted-foreground">Project Management</p>
+              <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Foco</h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-500">Project Management</p>
             </div>
           </div>
 
@@ -126,75 +126,77 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden"
+            className="lg:hidden h-8 w-8 p-0 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Navigation - Enhanced touch targets */}
-        <nav className="flex-1 px-4 py-6">
-          <div className="space-y-2">
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4">
+          <div className="space-y-0.5">
             {menuItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors',
-                  'min-h-[48px] flex items-center', // 48px minimum touch target
-                  'sm:py-2', // Smaller padding on larger screens
+                  'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150',
+                  'min-h-[44px]',
                   item.active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80'
+                    ? 'bg-zinc-100 dark:bg-zinc-800 font-medium text-zinc-900 dark:text-zinc-100'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'
                 )}
               >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <item.icon className={cn(
+                  'h-5 w-5 flex-shrink-0 transition-colors duration-150',
+                  item.active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-500'
+                )} />
                 <span className="truncate">{item.label}</span>
               </a>
             ))}
           </div>
 
-          {/* Projects Section - Enhanced touch targets */}
+          {/* Projects Section */}
           <div className="mt-8">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Projects</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Projects</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onCreateProject}
-                className="h-8 w-8 p-0 rounded-lg" // Larger touch target
+                className="h-7 w-7 p-0 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150"
                 aria-label="Create new project"
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {projects.map((project) => (
                 <button
                   key={project.id}
                   onClick={() => onProjectSelect?.(project)}
                   className={cn(
-                    'w-full flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition-colors',
-                    'min-h-[48px] flex items-center', // 48px minimum touch target
+                    'w-full flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150',
+                    'min-h-[40px]',
                     selectedProject?.id === project.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80'
+                      ? 'bg-zinc-100 dark:bg-zinc-800 font-medium text-zinc-900 dark:text-zinc-100'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'
                   )}
                   aria-label={`Select project ${project.name}`}
                 >
-                  <div className={cn('w-3 h-3 rounded-full flex-shrink-0', getStatusColor(project.status))} />
+                  <div className={cn('w-2 h-2 rounded-full flex-shrink-0', getStatusColor(project.status))} />
                   <span className="truncate flex-1">{project.name}</span>
                 </button>
               ))}
 
               {projects.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground mb-4">No projects yet</p>
+                <div className="text-center py-6">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-500 mb-3">No projects yet</p>
                   <Button
                     size="sm"
                     onClick={onCreateProject}
-                    className="w-full h-12 rounded-lg" // Larger touch target
+                    className="w-full h-10 rounded-md bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors duration-150"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Project
@@ -205,21 +207,21 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </div>
         </nav>
 
-        {/* Footer - Enhanced touch targets */}
-        <div className="border-t border-border p-4">
-          <div className="space-y-2">
+        {/* Footer */}
+        <div className="border-t border-zinc-100 dark:border-zinc-800 p-4">
+          <div className="space-y-0.5">
             <a
               href="/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors min-h-[48px] flex items-center"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors duration-150 min-h-[44px]"
             >
-              <Settings className="h-5 w-5 flex-shrink-0" />
+              <Settings className="h-5 w-5 flex-shrink-0 text-zinc-500" />
               <span>Settings</span>
             </a>
             <a
               href="/help"
-              className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors min-h-[48px] flex items-center"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors duration-150 min-h-[44px]"
             >
-              <HelpCircle className="h-5 w-5 flex-shrink-0" />
+              <HelpCircle className="h-5 w-5 flex-shrink-0 text-zinc-500" />
               <span>Help & Docs</span>
             </a>
           </div>

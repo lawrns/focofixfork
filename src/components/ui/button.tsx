@@ -5,62 +5,58 @@ import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg
-   text-sm font-medium transition-all duration-150
-   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-   disabled:pointer-events-none disabled:opacity-50
-   active:scale-[0.98]`,
+   text-sm font-medium transition-colors duration-150
+   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2
+   disabled:pointer-events-none disabled:opacity-50`,
   {
     variants: {
       variant: {
         primary: `
-          bg-primary-500 text-white shadow-sm
-          hover:bg-primary-600 hover:shadow-primary
-          focus-visible:ring-primary-500
-          dark:hover:shadow-primary
+          bg-zinc-900 text-white shadow-xs
+          hover:bg-zinc-800 hover:shadow-sm
+          dark:bg-zinc-100 dark:text-zinc-900
+          dark:hover:bg-zinc-200
         `,
         default: `
-          bg-primary-500 text-white shadow-sm
-          hover:bg-primary-600 hover:shadow-primary
-          focus-visible:ring-primary-500
-          dark:hover:shadow-primary
+          bg-zinc-900 text-white shadow-xs
+          hover:bg-zinc-800 hover:shadow-sm
+          dark:bg-zinc-100 dark:text-zinc-900
+          dark:hover:bg-zinc-200
         `,
         secondary: `
-          bg-white dark:bg-gray-800 
-          text-primary-600 dark:text-primary-400 
-          border border-primary-200 dark:border-primary-800
-          hover:bg-primary-50 dark:hover:bg-primary-900/30
-          focus-visible:ring-primary-500
+          bg-white text-zinc-900 border border-zinc-200
+          hover:bg-zinc-50
+          dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700
+          dark:hover:bg-zinc-800
         `,
         ghost: `
-          text-gray-700 dark:text-gray-300
-          hover:bg-gray-100 dark:hover:bg-gray-800
-          focus-visible:ring-gray-500
+          text-zinc-700
+          hover:bg-zinc-100
+          dark:text-zinc-300
+          dark:hover:bg-zinc-800
         `,
         danger: `
-          bg-red-500 text-white shadow-sm
+          bg-red-500 text-white
           hover:bg-red-600
-          focus-visible:ring-red-500
         `,
         success: `
-          bg-green-500 text-white shadow-sm
+          bg-green-500 text-white
           hover:bg-green-600
-          focus-visible:ring-green-500
         `,
         link: `
-          text-primary-600 dark:text-primary-400
+          text-zinc-900 dark:text-zinc-100
           underline-offset-4 hover:underline
           p-0 h-auto
         `,
         outline: `
-          border border-gray-300 dark:border-gray-600
-          text-gray-700 dark:text-gray-300
-          hover:bg-gray-50 dark:hover:bg-gray-800
-          focus-visible:ring-gray-500
+          border border-zinc-200 text-zinc-700
+          hover:bg-zinc-50
+          dark:border-zinc-700 dark:text-zinc-300
+          dark:hover:bg-zinc-800
         `,
         destructive: `
-          bg-red-500 text-white shadow-sm
+          bg-red-500 text-white
           hover:bg-red-600
-          focus-visible:ring-red-500
         `,
       },
       size: {

@@ -9,49 +9,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    /* Fixed for WCAG AA contrast: using custom design token colors */
-    --foreground: 15 23 42; /* #0F172A - From design-tokens.css for 4.5:1 contrast */
-    --card: 0 0% 100%;
-    --card-foreground: 15 23 42; /* #0F172A - Fixed for contrast */
-    --popover: 0 0% 100%;
-    --popover-foreground: 15 23 42; /* #0F172A - Fixed for contrast */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 15 23 42; /* #0F172A - Fixed for contrast */
-    --muted: 210 40% 96%;
-    --muted-foreground: 51 65 85; /* #334155 - From design-tokens.css */
-    --accent: 210 40% 96%;
-    --accent-foreground: 15 23 42; /* #0F172A - Fixed for contrast */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* Minimal zinc-based color scheme - Linear/Notion inspired */
+    --background: 0 0% 100%;           /* #FFFFFF - Pure white */
+    --foreground: 240 5.9% 10%;        /* zinc-900 #18181B */
+    --card: 0 0% 100%;                 /* #FFFFFF */
+    --card-foreground: 240 5.9% 10%;   /* zinc-900 */
+    --popover: 0 0% 100%;              /* #FFFFFF */
+    --popover-foreground: 240 5.9% 10%; /* zinc-900 */
+    --primary: 240 5.9% 10%;           /* zinc-900 - Dark buttons */
+    --primary-foreground: 0 0% 100%;   /* #FFFFFF */
+    --secondary: 240 4.8% 95.9%;       /* zinc-100 */
+    --secondary-foreground: 240 5.9% 10%; /* zinc-900 */
+    --muted: 240 4.8% 95.9%;           /* zinc-100 */
+    --muted-foreground: 240 3.8% 46.1%; /* zinc-500 */
+    --accent: 240 4.8% 95.9%;          /* zinc-100 */
+    --accent-foreground: 240 5.9% 10%; /* zinc-900 */
+    --destructive: 0 84.2% 60.2%;      /* red-500 */
+    --destructive-foreground: 0 0% 100%; /* white */
+    --border: 240 5.9% 90%;            /* zinc-200 */
+    --input: 240 5.9% 90%;             /* zinc-200 */
+    --ring: 240 5.9% 10%;              /* zinc-900 */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    /* Dark mode - zinc-950 base */
+    --background: 240 10% 3.9%;        /* zinc-950 #09090B */
+    --foreground: 0 0% 98%;            /* zinc-50 #FAFAFA */
+    --card: 240 10% 3.9%;              /* zinc-950 */
+    --card-foreground: 0 0% 98%;       /* zinc-50 */
+    --popover: 240 10% 3.9%;           /* zinc-950 */
+    --popover-foreground: 0 0% 98%;    /* zinc-50 */
+    --primary: 0 0% 98%;               /* zinc-50 - Light buttons on dark */
+    --primary-foreground: 240 10% 3.9%; /* zinc-950 */
+    --secondary: 240 3.7% 15.9%;       /* zinc-800 */
+    --secondary-foreground: 0 0% 98%;  /* zinc-50 */
+    --muted: 240 3.7% 15.9%;           /* zinc-800 */
+    --muted-foreground: 240 5% 64.9%;  /* zinc-400 */
+    --accent: 240 3.7% 15.9%;          /* zinc-800 */
+    --accent-foreground: 0 0% 98%;     /* zinc-50 */
+    --destructive: 0 62.8% 30.6%;      /* dark red */
+    --destructive-foreground: 0 0% 98%; /* zinc-50 */
+    --border: 240 3.7% 15.9%;          /* zinc-800 */
+    --input: 240 3.7% 15.9%;           /* zinc-800 */
+    --ring: 240 4.9% 83.9%;            /* zinc-300 */
   }
 }
 
@@ -105,29 +106,29 @@
     -webkit-backdrop-filter: blur(8px);
   }
 
-  /* ===== Gradient Utilities ===== */
+  /* ===== Gradient Utilities (Minimal zinc-based) ===== */
   .gradient-primary {
-    background: linear-gradient(135deg, rgb(59 130 246) 0%, rgb(37 99 235) 100%);
+    background: linear-gradient(135deg, rgb(24 24 27) 0%, rgb(39 39 42) 100%); /* zinc-900 to zinc-800 */
   }
 
   .gradient-primary-soft {
-    background: linear-gradient(135deg, rgb(239 246 255) 0%, rgb(219 234 254) 100%);
+    background: linear-gradient(135deg, rgb(250 250 250) 0%, rgb(244 244 245) 100%); /* zinc-50 to zinc-100 */
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, rgb(59 130 246) 0%, rgb(168 85 247) 100%);
+    background: linear-gradient(135deg, rgb(39 39 42) 0%, rgb(63 63 70) 100%); /* zinc-800 to zinc-700 */
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, rgb(16 185 129) 0%, rgb(6 182 212) 100%);
+    background: linear-gradient(135deg, rgb(34 197 94) 0%, rgb(22 163 74) 100%); /* green-500 to green-600 */
   }
 
   .gradient-mesh {
     background:
-      radial-gradient(at 0% 0%, rgb(59 130 246 / 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgb(168 85 247 / 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgb(236 72 153 / 0.15) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, rgb(16 185 129 / 0.15) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgb(161 161 170 / 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgb(113 113 122 / 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgb(161 161 170 / 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgb(113 113 122 / 0.08) 0px, transparent 50%); /* subtle zinc gradients */
   }
 
   /* ===== Hover Effects ===== */
@@ -251,11 +252,11 @@
 
   /* ===== Enhanced Focus States ===== */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2;
   }
 
   .focus-ring-inset {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset;
+    @apply focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-inset;
   }
 
   /* ===== Border Gradient Utilities ===== */
@@ -271,7 +272,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, rgb(59 130 246), rgb(168 85 247));
+    background: linear-gradient(135deg, rgb(161 161 170), rgb(113 113 122)); /* zinc-400 to zinc-500 */
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -395,45 +396,47 @@
 }
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
+  /* Minimal zinc-based color scheme - Linear/Notion inspired */
+  --background: 0 0% 100%;             /* #FFFFFF - Pure white */
+  --foreground: 240 5.9% 10%;          /* zinc-900 */
+  --card: 0 0% 100%;                   /* #FFFFFF */
+  --card-foreground: 240 5.9% 10%;     /* zinc-900 */
+  --popover: 0 0% 100%;                /* #FFFFFF */
+  --popover-foreground: 240 5.9% 10%;  /* zinc-900 */
+  --primary-foreground: 0 0% 100%;     /* #FFFFFF */
+  --secondary: 240 4.8% 95.9%;         /* zinc-100 */
+  --secondary-foreground: 240 5.9% 10%; /* zinc-900 */
+  --muted: 240 4.8% 95.9%;             /* zinc-100 */
+  --muted-foreground: 240 3.8% 46.1%;  /* zinc-500 */
+  --accent: 240 4.8% 95.9%;            /* zinc-100 */
+  --accent-foreground: 240 5.9% 10%;   /* zinc-900 */
+  --destructive: 0 84.2% 60.2%;        /* red-500 */
+  --destructive-foreground: 0 0% 100%; /* white */
+  --border: 240 5.9% 90%;              /* zinc-200 */
+  --input: 240 5.9% 90%;               /* zinc-200 */
+  --ring: 240 5.9% 10%;                /* zinc-900 */
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
+  /* Dark mode - zinc-950 base */
+  --background: 240 10% 3.9%;          /* zinc-950 */
+  --foreground: 0 0% 98%;              /* zinc-50 */
+  --card: 240 10% 3.9%;                /* zinc-950 */
+  --card-foreground: 0 0% 98%;         /* zinc-50 */
+  --popover: 240 10% 3.9%;             /* zinc-950 */
+  --popover-foreground: 0 0% 98%;      /* zinc-50 */
+  --primary-foreground: 240 10% 3.9%;  /* zinc-950 */
+  --secondary: 240 3.7% 15.9%;         /* zinc-800 */
+  --secondary-foreground: 0 0% 98%;    /* zinc-50 */
+  --muted: 240 3.7% 15.9%;             /* zinc-800 */
+  --muted-foreground: 240 5% 64.9%;    /* zinc-400 */
+  --accent: 240 3.7% 15.9%;            /* zinc-800 */
+  --accent-foreground: 0 0% 98%;       /* zinc-50 */
+  --destructive: 0 62.8% 30.6%;        /* dark red */
+  --destructive-foreground: 0 0% 98%;  /* zinc-50 */
+  --border: 240 3.7% 15.9%;            /* zinc-800 */
+  --input: 240 3.7% 15.9%;             /* zinc-800 */
+  --ring: 240 4.9% 83.9%;              /* zinc-300 */
 }
 
 @theme inline {
@@ -456,21 +459,21 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid rgb(59 130 246);
+  outline: 2px solid rgb(24 24 27);    /* zinc-900 */
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid rgb(59 130 246);
+  outline: 2px solid rgb(24 24 27);    /* zinc-900 */
   outline-offset: 2px;
 }
 
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid rgb(59 130 246);
+  outline: 2px solid rgb(24 24 27);    /* zinc-900 */
   outline-offset: 0px;
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  box-shadow: 0 0 0 3px rgb(24 24 27 / 0.1); /* zinc-900 with opacity */
 }

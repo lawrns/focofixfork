@@ -1,21 +1,15 @@
 'use client'
 
-import { 
-  githubIntegrationManifest, 
-  githubIntegrationCode 
+import {
+  githubIntegrationManifest,
+  githubIntegrationCode
 } from './github-integration'
-import { 
-  calendarIntegrationManifest, 
-  calendarIntegrationCode 
+import {
+  calendarIntegrationManifest,
+  calendarIntegrationCode
 } from './calendar-integration'
-import { 
-  timeTrackingManifest, 
-  timeTrackingCode 
-} from './time-tracking'
-import { 
-  customFieldsManifest, 
-  customFieldsCode 
-} from './custom-fields'
+// Time Tracking and Custom Fields power-ups removed in Phase 3 migration
+// These features have been deprecated and archived
 
 export interface BuiltInPowerUp {
   manifest: any
@@ -58,24 +52,7 @@ export class PowerUpsRegistry {
       featured: false,
       installed: false
     })
-
-    // Time Tracking
-    this.powerUps.set('time-tracking', {
-      manifest: timeTrackingManifest,
-      code: timeTrackingCode,
-      category: 'productivity',
-      featured: true,
-      installed: false
-    })
-
-    // Custom Fields
-    this.powerUps.set('custom-fields', {
-      manifest: customFieldsManifest,
-      code: customFieldsCode,
-      category: 'customization',
-      featured: true,
-      installed: false
-    })
+    // Time Tracking and Custom Fields power-ups have been deprecated in Phase 3
   }
 
   getAllPowerUps(): BuiltInPowerUp[] {

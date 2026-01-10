@@ -21,10 +21,12 @@ import {
   Upload,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertTriangle
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { RoleManagement } from './role-management'
+import { ExportDialog } from '@/components/deprecation/ExportDialog'
 
 interface UserSettings {
   theme: 'light' | 'dark' | 'system'
@@ -48,8 +50,9 @@ export function SettingsDashboard() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') || 'profile'
-  
+
   const [isSaving, setIsSaving] = useState(false)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
 
   const [userSettings, setUserSettings] = useState<UserSettings>({
     theme: 'system',
@@ -531,6 +534,42 @@ export function SettingsDashboard() {
         </TabsContent>
 
         <TabsContent value="data" className="space-y-6">
+          <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <CardTitle>Deprecated Features - Export Your Data</CardTitle>
+              </div>
+              <CardDescription className="text-amber-800 dark:text-amber-200">
+                Some features will be removed in Phase 3. Export your data before they&apos;re discontinued.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h4 className="font-medium">Backup Deprecated Features</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Export data from Gantt charts, custom fields, time tracking, and goals before removal.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setExportDialogOpen(true)}
+                      className="gap-2 bg-amber-600 hover:bg-amber-700"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export Deprecated Data
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-amber-700 dark:text-amber-300">
+                  <strong>Important:</strong> These features will be removed on February 15, 2026. Export your data now to preserve it.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Data Management</CardTitle>
@@ -584,6 +623,15 @@ export function SettingsDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Export Dialog for Deprecated Features */}
+      {user && (
+        <ExportDialog
+          userId={user.id}
+          open={exportDialogOpen}
+          onOpenChange={setExportDialogOpen}
+        />
+      )}
     </div>
   )
 }

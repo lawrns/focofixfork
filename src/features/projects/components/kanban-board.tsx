@@ -299,14 +299,15 @@ export function KanbanBoard() {
       <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 h-full" role="region" aria-label="Kanban board">
         {columns.map((column) => (
           <div key={column.id} className="flex-shrink-0 w-72 md:w-80 flex flex-col h-full">
-            {/* Column Header */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-t-lg px-3 md:px-4 py-2 md:py-3 border border-b-0 border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
+            {/* Column Container */}
+            <div className="flex-1 bg-zinc-50 dark:bg-zinc-900 rounded-lg p-4 border border-zinc-100 dark:border-zinc-800 overflow-hidden flex flex-col">
+              {/* Column Header */}
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                     {column.title}
                   </h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full" aria-label={`${column.tasks.length} tasks in ${column.title}`}>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full font-medium" aria-label={`${column.tasks.length} tasks in ${column.title}`}>
                     {column.tasks.length}
                   </span>
                 </div>
@@ -314,24 +315,25 @@ export function KanbanBoard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setAddingToColumn(column.id)}
-                  className="h-5 w-5 md:h-6 md:w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-6 w-6 p-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                   title={`Add task to ${column.title}`}
                   aria-label={`Add new task to ${column.title}`}
                 >
-                  <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
 
-            {/* Column Content */}
-            <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-b-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              {/* Column Content */}
+              <div className="flex-1 overflow-hidden">
               <Droppable droppableId={column.id}>
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`h-full overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
+                    className={`h-full overflow-y-auto space-y-2 rounded-md p-1 transition-all duration-150 ${
+                      snapshot.isDraggingOver
+                        ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-100/50 dark:bg-zinc-800/50'
+                        : 'border-2 border-transparent'
                     }`}
                     role="region"
                     aria-label={`${column.title} column with ${column.tasks.length} tasks`}
@@ -346,8 +348,10 @@ export function KanbanBoard() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`group relative bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 cursor-pointer ${
-                              snapshot.isDragging ? 'shadow-lg rotate-2' : ''
+                            className={`group relative bg-white dark:bg-zinc-900 rounded-md p-3 border cursor-pointer transition-all duration-150 ${
+                              snapshot.isDragging
+                                ? 'shadow-lg scale-[1.02] rotate-1 border-zinc-300 dark:border-zinc-600'
+                                : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-sm'
                             } ${getPriorityColor(task.priority)} border-l-4`}
                             onClick={() => handleCardClick(task.id)}
                             role="article"
@@ -366,43 +370,43 @@ export function KanbanBoard() {
                               className="absolute left-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
                               aria-label="Drag handle"
                             >
-                              <GripVertical className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
+                              <GripVertical className="h-4 w-4 text-zinc-400" />
                             </div>
 
-                            <div className="p-3 md:p-4 pl-6 md:pl-8">
+                            <div className="pl-4">
                               {/* Card Header */}
-                              <div className="flex items-start justify-between gap-2 mb-2 md:mb-3">
+                              <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-xs md:text-sm text-gray-900 dark:text-gray-100 leading-4 md:leading-5">
+                                  <h4 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 leading-5">
                                     {task.title}
                                   </h4>
                                   {task.description && (
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-3 md:leading-4">
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
                                       {task.description}
                                     </p>
                                   )}
                                 </div>
-                                
+
                                 {/* Menu Button - Only visible on hover */}
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-5 w-5 md:h-6 md:w-6 p-0 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 text-zinc-400 hover:text-zinc-600"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     // TODO: Open context menu
                                   }}
                                   aria-label={`Task options for ${task.title}`}
                                 >
-                                  <MoreHorizontal className="h-2 w-2 md:h-3 md:w-3" />
+                                  <MoreHorizontal className="h-3 w-3" />
                                 </Button>
                               </div>
 
                               {/* Card Footer - Metadata */}
-                              <div className="flex items-center gap-1 md:gap-2 flex-wrap">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {/* Priority Badge */}
-                                <Badge 
-                                  variant="outline" 
+                                <Badge
+                                  variant="outline"
                                   className={`text-xs ${getPriorityBadgeColor(task.priority)}`}
                                   aria-label={`Priority: ${task.priority}`}
                                 >
@@ -411,27 +415,24 @@ export function KanbanBoard() {
 
                                 {/* Due Date */}
                                 {task.due_date && (
-                                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" aria-label={`Due date: ${formatDate(task.due_date)}`}>
-                                    <Calendar className="h-2 w-2 md:h-3 md:w-3" aria-hidden="true" />
-                                    <span className="hidden sm:inline">{formatDate(task.due_date)}</span>
-                                    <span className="sm:hidden" aria-label={`Due: ${new Date(task.due_date).getDate()}`}>
-                                      {new Date(task.due_date).getDate()}
-                                    </span>
+                                  <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`Due date: ${formatDate(task.due_date)}`}>
+                                    <Calendar className="h-3 w-3" aria-hidden="true" />
+                                    <span>{formatDate(task.due_date)}</span>
                                   </div>
                                 )}
 
                                 {/* Comments */}
                                 {task.comment_count && task.comment_count > 0 && (
-                                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" aria-label={`${task.comment_count} comments`}>
-                                    <MessageSquare className="h-2 w-2 md:h-3 md:w-3" aria-hidden="true" />
+                                  <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`${task.comment_count} comments`}>
+                                    <MessageSquare className="h-3 w-3" aria-hidden="true" />
                                     <span>{task.comment_count}</span>
                                   </div>
                                 )}
 
                                 {/* Attachments */}
                                 {task.attachment_count && task.attachment_count > 0 && (
-                                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" aria-label={`${task.attachment_count} attachments`}>
-                                    <Paperclip className="h-2 w-2 md:h-3 md:w-3" aria-hidden="true" />
+                                  <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`${task.attachment_count} attachments`}>
+                                    <Paperclip className="h-3 w-3" aria-hidden="true" />
                                     <span>{task.attachment_count}</span>
                                   </div>
                                 )}
@@ -439,9 +440,9 @@ export function KanbanBoard() {
                                 {/* Assignee */}
                                 {task.assignee_id && (
                                   <div className="ml-auto" aria-label={`Assigned to: ${task.assignee_name || task.assignee_id}`}>
-                                    <Avatar className="h-5 w-5 md:h-6 md:w-6">
-                                      <AvatarFallback className="text-[10px] md:text-xs">
-                                        {task.assignee_name?.slice(0, 2).toUpperCase() || 
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarFallback className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                                        {task.assignee_name?.slice(0, 2).toUpperCase() ||
                                          task.assignee_id.slice(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
@@ -457,8 +458,8 @@ export function KanbanBoard() {
 
                     {/* Inline task creation form */}
                     {addingToColumn === column.id && (
-                      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border-2 border-blue-400 dark:border-blue-600" role="form" aria-label="Create new task">
-                        <div className="p-2 md:p-3">
+                      <div className="bg-white dark:bg-zinc-900 rounded-md border-2 border-zinc-300 dark:border-zinc-600" role="form" aria-label="Create new task">
+                        <div className="p-3">
                           <Input
                             ref={inputRef}
                             value={newTaskTitle}
@@ -472,19 +473,19 @@ export function KanbanBoard() {
                               }
                             }}
                             disabled={isCreating}
-                            className="text-sm border-0 focus:ring-0 shadow-none resize-none"
+                            className="text-sm border-0 focus:ring-0 shadow-none resize-none bg-transparent"
                             autoFocus
                             aria-label="New task title"
                           />
-                          <div className="flex gap-2 mt-2 md:mt-3">
+                          <div className="flex gap-2 mt-3">
                             <Button
                               size="sm"
                               onClick={() => handleCreateTask(column.id)}
                               disabled={isCreating || !newTaskTitle.trim()}
-                              className="flex-1 text-xs md:text-sm"
+                              className="flex-1 text-sm"
                               aria-label="Create new task"
                             >
-                              <Check className="h-2 w-2 md:h-3 md:w-3 mr-1" aria-hidden="true" />
+                              <Check className="h-3 w-3 mr-1" aria-hidden="true" />
                               {isCreating ? 'Creating...' : 'Add Task'}
                             </Button>
                             <Button
@@ -494,7 +495,7 @@ export function KanbanBoard() {
                               disabled={isCreating}
                               aria-label="Cancel task creation"
                             >
-                              <X className="h-2 w-2 md:h-3 md:w-3" aria-hidden="true" />
+                              <X className="h-3 w-3" aria-hidden="true" />
                             </Button>
                           </div>
                         </div>
@@ -505,7 +506,7 @@ export function KanbanBoard() {
                     {column.tasks.length === 0 && addingToColumn !== column.id && (
                       <button
                         onClick={() => setAddingToColumn(column.id)}
-                        className="w-full p-2 md:p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-xs md:text-sm text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="w-full p-3 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-md text-sm text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-all duration-150"
                         aria-label={`Add task to ${column.title} column`}
                       >
                         + Add task
@@ -514,6 +515,7 @@ export function KanbanBoard() {
                   </div>
                 )}
               </Droppable>
+              </div>
             </div>
           </div>
         ))}

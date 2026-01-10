@@ -90,11 +90,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const statusInfo = getStatusBadge(selectedProject?.status)
 
   return (
-    <header className="glass-subtle border-b border-white/20 shadow-lg sticky top-0 z-30 w-full">
-      {/* Branding bar */}
-      <div className="h-1 bg-gradient-to-r from-primary via-purple-500 to-emerald-500"></div>
-
-      <div className="px-4 sm:px-6 py-4 sm:py-4"> {/* Increased padding on mobile for better touch targets */}
+    <header className="bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800 sticky top-0 z-30 w-full">
+      <div className="px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full">
           {/* Left Section - Navigation & Project Info */}
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
@@ -376,17 +373,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
         {/* Progress Bar */}
         {selectedProject && (
-          <div className="mt-4 sm:mt-6 px-4 sm:px-6">
-            <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-              <span className="font-medium">Project Progress</span>
-              <span className="font-semibold text-foreground">{selectedProject.progress || 0}% Complete</span>
+          <div className="mt-4 sm:mt-5">
+            <div className="flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+              <span className="font-medium">Progress</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">{selectedProject.progress || 0}%</span>
             </div>
-            <div className="w-full bg-muted/20 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
               <motion.div
-                className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full shadow-sm"
+                className="bg-zinc-900 dark:bg-zinc-100 h-1.5 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${selectedProject.progress || 0}%` }}
-                transition={{ duration: 1.2, ease: 'easeOut' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
               />
             </div>
           </div>

@@ -9,15 +9,14 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', ...props }, ref) => {
     const variantStyles = {
-      default: 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm',
-      elevated: 'bg-white dark:bg-gray-900 shadow-lg dark:shadow-gray-950/50',
-      outlined: 'bg-transparent border border-gray-200 dark:border-gray-800',
-      ghost: 'bg-gray-50 dark:bg-gray-900/50',
+      default: 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800',
+      elevated: 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800',
+      outlined: 'bg-transparent border border-zinc-100 dark:border-zinc-800',
+      ghost: 'bg-zinc-50/50 dark:bg-zinc-900/50',
       interactive: `
-        bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm
+        bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800
         cursor-pointer transition-all duration-200
-        hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700
-        hover:-translate-y-0.5 active:scale-[0.99]
+        hover:shadow-sm hover:border-zinc-200 dark:hover:border-zinc-700
       `,
     }
 
@@ -32,7 +31,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-xl overflow-hidden',
+          'rounded-lg overflow-hidden transition-all duration-200',
           variantStyles[variant],
           paddingStyles[padding],
           className
@@ -97,7 +96,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-6 pt-4 border-t border-border/50', className)}
+    className={cn('flex items-center p-6 pt-4 border-t border-zinc-100 dark:border-zinc-800', className)}
     {...props}
   />
 ))

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
 const KanbanBoard = lazy(() => import('@/features/projects').then(m => ({ default: m.KanbanBoard })))
 const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
-const GanttView = lazy(() => import('@/components/views/gantt-view'))
+// GanttView removed in Phase 3 migration - feature deprecated
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Loading, LoadingCard, LoadingTable } from '@/components/ui/loading'
@@ -31,7 +31,7 @@ import { Project } from '@/features/projects/types'
 // Lazy load additional heavy components
 const ExportDialog = lazy(() => import('@/components/export/export-dialog'))
 const ImportDialog = lazy(() => import('@/components/import/import-dialog'))
-const TimeTracker = lazy(() => import('@/components/time-tracking/time-tracker'))
+// TimeTracker removed in Phase 3 migration - feature archived
 const PresenceIndicator = lazy(() => import('@/components/collaboration/presence-indicator'))
 const CommentsSection = lazy(() => import('@/components/comments/comments-section'))
 const NotificationCenter = lazy(() => import('@/components/notifications/notification-center'))
@@ -377,7 +377,7 @@ export default function DashboardPage() {
               />
             )}
             {activeView === 'kanban' && <KanbanBoard />}
-            {activeView === 'gantt' && <GanttView project={{ id: '', name: '', milestones: [], tasks: [] }} />}
+            {/* Gantt view removed in Phase 3 - use Kanban or Table view */}
           </Suspense>
 
           {/* Time Tracker Sidebar - disabled until timer_sessions table exists */}

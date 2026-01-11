@@ -91,10 +91,11 @@ export class AuthService {
    */
   static async signUp(data: RegisterData): Promise<AuthResponse> {
     try {
+      // TODO: Re-enable email_confirm when email service is configured in Supabase
       const { data: authData, error } = await supabaseAdmin.auth.admin.createUser({
         email: data.email,
         password: data.password,
-        email_confirm: true
+        email_confirm: false // Disabled until email service is configured
       })
 
       if (error) {

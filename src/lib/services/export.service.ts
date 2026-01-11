@@ -242,22 +242,20 @@ export class ExportService {
       } else {
         // Flatten for CSV
         const flatData = [
-          ...(milestones || []).map(m => ({
+          ...(milestones || []).map((m: any) => ({
             type: 'milestone',
             id: m.id,
             title: m.name || m.title,
-            start_date: this.formatDate(m.start_date),
             due_date: this.formatDate(m.due_date),
             status: m.status,
           })),
-          ...(tasks || []).map(t => ({
+          ...(tasks || []).map((t: any) => ({
             type: 'task',
             id: t.id,
             title: t.title,
             milestone_id: t.milestone_id,
-            start_date: this.formatDate(t.start_date),
-            due_date: this.formatDate(t.due_date),
-            status: t.status,
+            due_date: this.formatDate(t.due_date || null),
+            status: t.status || 'todo',
           }))
         ]
         this.downloadCSV(flatData, filename)
@@ -270,52 +268,34 @@ export class ExportService {
 
   /**
    * Export custom fields data before removal
+   * @deprecated Custom fields feature removed in Phase 3
    */
   static async exportCustomFields(organizationId: string, options: ExportOptions = {}): Promise<void> {
-    try {
-      const supabase = supabaseClient
-
-      // Try to fetch custom fields (table may not exist)
-      const { data: customFields } = await supabase
-        .from('custom_fields')
-        .select('*')
-        .eq('organization_id', organizationId)
-
-      const exportData = {
-        organization_id: organizationId,
-        export_type: 'custom_fields',
-        exported_at: new Date().toISOString(),
-        custom_fields: customFields || [],
-        note: 'Custom fields will be replaced by AI-extracted metadata',
-      }
-
-      const filename = options.filename || `custom-fields-export-${new Date().toISOString().split('T')[0]}`
-
-      if (options.format === 'csv') {
-        this.downloadCSV(customFields || [], filename)
-      } else {
-        this.downloadJSON(exportData, filename)
-      }
-    } catch (error) {
-      console.warn('Custom fields not found or already removed:', error)
-      // Export empty structure
-      this.downloadJSON({
-        organization_id: organizationId,
-        custom_fields: [],
-        note: 'No custom fields data found',
-      }, options.filename || 'custom-fields-export')
+    // Custom fields table no longer exists after Phase 3 migration
+    console.warn('Custom fields feature removed in Phase 3 migration')
+    
+    const exportData = {
+      organization_id: organizationId,
+      export_type: 'custom_fields',
+      exported_at: new Date().toISOString(),
+      custom_fields: [],
+      note: 'Custom fields were removed in Phase 3. Use AI-extracted metadata instead.',
     }
+
+    const filename = options.filename || `custom-fields-export-${new Date().toISOString().split('T')[0]}`
+    this.downloadJSON(exportData, filename)
   }
 
   /**
-   * Export time tracking data before removal
+   * Export time tracking data from archive
    */
   static async exportTimeTracking(userId: string, options: ExportOptions = {}): Promise<void> {
     try {
       const supabase = supabaseClient
 
-      let query = supabase
-        .from('time_entries')
+      // Query archive table instead of time_entries
+      let query = (supabase as any)
+        .from('time_entries_archive')
         .select('*')
         .eq('user_id', userId)
         .order('start_time', { ascending: false })
@@ -328,8 +308,8 @@ export class ExportService {
 
       const { data: timeEntries } = await query
 
-      const totalHours = (timeEntries || []).reduce((sum, entry) => {
-        return sum + (entry.duration_minutes || 0) / 60
+      const totalHours = (timeEntries || []).reduce((sum, entry: any) => {
+        return sum + ((entry.duration_minutes || 0) / 60)
       }, 0)
 
       const exportData = {
@@ -338,7 +318,7 @@ export class ExportService {
         exported_at: new Date().toISOString(),
         total_hours: totalHours,
         time_entries: timeEntries || [],
-        note: 'Time tracking is being removed. Focus on task completion instead.',
+        note: 'Time tracking is archived. Focus on task completion instead.',
       }
 
       const filename = options.filename || `time-tracking-export-${new Date().toISOString().split('T')[0]}`
@@ -349,46 +329,33 @@ export class ExportService {
         this.downloadCSV(timeEntries || [], filename)
       }
     } catch (error) {
-      console.warn('Time entries not found:', error)
+      console.warn('Time entries archive not found:', error)
       this.downloadJSON({
         user_id: userId,
         time_entries: [],
-        note: 'No time tracking data found',
+        note: 'No time tracking data found in archive',
       }, options.filename || 'time-tracking-export')
     }
   }
 
   /**
    * Export goals before migration to milestones
+   * @deprecated Goals migrated to milestones in Phase 3
    */
   static async exportGoals(organizationId: string, options: ExportOptions = {}): Promise<void> {
-    try {
-      const supabase = supabaseClient
-
-      const { data: goals } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false })
-
-      const exportData = {
-        organization_id: organizationId,
-        export_type: 'goals_backup',
-        exported_at: new Date().toISOString(),
-        goals: goals || [],
-        note: 'Goals will be automatically migrated to Milestones',
-      }
-
-      const filename = options.filename || `goals-export-${new Date().toISOString().split('T')[0]}`
-
-      if (options.format === 'csv') {
-        this.downloadCSV(goals || [], filename)
-      } else {
-        this.downloadJSON(exportData, filename)
-      }
-    } catch (error) {
-      console.warn('Goals not found:', error)
+    // Goals table no longer exists after Phase 3 migration
+    console.warn('Goals migrated to milestones in Phase 3 migration')
+    
+    const exportData = {
+      organization_id: organizationId,
+      export_type: 'goals_backup',
+      exported_at: new Date().toISOString(),
+      goals: [],
+      note: 'Goals were migrated to Milestones in Phase 3. Query milestones with type="goal" instead.',
     }
+
+    const filename = options.filename || `goals-export-${new Date().toISOString().split('T')[0]}`
+    this.downloadJSON(exportData, filename)
   }
 
   /**

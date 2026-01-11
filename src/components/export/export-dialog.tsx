@@ -83,8 +83,8 @@ export default function ExportDialog({
         status: selectedStatuses.length > 0 ? selectedStatuses : undefined,
         organizationId: exportType === 'comprehensive' ? projectId : organizationId,
         dateRange: dateRange.start && dateRange.end ? {
-          start: dateRange.start,
-          end: dateRange.end
+          start: dateRange.start.toISOString(),
+          end: dateRange.end.toISOString()
         } : undefined
       }
 

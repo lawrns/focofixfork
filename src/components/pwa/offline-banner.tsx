@@ -11,6 +11,7 @@ interface OfflineBannerProps {
 }
 
 export function OfflineBanner({ className }: OfflineBannerProps) {
+  const [mounted, setMounted] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [syncStatus, setSyncStatus] = useState({
     pendingRequests: 0,
@@ -21,8 +22,9 @@ export function OfflineBanner({ className }: OfflineBannerProps) {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
 
   useEffect(() => {
-    // Check initial online status
+    // Check initial online status only after mount to prevent hydration mismatch
     setIsOnline(navigator.onLine)
+    setMounted(true)
 
     // Listen for online/offline events
     const handleOnline = () => {
@@ -186,7 +188,7 @@ export function OfflineBanner({ className }: OfflineBannerProps) {
 
 // Hook for offline status
 export function useOfflineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isOnline, setIsOnline] = useState(true)
   const [syncStatus, setSyncStatus] = useState({
     pendingRequests: 0,
     offlineData: 0,
@@ -194,6 +196,9 @@ export function useOfflineStatus() {
   })
 
   useEffect(() => {
+    // Set actual online status only after mount
+    setIsOnline(navigator.onLine)
+
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 

@@ -31,18 +31,29 @@ export function ThemeProvider({
   storageKey = 'foco-ui-theme',
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (typeof window !== 'undefined' && localStorage.getItem(storageKey)) as Theme || defaultTheme
-  )
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<Theme>(defaultTheme)
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(defaultTheme === 'light' ? 'light' : defaultTheme === 'dark' ? 'dark' : 'light')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+    
+    // Load theme from localStorage only after mount
+    const storedTheme = localStorage.getItem(storageKey) as Theme
+    if (storedTheme) {
+      setTheme(storedTheme)
+    }
+  }, [storageKey])
+
+  useEffect(() => {
+    if (!mounted) return
+    
     const root = window.document.documentElement
 
     root.classList.remove('light', 'dark')
 
     let resolved: 'light' | 'dark'
-    
+
     if (theme === 'system') {
       resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     } else {
@@ -51,7 +62,7 @@ export function ThemeProvider({
 
     root.classList.add(resolved)
     setResolvedTheme(resolved)
-  }, [theme])
+  }, [theme, mounted])
 
   const value = {
     theme,

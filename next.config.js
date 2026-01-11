@@ -1,9 +1,25 @@
 /** @type {import('next').NextConfig} */
+
+// Security: Fail-fast validation for required environment variables
+const requiredEnvVars = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+]
+
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+
+if (missingEnvVars.length > 0) {
+  throw new Error(
+    `Missing required environment variables: ${missingEnvVars.join(', ')}\n` +
+    'Please set these in your .env.local file. See .env.example for reference.'
+  )
+}
+
 const nextConfig = {
-  // Environment variables - ensure they're available at build time
+  // Environment variables - NO fallback values for security
   env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://czijxfbkihrauyjwcgfn.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aWp4ZmJraWhyYXV5andjZ2ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNzU5ODMsImV4cCI6MjA2Nzc1MTk4M30.0MYAeaLn3L1LYiGNrsWPIvuZUVq-z7MUvaigybzCnQ0',
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
 
   // Image optimization for mobile

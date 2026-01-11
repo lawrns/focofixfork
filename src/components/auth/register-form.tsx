@@ -42,8 +42,6 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    displayName: '',
   })
 
   useEffect(() => {
@@ -110,18 +108,8 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
   }
 
   const validateForm = () => {
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return false
-    }
-
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters long')
-      return false
-    }
-
-    if (!formData.displayName.trim()) {
-      setError('Display name is required')
       return false
     }
 
@@ -142,11 +130,6 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
       const { data, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            display_name: formData.displayName.trim(),
-          }
-        }
       })
 
       if (authError) {
@@ -245,175 +228,155 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
   }
 
   return (
-    <div className="w-full space-y-8">
-      <div className="space-y-3 text-center">
-        <div className="flex justify-center mb-4">
+    <div className="w-full max-w-sm mx-auto">
+      {/* Header - Centered, Minimal */}
+      <div className="mb-8 text-center">
+        <div className="flex justify-center mb-6">
           <Image
             src="/focologo.png"
             alt="Foco Logo"
-            width={64}
-            height={64}
-            className="h-16 w-auto"
+            width={48}
+            height={48}
+            className="h-12 w-auto"
           />
         </div>
-        <h1 className="text-3xl font-bold text-foreground">
-          {invitationData ? 'Únete a tu equipo' : 'Crear tu cuenta'}
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mb-2">
+          {invitationData ? 'Join your team' : 'Create your account'}
         </h1>
-        <p className="text-muted-foreground text-base">
+        <p className="text-sm text-zinc-600">
           {invitationData
-            ? `Has sido invitado a unirte a ${invitationData.organization_name} en Foco`
-            : 'Comienza con la gestión de proyectos de Foco'
+            ? `You've been invited to join ${invitationData.organization_name}`
+            : 'Get started with Foco project management'
           }
         </p>
         {invitationData && (
-          <div className="bg-muted p-4 rounded-lg mt-4">
-            <p className="text-sm">
-              <strong>{invitationData.invited_by_name}</strong> te ha invitado como <strong>{invitationData.role}</strong> en <strong>{invitationData.organization_name}</strong>.
+          <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 rounded-md">
+            <p className="text-xs text-zinc-700">
+              <span className="font-medium">{invitationData.invited_by_name}</span> invited you as{' '}
+              <span className="font-medium">{invitationData.role}</span>
             </p>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-3">
-          <Label htmlFor="displayName" className="text-sm font-medium text-foreground">
-            Nombre de usuario
-          </Label>
-          <Input
-            id="displayName"
-            name="displayName"
-            type="text"
-            placeholder="Ingresa tu nombre de usuario"
-            value={formData.displayName}
-            onChange={handleInputChange}
-            required
-            disabled={isLoading}
-            autoComplete="name"
-            data-testid="displayName-input"
-            className="h-12 px-4 text-base"
-          />
-        </div>
-
-        <div className="space-y-3">
-          <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            Correo electrónico
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label
+            htmlFor="email"
+            className="text-xs font-medium text-zinc-700 uppercase tracking-wide"
+          >
+            Email
           </Label>
           <Input
             id="email"
             name="email"
             type="email"
-            placeholder="Ingresa tu correo electrónico"
+            placeholder="name@company.com"
             value={formData.email}
             onChange={handleInputChange}
             required
-            disabled={isLoading}
+            disabled={isLoading || !!invitationData?.email}
             autoComplete="email"
             data-testid="email-input"
-            className="h-12 px-4 text-base"
+            className="h-10 px-3 text-sm border-zinc-200 bg-white focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-colors"
           />
         </div>
 
-        <div className="space-y-3">
-          <Label htmlFor="password" className="text-sm font-medium text-foreground">
-            Contraseña
+        {/* Password Field */}
+        <div className="space-y-2">
+          <Label
+            htmlFor="password"
+            className="text-xs font-medium text-zinc-700 uppercase tracking-wide"
+          >
+            Password
           </Label>
           <Input
             id="password"
             name="password"
             type="password"
-            placeholder="Crea una contraseña (mín. 8 caracteres)"
+            placeholder="At least 8 characters"
             value={formData.password}
             onChange={handleInputChange}
             required
             disabled={isLoading}
             autoComplete="new-password"
             data-testid="password-input"
-            className="h-12 px-4 text-base"
+            className="h-10 px-3 text-sm border-zinc-200 bg-white focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-colors"
           />
         </div>
 
-        <div className="space-y-3">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
-            Confirmar contraseña
-          </Label>
-          <Input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirma tu contraseña"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            required
-            disabled={isLoading}
-            autoComplete="new-password"
-            data-testid="confirmPassword-input"
-            className="h-12 px-4 text-base"
-          />
-        </div>
-
+        {/* Error Message */}
         {error && (
-          <Alert variant="destructive" className="border-destructive/50">
-            <AlertDescription className="text-sm">{error}</AlertDescription>
-          </Alert>
+          <div className="px-3 py-2 text-xs border border-red-200 bg-red-50 text-red-900 rounded-md">
+            {error}
+          </div>
         )}
 
+        {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full h-12 text-base font-medium"
-          disabled={isLoading || !formData.email || !formData.password || !formData.confirmPassword || !formData.displayName}
+          className="w-full h-10 text-sm font-medium bg-zinc-900 hover:bg-zinc-800 text-white transition-colors"
+          disabled={isLoading || !formData.email || !formData.password}
           data-testid="register-button"
         >
-          {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-          Crear cuenta
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            'Create account'
+          )}
         </Button>
       </form>
 
-      {/* Social Login Buttons */}
-      <div className="space-y-4">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
-          </div>
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-zinc-200" />
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button
-            type="button"
-            className="h-12 text-base font-medium bg-[#4285F4] hover:bg-[#3367D6] text-white border-0 shadow-sm hover:shadow-md rounded-lg transition-all duration-200"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-          >
-            <GoogleIcon />
-            <span className="ml-2">Inicia sesión con Google</span>
-          </Button>
-
-          <Button
-            type="button"
-            className="h-12 text-base font-medium bg-black hover:bg-gray-800 text-white border-0 shadow-sm hover:shadow-md rounded-lg transition-all duration-200"
-            onClick={handleAppleSignIn}
-            disabled={isLoading}
-          >
-            <AppleIcon />
-            <span className="ml-2">Inicia sesión con Apple</span>
-          </Button>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-white px-2 text-zinc-500">Or continue with</span>
         </div>
       </div>
 
-      <div className="text-center pt-2">
-        <span className="text-muted-foreground text-sm">¿Ya tienes una cuenta? </span>
-        <a
-          href="/login"
-          className="text-primary hover:underline font-medium text-sm"
+      {/* Social Buttons - Minimal, no animations */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isLoading}
+          className="h-10 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <GoogleIcon />
+          <span className="hidden sm:inline">Google</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={isLoading}
+          className="h-10 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-900 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <AppleIcon />
+          <span className="hidden sm:inline">Apple</span>
+        </button>
+      </div>
+
+      {/* Sign in Link */}
+      <div className="text-center mt-6">
+        <span className="text-sm text-zinc-600">Already have an account? </span>
+        <button
+          type="button"
           onClick={(e) => {
             e.preventDefault()
             router.push('/login')
           }}
+          className="text-sm font-medium text-zinc-900 hover:text-zinc-700 transition-colors"
         >
-          Inicia sesión
-        </a>
+          Sign in
+        </button>
       </div>
     </div>
   )

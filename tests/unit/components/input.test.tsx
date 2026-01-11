@@ -15,27 +15,24 @@ describe('Input Component', () => {
   describe('Rendering', () => {
     it('renders with default props', () => {
       render(<Input placeholder="Enter text" />);
-      
+
       const input = screen.getByPlaceholderText('Enter text');
       expect(input).toBeInTheDocument();
-      expect(input).toHaveClass('h-11', 'w-full', 'rounded-lg', 'border-2');
+      expect(input).toHaveClass('w-full', 'rounded-lg', 'border', 'bg-white');
     });
 
     it('renders with custom className', () => {
       render(<Input className="custom-class" />);
-      
+
       const input = screen.getByRole('textbox');
       expect(input).toHaveClass('custom-class');
     });
 
-    it('renders with different variants', () => {
-      const { rerender } = render(<Input variant="error" />);
-      let input = screen.getByRole('textbox');
-      expect(input).toHaveClass('border-error/50', 'bg-error/5');
-
-      rerender(<Input variant="success" />);
-      input = screen.getByRole('textbox');
-      expect(input).toHaveClass('border-success/50', 'bg-success/5');
+    it('renders with error state', () => {
+      render(<Input error="This field is required" />);
+      const input = screen.getByRole('textbox');
+      expect(input).toHaveClass('border-red-500');
+      expect(screen.getByText('This field is required')).toBeInTheDocument();
     });
 
     it('renders with different types', () => {
@@ -97,10 +94,10 @@ describe('Input Component', () => {
 
     it('can be disabled', () => {
       render(<Input disabled />);
-      
+
       const input = screen.getByRole('textbox');
       expect(input).toBeDisabled();
-      expect(input).toHaveClass('disabled:opacity-50', 'disabled:bg-slate-50');
+      expect(input).toHaveClass('disabled:opacity-60', 'disabled:bg-zinc-50');
     });
 
     it('does not accept input when disabled', async () => {
@@ -200,11 +197,11 @@ describe('Input Component', () => {
     });
 
     it('indicates invalid state', () => {
-      render(<Input aria-invalid="true" variant="error" />);
-      
+      render(<Input aria-invalid="true" error="Invalid input" />);
+
       const input = screen.getByRole('textbox');
       expect(input).toHaveAttribute('aria-invalid', 'true');
-      expect(input).toHaveClass('border-error/50');
+      expect(input).toHaveClass('border-red-500');
     });
 
     it('passes accessibility checks', async () => {
@@ -378,40 +375,31 @@ describe('Input Component', () => {
   describe('Styling and Design System', () => {
     it('applies focus styles correctly', async () => {
       render(<Input />);
-      
+
       const input = screen.getByRole('textbox');
       input.focus();
-      
-      expect(input).toHaveClass('focus-visible:border-primary/50', 'focus-visible:ring-2');
-    });
 
-    it('applies hover styles correctly', async () => {
-      render(<Input />);
-      
-      const input = screen.getByRole('textbox');
-      await user.hover(input);
-      
-      expect(input).toHaveClass('hover:border-border-dark');
+      expect(input).toHaveClass('focus:ring-2', 'focus:ring-zinc-900/10');
     });
 
     it('applies disabled styles correctly', () => {
       render(<Input disabled />);
-      
+
       const input = screen.getByRole('textbox');
-      expect(input).toHaveClass('disabled:opacity-50', 'disabled:bg-slate-50');
+      expect(input).toHaveClass('disabled:opacity-60', 'disabled:bg-zinc-50');
     });
 
     it('maintains design system consistency', () => {
       const { rerender } = render(<Input />);
       let input = screen.getByRole('textbox');
-      
-      // Check base design tokens
-      expect(input).toHaveClass('h-11', 'rounded-lg', 'text-sm', 'font-medium');
 
-      // Check variant maintains consistency
-      rerender(<Input variant="error" />);
+      // Check base design tokens
+      expect(input).toHaveClass('rounded-lg', 'text-zinc-900', 'border');
+
+      // Check error state maintains consistency
+      rerender(<Input error="Error message" />);
       input = screen.getByRole('textbox');
-      expect(input).toHaveClass('h-11', 'rounded-lg', 'text-sm', 'font-medium');
+      expect(input).toHaveClass('rounded-lg', 'text-zinc-900', 'border-red-500');
     });
 
     it('supports custom styling overrides', () => {

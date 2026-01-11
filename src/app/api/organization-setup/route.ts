@@ -45,61 +45,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update user profile to include the organization_id
-    console.log('Updating user profile for user:', userId, 'with organization:', orgResult.data!.id)
+    // Add user as organization member
+    console.log('Adding user as organization member:', userId, 'to organization:', orgResult.data!.id)
 
-    // Get user info from auth to get display name
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
-    let displayName = 'User'
-    if (!userError && userData.user) {
-      displayName = userData.user.user_metadata?.full_name ||
-                   userData.user.user_metadata?.display_name ||
-                   userData.user.email?.split('@')[0] ||
-                   'User'
+    // Check if user is already a member
+    const { data: existingMember } = await supabaseAdmin
+      .from('organization_members')
+      .select('id')
+      .eq('organization_id', orgResult.data!.id)
+      .eq('user_id', userId)
+      .single()
+
+    if (!existingMember) {
+      const { error: memberError } = await supabaseAdmin
+        .from('organization_members')
+        .insert({
+          organization_id: orgResult.data!.id,
+          user_id: userId,
+          role: 'owner',
+          joined_at: new Date().toISOString()
+        })
+
+      if (memberError) {
+        console.error('Failed to add organization member:', memberError)
+        return NextResponse.json(
+          { success: false, error: `Failed to add user to organization: ${memberError.message}` },
+          { status: 400 }
+        )
+      }
     }
-
-    // Always try to upsert the profile - this handles both new and existing profiles
-    const profileData = {
-      id: userId,  // Use 'id' as the primary key matching the user ID
-      user_id: userId,  // Also set user_id for compatibility
-      organization_id: orgResult.data!.id,
-      display_name: displayName,
-      email_notifications: true,
-      theme_preference: 'system',
-      bio: null,
-      preferences: {},
-      settings: {},
-      timezone: 'UTC',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    console.log('Upserting profile with data:', profileData)
-
-    // Use upsert to handle both insert and update cases
-    const { data: upsertResult, error: upsertError } = await supabaseAdmin
-      .from('user_profiles')
-      .upsert(profileData, {
-        onConflict: 'id',
-        ignoreDuplicates: false
-      })
-      .select()
-
-    if (upsertError) {
-      console.error('Profile upsert error:', upsertError)
-      return NextResponse.json(
-        { success: false, error: `Profile update failed: ${upsertError.message}` },
-        { status: 400 }
-      )
-    }
-
-    console.log('Profile upsert result:', upsertResult)
 
     return NextResponse.json({
       success: true,
       data: {
         organization: orgResult.data,
-        message: 'Organization created and user profile updated successfully'
+        message: 'Organization created successfully'
       }
     })
   } catch (error) {

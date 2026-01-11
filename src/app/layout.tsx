@@ -1,100 +1,14 @@
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Providers } from "./providers";
-import { OfflineBanner } from "@/components/pwa/offline-banner";
-import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
-import type { Metadata } from "next";
+import { AppShell } from '@/components/foco/layout/app-shell';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-  adjustFontFallback: true,
-});
-
-export const metadata: Metadata = {
-  title: {
-    default: "Foco - Gestión de Proyectos con IA",
-    template: "%s | Foco"
-  },
-  description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
-  keywords: ["project management", "AI", "collaboration", "productivity", "team management"],
-  authors: [{ name: "Foco Team" }],
-  creator: "Foco",
-  publisher: "Foco",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL("https://foco.mx"),
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "es_MX",
-    url: "https://foco.mx",
-    title: "Foco - Gestión de Proyectos con IA",
-    description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
-    siteName: "Foco",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Foco - Gestión de Proyectos con IA",
-    description: "Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows.",
-    creator: "@foco",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-};
-
-export default function RootLayout({
+export default function AppLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-        <meta name="application-name" content="Foco" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Foco" />
-        <meta name="description" content="Streamline your project management with AI-powered insights, real-time collaboration, and intuitive workflows." />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#0052CC" />
-        <meta name="msapplication-tap-highlight" content="no" />
-        <meta name="theme-color" content="#0052CC" />
-
-        <link rel="apple-touch-icon" href="/icons/manifest-icon-192.maskable.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/icons/manifest-icon-192.maskable.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icons/manifest-icon-512.maskable.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icons/manifest-icon-192.maskable.png" />
-        <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#0052CC" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-      </head>
-      <body className={`${inter.variable} antialiased`}>
-        <OfflineBanner />
-        <Providers>{children}</Providers>
-        <ServiceWorkerRegistration />
-      </body>
-    </html>
+    <TooltipProvider>
+      <AppShell>{children}</AppShell>
+    </TooltipProvider>
   );
 }

@@ -10,15 +10,14 @@ import {
   CheckSquare,
   Star,
   BarChart3,
-  Target,
   Plus,
-  HelpCircle,
   ChevronDown,
   ChevronRight,
   Folder,
   Users,
   Settings,
-  GitBranch
+  Sun,
+  Moon
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
@@ -26,6 +25,7 @@ import { projectStore } from '@/lib/stores/project-store'
 import { useProjects } from '@/features/projects/hooks/useProjects'
 import { useTranslation } from '@/lib/i18n/context'
 import { apiCache } from '@/lib/api-cache'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 interface Project {
   id: string
@@ -38,12 +38,8 @@ const getNavigation = (t: any) => [
   { name: t('navigation.home'), href: '/dashboard/personalized', icon: Home },
   { name: t('navigation.inbox'), href: '/inbox', icon: Inbox },
   { name: t('navigation.myTasks'), href: '/tasks', icon: CheckSquare },
-  // { name: t('navigation.calendar'), href: '/calendar', icon: CalendarIcon }, // Temporarily disabled
   { name: t('navigation.favorites'), href: '/favorites', icon: Star },
   { name: t('navigation.reports'), href: '/reports', icon: BarChart3 },
-  { name: t('navigation.goals'), href: '/dashboard/goals', icon: Target },
-  { name: t('navigation.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Diagrams', href: '/mermaid', icon: GitBranch },
 ]
 
 export default function Sidebar() {
@@ -53,10 +49,10 @@ export default function Sidebar() {
   const [projects, setProjects] = useState<Project[]>([])
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [lastRealtimeUpdate, setLastRealtimeUpdate] = useState<number>(Date.now())
   const [primaryOrgId, setPrimaryOrgId] = useState<string | null>(null)
   const lastFetchTime = useRef<number>(0)
-  const fetchProjectsRef = useRef<((forceRefresh?: boolean) => Promise<void>) | null>(null)
+  const hasMounted = useRef(false)
+  const lastRealtimeUpdate = useRef<number>(Date.now())
   
   const navigation = getNavigation(t)
 
@@ -117,68 +113,53 @@ export default function Sidebar() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id]) // Only depend on user.id to prevent unnecessary recreations
+  }, [user?.id])
 
-  // Store latest fetchProjects in ref
+  // Single consolidated useEffect for all project fetching logic
   useEffect(() => {
-    fetchProjectsRef.current = fetchProjects
-  }, [fetchProjects])
-
-  useEffect(() => {
-    if (user && fetchProjectsRef.current) {
-      fetchProjectsRef.current(true) // Always force refresh on mount
-    }
-  }, [user?.id]) // Only depend on user.id
-
-  // Refresh projects when navigating back to dashboard or when component becomes visible
-  useEffect(() => {
-    if (!user) return
+    if (!user || hasMounted.current) return
     
-    const handleVisibilityChange = () => {
-      if (!document.hidden && fetchProjectsRef.current) {
-        fetchProjectsRef.current(true) // Force refresh using ref
-      }
-    }
+    hasMounted.current = true
+    fetchProjects(true) // Force refresh on mount
 
-    const handleFocus = () => {
-      if (fetchProjectsRef.current) {
-        fetchProjectsRef.current(true) // Force refresh using ref
-      }
-    }
-
-    const handleProjectDeleted = (event: CustomEvent) => {
-      if (fetchProjectsRef.current) {
-        fetchProjectsRef.current(true) // Force refresh using ref
-      }
+    // Set up event listeners for updates
+    const handleProjectDeleted = () => {
+      fetchProjects(true)
     }
 
     const handleProjectUpdated = () => {
-      // For updates, we don't need to force refresh since the store should be updated
-      // But we can ensure the sidebar reflects the latest store state
       const latestProjects = projectStore.getProjects()
       setProjects(latestProjects)
     }
 
     const handleForceProjectRefresh = () => {
-      if (fetchProjectsRef.current) {
-        fetchProjectsRef.current(true) // Force fresh data from API using ref
+      fetchProjects(true)
+    }
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchProjects(true)
       }
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-    window.addEventListener('projectDeleted', handleProjectDeleted as EventListener)
+    const handleFocus = () => {
+      fetchProjects(true)
+    }
+
+    window.addEventListener('projectDeleted', handleProjectDeleted)
     window.addEventListener('projectUpdated', handleProjectUpdated)
     window.addEventListener('forceProjectRefresh', handleForceProjectRefresh)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
-      window.removeEventListener('projectDeleted', handleProjectDeleted as EventListener)
+      window.removeEventListener('projectDeleted', handleProjectDeleted)
       window.removeEventListener('projectUpdated', handleProjectUpdated)
       window.removeEventListener('forceProjectRefresh', handleForceProjectRefresh)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
     }
-  }, [user?.id]) // Removed fetchProjects to prevent infinite loop
+  }, [user?.id, fetchProjects])
 
   // Fallback: If no real-time updates received in 5 minutes, force refresh
   useEffect(() => {
@@ -186,18 +167,16 @@ export default function Sidebar() {
     
     const interval = setInterval(() => {
       const now = Date.now()
-      const timeSinceLastUpdate = now - lastRealtimeUpdate
+      const timeSinceLastUpdate = now - lastRealtimeUpdate.current
 
       if (timeSinceLastUpdate > 300000) { // 5 minutes (300000ms)
-        if (fetchProjectsRef.current) {
-          fetchProjectsRef.current(true) // Force refresh using ref
-        }
-        setLastRealtimeUpdate(now) // Reset timer
+        fetchProjects(true) // Force refresh
+        lastRealtimeUpdate.current = now // Reset timer
       }
     }, 60000) // Check every 60 seconds
 
     return () => clearInterval(interval)
-  }, [user?.id]) // Removed fetchProjects to prevent infinite loop
+  }, [user?.id, fetchProjects])
 
   // Don't auto-refresh on auth changes - rely on store subscription
 
@@ -227,7 +206,7 @@ export default function Sidebar() {
   // Real-time updates for projects in sidebar - use organization-specific subscription
   useOrganizationRealtime(primaryOrgId || '', (payload) => {
     // Track that we received a real-time update
-    setLastRealtimeUpdate(Date.now())
+    lastRealtimeUpdate.current = Date.now()
 
     if (payload.table === 'projects') {
       if (payload.eventType === 'INSERT') {
@@ -252,26 +231,10 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex w-72 flex-col bg-background border-r border-border overflow-hidden">
-      <div className="flex h-full flex-col p-4 overflow-y-auto">
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 p-2">
-          <Image
-            src="/focologo.png"
-            alt="Foco Logo"
-            width={40}
-            height={40}
-            className="h-10 w-auto brightness-0 invert"
-            style={{ filter: 'brightness(0) invert(1)' }}
-          />
-          <div className="flex flex-col">
-            <h1 className="text-base font-bold text-foreground">Foco</h1>
-            <p className="text-sm font-medium text-muted-foreground">Focus on what matters</p>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="mt-8 flex flex-1 flex-col gap-1" aria-label="Main navigation">
+    <aside className="hidden md:flex w-60 flex-col bg-white border-r border-zinc-200">
+      <div className="flex h-full flex-col px-3 py-4 overflow-y-auto">
+        {/* Navigation - Minimal */}
+        <nav className="flex flex-1 flex-col gap-0.5" aria-label="Main navigation">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
@@ -280,60 +243,60 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
                   isActive
-                    ? 'bg-primary font-semibold text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50'
+                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-5 w-5 opacity-70" aria-hidden="true" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {item.name}
               </Link>
             )
           })}
 
-          {/* Projects Section */}
-          <div className="mt-6">
+          {/* Projects Section - Compact */}
+          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               onClick={() => setProjectsExpanded(!projectsExpanded)}
-              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
               aria-expanded={projectsExpanded}
               aria-label={projectsExpanded ? 'Collapse projects list' : 'Expand projects list'}
             >
               {projectsExpanded ? (
-                <ChevronDown className="h-4 w-4 opacity-70" aria-hidden="true" />
+                <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
               ) : (
-                <ChevronRight className="h-4 w-4 opacity-70" aria-hidden="true" />
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              <Folder className="h-5 w-5 opacity-70" aria-hidden="true" />
-              {t('navigation.projects')}
-              <span className="ml-auto text-xs bg-muted rounded-full px-2 py-0.5" aria-label={`${projects.length} projects`}>
+              <Folder className="h-4 w-4" aria-hidden="true" />
+              <span className="flex-1 text-left">Projects</span>
+              <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500" aria-label={`${projects.length} projects`}>
                 {projects.length}
               </span>
             </button>
 
             {projectsExpanded && (
-              <div className="mt-2 ml-6 space-y-1">
+              <div className="mt-1 ml-6 space-y-0.5">
                 {loading ? (
-                  <div className="animate-pulse space-y-2">
+                  <div className="animate-pulse space-y-1.5">
                     {[...Array(3)].map((_, i) => (
-                      <div key={i} className="h-6 bg-muted rounded"></div>
+                      <div key={i} className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
                     ))}
                   </div>
                 ) : projects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground px-3 py-2">
-                    {t('projects.noProjects')}
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 px-2 py-1.5">
+                    No projects yet
                   </p>
                 ) : (
                   projects.slice(0, 10).map((project) => (
                     <Link
                       key={project.id}
                       href={`/projects/${project.id}`}
-                      className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`block rounded-md px-2 py-1 text-xs transition-colors ${
                         pathname === `/projects/${project.id}`
-                          ? 'bg-primary/20 font-semibold text-primary'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50'
+                          : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
                       }`}
                       aria-current={pathname === `/projects/${project.id}` ? 'page' : undefined}
                     >
@@ -343,7 +306,7 @@ export default function Sidebar() {
                 )}
 
                 {projects.length > 10 && (
-                  <p className="text-sm text-muted-foreground px-3 py-1">
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500 px-2 py-1">
                     +{projects.length - 10} more
                   </p>
                 )}
@@ -352,39 +315,35 @@ export default function Sidebar() {
           </div>
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="mt-auto flex flex-col gap-2">
+        {/* Bottom Actions - Minimal */}
+        <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-0.5">
           <button
             onClick={handleNewProject}
-            className="flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md bg-zinc-900 px-3 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
           >
-            <Plus className="h-4 w-4 mr-2 opacity-70" />
+            <Plus className="h-3.5 w-3.5" />
             New Project
           </button>
 
           <Link
             href="/organizations"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
           >
-            <Users className="h-5 w-5 opacity-70" />
+            <Users className="h-4 w-4" />
             Organizations
           </Link>
 
           <Link
             href="/dashboard/settings"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
           >
-            <Settings className="h-5 w-5 opacity-70" />
+            <Settings className="h-4 w-4" />
             Settings
           </Link>
 
-          <Link
-            href="/help"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <HelpCircle className="h-5 w-5 opacity-70" />
-            Help & docs
-          </Link>
+          <div className="flex items-center justify-center px-2 py-1.5">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </aside>

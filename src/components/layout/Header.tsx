@@ -3,9 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Search, HelpCircle, X, Settings, LogOut, User } from 'lucide-react'
-import { SavedViews } from '@/components/ui/saved-views'
-import { ViewConfig } from '@/lib/hooks/use-saved-views'
+import { Search, X, Settings, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useTranslation } from '@/lib/i18n/context'
 import { apiGet } from '@/lib/api-client'
@@ -120,147 +118,112 @@ export default function Header() {
   }, [debounceTimer])
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 px-3 md:px-6 py-3 md:py-4 backdrop-blur-sm">
-      <div className="flex items-center gap-2 md:gap-6">
-        <div className="flex items-center gap-2 md:gap-3">
-          <Image
-            src="/focologo.png"
-            alt="Foco Logo"
-            width={32}
-            height={32}
-            className="h-6 md:h-8 w-auto"
-          />
-          <h2 className="text-lg md:text-xl font-bold text-foreground">Foco</h2>
-        </div>
-        <div className="hidden lg:flex items-center gap-2">
-            <span className="rounded-lg bg-primary/20 px-3 py-2 text-sm font-medium text-primary whitespace-nowrap">
-              Project Management
-            </span>
-          <span className="rounded-lg bg-muted px-3 py-2 text-sm font-medium text-muted-foreground whitespace-nowrap">
-            Dashboard
-          </span>
-        </div>
-      </div>
-
-      <div className="hidden md:block">
-        <SavedViews
-          onViewSelect={(view: ViewConfig) => {
-            // Handle view selection
-          }}
-          onViewSave={(name: string) => {
-            // Handle view save
-          }}
-          currentViewConfig={{
-            type: 'table',
-            filters: {},
-          }}
+    <header className="sticky top-0 z-10 flex items-center justify-between h-14 border-b border-zinc-200 bg-white px-4 md:px-6">
+      {/* Logo - Minimal */}
+      <div className="flex items-center gap-3">
+        <Image
+          src="/focologo.png"
+          alt="Foco"
+          width={24}
+          height={24}
+          className="h-6 w-6"
         />
+        <span className="text-sm font-semibold text-zinc-900">Foco</span>
       </div>
 
-      <div className="flex flex-1 justify-end items-center gap-2 md:gap-3">
-        {/* Search */}
-        <div className="relative w-full max-w-[200px] sm:max-w-xs md:w-72">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
+      {/* Right Side - Compact */}
+      <div className="flex items-center gap-2">
+        {/* Search - Minimal Input */}
+        <div className="relative w-56 md:w-72">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
           </div>
           <input
-            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder={t('common.search')}
+            className="h-8 w-full rounded-md border border-zinc-200 bg-white pl-8 pr-8 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-colors"
+            placeholder="Search..."
             type="search"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => searchQuery.trim() && setShowResults(true)}
             onBlur={() => {
-              // Delay hiding to allow click events on results
               setTimeout(() => setShowResults(false), 150)
             }}
           />
           {searchQuery && (
             <button
               onClick={clearSearch}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 hover:text-foreground text-muted-foreground"
+              className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-zinc-400 hover:text-zinc-600 transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
 
-          {/* Search Results Dropdown - Always present to prevent layout shifts */}
+          {/* Search Results - Clean Dropdown */}
           {showResults && (
-            <div className="absolute top-full mt-2 w-full bg-background border border-border rounded-lg shadow-lg z-50 min-h-[60px] max-h-96 overflow-y-auto">
+            <div className="absolute top-full mt-1 w-full bg-white border border-zinc-200 rounded-md shadow-sm z-50 max-h-80 overflow-y-auto">
               {isSearching ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                  <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
+                <div className="flex items-center justify-center p-3">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b border-zinc-900"></div>
+                  <span className="ml-2 text-xs text-zinc-500">Searching...</span>
                 </div>
               ) : searchResults.length > 0 ? (
                 searchResults.map((result) => (
                   <button
                     key={`${result.type}-${result.id}`}
                     onClick={() => handleResultClick(result)}
-                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
+                    className="w-full text-left px-3 py-2 hover:bg-zinc-50 transition-colors border-b border-zinc-100 last:border-0"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="px-2 py-1 text-xs rounded bg-primary/15 text-primary">
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 text-[10px] uppercase font-medium rounded bg-zinc-100 text-zinc-600">
                         {result.type}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{result.name}</p>
+                        <p className="text-xs font-medium truncate text-zinc-900">{result.name}</p>
                         {result.description && (
-                          <p className="text-sm text-muted-foreground truncate">{result.description}</p>
+                          <p className="text-[11px] text-zinc-500 truncate">{result.description}</p>
                         )}
                       </div>
                     </div>
                   </button>
                 ))
               ) : searchQuery.trim() ? (
-                <div className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground">{t('common.noResults')}</p>
+                <div className="p-3 text-center">
+                  <p className="text-xs text-zinc-500">No results found</p>
                 </div>
               ) : null}
             </div>
           )}
         </div>
 
-        {/* Help Button */}
-        <Button variant="ghost" size="compact" className="hidden sm:flex">
-          <HelpCircle className="h-4 w-4" />
-        </Button>
-
-        {/* Hey Menu (Notifications) */}
+        {/* Actions - Compact Icons */}
         <HeyMenu />
-
-        {/* Language Selector */}
         <LanguageSelectorCompact />
-
-        {/* Theme Toggle */}
         <ThemeToggle />
 
-        {/* User Avatar with Dropdown */}
+        {/* User Menu - Minimal Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="compact" className="rounded-full bg-primary/20 hover:bg-primary/30">
-              <span className="text-sm font-semibold text-primary">
-                {avatarText}
-              </span>
-            </Button>
+            <button className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition-colors">
+              {avatarText}
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{displayUser?.email}</p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-xs font-medium text-zinc-900">{displayUser?.email}</p>
+                <p className="text-[11px] text-zinc-500">
                   {displayUser?.user_metadata?.full_name || 'User'}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>{t('navigation.settings')}</span>
+              <Settings className="mr-2 h-3.5 w-3.5" />
+              <span className="text-xs">Settings</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-              <User className="mr-2 h-4 w-4" />
-              <span>{t('navigation.profile')}</span>
+              <User className="mr-2 h-3.5 w-3.5" />
+              <span className="text-xs">Profile</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -268,10 +231,10 @@ export default function Header() {
                 await supabase.auth.signOut()
                 router.push('/login')
               }}
-              className="text-destructive"
+              className="text-red-600"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>{t('navigation.signOut')}</span>
+              <LogOut className="mr-2 h-3.5 w-3.5" />
+              <span className="text-xs">Sign out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

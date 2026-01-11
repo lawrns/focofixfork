@@ -10,7 +10,8 @@ export function useGoalMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await goalService.createGoal(goalData)
+      const { userId, ...data } = goalData
+      const result = await goalService.createGoal(userId, data)
       return result
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Failed to create goal'
@@ -25,7 +26,8 @@ export function useGoalMutations() {
     try {
       setLoading(true)
       setError(null)
-      const result = await goalService.updateGoal(goalId, updates)
+      const { userId, ...data } = updates
+      const result = await goalService.updateGoal(userId, goalId, data)
       return result
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Failed to update goal'

@@ -28,14 +28,11 @@ export function useGoals(filters?: GoalFilters) {
     fetchGoals()
   }, [fetchGoals])
 
-  const createGoal = useCallback(async (goalData: Parameters<typeof goalService.createGoal>[0]) => {
+  const createGoal = useCallback(async (userId: string, goalData: Parameters<typeof goalService.createGoal>[1]) => {
     try {
-      const result = await goalService.createGoal(goalData)
-      if (result.success && result.data) {
-        setGoals(prev => [result.data!, ...prev])
-        return { success: true }
-      }
-      return { success: false, error: result.error }
+      const goal = await goalService.createGoal(userId, goalData)
+      setGoals(prev => [goal, ...prev])
+      return { success: true, data: goal }
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to create goal'
       setError(error)
@@ -43,14 +40,11 @@ export function useGoals(filters?: GoalFilters) {
     }
   }, [])
 
-  const updateGoal = useCallback(async (id: string, updates: Parameters<typeof goalService.updateGoal>[1]) => {
+  const updateGoal = useCallback(async (userId: string, id: string, updates: Parameters<typeof goalService.updateGoal>[2]) => {
     try {
-      const result = await goalService.updateGoal(id, updates)
-      if (result.success && result.data) {
-        setGoals(prev => prev.map(goal => goal.id === id ? result.data! : goal))
-        return { success: true }
-      }
-      return { success: false, error: result.error }
+      const goal = await goalService.updateGoal(userId, id, updates)
+      setGoals(prev => prev.map(g => g.id === id ? goal : g))
+      return { success: true, data: goal }
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to update goal'
       setError(error)
@@ -58,14 +52,11 @@ export function useGoals(filters?: GoalFilters) {
     }
   }, [])
 
-  const deleteGoal = useCallback(async (id: string) => {
+  const deleteGoal = useCallback(async (userId: string, id: string) => {
     try {
-      const result = await goalService.deleteGoal(id)
-      if (result.success) {
-        setGoals(prev => prev.filter(goal => goal.id !== id))
-        return { success: true }
-      }
-      return { success: false, error: result.error }
+      await goalService.deleteGoal(id, userId)
+      setGoals(prev => prev.filter(goal => goal.id !== id))
+      return { success: true }
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to delete goal'
       setError(error)
@@ -84,7 +75,7 @@ export function useGoals(filters?: GoalFilters) {
   }
 }
 
-export function useGoal(id: string) {
+export function useGoal(id: string, userId: string) {
   const [goal, setGoal] = useState<Goal | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,14 +84,14 @@ export function useGoal(id: string) {
     try {
       setLoading(true)
       setError(null)
-      const data = await goalService.getGoalById(id)
+      const data = await goalService.getGoal(id, userId)
       setGoal(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch goal')
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, userId])
 
   useEffect(() => {
     if (id) {
@@ -108,20 +99,17 @@ export function useGoal(id: string) {
     }
   }, [id, fetchGoal])
 
-  const updateGoal = useCallback(async (updates: Parameters<typeof goalService.updateGoal>[1]) => {
+  const updateGoal = useCallback(async (updates: Parameters<typeof goalService.updateGoal>[2]) => {
     try {
-      const result = await goalService.updateGoal(id, updates)
-      if (result.success && result.data) {
-        setGoal(result.data)
-        return { success: true }
-      }
-      return { success: false, error: result.error }
+      const result = await goalService.updateGoal(userId, id, updates)
+      setGoal(result)
+      return { success: true, data: result }
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to update goal'
       setError(error)
       return { success: false, error }
     }
-  }, [id])
+  }, [id, userId])
 
   return {
     goal,

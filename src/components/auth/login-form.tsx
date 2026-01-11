@@ -152,145 +152,163 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
   }
 
   return (
-    <div className="w-full space-y-8">
-      <div className="space-y-3 text-center">
-        <div className="flex justify-center mb-4">
+    <div className="w-full max-w-sm mx-auto">
+      {/* Header - Centered, Minimal */}
+      <div className="mb-8 text-center">
+        <div className="flex justify-center mb-6">
           <Image
             src="/focologo.png"
             alt="Foco Logo"
-            width={64}
-            height={64}
-            className="h-16 w-auto"
+            width={48}
+            height={48}
+            className="h-12 w-auto"
           />
         </div>
-        <h1 className="text-3xl font-bold text-foreground">Bienvenido de vuelta</h1>
-        <p className="text-muted-foreground text-base">
-          Inicia sesión en tu cuenta de Foco
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mb-2">
+          Welcome back
+        </h1>
+        <p className="text-sm text-zinc-600">
+          Sign in to your account to continue
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-3">
-          <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            Correo electrónico
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label
+            htmlFor="email"
+            className="text-xs font-medium text-zinc-700 uppercase tracking-wide"
+          >
+            Email
           </Label>
           <Input
             id="email"
             name="email"
             type="email"
-            placeholder="Ingresa tu correo electrónico"
+            placeholder="name@company.com"
             value={formData.email}
             onChange={handleInputChange}
             required
             disabled={isLoading}
             autoComplete="email"
             data-testid="email-input"
-            className="h-12 px-4 text-base"
+            className="h-10 px-3 text-sm border-zinc-200 bg-white focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-colors"
           />
         </div>
 
-        <div className="space-y-3">
+        {/* Password Field */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-sm font-medium text-foreground">
-              Contraseña
+            <Label
+              htmlFor="password"
+              className="text-xs font-medium text-zinc-700 uppercase tracking-wide"
+            >
+              Password
             </Label>
-            <a
-              href="/forgot-password"
-              className="text-sm text-primary hover:underline"
+            <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault()
                 router.push('/forgot-password')
               }}
+              className="text-xs text-zinc-500 hover:text-zinc-900 transition-colors"
             >
-              ¿Olvidaste tu contraseña?
-            </a>
+              Forgot?
+            </button>
           </div>
           <Input
             id="password"
             name="password"
             type="password"
-            placeholder="Ingresa tu contraseña"
+            placeholder="••••••••"
             value={formData.password}
             onChange={handleInputChange}
             required
             disabled={isLoading}
             autoComplete="current-password"
             data-testid="password-input"
-            className="h-12 px-4 text-base"
+            className="h-10 px-3 text-sm border-zinc-200 bg-white focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-colors"
           />
         </div>
 
+        {/* Info Message */}
         {info && (
-          <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950">
-            <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">{info}</AlertDescription>
-          </Alert>
+          <div className="px-3 py-2 text-xs border border-blue-200 bg-blue-50 text-blue-900 rounded-md">
+            {info}
+          </div>
         )}
 
+        {/* Error Message */}
         {error && (
-          <Alert variant="destructive" className="border-destructive/50">
-            <AlertDescription className="text-sm">{error}</AlertDescription>
-          </Alert>
+          <div className="px-3 py-2 text-xs border border-red-200 bg-red-50 text-red-900 rounded-md">
+            {error}
+          </div>
         )}
 
+        {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full h-12 text-base font-medium"
+          className="w-full h-10 text-sm font-medium bg-zinc-900 hover:bg-zinc-800 text-white transition-colors"
           disabled={isLoading || !formData.email || !formData.password}
           data-testid="login-button"
         >
-          {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-          Iniciar sesión
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            'Sign in'
+          )}
         </Button>
       </form>
 
-      {/* Social Login Buttons */}
-      <div className="space-y-4">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
-          </div>
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-zinc-200" />
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="relative overflow-hidden group h-12 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <GoogleIcon />
-            <span className="hidden sm:inline">Google</span>
-            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleAppleSignIn}
-            disabled={isLoading}
-            className="relative overflow-hidden group h-12 px-4 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 bg-black hover:bg-gray-900 border border-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <AppleIcon />
-            <span className="hidden sm:inline">Apple</span>
-            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
-          </button>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-white px-2 text-zinc-500">Or continue with</span>
         </div>
       </div>
 
-      <div className="text-center pt-2">
-        <span className="text-muted-foreground text-sm">¿No tienes una cuenta? </span>
-        <a
-          href="/register"
-          className="text-primary hover:underline font-medium text-sm"
+      {/* Social Buttons - Minimal, no animations */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isLoading}
+          className="h-10 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <GoogleIcon />
+          <span className="hidden sm:inline">Google</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={isLoading}
+          className="h-10 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-900 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <AppleIcon />
+          <span className="hidden sm:inline">Apple</span>
+        </button>
+      </div>
+
+      {/* Sign up Link */}
+      <div className="text-center mt-6">
+        <span className="text-sm text-zinc-600">Don&apos;t have an account? </span>
+        <button
+          type="button"
           onClick={(e) => {
             e.preventDefault()
             router.push('/register')
           }}
+          className="text-sm font-medium text-zinc-900 hover:text-zinc-700 transition-colors"
         >
-          Regístrate
-        </a>
+          Sign up
+        </button>
       </div>
     </div>
   )

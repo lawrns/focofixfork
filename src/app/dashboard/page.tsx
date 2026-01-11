@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo, useCallback, lazy } from 'react'
+import { Suspense, useEffect, useState, useMemo, useCallback, lazy, useRef } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
 // Lazy load heavy components
@@ -83,8 +83,6 @@ interface Organization {
 export default function DashboardPage() {
   // Disable static generation for this page since it requires authentication
   noStore()
-  
-  console.log('DashboardPage render')
 
   // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
@@ -95,12 +93,12 @@ export default function DashboardPage() {
   const { shouldShowTour, markTourComplete } = useOnboarding()
   const { isOpen: isTourOpen, startTour, closeTour, completeTour } = useProductTour()
 
-  // Redirect to personalized dashboard
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace('/dashboard/personalized')
-    }
-  }, [loading, user, router])
+  // Redirect to personalized dashboard - disabled to prevent flickering
+  // useEffect(() => {
+  //   if (!loading && user) {
+  //     router.replace('/dashboard/personalized')
+  //   }
+  // }, [loading, user, router])
 
   // Set page title
   useEffect(() => {
@@ -130,17 +128,28 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false)
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  
+  // Refs to prevent duplicate fetch calls
+  const hasLoadedOrganizations = useRef(false)
+  const hasLoadedProjects = useRef(false)
 
   const fetchOrganizations = useCallback(async () => {
-    if (!user) return
+    if (!user || hasLoadedOrganizations.current) return
 
     setIsLoadingOrganizations(true)
+    hasLoadedOrganizations.current = true
+    
     try {
       const { apiClient } = await import('@/lib/api-client')
       const data = await apiClient.get('/api/organizations')
-      
+
       if (data.success) {
-        const orgs = data.data || []
+        // Handle both direct array and nested data structure
+        const orgs = Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data.data?.data)
+            ? data.data.data
+            : []
         setOrganizations(orgs)
       } else {
         throw new Error(data.error || 'Failed to load organizations')
@@ -149,15 +158,18 @@ export default function DashboardPage() {
       console.error('Error fetching organizations:', error)
       const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar las organizaciones'
       toast.error('Error al cargar organizaciones', errorMessage)
+      setOrganizations([]) // Ensure organizations is always an array
     } finally {
       setIsLoadingOrganizations(false)
     }
   }, [user, toast])
 
   const fetchProjects = useCallback(async () => {
-    if (!user) return
+    if (!user || hasLoadedProjects.current) return
 
     setIsLoadingProjects(true)
+    hasLoadedProjects.current = true
+    
     try {
       const { apiClient } = await import('@/lib/api-client')
       const data = await apiClient.get('/api/projects')
@@ -192,13 +204,15 @@ export default function DashboardPage() {
       // Clean up the URL
       router.replace('/dashboard', undefined)
     }
+  }, [router])
 
+  useEffect(() => {
     // Load organizations and projects
     if (user) {
       fetchOrganizations()
       fetchProjects()
     }
-  }, [user, router, fetchOrganizations, fetchProjects])
+  }, [user, fetchOrganizations, fetchProjects])
 
   // Listen for quick action events
   useEffect(() => {
@@ -312,7 +326,6 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('Dashboard: project created:', result.data)
         projectStore.addProject(result.data)
         setShowNewProjectModal(false)
       } else {
@@ -427,7 +440,7 @@ export default function DashboardPage() {
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       <span className="text-sm text-muted-foreground">Loading...</span>
                     </div>
-                  ) : organizations.length === 0 ? (
+                  ) : !Array.isArray(organizations) || organizations.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">No organizations found</div>
                   ) : (
                     organizations.map((org) => (

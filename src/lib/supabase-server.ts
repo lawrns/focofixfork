@@ -4,8 +4,8 @@ import { logger } from '@/lib/logger'
 // Detect if we're running in the browser
 const isBrowser = typeof window !== 'undefined'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://czijxfbkihrauyjwcgfn.supabase.co'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://czijxfbkihrauyjwcgfn.supabase.co'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // Browser environment: Return null to prevent client-side usage
 // This prevents crashes when client-side code imports services that use supabaseAdmin

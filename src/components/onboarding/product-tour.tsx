@@ -120,16 +120,16 @@ export function ProductTour({
   return createPortal(
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
-      <div 
+      <div
         ref={overlayRef}
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm z-30"
         onClick={handleOverlayClick}
       />
 
       {/* Spotlight */}
       {spotlightRect && (
         <div
-          className="absolute border-2 border-blue-500 rounded-lg shadow-lg pointer-events-none transition-all duration-300"
+          className="absolute border-2 border-blue-500 rounded-lg shadow-lg pointer-events-none transition-all duration-300 z-40"
           style={{
             left: spotlightRect.left - 8,
             top: spotlightRect.top - 8,
@@ -141,8 +141,8 @@ export function ProductTour({
       )}
 
       {/* Tour Card */}
-      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div className="pointer-events-auto bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none z-50">
+        <div className="relative pointer-events-auto bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">

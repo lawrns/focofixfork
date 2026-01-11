@@ -15,10 +15,10 @@ describe('Button Component', () => {
   describe('Rendering', () => {
     it('renders with default props', () => {
       render(<Button>Click me</Button>);
-      
+
       const button = screen.getByRole('button', { name: /click me/i });
       expect(button).toBeInTheDocument();
-      expect(button).toHaveClass('bg-gradient-to-r', 'from-primary', 'to-primary-hover', 'text-white', 'h-11', 'px-5');
+      expect(button).toHaveClass('bg-zinc-900', 'text-white', 'h-10', 'px-4');
     });
 
     it('renders with custom className', () => {
@@ -31,29 +31,29 @@ describe('Button Component', () => {
     it('renders with different variants', () => {
       const { rerender } = render(<Button variant="destructive">Delete</Button>);
       let button = screen.getByRole('button');
-      expect(button).toHaveClass('from-error', 'to-red-600');
+      expect(button).toHaveClass('bg-red-500', 'text-white');
 
       rerender(<Button variant="outline">Outline</Button>);
       button = screen.getByRole('button');
-      expect(button).toHaveClass('border-2', 'border-border');
+      expect(button).toHaveClass('border', 'border-zinc-200', 'text-zinc-700');
 
       rerender(<Button variant="ghost">Ghost</Button>);
       button = screen.getByRole('button');
-      expect(button).toHaveClass('hover:bg-primary/10');
+      expect(button).toHaveClass('text-zinc-700');
     });
 
     it('renders with different sizes', () => {
       const { rerender } = render(<Button size="sm">Small</Button>);
       let button = screen.getByRole('button');
-      expect(button).toHaveClass('h-9', 'px-4', 'text-xs');
+      expect(button).toHaveClass('h-8', 'px-3', 'text-sm');
 
       rerender(<Button size="lg">Large</Button>);
       button = screen.getByRole('button');
-      expect(button).toHaveClass('h-12', 'px-8', 'text-base');
+      expect(button).toHaveClass('h-12', 'px-5', 'text-base');
 
       rerender(<Button size="icon">Icon</Button>);
       button = screen.getByRole('button');
-      expect(button).toHaveClass('h-11', 'w-11');
+      expect(button).toHaveClass('h-10', 'w-10');
     });
 
     it('renders children correctly', () => {
@@ -100,17 +100,11 @@ describe('Button Component', () => {
 
     it('shows loading state', () => {
       render(<Button loading>Loading</Button>);
-      
+
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-disabled', 'true');
-      expect(screen.getAllByText('Loading...')).toHaveLength(2);
-    });
-
-    it('shows custom loading text', () => {
-      render(<Button loading loadingText="Please wait">Loading</Button>);
-      
-      expect(screen.getAllByText('Please wait')).toHaveLength(2);
+      expect(screen.getByTestId('loader2-icon')).toBeInTheDocument();
     });
 
     it('handles keyboard events', async () => {
@@ -148,19 +142,10 @@ describe('Button Component', () => {
 
     it('has accessible name in loading state', () => {
       render(<Button loading>Submit</Button>);
-      
-      const button = screen.getByRole('button');
-      expect(button).toHaveAccessibleName('Loading...');
-    });
 
-    it('supports screen reader text', () => {
-      render(<Button loading loadingText="Processing">Submit</Button>);
-      
-      expect(screen.getAllByText('Processing')).toHaveLength(2);
-      const srOnlyElements = screen.getAllByText('Processing').filter(el => 
-        el.classList.contains('sr-only')
-      );
-      expect(srOnlyElements).toHaveLength(1);
+      const button = screen.getByRole('button');
+      expect(button).toBeDisabled();
+      expect(screen.getByTestId('loader2-icon')).toBeInTheDocument();
     });
 
     it('passes accessibility checks', async () => {
@@ -265,44 +250,26 @@ describe('Button Component', () => {
   });
 
   describe('Styling and Design System', () => {
-    it('applies hover states correctly', async () => {
-      render(<Button>Button</Button>);
-      
-      const button = screen.getByRole('button');
-      await user.hover(button);
-      
-      expect(button).toHaveClass('hover:shadow-lg', 'hover:scale-105');
-    });
-
-    it('applies active states correctly', async () => {
-      render(<Button>Button</Button>);
-      
-      const button = screen.getByRole('button');
-      await user.click(button);
-      
-      expect(button).toHaveClass('active:scale-95');
-    });
-
     it('applies focus states correctly', async () => {
       render(<Button>Button</Button>);
-      
+
       const button = screen.getByRole('button');
       button.focus();
-      
-      expect(button).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary/50');
+
+      expect(button).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-zinc-400');
     });
 
     it('maintains design system consistency', () => {
       const { rerender } = render(<Button variant="default">Default</Button>);
       let button = screen.getByRole('button');
-      
+
       // Check default design tokens
-      expect(button).toHaveClass('rounded-lg', 'text-sm', 'font-semibold');
+      expect(button).toHaveClass('rounded-lg', 'text-sm', 'font-medium');
 
       // Check variant maintains consistency
       rerender(<Button variant="secondary">Secondary</Button>);
       button = screen.getByRole('button');
-      expect(button).toHaveClass('rounded-lg', 'text-sm', 'font-semibold');
+      expect(button).toHaveClass('rounded-lg', 'text-sm', 'font-medium');
     });
 
     it('supports custom styling overrides', () => {

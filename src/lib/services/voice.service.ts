@@ -8,6 +8,7 @@
  */
 
 import OpenAI from 'openai'
+import { aiService } from './ai-service'
 
 // ============================================================================
 // TYPES
@@ -120,7 +121,6 @@ export class VoiceService {
   private client: OpenAI
   private config: {
     whisperModel: string
-    gptModel: string
     maxConversationTurns: number
     confirmationThreshold: number
   }
@@ -130,7 +130,7 @@ export class VoiceService {
     const apiKey = process.env.OPENAI_API_KEY || ''
 
     if (!apiKey) {
-      console.warn('⚠️  OpenAI API key not configured - voice features will use mock responses')
+      console.warn('⚠️  OpenAI API key not configured - voice transcription will not work')
     }
 
     this.client = new OpenAI({
@@ -139,7 +139,6 @@ export class VoiceService {
 
     this.config = {
       whisperModel: 'whisper-1',
-      gptModel: process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini',
       maxConversationTurns: 20,
       confirmationThreshold: 0.7,
     }
@@ -248,19 +247,13 @@ Return ONLY valid JSON with this structure:
   ]
 }`
 
-      const completion = await this.client.chat.completions.create({
-        model: this.config.gptModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Parse this voice input: "${transcript}"` }
-        ],
-        temperature: 0.3, // Low temperature for consistent parsing
-        max_tokens: 1000,
-      })
+      const content = await aiService.chatCompletion([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Parse this voice input: "${transcript}"` }
+      ])
 
-      const content = completion.choices[0]?.message?.content
       if (!content) {
-        throw new Error('No response from OpenAI')
+        throw new Error('No response from AI service')
       }
 
       // Parse JSON response
@@ -371,14 +364,7 @@ Return ONLY valid JSON with this structure:
         })),
       ]
 
-      const completion = await this.client.chat.completions.create({
-        model: this.config.gptModel,
-        messages,
-        temperature: 0.7,
-        max_tokens: 500,
-      })
-
-      const responseText = completion.choices[0]?.message?.content || 'I understand. What would you like to do next?'
+      const responseText = await aiService.chatCompletion(messages) || 'I understand. What would you like to do next?'
 
       // Add assistant response to history
       context.recent_messages.push({
@@ -450,19 +436,13 @@ Return ONLY valid JSON:
   "needs_clarification": false
 }`
 
-      const completion = await this.client.chat.completions.create({
-        model: this.config.gptModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Extract task from: "${params.transcript}"` }
-        ],
-        temperature: 0.4,
-        max_tokens: 300,
-      })
+      const content = await aiService.chatCompletion([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Extract task from: "${params.transcript}"` }
+      ])
 
-      const content = completion.choices[0]?.message?.content
       if (!content) {
-        throw new Error('No response from OpenAI')
+        throw new Error('No response from AI service')
       }
 
       const result = JSON.parse(content)

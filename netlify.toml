@@ -17,8 +17,14 @@
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_6m9EbrvSIdMQ5tBTxfgVMA_WQjeipVO"
   SUPABASE_SERVICE_ROLE_KEY = "sb_publishable_6m9EbrvSIdMQ5tBTxfgVMA_WQjeipVO"
 
-  # OpenAI AI environment variables (set via Netlify dashboard)
-  NEXT_PUBLIC_AI_PROVIDER = "openai"
+  # AI environment variables
+  AI_PROVIDER = "deepseek"
+  DEEPSEEK_API_KEY = "sk-7c27863ac0cc4105999c690b7ee58b8f"
+  DEEPSEEK_MODEL = "deepseek-chat"
+  DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+  
+  # OpenAI environment variables (for transcription)
+  OPENAI_API_KEY = "your-openai-key-here"
   NEXT_PUBLIC_OPENAI_MODEL = "gpt-4o-mini"
   NEXT_PUBLIC_OPENAI_CHAT_MODEL = "gpt-4o-mini"
 

@@ -97,20 +97,20 @@ export class InboxService {
       .limit(50)
 
     const { data: comments } = await this.supabase
-      .from('comments')
+      .from('foco_comments')
       .select(`
         *,
-        task:tasks(title, project_id),
-        author:users(full_name)
+        work_item:work_items(title, project_id),
+        author:auth.users(full_name)
       `)
-      .contains('content', `@${userId}`)
+      .or(`mentions.cs.{${userId}},user_id.eq.${userId}`)
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false })
       .limit(20)
 
     return [
       ...(tasks || []).map(t => ({ ...t, type: 'task' })),
-      ...(comments || []).map(c => ({ ...c, type: 'comment' })),
+      ...(comments || []).map(c => ({ ...c, type: 'comment', work_item: c.work_item || { title: 'Unknown', project_id: null } })),
     ]
   }
 

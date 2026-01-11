@@ -353,9 +353,9 @@ export class VoicePlanBackfillService {
           // Get production data
           const productionQuery = `
             SELECT 
-              (SELECT COUNT(*) FROM projects WHERE voice_session_id = $1) as project_count,
+              (SELECT COUNT(*) FROM foco_projects WHERE voice_session_id = $1) as project_count,
               (SELECT COUNT(*) FROM milestones WHERE voice_session_id = $1) as milestone_count,
-              (SELECT COUNT(*) FROM tasks WHERE voice_session_id = $1) as task_count
+              (SELECT COUNT(*) FROM work_items WHERE voice_session_id = $1) as task_count
           `
           
           const productionResult = await client.query(productionQuery, [session.id])

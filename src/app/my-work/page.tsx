@@ -43,7 +43,7 @@ const myWorkItems: (WorkItem & { section: 'now' | 'next' | 'later' | 'waiting' }
   { id: '2', workspace_id: '1', project_id: '2', type: 'bug', title: 'Fix navigation dropdown on Safari', status: 'review', priority: 'urgent', due_date: '2026-01-12', position: 1, section: 'now', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Mobile App v2', color: '#10B981' } as any },
   
   // Next
-  { id: '3', workspace_id: '1', project_id: '1', type: 'task', title: 'Product page templates', status: 'next', priority: 'medium', due_date: '2026-01-18', position: 0, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
+  { id: '3', workspace_id: '1', project_id: '1', type: 'task', title: "Product page templates - Don't forget to celebrate your wins!", status: 'next', priority: 'medium', due_date: '2026-01-18', position: 0, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
   { id: '4', workspace_id: '1', project_id: '1', type: 'task', title: 'Checkout flow redesign', status: 'next', priority: 'high', due_date: '2026-01-22', position: 1, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
   { id: '5', workspace_id: '1', project_id: '2', type: 'feature', title: 'Push notification system', status: 'next', priority: 'high', due_date: '2026-01-28', position: 2, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Mobile App v2', color: '#10B981' } as any },
   

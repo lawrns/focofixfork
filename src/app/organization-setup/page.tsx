@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react'
 export default function OrganizationSetupPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
-  const [organizationName, setOrganizationName] = useState('')
+  const [workspaceName, setWorkspaceName] = useState('')
   const [description, setDescription] = useState('')
   const [website, setWebsite] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -28,8 +28,8 @@ export default function OrganizationSetupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!organizationName.trim()) {
-      setError('Organization name is required')
+    if (!workspaceName.trim()) {
+      setError('Workspace name is required')
       return
     }
 
@@ -48,16 +48,15 @@ export default function OrganizationSetupPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/organization-setup', {
+      const response = await fetch('/api/foco/workspaces', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organizationName: organizationName.trim(),
+          name: workspaceName.trim(),
           description: description.trim(),
-          website: website.trim(),
-          userId: user.id
+          created_by: user.id
         }),
       })
 
@@ -71,11 +70,11 @@ export default function OrganizationSetupPage() {
         // Redirect to dashboard after successful setup
         router.push('/dashboard')
       } else {
-        setError(result.error || 'Failed to create organization')
+        setError(result.error || 'Failed to create workspace')
       }
     } catch (error) {
       console.error('Organization setup error:', error)
-      setError('An unexpected error occurred. Please try again.')
+      setError('An unexpected error occurred while creating workspace. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -99,26 +98,26 @@ export default function OrganizationSetupPage() {
         <div className="space-y-6">
           <div className="space-y-3 text-center">
             <h1 className="text-3xl font-bold text-foreground">
-              Setup Your Organization
+              Setup Your Workspace
             </h1>
             <p className="text-muted-foreground text-base">
-              Create your organization to get started with Foco
+              Create your workspace to get started with Foco
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-3">
               <Label htmlFor="organizationName" className="text-sm font-medium text-foreground">
-                Organization Name *
+                Workspace Name *
               </Label>
               <Input
-                id="organizationName"
-                name="organizationName"
+                id="workspaceName"
+                name="workspaceName"
                 type="text"
-                placeholder="Enter your organization name"
-                value={organizationName}
+                placeholder="Enter your workspace name"
+                value={workspaceName}
                 onChange={(e) => {
-                  setOrganizationName(e.target.value)
+                  setWorkspaceName(e.target.value)
                   if (error) setError(null)
                 }}
                 required
@@ -135,7 +134,7 @@ export default function OrganizationSetupPage() {
               <textarea
                 id="description"
                 name="description"
-                placeholder="Brief description of your organization (optional)"
+                placeholder="Brief description of your workspace (optional)"
                 value={description}
                 onChange={(e) => {
                   setDescription(e.target.value)
@@ -166,7 +165,7 @@ export default function OrganizationSetupPage() {
                 className="h-12 px-4 text-base"
               />
               <p className="text-xs text-muted-foreground">
-                Optional: Your organization&apos;s website URL
+                Optional: Your workspace&apos;s website URL
               </p>
             </div>
 
@@ -179,10 +178,10 @@ export default function OrganizationSetupPage() {
             <Button
               type="submit"
               className="w-full h-12 text-base font-medium"
-              disabled={isLoading || !organizationName.trim()}
+              disabled={isLoading || !workspaceName.trim()}
             >
               {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-              Create Organization
+              Create Workspace
             </Button>
           </form>
 

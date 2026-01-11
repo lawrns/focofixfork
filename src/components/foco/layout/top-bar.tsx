@@ -31,6 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/hooks/use-auth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase-client';
 
 interface TopBarProps {
   className?: string;
@@ -42,6 +44,7 @@ export function TopBar({ className }: TopBarProps) {
   const { sidebarCollapsed, density, setDensity } = useUIPreferencesStore();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
 
   return (
     <header
@@ -154,15 +157,15 @@ export function TopBar({ className }: TopBarProps) {
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Avatar className="h-7 w-7">
                 <AvatarImage src="/images/avatar.jpg" />
-                <AvatarFallback className="text-xs">JD</AvatarFallback>
+                <AvatarFallback className="text-xs">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span>John Doe</span>
-                <span className="text-xs font-normal text-zinc-500">john@acme.com</span>
+                <span>{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</span>
+                <span className="text-xs font-normal text-zinc-500">{user?.email || ''}</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -216,7 +219,18 @@ export function TopBar({ className }: TopBarProps) {
             <DropdownMenuItem>Profile settings</DropdownMenuItem>
             <DropdownMenuItem>Keyboard shortcuts</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 dark:text-red-400">
+            <DropdownMenuItem 
+              className="text-red-600 dark:text-red-400"
+              onClick={async () => {
+                try {
+                  const { error } = await supabase.auth.signOut();
+                  if (error) throw error;
+                  router.push('/login');
+                } catch (err) {
+                  console.error('Sign out failed:', err);
+                }
+              }}
+            >
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

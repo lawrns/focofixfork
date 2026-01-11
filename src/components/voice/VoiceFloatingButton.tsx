@@ -49,20 +49,27 @@ export function VoiceFloatingButton({
     if (audioBlob && !isProcessing) {
       processAudio(audioBlob)
     }
-  }, [audioBlob])
+  }, [audioBlob, isProcessing])
 
   // Keyboard shortcut: Cmd/Ctrl + Shift + V
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'v') {
         e.preventDefault()
-        toggleRecording()
+        if (isRecording) {
+          stopRecording()
+        } else {
+          clearRecording()
+          setShowSuccess(false)
+          setShowError(false)
+          startRecording()
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isRecording])
+  }, [isRecording, stopRecording, clearRecording, startRecording])
 
   const toggleRecording = () => {
     if (isRecording) {

@@ -205,8 +205,13 @@ export default function AdvancedFilterBuilder({
         return (
           <Input
             placeholder="Comma-separated values"
-            value={Array.isArray(filterValue) ? filterValue.join(', ') : ''}
-            onChange={(e) => setFilterValue(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+            value={Array.isArray(filterValue) ? filterValue.join(', ') : (typeof filterValue === 'string' ? filterValue : '')}
+            onChange={(e) => {
+              const inputValue = e.target.value;
+              // Parse to array for the filter value, but keep the raw input for display
+              const parsedArray = inputValue.split(',').map(s => s.trim()).filter(s => s);
+              setFilterValue(parsedArray.length > 0 ? parsedArray : inputValue);
+            }}
           />
         )
 

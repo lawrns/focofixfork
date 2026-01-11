@@ -151,6 +151,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 placeholder="Search projects..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search projects, tasks, and milestones"
                 className="pl-10 pr-4 py-2 w-24 sm:w-32 xl:w-48 border rounded-lg text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary/20 focus:outline-none bg-background border-border"
               />
             </div>
@@ -305,8 +306,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {
-                    await supabase.auth.signOut()
-                    router.push('/login')
+                    try {
+                      const { error } = await supabase.auth.signOut();
+                      if (error) throw error;
+                      router.push('/login');
+                    } catch (err) {
+                      console.error('Sign out failed:', err);
+                    }
                   }}
                   className="text-destructive"
                 >

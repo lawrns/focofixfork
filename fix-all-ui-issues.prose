@@ -1,0 +1,412 @@
+# Autonomous UI Issue Fixing
+# 10 specialized agents fixing all critical issues in parallel
+
+# Define specialized fix agents
+agent button_fixer:
+  model: sonnet
+  prompt: "You are an expert at implementing proper event handlers and button functionality. Fix all non-functional buttons by replacing console.log with actual implementations."
+
+agent state_manager:
+  model: sonnet
+  prompt: "You are a state management expert. Fix all state synchronization issues, stale closures, and race conditions. Implement proper dependency arrays and single sources of truth."
+
+agent accessibility_fixer:
+  model: sonnet
+  prompt: "You are an accessibility expert. Add proper ARIA labels, keyboard navigation, and screen reader support to meet WCAG 2.1 AA standards."
+
+agent performance_optimizer:
+  model: sonnet
+  prompt: "You are a React performance expert. Add useMemo, useCallback, and fix inline functions to prevent unnecessary re-renders."
+
+agent drag_drop_fixer:
+  model: sonnet
+  prompt: "You are a drag-and-drop specialist. Fix all drag-and-drop implementations to persist position, add keyboard support, and proper visual feedback."
+
+agent form_handler:
+  model: sonnet
+  prompt: "You are a form handling expert. Fix form validation, error associations, and async error handling."
+
+agent navigation_fixer:
+  model: sonnet
+  prompt: "You are a routing expert. Fix navigation issues, URL inconsistencies, and implement proper back button fallbacks."
+
+agent integration_fixer:
+  model: sonnet
+  prompt: "You are a component architecture expert. Fix component integration issues, proper prop passing, and callback implementations."
+
+agent mobile_optimizer:
+  model: sonnet
+  prompt: "You are a mobile UX expert. Fix touch target sizes, add gesture support, and optimize responsive behavior."
+
+agent error_handler:
+  model: sonnet
+  prompt: "You are an error handling specialist. Add try-catch blocks, user feedback, and proper error recovery to all async operations."
+
+# Phase 1: Fix Critical Issues in Parallel
+parallel:
+  # Fix 1: Command Palette & Top Bar
+  buttons_fixed = session: button_fixer
+    prompt: """
+    Fix the following critical button issues:
+
+    1. Command Palette (src/components/foco/layout/command-palette.tsx):
+       - Lines 59-61: Replace console.log('Create task/project/doc') with actual modal handlers
+       - Lines 64-66: Implement AI action handlers (Generate Brief, Status Update, Suggestions)
+
+    2. Top Bar (src/components/foco/layout/top-bar.tsx):
+       - Lines 164-165: Replace hardcoded "John Doe" with actual user data from auth context
+       - Lines 219-221: Implement actual sign out handler with error handling
+
+    For each fix:
+    - Read the current implementation
+    - Implement proper handlers (create modals if needed, use existing patterns)
+    - Use auth context user data where available
+    - Add error handling with toast notifications
+    - Test that changes work correctly
+
+    IMPORTANT: Do NOT use console.log for any production handlers.
+    """
+
+  # Fix 2: State Management Issues
+  state_fixed = session: state_manager
+    prompt: """
+    Fix the following critical state management issues:
+
+    1. VoiceFloatingButton (src/components/voice/VoiceFloatingButton.tsx):
+       - Lines 48-52: Add missing 'isProcessing' dependency
+       - Lines 55-65: Fix stale closure in keyboard event handler
+
+    2. ProjectTable (src/features/projects/components/ProjectTable.tsx):
+       - Lines 160-199: Consolidate to single source of truth (Zustand store)
+       - Remove competing state sources (local state, window events, refs)
+       - Simplify to store subscription only
+
+    3. Dashboard (src/app/dashboard/page.tsx):
+       - Lines 141-173: Fix race condition in organization/project fetching
+       - Replace useRef guards with proper React Query or SWR
+       - Add proper loading states
+
+    For each fix:
+    - Identify all state sources
+    - Choose the canonical source (prefer Zustand store)
+    - Remove duplicate state management
+    - Fix dependency arrays
+    - Add proper error handling
+    """
+
+  # Fix 3: Accessibility Issues
+  a11y_fixed = session: accessibility_fixer
+    prompt: """
+    Fix the following critical accessibility issues:
+
+    1. Toast Notifications (src/components/ui/toast.tsx):
+       - Line 92: Add role="status", aria-live="polite", aria-atomic="true"
+
+    2. Search Input (src/components/layout/Header.tsx):
+       - Lines 141-151: Add aria-label="Search projects, tasks, and milestones"
+
+    3. Form Inputs (src/components/ui/input.tsx):
+       - Lines 79-87: Add aria-describedby for error messages
+       - Add aria-invalid when error exists
+       - Add id to error message paragraph
+
+    4. Kanban Board (src/features/projects/components/kanban-board.tsx):
+       - Add keyboard navigation (Alt+Arrow keys to move tasks)
+       - Add aria-live region for task movements
+       - Add keyboard instructions
+
+    For each fix:
+    - Add proper ARIA attributes
+    - Test with keyboard only
+    - Add screen reader announcements
+    - Follow WCAG 2.1 AA guidelines
+    """
+
+  # Fix 4: Drag and Drop Issues
+  dragdrop_fixed = session: drag_drop_fixer
+    prompt: """
+    Fix the following drag-and-drop issues:
+
+    1. Kanban Board (src/features/projects/components/kanban-board.tsx):
+       - Lines 220-226: Add position tracking to backend API call
+       - Add keyboard alternative (Alt+Arrow keys)
+       - Add visual insertion indicators
+       - Configure @hello-pangea/dnd for mobile touch
+
+    2. Remove Fake Drag Handles:
+       - src/features/tasks/components/task-card.tsx:201-204
+       - src/components/tasks/checklist.tsx:105-119
+       - Either implement proper drag-and-drop or remove visual handles
+
+    3. Task List (src/features/tasks/components/task-list.tsx):
+       - Lines 528-530: Connect drag handle properly to dragHandleProps
+       - Lines 314-318: Add position field to API call
+
+    For each fix:
+    - Add position/order tracking
+    - Persist to backend
+    - Add keyboard support
+    - Add proper visual feedback
+    """
+
+  # Fix 5: Form & Error Handling
+  forms_fixed = session: form_handler
+    prompt: """
+    Fix the following form and error handling issues:
+
+    1. Advanced Filter Builder (src/components/filters/advanced-filter-builder.tsx):
+       - Lines 206-210: Fix array/string type mismatch for multi-value inputs
+       - Use separate inputValue state for display
+
+    2. Async Sign Out (multiple files):
+       - src/components/layout/Header.tsx:230-233
+       - src/features/dashboard/components/header.tsx:307-310
+       - Add try-catch blocks
+       - Show toast on error
+       - Only navigate on success
+
+    3. Comments Section (src/components/comments/comments-section.tsx):
+       - Lines 431-438: Fix reply content initialization
+       - Lines 595: Fix empty content initialization
+
+    For each fix:
+    - Add proper error handling
+    - Add user feedback (toasts)
+    - Fix state synchronization
+    - Test edge cases
+    """
+
+  # Fix 6: Performance Issues
+  perf_fixed = session: performance_optimizer
+    prompt: """
+    Fix the following critical performance issues:
+
+    1. Projects Page (src/app/projects/page.tsx):
+       - Lines 423-442: Wrap filteredProjects and sortedProjects in useMemo
+       - Lines 183-186, 340-343: Extract inline functions to useCallback
+       - Line 486: Wrap search onChange in useCallback
+
+    2. Dashboard Page (src/app/dashboard/page.tsx):
+       - Lines 91-97, 227-256: Wrap event handlers in useCallback
+       - Lines 358-364, 367: Extract inline functions
+
+    3. Task List (src/features/tasks/components/task-list.tsx):
+       - Lines 348-353: Wrap groupedTasks in useMemo
+       - Lines 418-419, 467-469: Extract inline onChange handlers
+
+    4. Table View (src/components/views/table-view.tsx):
+       - Line 432: Wrap search onChange in useCallback
+       - Line 494: Extract sort handler to useCallback
+
+    For each fix:
+    - Add useMemo for expensive computations
+    - Add useCallback for event handlers
+    - Ensure proper dependency arrays
+    - Verify no performance regressions
+    """
+
+  # Fix 7: Navigation Issues
+  nav_fixed = session: navigation_fixer
+    prompt: """
+    Fix the following navigation issues:
+
+    1. Project URL Consistency:
+       - Find all instances using project.id in URLs
+       - Replace with project.slug for consistency
+       - Files: Sidebar.tsx, projects/page.tsx, dashboard/page.tsx
+
+    2. Back Button Fallback (src/app/tasks/[id]/page.tsx):
+       - Line 428: Add smart back with fallback route
+       - Check history length before router.back()
+
+    3. New Project Button (src/components/layout/Sidebar.tsx):
+       - Lines 228-231: Replace window.location.href with router.push
+       - Implement modal instead of query parameter
+
+    4. Landing Page Hash Links (src/components/landing/navbar.tsx):
+       - Lines 13-17: Remove or implement actual sections
+       - Fix dropdown placeholder links
+
+    For each fix:
+    - Use Next.js router for navigation
+    - Add proper fallbacks
+    - Standardize URL schemes
+    - Test navigation flows
+    """
+
+  # Fix 8: Component Integration
+  integration_fixed = session: integration_fixer
+    prompt: """
+    Fix the following component integration issues:
+
+    1. Command Palette Integration:
+       - Implement actual create task/project/doc modals
+       - Connect to state management
+       - Trigger proper callbacks
+
+    2. Dashboard to ProjectTable Communication:
+       - Remove duplicate fetching
+       - Use single data source (store)
+       - Fix event-based updates
+
+    3. Modal State Management:
+       - Fix form reset race conditions in dialogs
+       - Add dirty state tracking
+       - Replace window.confirm with proper UI
+
+    4. Empty State Handlers:
+       - Implement actual handlers for empty state buttons
+       - Remove empty arrow functions () => {}
+
+    For each fix:
+    - Implement proper callbacks
+    - Connect parent/child properly
+    - Remove duplicate data sources
+    - Add proper loading states
+    """
+
+  # Fix 9: Mobile Optimizations
+  mobile_fixed = session: mobile_optimizer
+    prompt: """
+    Fix the following mobile UX issues:
+
+    1. Button Sizes (src/components/ui/button.tsx):
+       - Lines 62-72: Add mobile size override for xs/sm variants
+       - Enforce 44px minimum on mobile (pointer: coarse)
+
+    2. Kanban Mobile Drag (src/features/projects/components/kanban-board.tsx):
+       - Configure @hello-pangea/dnd with TouchSensor
+       - Add activation constraint (250ms delay, 5px tolerance)
+
+    3. Horizontal Scroll (src/components/ui/responsive-table.tsx):
+       - Lines 123, 181: Add scroll indicators
+       - Add touch scrolling optimization
+
+    4. Mobile Bottom Navigation (src/components/navigation/mobile-bottom-nav.tsx):
+       - Lines 64-87: Make auto-hide optional/disable
+       - Fix active state logic (overly broad startsWith)
+
+    For each fix:
+    - Test on actual mobile device
+    - Verify touch targets meet 44px minimum
+    - Add touch-specific optimizations
+    - Improve gesture support
+    """
+
+  # Fix 10: Error Handling & Edge Cases
+  errors_fixed = session: error_handler
+    prompt: """
+    Fix the following error handling issues:
+
+    1. Add try-catch to all async handlers:
+       - Dashboard page: fetchOrganizations, fetchProjects
+       - ProjectTable: All CRUD operations
+       - KanbanBoard: handleDragEnd
+       - Task operations: create, update, delete
+
+    2. Add User Feedback:
+       - Use toast notifications for all errors
+       - Add loading states to buttons during async ops
+       - Show specific error messages (not generic)
+
+    3. Add Validation:
+       - File uploader: validate file types during drag-over
+       - Forms: validate before submit
+       - Empty state checks before operations
+
+    4. Add Rollback Logic:
+       - Optimistic updates should rollback on error
+       - State should revert to previous on failure
+
+    For each fix:
+    - Wrap async code in try-catch
+    - Show user-friendly error messages
+    - Add proper loading states
+    - Implement error recovery
+    """
+
+# Phase 2: Verify All Fixes
+session "Verify all fixes and run tests"
+  prompt: """
+  All 10 fixing agents have completed their work. Now verify everything:
+
+  1. Run linting:
+     - npm run lint
+     - Fix any new linting errors
+     - Ensure zero errors (warnings OK)
+
+  2. Run tests:
+     - npm test
+     - Fix any failing tests
+     - Add new tests for fixed functionality
+
+  3. Run build:
+     - npm run build
+     - Verify successful production build
+     - Check bundle sizes haven't increased significantly
+
+  4. Manual Testing Checklist:
+     - [ ] Command palette create actions work
+     - [ ] Top bar shows actual user name
+     - [ ] Sign out works with error handling
+     - [ ] Kanban drag-and-drop persists order
+     - [ ] Keyboard navigation works on kanban
+     - [ ] Search has proper ARIA label
+     - [ ] Toast notifications announced
+     - [ ] Form errors properly associated
+     - [ ] No console.log in production code
+     - [ ] No inline functions in render (performance)
+     - [ ] All buttons meet 44px touch target on mobile
+
+  5. Report Results:
+     - Create FIXES_APPLIED.md with summary
+     - List all files changed
+     - Document any remaining issues
+     - Note any breaking changes
+
+  Context from all fixes:
+  - Buttons Fixed: {buttons_fixed}
+  - State Fixed: {state_fixed}
+  - A11y Fixed: {a11y_fixed}
+  - Drag-Drop Fixed: {dragdrop_fixed}
+  - Forms Fixed: {forms_fixed}
+  - Performance Fixed: {perf_fixed}
+  - Navigation Fixed: {nav_fixed}
+  - Integration Fixed: {integration_fixed}
+  - Mobile Fixed: {mobile_fixed}
+  - Errors Fixed: {errors_fixed}
+  """
+  context: { buttons_fixed, state_fixed, a11y_fixed, dragdrop_fixed, forms_fixed, perf_fixed, nav_fixed, integration_fixed, mobile_fixed, errors_fixed }
+
+# Phase 3: Commit Changes
+session "Commit all fixes with detailed message"
+  prompt: """
+  All fixes have been verified. Now commit the changes:
+
+  1. Stage all changed files:
+     git add -A
+
+  2. Create comprehensive commit message:
+     Title: "fix: resolve 147+ UI issues across frontend"
+
+     Body should include:
+     - Summary of issues fixed
+     - List of critical fixes (10 items)
+     - Files modified count
+     - Breaking changes (if any)
+     - Testing performed
+
+     Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+  3. Show commit summary:
+     git log -1 --stat
+
+  4. Push to remote:
+     git push origin master
+
+  5. Create summary report for user with:
+     - Total issues fixed
+     - Remaining issues (if any)
+     - Next recommended actions
+     - Testing verification checklist
+  """

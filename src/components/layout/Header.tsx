@@ -142,6 +142,7 @@ export default function Header() {
             className="h-8 w-full rounded-md border border-zinc-200 bg-white pl-8 pr-8 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-colors"
             placeholder="Search..."
             type="search"
+            aria-label="Search projects, tasks, and milestones"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => searchQuery.trim() && setShowResults(true)}
@@ -228,8 +229,13 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={async () => {
-                await supabase.auth.signOut()
-                router.push('/login')
+                try {
+                  const { error } = await supabase.auth.signOut();
+                  if (error) throw error;
+                  router.push('/login');
+                } catch (err) {
+                  console.error('Sign out failed:', err);
+                }
               }}
               className="text-red-600"
             >

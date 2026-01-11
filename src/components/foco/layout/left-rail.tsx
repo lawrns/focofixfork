@@ -10,7 +10,6 @@ import {
   FolderKanban,
   CheckSquare,
   Calendar,
-  FileText,
   Users,
   BarChart3,
   Settings,
@@ -32,17 +31,16 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Home', href: '/app', icon: Home, shortcut: 'G H' },
-  { label: 'Inbox', href: '/app/inbox', icon: Inbox, badge: 3, shortcut: 'G I' },
-  { label: 'My Work', href: '/app/my-work', icon: CheckSquare, shortcut: 'G M' },
+  { label: 'Home', href: '/dashboard', icon: Home, shortcut: 'G H' },
+  { label: 'Inbox', href: '/inbox', icon: Inbox, badge: 3, shortcut: 'G I' },
+  { label: 'My Work', href: '/my-work', icon: CheckSquare, shortcut: 'G M' },
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { label: 'Projects', href: '/app/projects', icon: FolderKanban, shortcut: 'G P' },
-  { label: 'Timeline', href: '/app/timeline', icon: Calendar, shortcut: 'G T' },
-  { label: 'Docs', href: '/app/docs', icon: FileText, shortcut: 'G D' },
-  { label: 'People', href: '/app/people', icon: Users, shortcut: 'G E' },
-  { label: 'Reports', href: '/app/reports', icon: BarChart3, shortcut: 'G R' },
+  { label: 'Projects', href: '/projects', icon: FolderKanban, shortcut: 'G P' },
+  { label: 'Timeline', href: '/timeline', icon: Calendar, shortcut: 'G T' },
+  { label: 'People', href: '/people', icon: Users, shortcut: 'G E' },
+  { label: 'Reports', href: '/reports', icon: BarChart3, shortcut: 'G R' },
 ];
 
 const pinnedProjects = [
@@ -56,7 +54,7 @@ export function LeftRail() {
 
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = pathname === item.href || 
-      (item.href !== '/app' && pathname.startsWith(item.href));
+      (item.href !== '/dashboard' && pathname.startsWith(item.href));
     
     const content = (
       <Link
@@ -120,7 +118,7 @@ export function LeftRail() {
         'h-14 flex items-center border-b border-zinc-200 dark:border-zinc-800',
         sidebarCollapsed ? 'justify-center px-2' : 'px-4'
       )}>
-        <Link href="/app" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-zinc-900 dark:bg-zinc-50 flex items-center justify-center">
             <span className="text-sm font-bold text-zinc-50 dark:text-zinc-900">F</span>
           </div>
@@ -176,7 +174,7 @@ export function LeftRail() {
               {pinnedProjects.map((project) => (
                 <Link
                   key={project.id}
-                  href={`/app/projects/${project.id}`}
+                  href={`/projects/${project.id}`}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm',
                     'hover:bg-zinc-100 dark:hover:bg-zinc-800',
@@ -197,7 +195,7 @@ export function LeftRail() {
 
       {/* Settings & Collapse */}
       <div className="border-t border-zinc-200 dark:border-zinc-800 p-2 space-y-1">
-        <NavLink item={{ label: 'Settings', href: '/app/settings', icon: Settings }} />
+        <NavLink item={{ label: 'Settings', href: '/settings', icon: Settings }} />
         
         <Button
           variant="ghost"

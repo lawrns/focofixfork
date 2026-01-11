@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -37,6 +37,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PageShell } from '@/components/layout/page-shell';
+import { PageHeader } from '@/components/layout/page-header';
+import { EmptyState } from '@/components/ui/empty-state-standard';
+import { emptyStates, buttons } from '@/lib/copy';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 interface ProjectData {
   id: string;
@@ -143,7 +150,7 @@ function ProjectCard({ project }: { project: ProjectData }) {
 
   return (
     <Link
-      href={`/app/projects/${project.slug}`}
+      href={`/projects/${project.slug}`}
       className={cn(
         'block p-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800',
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all',
@@ -264,7 +271,7 @@ function ProjectRow({ project }: { project: ProjectData }) {
 
   return (
     <Link
-      href={`/app/projects/${project.slug}`}
+      href={`/projects/${project.slug}`}
       className={cn(
         'flex items-center gap-4 p-4 border-b border-zinc-100 dark:border-zinc-800',
         'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors',
@@ -366,17 +373,59 @@ function ProjectRow({ project }: { project: ProjectData }) {
 }
 
 export default function ProjectsPage() {
+  const { user } = useAuth();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('updated');
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredProjects = mockProjects.filter(p =>
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!user) return;
+      
+      try {
+        const response = await fetch('/api/projects');
+        const data = await response.json();
+        
+        if (data.success) {
+          const projectsData = data.data?.data || data.data || [];
+          setProjects(projectsData.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug || p.id,
+            description: p.description,
+            color: p.color || '#6366F1',
+            icon: p.icon || 'folder',
+            status: p.status || 'active',
+            isPinned: p.is_pinned || false,
+            progress: p.progress || 0,
+            tasksCompleted: p.tasks_completed || 0,
+            totalTasks: p.total_tasks || 0,
+            risk: p.risk || 'none',
+            nextMilestone: p.next_milestone,
+            owner: p.owner || { name: 'Unknown' },
+            teamSize: p.team_size || 0,
+            updatedAt: p.updated_at || new Date().toISOString(),
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        toast.error('Failed to load projects');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [user]);
+
+  const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   const sortedProjects = [...filteredProjects].sort((a, b) => {
-    // Pinned projects first
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
     
     switch (sortBy) {
@@ -392,23 +441,40 @@ export default function ProjectsPage() {
     }
   });
 
-  return (
-    <div className="max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Projects
-          </h1>
-          <p className="text-zinc-500 mt-1">
-            {mockProjects.length} active projects
-          </p>
+  if (isLoading) {
+    return (
+      <PageShell>
+        <PageHeader
+          title="Projects"
+          subtitle="Loading..."
+          primaryAction={
+            <Button disabled>
+              <Plus className="h-4 w-4 mr-2" />
+              {buttons.createProject}
+            </Button>
+          }
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-64 rounded-xl" />
+          ))}
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Project
-        </Button>
-      </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell>
+      <PageHeader
+        title="Projects"
+        subtitle={`${projects.length} active projects`}
+        primaryAction={
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            {buttons.createProject}
+          </Button>
+        }
+      />
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-6">
@@ -487,20 +553,23 @@ export default function ProjectsPage() {
 
       {/* Empty State */}
       {sortedProjects.length === 0 && (
-        <div className="py-12 text-center">
-          <FolderKanban className="h-12 w-12 text-zinc-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-50 mb-1">
-            No projects found
-          </h3>
-          <p className="text-zinc-500 mb-4">
-            {search ? `No projects matching "${search}"` : 'Get started by creating your first project'}
-          </p>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Project
-          </Button>
-        </div>
+        <EmptyState
+          icon={FolderKanban}
+          title={search ? `No projects matching "${search}"` : emptyStates.projects.title}
+          description={search ? 'Try a different search term' : emptyStates.projects.description}
+          primaryAction={!search ? {
+            label: emptyStates.projects.primaryCta,
+            onClick: () => {},
+          } : {
+            label: 'Clear search',
+            onClick: () => setSearch(''),
+          }}
+          secondaryAction={!search ? {
+            label: emptyStates.projects.secondaryCta,
+            onClick: () => {},
+          } : undefined}
+        />
       )}
-    </div>
+    </PageShell>
   );
 }

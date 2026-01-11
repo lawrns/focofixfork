@@ -32,6 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PageShell } from '@/components/layout/page-shell';
+import { PageHeader } from '@/components/layout/page-header';
+import { buttons } from '@/lib/copy';
 
 interface MetricCard {
   label: string;
@@ -294,39 +297,34 @@ export default function ReportsPage() {
   const [timeRange, setTimeRange] = useState('week');
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Reports
-          </h1>
-          <p className="text-zinc-500 mt-1">
-            Insights and analytics for your workspace
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[140px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button>
-            <Zap className="h-4 w-4 mr-2" />
-            Generate Report
-          </Button>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Reports"
+        subtitle="Insights and analytics for your workspace"
+        primaryAction={
+          <div className="flex items-center gap-2">
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-[140px]">
+                <Calendar className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="quarter">This Quarter</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button>
+              <Zap className="h-4 w-4 mr-2" />
+              {buttons.generateReport}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-4 gap-4 mb-6">
@@ -373,6 +371,6 @@ export default function ReportsPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -14,7 +14,7 @@ import {
   ArrowRight,
   Zap,
   Archive,
-  Trash2,
+  Inbox as InboxIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { NotificationType } from '@/types/foco';
+import { PageShell } from '@/components/layout/page-shell';
+import { PageHeader } from '@/components/layout/page-header';
+import { EmptyState } from '@/components/ui/empty-state-standard';
+import { emptyStates } from '@/lib/copy';
 
 interface InboxItemData {
   id: string;
@@ -259,24 +263,17 @@ export default function InboxPage() {
   const unreadCount = mockInboxItems.filter(i => !i.isRead).length;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Inbox
-          </h1>
-          <p className="text-zinc-500 mt-1">
-            {unreadCount} unread notifications
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <PageShell maxWidth="4xl">
+      <PageHeader
+        title="Inbox"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}
+        primaryAction={
           <Button variant="outline" size="sm">
             <CheckCircle2 className="h-4 w-4 mr-2" />
             Mark all read
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Tabs */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="mb-4">
@@ -332,15 +329,16 @@ export default function InboxPage() {
 
         {/* Items */}
         {filteredItems.length === 0 ? (
-          <div className="py-12 text-center">
-            <Bell className="h-8 w-8 text-zinc-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-              All caught up!
-            </p>
-            <p className="text-sm text-zinc-500 mt-1">
-              No notifications to show
-            </p>
-          </div>
+          <EmptyState
+            icon={InboxIcon}
+            title={emptyStates.inbox.title}
+            description={emptyStates.inbox.description}
+            primaryAction={{
+              label: emptyStates.inbox.primaryCta,
+              onClick: () => window.location.href = '/my-work',
+            }}
+            size="sm"
+          />
         ) : (
           filteredItems.map((item) => (
             <InboxItem
@@ -355,9 +353,12 @@ export default function InboxPage() {
 
       {/* Help Text */}
       <p className="text-xs text-zinc-400 text-center mt-4">
-        Pro tip: Press <kbd className="px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded">E</kbd> to mark as done, 
-        <kbd className="px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded ml-1">S</kbd> to snooze
+        <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-300">E</kbd> mark done
+        <span className="mx-2">·</span>
+        <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-300">S</kbd> snooze
+        <span className="mx-2">·</span>
+        <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-300">A</kbd> archive
       </p>
-    </div>
+    </PageShell>
   );
 }

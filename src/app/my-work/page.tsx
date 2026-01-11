@@ -35,6 +35,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { WorkItem, PriorityLevel } from '@/types/foco';
+import { PageShell } from '@/components/layout/page-shell';
+import { PageHeader } from '@/components/layout/page-header';
 
 // Mock data
 const myWorkItems: (WorkItem & { section: 'now' | 'next' | 'later' | 'waiting' })[] = [
@@ -94,7 +96,7 @@ function WorkItemRow({
       
       <div className={cn('h-2 w-2 rounded-full shrink-0', priorityColors[item.priority])} />
       
-      <Link href={`/app/tasks/${item.id}`} className="flex-1 min-w-0">
+      <Link href={`/tasks/${item.id}`} className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className={cn(
             'font-medium text-sm truncate',
@@ -349,28 +351,23 @@ export default function MyWorkPage() {
   const totalToday = 8;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            My Work
-          </h1>
-          <p className="text-zinc-500 mt-1">
-            {completedToday} of {totalToday} tasks completed today
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Button variant="outline" size="sm">
-            <Zap className="h-4 w-4 mr-2" />
-            Plan my day
-          </Button>
-        </div>
-      </div>
+    <PageShell maxWidth="4xl">
+      <PageHeader
+        title="My Work"
+        subtitle={`${completedToday} of ${totalToday} completed today`}
+        primaryAction={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            <Button variant="outline" size="sm">
+              <Zap className="h-4 w-4 mr-2" />
+              Plan my day
+            </Button>
+          </div>
+        }
+      />
 
       {/* Progress Bar */}
       <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
@@ -386,6 +383,6 @@ export default function MyWorkPage() {
       <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} />
       <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} />
       <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} />
-    </div>
+    </PageShell>
   );
 }

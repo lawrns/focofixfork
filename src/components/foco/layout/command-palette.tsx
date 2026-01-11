@@ -45,15 +45,15 @@ export function CommandPalette() {
 
   const commands: CommandItem[] = useMemo(() => [
     // Navigation
-    { id: 'nav-home', label: 'Go to Home', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/app'), keywords: ['dashboard'] },
-    { id: 'nav-inbox', label: 'Go to Inbox', icon: Inbox, shortcut: 'G I', group: 'Navigation', action: () => router.push('/app/inbox'), keywords: ['notifications'] },
-    { id: 'nav-mywork', label: 'Go to My Work', icon: CheckSquare, shortcut: 'G M', group: 'Navigation', action: () => router.push('/app/my-work'), keywords: ['tasks', 'assigned'] },
-    { id: 'nav-projects', label: 'Go to Projects', icon: FolderKanban, shortcut: 'G P', group: 'Navigation', action: () => router.push('/app/projects') },
-    { id: 'nav-timeline', label: 'Go to Timeline', icon: Calendar, shortcut: 'G T', group: 'Navigation', action: () => router.push('/app/timeline') },
-    { id: 'nav-docs', label: 'Go to Docs', icon: FileText, shortcut: 'G D', group: 'Navigation', action: () => router.push('/app/docs') },
-    { id: 'nav-people', label: 'Go to People', icon: Users, shortcut: 'G E', group: 'Navigation', action: () => router.push('/app/people') },
-    { id: 'nav-reports', label: 'Go to Reports', icon: BarChart3, shortcut: 'G R', group: 'Navigation', action: () => router.push('/app/reports') },
-    { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/app/settings') },
+    { id: 'nav-home', label: 'Go to Home', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/dashboard'), keywords: ['dashboard'] },
+    { id: 'nav-inbox', label: 'Go to Inbox', icon: Inbox, shortcut: 'G I', group: 'Navigation', action: () => router.push('/inbox'), keywords: ['notifications'] },
+    { id: 'nav-mywork', label: 'Go to My Work', icon: CheckSquare, shortcut: 'G M', group: 'Navigation', action: () => router.push('/my-work'), keywords: ['tasks', 'assigned'] },
+    { id: 'nav-projects', label: 'Go to Projects', icon: FolderKanban, shortcut: 'G P', group: 'Navigation', action: () => router.push('/projects') },
+    { id: 'nav-timeline', label: 'Go to Timeline', icon: Calendar, shortcut: 'G T', group: 'Navigation', action: () => router.push('/timeline') },
+    { id: 'nav-docs', label: 'Go to Docs', icon: FileText, shortcut: 'G D', group: 'Navigation', action: () => router.push('/docs') },
+    { id: 'nav-people', label: 'Go to People', icon: Users, shortcut: 'G E', group: 'Navigation', action: () => router.push('/people') },
+    { id: 'nav-reports', label: 'Go to Reports', icon: BarChart3, shortcut: 'G R', group: 'Navigation', action: () => router.push('/reports') },
+    { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
     
     // Quick Actions
     { id: 'create-task', label: 'Create Task', icon: Plus, shortcut: 'C', group: 'Quick Actions', action: () => console.log('Create task'), keywords: ['new', 'add'] },
@@ -66,8 +66,8 @@ export function CommandPalette() {
     { id: 'ai-suggest', label: 'Get AI Suggestions', icon: Zap, group: 'AI Actions', action: () => console.log('Get suggestions'), keywords: ['help', 'ai'] },
     
     // Recent
-    { id: 'recent-1', label: 'Website Redesign', description: 'Project', icon: FolderKanban, group: 'Recent', action: () => router.push('/app/projects/website-redesign') },
-    { id: 'recent-2', label: 'Design homepage mockups', description: 'Task in Website Redesign', icon: CheckSquare, group: 'Recent', action: () => router.push('/app/tasks/1') },
+    { id: 'recent-1', label: 'Website Redesign', description: 'Project', icon: FolderKanban, group: 'Recent', action: () => router.push('/projects/website-redesign') },
+    { id: 'recent-2', label: 'Design homepage mockups', description: 'Task in Website Redesign', icon: CheckSquare, group: 'Recent', action: () => router.push('/tasks/1') },
   ], [router]);
 
   const filteredCommands = useMemo(() => {

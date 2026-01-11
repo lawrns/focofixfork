@@ -35,6 +35,8 @@ import {
 } from '@/components/ui/select';
 import { useTheme } from 'next-themes';
 import type { DensitySetting } from '@/types/foco';
+import { PageShell } from '@/components/layout/page-shell';
+import { buttons } from '@/lib/copy';
 
 const settingsSections = [
   { id: 'workspace', label: 'Workspace', icon: Settings },
@@ -412,14 +414,14 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <PageShell maxWidth="6xl">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           Settings
         </h1>
-        <p className="text-zinc-500 mt-1">
-          Manage your workspace preferences and configuration
+        <p className="text-sm text-zinc-500 mt-1">
+          Manage your workspace preferences
         </p>
       </div>
 
@@ -451,6 +453,6 @@ export default function SettingsPage() {
           {renderContent()}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

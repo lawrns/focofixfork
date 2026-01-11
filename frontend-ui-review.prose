@@ -1,0 +1,298 @@
+# Comprehensive Frontend UI Review
+# 10 specialized agents examining UI/UX shortcomings
+
+# Define specialized review agents
+agent ui_inspector:
+  model: sonnet
+  prompt: "You are a UI/UX expert who identifies non-functional buttons, broken interactions, and usability issues"
+
+agent interaction_analyst:
+  model: sonnet
+  prompt: "You are an interaction design specialist who evaluates drag-and-drop, gestures, and interactive patterns"
+
+agent accessibility_auditor:
+  model: sonnet
+  prompt: "You are an accessibility expert who reviews WCAG compliance, keyboard navigation, and screen reader support"
+
+agent state_detective:
+  model: sonnet
+  prompt: "You are a state management expert who identifies issues with state handling, data flow, and UI synchronization"
+
+agent visual_critic:
+  model: sonnet
+  prompt: "You are a visual design expert who evaluates layout, spacing, typography, and visual hierarchy"
+
+agent performance_analyst:
+  model: sonnet
+  prompt: "You are a frontend performance expert who identifies render issues, unnecessary re-renders, and optimization opportunities"
+
+agent event_handler_reviewer:
+  model: sonnet
+  prompt: "You are an event handling specialist who examines onClick, onChange, and other event handlers for proper implementation"
+
+agent responsive_tester:
+  model: sonnet
+  prompt: "You are a responsive design expert who evaluates mobile, tablet, and desktop experiences"
+
+agent component_auditor:
+  model: sonnet
+  prompt: "You are a React component expert who reviews component architecture, props, hooks, and patterns"
+
+agent integration_reviewer:
+  model: sonnet
+  prompt: "You are a system integration expert who examines how components work together and data flows through the app"
+
+# Phase 1: Parallel Deep Dive Reviews
+parallel:
+  # Review 1: Button and Click Handlers
+  buttons = session: ui_inspector
+    prompt: """
+    Examine all button components and click handlers in the codebase.
+    Focus on:
+    - Buttons with onClick handlers that only do console.log()
+    - Buttons missing proper handlers
+    - Disabled buttons that should be functional
+    - Submit buttons without form handling
+
+    Check these key files:
+    - src/components/foco/layout/command-palette.tsx (AI Actions buttons)
+    - src/app/page.tsx (dashboard buttons)
+    - src/components/**/*.tsx (all component buttons)
+
+    List every non-functional button with file path and line number.
+    """
+
+  # Review 2: Drag and Drop
+  dragdrop = session: interaction_analyst
+    prompt: """
+    Examine all drag-and-drop functionality in the codebase.
+    Focus on:
+    - DnD implementations that don't work logically
+    - Missing drop zones or drag handles
+    - Improper state updates after drag operations
+    - Accessibility issues with drag-and-drop
+
+    Search for:
+    - react-beautiful-dnd or @dnd-kit usage
+    - onDragStart, onDragEnd, onDrop handlers
+    - Drag-related state management
+
+    Document what's broken and why it's illogical.
+    """
+
+  # Review 3: Form Interactions
+  forms = session: state_detective
+    prompt: """
+    Review all form interactions and input handling.
+    Focus on:
+    - Forms without proper onSubmit handlers
+    - Inputs without onChange or value binding
+    - Missing form validation
+    - State not updating when inputs change
+
+    Check:
+    - Search inputs
+    - Create/Edit forms
+    - Filter controls
+    - Settings forms
+
+    List all broken form interactions.
+    """
+
+  # Review 4: Navigation Issues
+  navigation = session: ui_inspector
+    prompt: """
+    Examine navigation and routing issues.
+    Focus on:
+    - Links that don't navigate properly
+    - Back buttons not working
+    - Broken breadcrumbs
+    - Router state issues
+
+    Review:
+    - Sidebar navigation
+    - Command palette navigation
+    - Project/task navigation
+    - Modal navigation flows
+
+    Document all navigation problems.
+    """
+
+  # Review 5: State Management Problems
+  state = session: state_detective
+    prompt: """
+    Analyze state management issues causing UI problems.
+    Focus on:
+    - State not persisting between renders
+    - Stale closures in event handlers
+    - Missing state updates
+    - Race conditions in async state updates
+
+    Examine:
+    - useState/useEffect hooks
+    - Zustand stores (if any)
+    - Context providers
+    - Component state synchronization
+
+    Identify root causes of state-related UI bugs.
+    """
+
+  # Review 6: Event Handler Implementation
+  events = session: event_handler_reviewer
+    prompt: """
+    Review all event handler implementations.
+    Focus on:
+    - onClick handlers that do nothing or only log
+    - Missing preventDefault/stopPropagation
+    - Event handlers not bound to correct scope
+    - Async handlers without error handling
+
+    Search for:
+    - onClick={() => console.log(...)}
+    - onChange handlers
+    - onSubmit handlers
+    - Custom event handlers
+
+    List all improperly implemented handlers.
+    """
+
+  # Review 7: Component Integration
+  integration = session: integration_reviewer
+    prompt: """
+    Examine how components integrate and communicate.
+    Focus on:
+    - Props not being passed correctly
+    - Missing callback functions
+    - Data not flowing between parent/child
+    - Components rendering but not interactive
+
+    Check:
+    - Command palette integration
+    - Dashboard widgets
+    - Project/task components
+    - Modal/dialog interactions
+
+    Document integration failures.
+    """
+
+  # Review 8: Accessibility Barriers
+  a11y = session: accessibility_auditor
+    prompt: """
+    Audit accessibility issues affecting usability.
+    Focus on:
+    - Keyboard navigation broken
+    - Missing ARIA labels
+    - Buttons not keyboard accessible
+    - Focus management issues
+
+    Check:
+    - Interactive elements without proper roles
+    - Missing keyboard event handlers
+    - Tab order problems
+    - Screen reader compatibility
+
+    List all accessibility barriers.
+    """
+
+  # Review 9: Responsive and Mobile Issues
+  responsive = session: responsive_tester
+    prompt: """
+    Evaluate responsive design and mobile experience.
+    Focus on:
+    - Touch interactions not working
+    - Buttons too small for mobile
+    - Overlapping elements on small screens
+    - Mobile-specific interaction failures
+
+    Check:
+    - Touch event handlers
+    - Mobile breakpoints
+    - Gesture support
+    - Mobile navigation
+
+    Document mobile-specific issues.
+    """
+
+  # Review 10: Performance-Related UI Problems
+  performance = session: performance_analyst
+    prompt: """
+    Identify performance issues causing UI problems.
+    Focus on:
+    - Unnecessary re-renders blocking interactions
+    - Heavy computations blocking UI
+    - Missing memoization causing lag
+    - Event handlers creating new functions on each render
+
+    Search for:
+    - Inline function definitions in render
+    - Missing useMemo/useCallback
+    - Large lists without virtualization
+    - Expensive operations in render
+
+    List performance-related UI failures.
+    """
+
+# Phase 2: Synthesize Findings
+session "Create comprehensive UI issues report"
+  prompt: """
+  Synthesize all findings from the 10 specialized reviews into a comprehensive report.
+
+  Structure the report with:
+
+  # Executive Summary
+  - Total number of issues found
+  - Severity breakdown (Critical, High, Medium, Low)
+  - Most impacted areas of the UI
+
+  # Critical Issues (Blocking User Actions)
+  List issues that completely prevent user actions:
+  - Non-functional buttons with exact file paths and line numbers
+  - Broken drag-and-drop with detailed descriptions
+  - Forms that don't submit
+  - Navigation that fails
+
+  # High Priority Issues (Degraded Experience)
+  List issues that significantly degrade UX:
+  - Partially working interactions
+  - State management problems
+  - Accessibility barriers
+  - Mobile interaction failures
+
+  # Medium Priority Issues (Polish)
+  List issues affecting polish:
+  - Visual inconsistencies
+  - Missing feedback
+  - Performance issues
+
+  # Root Cause Analysis
+  Identify common patterns across issues:
+  - Are most issues from incomplete event handlers?
+  - State management architectural problems?
+  - Component integration failures?
+  - Missing implementation vs bugs?
+
+  # Recommended Fix Strategy
+  Provide a phased approach:
+  1. Quick wins (console.log → actual handlers)
+  2. Structural fixes (state management, integration)
+  3. Enhancement fixes (a11y, performance)
+
+  For each critical issue, provide:
+  - Exact file path and line number
+  - Current broken code snippet
+  - Recommended fix
+  - Estimated effort
+
+  Context from all reviews:
+  - Buttons Review: {buttons}
+  - Drag & Drop Review: {dragdrop}
+  - Forms Review: {forms}
+  - Navigation Review: {navigation}
+  - State Management Review: {state}
+  - Event Handlers Review: {events}
+  - Integration Review: {integration}
+  - Accessibility Review: {a11y}
+  - Responsive Review: {responsive}
+  - Performance Review: {performance}
+  """
+  context: { buttons, dragdrop, forms, navigation, state, events, integration, a11y, responsive, performance }

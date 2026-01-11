@@ -56,14 +56,14 @@ export function CommandPalette() {
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
     
     // Quick Actions
-    { id: 'create-task', label: 'Create Task', icon: Plus, shortcut: 'C', group: 'Quick Actions', action: () => console.log('Create task'), keywords: ['new', 'add'] },
-    { id: 'create-project', label: 'Create Project', icon: FolderKanban, shortcut: 'P', group: 'Quick Actions', action: () => console.log('Create project'), keywords: ['new', 'add'] },
-    { id: 'create-doc', label: 'Create Doc', icon: FileText, shortcut: 'D', group: 'Quick Actions', action: () => console.log('Create doc'), keywords: ['new', 'add', 'document'] },
+    { id: 'create-task', label: 'Create Task', icon: Plus, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/my-work?create=task'), keywords: ['new', 'add'] },
+    { id: 'create-project', label: 'Create Project', icon: FolderKanban, shortcut: 'P', group: 'Quick Actions', action: () => router.push('/projects?create=true'), keywords: ['new', 'add'] },
+    { id: 'create-doc', label: 'Create Doc', icon: FileText, shortcut: 'D', group: 'Quick Actions', action: () => router.push('/docs?create=true'), keywords: ['new', 'add', 'document'] },
     
     // AI Actions
-    { id: 'ai-brief', label: 'Generate Daily Brief', icon: Zap, group: 'AI Actions', action: () => console.log('Generate brief'), keywords: ['summary', 'ai'] },
-    { id: 'ai-status', label: 'Generate Status Update', icon: Zap, group: 'AI Actions', action: () => console.log('Generate status'), keywords: ['report', 'ai'] },
-    { id: 'ai-suggest', label: 'Get AI Suggestions', icon: Zap, group: 'AI Actions', action: () => console.log('Get suggestions'), keywords: ['help', 'ai'] },
+    { id: 'ai-brief', label: 'Generate Daily Brief', icon: Zap, group: 'AI Actions', action: () => router.push('/dashboard?brief=generate'), keywords: ['summary', 'ai'] },
+    { id: 'ai-status', label: 'Generate Status Update', icon: Zap, group: 'AI Actions', action: () => router.push('/reports?generate=status'), keywords: ['report', 'ai'] },
+    { id: 'ai-suggest', label: 'Get AI Suggestions', icon: Zap, group: 'AI Actions', action: () => router.push('/dashboard?suggestions=true'), keywords: ['help', 'ai'] },
     
     // Recent
     { id: 'recent-1', label: 'Website Redesign', description: 'Project', icon: FolderKanban, group: 'Recent', action: () => router.push('/projects/website-redesign') },

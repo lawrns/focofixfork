@@ -1,74 +1,90 @@
-import { NextRequest } from 'next/server'
-import { wrapRoute } from '@/server/http/wrapRoute'
-import { GetProjectsSchema, CreateProjectApiSchema } from '@/lib/validation/schemas/project-api.schema'
-import { ProjectsService } from '@/features/projects/services/projectService'
-import { normalizeProjectsData } from '@/lib/utils'
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
-// Configure for Netlify edge runtime with timeout limits
-export const runtime = 'edge'
-export const maxDuration = 10
-export const dynamic = 'force-dynamic'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-/**
- * GET /api/projects - List projects for the authenticated user
- */
 export async function GET(request: NextRequest) {
-  return wrapRoute(GetProjectsSchema, async ({ input, user, correlationId }) => {
-    const organizationId = input.query?.organization_id
-    const status = input.query?.status
-    const priority = input.query?.priority
-    const limit = input.query?.limit || 10
-    const offset = input.query?.offset || 0
+  try {
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get('workspace_id');
+    const status = searchParams.get('status');
 
-    const result = await ProjectsService.getUserProjects(user.id, {
-      organization_id: organizationId,
-      status,
-      priority,
-      limit,
-      offset,
-    })
+    let query = supabase
+      .from('foco_projects')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (!result.success) {
-      const err: any = new Error(result.error || 'Failed to fetch projects')
-      err.code = 'DATABASE_ERROR'
-      err.statusCode = 500
-      throw err
+    if (workspaceId) {
+      query = query.eq('workspace_id', workspaceId);
     }
 
-    return {
-      data: normalizeProjectsData(result.data || []),
-      pagination: result.pagination,
+    if (status) {
+      query = query.eq('status', status);
     }
-  })(request)
+
+    const { data, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (err) {
+    return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
+  }
 }
 
-/**
- * POST /api/projects - Create a new project
- */
 export async function POST(request: NextRequest) {
-  return wrapRoute(CreateProjectApiSchema, async ({ input, user, correlationId }) => {
-    const result = await ProjectsService.createProject(user.id, input.body as any)
+  try {
+    const body = await request.json();
+    const {
+      workspace_id,
+      name,
+      slug,
+      description,
+      brief,
+      color,
+      icon,
+      owner_id,
+      start_date,
+      target_date,
+      settings,
+    } = body;
 
-    if (!result.success) {
-      // Determine appropriate error code and status
-      if (result.error?.includes('already exists')) {
-        const err: any = new Error(result.error)
-        err.code = 'CONFLICT'
-        err.statusCode = 409
-        throw err
-      } else if (result.error?.includes('Invalid') || result.error?.includes('check your')) {
-        const err: any = new Error(result.error)
-        err.code = 'VALIDATION_ERROR'
-        err.statusCode = 400
-        throw err
-      } else {
-        const err: any = new Error(result.error || 'Failed to create project')
-        err.code = 'DATABASE_ERROR'
-        err.statusCode = 500
-        throw err
-      }
+    if (!workspace_id || !name || !slug) {
+      return NextResponse.json(
+        { error: 'workspace_id, name, and slug are required' },
+        { status: 400 }
+      );
     }
 
-    return result.data
-  })(request)
+    const { data, error } = await supabase
+      .from('foco_projects')
+      .insert({
+        workspace_id,
+        name,
+        slug,
+        description,
+        brief,
+        color: color || '#6366F1',
+        icon,
+        owner_id,
+        start_date,
+        target_date,
+        settings: settings || {},
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (err) {
+    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
+  }
 }

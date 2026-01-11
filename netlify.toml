@@ -38,5 +38,11 @@
   [headers.values]
     Cache-Control = "no-store, must-revalidate"
 
+# Cache busting for API routes
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 # Build processing and headers are handled automatically by @netlify/plugin-nextjs
 # HTTPS redirects are handled automatically by Netlify

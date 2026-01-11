@@ -215,24 +215,30 @@ export function KanbanBoard() {
 
     setColumns(newColumns)
 
-    // Update backend
+    // Update backend with both status and position
     try {
       const response = await fetch(`/api/tasks/${draggableId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: destColumn.id }),
+        body: JSON.stringify({ 
+          status: destColumn.id,
+          position: destination.index,
+          // TODO: Backend should support column_order field for persistent ordering
+        }),
       })
 
       if (!response.ok) {
         // Revert on failure
         setColumns(columns)
+        toast.error('Failed to update task position')
         console.error('Failed to update task status')
       }
     } catch (error) {
       // Revert on failure
       setColumns(columns)
+      toast.error('Failed to update task position')
       console.error('Failed to update task:', error)
     }
   }

@@ -49,9 +49,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const { user } = useAuth()
   const router = useRouter()
 
-  // Debug: Force render user avatar even if user is null
-  const displayUser = user || { email: 'test@example.com', user_metadata: { full_name: 'Test User' } }
-  const avatarText = displayUser?.email?.charAt(0).toUpperCase() || 'U'
+  // Use actual user data - no fallback to fake data
+  const displayUser = user
+  const avatarText = displayUser?.email?.charAt(0).toUpperCase() || '?'
 
   const getStatusColor = (status?: string) => {
     switch (status) {

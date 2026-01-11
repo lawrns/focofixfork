@@ -1,40 +1,36 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo, useCallback, lazy, useRef } from 'react'
+import { Suspense, useEffect, useState, useCallback, lazy, useRef } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
-// Lazy load heavy components
-const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
-const KanbanBoard = lazy(() => import('@/features/projects').then(m => ({ default: m.KanbanBoard })))
-const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
-// GanttView removed in Phase 3 migration - feature deprecated
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Loading, LoadingCard, LoadingTable } from '@/components/ui/loading'
+import { LoadingCard, LoadingTable } from '@/components/ui/loading'
 import { useToastHelpers, useToast } from '@/components/ui/toast'
 import { SkipToMainContent } from '@/components/ui/accessibility'
-import { DashboardEmpty } from '@/components/empty-states/dashboard-empty'
 import { ProductTour, useProductTour, defaultTourSteps } from '@/components/onboarding/product-tour'
 import { useOnboarding } from '@/lib/hooks/use-onboarding'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, Sparkles, Download, Upload } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
 import { projectStore } from '@/lib/stores/project-store'
 import { Project } from '@/features/projects/types'
+import { PageShell } from '@/components/layout/page-shell'
+import { PageHeader } from '@/components/layout/page-header'
+import { dialogs, placeholders, buttons } from '@/lib/copy'
+import { showProjectCreated, showError } from '@/lib/toast-helpers'
 
-// Lazy load additional heavy components
+// Lazy load heavy components
+const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
+const KanbanBoard = lazy(() => import('@/features/projects').then(m => ({ default: m.KanbanBoard })))
+const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
 const ExportDialog = lazy(() => import('@/components/export/export-dialog'))
 const ImportDialog = lazy(() => import('@/components/import/import-dialog'))
-// TimeTracker removed in Phase 3 migration - feature archived
-const PresenceIndicator = lazy(() => import('@/components/collaboration/presence-indicator'))
-const CommentsSection = lazy(() => import('@/components/comments/comments-section'))
-const NotificationCenter = lazy(() => import('@/components/notifications/notification-center'))
 const AIProjectCreator = lazy(() => import('@/components/ai/ai-project-creator').then(m => ({ default: m.AIProjectCreator })))
 const QuickActionsMenu = lazy(() => import('@/components/ui/quick-actions-menu').then(m => ({ default: m.QuickActionsMenu })))
 const ImportExportModal = lazy(() => import('@/components/import-export/import-export-modal').then(m => ({ default: m.ImportExportModal })))
@@ -339,82 +335,80 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="mx-6">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Dashboard</span>
-            <div className="flex items-center gap-2 md:gap-3" data-tour="dashboard-actions">
-              <Button onClick={() => setShowNewProjectModal(true)} variant="default" className="flex flex-row items-center gap-2" data-tour="create-project-button">
-                <Plus className="w-4 h-4" />
-                <span className="hidden md:inline">Create Project</span>
-                <span className="md:hidden">Create</span>
-              </Button>
-              <Button onClick={() => setShowAIProjectModal(true)} variant="outline" className="flex flex-row items-center gap-2" data-tour="ai-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-70"><path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
-                <span className="hidden md:inline">Create with AI</span>
-                <span className="md:hidden">AI</span>
-              </Button>
-            </div>
-          </CardTitle>
-          <CardDescription>Overview of your projects and work. Switch views to table, kanban, or gantt.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<Skeleton className="h-10 w-64" />}>
-            <ViewTabs
-              activeTab={activeView}
-              onTabChange={(tabId) => {
-              if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
-                setActiveViewState(tabId as typeof activeView)
-              }
-            }}
-            data-tour="view-tabs"
-          />
-          </Suspense>
-          <div className="flex items-center gap-2 md:gap-3 pt-2">
-            <ImportDialog onImportComplete={() => window.location.reload()} />
-            <ExportDialog />
+    <PageShell>
+      <PageHeader
+        title="Dashboard"
+        subtitle={`${projects.length} projects`}
+        primaryAction={
+          <div className="flex items-center gap-2" data-tour="dashboard-actions">
+            <Button 
+              onClick={() => setShowNewProjectModal(true)} 
+              data-tour="create-project-button"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Create project</span>
+              <span className="sm:hidden">Create</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAIProjectModal(true)}
+              data-tour="ai-button"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">AI create</span>
+              <span className="sm:hidden">AI</span>
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        }
+        secondaryActions={[
+          { label: 'Import', onClick: () => {}, icon: Upload },
+          { label: 'Export', onClick: () => {}, icon: Download },
+        ]}
+      />
 
-          <Suspense fallback={<DashboardSkeleton />}>
-            {activeView === 'table' && (
-              <ProjectTable 
-                onCreateProject={() => setShowNewProjectModal(true)}
-                onTakeTour={startTour}
-                onImportProjects={() => {
-                  // TODO: Trigger import dialog
-                  console.log('Opening import dialog')
-                }}
-              />
-            )}
-            {activeView === 'kanban' && <KanbanBoard />}
-            {/* Gantt view removed in Phase 3 - use Kanban or Table view */}
-          </Suspense>
+      {/* View Tabs */}
+      <Suspense fallback={<Skeleton className="h-10 w-64" />}>
+        <ViewTabs
+          activeTab={activeView}
+          onTabChange={(tabId) => {
+            if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
+              setActiveViewState(tabId as typeof activeView)
+            }
+          }}
+          data-tour="view-tabs"
+        />
+      </Suspense>
 
-          {/* Time Tracker Sidebar - disabled until timer_sessions table exists */}
-          {/* <div className="w-80 border-l bg-muted/10 p-4">
-            <TimeTracker
-              userId={user?.id || ''}
-              projects={[]} // TODO: Pass actual projects
-            />
-          </div> */}
+      {/* Main Content */}
+      <Suspense fallback={<DashboardSkeleton />}>
+        {activeView === 'table' && (
+          <ProjectTable 
+            onCreateProject={() => setShowNewProjectModal(true)}
+            onTakeTour={startTour}
+            onImportProjects={() => {
+              console.log('Opening import dialog')
+            }}
+          />
+        )}
+        {activeView === 'kanban' && <KanbanBoard />}
+      </Suspense>
 
-          {/* New Project Modal */}
+      {/* Create Project Dialog */}
       <Dialog open={showNewProjectModal} onOpenChange={setShowNewProjectModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>{dialogs.createProject.title}</DialogTitle>
+            <DialogDescription>{dialogs.createProject.description}</DialogDescription>
           </DialogHeader>
           <form action={handleCreateProject} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Project Name</Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 name="name"
-                placeholder="Enter project name"
+                placeholder={placeholders.projectName}
                 required
+                autoFocus
               />
             </div>
 
@@ -423,87 +417,78 @@ export default function DashboardPage() {
               <Textarea
                 id="description"
                 name="description"
-                placeholder="Describe your project"
+                placeholder={placeholders.description}
                 rows={3}
               />
+              <p className="text-xs text-zinc-500">Optional. Helps your team understand the goal.</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="organization_id">Organization (Optional)</Label>
-              <Select name="organization_id" disabled={isLoadingOrganizations}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoadingOrganizations ? "Loading organizations..." : "Select organization (optional)"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingOrganizations ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span className="text-sm text-muted-foreground">Loading...</span>
-                    </div>
-                  ) : !Array.isArray(organizations) || organizations.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground">No organizations found</div>
-                  ) : (
-                    organizations.map((org) => (
+            {organizations.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="organization_id">Organization</Label>
+                <Select name="organization_id" disabled={isLoadingOrganizations}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations.map((org) => (
                       <SelectItem key={org.id} value={org.id}>
                         {org.name}
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-
-            </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="due_date">Due Date</Label>
+              <Label htmlFor="due_date">Due date</Label>
               <Input
                 id="due_date"
                 name="due_date"
                 type="date"
               />
+              <p className="text-xs text-zinc-500">When should this be complete?</p>
             </div>
 
-            {/* File Attachments - Disabled for new project creation */}
-            {/* Files can be uploaded after the project is created */}
-
-            <div className="flex justify-end space-x-2 pt-4">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowNewProjectModal(false)}
               >
-                Cancel
+                {buttons.cancel}
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Creating...' : 'Create Project'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {buttons.creating}
+                  </>
+                ) : (
+                  buttons.createProject
+                )}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* AI Project Creator Modal */}
+      {/* AI Project Creator Dialog */}
       <Dialog open={showAIProjectModal} onOpenChange={setShowAIProjectModal}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto glass-card border-2">
-          <DialogHeader className="space-y-3">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500">
-                  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path>
-                  <path d="M20 3v4"></path>
-                  <path d="M22 5h-4"></path>
-                  <path d="M4 17v2"></path>
-                  <path d="M5 18H3"></path>
-                </svg>
+              <div className="p-2 rounded-lg bg-indigo-500/10">
+                <Sparkles className="h-5 w-5 text-indigo-500" />
               </div>
-              <DialogTitle className="text-2xl">AI-Powered Project Creator</DialogTitle>
+              <div>
+                <DialogTitle>Create with AI</DialogTitle>
+                <DialogDescription>
+                  Describe your project and AI will create tasks and milestones.
+                </DialogDescription>
+              </div>
             </div>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Describe your project in natural language, and AI will automatically create a complete project structure with milestones and tasks.
-            </DialogDescription>
           </DialogHeader>
           <AIProjectCreator
             onSuccess={(projectId) => {
@@ -529,21 +514,28 @@ export default function DashboardPage() {
       {/* Import/Export Modal */}
       <ImportExportModal
         projects={projects}
-        tasks={[]} // TODO: Add tasks data
+        tasks={[]}
         organizations={organizations}
-        labels={[]} // TODO: Add labels data
+        labels={[]}
         onImportComplete={(result) => {
           if (result.success) {
-            toastNotification.addToast({ type: 'success', title: 'Success', description: `Successfully imported ${result.imported.projects + result.imported.tasks} items` })
-            // Refresh data
+            toastNotification.addToast({ 
+              type: 'success', 
+              title: 'Import complete', 
+              description: `${result.imported.projects + result.imported.tasks} items imported` 
+            })
             fetchOrganizations()
             fetchProjects()
           }
         }}
         onExportComplete={() => {
-          toastNotification.addToast({ type: 'success', title: 'Success', description: 'Export completed successfully' })
+          toastNotification.addToast({ 
+            type: 'success', 
+            title: 'Export complete', 
+            description: 'Your data has been exported' 
+          })
         }}
       />
-    </div>
+    </PageShell>
   )
 }

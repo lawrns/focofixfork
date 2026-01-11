@@ -30,6 +30,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { PageShell } from '@/components/layout/page-shell';
+import { PageHeader } from '@/components/layout/page-header';
+import { EmptyState } from '@/components/ui/empty-state-standard';
+import { emptyStates, buttons } from '@/lib/copy';
 
 interface TeamMember {
   id: string;
@@ -367,22 +371,17 @@ export default function PeoplePage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            People
-          </h1>
-          <p className="text-zinc-500 mt-1">
-            {teamMembers.length} team members
-          </p>
-        </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Invite Member
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="People"
+        subtitle={`${teamMembers.length} team members`}
+        primaryAction={
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            {buttons.inviteMember}
+          </Button>
+        }
+      />
 
       {/* Tabs */}
       <Tabs value={view} onValueChange={(v) => setView(v as any)} className="mb-6">
@@ -424,16 +423,19 @@ export default function PeoplePage() {
 
       {/* Empty State */}
       {filteredMembers.length === 0 && (
-        <div className="py-12 text-center">
-          <Users className="h-12 w-12 text-zinc-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-50 mb-1">
-            No people found
-          </h3>
-          <p className="text-zinc-500">
-            No team members matching "{search}"
-          </p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={search ? emptyStates.peopleSearch.title : emptyStates.people.title}
+          description={search ? emptyStates.peopleSearch.description : emptyStates.people.description}
+          primaryAction={search ? {
+            label: emptyStates.peopleSearch.primaryCta,
+            onClick: () => setSearch(''),
+          } : {
+            label: emptyStates.people.primaryCta,
+            onClick: () => {},
+          }}
+        />
       )}
-    </div>
+    </PageShell>
   );
 }

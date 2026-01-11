@@ -2,28 +2,22 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ProtectedRoute } from '@/components/auth/protected-route'
 
 /**
- * Team page - redirects to organizations page
- * This page exists to handle the /team route from mobile navigation
+ * Team page - redirects to /people (consolidated per Intercom-level UX plan)
+ * /team and /people are now unified into a single People surface
  */
 export default function TeamPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to organizations page
-    router.replace('/organizations')
+    router.replace('/people')
   }, [router])
 
   return (
-    <ProtectedRoute>
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-muted-foreground">Redirecting to organizations...</p>
-        </div>
-      </div>
-    </ProtectedRoute>
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-zinc-500">Redirecting to People...</p>
+    </div>
   )
 }
 

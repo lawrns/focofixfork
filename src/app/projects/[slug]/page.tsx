@@ -89,7 +89,7 @@ const priorityColors: Record<PriorityLevel, string> = {
 function WorkItemCard({ item }: { item: WorkItem }) {
   return (
     <Link
-      href={`/app/tasks/${item.id}`}
+      href={`/tasks/${item.id}`}
       className={cn(
         'block p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all',

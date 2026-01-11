@@ -318,7 +318,7 @@ export default function TimelinePage() {
             <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
               <div className="w-48 shrink-0 p-3 border-r border-zinc-200 dark:border-zinc-800">
                 <Link 
-                  href="/app/projects/1" 
+                  href="/projects/website-redesign" 
                   className="flex items-center gap-2 font-medium text-sm hover:text-indigo-600 transition-colors"
                 >
                   <div className="h-3 w-3 rounded" style={{ backgroundColor: color }} />

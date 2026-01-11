@@ -67,7 +67,7 @@ export function CommandPalette() {
     
     // Recent
     { id: 'recent-1', label: 'Website Redesign', description: 'Project', icon: FolderKanban, group: 'Recent', action: () => router.push('/projects/website-redesign') },
-    { id: 'recent-2', label: 'Design homepage mockups', description: 'Task in Website Redesign', icon: CheckSquare, group: 'Recent', action: () => router.push('/tasks/1') },
+    { id: 'recent-2', label: 'Design homepage mockups', description: 'Task in Website Redesign', icon: CheckSquare, group: 'Recent', action: () => router.push('/my-work') },
   ], [router]);
 
   const filteredCommands = useMemo(() => {

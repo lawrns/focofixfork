@@ -55,7 +55,7 @@ export function Providers({ children }: ProvidersProps) {
             <ToastProvider>
               <AuthProvider>
                 {children}
-                <ConditionalMobileNav />
+                {typeof window !== 'undefined' && <ConditionalMobileNav />}
               </AuthProvider>
             </ToastProvider>
           </I18nProvider>

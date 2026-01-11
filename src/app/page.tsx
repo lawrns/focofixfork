@@ -136,7 +136,7 @@ function TodayStack() {
         {todayTasks.map((task) => (
           <Link
             key={task.id}
-            href={`/app/tasks/${task.id}`}
+            href={`/tasks/${task.id}`}
             className={cn(
               'flex items-center gap-3 p-3 -mx-2 rounded-lg',
               'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors',
@@ -305,7 +305,7 @@ function ProjectPulse() {
             Project Pulse
           </CardTitle>
           <Button variant="ghost" size="sm" className="h-8" asChild>
-            <Link href="/app/projects">
+            <Link href="/projects">
               View all
               <ArrowRight className="h-3.5 w-3.5 ml-1" />
             </Link>
@@ -316,7 +316,7 @@ function ProjectPulse() {
         {projectPulse.map((project) => (
           <Link
             key={project.id}
-            href={`/app/projects/${project.id}`}
+            href={`/projects/${project.id}`}
             className="block group"
           >
             <div className="flex items-center justify-between mb-1.5">

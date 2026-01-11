@@ -346,7 +346,7 @@ function Inspector({ item }: { item: WorkItem }) {
           Project
         </label>
         <Link 
-          href={`/app/projects/${(item.project as any)?.slug}`}
+          href={`/projects/${(item.project as any)?.slug}`}
           className="flex items-center gap-2 text-sm hover:text-indigo-600 transition-colors"
         >
           <div 
@@ -431,7 +431,7 @@ export default function WorkItemPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 text-sm text-zinc-500 mb-1">
                 <Link 
-                  href={`/app/projects/${(workItem.project as any)?.slug}`}
+                  href={`/projects/${(workItem.project as any)?.slug}`}
                   className="hover:text-indigo-600"
                 >
                   {(workItem.project as any)?.name}

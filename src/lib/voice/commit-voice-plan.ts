@@ -496,7 +496,7 @@ export class VoicePlanCommitService {
           : null
 
         const taskQuery = `
-          INSERT INTO tasks (
+          INSERT INTO work_items (
             title, description, project_id, milestone_id, status, priority,
             estimated_hours, due_date, created_by, updated_by,
             voice_session_id, voice_generated, voice_task_id, 
@@ -545,9 +545,9 @@ export class VoicePlanCommitService {
       }
 
       // Mark all items as committed
-      await client.query('UPDATE projects SET voice_commit_status = $1, voice_committed_at = NOW() WHERE id = $2', ['committed', project.id])
+      await client.query('UPDATE foco_projects SET voice_commit_status = $1, voice_committed_at = NOW() WHERE id = $2', ['committed', project.id])
       await client.query('UPDATE milestones SET voice_commit_status = $1, voice_committed_at = NOW() WHERE voice_session_id = $2', ['committed', session.id])
-      await client.query('UPDATE tasks SET voice_commit_status = $1, voice_committed_at = NOW() WHERE voice_session_id = $2', ['committed', session.id])
+      await client.query('UPDATE work_items SET voice_commit_status = $1, voice_committed_at = NOW() WHERE voice_session_id = $2', ['committed', session.id])
 
       await client.query('COMMIT')
 
@@ -615,7 +615,7 @@ export class VoicePlanCommitService {
         committed_at,
         (SELECT COUNT(*) FROM projects WHERE voice_session_id = $1 AND voice_commit_status = 'committed') as committed_projects,
         (SELECT COUNT(*) FROM milestones WHERE voice_session_id = $1 AND voice_commit_status = 'committed') as committed_milestones,
-        (SELECT COUNT(*) FROM tasks WHERE voice_session_id = $1 AND voice_commit_status = 'committed') as committed_tasks
+        (SELECT COUNT(*) FROM work_items WHERE voice_session_id = $1 AND voice_commit_status = 'committed') as committed_tasks
       FROM voice_sessions 
       WHERE id = $1 AND 
       (organization_id = ANY(SELECT organization_id FROM user_organizations WHERE user_id = $2) OR user_id = $2)
@@ -640,13 +640,13 @@ export class VoicePlanCommitService {
       await client.query('BEGIN')
 
       // Delete tasks created by this session
-      await client.query('DELETE FROM tasks WHERE voice_session_id = $1', [sessionId])
+      await client.query('DELETE FROM work_items WHERE voice_session_id = $1', [sessionId])
 
       // Delete milestones created by this session
       await client.query('DELETE FROM milestones WHERE voice_session_id = $1', [sessionId])
 
       // Delete project created by this session
-      await client.query('DELETE FROM projects WHERE voice_session_id = $1', [sessionId])
+      await client.query('DELETE FROM foco_projects WHERE voice_session_id = $1', [sessionId])
 
       // Delete dependencies
       await client.query('DELETE FROM voice_plan_dependencies WHERE session_id = $1', [sessionId])

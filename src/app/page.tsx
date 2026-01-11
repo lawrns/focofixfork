@@ -396,7 +396,7 @@ export default function HomePage() {
           Good morning, John
         </h1>
         <p className="text-zinc-500 mt-1">
-          Here's what needs your attention today.
+          Here&apos;s what needs your attention today.
         </p>
       </div>
 

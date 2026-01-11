@@ -1,7 +1,7 @@
 'use client';
 
 // Mermaid diagrams page - Client Component with hooks
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { MermaidDiagramListItem } from '@/lib/models/mermaid';
 import { mermaidService } from '@/lib/services/mermaid';
@@ -14,11 +14,7 @@ export default function MermaidPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'public' | 'private' | 'shared'>('all');
 
-  useEffect(() => {
-    loadDiagrams();
-  }, [search, filter]);
-
-  const loadDiagrams = async () => {
+  const loadDiagrams = useCallback(async () => {
     try {
       setLoading(true);
       const options: any = {
@@ -40,7 +36,11 @@ export default function MermaidPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, filter]);
+
+  useEffect(() => {
+    loadDiagrams();
+  }, [loadDiagrams]);
 
   const createNewDiagram = async () => {
     try {

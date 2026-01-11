@@ -54,7 +54,7 @@ test.describe('Progressive Web App', () => {
     expect(typeof isInstallable).toBe('boolean');
   });
 
-  test('should work offline', async ({ page, browserContext }) => {
+  test('should work offline', async ({ page, context }) => {
     // First load the app online
     await page.goto('/');
 
@@ -64,7 +64,7 @@ test.describe('Progressive Web App', () => {
     });
 
     // Set offline
-    await browserContext.setOffline(true);
+    await context.setOffline(true);
 
     // Try to navigate (should work via cache)
     await page.reload();
@@ -281,17 +281,17 @@ test.describe('Progressive Web App', () => {
     expect(typeof hasApiCache).toBe('boolean');
   });
 
-  test('should handle network recovery', async ({ page, browserContext }) => {
+  test('should handle network recovery', async ({ page, context }) => {
     await page.goto('/');
 
     // Go offline
-    await browserContext.setOffline(true);
+    await context.setOffline(true);
 
     // Should show offline state
     await page.waitForTimeout(1000);
 
     // Come back online
-    await browserContext.setOffline(false);
+    await context.setOffline(false);
 
     // Should sync any offline actions
     await page.waitForTimeout(2000);

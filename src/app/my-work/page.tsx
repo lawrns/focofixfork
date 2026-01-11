@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useFocusModeStore } from '@/lib/stores/foco-store';
@@ -37,25 +37,9 @@ import {
 import type { WorkItem, PriorityLevel } from '@/types/foco';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
-
-// Mock data
-const myWorkItems: (WorkItem & { section: 'now' | 'next' | 'later' | 'waiting' })[] = [
-  // Now
-  { id: '1', workspace_id: '1', project_id: '1', type: 'task', title: 'Design homepage mockups', description: 'High-fidelity mockups with final colors, typography, and imagery', status: 'in_progress', priority: 'high', due_date: '2026-01-15', position: 0, section: 'now', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
-  { id: '2', workspace_id: '1', project_id: '2', type: 'bug', title: 'Fix navigation dropdown on Safari', status: 'review', priority: 'urgent', due_date: '2026-01-12', position: 1, section: 'now', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Mobile App v2', color: '#10B981' } as any },
-  
-  // Next
-  { id: '3', workspace_id: '1', project_id: '1', type: 'task', title: "Product page templates - Don't forget to celebrate your wins!", status: 'next', priority: 'medium', due_date: '2026-01-18', position: 0, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
-  { id: '4', workspace_id: '1', project_id: '1', type: 'task', title: 'Checkout flow redesign', status: 'next', priority: 'high', due_date: '2026-01-22', position: 1, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
-  { id: '5', workspace_id: '1', project_id: '2', type: 'feature', title: 'Push notification system', status: 'next', priority: 'high', due_date: '2026-01-28', position: 2, section: 'next', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Mobile App v2', color: '#10B981' } as any },
-  
-  // Later
-  { id: '6', workspace_id: '1', project_id: '1', type: 'task', title: 'Mobile responsive audit', status: 'backlog', priority: 'medium', due_date: '2026-01-25', position: 0, section: 'later', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
-  { id: '7', workspace_id: '1', project_id: '1', type: 'feature', title: 'Add dark mode support', status: 'backlog', priority: 'low', due_date: '2026-02-01', position: 1, section: 'later', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'Website Redesign', color: '#6366F1' } as any },
-  
-  // Waiting
-  { id: '8', workspace_id: '1', project_id: '3', type: 'task', title: 'Review OAuth2 implementation PR', status: 'review', priority: 'medium', position: 0, section: 'waiting', created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, project: { name: 'API Platform', color: '#F59E0B' } as any },
-];
+import { useAuth } from '@/lib/hooks/use-auth';
+import { toast } from 'sonner';
+import { Card } from '@/components/ui/card';
 
 const priorityColors: Record<PriorityLevel, string> = {
   urgent: 'bg-red-500',
@@ -81,6 +65,24 @@ function WorkItemRow({
 }) {
   const [isCompleted, setIsCompleted] = useState(item.status === 'done');
 
+  const handleToggleComplete = async () => {
+    const nextStatus = !isCompleted ? 'done' : 'in_progress';
+    setIsCompleted(!isCompleted);
+    
+    try {
+      const response = await fetch(`/api/tasks/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update task');
+    } catch (error) {
+      setIsCompleted(isCompleted); // revert
+      toast.error('Failed to update task status');
+    }
+  };
+
   return (
     <div className={cn(
       'flex items-center gap-3 p-3 -mx-2 rounded-lg group',
@@ -90,7 +92,7 @@ function WorkItemRow({
       
       <Checkbox
         checked={isCompleted}
-        onCheckedChange={(checked) => setIsCompleted(!!checked)}
+        onCheckedChange={handleToggleComplete}
         className="h-5 w-5"
       />
       
@@ -193,9 +195,6 @@ function Section({
         <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 rounded">
           {items.length}
         </span>
-        <span className="text-xs text-zinc-500 ml-2">
-          {config.description}
-        </span>
       </div>
       
       <div className="space-y-1">
@@ -228,6 +227,16 @@ function FocusMode({
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  useEffect(() => {
+    let interval: any;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setElapsedSeconds(s => s + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -236,7 +245,6 @@ function FocusMode({
 
   return (
     <div className="fixed inset-0 bg-white dark:bg-zinc-950 z-50 flex flex-col">
-      {/* Focus Mode Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onExit}>
@@ -249,7 +257,6 @@ function FocusMode({
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Timer */}
           <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
             <Timer className="h-4 w-4 text-zinc-500" />
             <span className="font-mono text-lg">{formatTime(elapsedSeconds)}</span>
@@ -270,9 +277,7 @@ function FocusMode({
         </div>
       </div>
 
-      {/* Focus Content */}
       <div className="flex-1 flex">
-        {/* Main Content */}
         <div className="flex-1 p-8 max-w-3xl mx-auto">
           <div className="prose dark:prose-invert max-w-none">
             <p className="text-zinc-600 dark:text-zinc-300">
@@ -280,7 +285,6 @@ function FocusMode({
             </p>
           </div>
 
-          {/* AI Helpers */}
           <div className="mt-8 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="h-4 w-4 text-indigo-600" />
@@ -295,7 +299,6 @@ function FocusMode({
           </div>
         </div>
 
-        {/* Context Sidebar */}
         <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50 dark:bg-zinc-900">
           <h3 className="font-medium text-sm mb-4">Context</h3>
           
@@ -334,7 +337,37 @@ function FocusMode({
 }
 
 export default function MyWorkPage() {
+  const { user } = useAuth();
   const { isActive, currentWorkItem, activate, deactivate } = useFocusModeStore();
+  const [items, setItems] = useState<(WorkItem & { section: string })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchWorkItems = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/tasks');
+      const data = await response.json();
+      
+      if (data.success) {
+        // Map backend tasks to sections (default logic)
+        setItems((data.data?.data || data.data || []).map((t: any) => ({
+          ...t,
+          section: t.section || (t.status === 'in_progress' ? 'now' : t.status === 'next' ? 'next' : t.status === 'blocked' ? 'waiting' : 'later')
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch work items:', error);
+      toast.error('Failed to load My Work');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchWorkItems();
+  }, [fetchWorkItems]);
 
   const handleStartFocus = (item: WorkItem) => {
     activate(item);
@@ -345,16 +378,36 @@ export default function MyWorkPage() {
   }
 
   const getItemsBySection = (section: 'now' | 'next' | 'later' | 'waiting') =>
-    myWorkItems.filter(item => item.section === section);
+    items.filter(item => item.section === section);
 
-  const completedToday = 3;
-  const totalToday = 8;
+  const completedToday = items.filter(i => i.status === 'done').length; // This is a simplification
+  const totalToday = items.length;
+
+  if (isLoading) {
+    return (
+      <PageShell maxWidth="4xl">
+        <PageHeader title="My Work" subtitle="Loading your work..." />
+        <div className="space-y-8">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-4">
+              <div className="h-6 w-24 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded" />
+              <div className="space-y-2">
+                {[...Array(3)].map((_, j) => (
+                  <div key={j} className="h-12 w-full bg-zinc-50 dark:bg-zinc-900 animate-pulse rounded" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell maxWidth="4xl">
       <PageHeader
         title="My Work"
-        subtitle={`${completedToday} of ${totalToday} completed today`}
+        subtitle={`${completedToday} of ${totalToday} items completed`}
         primaryAction={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
@@ -369,16 +422,16 @@ export default function MyWorkPage() {
         }
       />
 
-      {/* Progress Bar */}
       <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Today's Progress</span>
-          <span className="text-sm text-zinc-500">{Math.round((completedToday / totalToday) * 100)}%</span>
+          <span className="text-sm font-medium">Today&apos;s Progress</span>
+          <span className="text-sm text-zinc-500">
+            {totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0}%
+          </span>
         </div>
-        <Progress value={(completedToday / totalToday) * 100} className="h-2" />
+        <Progress value={totalToday > 0 ? (completedToday / totalToday) * 100 : 0} className="h-2" />
       </div>
 
-      {/* Sections */}
       <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} />
       <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} />
       <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} />

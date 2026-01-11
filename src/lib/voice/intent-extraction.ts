@@ -101,16 +101,16 @@ const INTENT_PATTERNS = {
 // Entity extraction patterns
 const ENTITY_PATTERNS = {
   [EntityType.PROJECT_NAME]: [
-    /(?:project|initiative)\s+(?:called|named)\s+([A-Z][a-zA-Z\s]+)/i,
-    /(?:["'])([A-Z][a-zA-Z\s]+)(?:["'])/i
+    /(?:project|initiative)\s+(?:called|named)\s+([A-Z][a-zA-Z\s]+)/gi,
+    /(?:["'])([A-Z][a-zA-Z\s]+)(?:["'])/gi
   ],
   [EntityType.TASK_TITLE]: [
-    /(?:task|item)\s+(?:called|named)\s+([A-Z][a-zA-Z\s]+)/i,
-    /(?:["'])([A-Z][a-zA-Z\s]+)(?:["'])/i
+    /(?:task|item)\s+(?:called|named)\s+([A-Z][a-zA-Z\s]+)/gi,
+    /(?:["'])([A-Z][a-zA-Z\s]+)(?:["'])/gi
   ],
   [EntityType.PERSON_NAME]: [
     /\b([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/g,
-    /(?:assign|delegate)\s+(?:to|for)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/i
+    /(?:assign|delegate)\s+(?:to|for)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/gi
   ],
   [EntityType.DATE]: [
     /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s+\d{4})?\b/gi,

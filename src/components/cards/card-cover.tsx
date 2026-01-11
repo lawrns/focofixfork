@@ -129,19 +129,19 @@ export function CardCoverSelector({
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="colors" className="flex items-center gap-2">
-                <Palette className="w-4 h-4" />
+                <Palette className="w-4 h-4" aria-hidden="true" />
                 Colors
               </TabsTrigger>
               <TabsTrigger value="gradients" className="flex items-center gap-2">
-                <Image className="w-4 h-4" aria-hidden="true" />
+                <Palette className="w-4 h-4" aria-hidden="true" />
                 Gradients
               </TabsTrigger>
               <TabsTrigger value="upload" className="flex items-center gap-2">
-                <Upload className="w-4 h-4" />
+                <Upload className="w-4 h-4" aria-hidden="true" />
                 Upload
               </TabsTrigger>
               <TabsTrigger value="unsplash" className="flex items-center gap-2">
-                <Image className="w-4 h-4" aria-hidden="true" />
+                <Camera className="w-4 h-4" aria-hidden="true" />
                 Photos
               </TabsTrigger>
             </TabsList>
@@ -242,7 +242,7 @@ export function CardCoverSelector({
 
             <TabsContent value="unsplash" className="space-y-4">
               <div className="text-center py-8 text-gray-500">
-                <Image className="w-12 h-12 mx-auto mb-4 text-gray-300" aria-hidden="true" />
+                <Camera className="w-12 h-12 mx-auto mb-4 text-gray-300" aria-hidden="true" />
                 <p className="text-sm">Unsplash integration coming soon!</p>
                 <p className="text-xs text-gray-400 mt-1">
                   Browse thousands of high-quality photos for your cards

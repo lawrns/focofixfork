@@ -173,7 +173,7 @@ export function CommandPalette() {
         <div className="max-h-[400px] overflow-y-auto p-2">
           {Object.entries(groupedCommands).length === 0 ? (
             <div className="py-8 text-center text-sm text-zinc-500">
-              No results found for "{query}"
+              No results found for &quot;{query}&quot;
             </div>
           ) : (
             Object.entries(groupedCommands).map(([group, items]) => (

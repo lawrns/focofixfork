@@ -26,8 +26,11 @@ export interface Workspace {
   slug: string;
   description?: string;
   logo_url?: string;
-  settings: WorkspaceSettings;
-  ai_policy: AIPolicy;
+  website?: string;
+  created_by?: string;
+  is_active?: boolean;
+  settings?: WorkspaceSettings;
+  ai_policy?: AIPolicy;
   created_at: string;
   updated_at: string;
 }

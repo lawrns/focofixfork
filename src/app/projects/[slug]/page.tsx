@@ -213,7 +213,7 @@ function AISuggestionStrip() {
           <span className="font-medium">Team capacity is 92% next week</span>
           {' — '}
           <span className="text-zinc-600 dark:text-zinc-400">
-            Consider moving "Checkout flow redesign" by 2 days
+            Consider moving &quot;Checkout flow redesign&quot; by 2 days
           </span>
         </p>
       </div>

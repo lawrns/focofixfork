@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MermaidDiagram } from '@/lib/models/mermaid';
 import { MermaidPreview } from '@/features/mermaid/components/MermaidPreview';
@@ -15,11 +15,7 @@ export default function MermaidSharePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadPublicDiagram();
-  }, [shareToken]);
-
-  const loadPublicDiagram = async () => {
+  const loadPublicDiagram = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -31,7 +27,11 @@ export default function MermaidSharePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [shareToken]);
+
+  useEffect(() => {
+    loadPublicDiagram();
+  }, [loadPublicDiagram]);
 
   const handleCopyDiagram = async () => {
     if (!diagram) return;

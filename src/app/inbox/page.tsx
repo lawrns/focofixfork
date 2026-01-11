@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {
   AtSign,
@@ -33,6 +33,8 @@ import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state-standard';
 import { emptyStates } from '@/lib/copy';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { toast } from 'sonner';
 
 interface InboxItemData {
   id: string;
@@ -45,71 +47,6 @@ interface InboxItemData {
   isRead: boolean;
   createdAt: string;
 }
-
-const mockInboxItems: InboxItemData[] = [
-  {
-    id: '1',
-    type: 'mention',
-    title: 'Sarah mentioned you in a comment',
-    body: '"@John can you review the new checkout flow designs?"',
-    actor: { name: 'Sarah Chen' },
-    project: { name: 'Website Redesign', color: '#6366F1' },
-    workItem: { title: 'Checkout flow redesign' },
-    isRead: false,
-    createdAt: '5 minutes ago',
-  },
-  {
-    id: '2',
-    type: 'assigned',
-    title: 'Mike assigned you to a task',
-    actor: { name: 'Mike Johnson' },
-    project: { name: 'Mobile App v2', color: '#10B981' },
-    workItem: { title: 'Fix memory leak in image gallery' },
-    isRead: false,
-    createdAt: '1 hour ago',
-  },
-  {
-    id: '3',
-    type: 'ai_flag',
-    title: 'AI detected a potential risk',
-    body: 'Mobile App v2 milestone is trending 3 days late based on current velocity',
-    actor: { name: 'Foco AI' },
-    project: { name: 'Mobile App v2', color: '#10B981' },
-    isRead: false,
-    createdAt: '2 hours ago',
-  },
-  {
-    id: '4',
-    type: 'comment',
-    title: 'New comment on your task',
-    body: '"The wireframes look great! Just a few minor suggestions..."',
-    actor: { name: 'Lisa Park' },
-    project: { name: 'Website Redesign', color: '#6366F1' },
-    workItem: { title: 'Create homepage wireframes' },
-    isRead: true,
-    createdAt: '4 hours ago',
-  },
-  {
-    id: '5',
-    type: 'status_change',
-    title: 'Task moved to Review',
-    actor: { name: 'Alex Kim' },
-    project: { name: 'API Platform', color: '#F59E0B' },
-    workItem: { title: 'OAuth2 implementation' },
-    isRead: true,
-    createdAt: 'Yesterday',
-  },
-  {
-    id: '6',
-    type: 'due_soon',
-    title: 'Task due tomorrow',
-    actor: { name: 'System' },
-    project: { name: 'Website Redesign', color: '#6366F1' },
-    workItem: { title: 'Design homepage mockups' },
-    isRead: true,
-    createdAt: 'Yesterday',
-  },
-];
 
 const typeIcons: Record<NotificationType, React.ElementType> = {
   mention: AtSign,
@@ -219,7 +156,7 @@ function InboxItem({ item, selected, onSelect }: {
             Convert to task
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem className="text-red-600">
             <Archive className="h-4 w-4 mr-2" />
             Archive
           </DropdownMenuItem>
@@ -230,8 +167,44 @@ function InboxItem({ item, selected, onSelect }: {
 }
 
 export default function InboxPage() {
+  const { user } = useAuth();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'unread' | 'mentions' | 'ai'>('all');
+  const [items, setItems] = useState<InboxItemData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/notifications');
+      const data = await response.json();
+      
+      if (data.success) {
+        setItems(data.data.map((n: any) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          body: n.body,
+          actor: { name: n.actor?.full_name || 'System' },
+          project: n.project ? { name: n.project.name, color: n.project.color } : undefined,
+          workItem: n.work_item ? { title: n.work_item.title } : undefined,
+          isRead: n.is_read,
+          createdAt: new Date(n.created_at).toLocaleDateString(),
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      toast.error('Failed to load inbox');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const handleSelect = (id: string) => {
     setSelectedItems(prev => {
@@ -246,27 +219,40 @@ export default function InboxPage() {
   };
 
   const handleSelectAll = () => {
-    if (selectedItems.size === mockInboxItems.length) {
+    if (selectedItems.size === items.length) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(mockInboxItems.map(i => i.id)));
+      setSelectedItems(new Set(items.map(i => i.id)));
     }
   };
 
-  const filteredItems = mockInboxItems.filter(item => {
+  const filteredItems = items.filter(item => {
     if (filter === 'unread') return !item.isRead;
     if (filter === 'mentions') return item.type === 'mention';
     if (filter === 'ai') return item.type === 'ai_flag';
     return true;
   });
 
-  const unreadCount = mockInboxItems.filter(i => !i.isRead).length;
+  const unreadCount = items.filter(i => !i.isRead).length;
+
+  if (isLoading) {
+    return (
+      <PageShell maxWidth="4xl">
+        <PageHeader title="Inbox" subtitle="Loading your messages..." />
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-20 animate-pulse bg-zinc-100 dark:bg-zinc-800" />
+          ))}
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell maxWidth="4xl">
       <PageHeader
         title="Inbox"
-        subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You&apos;re all caught up"}
         primaryAction={
           <Button variant="outline" size="sm">
             <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -275,7 +261,6 @@ export default function InboxPage() {
         }
       />
 
-      {/* Tabs */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="mb-4">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -292,7 +277,6 @@ export default function InboxPage() {
         </TabsList>
       </Tabs>
 
-      {/* Bulk Actions */}
       {selectedItems.size > 0 && (
         <div className="flex items-center gap-2 p-3 mb-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
           <span className="text-sm font-medium">
@@ -314,12 +298,10 @@ export default function InboxPage() {
         </div>
       )}
 
-      {/* Inbox List */}
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        {/* List Header */}
         <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
           <Checkbox
-            checked={selectedItems.size === mockInboxItems.length}
+            checked={selectedItems.size === items.length && items.length > 0}
             onCheckedChange={handleSelectAll}
           />
           <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
@@ -327,7 +309,6 @@ export default function InboxPage() {
           </span>
         </div>
 
-        {/* Items */}
         {filteredItems.length === 0 ? (
           <EmptyState
             icon={InboxIcon}
@@ -351,7 +332,6 @@ export default function InboxPage() {
         )}
       </div>
 
-      {/* Help Text */}
       <p className="text-xs text-zinc-400 text-center mt-4">
         <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-300">E</kbd> mark done
         <span className="mx-2">·</span>

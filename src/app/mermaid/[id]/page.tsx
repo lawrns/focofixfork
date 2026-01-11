@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MermaidDiagramWithVersions, MermaidDiagramVersion } from '@/lib/models/mermaid';
 import { MermaidEditor } from '@/features/mermaid/components/MermaidEditor';
@@ -24,11 +24,7 @@ export default function MermaidDiagramPage() {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  useEffect(() => {
-    loadDiagram();
-  }, [diagramId]);
-
-  const loadDiagram = async () => {
+  const loadDiagram = useCallback(async () => {
     try {
       setLoading(true);
       const data = await mermaidService.getDiagram(diagramId);
@@ -44,7 +40,11 @@ export default function MermaidDiagramPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [diagramId, router]);
+
+  useEffect(() => {
+    loadDiagram();
+  }, [loadDiagram]);
 
   const handleSave = async () => {
     if (!diagram) return;

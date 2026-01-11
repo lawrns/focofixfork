@@ -96,12 +96,12 @@ export class InboxService {
       .order('created_at', { ascending: false })
       .limit(50)
 
-    const { data: comments } = await this.supabase
-      .from('foco_comments')
+    const { data: comments } = await (this.supabase
+      .from('comments') as any)
       .select(`
         *,
-        work_item:work_items(title, project_id),
-        author:auth.users(full_name)
+        work_item:tasks(title, project_id),
+        author:profiles(full_name)
       `)
       .or(`mentions.cs.{${userId}},user_id.eq.${userId}`)
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())

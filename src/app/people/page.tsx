@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Users,
@@ -34,6 +34,8 @@ import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state-standard';
 import { emptyStates, buttons } from '@/lib/copy';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { toast } from 'sonner';
 
 interface TeamMember {
   id: string;
@@ -57,87 +59,12 @@ interface TeamMember {
   timezone: string;
 }
 
-const teamMembers: TeamMember[] = [
-  {
-    id: '1',
-    name: 'Sarah Chen',
-    email: 'sarah@acme.com',
-    role: 'Design Lead',
-    status: 'online',
-    capacity: { current: 85, max: 100, trend: 'up' },
-    tasks: { assigned: 8, completed: 12, overdue: 0, blocked: 0 },
-    focusHours: 6,
-    timezone: 'PST',
-  },
-  {
-    id: '2',
-    name: 'Mike Johnson',
-    email: 'mike@acme.com',
-    role: 'Senior Engineer',
-    status: 'busy',
-    capacity: { current: 110, max: 100, trend: 'up' },
-    tasks: { assigned: 12, completed: 8, overdue: 2, blocked: 1 },
-    focusHours: 4,
-    timezone: 'EST',
-  },
-  {
-    id: '3',
-    name: 'Alex Kim',
-    email: 'alex@acme.com',
-    role: 'Frontend Developer',
-    status: 'online',
-    capacity: { current: 72, max: 100, trend: 'stable' },
-    tasks: { assigned: 6, completed: 15, overdue: 0, blocked: 0 },
-    focusHours: 5,
-    timezone: 'PST',
-  },
-  {
-    id: '4',
-    name: 'Lisa Park',
-    email: 'lisa@acme.com',
-    role: 'Product Manager',
-    status: 'away',
-    capacity: { current: 45, max: 100, trend: 'down' },
-    tasks: { assigned: 4, completed: 6, overdue: 0, blocked: 0 },
-    focusHours: 3,
-    timezone: 'CST',
-  },
-  {
-    id: '5',
-    name: 'James Wilson',
-    email: 'james@acme.com',
-    role: 'Backend Developer',
-    status: 'offline',
-    capacity: { current: 92, max: 100, trend: 'stable' },
-    tasks: { assigned: 7, completed: 10, overdue: 1, blocked: 0 },
-    focusHours: 6,
-    timezone: 'GMT',
-  },
-];
-
 const statusColors = {
   online: 'bg-green-500',
   away: 'bg-yellow-500',
   busy: 'bg-red-500',
   offline: 'bg-zinc-400',
 };
-
-const aiInsights = [
-  {
-    id: '1',
-    type: 'warning',
-    title: 'Mike is at 110% capacity',
-    description: 'Consider reassigning "API Integration" to balance workload',
-    confidence: 0.92,
-  },
-  {
-    id: '2',
-    type: 'suggestion',
-    title: 'Lisa has available capacity',
-    description: 'Could take on 2-3 more tasks from the Mobile App v2 project',
-    confidence: 0.88,
-  },
-];
 
 function MemberCard({ member }: { member: TeamMember }) {
   const isOverloaded = member.capacity.current > 100;
@@ -183,7 +110,6 @@ function MemberCard({ member }: { member: TeamMember }) {
         </DropdownMenu>
       </div>
 
-      {/* Capacity */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-zinc-500">Capacity</span>
@@ -210,7 +136,6 @@ function MemberCard({ member }: { member: TeamMember }) {
         )}
       </div>
 
-      {/* Task Stats */}
       <div className="grid grid-cols-4 gap-2 text-center">
         <div>
           <div className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
@@ -244,7 +169,6 @@ function MemberCard({ member }: { member: TeamMember }) {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800">
         <div className="flex items-center gap-1 text-xs text-zinc-500">
           <Clock className="h-3 w-3" />
@@ -258,10 +182,12 @@ function MemberCard({ member }: { member: TeamMember }) {
   );
 }
 
-function CapacityOverview() {
-  const totalCapacity = teamMembers.reduce((acc, m) => acc + m.capacity.current, 0) / teamMembers.length;
-  const overloaded = teamMembers.filter(m => m.capacity.current > 100).length;
-  const available = teamMembers.filter(m => m.capacity.current < 70).length;
+function CapacityOverview({ members }: { members: TeamMember[] }) {
+  if (members.length === 0) return null;
+  
+  const totalCapacity = members.reduce((acc, m) => acc + m.capacity.current, 0) / members.length;
+  const overloaded = members.filter(m => m.capacity.current > 100).length;
+  const available = members.filter(m => m.capacity.current < 70).length;
 
   return (
     <div className="grid grid-cols-4 gap-4 mb-6">
@@ -271,7 +197,7 @@ function CapacityOverview() {
             <Users className="h-4 w-4" />
             <span className="text-xs font-medium uppercase">Team Size</span>
           </div>
-          <div className="text-2xl font-semibold">{teamMembers.length}</div>
+          <div className="text-2xl font-semibold">{members.length}</div>
         </CardContent>
       </Card>
       
@@ -310,6 +236,23 @@ function CapacityOverview() {
   );
 }
 
+const aiInsightsMock = [
+  {
+    id: '1',
+    type: 'warning',
+    title: 'High capacity warning',
+    description: 'Some team members are approaching or exceeding 100% capacity.',
+    confidence: 0.92,
+  },
+  {
+    id: '2',
+    type: 'suggestion',
+    title: 'Workload balancing',
+    description: 'AI suggests redistributing tasks to members with available capacity.',
+    confidence: 0.88,
+  },
+];
+
 function AIInsights() {
   return (
     <Card className="mb-6 border-indigo-100 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-zinc-950">
@@ -320,7 +263,7 @@ function AIInsights() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {aiInsights.map((insight) => (
+        {aiInsightsMock.map((insight) => (
           <div
             key={insight.id}
             className={cn(
@@ -362,19 +305,79 @@ function AIInsights() {
 }
 
 export default function PeoplePage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'roster' | 'capacity'>('roster');
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredMembers = teamMembers.filter(m =>
+  const fetchMembers = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/user/profile');
+      const data = await response.json();
+      
+      if (data.success && data.data?.workspace_id) {
+        // Fetch workspace members
+        const membersRes = await fetch(`/api/organizations/${data.data.workspace_id}/members`);
+        const membersData = await membersRes.json();
+        
+        if (membersData.success) {
+          setMembers(membersData.data.map((m: any) => ({
+            id: m.user_id,
+            name: m.user?.full_name || m.user?.email?.split('@')[0] || 'Unknown',
+            email: m.user?.email || '',
+            role: m.role || 'Member',
+            avatar: m.user?.avatar_url,
+            status: 'online', // Default
+            capacity: {
+              current: m.capacity_hours_per_week ? Math.round((m.focus_hours_per_day * 5 / m.capacity_hours_per_week) * 100) : 80,
+              max: 100,
+              trend: 'stable'
+            },
+            tasks: { assigned: 0, completed: 0, overdue: 0, blocked: 0 },
+            focusHours: m.focus_hours_per_day || 4,
+            timezone: m.timezone || 'UTC'
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+      toast.error('Failed to load team members');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  const filteredMembers = members.filter(m =>
     m.name.toLowerCase().includes(search.toLowerCase()) ||
     m.role.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <PageHeader title="People" subtitle="Loading team..." />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="h-48 animate-pulse bg-zinc-100 dark:bg-zinc-800" />
+          ))}
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
       <PageHeader
         title="People"
-        subtitle={`${teamMembers.length} team members`}
+        subtitle={`${members.length} team members`}
         primaryAction={
           <Button>
             <Plus className="h-4 w-4 mr-2" />
@@ -383,7 +386,6 @@ export default function PeoplePage() {
         }
       />
 
-      {/* Tabs */}
       <Tabs value={view} onValueChange={(v) => setView(v as any)} className="mb-6">
         <div className="flex items-center justify-between">
           <TabsList>
@@ -408,25 +410,20 @@ export default function PeoplePage() {
         </div>
       </Tabs>
 
-      {/* Capacity Overview */}
-      <CapacityOverview />
-
-      {/* AI Insights */}
+      <CapacityOverview members={members} />
       <AIInsights />
 
-      {/* Team Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredMembers.map((member) => (
           <MemberCard key={member.id} member={member} />
         ))}
       </div>
 
-      {/* Empty State */}
       {filteredMembers.length === 0 && (
         <EmptyState
           icon={Users}
           title={search ? emptyStates.peopleSearch.title : emptyStates.people.title}
-          description={search ? emptyStates.peopleSearch.description : emptyStates.people.description}
+          description={search ? `No team members matching &quot;${search}&quot;` : emptyStates.people.description}
           primaryAction={search ? {
             label: emptyStates.peopleSearch.primaryCta,
             onClick: () => setSearch(''),

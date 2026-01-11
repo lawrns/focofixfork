@@ -1,7 +1,6 @@
 'use client'
 
 import { Suspense, useEffect, useState, useCallback, lazy, useRef } from 'react'
-import { unstable_noStore as noStore } from 'next/cache'
 import { useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadingCard, LoadingTable } from '@/components/ui/loading'
@@ -18,10 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Plus, Sparkles, Download, Upload } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
+import { useCommandPaletteStore } from '@/lib/stores/foco-store'
 import { projectStore } from '@/lib/stores/project-store'
 import { Project } from '@/features/projects/types'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
+import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
+import { useKeyboardShortcuts, commonShortcuts } from '@/lib/hooks/use-keyboard-shortcuts'
 import { dialogs, placeholders, buttons } from '@/lib/copy'
 import { showProjectCreated, showError } from '@/lib/toast-helpers'
 
@@ -77,14 +79,24 @@ interface Organization {
 }
 
 export default function DashboardPage() {
-  // Disable static generation for this page since it requires authentication
-  noStore()
-
   // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
   const { user, loading } = useAuth()
   const { createView, setActiveView } = useSavedViews()
   const toast = useToastHelpers()
+  
+  // Register global shortcuts
+  useKeyboardShortcuts({
+    shortcuts: [
+      { ...commonShortcuts.search, action: () => useCommandPaletteStore.getState().open() },
+      { ...commonShortcuts.newTask, action: () => setShowNewProjectModal(true) }, // Using project modal as placeholder
+      { ...commonShortcuts.goHome, action: () => router.push('/dashboard') },
+      { ...commonShortcuts.goInbox, action: () => router.push('/inbox') },
+      { ...commonShortcuts.goMyWork, action: () => router.push('/my-work') },
+      { ...commonShortcuts.goProjects, action: () => router.push('/projects') },
+    ]
+  })
+
   const toastNotification = useToast()
   const { shouldShowTour, markTourComplete } = useOnboarding()
   const { isOpen: isTourOpen, startTour, closeTour, completeTour } = useProductTour()
@@ -336,6 +348,7 @@ export default function DashboardPage() {
 
   return (
     <PageShell>
+      <OnboardingChecklist />
       <PageHeader
         title="Dashboard"
         subtitle={`${projects.length} projects`}

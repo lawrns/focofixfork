@@ -353,13 +353,13 @@ Return ONLY valid JSON with this structure:
 
     try {
       // Build conversation history for GPT
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      const messages: Array<{ role: 'user' | 'system' | 'assistant'; content: string }> = [
         {
           role: 'system',
           content: this.buildConversationalSystemPrompt(context),
         },
         ...context.recent_messages.slice(-10).map(msg => ({
-          role: msg.role,
+          role: msg.role as 'user' | 'system' | 'assistant',
           content: msg.content,
         })),
       ]

@@ -53,12 +53,16 @@ export function Navbar() {
 
         {/* Right Section */}
         <div className="hidden lg:flex items-center gap-3">
-          <Button variant="ghost" size="sm">
-            Log in
-          </Button>
-          <Button variant="primary" size="sm">
-            Get Started Free
-          </Button>
+          <Link href="/login">
+            <Button variant="ghost" size="sm">
+              Log in
+            </Button>
+          </Link>
+          <Link href="/register">
+            <Button variant="primary" size="sm">
+              Get Started Free
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -84,12 +88,16 @@ export function Navbar() {
               </a>
             ))}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
-              <Button variant="ghost" size="sm" className="w-full">
-                Log in
-              </Button>
-              <Button variant="primary" size="sm" className="w-full">
-                Get Started Free
-              </Button>
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="w-full">
+                  Log in
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="primary" size="sm" className="w-full">
+                  Get Started Free
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import './globals.css';
 import { Providers } from './providers';
 import { AppShell } from '@/components/foco/layout/app-shell';
 import { TooltipProvider } from '@/components/ui/tooltip';

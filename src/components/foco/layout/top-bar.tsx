@@ -10,6 +10,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  LogIn,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,6 +29,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/lib/hooks/use-auth';
+import Link from 'next/link';
 
 interface TopBarProps {
   className?: string;
@@ -38,6 +41,7 @@ export function TopBar({ className }: TopBarProps) {
   const { unreadCount } = useInboxStore();
   const { sidebarCollapsed, density, setDensity } = useUIPreferencesStore();
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <header
@@ -133,8 +137,19 @@ export function TopBar({ className }: TopBarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Profile */}
-        <DropdownMenu>
+        {/* Sign In Button - Only show if not authenticated */}
+        {!user && (
+          <Link href="/login">
+            <Button variant="default" size="sm" className="h-9">
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign in
+            </Button>
+          </Link>
+        )}
+
+        {/* Profile - Only show if authenticated */}
+        {user && (
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Avatar className="h-7 w-7">
@@ -206,6 +221,7 @@ export function TopBar({ className }: TopBarProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
     </header>
   );

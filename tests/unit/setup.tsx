@@ -182,6 +182,7 @@ vi.mock('lucide-react', () => ({
   RefreshCw: () => <svg data-testid="refresh-cw-icon" />,
   Download: () => <svg data-testid="download-icon" />,
   Upload: () => <svg data-testid="upload-icon" />,
+  UploadCloud: () => <svg data-testid="upload-cloud-icon" />,
   ArrowRight: () => <svg data-testid="arrow-right-icon" />,
   PlayCircle: () => <svg data-testid="play-circle-icon" />,
   Volume2: () => <svg data-testid="volume-icon" />,
@@ -214,6 +215,17 @@ vi.mock('lucide-react', () => ({
   CheckSquare: () => <svg data-testid="check-square-icon" />,
   FolderKanban: () => <svg data-testid="folder-kanban-icon" />,
   Hash: () => <svg data-testid="hash-icon" />,
+  SortAsc: () => <svg data-testid="sort-asc-icon" />,
+  SortDesc: () => <svg data-testid="sort-desc-icon" />,
+  List: () => <svg data-testid="list-icon" />,
+  File: () => <svg data-testid="file-icon" />,
+  Image: () => <svg data-testid="image-icon" />,
+  Video: () => <svg data-testid="video-icon" />,
+  Music: () => <svg data-testid="music-icon" />,
+  Code: () => <svg data-testid="code-icon" />,
+  AlertCircle: () => <svg data-testid="alert-circle-icon" />,
+  XCircle: () => <svg data-testid="x-circle-icon" />,
+  FolderOpen: () => <svg data-testid="folder-open-icon" />,
 }));
 
 // Custom test utilities

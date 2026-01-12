@@ -91,7 +91,7 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}): UseActivi
     if (autoFetch) {
       fetchActivities(false)
     }
-  }, [autoFetch, projectId, entityId])
+  }, [autoFetch, projectId, entityId, fetchActivities])
 
   return {
     activities,

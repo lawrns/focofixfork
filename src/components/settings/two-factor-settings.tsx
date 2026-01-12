@@ -232,6 +232,7 @@ export function TwoFactorSettings({ twoFactorEnabled }: { twoFactorEnabled: bool
                   src={setupData.qrCode}
                   alt="2FA QR Code"
                   className="w-48 h-48 border border-zinc-200 dark:border-zinc-800 rounded"
+                  loading="lazy"
                 />
               </div>
 

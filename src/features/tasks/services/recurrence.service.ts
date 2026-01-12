@@ -3,11 +3,11 @@ import { z } from 'zod';
 export type RecurrenceType = 'daily' | 'weekly' | 'monthly';
 
 export interface RecurrencePattern {
-  type: RecurrenceType;
-  interval: number;
+  type?: RecurrenceType;
+  interval?: number;
   daysOfWeek?: number[]; // 0-6, where 0 is Sunday
   endAfter?: number; // Number of occurrences before recurrence ends
-  endsNever: boolean;
+  endsNever?: boolean;
 }
 
 /**

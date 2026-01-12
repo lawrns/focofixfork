@@ -1,5 +1,5 @@
 import { EmailService } from './email';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase-server';
 
 interface DigestItem {
   title: string;
@@ -77,7 +77,10 @@ export class EmailDigestScheduler {
     userId: string,
     contentSelection: ContentSelection
   ): Promise<Record<string, DigestItem>> {
-    const supabase = createClient();
+    if (!supabaseAdmin) {
+      return {};
+    }
+    const supabase = supabaseAdmin;
 
     const items: Record<string, DigestItem> = {};
 
@@ -172,7 +175,11 @@ export class EmailDigestScheduler {
    */
   static async processDailyAndWeeklyDigests(): Promise<void> {
     try {
-      const supabase = createClient();
+      if (!supabaseAdmin) {
+        console.error('Supabase admin client not available');
+        return;
+      }
+      const supabase = supabaseAdmin;
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -54,11 +54,7 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadRules()
-  }, [projectId])
-
-  const loadRules = async () => {
+  const loadRules = useCallback(async () => {
     try {
       setIsLoading(true)
       const rulesData = await AutomationService.getRules(projectId)
@@ -73,7 +69,11 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [projectId, addToast, t])
+
+  useEffect(() => {
+    loadRules()
+  }, [loadRules])
 
   const handleToggleRule = async (ruleId: string, isActive: boolean) => {
     try {

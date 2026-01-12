@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { X, ChevronLeft, ChevronRight, Play } from 'lucide-react'
@@ -72,6 +72,10 @@ export function ProductTour({
     }
   }, [targetElement])
 
+  const handleSkip = useCallback(() => {
+    onClose()
+  }, [onClose])
+
   // Handle escape key to close tour
   useEffect(() => {
     if (!isOpen) return
@@ -84,7 +88,7 @@ export function ProductTour({
 
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen])
+  }, [isOpen, handleSkip])
 
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
@@ -98,10 +102,6 @@ export function ProductTour({
     if (activeStep > 0) {
       setActiveStep(activeStep - 1)
     }
-  }
-
-  const handleSkip = () => {
-    onClose()
   }
 
   const handleOverlayClick = (e: React.MouseEvent) => {

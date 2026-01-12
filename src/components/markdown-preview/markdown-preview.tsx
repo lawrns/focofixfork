@@ -89,7 +89,7 @@ export function MarkdownPreview({
                   <code className="markdown-code-block" {...props} />
                 ),
               pre: ({ node, ...props }) => <pre className="markdown-pre" {...props} />,
-              img: ({ node, alt, ...props }) => <img className="markdown-img" alt={alt || ''} {...props} />,
+              img: ({ node, alt, ...props }) => <img className="markdown-img" alt={alt || ''} loading="lazy" {...props} />,
               strong: ({ node, ...props }) => <strong className="markdown-strong" {...props} />,
               em: ({ node, ...props }) => <em className="markdown-em" {...props} />,
             }}

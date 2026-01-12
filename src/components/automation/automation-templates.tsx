@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,17 +66,7 @@ export function AutomationTemplates({
     { value: 'custom', label: t('automation.custom') }
   ]
 
-  useEffect(() => {
-    if (isOpen) {
-      loadTemplates()
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    filterTemplates()
-  }, [templates, searchTerm, activeCategory])
-
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       setIsLoading(true)
       const templatesData = await AutomationService.getTemplates()
@@ -91,9 +81,9 @@ export function AutomationTemplates({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [addToast, t])
 
-  const filterTemplates = () => {
+  const filterTemplates = useCallback(() => {
     let filtered = templates
 
     if (activeCategory !== 'all') {
@@ -110,7 +100,17 @@ export function AutomationTemplates({
     }
 
     setFilteredTemplates(filtered)
-  }
+  }, [templates, activeCategory, searchTerm])
+
+  useEffect(() => {
+    if (isOpen) {
+      loadTemplates()
+    }
+  }, [isOpen, loadTemplates])
+
+  useEffect(() => {
+    filterTemplates()
+  }, [filterTemplates])
 
   const handleSelectTemplate = async (template: AutomationTemplate) => {
     try {

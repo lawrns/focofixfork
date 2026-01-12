@@ -204,7 +204,7 @@ export function useTimeTrackingAnalytics(organizationId?: string, startDate?: st
     } finally {
       setLoading(false)
     }
-  }, [organizationId, startDate, endDate])
+  }, [organizationId])
 
   useEffect(() => {
     fetchAnalytics()

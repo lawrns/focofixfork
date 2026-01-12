@@ -219,7 +219,7 @@ const TableView: React.FC<TableViewProps> = ({
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = localData.filter(item => {
+    let filtered = (localData || []).filter(item => {
       // Search filter
       const searchText = type === 'projects'
         ? (item as ProjectTableItem).name + ' ' + (item as ProjectTableItem).description || ''
@@ -262,7 +262,7 @@ const TableView: React.FC<TableViewProps> = ({
     })
 
     return filtered
-  }, [data, searchTerm, statusFilter, priorityFilter, sortField, sortDirection, type])
+  }, [localData, searchTerm, statusFilter, priorityFilter, sortField, sortDirection, type])
 
   const handleSort = (field: string) => {
     if (sortField === field) {

@@ -161,6 +161,7 @@ export function LazyImage({
           alt={alt}
           width={width}
           height={height}
+          loading="lazy"
           className={cn(
             "transition-opacity duration-300",
             isLoaded ? "opacity-100" : "opacity-0"

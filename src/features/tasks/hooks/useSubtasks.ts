@@ -1,6 +1,16 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Subtask } from '@/types/database.types'
 import { toast } from 'sonner'
+
+interface Subtask {
+  id: string
+  task_id: string
+  title: string
+  completed: boolean
+  order: number
+  position?: number
+  created_at: string
+  updated_at: string
+}
 
 interface UseSubtasksProps {
   taskId: string

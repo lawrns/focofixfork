@@ -13,7 +13,7 @@
 
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, Loader2, Check, X } from 'lucide-react'
@@ -47,45 +47,7 @@ export function VoiceFloatingButton({
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
 
-  // Process audio when recording stops
-  useEffect(() => {
-    if (audioBlob && !isProcessing) {
-      processAudio(audioBlob)
-    }
-  }, [audioBlob, isProcessing])
-
-  // Keyboard shortcut: Cmd/Ctrl + Shift + V
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'v') {
-        e.preventDefault()
-        if (isRecording) {
-          stopRecording()
-        } else {
-          clearRecording()
-          setShowSuccess(false)
-          setShowError(false)
-          startRecording()
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isRecording, stopRecording, clearRecording, startRecording])
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording()
-    } else {
-      clearRecording()
-      setShowSuccess(false)
-      setShowError(false)
-      startRecording()
-    }
-  }
-
-  const processAudio = async (blob: Blob) => {
+  const processAudio = useCallback(async (blob: Blob) => {
     setIsProcessing(true)
 
     try {
@@ -118,7 +80,36 @@ export function VoiceFloatingButton({
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [user, onTranscriptCapture, onTaskCreated, clearRecording])
+
+  useEffect(() => {
+    if (audioBlob && !isProcessing) {
+      processAudio(audioBlob)
+    }
+  }, [audioBlob, isProcessing, processAudio])
+
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      clearRecording()
+      setShowSuccess(false)
+      setShowError(false)
+      startRecording()
+    }
+  }, [isRecording, stopRecording, clearRecording, startRecording])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'v') {
+        e.preventDefault()
+        toggleRecording()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [toggleRecording])
 
   const getButtonState = () => {
     if (showSuccess) return 'success'

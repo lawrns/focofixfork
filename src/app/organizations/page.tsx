@@ -110,43 +110,78 @@ function OrganizationsContent() {
     setSelectedOrganization(organization)
     setShowOrgModal(true)
 
-    // Load organization details and members
+    // Load organization details, members, and invitations in parallel
     try {
-      // Load organization details
-      const orgResponse = await fetch(`/api/organizations/${organization.id}`)
-      if (orgResponse.ok) {
-        const orgData = await orgResponse.json()
-        if (orgData.success) {
-          setSelectedOrganization(orgData.data)
-        }
-      }
+      const results = await Promise.allSettled([
+        fetch(`/api/organizations/${organization.id}`),
+        fetch(`/api/organizations/${organization.id}/members`),
+        fetch(`/api/organizations/${organization.id}/invitations`)
+      ])
 
-      // Load members
-      const membersResponse = await fetch(`/api/organizations/${organization.id}/members`)
-      if (membersResponse.ok) {
-        const membersData = await membersResponse.json()
-        if (membersData.success) {
-          setOrgMembers(membersData.data || [])
-          // Find current user's role
-          if (user) {
-            const currentUser = membersData.data?.find((member: any) =>
-              member.user_id === user.id
-            )
-            if (currentUser) {
-              setCurrentUserRole(currentUser.role)
+      // Handle organization details response
+      if (results[0].status === 'fulfilled') {
+        const orgResponse = results[0].value
+        if (orgResponse.ok) {
+          try {
+            const orgData = await orgResponse.json()
+            if (orgData.success) {
+              setSelectedOrganization(orgData.data)
             }
+          } catch (error) {
+            console.error('Failed to parse organization details:', error)
           }
+        } else {
+          console.error('Failed to load organization details:', orgResponse.status)
         }
+      } else {
+        console.error('Failed to fetch organization details:', results[0].reason)
       }
 
-      // Load invitations
-      const invitationsResponse = await fetch(`/api/organizations/${organization.id}/invitations`, {
-              })
-      if (invitationsResponse.ok) {
-        const invitationsData = await invitationsResponse.json()
-        if (invitationsData.success) {
-          setOrgInvitations(invitationsData.data || [])
+      // Handle members response
+      if (results[1].status === 'fulfilled') {
+        const membersResponse = results[1].value
+        if (membersResponse.ok) {
+          try {
+            const membersData = await membersResponse.json()
+            if (membersData.success) {
+              setOrgMembers(membersData.data || [])
+              // Find current user's role
+              if (user) {
+                const currentUser = membersData.data?.find((member: any) =>
+                  member.user_id === user.id
+                )
+                if (currentUser) {
+                  setCurrentUserRole(currentUser.role)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Failed to parse members data:', error)
+          }
+        } else {
+          console.error('Failed to load members:', membersResponse.status)
         }
+      } else {
+        console.error('Failed to fetch members:', results[1].reason)
+      }
+
+      // Handle invitations response
+      if (results[2].status === 'fulfilled') {
+        const invitationsResponse = results[2].value
+        if (invitationsResponse.ok) {
+          try {
+            const invitationsData = await invitationsResponse.json()
+            if (invitationsData.success) {
+              setOrgInvitations(invitationsData.data || [])
+            }
+          } catch (error) {
+            console.error('Failed to parse invitations data:', error)
+          }
+        } else {
+          console.error('Failed to load invitations:', invitationsResponse.status)
+        }
+      } else {
+        console.error('Failed to fetch invitations:', results[2].reason)
       }
     } catch (error) {
       console.error('Failed to load organization details:', error)

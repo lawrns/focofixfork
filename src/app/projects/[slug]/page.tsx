@@ -250,7 +250,7 @@ export default function ProjectPage() {
         // Fetch project
         const { data: projectData, error: projectError } = await supabase
           .from('foco_projects')
-          .select('*')
+          .select('id, workspace_id, name, slug, description, brief, color, icon, status, owner_id, default_status, settings, is_pinned, archived_at, created_at, updated_at')
           .eq('slug', slug)
           .single();
 
@@ -269,7 +269,7 @@ export default function ProjectPage() {
         // Fetch work items (tasks) for this project
         const { data: tasksData, error: tasksError } = await supabase
           .from('work_items')
-          .select('*')
+          .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, tags, created_at, updated_at')
           .eq('project_id', projectData.id)
           .order('created_at', { ascending: false });
 
@@ -303,7 +303,7 @@ export default function ProjectPage() {
         // Fetch team members
         const { data: membersData, error: membersError } = await supabase
           .from('foco_project_members')
-          .select('*')
+          .select('id, project_id, user_id, role, created_at, updated_at')
           .eq('project_id', projectData.id);
 
         if (membersError) throw membersError;

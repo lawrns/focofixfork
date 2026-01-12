@@ -217,30 +217,109 @@ function Section({
   );
 }
 
-function FocusMode({ 
-  item, 
-  onExit 
-}: { 
-  item: WorkItem; 
+function FocusMode({
+  item,
+  onExit
+}: {
+  item: WorkItem;
   onExit: () => void;
 }) {
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const {
+    isTimerRunning,
+    timerStartedAt,
+    startTimer,
+    stopTimer,
+    getElapsedSeconds,
+    completeAndSave
+  } = useFocusModeStore();
+
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // Update elapsed time every second when timer is running
   useEffect(() => {
     let interval: any;
     if (isTimerRunning) {
       interval = setInterval(() => {
-        setElapsedSeconds(s => s + 1);
+        setElapsedSeconds(getElapsedSeconds());
       }, 1000);
+    } else {
+      // Update once when stopped to show final time
+      setElapsedSeconds(getElapsedSeconds());
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning]);
+  }, [isTimerRunning, getElapsedSeconds]);
+
+  // Handle Page Visibility API - pause timer when tab is hidden, resume when visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab hidden - timer continues in background, just stop UI updates
+        console.log('Tab hidden - timer continues in background');
+      } else {
+        // Tab visible again - sync elapsed time from store
+        setElapsedSeconds(getElapsedSeconds());
+        console.log('Tab visible - synced timer state');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [getElapsedSeconds]);
+
+  // Initialize elapsed seconds on mount
+  useEffect(() => {
+    setElapsedSeconds(getElapsedSeconds());
+  }, [getElapsedSeconds]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleToggleTimer = () => {
+    if (isTimerRunning) {
+      stopTimer();
+    } else {
+      startTimer();
+    }
+  };
+
+  const handleCompleteAndExit = async () => {
+    try {
+      // Stop timer and save to database
+      await completeAndSave(async (taskId: string, duration: number) => {
+        // Save time entry to database
+        const response = await fetch('/api/time-entries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: taskId,
+            duration_seconds: duration,
+            started_at: new Date(Date.now() - duration * 1000).toISOString(),
+            ended_at: new Date().toISOString(),
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save time entry');
+        }
+
+        // Mark task as complete
+        await fetch(`/api/tasks/${taskId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'done' }),
+        });
+      });
+
+      toast.success('Task completed and time saved!');
+      onExit();
+    } catch (error) {
+      console.error('Error completing task:', error);
+      toast.error('Failed to save task completion');
+      onExit();
+    }
   };
 
   return (
@@ -264,13 +343,13 @@ function FocusMode({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setIsTimerRunning(!isTimerRunning)}
+              onClick={handleToggleTimer}
             >
               {isTimerRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
           </div>
-          
-          <Button onClick={onExit}>
+
+          <Button onClick={handleCompleteAndExit}>
             <CheckCircle2 className="h-4 w-4" />
             Complete & Exit
           </Button>

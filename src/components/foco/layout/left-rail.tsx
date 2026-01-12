@@ -110,6 +110,7 @@ export function LeftRail() {
       className={cn(
         'fixed left-0 top-0 z-30 h-screen bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800',
         'flex flex-col transition-all duration-200',
+        'hidden md:flex',
         sidebarCollapsed ? 'w-16' : 'w-64'
       )}
     >

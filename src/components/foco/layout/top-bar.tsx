@@ -2,6 +2,7 @@
 
 import { useCommandPaletteStore, useInboxStore, useUIPreferencesStore } from '@/lib/stores/foco-store';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 import {
   Search,
   Bell,
@@ -45,6 +46,20 @@ export function TopBar({ className }: TopBarProps) {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
+  const [workspace, setWorkspace] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetch('/api/organizations')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data && data.data.length > 0) {
+            setWorkspace(data.data[0]);
+          }
+        })
+        .catch(err => console.error('Failed to load workspace:', err));
+    }
+  }, [user]);
 
   return (
     <header
@@ -114,31 +129,33 @@ export function TopBar({ className }: TopBarProps) {
         </Button>
 
         {/* Workspace Switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-9 px-2 gap-2">
-              <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">AC</span>
-              </div>
-              <span className="text-sm font-medium hidden sm:inline">Acme Corp</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-            <DropdownMenuItem>
-              <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">AC</span>
-              </div>
-              <span>Acme Corp</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Plus className="h-4 w-4" />
-              Create workspace
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {workspace && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 px-2 gap-2">
+                <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white">{workspace.name.substring(0, 2).toUpperCase()}</span>
+                </div>
+                <span className="text-sm font-medium hidden sm:inline">{workspace.name}</span>
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+              <DropdownMenuItem>
+                <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white">{workspace.name.substring(0, 2).toUpperCase()}</span>
+                </div>
+                <span>{workspace.name}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Plus className="h-4 w-4" />
+                Create workspace
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Sign In Button - Only show if not authenticated */}
         {!user && (

@@ -200,6 +200,9 @@ vi.mock('lucide-react', () => ({
   Key: () => <svg data-testid="key-icon" />,
   Save: () => <svg data-testid="save-icon" />,
   Loader2: () => <svg data-testid="loader2-icon" className="h-4 w-4 animate-spin" />,
+  Plug: () => <svg data-testid="plug-icon" />,
+  CreditCard: () => <svg data-testid="credit-card-icon" />,
+  ChevronRight: () => <svg data-testid="chevron-right-icon" />,
 }));
 
 // Custom test utilities

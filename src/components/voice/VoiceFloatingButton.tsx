@@ -71,7 +71,7 @@ export function VoiceFloatingButton({
         clearRecording()
       }, 2000)
     } catch (err) {
-      console.error('Voice processing error:', err)
+      // Voice processing error handled by UI state
       setShowError(true)
       setTimeout(() => {
         setShowError(false)

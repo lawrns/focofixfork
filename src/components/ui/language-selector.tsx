@@ -19,7 +19,7 @@ export function LanguageSelector() {
     try {
       await setLanguage(langCode);
     } catch (error) {
-      console.error('Failed to change language:', error);
+      // Language change failed - handled silently
     }
   };
 
@@ -72,7 +72,7 @@ export function LanguageSelectorCompact() {
     try {
       await setLanguage(langCode);
     } catch (error) {
-      console.error('Failed to change language:', error);
+      // Language change failed - handled silently
     }
   };
 
@@ -83,7 +83,7 @@ export function LanguageSelectorCompact() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="compact"
+          size="sm"
           className="p-0"
           aria-label={`Current language: ${currentLanguage.name}`}
         >

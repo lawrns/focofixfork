@@ -71,7 +71,7 @@ export function Hero() {
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Button
-            variant="primary"
+            variant="default"
             size="lg"
             className="min-w-[180px] shadow-primary"
           >

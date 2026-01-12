@@ -59,7 +59,7 @@ export function Navbar() {
             </Button>
           </Link>
           <Link href="/register">
-            <Button variant="primary" size="sm">
+            <Button variant="default" size="sm">
               Get Started Free
             </Button>
           </Link>
@@ -94,7 +94,7 @@ export function Navbar() {
                 </Button>
               </Link>
               <Link href="/register">
-                <Button variant="primary" size="sm" className="w-full">
+                <Button variant="default" size="sm" className="w-full">
                   Get Started Free
                 </Button>
               </Link>

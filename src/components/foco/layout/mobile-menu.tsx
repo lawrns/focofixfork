@@ -112,7 +112,7 @@ export function MobileMenu() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-30 bg-black/50"
+            className="fixed inset-0 z-50 bg-black/50"
             data-testid="menu-backdrop"
           />
         )}

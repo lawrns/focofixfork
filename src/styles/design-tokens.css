@@ -139,22 +139,22 @@
   --radius-full: 9999px;    /* Full circle */
 
   /* ===== Shadows - Premium multi-layer system ===== */
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
-  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+  --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+  --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.08), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
+  --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.08), 0 2px 4px -2px hsl(0 0% 0% / 0.08);
+  --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.08), 0 4px 6px -4px hsl(0 0% 0% / 0.08);
+  --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.08), 0 8px 10px -6px hsl(0 0% 0% / 0.08);
+  --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.15);
 
   /* Special shadows for glassmorphism */
-  --shadow-glass: 0 8px 32px 0 rgb(31 38 135 / 0.07);
-  --shadow-glass-lg: 0 8px 32px 0 rgb(31 38 135 / 0.15);
-  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  --shadow-glass: 0 8px 32px 0 hsl(227 25% 33% / 0.07);
+  --shadow-glass-lg: 0 8px 32px 0 hsl(227 25% 33% / 0.15);
+  --shadow-inner: inset 0 2px 4px 0 hsl(0 0% 0% / 0.05);
 
   /* Colored shadows for emphasis */
-  --shadow-primary: 0 10px 40px -10px rgb(59 130 246 / 0.25);
-  --shadow-success: 0 10px 40px -10px rgb(16 185 129 / 0.25);
-  --shadow-error: 0 10px 40px -10px rgb(239 68 68 / 0.25);
+  --shadow-primary: 0 10px 40px -10px hsl(217 91% 60% / 0.25);
+  --shadow-success: 0 10px 40px -10px hsl(158 64% 52% / 0.25);
+  --shadow-error: 0 10px 40px -10px hsl(0 84% 60% / 0.25);
 
   /* ===== Z-Index Scale ===== */
   --z-base: 0;

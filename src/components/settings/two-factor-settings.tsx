@@ -50,7 +50,7 @@ export function TwoFactorSettings({ twoFactorEnabled }: { twoFactorEnabled: bool
       setShowSetupDialog(true);
     } catch (error) {
       toast.error('Failed to enable 2FA');
-      console.error(error);
+      // Error handled by UI feedback
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +109,7 @@ export function TwoFactorSettings({ twoFactorEnabled }: { twoFactorEnabled: bool
       setShowDisableDialog(false);
     } catch (error) {
       toast.error('Failed to disable 2FA');
-      console.error(error);
+      // Error handled by UI feedback
     } finally {
       setIsLoading(false);
     }

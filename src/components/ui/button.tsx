@@ -5,20 +5,14 @@ import { cn } from '@/lib/utils'
 import { Slot } from '@radix-ui/react-slot'
 
 const buttonVariants = cva(
-  `inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap rounded-lg
-   text-sm font-medium transition-colors duration-150
-   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2
+  `inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap rounded-md
+   text-sm font-medium transition-colors
+   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
    disabled:pointer-events-none disabled:opacity-50
    [&_svg]:inline-block [&_svg]:flex-shrink-0`,
   {
     variants: {
       variant: {
-        primary: `
-          bg-zinc-900 text-white shadow-xs
-          hover:bg-zinc-800 hover:shadow-sm
-          dark:bg-zinc-100 dark:text-zinc-900
-          dark:hover:bg-zinc-200
-        `,
         default: `
           bg-zinc-900 text-white shadow-xs
           hover:bg-zinc-800 hover:shadow-sm
@@ -37,14 +31,6 @@ const buttonVariants = cva(
           dark:text-zinc-300
           dark:hover:bg-zinc-800
         `,
-        danger: `
-          bg-red-500 text-white
-          hover:bg-red-600
-        `,
-        success: `
-          bg-green-500 text-white
-          hover:bg-green-600
-        `,
         link: `
           text-zinc-900 dark:text-zinc-100
           underline-offset-4 hover:underline
@@ -59,22 +45,23 @@ const buttonVariants = cva(
         destructive: `
           bg-red-500 text-white
           hover:bg-red-600
+          dark:bg-red-600
+          dark:hover:bg-red-700
         `,
       },
       size: {
-        xs: 'h-7 px-2.5 text-xs rounded-md [@media(pointer:coarse)]:h-11',
-        sm: 'h-8 px-3 text-sm [@media(pointer:coarse)]:h-11',
-        md: 'h-10 px-4 text-sm [@media(pointer:coarse)]:h-11',
-        lg: 'h-12 px-5 text-base',
-        xl: 'h-14 px-6 text-lg',
-        compact: 'h-10 px-3 rounded-lg text-sm [@media(pointer:coarse)]:h-11',
-        icon: 'h-10 w-10 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
-        'icon-sm': 'h-8 w-8 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
-        'icon-xs': 'h-6 w-6 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+        xs: 'h-7 px-2.5 text-xs rounded-md min-h-[44px] [@media(pointer:coarse)]:h-11',
+        sm: 'h-8 px-3 text-sm min-h-[44px] [@media(pointer:coarse)]:h-11',
+        md: 'h-10 px-4 text-sm min-h-[44px] [@media(pointer:coarse)]:h-11',
+        lg: 'h-12 px-5 text-base min-h-[44px]',
+        xl: 'h-14 px-6 text-lg min-h-[44px]',
+        icon: 'h-10 w-10 min-h-[44px] min-w-[44px] [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+        'icon-sm': 'h-8 w-8 min-h-[44px] min-w-[44px] [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+        'icon-xs': 'h-6 w-6 min-h-[44px] min-w-[44px] [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
       },
     },
     defaultVariants: {
-      variant: 'primary',
+      variant: 'default',
       size: 'md',
     },
   }

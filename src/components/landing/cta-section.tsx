@@ -29,7 +29,7 @@ export function CTASection() {
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
-                variant="primary"
+                variant="default"
                 size="lg"
                 className="bg-white text-primary-600 hover:bg-gray-100"
               >

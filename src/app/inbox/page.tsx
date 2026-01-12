@@ -175,13 +175,22 @@ export default function InboxPage() {
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
       const response = await fetch('/api/notifications');
+
+      // Handle non-ok responses
+      if (!response.ok) {
+        console.error('Failed to fetch notifications: HTTP', response.status);
+        toast.error('Failed to load inbox');
+        return;
+      }
+
       const data = await response.json();
-      
-      if (data.success) {
+
+      // Validate data structure and ensure it's an array
+      if (data.success && data.data && Array.isArray(data.data)) {
         setItems(data.data.map((n: any) => ({
           id: n.id,
           type: n.type,
@@ -193,10 +202,15 @@ export default function InboxPage() {
           isRead: n.is_read,
           createdAt: new Date(n.created_at).toLocaleDateString(),
         })));
+      } else {
+        // Handle null, undefined, or non-array data by setting empty array
+        setItems([]);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
       toast.error('Failed to load inbox');
+      // Set empty items on error to prevent crash
+      setItems([]);
     } finally {
       setIsLoading(false);
     }

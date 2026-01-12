@@ -15,7 +15,7 @@ import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 
 const taskSchema = z.object({
-  title: z.string().min(1, 'Task title is required').max(500, 'Title must be less than 500 characters'),
+  title: z.string().trim().min(1, 'Task title is required').max(500, 'Title must be less than 500 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   project_id: z.string().min(1, 'Project is required'),
   milestone_id: z.string().nullable().optional(),
@@ -68,6 +68,7 @@ export function TaskForm({
     formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(taskSchema),
+    mode: 'onBlur',
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
@@ -83,6 +84,7 @@ export function TaskForm({
   })
 
   const watchedProjectId = watch('project_id')
+  const watchedTitle = watch('title')
   const watchedStatus = watch('status')
   const watchedPriority = watch('priority')
   const watchedAssigneeId = watch('assignee_id')
@@ -158,9 +160,11 @@ export function TaskForm({
           {...register('title')}
           placeholder="Enter task title"
           disabled={isSubmitting}
+          aria-invalid={errors.title ? 'true' : 'false'}
+          aria-describedby={errors.title ? 'title-error' : undefined}
         />
         {errors.title && (
-          <p className="text-sm text-red-600 dark:text-red-400">
+          <p id="title-error" className="text-sm text-red-600 dark:text-red-400">
             {errors.title.message}
           </p>
         )}
@@ -364,7 +368,7 @@ export function TaskForm({
 
         <Button
           type="submit"
-          disabled={isSubmitting || !watchedProjectId}
+          disabled={isSubmitting || !watchedProjectId || !watchedTitle?.trim()}
         >
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {isEditing ? 'Update Task' : 'Create Task'}

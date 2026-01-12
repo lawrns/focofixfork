@@ -81,6 +81,8 @@ interface Organization {
 export default function DashboardPage() {
   // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
   const { user, loading } = useAuth()
   const { createView, setActiveView } = useSavedViews()
   const toast = useToastHelpers()
@@ -131,6 +133,8 @@ export default function DashboardPage() {
   const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [showAIProjectModal, setShowAIProjectModal] = useState(false)
+  const [showBriefGeneration, setShowBriefGeneration] = useState(false)
+  const [showAISuggestions, setShowAISuggestions] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -203,6 +207,26 @@ export default function DashboardPage() {
       router.push('/login')
     }
   }, [user, loading, router])
+
+  // Handle query parameters from command palette
+  useEffect(() => {
+    const briefParam = searchParams.get('brief')
+    const suggestionsParam = searchParams.get('suggestions')
+
+    if (briefParam === 'generate') {
+      setShowBriefGeneration(true)
+      toast.success('Generating daily brief...')
+      // Clear the parameter from URL
+      router.replace(pathname || '/dashboard')
+    }
+
+    if (suggestionsParam === 'true') {
+      setShowAISuggestions(true)
+      toast.success('Loading AI suggestions...')
+      // Clear the parameter from URL
+      router.replace(pathname || '/dashboard')
+    }
+  }, [searchParams, router, pathname, toast])
 
   useEffect(() => {
     // Check if we should show the new project modal

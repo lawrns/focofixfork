@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
@@ -385,22 +387,35 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive 
 export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('updated');
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectData | null>(null);
+
+  // Handle query parameters from command palette
+  useEffect(() => {
+    const createParam = searchParams.get('create');
+    if (createParam === 'true') {
+      setCreateDialogOpen(true);
+      // Clear the parameter from URL
+      router.replace(pathname || '/projects');
+    }
+  }, [searchParams, router, pathname]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       if (!user) return;
-      
+
       try {
         const response = await fetch('/api/projects');
         const data = await response.json();
-        
+
         if (data.success) {
           const projectsData = data.data?.data || data.data || [];
           setProjects(projectsData.map((p: any) => ({
@@ -572,7 +587,7 @@ export default function ProjectsPage() {
         title="Projects"
         subtitle={`${projects.length} active projects`}
         primaryAction={
-          <Button>
+          <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4" />
             {buttons.createProject}
           </Button>
@@ -724,6 +739,42 @@ export default function ProjectsPage() {
               Cancel
             </Button>
             <Button onClick={() => setEditDialogOpen(false)}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Project Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Project</DialogTitle>
+            <DialogDescription>
+              Create a new project to organize your work.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="create-name">Name</Label>
+              <Input
+                id="create-name"
+                placeholder="Project name"
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="create-description">Description</Label>
+              <Textarea
+                id="create-description"
+                placeholder="What is this project about?"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(false)}>Create project</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

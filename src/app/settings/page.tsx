@@ -37,6 +37,7 @@ import { useTheme } from 'next-themes';
 import type { DensitySetting } from '@/types/foco';
 import { PageShell } from '@/components/layout/page-shell';
 import { buttons } from '@/lib/copy';
+import { toast } from 'sonner';
 
 const settingsSections = [
   { id: 'workspace', label: 'Workspace', icon: Settings },
@@ -50,6 +51,38 @@ const settingsSections = [
 ];
 
 function WorkspaceSettings() {
+  const [isSaving, setIsSaving] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('Acme Corp');
+  const [workspaceSlug, setWorkspaceSlug] = useState('acme-corp');
+  const [workspaceDescription, setWorkspaceDescription] = useState('Demo workspace for Foco 2.0');
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workspaceName,
+          workspaceSlug,
+          workspaceDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -62,20 +95,35 @@ function WorkspaceSettings() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="workspace-name">Workspace Name</Label>
-            <Input id="workspace-name" defaultValue="Acme Corp" />
+            <Input
+              id="workspace-name"
+              value={workspaceName}
+              onChange={(e) => setWorkspaceName(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="workspace-slug">Workspace URL</Label>
             <div className="flex items-center gap-2">
               <span className="text-sm text-zinc-500">foco.app/</span>
-              <Input id="workspace-slug" defaultValue="acme-corp" className="max-w-[200px]" />
+              <Input
+                id="workspace-slug"
+                value={workspaceSlug}
+                onChange={(e) => setWorkspaceSlug(e.target.value)}
+                className="max-w-[200px]"
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="workspace-description">Description</Label>
-            <Input id="workspace-description" defaultValue="Demo workspace for Foco 2.0" />
+            <Input
+              id="workspace-description"
+              value={workspaceDescription}
+              onChange={(e) => setWorkspaceDescription(e.target.value)}
+            />
           </div>
-          <Button>Save Changes</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </CardContent>
       </Card>
 

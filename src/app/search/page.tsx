@@ -278,44 +278,49 @@ export default function SearchPage() {
             }}
             className="px-3 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
             aria-label="Filter by date"
+            type="button"
           >
             📅 Date
           </button>
           <div className="hidden absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg p-3 z-10 min-w-max">
             <div className="space-y-2">
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleDateRangeChange('any');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Any time
               </button>
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleDateRangeChange('week');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Past week
               </button>
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleDateRangeChange('month');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Past month
               </button>
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleDateRangeChange('custom');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Custom
               </button>
@@ -331,44 +336,49 @@ export default function SearchPage() {
             }}
             className="px-3 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
             aria-label="Filter by status"
+            type="button"
           >
             📋 Status
           </button>
           <div className="hidden absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg p-3 z-10 min-w-max">
             <div className="space-y-2">
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleStatusChange('');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 All statuses
               </button>
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleStatusChange('active');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Active
               </button>
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleStatusChange('completed');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Completed
               </button>
               <button
-                onClick={() => {
+                onClick={(ev) => {
                   handleStatusChange('archived');
-                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                  (ev.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
                 }}
                 className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+                type="button"
               >
                 Archived
               </button>

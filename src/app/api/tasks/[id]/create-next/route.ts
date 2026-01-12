@@ -36,16 +36,25 @@ export async function POST(
       );
     }
 
-    const pattern = task.recurrence_pattern as RecurrencePattern;
+    const patternData = task.recurrence_pattern as Partial<RecurrencePattern>;
     const occurrenceCount = task.occurrence_number || 1;
 
     // Validate pattern has required type field
-    if (!pattern.type) {
+    if (!patternData.type) {
       return NextResponse.json(
         { success: false, error: 'Invalid recurrence pattern' },
         { status: 400 }
       );
     }
+
+    // Now we know type exists, create proper pattern
+    const pattern: RecurrencePattern = {
+      type: patternData.type,
+      interval: patternData.interval,
+      daysOfWeek: patternData.daysOfWeek,
+      endAfter: patternData.endAfter,
+      endsNever: patternData.endsNever,
+    };
 
     if (!shouldCreateNextInstance(pattern, new Date(), occurrenceCount)) {
       return NextResponse.json(

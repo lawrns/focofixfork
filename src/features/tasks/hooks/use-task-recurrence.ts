@@ -56,14 +56,19 @@ export function useTaskRecurrence(options?: UseTaskRecurrenceOptions) {
   const handleTaskCompletion = useCallback(
     async (
       taskId: string,
-      pattern: RecurrencePattern,
+      pattern: Partial<RecurrencePattern>,
       occurrenceCount?: number
     ) => {
+      // Validate pattern has required type field
+      if (!pattern.type) {
+        throw new Error('Invalid recurrence pattern: missing type');
+      }
+
       // Check if we should create the next instance
       const should = shouldCreateNextInstance(pattern, new Date(), occurrenceCount);
 
       if (should) {
-        return createNextInstance(taskId, pattern, occurrenceCount);
+        return createNextInstance(taskId, pattern as RecurrencePattern, occurrenceCount);
       }
 
       return null;

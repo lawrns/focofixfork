@@ -879,7 +879,7 @@ export default function ProjectTable({
     if (user && fetchProjectsRef.current) {
       fetchProjectsRef.current(showArchived)
     }
-  }, [user?.id, showArchived]) // Depend on user.id and showArchived, not fetchProjects
+  }, [user, showArchived])
 
   // Apply filtering and sorting
   useEffect(() => {

@@ -16,7 +16,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Inbox,
@@ -53,35 +53,7 @@ export function SmartInbox({ userId, className }: SmartInboxProps) {
   const [showAll, setShowAll] = useState(false)
   const [processingAction, setProcessingAction] = useState<string | null>(null)
 
-  // Load Smart Inbox data
-  useEffect(() => {
-    loadInbox()
-  }, [userId])
-
-  // Real-time updates subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('inbox-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks',
-        },
-        () => {
-          // Reload inbox when tasks change
-          loadInbox()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId])
-
-  const loadInbox = async () => {
+  const loadInbox = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -93,7 +65,32 @@ export function SmartInbox({ userId, className }: SmartInboxProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userId])
+
+  useEffect(() => {
+    loadInbox()
+  }, [loadInbox])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('inbox-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+        },
+        () => {
+          loadInbox()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [loadInbox])
 
   const handleAction = async (
     item: InboxItem,

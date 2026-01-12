@@ -19,7 +19,7 @@ import { TasksService } from '../services/taskService'
 import { SmartDateInput } from '@/components/forms/smart-date-input'
 import { SuggestionChips } from './suggestion-chips'
 import { MarkdownPreview } from '@/components/markdown-preview/markdown-preview'
-import type { Task as DuplicateTask } from '../utils/duplicate-detection'
+import type { Task } from '../types'
 
 const taskSchema = z.object({
   title: z.string().trim().min(1, 'Task title is required').max(500, 'Title must be less than 500 characters'),
@@ -51,7 +51,7 @@ interface TaskFormProps {
   onSuccess?: () => void
   onCancel?: () => void
   isInModal?: boolean
-  projectTasks?: DuplicateTask[]
+  projectTasks?: Task[]
 }
 
 export function TaskForm({
@@ -68,7 +68,7 @@ export function TaskForm({
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [allProjectTasks, setAllProjectTasks] = useState<DuplicateTask[]>(projectTasks)
+  const [allProjectTasks, setAllProjectTasks] = useState<Task[]>(projectTasks)
   const [shouldCreateAnyway, setShouldCreateAnyway] = useState(false)
 
   // Suggestions state

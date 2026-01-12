@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,13 +41,7 @@ export function CalendarView({ className }: CalendarViewProps) {
     }
   }
 
-  useEffect(() => {
-    if (user) {
-      loadEvents()
-    }
-  }, [user, currentDate, viewType, filter])
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     if (!user) return
 
     try {
@@ -67,7 +61,13 @@ export function CalendarView({ className }: CalendarViewProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user, currentDate, viewType, filter, addToast, t])
+
+  useEffect(() => {
+    if (user) {
+      loadEvents()
+    }
+  }, [user, loadEvents])
 
   const getViewStartDate = (date: Date, view: string): Date => {
     switch (view) {

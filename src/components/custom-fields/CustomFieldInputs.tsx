@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 
 interface CustomField {
@@ -35,27 +35,7 @@ export function CustomFieldInputs({
   const [loading, setLoading] = useState(true)
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({})
 
-  // Fetch custom fields on mount
-  useEffect(() => {
-    fetchFields()
-    if (taskId) {
-      fetchTaskValues()
-    }
-  }, [projectId, taskId])
-
-  // Initialize field values from props
-  useEffect(() => {
-    if (values.length > 0) {
-      const initialValues: Record<string, any> = {}
-      values.forEach(val => {
-        initialValues[val.field_id] =
-          val.value_text || val.value_number || val.value_date || null
-      })
-      setFieldValues(initialValues)
-    }
-  }, [values])
-
-  async function fetchFields() {
+  const fetchFields = useCallback(async () => {
     try {
       const response = await fetch(`/api/projects/${projectId}/custom-fields`)
       if (!response.ok) {
@@ -69,9 +49,9 @@ export function CustomFieldInputs({
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId])
 
-  async function fetchTaskValues() {
+  const fetchTaskValues = useCallback(async () => {
     if (!taskId) return
 
     try {
@@ -90,13 +70,31 @@ export function CustomFieldInputs({
     } catch (err) {
       console.error('Error fetching task custom values:', err)
     }
-  }
+  }, [taskId])
 
-  function handleValueChange(fieldId: string, value: any) {
+  useEffect(() => {
+    fetchFields()
+    if (taskId) {
+      fetchTaskValues()
+    }
+  }, [fetchFields, fetchTaskValues, taskId])
+
+  useEffect(() => {
+    if (values.length > 0) {
+      const initialValues: Record<string, any> = {}
+      values.forEach(val => {
+        initialValues[val.field_id] =
+          val.value_text || val.value_number || val.value_date || null
+      })
+      setFieldValues(initialValues)
+    }
+  }, [values])
+
+  const handleValueChange = useCallback((fieldId: string, value: any) => {
     const newValues = { ...fieldValues, [fieldId]: value }
     setFieldValues(newValues)
     onValuesChange?.(newValues)
-  }
+  }, [fieldValues, onValuesChange])
 
   if (loading) {
     return <div className="text-sm text-gray-500">Loading custom fields...</div>

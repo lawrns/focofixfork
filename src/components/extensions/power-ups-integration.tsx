@@ -166,11 +166,14 @@ export function PowerUpsIntegration({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             {powerUp.manifest.icon && (
-              <img 
-                src={powerUp.manifest.icon} 
-                alt={powerUp.manifest.name}
-                className="w-10 h-10 rounded-lg"
-              />
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                <img 
+                  src={powerUp.manifest.icon} 
+                  alt={powerUp.manifest.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
             )}
             <div>
               <h3 className="font-semibold text-lg">{powerUp.manifest.name}</h3>

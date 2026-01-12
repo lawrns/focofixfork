@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase-client'
 import type { Database } from '@/lib/supabase/types'
 
-type TimeEntry = Database['public']['Tables']['task_time_entries']['Row']
-type TimeEntryInsert = Database['public']['Tables']['task_time_entries']['Insert']
+// Note: task_time_entries table does not exist in current schema
+// This service is a placeholder for future time tracking functionality
+type TimeEntry = any
+type TimeEntryInsert = any
 
 export interface TimeEntryResponse<T = TimeEntry> {
   success: boolean
@@ -27,19 +29,7 @@ export class TaskTimeEntriesService {
         return { success: false, error: 'Task ID and User ID are required' }
       }
 
-      const { data, error } = await supabase
-        .from('task_time_entries')
-        .select('*')
-        .eq('task_id', taskId)
-        .eq('user_id', userId)
-        .order('start_time', { ascending: false })
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      const totalSeconds = this.calculateTotalSeconds(data || [])
-      return { success: true, data: data || [], totalSeconds }
+      return { success: true, data: [], totalSeconds: 0 }
     } catch (error: any) {
       return { success: false, error: error.message || 'Failed to fetch time entries' }
     }
@@ -68,26 +58,7 @@ export class TaskTimeEntriesService {
         return { success: false, error: 'End time must be after start time' }
       }
 
-      const dataToInsert: TimeEntryInsert = {
-        task_id: taskId,
-        user_id: userId,
-        start_time: entry.startTime.toISOString(),
-        end_time: entry.endTime.toISOString(),
-        duration_seconds: entry.durationSeconds,
-        notes: entry.notes || ''
-      }
-
-      const { data, error } = await supabase
-        .from('task_time_entries')
-        .insert(dataToInsert)
-        .select()
-        .single()
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      return { success: true, data }
+      return { success: false, error: 'Time tracking not yet implemented' }
     } catch (error: any) {
       return { success: false, error: error.message || 'Failed to create time entry' }
     }
@@ -100,22 +71,7 @@ export class TaskTimeEntriesService {
     updates: { notes?: string }
   ): Promise<TimeEntryResponse> {
     try {
-      const { data, error } = await supabase
-        .from('task_time_entries')
-        .update(updates)
-        .eq('id', entryId)
-        .eq('task_id', taskId)
-        .eq('user_id', userId)
-        .select()
-        .single()
-
-      if (error) {
-        return error.code === 'PGRST116'
-          ? { success: false, error: 'Time entry not found' }
-          : { success: false, error: error.message }
-      }
-
-      return { success: true, data }
+      return { success: false, error: 'Time tracking not yet implemented' }
     } catch (error: any) {
       return { success: false, error: error.message || 'Failed to update time entry' }
     }
@@ -127,18 +83,7 @@ export class TaskTimeEntriesService {
     userId: string
   ): Promise<TimeEntryResponse<null>> {
     try {
-      const { error } = await supabase
-        .from('task_time_entries')
-        .delete()
-        .eq('id', entryId)
-        .eq('task_id', taskId)
-        .eq('user_id', userId)
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      return { success: true, data: null }
+      return { success: false, error: 'Time tracking not yet implemented' }
     } catch (error: any) {
       return { success: false, error: error.message || 'Failed to delete time entry' }
     }

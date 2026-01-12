@@ -16,7 +16,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   TrendingUp,
@@ -47,14 +47,7 @@ export function AIInsights({ userId, organizationId, className }: AIInsightsProp
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadInsights()
-    // Refresh insights every 5 minutes
-    const interval = setInterval(loadInsights, 5 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [userId, organizationId])
-
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -66,7 +59,13 @@ export function AIInsights({ userId, organizationId, className }: AIInsightsProp
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userId, organizationId])
+
+  useEffect(() => {
+    loadInsights()
+    const interval = setInterval(loadInsights, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [loadInsights])
 
   const getInsightIcon = (insight: Insight) => {
     switch (insight.type) {

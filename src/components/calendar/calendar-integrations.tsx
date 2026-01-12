@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -47,13 +47,7 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null)
   const [syncingIntegrations, setSyncingIntegrations] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    if (user) {
-      loadIntegrations()
-    }
-  }, [user])
-
-  const loadIntegrations = async () => {
+  const loadIntegrations = useCallback(async () => {
     if (!user) return
 
     try {
@@ -70,7 +64,13 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user, addToast, t])
+
+  useEffect(() => {
+    if (user) {
+      loadIntegrations()
+    }
+  }, [user, loadIntegrations])
 
   const handleToggleSync = async (integrationId: string, enabled: boolean) => {
     try {

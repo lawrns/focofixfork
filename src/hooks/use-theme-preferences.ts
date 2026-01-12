@@ -62,7 +62,7 @@ export function useThemePreferences(options: UseThemePreferencesOptions = {}) {
 
         const { data: profile, error: err } = await supabase
           .from('user_profiles')
-          .select('theme, accent_color, font_size')
+          .select('*')
           .eq('user_id', user.id)
           .single()
 
@@ -72,14 +72,18 @@ export function useThemePreferences(options: UseThemePreferencesOptions = {}) {
         }
 
         if (profile) {
-          if (profile.theme && THEME_OPTIONS.includes(profile.theme)) {
-            setThemeState(profile.theme)
+          const theme = (profile as any)?.theme
+          const accentColor = (profile as any)?.accent_color
+          const fontSize = (profile as any)?.font_size
+          
+          if (theme && THEME_OPTIONS.includes(theme)) {
+            setThemeState(theme)
           }
-          if (profile.accent_color && ACCENT_COLORS.includes(profile.accent_color)) {
-            setAccentColorState(profile.accent_color)
+          if (accentColor && ACCENT_COLORS.includes(accentColor)) {
+            setAccentColorState(accentColor)
           }
-          if (profile.font_size && FONT_SIZE_OPTIONS.includes(profile.font_size)) {
-            setFontSizeState(profile.font_size)
+          if (fontSize && FONT_SIZE_OPTIONS.includes(fontSize)) {
+            setFontSizeState(fontSize)
           }
         }
       } catch (err) {

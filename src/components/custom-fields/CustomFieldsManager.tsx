@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Trash2, Plus } from 'lucide-react'
@@ -32,12 +32,7 @@ export function CustomFieldsManager({ projectId }: CustomFieldsManagerProps) {
   })
   const [isAdding, setIsAdding] = useState(false)
 
-  // Fetch custom fields on mount
-  useEffect(() => {
-    fetchFields()
-  }, [projectId])
-
-  async function fetchFields() {
+  const fetchFields = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -55,9 +50,13 @@ export function CustomFieldsManager({ projectId }: CustomFieldsManagerProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId])
 
-  async function handleAddField() {
+  useEffect(() => {
+    fetchFields()
+  }, [fetchFields])
+
+  const handleAddField = useCallback(async () => {
     if (!newField.field_name.trim()) {
       setError('Field name is required')
       return
@@ -103,9 +102,9 @@ export function CustomFieldsManager({ projectId }: CustomFieldsManagerProps) {
       console.error('Error creating field:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     }
-  }
+  }, [newField, projectId, fields])
 
-  async function handleDeleteField(fieldId: string) {
+  const handleDeleteField = useCallback(async (fieldId: string) => {
     if (!confirm('Are you sure you want to delete this field? All associated values will be removed.')) {
       return
     }
@@ -126,7 +125,7 @@ export function CustomFieldsManager({ projectId }: CustomFieldsManagerProps) {
       console.error('Error deleting field:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     }
-  }
+  }, [fields])
 
   if (loading) {
     return <div className="text-sm text-gray-500">Loading custom fields...</div>

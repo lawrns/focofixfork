@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase-client'
 
 export interface SearchResult {
@@ -43,6 +43,145 @@ export function useSearch(options: SearchOptions) {
 
   const [debouncedQuery, setDebouncedQuery] = useState(options.query)
 
+  // Define search functions first (before performSearch)
+  const searchProjects = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        id,
+        name,
+        description,
+        organization_id,
+        organizations (
+          name
+        )
+      `)
+      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .limit(limit)
+
+    if (error) throw error
+
+    return (data || []).map(project => ({
+      id: project.id,
+      type: 'project' as const,
+      title: project.name,
+      subtitle: (project.organizations as any)?.name,
+      description: project.description || undefined,
+      url: `/projects/${project.id}`,
+      metadata: {
+        organizationId: project.organization_id
+      },
+      score: calculateRelevanceScore(query, project.name, project.description || undefined)
+    }))
+  }, [])
+
+  const searchMilestones = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
+    let queryBuilder = supabase
+      .from('milestones')
+      .select(`
+        id,
+        name,
+        description,
+        project_id,
+        status,
+        priority,
+        projects (
+          name,
+          organization_id,
+          organizations (
+            name
+          )
+        )
+      `)
+      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .limit(limit)
+
+    if (options.projectId) {
+      queryBuilder = queryBuilder.eq('project_id', options.projectId)
+    }
+
+    const { data, error } = await queryBuilder
+
+    if (error) throw error
+
+    return (data || []).map(milestone => ({
+      id: milestone.id,
+      type: 'milestone' as const,
+      title: milestone.name,
+      subtitle: (milestone.projects as any)?.name,
+      description: milestone.description || undefined,
+      url: `/milestones/${milestone.id}`,
+      metadata: {
+        status: milestone.status,
+        priority: milestone.priority,
+        projectId: milestone.project_id,
+        organizationName: (milestone.projects as any)?.organizations?.name
+      },
+      score: calculateRelevanceScore(query, milestone.name, milestone.description || undefined)
+    }))
+  }, [options.projectId])
+
+  const searchUsers = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
+    const { data, error } = await supabase
+      .from('organization_members')
+      .select(`
+        user_id,
+        role,
+        organizations (
+          id,
+          name
+        )
+      `)
+      .limit(limit)
+
+    if (error) throw error
+
+    const userResults = [] as SearchResult[]
+
+    (data || []).forEach(member => {
+      if (member.user_id.includes(query) || query.length < 3) {
+        userResults.push({
+          id: member.user_id,
+          type: 'user' as const,
+          title: `User ${member.user_id.slice(-8)}`,
+          subtitle: (member.organizations as any)?.name,
+          description: `Role: ${member.role}`,
+          url: `/users/${member.user_id}`,
+          metadata: {
+            role: member.role,
+            organizationId: (member.organizations as any)?.id
+          },
+          score: 0.5
+        })
+      }
+    })
+
+    return userResults.slice(0, limit)
+  }, [])
+
+  const searchOrganizations = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('id, name, created_at')
+      .ilike('name', `%${query}%`)
+      .limit(limit)
+
+    if (error) throw error
+
+    return (data || []).map(org => ({
+      id: org.id,
+      type: 'organization' as const,
+      title: org.name,
+      subtitle: 'Organization',
+      description: `Created ${org.created_at ? new Date(org.created_at).toLocaleDateString() : 'Unknown'}`,
+      url: `/organizations/${org.id}`,
+      metadata: {
+        createdAt: org.created_at
+      },
+      score: calculateRelevanceScore(query, org.name)
+    }))
+  }, [])
+
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,22 +191,7 @@ export function useSearch(options: SearchOptions) {
     return () => clearTimeout(timer)
   }, [options.query])
 
-  // Perform search when debounced query changes
-  useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setState({
-        results: [],
-        isLoading: false,
-        error: null,
-        hasMore: false
-      })
-      return
-    }
-
-    performSearch()
-  }, [debouncedQuery, options.types, options.organizationId, options.projectId, options.limit, options.fuzzy])
-
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }))
 
     try {
@@ -121,150 +245,22 @@ export function useSearch(options: SearchOptions) {
         hasMore: false
       })
     }
-  }
+  }, [debouncedQuery, searchProjects, searchMilestones, searchUsers, searchOrganizations])
 
-  const searchProjects = async (query: string, limit: number): Promise<SearchResult[]> => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`
-        id,
-        name,
-        description,
-        organization_id,
-        organizations (
-          name
-        )
-      `)
-      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-      .limit(limit)
-
-    if (error) throw error
-
-    return (data || []).map(project => ({
-      id: project.id,
-      type: 'project' as const,
-      title: project.name,
-      subtitle: (project.organizations as any)?.name,
-      description: project.description || undefined,
-      url: `/projects/${project.id}`,
-      metadata: {
-        organizationId: project.organization_id
-      },
-      score: calculateRelevanceScore(query, project.name, project.description || undefined)
-    }))
-  }
-
-  const searchMilestones = async (query: string, limit: number): Promise<SearchResult[]> => {
-    let queryBuilder = supabase
-      .from('milestones')
-      .select(`
-        id,
-        name,
-        description,
-        project_id,
-        status,
-        priority,
-        projects (
-          name,
-          organization_id,
-          organizations (
-            name
-          )
-        )
-      `)
-      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-      .limit(limit)
-
-    // Filter by project if specified
-    if (options.projectId) {
-      queryBuilder = queryBuilder.eq('project_id', options.projectId)
+  // Perform search when debounced query changes
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setState({
+        results: [],
+        isLoading: false,
+        error: null,
+        hasMore: false
+      })
+      return
     }
 
-    const { data, error } = await queryBuilder
-
-    if (error) throw error
-
-    return (data || []).map(milestone => ({
-      id: milestone.id,
-      type: 'milestone' as const,
-      title: milestone.name,
-      subtitle: (milestone.projects as any)?.name,
-      description: milestone.description || undefined,
-      url: `/milestones/${milestone.id}`,
-      metadata: {
-        status: milestone.status,
-        priority: milestone.priority,
-        projectId: milestone.project_id,
-        organizationName: (milestone.projects as any)?.organizations?.name
-      },
-      score: calculateRelevanceScore(query, milestone.name, milestone.description || undefined)
-    }))
-  }
-
-  const searchUsers = async (query: string, limit: number): Promise<SearchResult[]> => {
-    // Note: In Supabase, user metadata is in auth.users which requires admin access
-    // For now, we'll search organization members
-    const { data, error } = await supabase
-      .from('organization_members')
-      .select(`
-        user_id,
-        role,
-        organizations (
-          id,
-          name
-        )
-      `)
-      .limit(limit)
-
-    if (error) throw error
-
-    // This is a simplified version - in production you'd have user profiles
-    const userResults = [] as SearchResult[]
-
-    // For now, just return organization members as users
-    (data || []).forEach(member => {
-      if (member.user_id.includes(query) || query.length < 3) {
-        userResults.push({
-          id: member.user_id,
-          type: 'user' as const,
-          title: `User ${member.user_id.slice(-8)}`,
-          subtitle: (member.organizations as any)?.name,
-          description: `Role: ${member.role}`,
-          url: `/users/${member.user_id}`,
-          metadata: {
-            role: member.role,
-            organizationId: (member.organizations as any)?.id
-          },
-          score: 0.5 // Lower priority for user results
-        })
-      }
-    })
-
-    return userResults.slice(0, limit)
-  }
-
-  const searchOrganizations = async (query: string, limit: number): Promise<SearchResult[]> => {
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('id, name, created_at')
-      .ilike('name', `%${query}%`)
-      .limit(limit)
-
-    if (error) throw error
-
-    return (data || []).map(org => ({
-      id: org.id,
-      type: 'organization' as const,
-      title: org.name,
-      subtitle: 'Organization',
-      description: `Created ${org.created_at ? new Date(org.created_at).toLocaleDateString() : 'Unknown'}`,
-      url: `/organizations/${org.id}`,
-      metadata: {
-        createdAt: org.created_at
-      },
-      score: calculateRelevanceScore(query, org.name)
-    }))
-  }
+    performSearch()
+  }, [debouncedQuery, performSearch])
 
   return {
     ...state,

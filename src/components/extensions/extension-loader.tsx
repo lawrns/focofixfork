@@ -261,11 +261,14 @@ export function ExtensionLoader({
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     {extension.manifest.icon && (
-                      <img 
-                        src={extension.manifest.icon} 
-                        alt={extension.manifest.name}
-                        className="w-6 h-6 rounded"
-                      />
+                      <div className="w-6 h-6 rounded overflow-hidden flex-shrink-0">
+                        <img 
+                          src={extension.manifest.icon} 
+                          alt={extension.manifest.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
                     )}
                     <h4 className="font-semibold">{extension.manifest.name}</h4>
                     <Badge variant="secondary">{extension.manifest.version}</Badge>

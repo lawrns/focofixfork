@@ -129,7 +129,7 @@ export const useTaskReminder = {
     taskName: string,
     reminderTime: Date,
     sendNotificationFn: (notification: ReminderNotification) => Promise<any>
-  ): ReminderResult<ReminderNotification> {
+  ): Promise<ReminderResult<ReminderNotification>> {
     try {
       const notification: ReminderNotification = {
         id: `reminder-${taskId}-${Date.now()}`,

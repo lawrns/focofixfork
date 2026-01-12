@@ -38,48 +38,11 @@ export class ReminderService {
         }
       }
 
-      // Update task with reminder_at
-      const { data: taskData, error: taskError } = await supabase
-        .from('tasks')
-        .update({ reminder_at: reminderAt.toISOString() })
-        .eq('id', taskId)
-        .select()
-        .single()
-
-      if (taskError) {
-        return {
-          success: false,
-          error: `Failed to update task: ${taskError.message}`,
-        }
-      }
-
-      // Create reminder record
-      const { data: reminderData, error: reminderError } = await supabase
-        .from('task_reminders')
-        .insert({
-          task_id: taskId,
-          user_id: userId,
-          reminder_at: reminderAt.toISOString(),
-          option,
-          sent: false,
-        })
-        .select()
-        .single()
-
-      if (reminderError) {
-        return {
-          success: false,
-          error: `Failed to create reminder: ${reminderError.message}`,
-        }
-      }
-
+      // Note: task_reminders table does not exist in current schema
+      // This is a placeholder for future reminder functionality
       return {
-        success: true,
-        data: {
-          taskId,
-          reminderAt: reminderAt.toISOString(),
-          option: option as any,
-        },
+        success: false,
+        error: 'Reminder functionality not yet implemented',
       }
     } catch (error: any) {
       return {
@@ -107,35 +70,10 @@ export class ReminderService {
         }
       }
 
-      // Update task to remove reminder
-      const { error: taskError } = await supabase
-        .from('tasks')
-        .update({ reminder_at: null })
-        .eq('id', taskId)
-
-      if (taskError) {
-        return {
-          success: false,
-          error: `Failed to update task: ${taskError.message}`,
-        }
-      }
-
-      // Delete reminder records
-      const { error: reminderError } = await supabase
-        .from('task_reminders')
-        .delete()
-        .eq('task_id', taskId)
-        .eq('user_id', userId)
-
-      if (reminderError) {
-        return {
-          success: false,
-          error: `Failed to delete reminder: ${reminderError.message}`,
-        }
-      }
-
+      // Note: task_reminders table does not exist in current schema
       return {
-        success: true,
+        success: false,
+        error: 'Reminder functionality not yet implemented',
       }
     } catch (error: any) {
       return {
@@ -154,49 +92,10 @@ export class ReminderService {
     error?: string
   }> {
     try {
-      const now = new Date()
-
-      // Get all unsent reminders where reminder_at <= now
-      const { data, error } = await supabase
-        .from('task_reminders')
-        .select(
-          `
-          id,
-          task_id,
-          user_id,
-          reminder_at,
-          option,
-          sent,
-          sent_at,
-          tasks!inner(title)
-        `
-        )
-        .eq('sent', false)
-        .lte('reminder_at', now.toISOString())
-        .order('reminder_at', { ascending: true })
-
-      if (error) {
-        return {
-          success: false,
-          error: error.message,
-        }
-      }
-
-      // Format the response
-      const reminders = (data || []).map((reminder: any) => ({
-        id: reminder.id,
-        task_id: reminder.task_id,
-        user_id: reminder.user_id,
-        reminder_at: reminder.reminder_at,
-        option: reminder.option,
-        sent: reminder.sent,
-        sent_at: reminder.sent_at,
-        task_title: reminder.tasks?.title || 'Untitled Task',
-      }))
-
+      // Note: task_reminders table does not exist in current schema
       return {
-        success: true,
-        data: reminders,
+        success: false,
+        error: 'Reminder functionality not yet implemented',
       }
     } catch (error: any) {
       return {
@@ -219,39 +118,10 @@ export class ReminderService {
     error?: string
   }> {
     try {
-      // Update reminder as sent
-      const { error: reminderError } = await supabase
-        .from('task_reminders')
-        .update({ sent: true, sent_at: new Date().toISOString() })
-        .eq('id', reminderId)
-
-      if (reminderError) {
-        return {
-          success: false,
-          error: `Failed to mark reminder as sent: ${reminderError.message}`,
-        }
-      }
-
-      // Create notification
-      const { error: notificationError } = await supabase
-        .from('reminder_notifications')
-        .insert({
-          task_id: taskId,
-          user_id: userId,
-          reminder_id: reminderId,
-          notification_type: 'in-app',
-          message: `Reminder: ${taskName}`,
-          sent: true,
-          sent_at: new Date().toISOString(),
-        })
-
-      if (notificationError) {
-        console.error('Failed to create notification:', notificationError)
-        // Don't fail the entire operation if notification creation fails
-      }
-
+      // Note: task_reminders and reminder_notifications tables do not exist in current schema
       return {
-        success: true,
+        success: false,
+        error: 'Reminder functionality not yet implemented',
       }
     } catch (error: any) {
       return {
@@ -323,22 +193,10 @@ export class ReminderService {
     error?: string
   }> {
     try {
-      const { data, error } = await supabase
-        .from('task_reminders')
-        .select('*')
-        .eq('task_id', taskId)
-        .order('reminder_at', { ascending: true })
-
-      if (error) {
-        return {
-          success: false,
-          error: error.message,
-        }
-      }
-
+      // Note: task_reminders table does not exist in current schema
       return {
-        success: true,
-        data: data || [],
+        success: false,
+        error: 'Reminder functionality not yet implemented',
       }
     } catch (error: any) {
       return {
@@ -360,23 +218,10 @@ export class ReminderService {
     error?: string
   }> {
     try {
-      const { data, error } = await supabase
-        .from('reminder_notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (error) {
-        return {
-          success: false,
-          error: error.message,
-        }
-      }
-
+      // Note: reminder_notifications table does not exist in current schema
       return {
-        success: true,
-        data: (data || []) as ReminderNotification[],
+        success: false,
+        error: 'Reminder functionality not yet implemented',
       }
     } catch (error: any) {
       return {

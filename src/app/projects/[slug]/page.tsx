@@ -248,11 +248,11 @@ export default function ProjectPage() {
         setError(null);
 
         // Fetch project
-        const { data: projectData, error: projectError } = await supabase
+        const { data: projectData, error: projectError } = (await supabase
           .from('foco_projects')
           .select('id, workspace_id, name, slug, description, brief, color, icon, status, owner_id, default_status, settings, is_pinned, archived_at, created_at, updated_at')
           .eq('slug', slug)
-          .single();
+          .single()) as { data: Project | null; error: any };
 
         if (projectError) throw projectError;
         if (!projectData) throw new Error('Project not found');
@@ -266,11 +266,11 @@ export default function ProjectPage() {
         });
 
         // Fetch work items (tasks) for this project
-        const { data: tasksData, error: tasksError } = await supabase
+        const { data: tasksData, error: tasksError } = (await supabase
           .from('work_items')
           .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, tags, created_at, updated_at')
           .eq('project_id', projectData.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
 
         if (tasksError) throw tasksError;
         
@@ -279,10 +279,10 @@ export default function ProjectPage() {
         let assigneeMap: Record<string, any> = {};
 
         if (assigneeIds.length > 0) {
-          const { data: assigneesData } = await supabase
+          const { data: assigneesData } = (await supabase
             .from('user_profiles')
             .select('id, email, full_name')
-            .in('id', assigneeIds);
+            .in('id', assigneeIds)) as { data: any[] | null; error: any };
 
           if (assigneesData) {
             assigneeMap = Object.fromEntries(
@@ -300,10 +300,10 @@ export default function ProjectPage() {
         setTasks(tasksWithAssignees);
 
         // Fetch team members
-        const { data: membersData, error: membersError } = await supabase
+        const { data: membersData, error: membersError } = (await supabase
           .from('foco_project_members')
           .select('id, project_id, user_id, role, created_at, updated_at')
-          .eq('project_id', projectData.id);
+          .eq('project_id', projectData.id)) as { data: any[] | null; error: any };
 
         if (membersError) throw membersError;
 
@@ -312,10 +312,10 @@ export default function ProjectPage() {
         let memberProfilesMap: Record<string, any> = {};
 
         if (memberUserIds.length > 0) {
-          const { data: profilesData } = await supabase
+          const { data: profilesData } = (await supabase
             .from('user_profiles')
             .select('id, email, full_name')
-            .in('id', memberUserIds);
+            .in('id', memberUserIds)) as { data: any[] | null; error: any };
 
           if (profilesData) {
             memberProfilesMap = Object.fromEntries(

@@ -351,9 +351,9 @@ export default function CommentsSection({
                   size="sm"
                 >
                   {isSubmitting ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   ) : (
-                    <Send className="w-4 h-4 mr-2" />
+                    <Send className="w-4 h-4" />
                   )}
                   Post
                 </Button>
@@ -595,7 +595,7 @@ function CommentItem({
                 onClick={() => onReply({ ...comment, content: '' })}
                 className="text-muted-foreground hover:text-foreground h-6 px-2 text-xs"
               >
-                <Reply className="w-3 h-3 mr-1" />
+                <Reply className="w-3 h-3" />
                 Reply
               </Button>
 
@@ -606,7 +606,7 @@ function CommentItem({
                   onClick={() => setShowReactions(showReactions === comment.id ? null : comment.id)}
                   className="text-muted-foreground hover:text-foreground h-6 px-2 text-xs"
                 >
-                  <Smile className="w-3 h-3 mr-1" />
+                  <Smile className="w-3 h-3" />
                   React
                 </Button>
 
@@ -644,7 +644,7 @@ function CommentItem({
                     }}
                     className="text-muted-foreground hover:text-foreground h-6 px-2 text-xs"
                   >
-                    <Edit className="w-3 h-3 mr-1" />
+                    <Edit className="w-3 h-3" />
                     Edit
                   </Button>
 
@@ -654,7 +654,7 @@ function CommentItem({
                     onClick={() => onDelete(comment.id)}
                     className="text-muted-foreground hover:text-destructive h-6 px-2 text-xs"
                   >
-                    <Trash2 className="w-3 h-3 mr-1" />
+                    <Trash2 className="w-3 h-3" />
                     Delete
                   </Button>
                 </>

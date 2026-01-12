@@ -254,7 +254,7 @@ export function MilestoneForm({
               type="submit"
               disabled={isSubmitting || !watchedProjectId}
             >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEditing ? 'Update Milestone' : 'Create Milestone'}
             </Button>
           </div>

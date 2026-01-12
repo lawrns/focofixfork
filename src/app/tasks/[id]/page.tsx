@@ -286,7 +286,7 @@ function Inspector({ item }: { item: WorkItem }) {
           Due Date
         </label>
         <Button variant="outline" className="w-full justify-start">
-          <Calendar className="h-4 w-4 mr-2" />
+          <Calendar className="h-4 w-4" />
           {item.due_date 
             ? new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'No due date'
@@ -321,7 +321,7 @@ function Inspector({ item }: { item: WorkItem }) {
           Estimate
         </label>
         <Button variant="outline" className="w-full justify-start">
-          <Clock className="h-4 w-4 mr-2" />
+          <Clock className="h-4 w-4" />
           {item.estimate_hours ? `${item.estimate_hours}h estimated` : 'No estimate'}
         </Button>
       </div>
@@ -441,7 +441,7 @@ export default function WorkItemPage() {
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleStartFocus}>
-              <Play className="h-4 w-4 mr-1" />
+              <Play className="h-4 w-4" />
               Focus
             </Button>
             <DropdownMenu>
@@ -533,7 +533,7 @@ export default function WorkItemPage() {
                     </Button>
                   </div>
                   <Button size="sm" disabled={!newComment.trim()}>
-                    <Send className="h-4 w-4 mr-1" />
+                    <Send className="h-4 w-4" />
                     Comment
                   </Button>
                 </div>

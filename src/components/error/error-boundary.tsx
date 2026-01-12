@@ -221,7 +221,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
                   onClick={copyErrorDetails}
                   className="h-6 px-2 text-xs"
                 >
-                  <Copy className="h-3 w-3 mr-1" />
+                  <Copy className="h-3 w-3" />
                   Copy Details
                 </Button>
               </div>
@@ -272,13 +272,13 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               {enableRetry && (
                 <Button onClick={onRetry} className="flex-1">
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" />
                   Try Again
                 </Button>
               )}
 
               <Button variant="outline" onClick={() => window.location.href = '/'} className="flex-1">
-                <Home className="mr-2 h-4 w-4" />
+                <Home className="h-4 w-4" />
                 Go Home
               </Button>
             </div>

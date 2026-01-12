@@ -356,7 +356,7 @@ export function TaskList({
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading tasks...</span>
+        <span className="text-muted-foreground">Loading tasks...</span>
       </div>
     )
   }
@@ -395,14 +395,14 @@ export function TaskList({
               onClick={() => setShowBulkDeleteDialog(true)}
               aria-label={`Delete ${selectedTasks.size} selected tasks`}
             >
-              <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
               Delete ({selectedTasks.size})
             </Button>
           )}
 
           {showCreateButton && onCreateTask && (
             <Button onClick={onCreateTask} aria-label="Create new task">
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               New Task
             </Button>
           )}
@@ -489,7 +489,7 @@ export function TaskList({
 
           {showCreateButton && onCreateTask && tasks.length === 0 && (
             <Button onClick={onCreateTask}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               Create First Task
             </Button>
           )}
@@ -738,7 +738,7 @@ export function TaskList({
               disabled={isBulkDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isBulkDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isBulkDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

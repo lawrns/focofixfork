@@ -233,28 +233,28 @@ export function TaskQuickActions({
         <DropdownMenuContent align="end">
           {onEdit && (
             <DropdownMenuItem onClick={() => onEdit(task.id)}>
-              <Edit className="mr-2 h-4 w-4" />
+              <Edit className="h-4 w-4" />
               {t('task.editTask')}
             </DropdownMenuItem>
           )}
           
           {onDuplicate && (
             <DropdownMenuItem onClick={() => onDuplicate(task)}>
-              <Copy className="mr-2 h-4 w-4" />
+              <Copy className="h-4 w-4" />
               {t('task.duplicateTask')}
             </DropdownMenuItem>
           )}
 
           {onToggleFavorite && (
             <DropdownMenuItem onClick={() => onToggleFavorite(task.id)}>
-              <Star className="mr-2 h-4 w-4" />
+              <Star className="h-4 w-4" />
               {task.is_favorite ? t('task.removeFromFavorites') : t('task.addToFavorites')}
             </DropdownMenuItem>
           )}
 
           {onArchive && (
             <DropdownMenuItem onClick={() => onArchive(task.id)}>
-              <Archive className="mr-2 h-4 w-4" />
+              <Archive className="h-4 w-4" />
               {t('task.archiveTask')}
             </DropdownMenuItem>
           )}
@@ -266,7 +266,7 @@ export function TaskQuickActions({
                 onClick={() => onDelete(task.id)}
                 className="text-red-600 dark:text-red-400"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
                 {t('task.deleteTask')}
               </DropdownMenuItem>
             </>

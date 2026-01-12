@@ -76,14 +76,14 @@ export function Hero() {
             className="min-w-[180px] shadow-primary"
           >
             Get Started Free
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4" />
           </Button>
           <Button
             variant="secondary"
             size="lg"
             className="min-w-[160px]"
           >
-            <Play className="w-4 h-4 mr-2" />
+            <Play className="w-4 h-4" />
             Watch Demo
           </Button>
         </motion.div>

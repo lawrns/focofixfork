@@ -198,7 +198,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     onClick={onCreateProject}
                     className="w-full h-10 rounded-md bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors duration-150"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4" />
                     Create Project
                   </Button>
                 </div>

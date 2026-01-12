@@ -412,7 +412,7 @@ export default function PermissionsManager({
           <Dialog open={showCreateRole} onOpenChange={setShowCreateRole}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Create Role
               </Button>
             </DialogTrigger>
@@ -524,7 +524,7 @@ export default function PermissionsManager({
                     onClick={handleCreateRole}
                     disabled={!newRoleName.trim()}
                   >
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="w-4 h-4" />
                     Create Role
                   </Button>
                 </div>
@@ -574,7 +574,7 @@ export default function PermissionsManager({
                       </div>
 
                       {canManagePermissions && !role.is_system && (
-                        <div className="flex items-center gap-1 ml-2">
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -626,7 +626,7 @@ export default function PermissionsManager({
                   variant="outline"
                   onClick={() => handleEditRole(selectedRole)}
                 >
-                  <Edit className="w-4 h-4 mr-2" />
+                  <Edit className="w-4 h-4" />
                   Edit Role
                 </Button>
               )}
@@ -813,7 +813,7 @@ export default function PermissionsManager({
                 onClick={handleUpdateRole}
                 disabled={!newRoleName.trim()}
               >
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-4 h-4" />
                 Update Role
               </Button>
             </div>

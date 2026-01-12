@@ -174,13 +174,13 @@ export function ProjectCard({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link href={`/projects/${currentProject.id}`}>
-                    <Eye className="mr-2 h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                     View Details
                   </Link>
                 </DropdownMenuItem>
                 {onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(currentProject.id)}>
-                    <Edit className="mr-2 h-4 w-4" />
+                    <Edit className="h-4 w-4" />
                     Edit Project
                   </DropdownMenuItem>
                 )}
@@ -191,7 +191,7 @@ export function ProjectCard({
                     disabled={isDeleting}
                     className="text-red-600 dark:text-red-400"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                     {isDeleting ? 'Deleting...' : 'Delete Project'}
                   </DropdownMenuItem>
                 )}
@@ -241,7 +241,7 @@ export function ProjectCard({
         <div className="pt-2">
           <Button asChild variant="outline" size="sm" className="w-full">
             <Link href={`/projects/${currentProject.id}`} className="flex items-center justify-center">
-              <Eye className="mr-2 h-4 w-4" />
+              <Eye className="h-4 w-4" />
               View Project
             </Link>
           </Button>

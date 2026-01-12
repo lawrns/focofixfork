@@ -296,11 +296,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
-                  <Settings className="mr-2 h-4 w-4" />
+                  <Settings className="h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-                  <User className="mr-2 h-4 w-4" />
+                  <User className="h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -316,7 +316,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   }}
                   className="text-destructive"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="h-4 w-4" />
                   <span>Sign Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

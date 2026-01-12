@@ -88,7 +88,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
           onGoalCreated={loadGoals}
         >
           <Button className="bg-[#0052CC] hover:bg-[#004299]">
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             New Goal
           </Button>
         </CreateGoalDialog>
@@ -112,7 +112,7 @@ export function GoalsDashboard({ organizationId, projectId }: GoalsDashboardProp
                     onGoalCreated={loadGoals}
                   >
                     <Button className="bg-[#0052CC] hover:bg-[#004299]">
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       Create Your First Goal
                     </Button>
                   </CreateGoalDialog>

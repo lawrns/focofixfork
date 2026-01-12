@@ -224,7 +224,7 @@ export default function OrganizationDetailPage() {
               The organization you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
             </p>
             <Button onClick={() => router.push('/organizations')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4" />
               Back to Organizations
             </Button>
           </CardContent>
@@ -244,7 +244,7 @@ export default function OrganizationDetailPage() {
               size="sm"
               onClick={() => router.push('/organizations')}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4" />
               Back
             </Button>
             <div className="flex items-center space-x-3">
@@ -265,7 +265,7 @@ export default function OrganizationDetailPage() {
               <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
                 <DialogTrigger asChild>
                   <Button>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4" />
                     Invite Member
                   </Button>
                 </DialogTrigger>
@@ -326,12 +326,12 @@ export default function OrganizationDetailPage() {
                       >
                         {isInviting ? (
                           <>
-                            <Clock className="w-4 h-4 mr-2 animate-spin" />
+                            <Clock className="w-4 h-4 animate-spin" />
                             Sending...
                           </>
                         ) : (
                           <>
-                            <Mail className="w-4 h-4 mr-2" />
+                            <Mail className="w-4 h-4" />
                             Send Invitation
                           </>
                         )}
@@ -343,7 +343,7 @@ export default function OrganizationDetailPage() {
             )}
 
             <Button variant="outline">
-              <Settings className="w-4 h-4 mr-2" />
+              <Settings className="w-4 h-4" />
               Settings
             </Button>
           </div>
@@ -515,7 +515,7 @@ export default function OrganizationDetailPage() {
                   </p>
                   {canManageMembers && (
                     <Button onClick={() => setShowInviteModal(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       Invite Member
                     </Button>
                   )}

@@ -210,20 +210,20 @@ export function DataGrid<T extends Record<string, any>>({
         <div className="flex items-center space-x-2">
           {filterable && (
             <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="w-4 h-4" />
               Filter
             </Button>
           )}
           
           {exportable && (
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-4 h-4" />
               Export
             </Button>
           )}
           
           <Button variant="outline" size="sm">
-            <Columns className="w-4 h-4 mr-2" />
+            <Columns className="w-4 h-4" />
             Columns
           </Button>
         </div>

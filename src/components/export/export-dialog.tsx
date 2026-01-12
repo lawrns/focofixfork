@@ -179,7 +179,7 @@ export default function ExportDialog({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className={className}>
-            <Download className="w-4 h-4 mr-2 opacity-70" />
+            <Download className="w-4 h-4 opacity-70" />
             <span className="hidden md:inline">Export Data</span>
             <span className="md:hidden">Export</span>
           </Button>
@@ -316,7 +316,7 @@ export default function ExportDialog({
                             !dateRange.start && 'text-muted-foreground'
                           )}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="h-4 w-4" />
                           {dateRange.start ? format(dateRange.start, 'PPP') : 'Select start date'}
                         </Button>
                       </PopoverTrigger>
@@ -342,7 +342,7 @@ export default function ExportDialog({
                             !dateRange.end && 'text-muted-foreground'
                           )}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="h-4 w-4" />
                           {dateRange.end ? format(dateRange.end, 'PPP') : 'Select end date'}
                         </Button>
                       </PopoverTrigger>
@@ -427,12 +427,12 @@ export default function ExportDialog({
             >
               {isExporting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Exporting...
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-4 h-4" />
                   Export {exportFormat.toUpperCase()}
                 </>
               )}

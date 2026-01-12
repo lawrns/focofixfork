@@ -93,7 +93,7 @@ export function LeftRail() {
               </Badge>
             )}
             {item.shortcut && (
-              <kbd className="ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 rounded">
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 rounded">
                 {item.shortcut}
               </kbd>
             )}

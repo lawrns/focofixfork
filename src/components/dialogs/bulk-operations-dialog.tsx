@@ -236,7 +236,7 @@ export default function BulkOperationsDialog({
               onClick={handleExecute}
               disabled={isExecuting || selectedProjects.length === 0}
             >
-              {isExecuting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isExecuting && <Loader2 className="h-4 w-4 animate-spin" />}
               {config.confirmText} {selectedProjects.length} Project{selectedProjects.length !== 1 ? 's' : ''}
             </Button>
           )}

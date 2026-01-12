@@ -268,7 +268,7 @@ export function TaskEditDialog({
                       !formData.due_date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="h-4 w-4" />
                     {formData.due_date ? format(new Date(formData.due_date), "PPP") : t('task.selectDueDate')}
                   </Button>
                 </PopoverTrigger>
@@ -326,7 +326,7 @@ export function TaskEditDialog({
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isUpdating || !formData.title.trim()}>
-              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
               {t('common.save')}
             </Button>
           </div>

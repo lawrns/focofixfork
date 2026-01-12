@@ -70,7 +70,7 @@ export function PageHeader({
                     onClick={action.onClick}
                     className={cn(action.destructive && 'text-red-600 dark:text-red-400')}
                   >
-                    {action.icon && <action.icon className="h-4 w-4 mr-2" />}
+                    {action.icon && <action.icon className="h-4 w-4" />}
                     {action.label}
                   </DropdownMenuItem>
                 )

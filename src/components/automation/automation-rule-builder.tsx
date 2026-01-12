@@ -409,7 +409,7 @@ export function AutomationRuleBuilder({
                       {t('automation.conditions')}
                     </div>
                     <Button onClick={addCondition} size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4" />
                       {t('automation.addCondition')}
                     </Button>
                   </CardTitle>
@@ -499,7 +499,7 @@ export function AutomationRuleBuilder({
                       {t('automation.actions')}
                     </div>
                     <Button onClick={addAction} size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4" />
                       {t('automation.addAction')}
                     </Button>
                   </CardTitle>
@@ -578,7 +578,7 @@ export function AutomationRuleBuilder({
               {t('common.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={isLoading}>
-              {isLoading && <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {isLoading && <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               {t('common.save')}
             </Button>
           </div>

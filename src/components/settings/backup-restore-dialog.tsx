@@ -135,7 +135,7 @@ export function BackupRestoreDialog({ children }: BackupRestoreDialogProps) {
               disabled={isLoading}
               className="w-full bg-[#0052CC] hover:bg-[#004299]"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-4 h-4" />
               {isLoading ? 'Creating Backup...' : 'Create & Download Backup'}
             </Button>
           </div>
@@ -171,7 +171,7 @@ export function BackupRestoreDialog({ children }: BackupRestoreDialogProps) {
                     variant="outline"
                     className="w-full border-[#00B894] text-[#00B894] hover:bg-[#00B894] hover:text-white"
                   >
-                    <Upload className="w-4 h-4 mr-2" />
+                    <Upload className="w-4 h-4" />
                     {isLoading ? 'Restoring...' : 'Restore Backup'}
                   </Button>
                 </div>
@@ -182,7 +182,7 @@ export function BackupRestoreDialog({ children }: BackupRestoreDialogProps) {
           {/* Warning */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex">
-              <Shield className="w-5 h-5 text-yellow-600 mr-2" />
+              <Shield className="w-5 h-5 text-yellow-600" />
               <div>
                 <h4 className="text-sm font-medium text-yellow-800">Important Notes</h4>
                 <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside space-y-1">

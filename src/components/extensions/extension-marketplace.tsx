@@ -475,7 +475,7 @@ export function ExtensionMarketplace({
                   onClick={() => handleInstall(extension)}
                   className="flex-1"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-4 h-4" />
                   Install
                 </Button>
                 <Button

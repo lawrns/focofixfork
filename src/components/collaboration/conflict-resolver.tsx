@@ -421,12 +421,12 @@ New Value: ${formatValue(selectedConflict.their_change.new_value)}`}
                 >
                   {isResolving ? (
                     <>
-                      <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                      <RotateCcw className="w-4 h-4 animate-spin" />
                       Resolving...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
+                      <CheckCircle className="w-4 h-4" />
                       Resolve Conflict
                     </>
                   )}

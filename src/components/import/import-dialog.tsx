@@ -203,7 +203,7 @@ export default function ImportDialog({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className={className}>
-            <Upload className="w-4 h-4 mr-2 opacity-70" />
+            <Upload className="w-4 h-4 opacity-70" />
             <span className="hidden md:inline">Import Data</span>
             <span className="md:hidden">Import</span>
           </Button>
@@ -265,7 +265,7 @@ export default function ImportDialog({
                 size="sm"
                 onClick={() => downloadTemplate(importType)}
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4" />
                 Download Template
               </Button>
             </div>
@@ -446,12 +446,12 @@ export default function ImportDialog({
               >
                 {isImporting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Importing...
                   </>
                 ) : (
                   <>
-                    <Upload className="w-4 h-4 mr-2" />
+                    <Upload className="w-4 h-4" />
                     Import Data
                   </>
                 )}

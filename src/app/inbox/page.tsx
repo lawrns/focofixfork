@@ -144,20 +144,20 @@ function InboxItem({ item, selected, onSelect }: {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem>
-            <CheckCircle2 className="h-4 w-4 mr-2" />
+            <CheckCircle2 className="h-4 w-4" />
             Mark as done
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Clock className="h-4 w-4 mr-2" />
+            <Clock className="h-4 w-4" />
             Snooze
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <ArrowRight className="h-4 w-4 mr-2" />
+            <ArrowRight className="h-4 w-4" />
             Convert to task
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-red-600">
-            <Archive className="h-4 w-4 mr-2" />
+            <Archive className="h-4 w-4" />
             Archive
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -255,7 +255,7 @@ export default function InboxPage() {
         subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You&apos;re all caught up"}
         primaryAction={
           <Button variant="outline" size="sm">
-            <CheckCircle2 className="h-4 w-4 mr-2" />
+            <CheckCircle2 className="h-4 w-4" />
             Mark all read
           </Button>
         }
@@ -284,15 +284,15 @@ export default function InboxPage() {
           </span>
           <div className="flex-1" />
           <Button variant="ghost" size="sm">
-            <CheckCircle2 className="h-4 w-4 mr-1" />
+            <CheckCircle2 className="h-4 w-4" />
             Done
           </Button>
           <Button variant="ghost" size="sm">
-            <Clock className="h-4 w-4 mr-1" />
+            <Clock className="h-4 w-4" />
             Snooze
           </Button>
           <Button variant="ghost" size="sm">
-            <Archive className="h-4 w-4 mr-1" />
+            <Archive className="h-4 w-4" />
             Archive
           </Button>
         </div>

@@ -425,7 +425,7 @@ export default function AdvancedFilterBuilder({
                     </AnimatePresence>
 
                     <Button onClick={handleAddFilter} disabled={!selectedField || !selectedOperator}>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       Add Filter
                     </Button>
                   </CardContent>
@@ -521,7 +521,7 @@ export default function AdvancedFilterBuilder({
                     </div>
 
                     <Button onClick={handleAddSort} disabled={!sortField}>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       Add Sort
                     </Button>
                   </CardContent>
@@ -537,7 +537,7 @@ export default function AdvancedFilterBuilder({
                 <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
-                      <Save className="w-4 h-4 mr-2" />
+                      <Save className="w-4 h-4" />
                       Save Filter
                     </Button>
                   </DialogTrigger>

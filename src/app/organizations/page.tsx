@@ -561,11 +561,11 @@ function OrganizationsContent() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button variant="outline" className="justify-start">
-                  <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+                  <Plus className="w-4 h-4" aria-hidden="true" />
                   Invite Team Members
                 </Button>
                 <Button variant="outline" className="justify-start">
-                  <Settings className="w-4 h-4 mr-2" aria-hidden="true" />
+                  <Settings className="w-4 h-4" aria-hidden="true" />
                   Organization Settings
                 </Button>
               </div>
@@ -594,7 +594,7 @@ function OrganizationsContent() {
 
                     {canManageMembers && (
                       <Button onClick={() => setShowInviteModal(true)}>
-                        <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+                        <Plus className="w-4 h-4" aria-hidden="true" />
                         Invite Member
                       </Button>
                     )}
@@ -668,7 +668,7 @@ function OrganizationsContent() {
                               </Badge>
                               {canManageMembers && (
                                 <Button onClick={() => setShowInviteModal(true)} size="sm">
-                                  <Mail className="w-4 h-4 mr-2" />
+                                  <Mail className="w-4 h-4" />
                                   Add Members by Email
                                 </Button>
                               )}
@@ -780,7 +780,7 @@ function OrganizationsContent() {
                                 </p>
                                 {canManageMembers && (
                                   <Button onClick={() => setShowInviteModal(true)}>
-                                    <Plus className="w-4 h-4 mr-2" />
+                                    <Plus className="w-4 h-4" />
                                     Invite Member
                                   </Button>
                                 )}
@@ -848,12 +848,12 @@ function OrganizationsContent() {
                               >
                                 {isInviting ? (
                                   <>
-                                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                                    <Clock className="w-4 h-4 animate-spin" />
                                     Sending...
                                   </>
                                 ) : (
                                   <>
-                                    <Mail className="w-4 h-4 mr-2" />
+                                    <Mail className="w-4 h-4" />
                                     Send Invitation
                                   </>
                                 )}
@@ -1033,12 +1033,12 @@ function OrganizationsContent() {
                 >
                   {isInviting ? (
                     <>
-                      <Clock className="w-4 h-4 mr-2 animate-spin" />
+                      <Clock className="w-4 h-4 animate-spin" />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Mail className="w-4 h-4 mr-2" />
+                      <Mail className="w-4 h-4" />
                       Send Invitation
                     </>
                   )}
@@ -1125,12 +1125,12 @@ function OrganizationsContent() {
                 >
                   {isCreating ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Creating...
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       Create Organization
                     </>
                   )}

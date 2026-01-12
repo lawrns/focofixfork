@@ -1026,7 +1026,7 @@ export default function ProjectTable({
                 <span className="truncate max-w-[12ch]">{String(f.value)}</span>
                 <button
                   onClick={() => setFilters(filters.filter((_, i) => i !== idx))}
-                  className="ml-1 inline-flex items-center justify-center rounded-full hover:bg-muted"
+                  className="inline-flex items-center justify-center rounded-full hover:bg-muted"
                   aria-label="Remove filter"
                 >
                   <X className="h-3 w-3" />

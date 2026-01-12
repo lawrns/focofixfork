@@ -171,12 +171,12 @@ export function OfflineIndicator({
                 >
                   {isRetrying ? (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin" />
                       Retrying...
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
+                      <RefreshCw className="w-4 h-4" />
                       Retry
                     </>
                   )}

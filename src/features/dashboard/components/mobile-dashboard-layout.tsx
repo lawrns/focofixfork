@@ -79,7 +79,7 @@ export function MobileDashboardLayout({
                     onClick={onCreateNew}
                     className="px-4 py-2 min-h-[40px]"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline">{createButtonText}</span>
                   </Button>
                 )}
@@ -173,7 +173,7 @@ export function MobileDashboardLayout({
               className="w-full py-4 text-base font-semibold min-h-[56px]"
               size="lg"
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="w-5 h-5" />
               {createButtonText}
             </Button>
           </div>
@@ -221,7 +221,7 @@ export function MobileDashboardLayout({
 
                 {onCreateNew && (
                   <Button onClick={onCreateNew}>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4" />
                     {createButtonText}
                   </Button>
                 )}

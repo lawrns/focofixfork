@@ -208,7 +208,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
                         onClick={handleMarkMultipleAsRead}
                         className="h-8 px-2 text-xs"
                       >
-                        <CheckCheck className="h-3 w-3 mr-1" />
+                        <CheckCheck className="h-3 w-3" />
                         Mark Read
                       </Button>
                     )}
@@ -230,7 +230,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
                     <TabsTrigger value="unread" className="text-sm">
                       Unread
                       {unreadCount > 0 && (
-                        <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                        <Badge variant="secondary" className="h-5 px-1.5 text-xs">
                           {unreadCount}
                         </Badge>
                       )}
@@ -324,7 +324,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
                                         handleMarkAsRead(notification.id)
                                       }}
                                     >
-                                      <Check className="mr-2 h-3 w-3" />
+                                      <Check className="h-3 w-3" />
                                       Mark as read
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
@@ -421,7 +421,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
                                         handleMarkAsRead(notification.id)
                                       }}
                                     >
-                                      <Check className="mr-2 h-3 w-3" />
+                                      <Check className="h-3 w-3" />
                                       Mark as read
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>

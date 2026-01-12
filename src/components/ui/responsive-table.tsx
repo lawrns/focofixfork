@@ -301,7 +301,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
                           onRowAction?.(row, 'view')
                         }}
                       >
-                        <Eye className="w-4 h-4 mr-1" />
+                        <Eye className="w-4 h-4" />
                         View
                       </Button>
                       <Button
@@ -312,7 +312,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
                           onRowAction?.(row, 'edit')
                         }}
                       >
-                        <Edit className="w-4 h-4 mr-1" />
+                        <Edit className="w-4 h-4" />
                         Edit
                       </Button>
                       <Button
@@ -323,7 +323,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
                           onRowAction?.(row, 'delete')
                         }}
                       >
-                        <Trash2 className="w-4 h-4 mr-1" />
+                        <Trash2 className="w-4 h-4" />
                         Delete
                       </Button>
                     </div>

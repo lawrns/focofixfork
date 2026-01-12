@@ -198,7 +198,7 @@ export function Checklist({
           disabled={disabled}
           className="w-full justify-start text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Add an item
         </Button>
       )}

@@ -44,9 +44,9 @@ export function UndoToast() {
               className="h-7 px-2 text-zinc-300 dark:text-zinc-600 hover:text-zinc-50 dark:hover:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
               onClick={() => undoAction(latestAction.id)}
             >
-              <Undo2 className="h-3.5 w-3.5 mr-1" />
+              <Undo2 className="h-3.5 w-3.5" />
               Undo
-              <span className="ml-1 text-xs opacity-60">({timeRemaining}s)</span>
+              <span className="text-xs opacity-60">({timeRemaining}s)</span>
             </Button>
             
             <Button

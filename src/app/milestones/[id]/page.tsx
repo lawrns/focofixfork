@@ -258,7 +258,7 @@ function MilestonePageContent() {
           <div className="flex items-center gap-4 mb-4">
             <Link href={`/projects/${milestone.project_id}`}>
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4" />
                 Back to Project
               </Button>
             </Link>
@@ -274,7 +274,7 @@ function MilestonePageContent() {
 
             <div className="flex gap-2">
               <Button variant="outline" size="sm" aria-label="Edit milestone">
-                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
+                <Edit className="h-4 w-4" aria-hidden="true" />
                 Edit
               </Button>
               <Button
@@ -284,7 +284,7 @@ function MilestonePageContent() {
                 onClick={handleDeleteMilestone}
                 aria-label="Delete milestone"
               >
-                <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
                 Delete
               </Button>
             </div>

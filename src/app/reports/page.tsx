@@ -102,11 +102,11 @@ function WeeklyStatusReport({ projectStatus }: { projectStatus: ProjectStatus[] 
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-1" />
+              <Download className="h-4 w-4" />
               Export
             </Button>
             <Button variant="outline" size="sm">
-              <Share2 className="h-4 w-4 mr-1" />
+              <Share2 className="h-4 w-4" />
               Share
             </Button>
           </div>
@@ -238,7 +238,7 @@ export default function ReportsPage() {
           <div className="flex items-center gap-2">
             <Select value={timeRange} onValueChange={setTimeRange}>
               <SelectTrigger className="w-[140px]">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -252,7 +252,7 @@ export default function ReportsPage() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button>
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-4 w-4" />
               {buttons.generateReport}
             </Button>
           </div>

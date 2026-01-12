@@ -273,7 +273,7 @@ export function CardDetailModal({
                   <Icon className="w-4 h-4" />
                   {label}
                   {count && count > 0 && (
-                    <Badge variant="secondary" className="ml-1 text-xs">
+                    <Badge variant="secondary" className="text-xs">
                       {count}
                     </Badge>
                   )}

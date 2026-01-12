@@ -250,7 +250,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
                           size="sm"
                           className="text-xs text-muted-foreground hover:text-foreground"
                         >
-                          <Settings className="h-3 w-3 mr-1" />
+                          <Settings className="h-3 w-3" />
                           Settings
                         </Button>
                       </div>

@@ -313,13 +313,13 @@ export default function NotificationCenter({
                 size="sm"
                 onClick={handleMarkMultipleAsRead}
               >
-                <CheckCheck className="w-4 h-4 mr-2" />
+                <CheckCheck className="w-4 h-4" />
                 Mark Read ({selectedNotifications.size})
               </Button>
             )}
 
             <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="w-4 h-4" />
               Filter
             </Button>
 
@@ -422,7 +422,7 @@ export default function NotificationCenter({
                               }}
                               className="h-6 px-2 text-xs"
                             >
-                              <Check className="w-3 h-3 mr-1" />
+                              <Check className="w-3 h-3" />
                               Mark Read
                             </Button>
                           )}
@@ -449,7 +449,7 @@ export default function NotificationCenter({
                                 }}
                                 className="w-full justify-start"
                               >
-                                <Archive className="w-3 h-3 mr-2" />
+                                <Archive className="w-3 h-3" />
                                 Archive
                               </Button>
 
@@ -462,7 +462,7 @@ export default function NotificationCenter({
                                 }}
                                 className="w-full justify-start text-destructive hover:text-destructive"
                               >
-                                <Trash2 className="w-3 h-3 mr-2" />
+                                <Trash2 className="w-3 h-3" />
                                 Dismiss
                               </Button>
                             </DropdownMenuContent>

@@ -901,7 +901,7 @@ export default function VoicePlanningWorkbench() {
                       <div className="flex items-center justify-between text-xs text-slate-500">
                         <span>{transcript.length} characters</span>
                         <Button variant="ghost" size="sm" onClick={() => setTranscript(demoBrief)}>
-                          <Lightbulb className="h-3 w-3 mr-1" />
+                          <Lightbulb className="h-3 w-3" />
                           Use example
                         </Button>
                       </div>

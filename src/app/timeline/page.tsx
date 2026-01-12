@@ -241,7 +241,7 @@ export default function TimelinePage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4" />
             Filter
           </Button>
           <Select value={view} onValueChange={(v) => setView(v as any)}>
@@ -271,7 +271,7 @@ export default function TimelinePage() {
           </Button>
         </div>
         <Button variant="outline" size="sm">
-          <Calendar className="h-4 w-4 mr-2" />
+          <Calendar className="h-4 w-4" />
           Today
         </Button>
       </div>

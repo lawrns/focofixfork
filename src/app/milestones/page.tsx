@@ -230,7 +230,7 @@ function MilestonesContent() {
                 <h1 className="text-2xl font-bold">Milestones</h1>
                 <p className="text-muted-foreground mt-1">Track and manage all your project milestones</p>
               </div>
-              <Button size="sm"><Plus className="w-4 h-4 mr-2" />New Milestone</Button>
+              <Button size="sm"><Plus className="w-4 h-4" />New Milestone</Button>
             </div>
           </CardHeader>
         </Card>
@@ -289,7 +289,7 @@ function MilestonesContent() {
               </p>
               {!searchTerm && filterStatus === 'all' && filterPriority === 'all' && (
                 <Button>
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4" />
                   Create Milestone
                 </Button>
               )}
@@ -324,12 +324,12 @@ function MilestonesContent() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link href={`/milestones/${milestone.id}`}>
-                              <Eye className="mr-2 h-4 w-4" />
+                              <Eye className="h-4 w-4" />
                               View Details
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditMilestone(milestone.id)}>
-                            <Edit className="mr-2 h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                             Edit Milestone
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -337,7 +337,7 @@ function MilestonesContent() {
                             onClick={() => handleDeleteMilestone(milestone.id)}
                             className="text-red-600 dark:text-red-400"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                             Delete Milestone
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -355,7 +355,7 @@ function MilestonesContent() {
                     {/* Status and Priority */}
                     <div className="flex items-center justify-between">
                       <Badge className={statusInfo.color}>
-                        <StatusIcon className="w-3 h-3 mr-1" />
+                        <StatusIcon className="w-3 h-3" />
                         {statusInfo.label}
                       </Badge>
 
@@ -367,7 +367,7 @@ function MilestonesContent() {
                     {/* Due Date */}
                     {milestone.due_date && (
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4 mr-2" />
+                        <Calendar className="w-4 h-4" />
                         Due {new Date(milestone.due_date).toLocaleDateString()}
                       </div>
                     )}
@@ -375,7 +375,7 @@ function MilestonesContent() {
                     {/* Assigned User */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <User className="w-4 h-4 mr-2" />
+                        <User className="w-4 h-4" />
                         <span>Assigned to</span>
                       </div>
                       <Avatar className="w-6 h-6">

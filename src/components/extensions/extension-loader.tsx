@@ -196,7 +196,7 @@ export function ExtensionLoader({
     return (
       <Card className="p-6">
         <div className="flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          <Loader2 className="w-6 h-6 animate-spin" />
           <span>Loading extensions...</span>
         </div>
       </Card>
@@ -220,7 +220,7 @@ export function ExtensionLoader({
             <label htmlFor="extension-upload">
               <Button variant="outline" size="sm" asChild>
                 <span>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className="w-4 h-4" />
                   Upload Extension
                 </span>
               </Button>
@@ -274,12 +274,12 @@ export function ExtensionLoader({
                   <div className="flex items-center gap-2">
                     {extensionManager.isEnabled(extension.id) ? (
                       <Badge variant="default" className="bg-green-500">
-                        <CheckCircle className="w-3 h-3 mr-1" />
+                        <CheckCircle className="w-3 h-3" />
                         Enabled
                       </Badge>
                     ) : (
                       <Badge variant="secondary">
-                        <Pause className="w-3 h-3 mr-1" />
+                        <Pause className="w-3 h-3" />
                         Disabled
                       </Badge>
                     )}
@@ -294,12 +294,12 @@ export function ExtensionLoader({
                   >
                     {extensionManager.isEnabled(extension.id) ? (
                       <>
-                        <Pause className="w-4 h-4 mr-2" />
+                        <Pause className="w-4 h-4" />
                         Disable
                       </>
                     ) : (
                       <>
-                        <Play className="w-4 h-4 mr-2" />
+                        <Play className="w-4 h-4" />
                         Enable
                       </>
                     )}

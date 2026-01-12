@@ -301,7 +301,7 @@ export function SetupWizard({ isOpen, onClose, onComplete }: SetupWizardProps) {
               onClick={addInviteEmail}
               className="w-full"
             >
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus className="w-4 h-4" />
               Add Another Email
             </Button>
             
@@ -431,7 +431,7 @@ export function SetupWizard({ isOpen, onClose, onComplete }: SetupWizardProps) {
             onClick={handlePrevious}
             disabled={currentStep === 0}
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
+            <ChevronLeft className="w-4 h-4" />
             Previous
           </Button>
           
@@ -445,7 +445,7 @@ export function SetupWizard({ isOpen, onClose, onComplete }: SetupWizardProps) {
             >
               {currentStep === totalSteps - 1 ? 'Complete Setup' : 'Next'}
               {currentStep < totalSteps - 1 && (
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className="w-4 h-4" />
               )}
             </Button>
           </div>

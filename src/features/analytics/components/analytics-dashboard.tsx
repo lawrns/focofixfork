@@ -200,7 +200,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
             </SelectContent>
           </Select>
           <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4" />
             Export Report
           </Button>
         </div>

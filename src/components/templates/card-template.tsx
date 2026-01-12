@@ -237,7 +237,7 @@ export function CardTemplateSelector({ onApplyTemplate, className }: CardTemplat
                         </h3>
                         <Badge className={getCategoryColor(template.category)}>
                           {getCategoryIcon(template.category)}
-                          <span className="ml-1 capitalize">{template.category}</span>
+                          <span className="capitalize">{template.category}</span>
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">

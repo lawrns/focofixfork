@@ -47,14 +47,8 @@ export async function POST(
       );
     }
 
-    // Now we know type exists, create proper pattern
-    const pattern: RecurrencePattern = {
-      type: patternData.type,
-      interval: patternData.interval,
-      daysOfWeek: patternData.daysOfWeek,
-      endAfter: patternData.endAfter,
-      endsNever: patternData.endsNever,
-    };
+    // Now we know type exists, assert as valid pattern
+    const pattern = patternData as RecurrencePattern;
 
     if (!shouldCreateNextInstance(pattern, new Date(), occurrenceCount)) {
       return NextResponse.json(

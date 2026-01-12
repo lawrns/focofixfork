@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,10 @@ import {
   EyeOff,
   AlertTriangle
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useSyncStatus } from '@/lib/hooks/useSyncStatus'
+import { SyncIndicator } from '@/components/ui/sync-indicator'
 import { RoleManagement } from './role-management'
 import { ExportDialog } from '@/components/deprecation/ExportDialog'
 
@@ -75,6 +78,11 @@ export function SettingsDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // Auto-save sync status tracking
+  const userSyncStatus = useSyncStatus({ syncedResetMs: 2000, errorResetMs: 4000 })
+  const orgSyncStatus = useSyncStatus({ syncedResetMs: 2000, errorResetMs: 4000 })
+  const autoSaveDebounceRef = useRef<NodeJS.Timeout | null>(null)
+
   const loadSettings = useCallback(async () => {
     if (!user) return
 
@@ -103,6 +111,94 @@ export function SettingsDashboard() {
   useEffect(() => {
     loadSettings()
   }, [loadSettings])
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveDebounceRef.current) {
+        clearTimeout(autoSaveDebounceRef.current)
+      }
+    }
+  }, [])
+
+  // Auto-save user settings with debouncing
+  useEffect(() => {
+    if (autoSaveDebounceRef.current) {
+      clearTimeout(autoSaveDebounceRef.current)
+    }
+
+    autoSaveDebounceRef.current = setTimeout(() => {
+      performSaveUserSettings()
+    }, 500) // 500ms debounce
+
+    return () => {
+      if (autoSaveDebounceRef.current) {
+        clearTimeout(autoSaveDebounceRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userSettings])
+
+  const performSaveUserSettings = async () => {
+    if (!user) return
+
+    userSyncStatus.startSync()
+    try {
+      console.log('[Settings] Auto-saving user settings:', {
+        full_name: user.user_metadata?.full_name || user.email,
+        timezone: userSettings.timezone,
+        language: userSettings.language
+      })
+
+      const response = await fetch('/api/user/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: user.user_metadata?.full_name || user.email,
+          timezone: userSettings.timezone,
+          language: userSettings.language
+        })
+      })
+
+      const responseData = await response.json()
+      console.log('[Settings] Profile update response:', response.status, responseData)
+
+      if (!response.ok) {
+        console.error('[Settings] Profile update failed:', response.status, responseData)
+        throw new Error(responseData.error || 'Failed to save settings')
+      }
+
+      console.log('[Settings] Profile updated successfully')
+
+      // Also save notification settings
+      const notifResponse = await fetch('/api/user/settings/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email_notifications: userSettings.emailNotifications,
+          push_notifications: userSettings.pushNotifications,
+          weekly_reports: userSettings.weeklyReports,
+          marketing_emails: userSettings.marketingEmails
+        })
+      })
+
+      if (!notifResponse.ok) {
+        throw new Error('Failed to save notification settings')
+      }
+
+      userSyncStatus.completeSync()
+    } catch (error) {
+      console.error('[Settings] Error saving user settings:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save settings'
+      userSyncStatus.setSyncError(errorMessage)
+      toast.error(errorMessage, {
+        action: {
+          label: 'Retry',
+          onClick: () => performSaveUserSettings()
+        }
+      })
+    }
+  }
 
   const saveUserSettings = async () => {
     if (!user) return
@@ -146,15 +242,19 @@ export function SettingsDashboard() {
           marketing_emails: userSettings.marketingEmails
         })
       })
+
+      toast.success('Settings saved successfully')
     } catch (error) {
       console.error('[Settings] Error saving user settings:', error)
-      alert('Failed to save settings: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      toast.error('Failed to save settings: ' + errorMessage)
     } finally {
       setSaving(false)
     }
   }
 
   const saveOrgSettings = async () => {
+    orgSyncStatus.startSync()
     setSaving(true)
     try {
       // Get organization ID first
@@ -176,8 +276,18 @@ export function SettingsDashboard() {
       })
 
       if (!response.ok) throw new Error('Failed to save organization settings')
+      orgSyncStatus.completeSync()
+      toast.success('Organization settings saved')
     } catch (error) {
       console.error('Error saving organization settings:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save settings'
+      orgSyncStatus.setSyncError(errorMessage)
+      toast.error(errorMessage, {
+        action: {
+          label: 'Retry',
+          onClick: () => saveOrgSettings()
+        }
+      })
     } finally {
       setSaving(false)
     }
@@ -239,10 +349,20 @@ export function SettingsDashboard() {
         <TabsContent value="profile" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your personal information and preferences.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>
+                    Update your personal information and preferences.
+                  </CardDescription>
+                </div>
+                <SyncIndicator
+                  status={userSyncStatus.syncStatus}
+                  errorMessage={userSyncStatus.syncErrorMessage}
+                  showLabel
+                  compact={false}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -317,10 +437,20 @@ export function SettingsDashboard() {
         <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Choose how you want to be notified about project updates and activities.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Notification Preferences</CardTitle>
+                  <CardDescription>
+                    Choose how you want to be notified about project updates and activities.
+                  </CardDescription>
+                </div>
+                <SyncIndicator
+                  status={userSyncStatus.syncStatus}
+                  errorMessage={userSyncStatus.syncErrorMessage}
+                  showLabel
+                  compact={false}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -404,10 +534,20 @@ export function SettingsDashboard() {
         <TabsContent value="appearance" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Appearance Settings</CardTitle>
-              <CardDescription>
-                Customize how Foco looks and feels for you.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Appearance Settings</CardTitle>
+                  <CardDescription>
+                    Customize how Foco looks and feels for you.
+                  </CardDescription>
+                </div>
+                <SyncIndicator
+                  status={userSyncStatus.syncStatus}
+                  errorMessage={userSyncStatus.syncErrorMessage}
+                  showLabel
+                  compact={false}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -442,10 +582,20 @@ export function SettingsDashboard() {
         <TabsContent value="organization" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Organization Settings</CardTitle>
-              <CardDescription>
-                Manage your organization&apos;s settings and preferences.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Organization Settings</CardTitle>
+                  <CardDescription>
+                    Manage your organization&apos;s settings and preferences.
+                  </CardDescription>
+                </div>
+                <SyncIndicator
+                  status={orgSyncStatus.syncStatus}
+                  errorMessage={orgSyncStatus.syncErrorMessage}
+                  showLabel
+                  compact={false}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

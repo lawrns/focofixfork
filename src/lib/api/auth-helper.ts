@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 
@@ -11,24 +11,28 @@ export interface AuthResult {
 
 /**
  * Get authenticated user from request
- * Creates Supabase client with user's cookies
+ * Creates Supabase server client with proper cookie handling
  */
 export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
   const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   
-  // Get auth token from cookie
-  const authToken = cookieStore.get('sb-access-token')?.value || 
-                    cookieStore.get('sb-ouvqnyfqipgnrjnuqsqq-auth-token')?.value
-  
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: authToken ? {
-        Authorization: `Bearer ${authToken}`
-      } : {}
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
     }
-  })
+  )
   
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) {

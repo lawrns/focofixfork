@@ -75,9 +75,9 @@ export const useUIPreferencesStore = create<UIPreferencesState>()(
 // ============================================================================
 interface CommandPaletteState {
   isOpen: boolean;
-  mode: 'search' | 'create' | 'navigate';
+  mode: 'search' | 'create' | 'navigate' | 'create-project' | 'create-doc' | 'import';
   query: string;
-  open: (mode?: 'search' | 'create' | 'navigate') => void;
+  open: (mode?: 'search' | 'create' | 'navigate' | 'create-project' | 'create-doc' | 'import') => void;
   close: () => void;
   setQuery: (query: string) => void;
   toggle: () => void;

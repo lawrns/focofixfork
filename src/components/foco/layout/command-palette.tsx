@@ -158,7 +158,13 @@ export function CommandPalette() {
           <Search className="h-4 w-4 text-zinc-400" />
           <input
             type="text"
-            placeholder={mode === 'create' ? 'Create...' : 'Type a command or search...'}
+            placeholder={
+              mode === 'create' ? 'Create task...' :
+              mode === 'create-project' ? 'Create project...' :
+              mode === 'create-doc' ? 'Create doc...' :
+              mode === 'import' ? 'Import...' :
+              'Type a command or search...'
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 px-3 py-4 bg-transparent text-sm outline-none placeholder:text-zinc-400"

@@ -326,7 +326,7 @@ export class NotificationModel {
     }
 
     const now = new Date()
-    const currentTime = now.getHours() * 100 + now.getMinutes()
+    const currentTime = now.getHours() * 60 + now.getMinutes()
 
     const startTime = this.timeStringToMinutes(preferences.quiet_hours_start)
     const endTime = this.timeStringToMinutes(preferences.quiet_hours_end)

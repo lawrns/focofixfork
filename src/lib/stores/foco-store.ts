@@ -217,43 +217,88 @@ export const useUndoStore = create<UndoState>((set, get) => ({
 }));
 
 // ============================================================================
-// FOCUS MODE STORE
+// FOCUS MODE STORE (Persisted)
 // ============================================================================
 interface FocusModeState {
   isActive: boolean;
   currentWorkItem: WorkItem | null;
   timerStartedAt: number | null;
   timerDuration: number; // in seconds
+  isTimerRunning: boolean;
   activate: (workItem: WorkItem) => void;
   deactivate: () => void;
   startTimer: () => void;
   stopTimer: () => void;
+  getElapsedSeconds: () => number;
+  completeAndSave: (onComplete?: (taskId: string, duration: number) => Promise<void>) => Promise<void>;
 }
 
-export const useFocusModeStore = create<FocusModeState>((set) => ({
-  isActive: false,
-  currentWorkItem: null,
-  timerStartedAt: null,
-  timerDuration: 0,
-  activate: (workItem) => set({ 
-    isActive: true, 
-    currentWorkItem: workItem,
-    timerStartedAt: null,
-    timerDuration: 0,
-  }),
-  deactivate: () => set({ 
-    isActive: false, 
-    currentWorkItem: null,
-    timerStartedAt: null,
-  }),
-  startTimer: () => set({ timerStartedAt: Date.now() }),
-  stopTimer: () => set((state) => ({
-    timerStartedAt: null,
-    timerDuration: state.timerStartedAt 
-      ? state.timerDuration + Math.floor((Date.now() - state.timerStartedAt) / 1000)
-      : state.timerDuration,
-  })),
-}));
+export const useFocusModeStore = create<FocusModeState>()(
+  persist(
+    (set, get) => ({
+      isActive: false,
+      currentWorkItem: null,
+      timerStartedAt: null,
+      timerDuration: 0,
+      isTimerRunning: false,
+      activate: (workItem) => set({
+        isActive: true,
+        currentWorkItem: workItem,
+        timerStartedAt: null,
+        timerDuration: 0,
+        isTimerRunning: false,
+      }),
+      deactivate: () => set({
+        isActive: false,
+        currentWorkItem: null,
+        timerStartedAt: null,
+        timerDuration: 0,
+        isTimerRunning: false,
+      }),
+      startTimer: () => set({
+        timerStartedAt: Date.now(),
+        isTimerRunning: true,
+      }),
+      stopTimer: () => set((state) => ({
+        timerStartedAt: null,
+        isTimerRunning: false,
+        timerDuration: state.timerStartedAt
+          ? state.timerDuration + Math.floor((Date.now() - state.timerStartedAt) / 1000)
+          : state.timerDuration,
+      })),
+      getElapsedSeconds: () => {
+        const state = get();
+        let elapsed = state.timerDuration;
+        if (state.timerStartedAt && state.isTimerRunning) {
+          elapsed += Math.floor((Date.now() - state.timerStartedAt) / 1000);
+        }
+        return elapsed;
+      },
+      completeAndSave: async (onComplete) => {
+        const state = get();
+
+        // Stop timer and calculate final duration
+        if (state.timerStartedAt && state.isTimerRunning) {
+          get().stopTimer();
+        }
+
+        const finalDuration = get().timerDuration;
+        const taskId = state.currentWorkItem?.id;
+
+        // Save to database if callback provided
+        if (onComplete && taskId) {
+          await onComplete(taskId, finalDuration);
+        }
+
+        // Deactivate focus mode
+        get().deactivate();
+      },
+    }),
+    {
+      name: 'foco-focus-mode',
+    }
+  )
+);
 
 // ============================================================================
 // PRESENCE STORE (Real-time collaboration)

@@ -4,6 +4,7 @@ import { useCommandPaletteStore, useInboxStore, useUIPreferencesStore } from '@/
 import { useKeyboardShortcutsModalStore } from '@/lib/hooks/use-keyboard-shortcuts-modal';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { Breadcrumbs } from '@/components/navigation/breadcrumbs';
 import {
   Search,
   Bell,
@@ -67,28 +68,20 @@ export function TopBar({ className }: TopBarProps) {
     <header
       className={cn(
         'fixed top-0 right-0 z-20 h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
-        'flex items-center justify-between px-4 gap-4',
+        'flex items-center px-4 gap-4',
         'transition-all duration-200',
         'left-0 md:left-64',
         sidebarCollapsed && 'md:left-16',
         className
       )}
     >
-      {/* Search */}
-      <Button
-        variant="outline"
-        className="flex-1 max-w-md justify-start text-zinc-500 dark:text-zinc-400 h-9"
-        onClick={() => openCommandPalette('search')}
-      >
-        <Search className="h-4 w-4" />
-        <span className="text-sm">Search or jump to...</span>
-        <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700">
-          ⌘K
-        </kbd>
-      </Button>
+      {/* Breadcrumbs - Hidden on mobile */}
+      <div className="hidden md:flex md:flex-1 md:min-w-0">
+        <Breadcrumbs className="text-xs" />
+      </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 ml-auto">
         {/* Quick Create */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

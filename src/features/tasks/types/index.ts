@@ -16,6 +16,11 @@ export interface Task {
   created_by: string;
   created_at: string;
   updated_at: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: any;
+  parent_recurring_task_id?: string;
+  occurrence_number?: number;
+  next_occurrence_date?: string;
 }
 
 export interface CreateTaskData {

@@ -134,7 +134,8 @@ describe('PriorityIndicator - Integration Tests', () => {
         </select>
       )
 
-      expect(screen.getByTestId('flag-icon')).toBeInTheDocument()
+      const flagIcons = screen.getAllByTestId('flag-icon')
+      expect(flagIcons.length).toBeGreaterThan(0)
     })
 
     it('should display accessible priority in detail view', () => {

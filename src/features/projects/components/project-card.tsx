@@ -12,7 +12,8 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  Star
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -82,12 +83,15 @@ export function ProjectCard({
   project,
   onEdit,
   onDelete,
+  onPin,
   showActions = true
 }: ProjectCardProps) {
   const [currentProject, setCurrentProject] = useState(project)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdated, setIsUpdated] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isPinning, setIsPinning] = useState(false)
+  const [isPinned, setIsPinned] = useState(project.is_pinned ?? false)
 
   // Real-time updates for this project
   useRealtime(
@@ -110,6 +114,7 @@ export function ProjectCard({
   // Update local state when prop changes
   useEffect(() => {
     setCurrentProject(project)
+    setIsPinned(project.is_pinned ?? false)
   }, [project])
 
   const formatDate = (dateString: string | null) => {
@@ -128,6 +133,34 @@ export function ProjectCard({
       console.error('Failed to delete project:', error)
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handlePin = async () => {
+    setIsPinning(true)
+
+    try {
+      const method = isPinned ? 'DELETE' : 'POST'
+      const response = await fetch(`/api/projects/${currentProject.id}/pin`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update pin status')
+      }
+
+      const newPinnedState = !isPinned
+      setIsPinned(newPinnedState)
+
+      if (onPin) {
+        onPin(currentProject.id, newPinnedState)
+      }
+    } catch (error) {
+      console.error('Failed to update pin status:', error)
+      setIsPinned(!isPinned)
+    } finally {
+      setIsPinning(false)
     }
   }
 
@@ -172,39 +205,57 @@ export function ProjectCard({
             </div>
 
           {showActions && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href={`/projects/${currentProject.id}`}>
-                    <Eye className="h-4 w-4" />
-                    View Details
-                  </Link>
-                </DropdownMenuItem>
-                {onEdit && (
-                  <DropdownMenuItem onClick={() => onEdit(currentProject.id)}>
-                    <Edit className="h-4 w-4" />
-                    Edit Project
+            <div className="flex items-center gap-2 ml-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handlePin}
+                disabled={isPinning}
+                title={isPinned ? 'Unpin' : 'Pin to top'}
+                aria-label={isPinned ? 'Unpin' : 'Pin to top'}
+              >
+                <Star
+                  className="h-4 w-4"
+                  fill={isPinned ? 'currentColor' : 'none'}
+                />
+                <span className="sr-only">{isPinned ? 'Unpin' : 'Pin to top'}</span>
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/projects/${currentProject.id}`}>
+                      <Eye className="h-4 w-4" />
+                      View Details
+                    </Link>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {onDelete && (
-                  <DropdownMenuItem
-                    onClick={() => setShowDeleteDialog(true)}
-                    disabled={isDeleting}
-                    className="text-red-600 dark:text-red-400"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {isDeleting ? 'Deleting...' : 'Delete Project'}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {onEdit && (
+                    <DropdownMenuItem onClick={() => onEdit(currentProject.id)}>
+                      <Edit className="h-4 w-4" />
+                      Edit Project
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  {onDelete && (
+                    <DropdownMenuItem
+                      onClick={() => setShowDeleteDialog(true)}
+                      disabled={isDeleting}
+                      className="text-red-600 dark:text-red-400"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {isDeleting ? 'Deleting...' : 'Delete Project'}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </CardHeader>

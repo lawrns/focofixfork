@@ -203,6 +203,13 @@ vi.mock('lucide-react', () => ({
   Plug: () => <svg data-testid="plug-icon" />,
   CreditCard: () => <svg data-testid="credit-card-icon" />,
   ChevronRight: () => <svg data-testid="chevron-right-icon" />,
+  AtSign: () => <svg data-testid="at-sign-icon" />,
+  CheckCircle2: () => <svg data-testid="check-circle-2-icon" />,
+  MoreHorizontal: () => <svg data-testid="more-horizontal-icon" />,
+  MessageSquare: () => <svg data-testid="message-square-icon" />,
+  Archive: () => <svg data-testid="archive-icon" />,
+  Inbox: () => <svg data-testid="inbox-icon" />,
+  Filter: () => <svg data-testid="filter-icon" />,
 }));
 
 // Custom test utilities

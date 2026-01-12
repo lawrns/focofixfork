@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/hooks/use-auth'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
+  slug: z.string().min(1, 'Slug is required').max(100, 'Slug must be less than 100 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   organization_id: z.string().min(1, 'Organization is required'),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
@@ -44,6 +45,10 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [slugError, setSlugError] = useState<string | null>(null)
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false)
+  const [isSlugAvailable, setIsSlugAvailable] = useState<boolean | null>(null)
+  const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false)
 
   const {
     register,
@@ -55,6 +60,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name: project?.name || '',
+      slug: '',
       description: project?.description || '',
       organization_id: project?.organization_id || organizations[0]?.id || '',
       status: project?.status || 'planning',
@@ -65,11 +71,84 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
     },
   })
 
+  const watchedName = watch('name')
+  const watchedSlug = watch('slug')
   const watchedStatus = watch('status')
   const watchedPriority = watch('priority')
   const watchedOrganizationId = watch('organization_id')
 
   const isEditing = !!project?.id
+
+  // Helper function to generate slug from name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+  }
+
+  // Auto-generate slug from name if not manually edited
+  useEffect(() => {
+    if (watchedName && !hasManuallyEditedSlug && !isEditing) {
+      const generatedSlug = generateSlug(watchedName)
+      setValue('slug', generatedSlug)
+    }
+  }, [watchedName, hasManuallyEditedSlug, isEditing, setValue])
+
+  // Debounced slug uniqueness check
+  useEffect(() => {
+    if (!watchedSlug || isEditing) {
+      return
+    }
+
+    const abortController = new AbortController()
+    const timeoutId = setTimeout(async () => {
+      setIsCheckingSlug(true)
+      setSlugError(null)
+      setIsSlugAvailable(null)
+
+      try {
+        const response = await fetch('/api/projects/check-slug', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            slug: watchedSlug,
+            workspace_id: watchedOrganizationId,
+            project_id: project?.id,
+          }),
+          signal: abortController.signal,
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to check slug')
+        }
+
+        setIsSlugAvailable(data.available)
+        if (!data.available) {
+          setSlugError('Slug already taken')
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Slug check error:', err)
+          // Don't block form submission on check error
+          setIsSlugAvailable(true)
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setIsCheckingSlug(false)
+        }
+      }
+    }, 500) // 500ms debounce
+
+    return () => {
+      clearTimeout(timeoutId)
+      abortController.abort()
+    }
+  }, [watchedSlug, watchedOrganizationId, isEditing, project?.id])
 
   const onSubmit = async (data: any) => {
     if (!user) return
@@ -81,12 +160,19 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
       const url = isEditing ? `/api/projects/${project.id}` : '/api/projects'
       const method = isEditing ? 'PUT' : 'POST'
 
+      // Map organization_id to workspace_id for API
+      const payload = {
+        ...data,
+        workspace_id: data.organization_id,
+      }
+      delete payload.organization_id
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -132,6 +218,41 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
                 {errors.name.message}
               </p>
             )}
+          </div>
+
+          {/* Slug */}
+          <div className="space-y-2">
+            <Label htmlFor="slug">
+              Slug *
+              {isCheckingSlug && (
+                <span className="ml-2 text-xs text-gray-500">Checking availability...</span>
+              )}
+              {isSlugAvailable === true && !isCheckingSlug && (
+                <span className="ml-2 text-xs text-green-600">Available</span>
+              )}
+            </Label>
+            <Input
+              id="slug"
+              {...register('slug', {
+                onChange: () => setHasManuallyEditedSlug(true)
+              })}
+              placeholder="project-slug"
+              disabled={isSubmitting || isEditing}
+              className={slugError ? 'border-red-500' : ''}
+            />
+            {slugError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {slugError}
+              </p>
+            )}
+            {errors.slug && !slugError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {errors.slug.message}
+              </p>
+            )}
+            <p className="text-xs text-gray-500">
+              This will be used in the project URL. Only lowercase letters, numbers, and hyphens.
+            </p>
           </div>
 
           {/* Description */}
@@ -277,7 +398,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCheckingSlug || isSlugAvailable === false}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEditing ? 'Update Project' : 'Create Project'}

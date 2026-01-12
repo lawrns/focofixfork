@@ -52,13 +52,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await req.json()
-    
+
     // Validate required fields
     if (!body.name) {
       return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
@@ -70,6 +70,24 @@ export async function POST(req: NextRequest) {
 
     // Generate slug from name if not provided
     const slug = body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+    // Check if slug already exists in workspace
+    const { data: existingProject, error: checkError } = await supabase
+      .from('foco_projects')
+      .select('id')
+      .eq('workspace_id', body.workspace_id)
+      .eq('slug', slug)
+      .limit(1)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Slug check error:', checkError)
+      return NextResponse.json({ success: false, error: checkError.message }, { status: 500 })
+    }
+
+    if (existingProject) {
+      return NextResponse.json({ success: false, error: 'Slug already exists' }, { status: 409 })
+    }
 
     const projectData = {
       name: body.name,
@@ -91,6 +109,10 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Project create error:', insertError)
+      // Handle unique constraint violation
+      if (insertError.code === '23505') {
+        return NextResponse.json({ success: false, error: 'Slug already exists' }, { status: 409 })
+      }
       return NextResponse.json({ success: false, error: insertError.message }, { status: 500 })
     }
 

@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import Image from 'next/image'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   Home,
   Inbox,
@@ -16,15 +15,11 @@ import {
   Folder,
   Users,
   Settings,
-  Sun,
-  Moon
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
-import { useProjects } from '@/features/projects/hooks/useProjects'
 import { useTranslation } from '@/lib/i18n/context'
-import { apiCache } from '@/lib/api-cache'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 interface Project {
@@ -51,135 +46,71 @@ export default function Sidebar() {
   const [projectsExpanded, setProjectsExpanded] = useState(true)
   const [loading, setLoading] = useState(true)
   const [primaryOrgId, setPrimaryOrgId] = useState<string | null>(null)
-  const lastFetchTime = useRef<number>(0)
   const hasMounted = useRef(false)
   const lastRealtimeUpdate = useRef<number>(Date.now())
-  
+
   const navigation = getNavigation(t)
 
-  const fetchProjects = useCallback(async (forceRefresh = false) => {
-    if (!user) return
-
-    // Debounce rapid successive calls
-    const now = Date.now()
-    if (!forceRefresh && lastFetchTime.current && (now - lastFetchTime.current) < 1000) {
-      return
-    }
-    lastFetchTime.current = now
-
-    // Check cache first
-    const cacheKey = `sidebar-projects-${user.id}`
-    if (!forceRefresh) {
-      const cachedProjects = apiCache.get<Project[]>(cacheKey)
-      if (cachedProjects) {
-        projectStore.setProjects(cachedProjects)
-        setProjects(cachedProjects)
-        setLoading(false)
-        return
-      }
-    }
-
-    try {
-      const response = await fetch(`/api/projects?t=${Date.now()}`, {
-        cache: 'no-cache',
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-
-        // Handle different API response formats
-        let projectsData: Project[] = []
-        if (data.success && data.data && Array.isArray(data.data.data)) {
-          projectsData = data.data.data
-        } else if (data.success && Array.isArray(data.data)) {
-          projectsData = data.data
-        } else if (Array.isArray(data.data)) {
-          projectsData = data.data
-        } else if (Array.isArray(data)) {
-          projectsData = data
-        }
-
-        // Cache the results
-        apiCache.set(cacheKey, projectsData, 30000)
-
-        projectStore.setProjects(projectsData)
-        setProjects(projectsData)
-      } else {
-        projectStore.setProjects([])
-        setProjects([])
-      }
-    } catch (error) {
-      projectStore.setProjects([])
-      setProjects([])
-    } finally {
-      setLoading(false)
-    }
-  }, [user?.id])
-
-  // Single consolidated useEffect for all project fetching logic
+  // Initialize projects from store on mount
   useEffect(() => {
     if (!user || hasMounted.current) return
-    
+
     hasMounted.current = true
-    fetchProjects(true) // Force refresh on mount
+    setLoading(true)
+
+    // Refresh projects via store
+    projectStore.refreshProjects().finally(() => {
+      setLoading(false)
+    })
 
     // Set up event listeners for updates
     const handleProjectDeleted = () => {
-      fetchProjects(true)
-    }
-
-    const handleProjectUpdated = () => {
-      const latestProjects = projectStore.getProjects()
-      setProjects(latestProjects)
+      projectStore.refreshProjects()
     }
 
     const handleForceProjectRefresh = () => {
-      fetchProjects(true)
+      projectStore.refreshProjects()
     }
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        fetchProjects(true)
+        projectStore.refreshProjects()
       }
     }
 
     const handleFocus = () => {
-      fetchProjects(true)
+      projectStore.refreshProjects()
     }
 
     window.addEventListener('projectDeleted', handleProjectDeleted)
-    window.addEventListener('projectUpdated', handleProjectUpdated)
     window.addEventListener('forceProjectRefresh', handleForceProjectRefresh)
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
 
     return () => {
       window.removeEventListener('projectDeleted', handleProjectDeleted)
-      window.removeEventListener('projectUpdated', handleProjectUpdated)
       window.removeEventListener('forceProjectRefresh', handleForceProjectRefresh)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [user?.id, fetchProjects])
+  }, [user])
 
   // Fallback: If no real-time updates received in 5 minutes, force refresh
   useEffect(() => {
     if (!user) return
-    
+
     const interval = setInterval(() => {
       const now = Date.now()
       const timeSinceLastUpdate = now - lastRealtimeUpdate.current
 
       if (timeSinceLastUpdate > 300000) { // 5 minutes (300000ms)
-        fetchProjects(true) // Force refresh
+        projectStore.refreshProjects()
         lastRealtimeUpdate.current = now // Reset timer
       }
     }, 60000) // Check every 60 seconds
 
     return () => clearInterval(interval)
-  }, [user?.id, fetchProjects])
-
-  // Don't auto-refresh on auth changes - rely on store subscription
+  }, [user])
 
   // Fetch user's primary organization ID
   useEffect(() => {

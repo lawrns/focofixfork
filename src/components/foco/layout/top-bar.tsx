@@ -5,6 +5,7 @@ import { useKeyboardShortcutsModalStore } from '@/lib/hooks/use-keyboard-shortcu
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/navigation/breadcrumbs';
+import { useMobile } from '@/lib/hooks/use-mobile';
 import {
   Search,
   Bell,
@@ -50,6 +51,7 @@ export function TopBar({ className }: TopBarProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [workspace, setWorkspace] = useState<any>(null);
+  const isMobile = useMobile();
 
   useEffect(() => {
     if (user) {
@@ -67,11 +69,12 @@ export function TopBar({ className }: TopBarProps) {
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 z-20 h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
-        'flex items-center px-4 gap-4',
+        'fixed top-0 right-0 z-20 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
+        'flex items-center gap-2 md:gap-4',
         'transition-all duration-200',
         'left-0 md:left-64',
         sidebarCollapsed && 'md:left-16',
+        'h-12 md:h-14 px-2 md:px-4',
         className
       )}
     >
@@ -80,15 +83,42 @@ export function TopBar({ className }: TopBarProps) {
         <Breadcrumbs className="text-xs" />
       </div>
 
+      {/* Search Bar - Icon button on mobile, full search on desktop */}
+      <div className="flex items-center gap-2 flex-1 md:flex-none md:max-w-xs">
+        {/* Mobile: Search icon button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => openCommandPalette('search')}
+          className="md:hidden h-9 w-9 min-h-[44px] min-w-[44px]"
+          aria-label="Search"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+        
+        {/* Desktop: Full search bar */}
+        <Button
+          variant="outline"
+          onClick={() => openCommandPalette('search')}
+          className="hidden md:flex items-center gap-2 h-9 px-3 flex-1 max-w-xs text-sm text-muted-foreground"
+        >
+          <Search className="h-4 w-4" />
+          <span className="hidden lg:inline">Search...</span>
+          <kbd className="ml-auto hidden lg:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </Button>
+      </div>
+
       {/* Right Actions */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-1 md:gap-2 ml-auto">
         {/* Quick Create */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default" size="sm" className="h-9">
+            <Button variant="default" size="sm" className="h-9 min-h-[44px] px-2 md:px-3">
               <Plus className="h-4 w-4" />
-              Create
-              <ChevronDown className="h-3 w-3 opacity-60" />
+              <span className="hidden md:inline">Create</span>
+              <ChevronDown className="h-3 w-3 opacity-60 hidden md:inline" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -112,7 +142,7 @@ export function TopBar({ className }: TopBarProps) {
         </DropdownMenu>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 min-h-[44px] min-w-[44px]">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <Badge
@@ -128,12 +158,12 @@ export function TopBar({ className }: TopBarProps) {
         {workspace && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 px-2 gap-2">
-                <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <Button variant="ghost" size="sm" className="h-9 min-h-[44px] px-1 md:px-2 gap-1 md:gap-2">
+                <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
                   <span className="text-[10px] font-bold text-white">{workspace.name.substring(0, 2).toUpperCase()}</span>
                 </div>
-                <span className="text-sm font-medium hidden sm:inline">{workspace.name}</span>
-                <ChevronDown className="h-3 w-3 opacity-60" />
+                <span className="text-sm font-medium hidden lg:inline">{workspace.name}</span>
+                <ChevronDown className="h-3 w-3 opacity-60 hidden md:inline" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -156,9 +186,9 @@ export function TopBar({ className }: TopBarProps) {
         {/* Sign In Button - Only show if not authenticated */}
         {!user && (
           <Link href="/login">
-            <Button variant="default" size="sm" className="h-9">
+            <Button variant="default" size="sm" className="h-9 min-h-[44px] px-2 md:px-3">
               <LogIn className="h-4 w-4" />
-              Sign in
+              <span className="hidden md:inline">Sign in</span>
             </Button>
           </Link>
         )}
@@ -167,7 +197,7 @@ export function TopBar({ className }: TopBarProps) {
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Button variant="ghost" size="icon" className="h-9 w-9 min-h-[44px] min-w-[44px]">
               <Avatar className="h-7 w-7">
                 <AvatarImage src="/images/avatar.jpg" />
                 <AvatarFallback className="text-xs">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>

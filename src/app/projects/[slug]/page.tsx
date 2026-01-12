@@ -7,6 +7,7 @@ import { useRecentItems } from '@/hooks/useRecentItems';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useMobile } from '@/lib/hooks/use-mobile';
 import {
   LayoutGrid,
   List,
@@ -80,60 +81,60 @@ function WorkItemCard({ item }: { item: WorkItem }) {
     <Link
       href={`/tasks/${item.id}`}
       className={cn(
-        'block p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
+        'block p-2 md:p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all',
-        'group cursor-pointer'
+        'group cursor-pointer min-h-[44px]'
       )}
     >
-      <div className="flex items-start gap-2">
-        <GripVertical className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100 mt-0.5 cursor-grab" />
+      <div className="flex items-start gap-1.5 md:gap-2">
+        <GripVertical className="h-3.5 w-3.5 md:h-4 md:w-4 text-zinc-300 opacity-0 group-hover:opacity-100 mt-0.5 cursor-grab shrink-0" />
         <div className="flex-1 min-w-0">
           {/* Title & Type */}
-          <div className="flex items-start gap-2 mb-2">
-            <div className={cn('h-2 w-2 rounded-full mt-1.5 shrink-0', priorityColors[item.priority])} />
-            <span className="font-medium text-sm text-zinc-900 dark:text-zinc-50 line-clamp-2">
+          <div className="flex items-start gap-1.5 md:gap-2 mb-1.5 md:mb-2">
+            <div className={cn('h-1.5 w-1.5 md:h-2 md:w-2 rounded-full mt-1.5 shrink-0', priorityColors[item.priority])} />
+            <span className="font-medium text-xs md:text-sm text-zinc-900 dark:text-zinc-50 line-clamp-2">
               {item.title}
             </span>
           </div>
           
           {/* Labels */}
-          <div className="flex items-center gap-1.5 mb-2">
+          <div className="flex items-center gap-1 md:gap-1.5 mb-1.5 md:mb-2 flex-wrap">
             {item.type === 'bug' && (
-              <Badge variant="outline" className="h-5 text-[10px] text-red-600 border-red-200 bg-red-50">
+              <Badge variant="outline" className="h-4 md:h-5 text-[9px] md:text-[10px] text-red-600 border-red-200 bg-red-50">
                 Bug
               </Badge>
             )}
             {item.type === 'feature' && (
-              <Badge variant="outline" className="h-5 text-[10px] text-purple-600 border-purple-200 bg-purple-50">
+              <Badge variant="outline" className="h-4 md:h-5 text-[9px] md:text-[10px] text-purple-600 border-purple-200 bg-purple-50">
                 Feature
               </Badge>
             )}
             {item.status === 'blocked' && item.blocked_reason && (
-              <Badge variant="outline" className="h-5 text-[10px] text-red-600 border-red-200 bg-red-50">
-                <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+              <Badge variant="outline" className="h-4 md:h-5 text-[9px] md:text-[10px] text-red-600 border-red-200 bg-red-50">
+                <AlertTriangle className="h-2 w-2 md:h-2.5 md:w-2.5 mr-0.5" />
                 Blocked
               </Badge>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
               {item.due_date && (
                 <span className={cn(
-                  'flex items-center gap-1 text-xs',
+                  'flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs',
                   new Date(item.due_date) < new Date() 
                     ? 'text-red-500' 
                     : 'text-zinc-500'
                 )}>
-                  <Clock className="h-3 w-3" />
-                  {new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <Clock className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" />
+                  <span className="truncate">{new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </span>
               )}
             </div>
             {item.assignee && (
-              <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-[8px]">
+              <Avatar className="h-4 w-4 md:h-5 md:w-5 shrink-0">
+                <AvatarFallback className="text-[7px] md:text-[8px]">
                   {item.assignee.full_name?.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
@@ -152,27 +153,27 @@ function BoardColumn({ status, label, color, items }: {
   items: WorkItem[];
 }) {
   return (
-    <div className="flex flex-col w-72 shrink-0">
+    <div className="flex flex-col w-full md:w-72 min-w-[280px] shrink-0">
       {/* Column Header */}
-      <div className="flex items-center gap-2 px-2 py-2 mb-2">
-        <div className={cn('h-2 w-2 rounded-full', color)} />
-        <span className="font-medium text-sm text-zinc-900 dark:text-zinc-50">
+      <div className="flex items-center gap-1 md:gap-2 px-1 md:px-2 py-1 md:py-2 mb-2">
+        <div className={cn('h-1.5 w-1.5 md:h-2 md:w-2 rounded-full shrink-0', color)} />
+        <span className="font-medium text-xs md:text-sm text-zinc-900 dark:text-zinc-50 truncate">
           {label}
         </span>
-        <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 rounded">
+        <span className="text-[10px] md:text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1 md:px-1.5 rounded shrink-0">
           {items.length}
         </span>
         <div className="flex-1" />
-        <Button variant="ghost" size="icon" className="h-6 w-6">
-          <Plus className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
+          <Plus className="h-3 w-3 md:h-3.5 md:w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
-          <MoreHorizontal className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
+          <MoreHorizontal className="h-3 w-3 md:h-3.5 md:w-3.5" />
         </Button>
       </div>
 
       {/* Cards */}
-      <div className="flex-1 space-y-2 min-h-[200px] p-1 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/20">
+      <div className="flex-1 space-y-1 md:space-y-2 min-h-[200px] p-0.5 md:p-1 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/20">
         {items.map((item) => (
           <WorkItemCard key={item.id} item={item} />
         ))}
@@ -180,11 +181,11 @@ function BoardColumn({ status, label, color, items }: {
         {/* Add Card Button */}
         <Button
           variant="ghost"
-          className="w-full justify-start text-zinc-500 h-9"
+          className="w-full justify-start text-zinc-500 h-9 md:h-9 min-h-[44px]"
           size="sm"
         >
           <Plus className="h-3.5 w-3.5" />
-          Add task
+          <span className="text-xs md:text-sm">Add task</span>
         </Button>
       </div>
     </div>
@@ -193,27 +194,29 @@ function BoardColumn({ status, label, color, items }: {
 
 function AISuggestionStrip() {
   return (
-    <div className="flex items-center gap-3 p-3 mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-      <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded">
-        <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 p-2 md:p-3 mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+      <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded shrink-0">
+          <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs md:text-sm text-zinc-900 dark:text-zinc-50">
+            <span className="font-medium">Team capacity is 92% next week</span>
+            <span className="hidden md:inline">{' — '}</span>
+            <span className="block md:inline text-zinc-600 dark:text-zinc-400">
+              Consider moving &quot;Checkout flow redesign&quot; by 2 days
+            </span>
+          </p>
+        </div>
       </div>
-      <div className="flex-1">
-        <p className="text-sm text-zinc-900 dark:text-zinc-50">
-          <span className="font-medium">Team capacity is 92% next week</span>
-          {' — '}
-          <span className="text-zinc-600 dark:text-zinc-400">
-            Consider moving &quot;Checkout flow redesign&quot; by 2 days
-          </span>
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="text-[10px]">
+      <div className="flex items-center gap-2 justify-end">
+        <Badge variant="secondary" className="text-[10px] hidden md:inline-flex">
           89% confident
         </Badge>
-        <Button size="sm" variant="default" className="h-7">
+        <Button size="sm" variant="default" className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none">
           Apply
         </Button>
-        <Button size="sm" variant="ghost" className="h-7">
+        <Button size="sm" variant="ghost" className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none">
           Dismiss
         </Button>
       </div>
@@ -231,6 +234,7 @@ export default function ProjectPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useMobile();
 
   const slug = params.slug as string;
 
@@ -386,87 +390,123 @@ export default function ProjectPage() {
   return (
     <div className="max-w-full">
       {/* Project Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 md:mb-6">
+        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
           <div
-            className="h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-bold"
+            className="h-10 w-10 md:h-12 md:w-12 rounded-xl flex items-center justify-center text-white text-base md:text-lg font-bold shrink-0"
             style={{ backgroundColor: project.color || '#6366F1' }}
           >
             {project.name.charAt(0).toUpperCase()}
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+              <h1 className="text-xl md:text-2xl font-semibold text-zinc-900 dark:text-zinc-50 truncate">
                 {project.name}
               </h1>
             </div>
-            <p className="text-zinc-500 mt-0.5">
+            <p className="text-zinc-500 mt-0.5 text-sm md:text-base hidden md:block">
               {project.description || 'No description'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]">
             <Zap className="h-4 w-4" />
-            Generate Status
+            <span className="hidden md:inline">Generate Status</span>
           </Button>
-          <Button size="sm">
+          <Button size="sm" className="flex-1 md:flex-none min-h-[44px]">
             <Plus className="h-4 w-4" />
-            Add Task
+            <span className="hidden md:inline">Add Task</span>
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="board" className="gap-2">
-              <LayoutGrid className="h-4 w-4" />
-              Board
-            </TabsTrigger>
-            <TabsTrigger value="list" className="gap-2">
-              <List className="h-4 w-4" />
-              List
-            </TabsTrigger>
-            <TabsTrigger value="timeline" className="gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Timeline
-            </TabsTrigger>
-            <TabsTrigger value="docs" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Docs
-            </TabsTrigger>
-            <TabsTrigger value="people" className="gap-2">
-              <Users className="h-4 w-4" />
-              People
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-0 mb-4">
+          {/* Tabs List - Scrollable on mobile */}
+          <div className="relative w-full md:w-auto">
+            {/* Scroll fade indicators for mobile */}
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10 md:hidden" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10 md:hidden" />
+            
+            <TabsList className="w-full md:w-auto overflow-x-auto scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <TabsTrigger value="overview" className="px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="board" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <LayoutGrid className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>Board</span>
+              </TabsTrigger>
+              <TabsTrigger value="list" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>List</span>
+              </TabsTrigger>
+              <TabsTrigger value="timeline" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <CalendarIcon className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>Timeline</span>
+              </TabsTrigger>
+              <TabsTrigger value="docs" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>Docs</span>
+              </TabsTrigger>
+              <TabsTrigger value="people" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>People</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <Settings className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>Settings</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
+          {/* Filter/Group Actions - Dropdown on mobile */}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
+            {/* Mobile: Single dropdown with both filter and group */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Group: Status
+                <Button variant="outline" size="sm" className="md:hidden min-h-[44px] flex-1">
+                  <Filter className="h-4 w-4" />
+                  <span>Actions</span>
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>Status</DropdownMenuItem>
-                <DropdownMenuItem>Assignee</DropdownMenuItem>
-                <DropdownMenuItem>Priority</DropdownMenuItem>
-                <DropdownMenuItem>None</DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <span>Group: Status</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>Group: Assignee</DropdownMenuItem>
+                <DropdownMenuItem>Group: Priority</DropdownMenuItem>
+                <DropdownMenuItem>Group: None</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Desktop: Separate buttons */}
+            <div className="hidden md:flex items-center gap-2">
+              <Button variant="outline" size="sm" className="min-h-[44px]">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="min-h-[44px]">
+                    Group: Status
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>Status</DropdownMenuItem>
+                  <DropdownMenuItem>Assignee</DropdownMenuItem>
+                  <DropdownMenuItem>Priority</DropdownMenuItem>
+                  <DropdownMenuItem>None</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
@@ -475,7 +515,7 @@ export default function ProjectPage() {
 
         {/* Board View */}
         <TabsContent value="board" className="mt-0">
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
+          <div className="flex gap-2 md:gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {columns.map((column) => (
               <BoardColumn
                 key={column.status}
@@ -490,81 +530,81 @@ export default function ProjectPage() {
 
         {/* Overview */}
         <TabsContent value="overview">
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div className="col-span-1 md:col-span-2 space-y-4 md:space-y-6">
               {/* Brief */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-2">Project Brief</h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-300">
+              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-medium mb-2 text-sm md:text-base">Project Brief</h3>
+                <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-300">
                   {project.brief || project.description || 'No project brief available.'}
                 </p>
               </div>
 
               {/* Milestones */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-3">Milestones</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-amber-600" />
+              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-medium mb-3 text-sm md:text-base">Milestones</h3>
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex items-center justify-between p-2 md:p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                      <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                        <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600" />
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">Design Phase Complete</p>
-                        <p className="text-xs text-zinc-500">Due Jan 20, 2026</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-xs md:text-sm truncate">Design Phase Complete</p>
+                        <p className="text-[10px] md:text-xs text-zinc-500">Due Jan 20, 2026</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 shrink-0 text-[10px] md:text-xs">
                       In Progress
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-zinc-500" />
+                  <div className="flex items-center justify-between p-2 md:p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                      <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center shrink-0">
+                        <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-zinc-500" />
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">Development Complete</p>
-                        <p className="text-xs text-zinc-500">Due Feb 28, 2026</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-xs md:text-sm truncate">Development Complete</p>
+                        <p className="text-[10px] md:text-xs text-zinc-500">Due Feb 28, 2026</p>
                       </div>
                     </div>
-                    <Badge variant="outline">Upcoming</Badge>
+                    <Badge variant="outline" className="shrink-0 text-[10px] md:text-xs">Upcoming</Badge>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* Quick Stats */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-3">Progress</h3>
-                <div className="space-y-3">
+              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-medium mb-3 text-sm md:text-base">Progress</h3>
+                <div className="space-y-2 md:space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-500">Completed</span>
-                    <span className="font-medium">{completedTasks} / {tasks.length}</span>
+                    <span className="text-xs md:text-sm text-zinc-500">Completed</span>
+                    <span className="font-medium text-sm md:text-base">{completedTasks} / {tasks.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-500">In Progress</span>
-                    <span className="font-medium">{inProgressTasks}</span>
+                    <span className="text-xs md:text-sm text-zinc-500">In Progress</span>
+                    <span className="font-medium text-sm md:text-base">{inProgressTasks}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-500">Blocked</span>
-                    <span className="font-medium text-red-500">{blockedTasks}</span>
+                    <span className="text-xs md:text-sm text-zinc-500">Blocked</span>
+                    <span className="font-medium text-sm md:text-base text-red-500">{blockedTasks}</span>
                   </div>
                 </div>
               </div>
 
               {/* Team */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-3">Team</h3>
+              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-medium mb-3 text-sm md:text-base">Team</h3>
                 <div className="space-y-2">
                   {teamMembers.length === 0 ? (
-                    <p className="text-sm text-zinc-500">No team members yet</p>
+                    <p className="text-xs md:text-sm text-zinc-500">No team members yet</p>
                   ) : (
                     teamMembers.map((member) => (
                       <div key={member.id} className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
+                        <Avatar className="h-6 w-6 shrink-0">
                           <AvatarFallback className="text-[10px]">
                             {member.user_profiles?.full_name
                               ?.split(' ')
@@ -572,7 +612,7 @@ export default function ProjectPage() {
                               .join('') || member.user_profiles?.email.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">
+                        <span className="text-xs md:text-sm truncate">
                           {member.user_profiles?.full_name || member.user_profiles?.email}
                         </span>
                       </div>

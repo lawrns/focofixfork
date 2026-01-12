@@ -573,7 +573,12 @@ describe('useUndoRedo Hook', () => {
         result.current.undo()       // Undo action_2: undo=1, redo=1
       })
 
-      // After undo/redo/undo sequence, should have undo stack but no redo
+      // After undo/redo/undo sequence:
+      // Started with [1,2] in undo
+      // Undo twice: [] undo, [2,1] redo
+      // Redo twice: [1,2] undo, [] redo
+      // Undo once: [1] undo, [2] redo
+      expect(result.current.getHistoryLength()).toBe(1)
       expect(result.current.canUndo()).toBe(true)
       expect(result.current.canRedo()).toBe(true)
     })

@@ -595,8 +595,8 @@ describe('EmptyState Component', () => {
 
       let icon = container.querySelector('svg');
       expect(icon).toBeInTheDocument();
-      const iconWrapper = icon?.parentElement;
-      expect(iconWrapper).toHaveClass('mb-4');
+      // Icon should be in a circular background container
+      expect(icon?.parentElement).toHaveClass('rounded-full');
     });
 
     it('skips icon rendering when not provided', () => {

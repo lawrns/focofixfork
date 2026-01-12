@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, FolderKanban, CheckSquare, Loader2 } from 'lucide-react';
+import { Search, FolderKanban, CheckSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { InlineLoadingSkeleton } from '@/components/skeleton-screens';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -87,7 +87,7 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           leftIcon={<Search className="h-4 w-4" />}
-          rightIcon={isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+          rightIcon={isLoading ? <InlineLoadingSkeleton size="sm" /> : undefined}
           className="max-w-2xl"
         />
       </div>

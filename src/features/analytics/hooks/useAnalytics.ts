@@ -1,19 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import { analyticsService } from '@/lib/services/analytics.service'
+import { useAuth } from '@/lib/hooks/use-auth'
 import type { AnalyticsData, AnalyticsFilters } from '../types'
 
 export function useAnalytics(filters?: AnalyticsFilters) {
+  const { user } = useAuth()
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAnalytics = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
-      // Get user ID from somewhere - this should be passed or from context
-      // For now, using placeholder - this needs proper implementation
-      const userId = 'current-user' // TODO: Get from auth context
+      const userId = user.id
       const dashboardData = await analyticsService.getDashboardAnalytics(
         userId,
         '30d',
@@ -80,7 +85,7 @@ export function useAnalytics(filters?: AnalyticsFilters) {
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }, [user?.id, filters])
 
   useEffect(() => {
     fetchAnalytics()

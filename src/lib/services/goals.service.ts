@@ -14,7 +14,6 @@ import type {
 } from '@/lib/validation/schemas/goals'
 
 // GoalsService class for managing goal-related operations
-// TODO: Implement when goals tables are added to database
 export class GoalsService {
   // ===============================
   // GOAL CRUD OPERATIONS

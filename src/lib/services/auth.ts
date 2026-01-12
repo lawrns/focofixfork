@@ -91,7 +91,7 @@ export class AuthService {
    */
   static async signUp(data: RegisterData): Promise<AuthResponse> {
     try {
-      // TODO: Re-enable email_confirm when email service is configured in Supabase
+      // Note: email_confirm disabled - re-enable when SMTP is configured in Supabase project settings
       const { data: authData, error } = await supabaseAdmin.auth.admin.createUser({
         email: data.email,
         password: data.password,

@@ -1,28 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-
-// TODO: Move to centralized auth utility
-async function getAuthUser(req: NextRequest) {
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        cookie: cookieStore.toString()
-      }
-    }
-  })
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
-    return { user: null, supabase, error: 'Unauthorized' }
-  }
-  
-  return { user, supabase, error: null }
-}
+import { getAuthUser } from '@/lib/api/auth-helper'
 
 export async function GET(req: NextRequest) {
   try {
@@ -39,7 +16,7 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     let query = supabase
-      .from('tasks')
+      .from('work_items')
       .select('*')
       .order('position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })
@@ -92,21 +69,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Project ID is required' }, { status: 400 })
     }
 
+    // Get workspace_id from project
+    const { data: projectData } = await supabase
+      .from('foco_projects')
+      .select('workspace_id')
+      .eq('id', body.project_id)
+      .single()
+
+    if (!projectData) {
+      return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
+    }
+
     const taskData = {
       title: body.title,
       description: body.description || null,
-      status: body.status || 'todo',
-      priority: body.priority || 'medium',
+      status: body.status || 'backlog',
+      priority: body.priority || 'none',
       project_id: body.project_id,
-      milestone_id: body.milestone_id || null,
+      workspace_id: projectData.workspace_id,
       assignee_id: body.assignee_id || null,
       due_date: body.due_date || null,
       position: body.position || 0,
-      created_by: user.id,
+      reporter_id: user.id,
+      type: 'task',
     }
 
     const { data, error: insertError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .insert(taskData)
       .select()
       .single()

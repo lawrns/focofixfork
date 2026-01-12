@@ -1,28 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-
-// TODO: Move to centralized auth utility
-async function getAuthUser(req: NextRequest) {
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        cookie: cookieStore.toString()
-      }
-    }
-  })
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
-    return { user: null, supabase, error: 'Unauthorized' }
-  }
-  
-  return { user, supabase, error: null }
-}
+import { getAuthUser } from '@/lib/api/auth-helper'
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,19 +10,19 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const organizationId = searchParams.get('organization_id')
+    const workspaceId = searchParams.get('workspace_id')
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     let query = supabase
-      .from('projects')
+      .from('foco_projects')
       .select('*')
       .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    if (organizationId) {
-      query = query.eq('organization_id', organizationId)
+    if (workspaceId) {
+      query = query.eq('workspace_id', workspaceId)
     }
 
     if (status) {
@@ -87,6 +64,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
     }
 
+    if (!body.workspace_id) {
+      return NextResponse.json({ success: false, error: 'Workspace ID is required' }, { status: 400 })
+    }
+
     // Generate slug from name if not provided
     const slug = body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
@@ -94,15 +75,16 @@ export async function POST(req: NextRequest) {
       name: body.name,
       slug,
       description: body.description || null,
+      brief: body.brief || null,
       color: body.color || '#6366F1',
       icon: body.icon || 'folder',
       status: body.status || 'active',
-      organization_id: body.organization_id,
-      created_by: user.id,
+      workspace_id: body.workspace_id,
+      owner_id: user.id,
     }
 
     const { data, error: insertError } = await supabase
-      .from('projects')
+      .from('foco_projects')
       .insert(projectData)
       .select()
       .single()

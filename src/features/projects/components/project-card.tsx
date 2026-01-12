@@ -47,9 +47,11 @@ interface ProjectCardProps {
     created_at: string
     organization_id: string
     color?: string
+    is_pinned?: boolean
   }
   onEdit?: (projectId: string) => void
   onDelete?: (projectId: string) => void
+  onPin?: (projectId: string, isPinned: boolean) => void
   showActions?: boolean
 }
 

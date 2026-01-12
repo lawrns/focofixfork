@@ -195,7 +195,7 @@ export function ProductTour({
                   size="sm"
                   onClick={handlePrevious}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  <ChevronLeft className="w-4 h-4" />
                   Previous
                 </Button>
               )}
@@ -215,7 +215,7 @@ export function ProductTour({
               >
                 {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
                 {activeStep < steps.length - 1 && (
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <ChevronRight className="w-4 h-4" />
                 )}
               </Button>
             </div>

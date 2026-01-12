@@ -137,7 +137,7 @@ export function PushPermissionPrompt({
           <div className="space-y-2">
             {content.benefits.map((benefit, index) => (
               <div key={index} className="flex items-center text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                 {benefit}
               </div>
             ))}
@@ -145,7 +145,7 @@ export function PushPermissionPrompt({
 
           {error && (
             <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-md">
-              <AlertCircle className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
               <span className="text-sm text-red-700">{error}</span>
             </div>
           )}

@@ -380,7 +380,7 @@ export default function PeoplePage() {
         subtitle={`${members.length} team members`}
         primaryAction={
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             {buttons.inviteMember}
           </Button>
         }

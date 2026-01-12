@@ -159,12 +159,12 @@ export function OfflineBanner({ className }: OfflineBannerProps) {
               >
                 {isSyncing ? (
                   <>
-                    <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                    <RefreshCw className="w-3 h-3 animate-spin" />
                     Syncing...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-3 h-3 mr-1" />
+                    <RefreshCw className="w-3 h-3" />
                     Sync Now
                   </>
                 )}

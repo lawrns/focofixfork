@@ -187,7 +187,7 @@ export function AuditDashboard({ organizationId }: AuditDashboardProps) {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={handleExportLogs}>
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4" />
             Export Logs
           </Button>
         </div>

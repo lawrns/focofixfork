@@ -181,7 +181,7 @@ export function PowerUpsIntegration({
           <div className="flex items-center gap-2">
             {powerUp.featured && (
               <Badge variant="default" className="bg-yellow-500">
-                <Star className="w-3 h-3 mr-1" />
+                <Star className="w-3 h-3" />
                 Featured
               </Badge>
             )}
@@ -224,12 +224,12 @@ export function PowerUpsIntegration({
                 >
                   {extensionManager.isEnabled(powerUp.manifest.id) ? (
                     <>
-                      <Pause className="w-4 h-4 mr-2" />
+                      <Pause className="w-4 h-4" />
                       Disable
                     </>
                   ) : (
                     <>
-                      <Play className="w-4 h-4 mr-2" />
+                      <Play className="w-4 h-4" />
                       Enable
                     </>
                   )}
@@ -240,7 +240,7 @@ export function PowerUpsIntegration({
                   size="sm"
                   onClick={() => handleUninstall(powerUp)}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
+                  <Trash2 className="w-4 h-4" />
                   Uninstall
                 </Button>
               </>
@@ -249,7 +249,7 @@ export function PowerUpsIntegration({
                 onClick={() => handleInstall(powerUp)}
                 className="flex-1"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4" />
                 Install
               </Button>
             )}
@@ -296,7 +296,7 @@ export function PowerUpsIntegration({
         
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
-            <Zap className="w-4 h-4 mr-1" />
+            <Zap className="w-4 h-4" />
             {installedPowerUps.length} Installed
           </Badge>
         </div>

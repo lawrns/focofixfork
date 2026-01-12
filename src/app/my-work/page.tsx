@@ -209,7 +209,7 @@ function Section({
         )}
         
         <Button variant="ghost" size="sm" className="w-full justify-start text-zinc-500 mt-2">
-          <Plus className="h-3.5 w-3.5 mr-1" />
+          <Plus className="h-3.5 w-3.5" />
           Add task
         </Button>
       </div>
@@ -271,7 +271,7 @@ function FocusMode({
           </div>
           
           <Button onClick={onExit}>
-            <CheckCircle2 className="h-4 w-4 mr-2" />
+            <CheckCircle2 className="h-4 w-4" />
             Complete & Exit
           </Button>
         </div>
@@ -411,11 +411,11 @@ export default function MyWorkPage() {
         primaryAction={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4" />
               Filter
             </Button>
             <Button variant="outline" size="sm">
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-4 w-4" />
               Plan my day
             </Button>
           </div>

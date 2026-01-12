@@ -157,7 +157,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
               onClick={() => setSpecification(prompt)}
               className="w-full text-left p-3 text-sm border rounded-lg hover:bg-accent transition-colors"
             >
-              <Sparkles className="inline h-3 w-3 mr-2 text-primary" />
+              <Sparkles className="inline h-3 w-3 text-primary" />
               {prompt}
             </button>
           ))}
@@ -180,12 +180,12 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
         >
           {loading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Generating...
             </>
           ) : (
             <>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
+              <CheckCircle2 className="h-4 w-4" />
               Create Project
             </>
           )}
@@ -194,7 +194,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
 
       {/* AI Info */}
       <div className="text-xs text-muted-foreground bg-muted p-3 rounded-lg">
-        <Sparkles className="inline h-3 w-3 mr-1" />
+        <Sparkles className="inline h-3 w-3" />
         Powered by OpenAI. The AI will analyze your description and create a structured project plan with milestones and tasks.
       </div>
     </div>

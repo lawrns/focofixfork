@@ -275,7 +275,7 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
         </div>
         
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4" />
           {t('calendar.addIntegration')}
         </Button>
       </div>
@@ -306,7 +306,7 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
                     </div>
                   </div>
                   <Button className="w-full" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4" />
                     {t('calendar.connect')}
                   </Button>
                 </CardContent>

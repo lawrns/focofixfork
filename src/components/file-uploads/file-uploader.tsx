@@ -244,7 +244,7 @@ export default function FileUploader({
           onClick={() => fileInputRef.current?.click()}
           disabled={uploadQueue.some(item => item.status === 'uploading')}
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Add Files
         </Button>
 

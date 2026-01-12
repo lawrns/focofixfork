@@ -279,7 +279,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
               type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEditing ? 'Update Project' : 'Create Project'}
             </Button>
           </div>

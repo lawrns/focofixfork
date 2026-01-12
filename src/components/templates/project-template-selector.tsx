@@ -356,7 +356,7 @@ function TemplateCard({ template, onSelectTemplate, getCategoryIcon, getCategory
             size="sm"
           >
             Use This Template
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </CardContent>
       </Card>
@@ -437,7 +437,7 @@ function TemplateListItem({ template, onSelectTemplate, getCategoryIcon, getCate
                 size="sm"
               >
                 Use Template
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </div>

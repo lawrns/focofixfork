@@ -306,7 +306,7 @@ export function SettingsDashboard() {
 
               <div className="flex justify-end">
                 <Button onClick={saveUserSettings} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
@@ -393,7 +393,7 @@ export function SettingsDashboard() {
 
               <div className="flex justify-end">
                 <Button onClick={saveUserSettings} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Preferences'}
                 </Button>
               </div>
@@ -431,7 +431,7 @@ export function SettingsDashboard() {
 
               <div className="flex justify-end">
                 <Button onClick={saveUserSettings} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Theme'}
                 </Button>
               </div>
@@ -521,7 +521,7 @@ export function SettingsDashboard() {
 
               <div className="flex justify-end">
                 <Button onClick={saveOrgSettings} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Organization Settings'}
                 </Button>
               </div>
@@ -587,7 +587,7 @@ export function SettingsDashboard() {
                     </p>
                   </div>
                   <Button onClick={handleExportData} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4" />
                     Export Data
                   </Button>
                 </div>
@@ -600,7 +600,7 @@ export function SettingsDashboard() {
                     </p>
                   </div>
                   <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4" />
                     Import Data
                   </Button>
                 </div>

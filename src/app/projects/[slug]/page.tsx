@@ -194,7 +194,7 @@ function BoardColumn({ status, label, color, items }: {
           className="w-full justify-start text-zinc-500 h-9"
           size="sm"
         >
-          <Plus className="h-3.5 w-3.5 mr-1" />
+          <Plus className="h-3.5 w-3.5" />
           Add task
         </Button>
       </div>
@@ -266,11 +266,11 @@ export default function ProjectPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
-            <Zap className="h-4 w-4 mr-1" />
+            <Zap className="h-4 w-4" />
             Generate Status
           </Button>
           <Button size="sm">
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4" />
             Add Task
           </Button>
         </div>
@@ -282,41 +282,41 @@ export default function ProjectPage() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="board">
-              <LayoutGrid className="h-4 w-4 mr-1" />
+              <LayoutGrid className="h-4 w-4" />
               Board
             </TabsTrigger>
             <TabsTrigger value="list">
-              <List className="h-4 w-4 mr-1" />
+              <List className="h-4 w-4" />
               List
             </TabsTrigger>
             <TabsTrigger value="timeline">
-              <CalendarIcon className="h-4 w-4 mr-1" />
+              <CalendarIcon className="h-4 w-4" />
               Timeline
             </TabsTrigger>
             <TabsTrigger value="docs">
-              <FileText className="h-4 w-4 mr-1" />
+              <FileText className="h-4 w-4" />
               Docs
             </TabsTrigger>
             <TabsTrigger value="people">
-              <Users className="h-4 w-4 mr-1" />
+              <Users className="h-4 w-4" />
               People
             </TabsTrigger>
             <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-1" />
+              <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-1" />
+              <Filter className="h-4 w-4" />
               Filter
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                   Group: Status
-                  <ChevronDown className="h-3 w-3 ml-1" />
+                  <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>

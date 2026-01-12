@@ -188,18 +188,18 @@ export function PWASettings() {
             >
               {isSyncing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   Syncing...
                 </>
               ) : (
                 <>
-                  <Zap className="w-4 h-4 mr-2" />
+                  <Zap className="w-4 h-4" />
                   Sync Data
                 </>
               )}
             </Button>
             <Button onClick={refreshCapabilities} variant="outline" size="sm">
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCw className="w-4 h-4" />
               Refresh Status
             </Button>
           </div>
@@ -264,12 +264,12 @@ export function PWASettings() {
               <Button onClick={handleInstall} disabled={isInstalling}>
                 {isInstalling ? (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin" />
                     Installing...
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-4 h-4" />
                     Install App
                   </>
                 )}
@@ -280,12 +280,12 @@ export function PWASettings() {
               <Button onClick={handleUpdate} disabled={isUpdating} variant="outline">
                 {isUpdating ? (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin" />
                     Updating...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
+                    <RefreshCw className="w-4 h-4" />
                     Update App
                   </>
                 )}
@@ -352,12 +352,12 @@ export function PWASettings() {
           >
             {isClearingCache ? (
               <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                <RefreshCw className="w-4 h-4 animate-spin" />
                 Clearing Cache...
               </>
             ) : (
               <>
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="w-4 h-4" />
                 Clear Cache
               </>
             )}
@@ -408,14 +408,14 @@ export function PWASettings() {
           <div className="flex gap-2">
             {notificationPermission !== 'granted' && (
               <Button onClick={handleRequestNotifications} variant="outline">
-                <Bell className="w-4 h-4 mr-2" />
+                <Bell className="w-4 h-4" />
                 Enable Notifications
               </Button>
             )}
 
             {notificationPermission === 'granted' && (
               <Button onClick={handleTestNotification} variant="outline">
-                <Bell className="w-4 h-4 mr-2" />
+                <Bell className="w-4 h-4" />
                 Test Notification
               </Button>
             )}

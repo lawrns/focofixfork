@@ -142,7 +142,7 @@ export function FeatureTip({
                     className="text-xs"
                   >
                     {action}
-                    <ArrowRight className="w-3 h-3 ml-1" />
+                    <ArrowRight className="w-3 h-3" />
                   </Button>
                 )}
                 

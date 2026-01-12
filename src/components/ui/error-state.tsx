@@ -65,7 +65,7 @@ export function ErrorState({
         </p>
         {onRetry && (
           <Button onClick={onRetry} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4" />
             Try Again
           </Button>
         )}

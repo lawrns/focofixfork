@@ -424,26 +424,26 @@ export function EnhancedTaskCard({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
-                        <Circle className="mr-2 h-4 w-4" aria-hidden="true" />
+                        <Circle className="h-4 w-4" aria-hidden="true" />
                         Mark as To Do
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
-                        <PlayCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                        <PlayCircle className="h-4 w-4" aria-hidden="true" />
                         Start Progress
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleStatusChange('review')}>
-                        <AlertTriangle className="mr-2 h-4 w-4" aria-hidden="true" />
+                        <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                         Move to Review
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleStatusChange('done')}>
-                        <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                        <CheckCircle className="h-4 w-4" aria-hidden="true" />
                         Mark as Done
                       </DropdownMenuItem>
                       {onEdit && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => onEdit(currentTask.id)}>
-                            <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
+                            <Edit className="h-4 w-4" aria-hidden="true" />
                             Edit Task
                           </DropdownMenuItem>
                         </>
@@ -455,7 +455,7 @@ export function EnhancedTaskCard({
                             onClick={handleDelete}
                             className="text-red-600 dark:text-red-400"
                           >
-                            <AlertTriangle className="mr-2 h-4 w-4" aria-hidden="true" />
+                            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                             Delete Task
                           </DropdownMenuItem>
                         </>

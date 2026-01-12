@@ -123,7 +123,7 @@ export function AccessibilitySettings() {
               </p>
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
-              <CheckCircle className="w-3 h-3 mr-1" />
+              <CheckCircle className="w-3 h-3" />
               Compliant
             </Badge>
           </div>
@@ -326,11 +326,11 @@ export function AccessibilitySettings() {
 
           <div className="flex gap-2">
             <Button onClick={testAnnouncement} variant="outline" size="sm">
-              <Volume2 className="w-4 h-4 mr-2" />
+              <Volume2 className="w-4 h-4" />
               Test Announcement
             </Button>
             <Button onClick={runAccessibilityTest} variant="outline" size="sm">
-              <Eye className="w-4 h-4 mr-2" />
+              <Eye className="w-4 h-4" />
               Check Page
             </Button>
           </div>

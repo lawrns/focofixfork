@@ -225,7 +225,7 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
           <p className="text-muted-foreground">{t('automation.rulesDescription')}</p>
         </div>
         <Button onClick={() => setShowRuleBuilder(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4" />
           {t('automation.createRule')}
         </Button>
       </div>
@@ -236,7 +236,7 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
           <h3 className="text-lg font-semibold mb-2">{t('automation.noRules')}</h3>
           <p className="text-muted-foreground mb-4">{t('automation.noRulesDescription')}</p>
           <Button onClick={() => setShowRuleBuilder(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             {t('automation.createFirstRule')}
           </Button>
         </Card>
@@ -284,11 +284,11 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEditRule(rule)}>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                           {t('common.edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDuplicateRule(rule)}>
-                          <Copy className="mr-2 h-4 w-4" />
+                          <Copy className="h-4 w-4" />
                           {t('common.duplicate')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -296,7 +296,7 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
                           onClick={() => setShowDeleteDialog(rule.id)}
                           className="text-red-600 dark:text-red-400"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                           {t('common.delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>

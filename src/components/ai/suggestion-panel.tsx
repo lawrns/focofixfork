@@ -217,7 +217,7 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
     return (
       <Card className={className}>
         <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+          <RefreshCw className="h-5 w-5 animate-spin" />
           <span className="text-sm text-muted-foreground">Checking AI service...</span>
         </CardContent>
       </Card>
@@ -282,9 +282,9 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
                     className="text-xs"
                   >
                     {generatingType === 'tasks' ? (
-                      <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                      <RefreshCw className="h-3 w-3 animate-spin" />
                     ) : (
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                      <CheckCircle className="h-3 w-3" />
                     )}
                     Tasks
                   </Button>
@@ -297,9 +297,9 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
                     className="text-xs"
                   >
                     {generatingType === 'milestones' ? (
-                      <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                      <RefreshCw className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Target className="h-3 w-3 mr-1" />
+                      <Target className="h-3 w-3" />
                     )}
                     Milestones
                   </Button>
@@ -312,9 +312,9 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
                     className="text-xs"
                   >
                     {generatingType === 'analysis' ? (
-                      <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                      <RefreshCw className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Lightbulb className="h-3 w-3 mr-1" />
+                      <Lightbulb className="h-3 w-3" />
                     )}
                     Analyze
                   </Button>
@@ -330,9 +330,9 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
                   className="text-xs"
                 >
                   {generatingType === 'code' ? (
-                    <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                    <RefreshCw className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Code className="h-3 w-3 mr-1" />
+                    <Code className="h-3 w-3" />
                   )}
                   Code Help
                 </Button>

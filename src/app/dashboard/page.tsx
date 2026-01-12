@@ -358,7 +358,7 @@ export default function DashboardPage() {
               onClick={() => setShowNewProjectModal(true)} 
               data-tour="create-project-button"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create project</span>
               <span className="sm:hidden">Create</span>
             </Button>
@@ -367,7 +367,7 @@ export default function DashboardPage() {
               onClick={() => setShowAIProjectModal(true)}
               data-tour="ai-button"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4" />
               <span className="hidden sm:inline">AI create</span>
               <span className="sm:hidden">AI</span>
             </Button>
@@ -475,7 +475,7 @@ export default function DashboardPage() {
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     {buttons.creating}
                   </>
                 ) : (

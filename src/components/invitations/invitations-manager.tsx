@@ -222,7 +222,7 @@ export default function InvitationsManager({
           <Dialog open={showCreateInvitation} onOpenChange={setShowCreateInvitation}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Send Invitation
               </Button>
             </DialogTrigger>
@@ -295,12 +295,12 @@ export default function InvitationsManager({
                   >
                     {isInviting ? (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        <RefreshCw className="w-4 h-4 animate-spin" />
                         Sending...
                       </>
                     ) : (
                       <>
-                        <Send className="w-4 h-4 mr-2" />
+                        <Send className="w-4 h-4" />
                         Send Invitation
                       </>
                     )}
@@ -347,7 +347,7 @@ export default function InvitationsManager({
                   </p>
                   {canManageInvitations && (
                     <Button onClick={() => setShowCreateInvitation(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       Send First Invitation
                     </Button>
                   )}
@@ -504,7 +504,7 @@ export default function InvitationsManager({
                           size="sm"
                           onClick={() => handleResendInvitation(invitation.id)}
                         >
-                          <RefreshCw className="w-4 h-4 mr-2" />
+                          <RefreshCw className="w-4 h-4" />
                           Resend
                         </Button>
                       )}

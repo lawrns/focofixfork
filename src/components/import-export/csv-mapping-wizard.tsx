@@ -302,7 +302,7 @@ export function CSVMappingWizard({ csvHeaders, onMappingComplete, onCancel }: CS
               onClick={handlePrevious}
               disabled={currentStep === 0}
             >
-              <ChevronLeft className="w-4 h-4 mr-2" />
+              <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
             
@@ -321,12 +321,12 @@ export function CSVMappingWizard({ csvHeaders, onMappingComplete, onCancel }: CS
                 {currentStep === csvHeaders.length - 1 ? (
                   <>
                     Complete
-                    <CheckCircle className="w-4 h-4 ml-2" />
+                    <CheckCircle className="w-4 h-4" />
                   </>
                 ) : (
                   <>
                     Next
-                    <ChevronRight className="w-4 h-4 ml-2" />
+                    <ChevronRight className="w-4 h-4" />
                   </>
                 )}
               </Button>

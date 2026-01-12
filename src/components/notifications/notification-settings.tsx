@@ -94,7 +94,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
     <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Bell className="w-5 h-5 mr-2" />
+          <Bell className="w-5 h-5" />
           Push Notifications
         </CardTitle>
         <CardDescription>
@@ -205,7 +205,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               onClick={handleTestNotification}
               className="w-full"
             >
-              <TestTube className="w-4 h-4 mr-2" />
+              <TestTube className="w-4 h-4" />
               Send Test Notification
             </Button>
             <p className="text-xs text-gray-500 text-center mt-2">

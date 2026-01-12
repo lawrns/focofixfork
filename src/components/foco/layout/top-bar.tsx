@@ -62,7 +62,7 @@ export function TopBar({ className }: TopBarProps) {
         className="flex-1 max-w-md justify-start text-zinc-500 dark:text-zinc-400 h-9"
         onClick={() => openCommandPalette('search')}
       >
-        <Search className="h-4 w-4 mr-2" />
+        <Search className="h-4 w-4" />
         <span className="text-sm">Search or jump to...</span>
         <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700">
           ⌘K
@@ -75,9 +75,9 @@ export function TopBar({ className }: TopBarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="default" size="sm" className="h-9">
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4" />
               Create
-              <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
+              <ChevronDown className="h-3 w-3 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -127,14 +127,14 @@ export function TopBar({ className }: TopBarProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
             <DropdownMenuItem>
-              <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-2">
+              <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <span className="text-[10px] font-bold text-white">AC</span>
               </div>
               <span>Acme Corp</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4" />
               Create workspace
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -144,7 +144,7 @@ export function TopBar({ className }: TopBarProps) {
         {!user && (
           <Link href="/login">
             <Button variant="default" size="sm" className="h-9">
-              <LogIn className="h-4 w-4 mr-2" />
+              <LogIn className="h-4 w-4" />
               Sign in
             </Button>
           </Link>
@@ -174,26 +174,26 @@ export function TopBar({ className }: TopBarProps) {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 {theme === 'dark' ? (
-                  <Moon className="h-4 w-4 mr-2" />
+                  <Moon className="h-4 w-4" />
                 ) : theme === 'light' ? (
-                  <Sun className="h-4 w-4 mr-2" />
+                  <Sun className="h-4 w-4" />
                 ) : (
-                  <Monitor className="h-4 w-4 mr-2" />
+                  <Monitor className="h-4 w-4" />
                 )}
                 Theme
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
                   <DropdownMenuRadioItem value="light">
-                    <Sun className="h-4 w-4 mr-2" />
+                    <Sun className="h-4 w-4" />
                     Light
                   </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="dark">
-                    <Moon className="h-4 w-4 mr-2" />
+                    <Moon className="h-4 w-4" />
                     Dark
                   </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="system">
-                    <Monitor className="h-4 w-4 mr-2" />
+                    <Monitor className="h-4 w-4" />
                     System
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>

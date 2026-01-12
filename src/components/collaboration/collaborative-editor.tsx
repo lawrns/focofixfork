@@ -319,14 +319,14 @@ export default function CollaborativeEditor({
 
               {isLocked && (
                 <Badge variant="destructive">
-                  <Lock className="w-3 h-3 mr-1" />
+                  <Lock className="w-3 h-3" />
                   Locked
                 </Badge>
               )}
 
               {autoSave ? (
                 <Badge variant="secondary">
-                  <Save className="w-3 h-3 mr-1" />
+                  <Save className="w-3 h-3" />
                   Auto-save
                 </Badge>
               ) : (

@@ -162,7 +162,7 @@ function ProjectCard({ project }: { project: ProjectData }) {
       <div className="flex items-center justify-between mb-4">
         {project.risk !== 'none' && (
           <Badge variant="outline" className={cn('text-xs', riskColors[project.risk])}>
-            <AlertTriangle className="h-3 w-3 mr-1" />
+            <AlertTriangle className="h-3 w-3" />
             {project.risk} risk
           </Badge>
         )}
@@ -376,7 +376,7 @@ export default function ProjectsPage() {
           subtitle="Loading..."
           primaryAction={
             <Button disabled>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4" />
               {buttons.createProject}
             </Button>
           }
@@ -397,7 +397,7 @@ export default function ProjectsPage() {
         subtitle={`${projects.length} active projects`}
         primaryAction={
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             {buttons.createProject}
           </Button>
         }
@@ -417,7 +417,7 @@ export default function ProjectsPage() {
 
         <Select value={sortBy} onValueChange={setSortBy}>
           <SelectTrigger className="w-[160px]">
-            <ArrowUpDown className="h-4 w-4 mr-2" />
+            <ArrowUpDown className="h-4 w-4" />
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>

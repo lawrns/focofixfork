@@ -207,7 +207,7 @@ export function ImportExportModal({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <FileText className="w-4 h-4 mr-2" />
+          <FileText className="w-4 h-4" />
           Import/Export
         </Button>
       </DialogTrigger>
@@ -308,12 +308,12 @@ export function ImportExportModal({
                 >
                   {isProcessing ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                       Exporting...
                     </>
                   ) : (
                     <>
-                      <Download className="w-4 h-4 mr-2" />
+                      <Download className="w-4 h-4" />
                       Export Data
                     </>
                   )}
@@ -358,7 +358,7 @@ export function ImportExportModal({
                         size="sm"
                         onClick={() => setShowMapping(!showMapping)}
                       >
-                        <Settings className="w-4 h-4 mr-2" />
+                        <Settings className="w-4 h-4" />
                         {showMapping ? 'Hide' : 'Configure'} Mapping
                       </Button>
                     </div>
@@ -504,12 +504,12 @@ export function ImportExportModal({
                 >
                   {isProcessing ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                       Importing...
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4 mr-2" />
+                      <Upload className="w-4 h-4" />
                       Import Data
                     </>
                   )}

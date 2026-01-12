@@ -147,12 +147,12 @@ export function DataIntegrityDashboard({ organizationId }: DataIntegrityDashboar
             <Button onClick={runIntegrityCheck} disabled={isRunning} className="bg-[#0052CC] hover:bg-[#004299]">
               {isRunning ? (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   Running Check...
                 </>
               ) : (
                 <>
-                  <Shield className="w-4 h-4 mr-2" />
+                  <Shield className="w-4 h-4" />
                   Run Integrity Check
                 </>
               )}
@@ -179,7 +179,7 @@ export function DataIntegrityDashboard({ organizationId }: DataIntegrityDashboar
         </div>
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={exportReport}>
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4" />
             Export Report
           </Button>
           <Button variant="outline" onClick={runIntegrityCheck} disabled={isRunning}>
@@ -264,12 +264,12 @@ export function DataIntegrityDashboard({ organizationId }: DataIntegrityDashboar
               <Button onClick={autoFixIssues} disabled={isFixing} variant="outline">
                 {isFixing ? (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin" />
                     Fixing...
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 mr-2" />
+                    <Zap className="w-4 h-4" />
                     Auto-fix Issues
                   </>
                 )}

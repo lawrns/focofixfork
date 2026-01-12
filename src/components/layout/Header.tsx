@@ -165,7 +165,7 @@ export default function Header() {
               {isSearching ? (
                 <div className="flex items-center justify-center p-3">
                   <div className="animate-spin rounded-full h-4 w-4 border-b border-zinc-900"></div>
-                  <span className="ml-2 text-xs text-zinc-500">Searching...</span>
+                  <span className="text-xs text-zinc-500">Searching...</span>
                 </div>
               ) : searchResults.length > 0 ? (
                 searchResults.map((result) => (
@@ -219,11 +219,11 @@ export default function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
-              <Settings className="mr-2 h-3.5 w-3.5" />
+              <Settings className="h-3.5 w-3.5" />
               <span className="text-xs">Settings</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-              <User className="mr-2 h-3.5 w-3.5" />
+              <User className="h-3.5 w-3.5" />
               <span className="text-xs">Profile</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -239,7 +239,7 @@ export default function Header() {
               }}
               className="text-red-600"
             >
-              <LogOut className="mr-2 h-3.5 w-3.5" />
+              <LogOut className="h-3.5 w-3.5" />
               <span className="text-xs">Sign out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

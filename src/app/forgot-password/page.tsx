@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
             variant="outline"
             className="w-full"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Volver al inicio de sesión
           </Button>
         </div>
@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
             className="w-full h-12 text-base font-medium"
             disabled={isLoading || !email}
           >
-            {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+            {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
             Enviar enlace de recuperación
           </Button>
         </form>
@@ -141,7 +141,7 @@ export default function ForgotPasswordPage() {
             onClick={() => router.push('/login')}
             className="text-sm"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Volver al inicio de sesión
           </Button>
         </div>

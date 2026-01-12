@@ -210,7 +210,7 @@ export function InstallPrompt({
                     className="flex-1 bg-primary hover:bg-primary/90"
                     size="sm"
                   >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-4 h-4" />
                     Install App
                   </Button>
 

@@ -491,7 +491,7 @@ export function KanbanBoard() {
                               className="flex-1 text-sm"
                               aria-label="Create new task"
                             >
-                              <Check className="h-3 w-3 mr-1" aria-hidden="true" />
+                              <Check className="h-3 w-3" aria-hidden="true" />
                               {isCreating ? 'Creating...' : 'Add Task'}
                             </Button>
                             <Button

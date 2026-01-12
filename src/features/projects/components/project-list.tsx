@@ -168,7 +168,7 @@ export function ProjectList({
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading projects...</span>
+        <span className="text-muted-foreground">Loading projects...</span>
       </div>
     )
   }
@@ -197,7 +197,7 @@ export function ProjectList({
 
         {showCreateButton && onCreateProject && (
           <Button onClick={onCreateProject}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             New Project
           </Button>
         )}
@@ -264,7 +264,7 @@ export function ProjectList({
 
           {showCreateButton && onCreateProject && projects.length === 0 && (
             <Button onClick={onCreateProject}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               Create First Project
             </Button>
           )}

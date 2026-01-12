@@ -154,7 +154,7 @@ export function MilestoneTimeline({
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading milestones...</span>
+        <span className="text-muted-foreground">Loading milestones...</span>
       </div>
     )
   }
@@ -189,7 +189,7 @@ export function MilestoneTimeline({
         </div>
         {onCreateMilestone && (
           <Button onClick={onCreateMilestone} size="sm">
-            <Target className="mr-2 h-4 w-4" />
+            <Target className="h-4 w-4" />
             Add Milestone
           </Button>
         )}
@@ -205,7 +205,7 @@ export function MilestoneTimeline({
             </p>
             {onCreateMilestone && (
               <Button onClick={onCreateMilestone}>
-                <Target className="mr-2 h-4 w-4" />
+                <Target className="h-4 w-4" />
                 Create First Milestone
               </Button>
             )}

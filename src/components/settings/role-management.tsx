@@ -230,7 +230,7 @@ export function RoleManagement() {
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserPlus className="h-4 w-4" />
                 Invite Member
               </Button>
             </DialogTrigger>

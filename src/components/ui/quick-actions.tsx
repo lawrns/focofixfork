@@ -63,7 +63,7 @@ export function QuickActions({
                 action.variant === 'destructive' && 'text-destructive focus:text-destructive'
               )}
             >
-              {action.icon && <action.icon className="mr-2 h-4 w-4" />}
+              {action.icon && <action.icon className="h-4 w-4" />}
               {action.label}
             </DropdownMenuItem>
           </React.Fragment>

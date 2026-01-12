@@ -369,17 +369,17 @@ export function GracefulError({
               >
                 {isReporting ? (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin" />
                     Reporting...
                   </>
                 ) : reportSent ? (
                   <>
-                    <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                    <CheckCircle className="w-4 h-4 text-green-500" />
                     Error Reported
                   </>
                 ) : (
                   <>
-                    <MessageCircle className="w-4 h-4 mr-2" />
+                    <MessageCircle className="w-4 h-4" />
                     Report This Error
                   </>
                 )}

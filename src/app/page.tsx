@@ -104,7 +104,7 @@ export default function LandingPage() {
             >
               <Link href="/register">
                 Comenzar ahora
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <span className="text-[15px] text-zinc-500 dark:text-zinc-500 font-light">Gratis · Sin tarjeta</span>
@@ -237,7 +237,7 @@ export default function LandingPage() {
             >
               <Link href="/register">
                 Crear cuenta gratis
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </motion.div>

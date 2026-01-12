@@ -258,7 +258,7 @@ export function CardCoverSelector({
               disabled={!currentCover}
               className="text-red-600 hover:text-red-700"
             >
-              <X className="w-4 h-4 mr-2" />
+              <X className="w-4 h-4" />
               Remove Cover
             </Button>
             <Button variant="outline" onClick={() => setIsOpen(false)}>

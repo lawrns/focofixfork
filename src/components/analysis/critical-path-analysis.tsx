@@ -111,7 +111,7 @@ export default function CriticalPathAnalysis({
               </p>
               {tasks.length > 0 && (
                 <Button onClick={runAnalysis} disabled={isAnalyzing}>
-                  <Activity className="w-4 h-4 mr-2" />
+                  <Activity className="w-4 h-4" />
                   Run Analysis
                 </Button>
               )}
@@ -246,19 +246,19 @@ export default function CriticalPathAnalysis({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Earliest Start:</span>
-                    <span className="ml-1 font-medium">Day {task.earliestStart}</span>
+                    <span className="font-medium">Day {task.earliestStart}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Latest Start:</span>
-                    <span className="ml-1 font-medium">Day {task.latestStart}</span>
+                    <span className="font-medium">Day {task.latestStart}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Earliest Finish:</span>
-                    <span className="ml-1 font-medium">Day {task.earliestFinish}</span>
+                    <span className="font-medium">Day {task.earliestFinish}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Latest Finish:</span>
-                    <span className="ml-1 font-medium">Day {task.latestFinish}</span>
+                    <span className="font-medium">Day {task.latestFinish}</span>
                   </div>
                 </div>
 
@@ -332,12 +332,12 @@ export default function CriticalPathAnalysis({
         <Button onClick={runAnalysis} disabled={isAnalyzing} variant="outline">
           {isAnalyzing ? (
             <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              <RefreshCw className="w-4 h-4 animate-spin" />
               Analyzing...
             </>
           ) : (
             <>
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCw className="w-4 h-4" />
               Refresh Analysis
             </>
           )}

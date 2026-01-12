@@ -187,6 +187,8 @@ export default function CommentsSection({
 
     setIsSubmitting(true)
     try {
+      const parentComment = findCommentById(parentId)
+
       await CommentsService.createComment({
         content: replyingTo.content,
         author_id: currentUser.id,
@@ -195,7 +197,8 @@ export default function CommentsSection({
         entity_type: entityType,
         entity_id: entityId,
         type: 'reply',
-        parent_id: parentId
+        parent_id: parentId,
+        parent_comment_id: parentComment?.parent_id ? parentComment.id : parentId
       })
 
       setReplyingTo(null)
@@ -392,26 +395,27 @@ export default function CommentsSection({
                   depth={0}
                 />
 
-                {/* Replies */}
-                {thread.replies.map((reply) => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    currentUser={currentUser}
-                    onReply={setReplyingTo}
-                    onEdit={(comment) => {
-                      setEditingComment(comment)
-                      setEditContent(comment.content)
-                    }}
-                    onDelete={handleDeleteComment}
-                    onReaction={handleReaction}
-                    showReactions={showReactions}
-                    setShowReactions={setShowReactions}
-                    depth={1}
-                  />
-                ))}
+                {/* Render Nested Comments Recursively */}
+                <CommentThread
+                  comments={thread.replies}
+                  parentCommentId={thread.root_comment.id}
+                  currentUser={currentUser}
+                  onReply={setReplyingTo}
+                  onEdit={(comment) => {
+                    setEditingComment(comment)
+                    setEditContent(comment.content)
+                  }}
+                  onDelete={handleDeleteComment}
+                  onReaction={handleReaction}
+                  showReactions={showReactions}
+                  setShowReactions={setShowReactions}
+                  replyingTo={replyingTo}
+                  onSubmitReply={handleSubmitReply}
+                  isSubmitting={isSubmitting}
+                  depth={1}
+                />
 
-                {/* Reply Input */}
+                {/* Reply Input for Root Comment */}
                 {replyingTo?.id === thread.root_comment.id && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -477,6 +481,136 @@ export default function CommentsSection({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// Recursive Comment Thread Component
+interface CommentThreadProps {
+  comments: Comment[]
+  parentCommentId: string
+  currentUser: { id: string; name: string; avatar?: string }
+  onReply: (comment: Comment) => void
+  onEdit: (comment: Comment) => void
+  onDelete: (commentId: string) => void
+  onReaction: (commentId: string, emoji: string) => void
+  showReactions: string | null
+  setShowReactions: (commentId: string | null) => void
+  replyingTo: Comment | null
+  onSubmitReply: (parentId: string) => void
+  isSubmitting: boolean
+  depth: number
+}
+
+function CommentThread({
+  comments,
+  parentCommentId,
+  currentUser,
+  onReply,
+  onEdit,
+  onDelete,
+  onReaction,
+  showReactions,
+  setShowReactions,
+  replyingTo,
+  onSubmitReply,
+  isSubmitting,
+  depth
+}: CommentThreadProps) {
+  // Build a map of comments by parent to support recursive rendering
+  const childrenByParent = new Map<string, Comment[]>()
+  const rootComments: Comment[] = []
+
+  comments.forEach(comment => {
+    if (comment.parent_id === parentCommentId) {
+      rootComments.push(comment)
+    } else if (comment.parent_id) {
+      if (!childrenByParent.has(comment.parent_id)) {
+        childrenByParent.set(comment.parent_id, [])
+      }
+      childrenByParent.get(comment.parent_id)!.push(comment)
+    }
+  })
+
+  const renderCommentAndChildren = (comment: Comment, currentDepth: number) => {
+    const children = childrenByParent.get(comment.id) || []
+    const maxDepth = 4 // Limit nesting depth to prevent UI issues
+
+    return (
+      <div key={comment.id} className="space-y-3">
+        {/* Comment Item */}
+        <CommentItem
+          comment={comment}
+          currentUser={currentUser}
+          onReply={onReply}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onReaction={onReaction}
+          showReactions={showReactions}
+          setShowReactions={setShowReactions}
+          depth={currentDepth}
+        />
+
+        {/* Reply Input */}
+        {replyingTo?.id === comment.id && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-2"
+            style={{ marginLeft: `${currentDepth * 2.75 + 2.75}rem` }}
+          >
+            <div className="flex gap-3">
+              <Avatar className="w-6 h-6">
+                <AvatarImage src={currentUser.avatar} />
+                <AvatarFallback className="text-xs">
+                  {currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="flex-1">
+                <Textarea
+                  placeholder="Write a reply..."
+                  value={replyingTo.content}
+                  onChange={(e) => onReply({ ...replyingTo, content: e.target.value })}
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onReply(null as any)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => onSubmitReply(comment.id)}
+                disabled={!replyingTo.content.trim() || isSubmitting}
+              >
+                {isSubmitting ? 'Posting...' : 'Reply'}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Render child comments if not at max depth */}
+        {children.length > 0 && currentDepth < maxDepth && (
+          <div className="space-y-3">
+            {children.map(child => renderCommentAndChildren(child, currentDepth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {rootComments.map(comment => renderCommentAndChildren(comment, depth))}
+    </>
   )
 }
 

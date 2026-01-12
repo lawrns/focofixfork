@@ -172,6 +172,7 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'mentions' | 'ai'>('all');
   const [items, setItems] = useState<InboxItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -219,6 +220,47 @@ export default function InboxPage() {
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  const handleMarkAllAsRead = useCallback(async () => {
+    const unreadCount = items.filter(i => !i.isRead).length;
+
+    if (unreadCount === 0) {
+      toast.success('All notifications are already read');
+      return;
+    }
+
+    setIsMarkingAllRead(true);
+
+    try {
+      const response = await fetch('/api/notifications/mark-all-read', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to mark notifications as read');
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(data.message || `${data.count} notifications marked as read`);
+        // Refresh notifications after successful update
+        await fetchNotifications();
+      } else {
+        toast.error('Failed to mark notifications as read');
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+      toast.error('Failed to mark notifications as read');
+    } finally {
+      setIsMarkingAllRead(false);
+    }
+  }, [items, fetchNotifications]);
 
   const handleSelect = (id: string) => {
     setSelectedItems(prev => {
@@ -268,9 +310,14 @@ export default function InboxPage() {
         title="Inbox"
         subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You&apos;re all caught up"}
         primaryAction={
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            disabled={isMarkingAllRead || unreadCount === 0}
+          >
             <CheckCircle2 className="h-4 w-4" />
-            Mark all read
+            {isMarkingAllRead ? 'Marking...' : 'Mark all read'}
           </Button>
         }
       />

@@ -29,6 +29,7 @@ import {
 import { toast } from 'sonner'
 import { Task } from '../types'
 import { useTaskExport } from '../hooks/use-task-export'
+import { BatchToolbar } from './batch-toolbar'
 
 interface TaskListProps {
   projectId?: string
@@ -405,6 +406,18 @@ export function TaskList({
 
   return (
     <div className="space-y-6">
+      {/* Batch Toolbar */}
+      <BatchToolbar
+        selectedCount={selectedTasks.size}
+        tasks={filteredTasks.map(t => ({ ...t, isSelected: selectedTasks.has(t.id) }))}
+        projects={[]}
+        users={[]}
+        onSelectAll={handleSelectAll}
+        onClearSelection={() => setSelectedTasks(new Set())}
+        onTasksUpdated={setTasks}
+        filteredTaskCount={filteredTasks.length}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

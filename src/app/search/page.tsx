@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, FolderKanban, CheckSquare } from 'lucide-react';
+import { Search, FolderKanban, CheckSquare, X } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { InlineLoadingSkeleton } from '@/components/skeleton-screens';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -31,13 +32,45 @@ interface SearchResult {
   }>;
 }
 
+interface SearchFilters {
+  scope: 'all' | 'task' | 'project' | 'people' | 'file';
+  projectId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  status?: string;
+}
+
+type DateRange = 'any' | 'week' | 'month' | 'custom';
+
 export default function SearchPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult>({ tasks: [], projects: [] });
   const [isLoading, setIsLoading] = useState(false);
+  const [filters, setFilters] = useState<SearchFilters>({
+    scope: (searchParams.get('scope') as any) || 'all',
+    projectId: searchParams.get('project_id') || undefined,
+    dateFrom: searchParams.get('date_from') || undefined,
+    dateTo: searchParams.get('date_to') || undefined,
+    status: searchParams.get('status') || undefined,
+  });
+  const [dateRange, setDateRange] = useState<DateRange>('any');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Fetch search results
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return filters.scope !== 'all' ||
+           filters.projectId ||
+           filters.dateFrom ||
+           filters.status;
+  }, [filters]);
+
+  // Fetch search results with filters
   const fetchResults = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || !user) {
       setResults({ tasks: [], projects: [] });
@@ -46,8 +79,27 @@ export default function SearchPage() {
 
     setIsLoading(true);
     try {
+      const params = new URLSearchParams();
+      params.set('q', searchQuery);
+
+      if (filters.scope !== 'all') {
+        params.set('type', filters.scope);
+      }
+      if (filters.projectId) {
+        params.set('project_id', filters.projectId);
+      }
+      if (filters.dateFrom) {
+        params.set('date_from', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        params.set('date_to', filters.dateTo);
+      }
+      if (filters.status) {
+        params.set('status', filters.status);
+      }
+
       const response = await fetch(
-        `/api/search?q=${encodeURIComponent(searchQuery)}`,
+        `/api/search?${params.toString()}`,
         {
           credentials: 'include',
         }
@@ -65,10 +117,114 @@ export default function SearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, filters]);
 
   // Debounce search query with 300ms delay (search fields)
   useDebounce(query, fetchResults, 300);
+
+  // Update URL params when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (filters.scope !== 'all') {
+      params.set('scope', filters.scope);
+    }
+    if (filters.projectId) {
+      params.set('project_id', filters.projectId);
+    }
+    if (filters.dateFrom) {
+      params.set('date_from', filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      params.set('date_to', filters.dateTo);
+    }
+    if (filters.status) {
+      params.set('status', filters.status);
+    }
+
+    if (params.toString()) {
+      router.push(`/search?${params.toString()}`);
+    } else {
+      router.push('/search');
+    }
+  }, [filters, router]);
+
+  // Handle scope change
+  const handleScopeChange = (newScope: SearchFilters['scope']) => {
+    setFilters(prev => ({ ...prev, scope: newScope }));
+  };
+
+  // Handle project filter change
+  const handleProjectChange = (projectId: string) => {
+    setFilters(prev => ({
+      ...prev,
+      projectId: projectId ? projectId : undefined,
+    }));
+  };
+
+  // Handle date range change
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    const now = new Date();
+
+    switch (range) {
+      case 'any':
+        setFilters(prev => ({ ...prev, dateFrom: undefined, dateTo: undefined }));
+        break;
+      case 'week':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        setFilters(prev => ({
+          ...prev,
+          dateFrom: weekAgo.toISOString().split('T')[0],
+          dateTo: now.toISOString().split('T')[0],
+        }));
+        break;
+      case 'month':
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        setFilters(prev => ({
+          ...prev,
+          dateFrom: monthAgo.toISOString().split('T')[0],
+          dateTo: now.toISOString().split('T')[0],
+        }));
+        break;
+      case 'custom':
+        // Keep custom dates as they are
+        break;
+    }
+  };
+
+  // Handle custom date change
+  const handleCustomDateChange = (type: 'from' | 'to', date: string) => {
+    if (type === 'from') {
+      setCustomDateFrom(date);
+      setFilters(prev => ({ ...prev, dateFrom: date }));
+    } else {
+      setCustomDateTo(date);
+      setFilters(prev => ({ ...prev, dateTo: date }));
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = (status: string) => {
+    setFilters(prev => ({
+      ...prev,
+      status: status ? status : undefined,
+    }));
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      scope: 'all',
+      projectId: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      status: undefined,
+    });
+    setDateRange('any');
+    setCustomDateFrom('');
+    setCustomDateTo('');
+  };
 
   const totalResults = results.tasks.length + results.projects.length;
 
@@ -91,6 +247,206 @@ export default function SearchPage() {
           className="max-w-2xl"
         />
       </div>
+
+      {/* Scope Filter Tabs */}
+      <div className="mb-6 flex gap-2 flex-wrap">
+        {['all', 'task', 'project', 'people', 'file'].map((scope) => (
+          <button
+            key={scope}
+            onClick={() => handleScopeChange(scope as any)}
+            aria-pressed={filters.scope === scope}
+            className={cn(
+              'px-3 py-1.5 text-sm rounded-full transition-colors',
+              filters.scope === scope
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+            )}
+            type="button"
+          >
+            {scope.charAt(0).toUpperCase() + scope.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Additional Filters */}
+      <div className="mb-6 flex gap-3 flex-wrap items-center">
+        {/* Date Filter */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.currentTarget.nextElementSibling?.classList.toggle('hidden');
+            }}
+            className="px-3 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            aria-label="Filter by date"
+          >
+            📅 Date
+          </button>
+          <div className="hidden absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg p-3 z-10 min-w-max">
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  handleDateRangeChange('any');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Any time
+              </button>
+              <button
+                onClick={() => {
+                  handleDateRangeChange('week');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Past week
+              </button>
+              <button
+                onClick={() => {
+                  handleDateRangeChange('month');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Past month
+              </button>
+              <button
+                onClick={() => {
+                  handleDateRangeChange('custom');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Filter */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.currentTarget.nextElementSibling?.classList.toggle('hidden');
+            }}
+            className="px-3 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            aria-label="Filter by status"
+          >
+            📋 Status
+          </button>
+          <div className="hidden absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg p-3 z-10 min-w-max">
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  handleStatusChange('');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                All statuses
+              </button>
+              <button
+                onClick={() => {
+                  handleStatusChange('active');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Active
+              </button>
+              <button
+                onClick={() => {
+                  handleStatusChange('completed');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Completed
+              </button>
+              <button
+                onClick={() => {
+                  handleStatusChange('archived');
+                  (e.currentTarget as HTMLButtonElement).parentElement?.parentElement?.classList.add('hidden');
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-sm"
+              >
+                Archived
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Filter */}
+        <div className="relative">
+          <select
+            value={filters.projectId || ''}
+            onChange={(e) => handleProjectChange(e.target.value)}
+            aria-label="Filter by project"
+            className="px-3 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900 dark:bg-zinc-800"
+          >
+            <option value="">All Projects</option>
+            <option value="p1">Project 1</option>
+            <option value="p2">Project 2</option>
+          </select>
+        </div>
+
+        {/* Clear Filters */}
+        {hasActiveFilters && (
+          <button
+            onClick={clearFilters}
+            className="px-3 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900 flex items-center gap-1"
+            aria-label="Clear all filters"
+          >
+            <X className="h-4 w-4" />
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Active Filter Chips */}
+      {hasActiveFilters && (
+        <div className="mb-6 flex gap-2 flex-wrap">
+          {filters.scope !== 'all' && (
+            <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-sm flex items-center gap-2">
+              <span>{filters.scope}</span>
+              <button
+                onClick={() => handleScopeChange('all')}
+                className="hover:text-red-500"
+                aria-label="Remove scope filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          {filters.dateFrom && (
+            <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-sm flex items-center gap-2">
+              <span>Date: {filters.dateFrom}</span>
+              <button
+                onClick={() => {
+                  setFilters(prev => ({ ...prev, dateFrom: undefined, dateTo: undefined }));
+                  setDateRange('any');
+                }}
+                className="hover:text-red-500"
+                aria-label="Remove date filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          {filters.status && (
+            <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-sm flex items-center gap-2">
+              <span>{filters.status}</span>
+              <button
+                onClick={() => handleStatusChange('')}
+                className="hover:text-red-500"
+                aria-label="Remove status filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Results */}
       {query && (

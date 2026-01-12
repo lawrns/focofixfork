@@ -39,6 +39,55 @@ export function useCollaborativeCursor({
   const channelRef = useRef<RealtimeChannel | null>(null)
   const lastCursorBroadcastRef = useRef<number>(0)
 
+  // Update presence users from channel state
+  const updatePresenceUsers = useCallback(() => {
+    if (!channelRef.current) return
+
+    const presenceState = channelRef.current.presenceState()
+    const usersList: CollaborationUser[] = []
+
+    Object.values(presenceState).forEach((presences: any[]) => {
+      presences.forEach((presence: any) => {
+        usersList.push({
+          user_id: presence.user_id,
+          user_name: presence.user_name,
+          avatar: presence.avatar,
+          status: presence.status || 'online',
+          last_seen: presence.last_seen,
+          cursor_position: presence.cursor_position,
+          color: generateUserColor(presence.user_id),
+        })
+      })
+    })
+
+    setUsers(usersList)
+  }, [])
+
+  // Handle incoming cursor position broadcasts
+  const handleCursorBroadcast = useCallback(
+    (payload: any) => {
+      if (payload.user_id === currentUserId) return // Ignore own cursor
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => {
+          if (user.user_id === payload.user_id) {
+            return {
+              ...user,
+              cursor_position: {
+                line: Math.floor(payload.cursor_y / 20), // Approximate line from Y
+                column: Math.floor(payload.cursor_x / 8), // Approximate column from X
+                offset: Math.floor(payload.cursor_y / 20) * 80 + Math.floor(payload.cursor_x / 8),
+              },
+              last_seen: new Date().toISOString(),
+            }
+          }
+          return user
+        })
+      )
+    },
+    [currentUserId]
+  )
+
   // Initialize presence channel and listeners
   useEffect(() => {
     const channelId = `presence:${entityType}:${entityId}`
@@ -96,56 +145,7 @@ export function useCollaborativeCursor({
         channelRef.current.unsubscribe()
       }
     }
-  }, [entityId, entityType, currentUserId, currentUserName, currentUserAvatar, pagePath])
-
-  // Update presence users from channel state
-  const updatePresenceUsers = useCallback(() => {
-    if (!channelRef.current) return
-
-    const presenceState = channelRef.current.presenceState()
-    const usersList: CollaborationUser[] = []
-
-    Object.values(presenceState).forEach((presences: any[]) => {
-      presences.forEach((presence: any) => {
-        usersList.push({
-          user_id: presence.user_id,
-          user_name: presence.user_name,
-          avatar: presence.avatar,
-          status: presence.status || 'online',
-          last_seen: presence.last_seen,
-          cursor_position: presence.cursor_position,
-          color: generateUserColor(presence.user_id),
-        })
-      })
-    })
-
-    setUsers(usersList)
-  }, [])
-
-  // Handle incoming cursor position broadcasts
-  const handleCursorBroadcast = useCallback(
-    (payload: any) => {
-      if (payload.user_id === currentUserId) return // Ignore own cursor
-
-      setUsers((prevUsers) =>
-        prevUsers.map((user) => {
-          if (user.user_id === payload.user_id) {
-            return {
-              ...user,
-              cursor_position: {
-                line: Math.floor(payload.cursor_y / 20), // Approximate line from Y
-                column: Math.floor(payload.cursor_x / 8), // Approximate column from X
-                offset: Math.floor(payload.cursor_y / 20) * 80 + Math.floor(payload.cursor_x / 8),
-              },
-              last_seen: new Date().toISOString(),
-            }
-          }
-          return user
-        })
-      )
-    },
-    [currentUserId]
-  )
+  }, [entityId, entityType, currentUserId, currentUserName, currentUserAvatar, pagePath, updatePresenceUsers, handleCursorBroadcast])
 
   // Broadcast cursor position
   const broadcastCursor = useCallback(

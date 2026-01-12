@@ -134,6 +134,24 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+// Mock supabase-client
+vi.mock('@/lib/supabase-client', () => ({
+  supabase: {
+    auth: {
+      getUser: vi.fn(),
+      signInWithPassword: vi.fn(),
+      signOut: vi.fn(),
+      onAuthStateChange: vi.fn(),
+    },
+    from: vi.fn((table: string) => {
+      if (table === 'organization_members') {
+        return createChainableMock({ data: [{ organization_id: 'org-123' }], error: null, count: 1 });
+      }
+      return createChainableMock({ data: [], error: null, count: 0 });
+    }),
+  },
+}));
+
 // Mock Framer Motion
 vi.mock('framer-motion', () => ({
   motion: {

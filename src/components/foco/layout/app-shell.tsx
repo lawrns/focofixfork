@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore, useFocusModeStore } from '@/lib/stores/foco-store';
 import { LeftRail } from './left-rail';
@@ -14,6 +15,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const pathname = usePathname();
   const { sidebarCollapsed, density } = useUIPreferencesStore();
   const { isActive: focusModeActive } = useFocusModeStore();
 
@@ -24,7 +26,10 @@ export function AppShell({ children }: AppShellProps) {
     spacious: 'text-base',
   };
 
-  if (focusModeActive) {
+  // Landing page and auth pages should not have AppShell chrome
+  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password';
+
+  if (isPublicPage || focusModeActive) {
     return (
       <div className="min-h-screen bg-white dark:bg-zinc-950">
         <CommandPalette />

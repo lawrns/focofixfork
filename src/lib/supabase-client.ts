@@ -33,7 +33,32 @@ declare global {
 
 // Create browser client with cookie-based session storage for Next.js App Router
 // Use global variable to ensure singleton even with React Strict Mode and HMR
-export const supabase = globalThis.__supabase ?? createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+export const supabase = globalThis.__supabase ?? createBrowserClient<Database>(
+  supabaseUrl,
+  supabaseAnonKey,
+  {
+    cookies: {
+      getAll() {
+        if (typeof document === 'undefined') return []
+        const cookies: { name: string; value: string }[] = []
+        document.cookie.split(';').forEach(cookie => {
+          const [name, value] = cookie.trim().split('=')
+          if (name && value) {
+            cookies.push({ name: decodeURIComponent(name), value: decodeURIComponent(value) })
+          }
+        })
+        return cookies
+      },
+      setAll(cookies) {
+        if (typeof document === 'undefined') return
+        cookies.forEach(({ name, value, options }) => {
+          const cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; max-age=${options?.maxAge || 31536000}; ${options?.secure ? 'secure;' : ''} ${options?.sameSite ? `samesite=${options.sameSite};` : ''}`
+          document.cookie = cookieString
+        })
+      },
+    },
+  }
+)
 
 if (typeof window !== 'undefined') {
   globalThis.__supabase = supabase

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Subtask } from '@/types/database.types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,6 +24,13 @@ import {
 import { GripVertical, Plus, Trash2, MoreVertical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+
+interface Subtask {
+  id: string
+  title: string
+  completed: boolean
+  order?: number
+}
 
 interface SubtaskListProps {
   taskId: string

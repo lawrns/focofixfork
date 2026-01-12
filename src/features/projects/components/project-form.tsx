@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Calendar, X } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ColorPicker } from './color-picker'
+import { SmartDateInput } from '@/components/forms/smart-date-input'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),

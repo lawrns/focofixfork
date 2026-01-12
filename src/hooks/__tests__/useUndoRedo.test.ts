@@ -203,24 +203,22 @@ describe('useUndoRedo Hook', () => {
       })
 
       expect(result.current.canRedo()).toBe(true)
+      expect(result.current.canUndo()).toBe(false)
 
       // Redo in reverse order
       act(() => {
         result.current.redo()
       })
-
       expect(redoFn1).toHaveBeenCalledTimes(1)
 
       act(() => {
         result.current.redo()
       })
-
       expect(redoFn2).toHaveBeenCalledTimes(1)
 
       act(() => {
         result.current.redo()
       })
-
       expect(redoFn3).toHaveBeenCalledTimes(1)
       expect(result.current.canRedo()).toBe(false)
     })

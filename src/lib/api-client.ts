@@ -72,6 +72,7 @@ class ApiClient {
             ...headers,
           },
           signal: controller.signal,
+          credentials: 'include',
         }
 
         if (body && method !== 'GET') {

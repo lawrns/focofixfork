@@ -236,7 +236,7 @@ export function TopBar({ className }: TopBarProps) {
 
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile settings</DropdownMenuItem>
-            <DropdownMenuItem>Keyboard shortcuts</DropdownMenuItem>
+            <DropdownMenuItem onClick={openKeyboardShortcuts}>Keyboard shortcuts</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="text-red-600 dark:text-red-400"

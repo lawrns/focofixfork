@@ -34,22 +34,28 @@ export function EmptyState({
 }: EmptyStateProps) {
   const sizeClasses = {
     sm: {
-      container: 'py-8',
-      icon: 'h-8 w-8',
-      title: 'text-sm font-medium',
+      container: 'py-8 px-6',
+      icon: 'h-10 w-10',
+      iconContainer: 'mb-3',
+      title: 'text-sm font-semibold',
       description: 'text-xs',
+      spacing: 'gap-1.5',
     },
     md: {
-      container: 'py-12',
-      icon: 'h-12 w-12',
-      title: 'text-base font-medium',
+      container: 'py-12 px-8',
+      icon: 'h-14 w-14',
+      iconContainer: 'mb-4',
+      title: 'text-base font-semibold',
       description: 'text-sm',
+      spacing: 'gap-2',
     },
     lg: {
-      container: 'py-16',
-      icon: 'h-16 w-16',
-      title: 'text-lg font-semibold',
-      description: 'text-sm',
+      container: 'py-16 px-10',
+      icon: 'h-20 w-20',
+      iconContainer: 'mb-5',
+      title: 'text-xl font-semibold',
+      description: 'text-base',
+      spacing: 'gap-3',
     },
   };
 
@@ -58,30 +64,58 @@ export function EmptyState({
   return (
     <div className={cn('flex flex-col items-center text-center', sizes.container, className)}>
       {illustration ? (
-        <div className="mb-4">{illustration}</div>
+        <div className={sizes.iconContainer}>{illustration}</div>
       ) : Icon ? (
-        <div className="mb-4">
-          <Icon className={cn('text-zinc-300 dark:text-zinc-600', sizes.icon)} strokeWidth={1.5} />
+        <div className={cn(
+          'p-3 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900',
+          sizes.iconContainer
+        )}>
+          <Icon
+            className={cn(
+              'text-zinc-400 dark:text-zinc-500',
+              sizes.icon
+            )}
+            strokeWidth={1.5}
+          />
         </div>
       ) : null}
 
-      <h3 className={cn('text-zinc-900 dark:text-zinc-50 mb-1', sizes.title)}>
-        {title}
-      </h3>
-      
-      <p className={cn('text-zinc-500 max-w-sm', sizes.description)}>
-        {description}
-      </p>
+      <div className={cn('flex flex-col', sizes.spacing)}>
+        <h3 className={cn(
+          'text-zinc-900 dark:text-zinc-50',
+          sizes.title
+        )}>
+          {title}
+        </h3>
+
+        <p className={cn(
+          'text-zinc-500 dark:text-zinc-400 max-w-sm leading-relaxed',
+          sizes.description
+        )}>
+          {description}
+        </p>
+      </div>
 
       {(primaryAction || secondaryAction) && (
-        <div className="flex items-center gap-3 mt-4">
+        <div className={cn('flex items-center gap-3 mt-6', {
+          'flex-col sm:flex-row': size === 'lg',
+        })}>
           {primaryAction && (
-            <Button onClick={primaryAction.onClick}>
+            <Button
+              onClick={primaryAction.onClick}
+              className="gap-2"
+              size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'}
+            >
               {primaryAction.label}
             </Button>
           )}
           {secondaryAction && (
-            <Button variant="outline" onClick={secondaryAction.onClick}>
+            <Button
+              variant="outline"
+              onClick={secondaryAction.onClick}
+              className="gap-2"
+              size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'}
+            >
               {secondaryAction.label}
             </Button>
           )}

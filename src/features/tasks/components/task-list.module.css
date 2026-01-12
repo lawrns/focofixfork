@@ -1,0 +1,142 @@
+/* Kanban board responsive styles */
+.kanbanBoard {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal scroll on body while table scrolls */
+.kanbanBoard {
+  overscroll-behavior-x: contain;
+}
+
+/* Ensure smooth scrolling on iOS */
+.kanbanBoard {
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Column sizing for mobile */
+@media (max-width: 768px) {
+  .kanbanBoard {
+    padding-bottom: 0.5rem;
+  }
+
+  .kanbanColumn {
+    flex: 0 0 320px;
+    min-width: 320px;
+  }
+
+  .kanbanColumnHeader {
+    font-size: 0.875rem;
+  }
+
+  .kanbanColumnCount {
+    min-height: 24px;
+    min-width: 24px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Column sizing for desktop */
+@media (min-width: 769px) {
+  .kanbanColumn {
+    flex: 0 0 320px;
+    min-width: 320px;
+  }
+}
+
+/* Touch-friendly task card sizing */
+.taskCard {
+  min-height: 60px;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Drag handle sizing for touch */
+.dragHandle {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  padding: 0.25rem;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* Checkbox sizing for touch */
+.taskCheckbox {
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+/* Prevent momentum scrolling conflicts */
+.kanbanBoard * {
+  -webkit-touch-callout: none;
+}
+
+/* Ensure filters are responsive */
+.taskFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .taskFilters {
+    flex-direction: column;
+  }
+
+  .taskFilters > div {
+    width: 100%;
+  }
+}
+
+/* Ensure buttons don't disappear on mobile */
+.actionButton {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem;
+}
+
+/* Prevent content cutoff */
+.taskCardContainer {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ensure proper spacing on mobile */
+.columnHeader {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive column width adjustments */
+@media (max-width: 480px) {
+  .kanbanColumn {
+    flex: 0 0 280px;
+    min-width: 280px;
+  }
+
+  .taskCard {
+    font-size: 0.875rem;
+  }
+
+  .columnHeader h3 {
+    font-size: 0.875rem;
+  }
+}

@@ -5,7 +5,7 @@ import { Toaster } from 'sonner';
 export function ToastContainer() {
   return (
     <Toaster
-      position="bottom-right"
+      position="top-right"
       toastOptions={{
         style: {
           background: 'hsl(var(--background))',
@@ -16,6 +16,8 @@ export function ToastContainer() {
       }}
       closeButton
       richColors
+      visibleToasts={5}
+      expand
     />
   );
 }

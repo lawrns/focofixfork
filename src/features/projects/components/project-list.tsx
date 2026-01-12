@@ -2,9 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { ProjectCard } from './project-card'
+import { ProjectForm } from './project-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Loader2, Plus, Search, Filter } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useRealtime } from '@/lib/hooks/useRealtime'
@@ -13,6 +21,7 @@ import { projectStore } from '@/lib/stores/project-store'
 interface Project {
   id: string
   name: string
+  slug?: string
   description: string | null
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'urgent'
@@ -21,6 +30,11 @@ interface Project {
   due_date: string | null
   created_at: string
   organization_id: string
+}
+
+interface Organization {
+  id: string
+  name: string
 }
 
 interface ProjectListProps {
@@ -51,6 +65,27 @@ export function ProjectList({
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
   const [priorityFilter, setPriorityFilter] = useState(initialPriority || 'all')
+
+  // Edit modal states
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+
+  // Fetch organizations
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      if (!user) return
+      try {
+        const { apiClient } = await import('@/lib/api-client')
+        const response = await apiClient.get('/api/organizations')
+        const orgsData = response.data || response
+        setOrganizations(Array.isArray(orgsData) ? orgsData : [])
+      } catch (err) {
+        console.error('Error fetching organizations:', err)
+      }
+    }
+    fetchOrganizations()
+  }, [user])
 
   const fetchProjects = useCallback(async () => {
     if (!user) return
@@ -130,6 +165,21 @@ export function ProjectList({
 
     return matchesSearch
   })
+
+  const handleEditProject = useCallback((projectId: string) => {
+    const projectToEdit = projects.find((p) => p.id === projectId)
+    if (projectToEdit) {
+      setEditingProject(projectToEdit)
+      setEditDialogOpen(true)
+    }
+  }, [projects])
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false)
+    setEditingProject(null)
+    // Refresh projects list
+    fetchProjects()
+  }
 
   const handleDeleteProject = async (projectId: string) => {
     if (!user) return

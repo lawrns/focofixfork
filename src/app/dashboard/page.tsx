@@ -576,5 +576,6 @@ export default function DashboardPage() {
         }}
       />
     </PageShell>
+    </ErrorBoundary>
   )
 }

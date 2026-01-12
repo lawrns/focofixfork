@@ -185,7 +185,7 @@ describe('useSyncStatus', () => {
     })
 
     expect(result.current.syncStatus).toBe('error')
-    expect(result.current.syncError).toBe('Initial error')
+    expect(result.current.syncErrorMessage).toBe('Initial error')
 
     act(() => {
       result.current.startSync()

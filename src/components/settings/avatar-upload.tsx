@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -121,6 +122,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadComplete, onError }: Av
           {/* Preview */}
           {preview && (
             <div className="flex flex-col items-center space-y-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={preview}
                 alt="Avatar preview"

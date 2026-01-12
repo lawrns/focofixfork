@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   validateNoFutureDate,
   validateFutureDate,
@@ -10,13 +10,10 @@ import {
 } from '../date-validation'
 
 describe('Date Validation Utilities', () => {
-  let mockToday: Date
-
   beforeEach(() => {
-    // Set a fixed date for testing (January 15, 2025)
-    mockToday = new Date('2025-01-15T00:00:00Z')
+    // Set a fixed date for testing (January 15, 2025 00:00:00 UTC)
     vi.useFakeTimers()
-    vi.setSystemTime(mockToday)
+    vi.setSystemTime(new Date('2025-01-15T00:00:00Z'))
   })
 
   afterEach(() => {

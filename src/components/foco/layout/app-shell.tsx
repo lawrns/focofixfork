@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useUIPreferencesStore, useFocusModeStore } from '@/lib/stores/foco-store';
 import { LeftRail } from './left-rail';
 import { TopBar } from './top-bar';
+import { MobileMenu } from './mobile-menu';
 import { CommandPalette } from './command-palette';
 import { KeyboardShortcutsModal } from './keyboard-shortcuts-modal';
 import { ToastContainer } from '../ui/toast-container';
@@ -48,13 +49,15 @@ export function AppShell({ children }: AppShellProps) {
     <div className={cn('min-h-screen bg-zinc-50 dark:bg-zinc-950', densityClasses[density])}>
       <CommandPalette />
       <KeyboardShortcutsModal />
+      <MobileMenu />
       <LeftRail />
       <TopBar />
 
       <main
         className={cn(
           'pt-14 min-h-screen transition-all duration-200',
-          sidebarCollapsed ? 'pl-16' : 'pl-64'
+          'md:pl-64',
+          sidebarCollapsed && 'md:pl-16'
         )}
       >
         <div className="p-6">

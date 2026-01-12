@@ -104,7 +104,7 @@ export function EmptyState({
             <Button
               onClick={primaryAction.onClick}
               className="gap-2"
-              size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'}
+              size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : undefined}
             >
               {primaryAction.label}
             </Button>
@@ -114,7 +114,7 @@ export function EmptyState({
               variant="outline"
               onClick={secondaryAction.onClick}
               className="gap-2"
-              size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'}
+              size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : undefined}
             >
               {secondaryAction.label}
             </Button>

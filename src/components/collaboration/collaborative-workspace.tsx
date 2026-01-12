@@ -40,8 +40,8 @@ export default function CollaborativeWorkspace({
     entityType,
     pagePath,
     currentUserId: user?.id || 'anonymous',
-    currentUserName: user?.name || 'Anonymous',
-    currentUserAvatar: user?.avatar_url,
+    currentUserName: (user?.user_metadata?.name || user?.email || 'Anonymous') as string,
+    currentUserAvatar: user?.user_metadata?.avatar_url,
   })
 
   const otherUsers = useMemo(

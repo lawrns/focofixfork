@@ -25,7 +25,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 interface Project {
   id: string
   name: string
-  slug: string
+  slug?: string
   status: string
   organization_id: string | null
 }

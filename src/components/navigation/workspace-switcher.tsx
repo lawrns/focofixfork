@@ -79,6 +79,11 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
     fetchWorkspaces()
   }, [user])
 
+  // Filter workspaces based on search
+  const filteredWorkspaces = workspaces.filter(w =>
+    w.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   // Keyboard shortcut handler
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -104,11 +109,6 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
       }, 0)
     }
   }, [isOpen, filteredWorkspaces.length])
-
-  // Filter workspaces based on search
-  const filteredWorkspaces = workspaces.filter(w =>
-    w.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
 
   // Announce workspace changes
   useEffect(() => {

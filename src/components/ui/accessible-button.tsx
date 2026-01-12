@@ -64,7 +64,7 @@ export const AccessibleButton = React.forwardRef<
 
 AccessibleButton.displayName = 'AccessibleButton'
 
-interface IconButtonProps extends Omit<AccessibleButtonProps, 'children'> {
+export interface IconButtonProps extends Omit<AccessibleButtonProps, 'children'> {
   icon: React.ReactNode
   label: string
 }

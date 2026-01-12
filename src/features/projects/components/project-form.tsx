@@ -372,9 +372,9 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
               currentColor={watchedColor}
               onColorChange={(color) => setValue('color', color)}
             />
-            {errors.color && (
+            {errors.color?.message && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.color.message}
+                {String(errors.color.message)}
               </p>
             )}
           </div>

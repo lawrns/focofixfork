@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('theme, accent_color, font_size')
+      .select('preferences')
       .eq('user_id', user.id)
       .single()
 
@@ -39,10 +39,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const prefs = (profile?.preferences as any) || {}
     return NextResponse.json({
-      theme: profile?.theme || 'light',
-      accent_color: profile?.accent_color || 'blue',
-      font_size: profile?.font_size || 'medium',
+      theme: prefs.theme || 'light',
+      accent_color: prefs.accent_color || 'blue',
+      font_size: prefs.font_size || 'medium',
     })
   } catch (error) {
     console.error('Error fetching preferences:', error)
@@ -92,23 +93,27 @@ export async function PATCH(request: NextRequest) {
     // Get current preferences first
     const { data: currentProfile } = await supabase
       .from('user_profiles')
-      .select('theme, accent_color, font_size')
+      .select('preferences')
       .eq('user_id', user.id)
       .single()
 
+    const currentPrefs = (currentProfile?.preferences as any) || {}
+
     // Merge with existing preferences
     const mergedPreferences = {
-      user_id: user.id,
-      theme: updates.theme || currentProfile?.theme || 'light',
-      accent_color: updates.accent_color || currentProfile?.accent_color || 'blue',
-      font_size: updates.font_size || currentProfile?.font_size || 'medium',
-      updated_at: new Date().toISOString(),
+      theme: updates.theme || currentPrefs.theme || 'light',
+      accent_color: updates.accent_color || currentPrefs.accent_color || 'blue',
+      font_size: updates.font_size || currentPrefs.font_size || 'medium',
     }
 
     // Update in database
     const { error: updateError } = await supabase
       .from('user_profiles')
-      .upsert(mergedPreferences)
+      .update({
+        preferences: mergedPreferences,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
 
     if (updateError) {
       console.error('Database update error:', updateError)

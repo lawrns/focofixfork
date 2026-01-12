@@ -108,7 +108,6 @@ export function InlineEditField({
           {fieldType === 'select' && (
             <Select value={editValue} onValueChange={onChange} disabled={isLoading}>
               <SelectTrigger
-                ref={inputRef as React.RefObject<HTMLSelectElement>}
                 data-testid={`inline-${fieldName}-edit`}
                 className="w-auto border-0 outline-none"
                 aria-label={`Edit ${fieldName}`}

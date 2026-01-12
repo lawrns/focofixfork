@@ -21,9 +21,13 @@ export function CustomFieldsManager({ projectId }: CustomFieldsManagerProps) {
   const [fields, setFields] = useState<CustomField[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [newField, setNewField] = useState({
+  const [newField, setNewField] = useState<{
+    field_name: string;
+    field_type: 'text' | 'number' | 'date' | 'dropdown';
+    options: string;
+  }>({
     field_name: '',
-    field_type: 'text' as const,
+    field_type: 'text',
     options: '',
   })
   const [isAdding, setIsAdding] = useState(false)

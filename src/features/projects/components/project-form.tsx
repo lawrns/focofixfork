@@ -347,25 +347,23 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
           {/* Dates Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="date"
-                {...register('start_date')}
-                disabled={isSubmitting}
-              />
-            </div>
+            <SmartDateInput
+              value={watch('start_date')}
+              onDateStringChange={(dateStr) => setValue('start_date', dateStr || '', { shouldDirty: true })}
+              label="Start Date"
+              placeholder="Enter date or natural language (e.g., 'today', 'next monday')"
+              disabled={isSubmitting}
+              error={errors.start_date?.message}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="due_date">Due Date</Label>
-              <Input
-                id="due_date"
-                type="date"
-                {...register('due_date')}
-                disabled={isSubmitting}
-              />
-            </div>
+            <SmartDateInput
+              value={watch('due_date')}
+              onDateStringChange={(dateStr) => setValue('due_date', dateStr || '', { shouldDirty: true })}
+              label="Due Date"
+              placeholder="Enter date or natural language (e.g., 'in 3 months', '2024-03-15')"
+              disabled={isSubmitting}
+              error={errors.due_date?.message}
+            />
           </div>
 
           {/* Color Picker */}

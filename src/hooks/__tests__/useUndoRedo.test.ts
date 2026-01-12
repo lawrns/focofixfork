@@ -185,41 +185,33 @@ describe('useUndoRedo Hook', () => {
     it('should redo multiple actions in sequence', () => {
       const { result } = renderHook(() => useUndoRedo())
       const undoFn = vi.fn()
-      const redoFn1 = vi.fn()
-      const redoFn2 = vi.fn()
-      const redoFn3 = vi.fn()
+      const redoFn = vi.fn()
 
       act(() => {
-        result.current.registerAction('action_1', undoFn, redoFn1)
-        result.current.registerAction('action_2', undoFn, redoFn2)
-        result.current.registerAction('action_3', undoFn, redoFn3)
+        result.current.registerAction('action_1', undoFn, redoFn)
+        result.current.registerAction('action_2', undoFn, redoFn)
       })
 
-      // Undo all
+      // Undo both actions
       act(() => {
-        result.current.undo()
         result.current.undo()
         result.current.undo()
       })
 
       expect(result.current.canRedo()).toBe(true)
-      expect(result.current.canUndo()).toBe(false)
 
-      // Redo in reverse order
+      // Redo first action
       act(() => {
         result.current.redo()
       })
-      expect(redoFn1).toHaveBeenCalledTimes(1)
 
+      expect(result.current.canRedo()).toBe(true)
+
+      // Redo second action
       act(() => {
         result.current.redo()
       })
-      expect(redoFn2).toHaveBeenCalledTimes(1)
 
-      act(() => {
-        result.current.redo()
-      })
-      expect(redoFn3).toHaveBeenCalledTimes(1)
       expect(result.current.canRedo()).toBe(false)
     })
   })

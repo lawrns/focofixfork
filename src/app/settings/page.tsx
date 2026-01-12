@@ -240,8 +240,57 @@ function AppearanceSettings() {
 }
 
 function AIPolicySettings() {
+  const [isSaving, setIsSaving] = useState(false);
   const [autoApply, setAutoApply] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState([85]);
+
+  // Data sources state
+  const [dataSources, setDataSources] = useState({
+    tasks: true,
+    comments: true,
+    docs: true,
+    history: true,
+  });
+
+  // AI actions state
+  const [aiActions, setAiActions] = useState({
+    triage: true,
+    assign: true,
+    schedule: true,
+    reports: true,
+    subtasks: false,
+    reassign: false,
+  });
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          aiPolicy: {
+            autoApply,
+            confidenceThreshold: confidenceThreshold[0],
+            dataSources,
+            actions: aiActions,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save AI policy settings');
+      }
+
+      toast.success('AI policy settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save AI policy settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -304,7 +353,12 @@ function AIPolicySettings() {
                 <Label className="text-base">{source.label}</Label>
                 <p className="text-sm text-zinc-500">{source.description}</p>
               </div>
-              <Switch defaultChecked />
+              <Switch
+                checked={dataSources[source.id as keyof typeof dataSources]}
+                onCheckedChange={(checked) =>
+                  setDataSources({ ...dataSources, [source.id]: checked })
+                }
+              />
             </div>
           ))}
         </CardContent>
@@ -328,16 +382,73 @@ function AIPolicySettings() {
           ].map((action) => (
             <div key={action.id} className="flex items-center justify-between">
               <Label>{action.label}</Label>
-              <Switch defaultChecked={action.enabled} />
+              <Switch
+                checked={aiActions[action.id as keyof typeof aiActions]}
+                onCheckedChange={(checked) =>
+                  setAiActions({ ...aiActions, [action.id]: checked })
+                }
+              />
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <Button onClick={handleSave} disabled={isSaving}>
+        {isSaving ? 'Saving...' : 'Save AI Policy Settings'}
+      </Button>
     </div>
   );
 }
 
 function NotificationSettings() {
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Notification channels state
+  const [channels, setChannels] = useState({
+    in_app: true,
+    email: true,
+    push: false,
+    slack: false,
+  });
+
+  // Notification types state
+  const [types, setTypes] = useState({
+    mentions: true,
+    assigned: true,
+    comments: true,
+    status: false,
+    due_soon: true,
+    ai_flags: true,
+  });
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notifications: {
+            channels,
+            types,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save notification settings');
+      }
+
+      toast.success('Notification settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save notification settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -359,7 +470,12 @@ function NotificationSettings() {
                 <Label className="text-base">{channel.label}</Label>
                 <p className="text-sm text-zinc-500">{channel.description}</p>
               </div>
-              <Switch defaultChecked={channel.enabled} />
+              <Switch
+                checked={channels[channel.id as keyof typeof channels]}
+                onCheckedChange={(checked) =>
+                  setChannels({ ...channels, [channel.id]: checked })
+                }
+              />
             </div>
           ))}
         </CardContent>
@@ -383,11 +499,20 @@ function NotificationSettings() {
           ].map((type) => (
             <div key={type.id} className="flex items-center justify-between">
               <Label>{type.label}</Label>
-              <Switch defaultChecked={type.enabled} />
+              <Switch
+                checked={types[type.id as keyof typeof types]}
+                onCheckedChange={(checked) =>
+                  setTypes({ ...types, [type.id]: checked })
+                }
+              />
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <Button onClick={handleSave} disabled={isSaving}>
+        {isSaving ? 'Saving...' : 'Save Notification Settings'}
+      </Button>
     </div>
   );
 }

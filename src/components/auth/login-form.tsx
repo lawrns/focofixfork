@@ -85,7 +85,19 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
       }
 
       if (data.user) {
-        // Success - redirect or call onSuccess callback
+        // Check if user has 2FA enabled
+        const statusResponse = await fetch('/api/auth/status')
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json()
+          if (statusData.twoFactorEnabled) {
+            // Store session token and show 2FA form
+            setSessionToken(data.session?.access_token || null)
+            setNeeds2FA(true)
+            return
+          }
+        }
+
+        // No 2FA - redirect or call onSuccess callback
         if (onSuccess) {
           onSuccess()
         } else {
@@ -105,6 +117,47 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
       } else {
         setError('An unexpected error occurred. Please try again later.')
       }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!twoFactorToken || twoFactorToken.length !== 6) {
+      setError('Please enter a valid 6-digit code')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/auth/2fa/verify-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: twoFactorToken,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Invalid 2FA code')
+      }
+
+      // Success - redirect or call onSuccess callback
+      setNeeds2FA(false)
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push(redirectTo)
+      }
+    } catch (error: any) {
+      console.error('2FA verification error:', error)
+      setError(error.message || 'Invalid 2FA code. Please try again.')
     } finally {
       setIsLoading(false)
     }

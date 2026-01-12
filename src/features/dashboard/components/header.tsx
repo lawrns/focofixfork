@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { supabase } from '@/lib/supabase-client'
+import { WorkspaceSwitcher } from '@/components/navigation/workspace-switcher'
 
 interface DashboardHeaderProps {
   selectedProject?: any
@@ -106,6 +107,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <Menu className="h-5 w-5" />
               </Button>
             )}
+
+            {/* Workspace Switcher */}
+            <WorkspaceSwitcher />
 
             {/* Project Info */}
             <div className="flex items-center space-x-3 min-w-0 flex-1">

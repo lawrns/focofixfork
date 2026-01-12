@@ -44,6 +44,7 @@ import { TaskQuickActions } from './task-quick-actions'
 import { TaskEditDialog } from './task-edit-dialog'
 import { PriorityIndicator } from './priority-indicator'
 import { InlineEditField } from './inline-edit-field'
+import { RecurrenceBadge } from './RecurrenceBadge'
 import { useInlineEdit } from '../hooks/use-inline-edit'
 import { Task } from '../types'
 
@@ -425,6 +426,9 @@ function TaskCardComponent({
             <Badge className="bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600 text-sm font-semibold">
               {t('task.overdue')}
             </Badge>
+          )}
+          {currentTask.is_recurring && (
+            <RecurrenceBadge pattern={currentTask.recurrence_pattern} />
           )}
         </div>
 

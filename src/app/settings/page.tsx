@@ -429,6 +429,12 @@ function NotificationSettings() {
     ai_flags: true,
   });
 
+  // Quiet hours state
+  const [quietHours, setQuietHours] = useState({
+    start: '22:00',
+    end: '08:00',
+  });
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -441,6 +447,7 @@ function NotificationSettings() {
           notifications: {
             channels,
             types,
+            quietHours,
           },
         }),
       });
@@ -515,6 +522,46 @@ function NotificationSettings() {
               />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quiet Hours</CardTitle>
+          <CardDescription>
+            Mute notifications during your designated do-not-disturb time
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quiet-start">Start Time</Label>
+              <Input
+                id="quiet-start"
+                type="time"
+                value={quietHours.start}
+                onChange={(e) =>
+                  setQuietHours({ ...quietHours, start: e.target.value })
+                }
+                aria-label="Quiet hours start time"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quiet-end">End Time</Label>
+              <Input
+                id="quiet-end"
+                type="time"
+                value={quietHours.end}
+                onChange={(e) =>
+                  setQuietHours({ ...quietHours, end: e.target.value })
+                }
+                aria-label="Quiet hours end time"
+              />
+            </div>
+          </div>
+          <p className="text-sm text-zinc-500">
+            Email notifications will be delayed during these hours. Other channels will be suppressed entirely.
+          </p>
         </CardContent>
       </Card>
 

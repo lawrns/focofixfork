@@ -39,6 +39,14 @@ export async function POST(
     const pattern = task.recurrence_pattern as RecurrencePattern;
     const occurrenceCount = task.occurrence_number || 1;
 
+    // Validate pattern has required type field
+    if (!pattern.type) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid recurrence pattern' },
+        { status: 400 }
+      );
+    }
+
     if (!shouldCreateNextInstance(pattern, new Date(), occurrenceCount)) {
       return NextResponse.json(
         { success: false, error: 'Recurrence has ended' },

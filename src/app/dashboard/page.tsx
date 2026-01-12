@@ -353,34 +353,34 @@ export default function DashboardPage() {
       <PageShell>
         <OnboardingChecklist />
         <PageHeader
-        title="Dashboard"
-        subtitle={`${projects.length} projects`}
-        primaryAction={
-          <div className="flex items-center gap-2" data-tour="dashboard-actions">
-            <Button 
-              onClick={() => setShowNewProjectModal(true)} 
-              data-tour="create-project-button"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create project</span>
-              <span className="sm:hidden">Create</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAIProjectModal(true)}
-              data-tour="ai-button"
-            >
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">AI create</span>
-              <span className="sm:hidden">AI</span>
-            </Button>
-          </div>
-        }
-        secondaryActions={[
-          { label: 'Import', onClick: () => {}, icon: Upload },
-          { label: 'Export', onClick: () => {}, icon: Download },
-        ]}
-      />
+          title="Dashboard"
+          subtitle={`${projects.length} projects`}
+          primaryAction={
+            <div className="flex items-center gap-2" data-tour="dashboard-actions">
+              <Button
+                onClick={() => setShowNewProjectModal(true)}
+                data-tour="create-project-button"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Create project</span>
+                <span className="sm:hidden">Create</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowAIProjectModal(true)}
+                data-tour="ai-button"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">AI create</span>
+                <span className="sm:hidden">AI</span>
+              </Button>
+            </div>
+          }
+          secondaryActions={[
+            { label: 'Import', onClick: () => {}, icon: Upload },
+            { label: 'Export', onClick: () => {}, icon: Download },
+          ]}
+        />
 
       {/* View Tabs */}
       <Suspense fallback={<Skeleton className="h-10 w-64" />}>

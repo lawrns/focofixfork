@@ -128,9 +128,4 @@
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
-
-  /* Prevent layout shift from scrollbars */
-  body {
-    overflow-x: hidden;
-  }
 }

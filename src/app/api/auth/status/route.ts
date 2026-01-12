@@ -3,13 +3,13 @@ import { requireAuth } from '@/server/auth/requireAuth';
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { id: userId, email, supabase } = await requireAuth();
 
     // Get user's 2FA status
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('two_factor_enabled')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     if (error) {
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      userId: user.id,
-      email: user.email,
+      userId: userId,
+      email: email,
       twoFactorEnabled: profile?.two_factor_enabled || false,
     });
   } catch (error) {

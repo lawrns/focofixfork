@@ -4,7 +4,7 @@ import { TwoFactorAuthService } from '@/lib/services/two-factor-auth.service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { id: userId, email, supabase } = await requireAuth();
     const body = await request.json();
     const { secret, token, backupCodes } = body;
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         two_factor_backup_codes: backupCodes || [],
         two_factor_enabled_at: new Date().toISOString(),
       })
-      .eq('id', user.id);
+      .eq('id', userId);
 
     if (updateError) {
       console.error('Failed to save 2FA settings:', updateError);

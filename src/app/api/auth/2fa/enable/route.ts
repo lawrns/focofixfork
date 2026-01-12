@@ -4,13 +4,13 @@ import { TwoFactorAuthService } from '@/lib/services/two-factor-auth.service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { id: userId, email, supabase } = await requireAuth();
 
     // Get user profile to check if 2FA is already enabled
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('two_factor_enabled')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     if (profileError) {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate secret and backup codes
-    const secret = TwoFactorAuthService.generateSecret(user.email || 'user', 'Foco');
+    const secret = TwoFactorAuthService.generateSecret(email || 'user', 'Foco');
     const backupCodes = TwoFactorAuthService.generateBackupCodes(10);
     const qrCode = await TwoFactorAuthService.generateQRCode(secret.keyuri);
 

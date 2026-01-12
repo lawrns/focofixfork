@@ -120,9 +120,10 @@ describe('Breadcrumbs Component', () => {
       const longName = 'This is a very long project name that should be truncated';
       render(<Breadcrumbs projectName={longName} />);
 
-      const projectElement = screen.getByText('This is a very long project n...');
+      const projectElement = screen.getByText('This is a very long project na...');
       expect(projectElement).toBeInTheDocument();
-      expect(projectElement.textContent).toHaveLength(33); // 30 chars + "..."
+      // Verify truncation: 30 characters of original text + "..."
+      expect(projectElement.textContent?.length).toBe(33);
     });
 
     it('truncates long task titles to 30 characters with ellipsis', () => {

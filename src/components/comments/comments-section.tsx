@@ -30,7 +30,8 @@ import {
   X
 } from 'lucide-react'
 import { CommentsService } from '@/lib/services/comments'
-import { Comment, CommentThread, CommentModel, Mention } from '@/lib/models/comments'
+import { CommentModel } from '@/lib/models/comments'
+import type { Comment, CommentThread, Mention } from '@/lib/models/comments'
 import { cn } from '@/lib/utils'
 
 interface CommentsSectionProps {
@@ -198,8 +199,7 @@ export default function CommentsSection({
         entity_type: entityType,
         entity_id: entityId,
         type: 'reply',
-        parent_id: parentId,
-        parent_comment_id: parentComment?.parent_id ? parentComment.id : parentId
+        parent_id: parentId
       })
 
       setReplyingTo(null)

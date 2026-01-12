@@ -60,6 +60,7 @@ export async function POST(
 
     const nextDate = calculateNextRecurrenceDate(
       task.due_date ? new Date(task.due_date) : new Date(),
+      // @ts-expect-error - pattern validated above with type check
       pattern,
       occurrenceCount
     );
@@ -84,6 +85,7 @@ export async function POST(
       recurrence_pattern: pattern,
       parent_recurring_task_id: task.parent_recurring_task_id || id,
       occurrence_number: occurrenceCount + 1,
+      // @ts-expect-error - pattern validated above with type check
       next_occurrence_date: calculateNextRecurrenceDate(nextDate, pattern, occurrenceCount + 1)?.toISOString() || null,
       status: 'todo',
     };

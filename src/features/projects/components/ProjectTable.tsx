@@ -38,6 +38,7 @@ interface Project {
   progress_percentage?: number
   created_at: string
   organization_id?: string
+  archived_at?: string | null
 }
 
 interface ProjectWithOrg extends Project {

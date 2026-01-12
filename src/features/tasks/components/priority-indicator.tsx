@@ -94,4 +94,4 @@ export function PriorityIndicator({
   }
 }
 
-export { Priority, Variant }
+export type { Priority, Variant }

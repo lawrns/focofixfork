@@ -151,7 +151,6 @@ export function BatchToolbar({
           <div className="flex items-center gap-3">
             <Checkbox
               checked={selectedCount > 0 && selectedCount === filteredTaskCount}
-              indeterminate={selectedCount > 0 && selectedCount < filteredTaskCount}
               onCheckedChange={onSelectAll}
               aria-label="Select all tasks"
             />

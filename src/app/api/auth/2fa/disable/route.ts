@@ -3,13 +3,13 @@ import { requireAuth } from '@/server/auth/requireAuth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { id: userId, supabase } = await requireAuth();
 
     // Get current user to verify 2FA is enabled
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('two_factor_enabled')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     if (profileError) {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         two_factor_backup_codes: [],
         two_factor_enabled_at: null,
       })
-      .eq('id', user.id);
+      .eq('id', userId);
 
     if (updateError) {
       console.error('Failed to disable 2FA:', updateError);

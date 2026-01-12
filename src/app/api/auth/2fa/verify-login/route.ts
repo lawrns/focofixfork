@@ -4,7 +4,7 @@ import { TwoFactorAuthService } from '@/lib/services/two-factor-auth.service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, supabase } = await requireAuth();
+    const { id: userId, email, supabase } = await requireAuth();
     const body = await request.json();
     const { token } = body;
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('two_factor_secret, two_factor_enabled, two_factor_backup_codes')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     if (profileError || !profile?.two_factor_enabled) {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       await supabase
         .from('user_profiles')
         .update({ two_factor_backup_codes: updatedCodes })
-        .eq('id', user.id);
+        .eq('id', userId);
 
       return NextResponse.json({
         success: true,

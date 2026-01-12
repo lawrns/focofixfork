@@ -408,7 +408,7 @@ export function ProjectList({
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => onEditProject?.(project.id)}
+                        onClick={() => handleEditProject(project.id)}
                         className="p-2 hover:bg-muted rounded-md transition-colors"
                         aria-label="Edit project"
                       >

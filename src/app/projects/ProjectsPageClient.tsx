@@ -414,6 +414,26 @@ export default function ProjectsPageClient() {
 
       try {
         const response = await fetch('/api/projects');
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Projects API error:', {
+            status: response.status,
+            error: errorData.error
+          });
+
+          if (response.status === 401) {
+            toast.error('Session expired. Please sign in again.');
+          } else if (response.status === 403) {
+            toast.error('You do not have permission to access projects.');
+          } else {
+            toast.error('Failed to load projects');
+          }
+
+          setProjects([]);
+          return;
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -436,10 +456,15 @@ export default function ProjectsPageClient() {
             teamSize: p.team_size || 0,
             updatedAt: p.updated_at || new Date().toISOString(),
           })));
+        } else {
+          console.error('Projects API returned success: false', data.error);
+          toast.error(data.error || 'Failed to load projects');
+          setProjects([]);
         }
       } catch (error) {
         console.error('Failed to fetch projects:', error);
         toast.error('Failed to load projects');
+        setProjects([]);
       } finally {
         setIsLoading(false);
       }
@@ -470,12 +495,28 @@ export default function ProjectsPageClient() {
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Duplicate project API error:', {
+          status: response.status,
+          error: errorData.error
+        });
+        toast.error(errorData.error || 'Failed to duplicate project');
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
         toast.success('Project duplicated successfully');
         // Refresh projects list
         const refreshResponse = await fetch('/api/projects');
+
+        if (!refreshResponse.ok) {
+          console.error('Failed to refresh projects list');
+          return;
+        }
+
         const refreshData = await refreshResponse.json();
         if (refreshData.success) {
           const projectsData = refreshData.data?.data || refreshData.data || [];
@@ -499,7 +540,7 @@ export default function ProjectsPageClient() {
           })));
         }
       } else {
-        toast.error('Failed to duplicate project');
+        toast.error(data.error || 'Failed to duplicate project');
       }
     } catch (error) {
       console.error('Duplicate project error:', error);
@@ -523,6 +564,16 @@ export default function ProjectsPageClient() {
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Archive project API error:', {
+          status: response.status,
+          error: errorData.error
+        });
+        toast.error(errorData.error || 'Failed to archive project');
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -530,7 +581,7 @@ export default function ProjectsPageClient() {
         // Remove from list
         setProjects(prev => prev.filter(p => p.id !== project.id));
       } else {
-        toast.error('Failed to archive project');
+        toast.error(data.error || 'Failed to archive project');
       }
     } catch (error) {
       console.error('Archive project error:', error);

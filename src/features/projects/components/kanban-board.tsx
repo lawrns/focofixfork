@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { generateKeyBetween } from 'fractional-indexing'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -24,6 +25,7 @@ interface Task {
   project_id: string
   milestone_id?: string
   due_date?: string
+  position?: string
   comment_count?: number
   attachment_count?: number
 }
@@ -75,10 +77,16 @@ export function KanbanBoard() {
 
         console.log('KanbanBoard: loaded tasks:', tasksData.length)
 
-        // Distribute tasks into columns
+        // Distribute tasks into columns and sort by position
         setColumns(prevColumns => prevColumns.map(col => ({
           ...col,
-          tasks: tasksData.filter(task => task.status === col.id)
+          tasks: tasksData
+            .filter(task => task.status === col.id)
+            .sort((a, b) => {
+              const posA = a.position || 'a0'
+              const posB = b.position || 'a0'
+              return posA.localeCompare(posB)
+            })
         })))
       } else {
         console.error('Failed to fetch tasks')
@@ -197,9 +205,19 @@ export function KanbanBoard() {
     const newSourceTasks = Array.from(sourceColumn.tasks)
     newSourceTasks.splice(source.index, 1)
 
-    // Add task to destination column
+    // Calculate fractional index position
+    const destTasks = Array.from(destColumn.tasks)
+    const prevTask = destination.index > 0 ? destTasks[destination.index - 1] : null
+    const nextTask = destination.index < destTasks.length ? destTasks[destination.index] : null
+
+    const newPosition = generateKeyBetween(
+      prevTask?.position || null,
+      nextTask?.position || null
+    )
+
+    // Add task to destination column with new position
+    const updatedTask = { ...sourceTask, status: destColumn.id, position: newPosition }
     const newDestTasks = Array.from(destColumn.tasks)
-    const updatedTask = { ...sourceTask, status: destColumn.id }
     newDestTasks.splice(destination.index, 0, updatedTask)
 
     // Update state optimistically
@@ -215,17 +233,16 @@ export function KanbanBoard() {
 
     setColumns(newColumns)
 
-    // Update backend with both status and position
+    // Update backend with status and fractional position
     try {
       const response = await fetch(`/api/tasks/${draggableId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: destColumn.id,
-          position: destination.index,
-          // Note: position field is saved, but backend needs column-specific ordering to fully persist drag order within columns
+          position: newPosition,
         }),
       })
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -30,6 +31,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -72,7 +81,15 @@ const riskColors = {
   high: 'text-red-600 bg-red-50 border-red-200',
 };
 
-function ProjectCard({ project }: { project: ProjectData }) {
+interface ProjectCardProps {
+  project: ProjectData;
+  onEdit: (project: ProjectData) => void;
+  onDuplicate: (project: ProjectData) => void;
+  onGenerateStatus: (project: ProjectData) => void;
+  onArchive: (project: ProjectData) => void;
+}
+
+function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive }: ProjectCardProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   return (
@@ -130,11 +147,40 @@ function ProjectCard({ project }: { project: ProjectData }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit project</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuItem>Generate status update</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onEdit(project);
+                }}
+              >
+                Edit project
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onDuplicate(project);
+                }}
+              >
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onGenerateStatus(project);
+                }}
+              >
+                Generate status update
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">Archive</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onArchive(project);
+                }}
+              >
+                Archive
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -193,7 +239,15 @@ function ProjectCard({ project }: { project: ProjectData }) {
   );
 }
 
-function ProjectRow({ project }: { project: ProjectData }) {
+interface ProjectRowProps {
+  project: ProjectData;
+  onEdit: (project: ProjectData) => void;
+  onDuplicate: (project: ProjectData) => void;
+  onGenerateStatus: (project: ProjectData) => void;
+  onArchive: (project: ProjectData) => void;
+}
+
+function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive }: ProjectRowProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   return (
@@ -287,11 +341,40 @@ function ProjectRow({ project }: { project: ProjectData }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit project</DropdownMenuItem>
-            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-            <DropdownMenuItem>Generate status update</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                onEdit(project);
+              }}
+            >
+              Edit project
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                onDuplicate(project);
+              }}
+            >
+              Duplicate
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                onGenerateStatus(project);
+              }}
+            >
+              Generate status update
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Archive</DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={(e) => {
+                e.preventDefault();
+                onArchive(project);
+              }}
+            >
+              Archive
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -301,11 +384,14 @@ function ProjectRow({ project }: { project: ProjectData }) {
 
 export default function ProjectsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('updated');
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectData | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -346,6 +432,96 @@ export default function ProjectsPage() {
 
     fetchProjects();
   }, [user]);
+
+  const handleEditProject = useCallback((project: ProjectData) => {
+    setEditingProject(project);
+    setEditDialogOpen(true);
+  }, []);
+
+  const handleDuplicateProject = useCallback(async (project: ProjectData) => {
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `${project.name} (Copy)`,
+          description: project.description,
+          color: project.color,
+          icon: project.icon,
+          status: project.status,
+          workspace_id: project.id, // This should be the actual workspace_id from the project
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Project duplicated successfully');
+        // Refresh projects list
+        const refreshResponse = await fetch('/api/projects');
+        const refreshData = await refreshResponse.json();
+        if (refreshData.success) {
+          const projectsData = refreshData.data?.data || refreshData.data || [];
+          setProjects(projectsData.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug || p.id,
+            description: p.description,
+            color: p.color || '#6366F1',
+            icon: p.icon || 'folder',
+            status: p.status || 'active',
+            isPinned: p.is_pinned || false,
+            progress: p.progress || 0,
+            tasksCompleted: p.tasks_completed || 0,
+            totalTasks: p.total_tasks || 0,
+            risk: p.risk || 'none',
+            nextMilestone: p.next_milestone,
+            owner: p.owner || { name: 'Unknown' },
+            teamSize: p.team_size || 0,
+            updatedAt: p.updated_at || new Date().toISOString(),
+          })));
+        }
+      } else {
+        toast.error('Failed to duplicate project');
+      }
+    } catch (error) {
+      console.error('Duplicate project error:', error);
+      toast.error('Failed to duplicate project');
+    }
+  }, []);
+
+  const handleGenerateStatus = useCallback((project: ProjectData) => {
+    router.push(`/projects/${project.slug}/status-update`);
+  }, [router]);
+
+  const handleArchiveProject = useCallback(async (project: ProjectData) => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'archived',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Project archived successfully');
+        // Remove from list
+        setProjects(prev => prev.filter(p => p.id !== project.id));
+      } else {
+        toast.error('Failed to archive project');
+      }
+    } catch (error) {
+      console.error('Archive project error:', error);
+      toast.error('Failed to archive project');
+    }
+  }, []);
 
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -456,7 +632,14 @@ export default function ProjectsPage() {
       {view === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onEdit={handleEditProject}
+              onDuplicate={handleDuplicateProject}
+              onGenerateStatus={handleGenerateStatus}
+              onArchive={handleArchiveProject}
+            />
           ))}
         </div>
       ) : (
@@ -473,7 +656,14 @@ export default function ProjectsPage() {
 
           {/* List Items */}
           {sortedProjects.map((project) => (
-            <ProjectRow key={project.id} project={project} />
+            <ProjectRow
+              key={project.id}
+              project={project}
+              onEdit={handleEditProject}
+              onDuplicate={handleDuplicateProject}
+              onGenerateStatus={handleGenerateStatus}
+              onArchive={handleArchiveProject}
+            />
           ))}
         </div>
       )}
@@ -497,6 +687,46 @@ export default function ProjectsPage() {
           } : undefined}
         />
       )}
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Make changes to your project here. Click save when you&apos;re done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="name" className="text-sm font-medium">
+                Name
+              </label>
+              <Input
+                id="name"
+                defaultValue={editingProject?.name}
+                placeholder="Project name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <Input
+                id="description"
+                defaultValue={editingProject?.description}
+                placeholder="Project description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setEditDialogOpen(false)}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

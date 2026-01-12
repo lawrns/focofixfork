@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -12,6 +13,7 @@ const ReviewPanel = dynamic(() => import('@/features/voice/components/PlanReview
 const Timeline = dynamic(() => import('@/features/voice/components/PlanTimeline'), { ssr: false })
 
 export default function VoicePage() {
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   return (
@@ -25,7 +27,7 @@ export default function VoicePage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild><a href="/settings">Settings</a></Button>
-            <Button variant="default" asChild><a href="/projects/new">New Project</a></Button>
+            <Button variant="default" onClick={() => router.push('/projects?create=true')}>New Project</Button>
           </div>
         </div>
         <div className="mt-6">

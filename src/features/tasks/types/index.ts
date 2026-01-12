@@ -12,6 +12,7 @@ export interface Task {
   estimated_hours?: number;
   actual_hours?: number;
   due_date?: string;
+  position?: string;
   created_by: string;
   created_at: string;
   updated_at: string;

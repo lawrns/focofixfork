@@ -324,12 +324,6 @@ describe('InboxPage - Mark All As Read', () => {
             json: () => Promise.resolve({ success: true, data: [] }),
           });
         }
-        if (url === '/api/notifications/mark-all-read') {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ success: true, count: 0 }),
-          });
-        }
         return Promise.reject(new Error('Unknown URL'));
       });
 
@@ -340,13 +334,9 @@ describe('InboxPage - Mark All As Read', () => {
       });
 
       const markAllReadButton = screen.getByRole('button', { name: /mark all read/i });
-      await userEvent.click(markAllReadButton);
 
-      await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith(
-          expect.stringContaining('0')
-        );
-      });
+      // Button should be disabled when no unread notifications
+      expect(markAllReadButton).toBeDisabled();
     });
 
     it('should show all caught up state when all notifications are read', async () => {

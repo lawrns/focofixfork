@@ -43,6 +43,8 @@ import { useTranslation } from '@/lib/i18n/context'
 import { TaskQuickActions } from './task-quick-actions'
 import { TaskEditDialog } from './task-edit-dialog'
 import { PriorityIndicator } from './priority-indicator'
+import { InlineEditField } from './inline-edit-field'
+import { useInlineEdit } from '../hooks/use-inline-edit'
 import { Task } from '../types'
 
 interface TaskCardProps {
@@ -113,6 +115,50 @@ function TaskCardComponent({
   const [isUpdated, setIsUpdated] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+
+  // Inline edit hook
+  const inlineEdit = useInlineEdit(currentTask, {
+    onSave: async (fieldName, value) => {
+      await handleInlineFieldUpdate(fieldName, value)
+    },
+  })
+
+  const handleInlineFieldUpdate = async (fieldName: string, value: any) => {
+    try {
+      setIsUpdating(true)
+
+      // Prepare the update payload
+      const updatePayload: any = {}
+      updatePayload[fieldName] = value
+
+      // Send update to API
+      const response = await fetch(`/api/tasks/${currentTask.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updatePayload),
+      })
+
+      if (!response.ok) {
+        const errorBody = await response.text()
+        throw new Error(`Failed to update task: ${response.status} - ${errorBody}`)
+      }
+
+      const updatedTask = await response.json()
+
+      // Update local state
+      setCurrentTask(updatedTask.data || updatedTask)
+      setIsUpdated(true)
+      setTimeout(() => setIsUpdated(false), 3000)
+    } catch (error) {
+      console.error('Failed to update task field:', error)
+      throw error
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   // Real-time updates for this task
   useRealtime(
@@ -215,17 +261,49 @@ function TaskCardComponent({
             </div>
 
             <div className="flex-1 min-w-0">
-              <Link
-                href={`/tasks/${currentTask.id}`}
-                className="block"
-                aria-label={`View task: ${currentTask.title}`}
-              >
-                <h3 className={`font-semibold text-base leading-tight hover:text-primary transition-colors truncate ${
-                  currentTask.status === 'done' ? 'line-through text-muted-foreground' : ''
-                }`}>
-                  {currentTask.title}
-                </h3>
-              </Link>
+              {inlineEdit.editingField === 'title' ? (
+                <InlineEditField
+                  fieldName="title"
+                  fieldType="text"
+                  value={currentTask.title}
+                  editValue={inlineEdit.editValue}
+                  isEditing={true}
+                  isLoading={inlineEdit.isLoading}
+                  error={inlineEdit.error}
+                  onStartEdit={() => {}}
+                  onSave={async (value) => {
+                    return await inlineEdit.saveChanges('title', value)
+                  }}
+                  onCancel={inlineEdit.cancelEditing}
+                  onKeyDown={inlineEdit.handleKeyDown}
+                  onBlur={inlineEdit.handleBlur}
+                  onChange={inlineEdit.setEditValue}
+                  inputRef={inlineEdit.inputRef}
+                />
+              ) : (
+                <Link
+                  href={`/tasks/${currentTask.id}`}
+                  className="block"
+                  aria-label={`View task: ${currentTask.title}`}
+                >
+                  <h3
+                    className={`font-semibold text-base leading-tight hover:text-primary transition-colors truncate cursor-pointer rounded px-1 py-0.5 hover:bg-muted ${
+                      currentTask.status === 'done' ? 'line-through text-muted-foreground' : ''
+                    }`}
+                    onDoubleClick={() => inlineEdit.startEditing('title', currentTask.title)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        inlineEdit.startEditing('title', currentTask.title)
+                      }
+                    }}
+                    title="Double-click to edit title"
+                  >
+                    {currentTask.title}
+                  </h3>
+                </Link>
+              )}
               {currentTask.description && (
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                   {currentTask.description}
@@ -294,13 +372,54 @@ function TaskCardComponent({
             {t(`status.${currentTask.status}`)}
           </Badge>
           <div className="flex items-center gap-2">
-            <PriorityIndicator
-              priority={currentTask.priority as any}
-              variant="dot"
-            />
-            <Badge className={`${priorityConfig[currentTask.priority].color} text-sm font-semibold`}>
-              {t(`priority.${currentTask.priority}`)}
-            </Badge>
+            {inlineEdit.editingField === 'priority' ? (
+              <InlineEditField
+                fieldName="priority"
+                fieldType="select"
+                value={currentTask.priority}
+                editValue={inlineEdit.editValue}
+                isEditing={true}
+                isLoading={inlineEdit.isLoading}
+                error={inlineEdit.error}
+                selectOptions={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                  { value: 'urgent', label: 'Urgent' },
+                ]}
+                onStartEdit={() => {}}
+                onSave={async (value) => {
+                  return await inlineEdit.saveChanges('priority', value)
+                }}
+                onCancel={inlineEdit.cancelEditing}
+                onKeyDown={inlineEdit.handleKeyDown}
+                onBlur={inlineEdit.handleBlur}
+                onChange={inlineEdit.setEditValue}
+                inputRef={inlineEdit.inputRef}
+                data-testid="inline-priority-dropdown"
+              />
+            ) : (
+              <>
+                <PriorityIndicator
+                  priority={currentTask.priority as any}
+                  variant="dot"
+                />
+                <Badge
+                  className={`${priorityConfig[currentTask.priority].color} text-sm font-semibold cursor-pointer`}
+                  onDoubleClick={() => inlineEdit.startEditing('priority', currentTask.priority)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      inlineEdit.startEditing('priority', currentTask.priority)
+                    }
+                  }}
+                  title="Double-click to edit priority"
+                >
+                  {t(`priority.${currentTask.priority}`)}
+                </Badge>
+              </>
+            )}
           </div>
           {isOverdue && (
             <Badge className="bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600 text-sm font-semibold">
@@ -346,7 +465,41 @@ function TaskCardComponent({
             {currentTask.due_date && (
               <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400' : ''}`}>
                 <Calendar className="h-3 w-3" />
-                <span>{formatDate(currentTask.due_date)}</span>
+                {inlineEdit.editingField === 'due_date' ? (
+                  <InlineEditField
+                    fieldName="due_date"
+                    fieldType="date"
+                    value={currentTask.due_date}
+                    editValue={inlineEdit.editValue}
+                    isEditing={true}
+                    isLoading={inlineEdit.isLoading}
+                    error={inlineEdit.error}
+                    onStartEdit={() => {}}
+                    onSave={async (value) => {
+                      return await inlineEdit.saveChanges('due_date', value)
+                    }}
+                    onCancel={inlineEdit.cancelEditing}
+                    onKeyDown={inlineEdit.handleKeyDown}
+                    onBlur={inlineEdit.handleBlur}
+                    onChange={inlineEdit.setEditValue}
+                    inputRef={inlineEdit.inputRef}
+                  />
+                ) : (
+                  <span
+                    className="cursor-pointer rounded px-1 py-0.5 hover:bg-muted transition-colors"
+                    onDoubleClick={() => inlineEdit.startEditing('due_date', currentTask.due_date)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        inlineEdit.startEditing('due_date', currentTask.due_date)
+                      }
+                    }}
+                    title="Double-click to edit due date"
+                  >
+                    {formatDate(currentTask.due_date)}
+                  </span>
+                )}
               </div>
             )}
           </div>

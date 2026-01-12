@@ -154,6 +154,7 @@ export default function ProjectTable({
   const [filters, setFilters] = useState<FilterCondition[]>([])
   const [sortConditions, setSortConditions] = useState<SortCondition[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithOrg[]>([])
+  const [showArchived, setShowArchived] = useState(false)
   const { toast: toastNotification } = useToast()
 
   // Subscribe to global project store
@@ -365,6 +366,43 @@ export default function ProjectTable({
     setBulkOperation('archive')
     setSelectedProjects(new Set([projectId]))
     setBulkDialogOpen(true)
+  }
+
+  const handleUnarchiveProject = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ archived_at: null }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to unarchive project')
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          variant: 'success',
+          title: 'Success',
+          description: 'Project has been restored.'
+        })
+
+        // Refresh the archived projects view
+        if (showArchived && fetchProjectsRef.current) {
+          fetchProjectsRef.current(true)
+        }
+      }
+    } catch (error) {
+      console.error('Error unarchiving project:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to restore project. Please try again.',
+      })
+    }
   }
 
   const handleDeleteProject = (projectId: string) => {
@@ -786,15 +824,16 @@ export default function ProjectTable({
   const someSelected = selectedProjects.size > 0 && selectedProjects.size < projects.length
 
   // Fetch projects function
-  const fetchProjectsRef = useRef<(() => Promise<void>) | null>(null)
-  
-  const fetchProjects = useCallback(async () => {
-    if (!user) return
+  const fetchProjectsRef = useRef<((archived?: boolean) => Promise<void>) | null>(null)
+
+  const fetchProjects = useCallback(async (archived: boolean = false) => {
+    if (!user?.id) return
 
     try {
       setLoading(true)
       const { apiClient } = await import('@/lib/api-client')
-      const data = await apiClient.get('/api/projects')
+      const url = archived ? '/api/projects?archived=true' : '/api/projects'
+      const data = await apiClient.get(url)
 
       // Handle wrapped response: {success: true, data: {data: [...], pagination: {}}}
       let projectsData: ProjectWithOrg[] = []
@@ -816,7 +855,9 @@ export default function ProjectTable({
       }
 
       console.log('ProjectTable: fetched projects from API:', projectsData.length)
-      projectStore.setProjects(projectsData)
+      if (!archived) {
+        projectStore.setProjects(projectsData)
+      }
       setProjects(projectsData)
     } catch (err) {
       console.error('Error fetching projects:', err)
@@ -832,12 +873,12 @@ export default function ProjectTable({
     fetchProjectsRef.current = fetchProjects
   }, [fetchProjects])
 
-  // Initial fetch
+  // Initial fetch and refetch when showArchived changes
   useEffect(() => {
     if (user && fetchProjectsRef.current) {
-      fetchProjectsRef.current()
+      fetchProjectsRef.current(showArchived)
     }
-  }, [user?.id]) // Only depend on user.id, not fetchProjects
+  }, [user?.id, showArchived]) // Depend on user.id and showArchived, not fetchProjects
 
   // Apply filtering and sorting
   useEffect(() => {
@@ -1011,6 +1052,14 @@ export default function ProjectTable({
             onFiltersChange={setFilters}
             onSortChange={setSortConditions}
           />
+          <Button
+            variant={showArchived ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowArchived(!showArchived)}
+            className="whitespace-nowrap"
+          >
+            {showArchived ? 'Viewing Archived' : 'View Archived'}
+          </Button>
           {(filters.length > 0 || sortConditions.length > 0) && (
             <span className="text-sm text-muted-foreground">
               {filteredProjects.length} of {projects.length} projects
@@ -1104,7 +1153,9 @@ export default function ProjectTable({
                       },
                       permissions.canManageTeam ? handleProjectSettings : () => {
                         console.log('Permission Denied: change settings')
-                      }
+                      },
+                      showArchived && project.archived_at !== null && project.archived_at !== undefined,
+                      handleUnarchiveProject
                     )}
                   />
                 </div>
@@ -1284,7 +1335,9 @@ export default function ProjectTable({
                           },
                           permissions.canManageTeam ? handleProjectSettings : () => {
                             console.log('Permission Denied: change settings')
-                          }
+                          },
+                          showArchived && project.archived_at !== null && project.archived_at !== undefined,
+                          handleUnarchiveProject
                         )}
                       />
                       </div>

@@ -4,7 +4,7 @@ import { getAuthUser } from '@/lib/api/auth-helper'
 export async function GET(req: NextRequest) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const workspaceId = searchParams.get('workspace_id')
     const status = searchParams.get('status')
+    const archived = searchParams.get('archived') // true to show archived, false/null for active
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
 
@@ -27,6 +28,15 @@ export async function GET(req: NextRequest) {
 
     if (status) {
       query = query.eq('status', status)
+    }
+
+    // Filter by archive status
+    if (archived === 'true') {
+      // Show only archived projects
+      query = query.not('archived_at', 'is', null)
+    } else {
+      // Show only active projects (default behavior)
+      query = query.is('archived_at', null)
     }
 
     const { data, error: queryError } = await query

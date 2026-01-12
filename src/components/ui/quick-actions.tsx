@@ -82,7 +82,9 @@ export const createProjectActions = (
   onArchive: (id: string) => void,
   onDelete: (id: string) => void,
   onManageTeam: (id: string) => void,
-  onSettings: (id: string) => void
+  onSettings: (id: string) => void,
+  isArchived: boolean = false,
+  onUnarchive?: (id: string) => void
 ): QuickAction[] => [
   {
     id: 'view',
@@ -108,29 +110,31 @@ export const createProjectActions = (
     onClick: () => {},
     separator: true,
   },
+  ...(isArchived ? [] : [
+    {
+      id: 'manage-team',
+      label: 'Manage Team',
+      icon: Users,
+      onClick: () => onManageTeam(projectId),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      onClick: () => onSettings(projectId),
+    },
+    {
+      id: 'separator2',
+      label: '',
+      onClick: () => {},
+      separator: true,
+    },
+  ]),
   {
-    id: 'manage-team',
-    label: 'Manage Team',
-    icon: Users,
-    onClick: () => onManageTeam(projectId),
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    onClick: () => onSettings(projectId),
-  },
-  {
-    id: 'separator2',
-    label: '',
-    onClick: () => {},
-    separator: true,
-  },
-  {
-    id: 'archive',
-    label: 'Archive',
+    id: isArchived ? 'unarchive' : 'archive',
+    label: isArchived ? 'Restore Project' : 'Archive',
     icon: Archive,
-    onClick: () => onArchive(projectId),
+    onClick: () => isArchived ? (onUnarchive?.(projectId)) : onArchive(projectId),
   },
   {
     id: 'delete',

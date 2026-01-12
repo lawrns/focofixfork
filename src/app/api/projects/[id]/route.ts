@@ -58,7 +58,7 @@ export async function PATCH(
 
     // Build update object with only provided fields
     const updateData: Record<string, any> = {}
-    
+
     if (body.name !== undefined) updateData.name = body.name
     if (body.slug !== undefined) updateData.slug = body.slug
     if (body.description !== undefined) updateData.description = body.description
@@ -66,6 +66,7 @@ export async function PATCH(
     if (body.icon !== undefined) updateData.icon = body.icon
     if (body.status !== undefined) updateData.status = body.status
     if (body.is_pinned !== undefined) updateData.is_pinned = body.is_pinned
+    if (body.archived_at !== undefined) updateData.archived_at = body.archived_at
 
     updateData.updated_at = new Date().toISOString()
 

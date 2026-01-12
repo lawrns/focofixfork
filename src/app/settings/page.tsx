@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
 import {
@@ -46,6 +46,7 @@ import type { DensitySetting } from '@/types/foco';
 import { PageShell } from '@/components/layout/page-shell';
 import { buttons } from '@/lib/copy';
 import { toast } from 'sonner';
+import { TwoFactorSettings } from '@/components/settings/two-factor-settings';
 
 const settingsSections = [
   { id: 'workspace', label: 'Workspace', icon: Settings },
@@ -797,8 +798,37 @@ function IntegrationsSettings() {
   );
 }
 
+function SecuritySettings({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
+  return (
+    <div className="space-y-6">
+      <TwoFactorSettings twoFactorEnabled={twoFactorEnabled} />
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('workspace');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  useEffect(() => {
+    // Fetch user's current 2FA status
+    const fetchUserStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/status');
+        if (response.ok) {
+          const data = await response.json();
+          setTwoFactorEnabled(data.twoFactorEnabled || false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user status:', error);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    fetchUserStatus();
+  }, []);
 
   const renderContent = () => {
     switch (activeSection) {
@@ -812,6 +842,8 @@ export default function SettingsPage() {
         return <NotificationSettings />;
       case 'integrations':
         return <IntegrationsSettings />;
+      case 'security':
+        return <SecuritySettings twoFactorEnabled={twoFactorEnabled} />;
       default:
         return (
           <Card>

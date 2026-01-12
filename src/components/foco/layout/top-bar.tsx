@@ -173,7 +173,7 @@ export function TopBar({ className }: TopBarProps) {
         {/* Profile - Only show if authenticated */}
         {user && (
           <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Avatar className="h-7 w-7">
                 <AvatarImage src="/images/avatar.jpg" />
@@ -223,7 +223,7 @@ export function TopBar({ className }: TopBarProps) {
             {/* Density Selector */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <span className="mr-2">⊟</span>
+                <span className="mr-2">{'\u22df'}</span>
                 Density
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>

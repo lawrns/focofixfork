@@ -37,6 +37,9 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+  const [needs2FA, setNeeds2FA] = useState(false)
+  const [twoFactorToken, setTwoFactorToken] = useState('')
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',

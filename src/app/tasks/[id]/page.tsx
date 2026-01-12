@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useFocusModeStore } from '@/lib/stores/foco-store';
+import { useRecentItems } from '@/hooks/useRecentItems';
 import { PriorityIndicator } from '@/features/tasks/components/priority-indicator';
 import {
   ArrowLeft,
@@ -418,8 +419,19 @@ export default function WorkItemPage() {
   const params = useParams();
   const router = useRouter();
   const { activate } = useFocusModeStore();
+  const { addItem } = useRecentItems();
   const [newComment, setNewComment] = useState('');
   const [isCompleted, setIsCompleted] = useState(workItem.status === 'done');
+
+  // Track this task in recent items when component mounts
+  useEffect(() => {
+    addItem({
+      type: 'task',
+      id: workItem.id,
+      name: workItem.title,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleStartFocus = () => {
     activate(workItem);

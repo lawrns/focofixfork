@@ -18,6 +18,7 @@ import { DuplicateWarningDialog } from './duplicate-warning-dialog'
 import { TasksService } from '../services/taskService'
 import { SmartDateInput } from '@/components/forms/smart-date-input'
 import { SuggestionChips } from './suggestion-chips'
+import { MarkdownPreview } from '@/components/markdown-preview/markdown-preview'
 import type { Task } from '../utils/duplicate-detection'
 
 const taskSchema = z.object({
@@ -333,13 +334,13 @@ export function TaskForm({
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          {...register('description')}
-          placeholder="Describe the task in detail..."
-          rows={3}
+        <Label htmlFor="description">Description (Supports Markdown)</Label>
+        <MarkdownPreview
+          value={watch('description') || ''}
+          onChange={(value) => setValue('description', value, { shouldDirty: true })}
+          placeholder="Describe the task in detail. Supports markdown formatting..."
           disabled={isSubmitting}
+          rows={5}
         />
         {errors.description && (
           <p className="text-sm text-red-600 dark:text-red-400">

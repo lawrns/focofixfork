@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import {
   Calendar,
   Clock,
@@ -315,13 +316,16 @@ function TaskCardComponent({
 
           {/* Actions Menu - Right Side */}
           {showActions && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0 hover:bg-muted" aria-label={`Actions for ${currentTask.title}`}>
-                  <MoreVertical className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
+            <TooltipProvider delayDuration={500}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0 hover:bg-muted" aria-label={`Actions for ${currentTask.title}`}>
+                        <MoreVertical className="h-5 w-5" aria-hidden="true" />
+                        <span className="sr-only">Open menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
                   <Circle className="h-4 w-4" aria-hidden="true" />
@@ -361,7 +365,11 @@ function TaskCardComponent({
                   </>
                 )}
               </DropdownMenuContent>
-            </DropdownMenu>
+                    </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">More actions</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
           )}
         </div>
       </CardHeader>
@@ -369,7 +377,7 @@ function TaskCardComponent({
       <CardContent className="space-y-3">
         {/* Status and Priority Badges */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge className={`${statusInfo.color} text-sm font-semibold`}>
+          <Badge className={statusInfo.color + ' text-sm font-semibold'}>
             {t(`status.${currentTask.status}`)}
           </Badge>
           <div className="flex items-center gap-2">

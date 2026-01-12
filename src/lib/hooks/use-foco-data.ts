@@ -252,7 +252,7 @@ export function useWorkItems(options?: {
         {
           event: '*',
           schema: 'public',
-          table: 'work_items',
+          table: 'tasks',
           filter: `workspace_id=eq.${wsId}`,
         },
         () => {
@@ -311,7 +311,7 @@ export function useWorkItem(workItemId: string) {
         {
           event: '*',
           schema: 'public',
-          table: 'work_items',
+          table: 'tasks',
           filter: `id=eq.${workItemId}`,
         },
         () => {

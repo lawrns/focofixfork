@@ -100,16 +100,16 @@ export function TopBar({ className }: TopBarProps) {
               <span>Task</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">C</kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openCommandPalette('create-project')}>
               <span>Project</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">P</kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openCommandPalette('create-doc')}>
               <span>Doc</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">D</kbd>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openCommandPalette('import')}>
               <span>Import...</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -106,7 +106,7 @@ describe('Button Touch Targets (WCAG 2.5.5 Level AAA)', () => {
     });
 
     it('compact variant has 44px minimum height on touch devices', () => {
-      const { container } = render(<Button size="compact">Compact</Button>);
+      const { container } = render(<Button size="sm">Compact</Button>);
       const button = container.querySelector('button');
 
       expect(button).not.toBeNull();

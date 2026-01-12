@@ -170,7 +170,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
       {/* Bell Button */}
       <Button
         variant="ghost"
-        size="compact"
+        size="sm"
         onClick={() => setIsOpen(!isOpen)}
         className="relative"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}

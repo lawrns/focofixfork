@@ -248,15 +248,16 @@ export default function ProjectPage() {
         setError(null);
 
         // Fetch project
-        const { data: projectData, error: projectError } = await supabase
+        const projectResponse: { data: Project | null; error: any } = await (supabase as any)
           .from('foco_projects')
-          .select('id, workspace_id, name, slug, description, brief, color, icon, status, owner_id, default_status, settings, is_pinned, archived_at, created_at, updated_at')
+          .select('*')
           .eq('slug', slug)
           .single();
 
-        if (projectError) throw projectError;
-        if (!projectData) throw new Error('Project not found');
+        if (projectResponse.error) throw projectResponse.error;
+        if (!projectResponse.data) throw new Error('Project not found');
 
+        const projectData = projectResponse.data;
         setProject(projectData);
 
         // Track in recent items
@@ -267,16 +268,17 @@ export default function ProjectPage() {
         });
 
         // Fetch work items (tasks) for this project
-        const { data: tasksData, error: tasksError } = await supabase
+        const tasksResponse: { data: any[] | null; error: any } = await (supabase as any)
           .from('work_items')
-          .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, tags, created_at, updated_at')
+          .select('*')
           .eq('project_id', projectData.id)
           .order('created_at', { ascending: false });
 
-        if (tasksError) throw tasksError;
+        if (tasksResponse.error) throw tasksResponse.error;
+        const tasksData = tasksResponse.data || [];
         
         // Fetch assignee profiles for work items that have assignees
-        const assigneeIds = [...new Set((tasksData || []).map(t => t.assignee_id).filter(Boolean))];
+        const assigneeIds = [...new Set(tasksData.map((t: any) => t.assignee_id).filter(Boolean))];
         let assigneeMap: Record<string, any> = {};
         
         if (assigneeIds.length > 0) {
@@ -287,29 +289,30 @@ export default function ProjectPage() {
           
           if (assigneesData) {
             assigneeMap = Object.fromEntries(
-              assigneesData.map(a => [a.id, a])
+              assigneesData.map((a: any) => [a.id, a])
             );
           }
         }
         
         // Map assignee data to work items
-        const tasksWithAssignees = (tasksData || []).map(task => ({
+        const tasksWithAssignees = tasksData.map((task: any) => ({
           ...task,
           assignee: task.assignee_id ? assigneeMap[task.assignee_id] : undefined
-        }));
+        })) as WorkItem[];
         
         setTasks(tasksWithAssignees);
 
         // Fetch team members
-        const { data: membersData, error: membersError } = await supabase
+        const membersResponse: { data: any[] | null; error: any } = await (supabase as any)
           .from('foco_project_members')
-          .select('id, project_id, user_id, role, created_at, updated_at')
+          .select('*')
           .eq('project_id', projectData.id);
 
-        if (membersError) throw membersError;
+        if (membersResponse.error) throw membersResponse.error;
+        const membersData = membersResponse.data || [];
         
         // Fetch user profiles for team members
-        const memberUserIds = (membersData || []).map(m => m.user_id);
+        const memberUserIds = membersData.map((m: any) => m.user_id);
         let memberProfilesMap: Record<string, any> = {};
         
         if (memberUserIds.length > 0) {
@@ -320,16 +323,16 @@ export default function ProjectPage() {
           
           if (profilesData) {
             memberProfilesMap = Object.fromEntries(
-              profilesData.map(p => [p.id, p])
+              profilesData.map((p: any) => [p.id, p])
             );
           }
         }
         
         // Map user profiles to team members
-        const membersWithProfiles = (membersData || []).map(member => ({
+        const membersWithProfiles = membersData.map((member: any) => ({
           ...member,
           user_profiles: memberProfilesMap[member.user_id]
-        }));
+        })) as TeamMember[];
         
         setTeamMembers(membersWithProfiles);
 

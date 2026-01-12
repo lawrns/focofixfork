@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Calendar, X } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { ColorPicker } from './color-picker'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
@@ -24,6 +25,7 @@ const projectSchema = z.object({
   start_date: z.string().optional(),
   due_date: z.string().optional(),
   progress_percentage: z.number().min(0).max(100).default(0),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format').default('#6366F1'),
 })
 
 type ProjectFormData = z.infer<typeof projectSchema>
@@ -68,6 +70,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
       start_date: project?.start_date || '',
       due_date: project?.due_date || '',
       progress_percentage: project?.progress_percentage ?? 0,
+      color: (project as any)?.color || '#6366F1',
     },
   })
 
@@ -76,6 +79,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
   const watchedStatus = watch('status')
   const watchedPriority = watch('priority')
   const watchedOrganizationId = watch('organization_id')
+  const watchedColor = watch('color')
 
   const isEditing = !!project?.id
 
@@ -361,6 +365,19 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
                 disabled={isSubmitting}
               />
             </div>
+          </div>
+
+          {/* Color Picker */}
+          <div className="space-y-2">
+            <ColorPicker
+              currentColor={watchedColor}
+              onColorChange={(color) => setValue('color', color)}
+            />
+            {errors.color && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {errors.color.message}
+              </p>
+            )}
           </div>
 
           {/* Progress (only for existing projects) */}

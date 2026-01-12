@@ -42,6 +42,7 @@ import { motion } from 'framer-motion'
 import { useTranslation } from '@/lib/i18n/context'
 import { TaskQuickActions } from './task-quick-actions'
 import { TaskEditDialog } from './task-edit-dialog'
+import { PriorityIndicator } from './priority-indicator'
 import { Task } from '../types'
 
 interface TaskCardProps {
@@ -288,13 +289,19 @@ function TaskCardComponent({
 
       <CardContent className="space-y-3">
         {/* Status and Priority Badges */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge className={`${statusInfo.color} text-sm font-semibold`}>
             {t(`status.${currentTask.status}`)}
           </Badge>
-          <Badge className={`${priorityConfig[currentTask.priority].color} text-sm font-semibold`}>
-            {t(`priority.${currentTask.priority}`)}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <PriorityIndicator
+              priority={currentTask.priority as any}
+              variant="dot"
+            />
+            <Badge className={`${priorityConfig[currentTask.priority].color} text-sm font-semibold`}>
+              {t(`priority.${currentTask.priority}`)}
+            </Badge>
+          </div>
           {isOverdue && (
             <Badge className="bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600 text-sm font-semibold">
               {t('task.overdue')}

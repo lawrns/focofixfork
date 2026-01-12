@@ -46,6 +46,7 @@ interface ProjectCardProps {
     due_date: string | null
     created_at: string
     organization_id: string
+    color?: string
   }
   onEdit?: (projectId: string) => void
   onDelete?: (projectId: string) => void
@@ -144,7 +145,12 @@ export function ProjectCard({
       animate={isUpdated ? { scale: [1, 1.02, 1] } : { scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className={`glass-card hover-lift border-l-4 ${statusBorderColors[currentProject.status]} ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
+      <Card
+        className={`glass-card hover-lift border-l-4 ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}
+        style={{
+          borderLeftColor: currentProject.color || '#6366F1',
+        }}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">

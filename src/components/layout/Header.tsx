@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Search, X, Settings, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useTranslation } from '@/lib/i18n/context'
+import { useDebounce } from '@/lib/hooks/use-debounce'
 import { apiGet } from '@/lib/api-client'
 import { LanguageSelectorCompact } from '@/components/ui/language-selector'
 import { HeyMenu } from '@/components/notifications/hey-menu'
@@ -41,10 +42,12 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
   const performSearch = useCallback(async (query: string) => {
-    if (!user || !query.trim()) return
+    if (!user || !query.trim()) {
+      setSearchResults([])
+      return
+    }
 
     setIsSearching(true)
     try {
@@ -68,34 +71,19 @@ export default function Header() {
     }
   }, [user])
 
+  // Debounce search query with 300ms delay (search fields)
+  useDebounce(searchQuery, performSearch, 300)
+
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query)
     setShowResults(query.trim() !== '')
-
-    if (debounceTimer) {
-      clearTimeout(debounceTimer)
-    }
-
-    const timer = setTimeout(() => {
-      if (query.trim()) {
-        performSearch(query)
-      } else {
-        setSearchResults([])
-      }
-    }, 300)
-
-    setDebounceTimer(timer)
-  }, [performSearch, debounceTimer])
+  }, [])
 
   const clearSearch = useCallback(() => {
     setSearchQuery('')
     setSearchResults([])
     setShowResults(false)
-    if (debounceTimer) {
-      clearTimeout(debounceTimer)
-      setDebounceTimer(null)
-    }
-  }, [debounceTimer])
+  }, [])
 
   const handleResultClick = useCallback((result: SearchResult) => {
     // Navigate to the result
@@ -108,14 +96,6 @@ export default function Header() {
     }
     clearSearch()
   }, [router, clearSearch])
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer)
-      }
-    }
-  }, [debounceTimer])
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between h-14 border-b border-zinc-200 bg-white px-4 md:px-6">

@@ -1,9 +1,8 @@
 'use client'
 
 import { Suspense, useEffect, useState, useCallback, lazy, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { Skeleton } from '@/components/ui/skeleton'
-import { LoadingCard, LoadingTable } from '@/components/ui/loading'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { DashboardSkeleton, Skeleton } from '@/components/skeleton-screens'
 import { useToastHelpers, useToast } from '@/components/ui/toast'
 import { SkipToMainContent } from '@/components/ui/accessibility'
 import { ProductTour, useProductTour, defaultTourSteps } from '@/components/onboarding/product-tour'
@@ -38,34 +37,12 @@ const AIProjectCreator = lazy(() => import('@/components/ai/ai-project-creator')
 const QuickActionsMenu = lazy(() => import('@/components/ui/quick-actions-menu').then(m => ({ default: m.QuickActionsMenu })))
 const ImportExportModal = lazy(() => import('@/components/import-export/import-export-modal').then(m => ({ default: m.ImportExportModal })))
 
-function DashboardSkeleton() {
+function DashboardSkeletonWrapper() {
   return (
     <div className="space-y-6">
       <SkipToMainContent />
       <main id="main-content" className="space-y-6">
-        {/* Header skeleton */}
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        
-        {/* Stats cards skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <LoadingCard key={i} />
-          ))}
-        </div>
-        
-        {/* Main content skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <LoadingTable rows={5} columns={4} />
-          </div>
-          <div className="space-y-4">
-            <LoadingCard />
-            <LoadingCard />
-          </div>
-        </div>
+        <DashboardSkeleton />
       </main>
     </div>
   )

@@ -44,7 +44,7 @@ interface Project {
   description?: string;
   brief?: string;
   color?: string;
-  organization_id: string;
+  workspace_id: string;
 }
 
 

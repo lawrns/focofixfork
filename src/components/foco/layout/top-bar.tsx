@@ -69,7 +69,8 @@ export function TopBar({ className }: TopBarProps) {
         'fixed top-0 right-0 z-20 h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
         'flex items-center justify-between px-4 gap-4',
         'transition-all duration-200',
-        sidebarCollapsed ? 'left-16' : 'left-64',
+        'left-0 md:left-64',
+        sidebarCollapsed && 'md:left-16',
         className
       )}
     >

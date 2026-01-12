@@ -74,52 +74,42 @@ export function useUndoRedo() {
   /**
    * Undo the last action
    */
-  const undo = useCallback(async () => {
-    setUndoStack(prev => {
-      if (prev.length === 0) return prev
+  const undo = useCallback(() => {
+    if (undoStack.length === 0) return
 
-      const newUndoStack = [...prev]
-      const historyAction = newUndoStack.pop()!
+    const newUndoStack = [...undoStack]
+    const historyAction = newUndoStack.pop()!
 
-      // Execute undo function
-      Promise.resolve(historyAction.action.undo()).catch(err => {
-        console.error('Undo failed:', err)
-      })
-
-      // Move to redo stack
-      setRedoStack(prev => [...prev, historyAction])
-
-      // Update last action to the one being undone
-      setLastAction(historyAction.action)
-
-      return newUndoStack
+    // Execute undo function asynchronously
+    Promise.resolve(historyAction.action.undo()).catch(err => {
+      console.error('Undo failed:', err)
     })
-  }, [])
+
+    // Update both stacks and last action
+    setUndoStack(newUndoStack)
+    setRedoStack(prevRedo => [...prevRedo, historyAction])
+    setLastAction(historyAction.action)
+  }, [undoStack])
 
   /**
    * Redo the last undone action
    */
-  const redo = useCallback(async () => {
-    setRedoStack(prev => {
-      if (prev.length === 0) return prev
+  const redo = useCallback(() => {
+    if (redoStack.length === 0) return
 
-      const newRedoStack = [...prev]
-      const historyAction = newRedoStack.pop()!
+    const newRedoStack = [...redoStack]
+    const historyAction = newRedoStack.pop()!
 
-      // Execute redo function
-      Promise.resolve(historyAction.action.redo()).catch(err => {
-        console.error('Redo failed:', err)
-      })
-
-      // Move back to undo stack
-      setUndoStack(prev => [...prev, historyAction])
-
-      // Update last action
-      setLastAction(historyAction.action)
-
-      return newRedoStack
+    // Execute redo function asynchronously
+    Promise.resolve(historyAction.action.redo()).catch(err => {
+      console.error('Redo failed:', err)
     })
-  }, [])
+
+    // Update both stacks and last action
+    setRedoStack(newRedoStack)
+    setUndoStack(prevUndo => [...prevUndo, historyAction])
+    setLastAction(historyAction.action)
+  }, [redoStack])
 
   /**
    * Check if undo is available

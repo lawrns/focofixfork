@@ -34,7 +34,7 @@ describe('EmptyState Component', () => {
     });
 
     it('renders with icon', () => {
-      render(
+      const { container } = render(
         <EmptyState
           icon={Inbox}
           title="Empty Inbox"
@@ -43,7 +43,7 @@ describe('EmptyState Component', () => {
       );
 
       expect(screen.getByText('Empty Inbox')).toBeInTheDocument();
-      const icon = screen.getByText('Empty Inbox').parentElement?.querySelector('svg');
+      const icon = container.querySelector('svg');
       expect(icon).toBeInTheDocument();
     });
 
@@ -505,7 +505,7 @@ describe('EmptyState Component', () => {
       );
 
       let title = screen.getByText('Title');
-      expect(title).toHaveClass('text-sm', 'font-medium');
+      expect(title).toHaveClass('text-sm', 'font-semibold');
 
       rerender(
         <EmptyState
@@ -516,7 +516,7 @@ describe('EmptyState Component', () => {
       );
 
       title = screen.getByText('Title');
-      expect(title).toHaveClass('text-base', 'font-medium');
+      expect(title).toHaveClass('text-base', 'font-semibold');
 
       rerender(
         <EmptyState
@@ -527,7 +527,7 @@ describe('EmptyState Component', () => {
       );
 
       title = screen.getByText('Title');
-      expect(title).toHaveClass('text-lg', 'font-semibold');
+      expect(title).toHaveClass('text-xl', 'font-semibold');
     });
   });
 

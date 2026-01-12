@@ -326,47 +326,47 @@ function TaskCardComponent({
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
-                  <Circle className="h-4 w-4" aria-hidden="true" />
-                  Mark as To Do
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
-                  <PlayCircle className="h-4 w-4" aria-hidden="true" />
-                  Start Progress
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange('review')}>
-                  <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                  Move to Review
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange('done')}>
-                  <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                  Mark as Done
-                </DropdownMenuItem>
-                {onEdit && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onEdit(currentTask.id)}>
-                      <Edit className="h-4 w-4" aria-hidden="true" />
-                      Edit Task
-                    </DropdownMenuItem>
-                  </>
-                )}
-                {onDelete && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className="text-red-600 dark:text-red-400"
-                    >
-                      <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                      Delete Task
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TooltipTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
+                        <Circle className="h-4 w-4" aria-hidden="true" />
+                        Mark as To Do
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
+                        <PlayCircle className="h-4 w-4" aria-hidden="true" />
+                        Start Progress
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('review')}>
+                        <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                        Move to Review
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('done')}>
+                        <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                        Mark as Done
+                      </DropdownMenuItem>
+                      {onEdit && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onEdit(currentTask.id)}>
+                            <Edit className="h-4 w-4" aria-hidden="true" />
+                            Edit Task
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {onDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={handleDelete}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                            Delete Task
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TooltipTrigger>
                   <TooltipContent side="bottom">More actions</TooltipContent>
                 </Tooltip>
               </TooltipProvider>

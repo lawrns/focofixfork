@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -13,6 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useDuplicateDetection } from '../hooks/use-duplicate-detection'
+import { DuplicateWarningDialog } from './duplicate-warning-dialog'
+import { TasksService } from '../services/taskService'
+import type { Task } from '../utils/duplicate-detection'
 
 const taskSchema = z.object({
   title: z.string().trim().min(1, 'Task title is required').max(500, 'Title must be less than 500 characters'),
@@ -44,6 +48,7 @@ interface TaskFormProps {
   onSuccess?: () => void
   onCancel?: () => void
   isInModal?: boolean
+  projectTasks?: Task[]
 }
 
 export function TaskForm({
@@ -54,11 +59,22 @@ export function TaskForm({
   defaultProjectId,
   onSuccess,
   onCancel,
-  isInModal = false
+  isInModal = false,
+  projectTasks = [],
 }: TaskFormProps) {
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [allProjectTasks, setAllProjectTasks] = useState<Task[]>(projectTasks)
+  const [shouldCreateAnyway, setShouldCreateAnyway] = useState(false)
+
+  const {
+    duplicates,
+    showDialog,
+    checkDuplicates,
+    closeDuplicateDialog,
+    resetDuplicates,
+  } = useDuplicateDetection({ threshold: 0.9, enabled: true })
 
   const {
     register,
@@ -93,6 +109,52 @@ export function TaskForm({
   const availableMilestones = milestones.filter(m => m.project_id === watchedProjectId)
 
   const isEditing = !!task?.id
+
+  // Load tasks for duplicate detection
+  useEffect(() => {
+    const loadProjectTasks = async () => {
+      if (!user || !watchedProjectId) {
+        setAllProjectTasks([])
+        return
+      }
+
+      try {
+        const response = await TasksService.getUserTasks(user.id, {
+          project_id: watchedProjectId,
+        })
+        if (response.success && response.data) {
+          setAllProjectTasks(response.data as Task[])
+        }
+      } catch (err) {
+        console.error('Failed to load project tasks for duplicate detection:', err)
+      }
+    }
+
+    loadProjectTasks()
+  }, [user, watchedProjectId])
+
+  // Handle title blur - check for duplicates
+  const handleTitleBlur = useCallback(() => {
+    if (isEditing || shouldCreateAnyway) {
+      return
+    }
+
+    if (watchedTitle.trim() && watchedProjectId) {
+      checkDuplicates(watchedTitle, watchedProjectId, allProjectTasks)
+    }
+  }, [watchedTitle, watchedProjectId, allProjectTasks, isEditing, shouldCreateAnyway, checkDuplicates])
+
+  // Handle dialog cancel
+  const handleDuplicateCancel = useCallback(() => {
+    closeDuplicateDialog()
+    setShouldCreateAnyway(false)
+  }, [closeDuplicateDialog])
+
+  // Handle create anyway
+  const handleCreateAnyway = useCallback(() => {
+    setShouldCreateAnyway(true)
+    closeDuplicateDialog()
+  }, [closeDuplicateDialog])
 
   const onSubmit = async (data: any) => {
     if (!user) return
@@ -157,7 +219,7 @@ export function TaskForm({
         <Label htmlFor="title">Task Title *</Label>
         <Input
           id="title"
-          {...register('title')}
+          {...register('title', { onBlur: handleTitleBlur })}
           placeholder="Enter task title"
           disabled={isSubmitting}
           aria-invalid={errors.title ? 'true' : 'false'}
@@ -377,24 +439,44 @@ export function TaskForm({
     </form>
   )
 
-  // If in modal, return bare form without Card wrapper
+  // If in modal, return bare form with dialog without Card wrapper
   if (isInModal) {
-    return <div className="space-y-4">{formContent}</div>
+    return (
+      <>
+        <div className="space-y-4">{formContent}</div>
+        <DuplicateWarningDialog
+          isOpen={showDialog}
+          title={watchedTitle}
+          duplicates={duplicates}
+          onCreateAnyway={handleCreateAnyway}
+          onCancel={handleDuplicateCancel}
+        />
+      </>
+    )
   }
 
   // Otherwise, return form wrapped in Card for standalone pages
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>
-          {isEditing ? 'Edit Task' : 'Create New Task'}
-        </CardTitle>
-      </CardHeader>
+    <>
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>
+            {isEditing ? 'Edit Task' : 'Create New Task'}
+          </CardTitle>
+        </CardHeader>
 
-      <CardContent>
-        {formContent}
-      </CardContent>
-    </Card>
+        <CardContent>
+          {formContent}
+        </CardContent>
+      </Card>
+      <DuplicateWarningDialog
+        isOpen={showDialog}
+        title={watchedTitle}
+        duplicates={duplicates}
+        onCreateAnyway={handleCreateAnyway}
+        onCancel={handleDuplicateCancel}
+      />
+    </>
   )
 }
 

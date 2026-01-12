@@ -34,7 +34,7 @@ describe('SearchPage', () => {
     expect(searchInput).toBeInTheDocument()
   })
 
-  it('displays search results when search is performed', async () => {
+  it('displays search results when search is performed after debounce delay', async () => {
     const mockResults = {
       success: true,
       data: {
@@ -58,12 +58,16 @@ describe('SearchPage', () => {
     const searchInput = screen.getByPlaceholderText(/search/i)
     await user.type(searchInput, 'test query')
 
+    // API should not be called immediately
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    // Wait for debounce to complete (300ms default)
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/search?q=test%20query'),
         expect.any(Object)
       )
-    })
+    }, { timeout: 500 })
   })
 
   it('shows empty state when no query is entered', () => {

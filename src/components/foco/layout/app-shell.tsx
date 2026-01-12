@@ -7,6 +7,7 @@ import { useUIPreferencesStore, useFocusModeStore } from '@/lib/stores/foco-stor
 import { LeftRail } from './left-rail';
 import { TopBar } from './top-bar';
 import { CommandPalette } from './command-palette';
+import { KeyboardShortcutsModal } from './keyboard-shortcuts-modal';
 import { ToastContainer } from '../ui/toast-container';
 import { UndoToast } from '../ui/undo-toast';
 
@@ -33,6 +34,7 @@ export function AppShell({ children }: AppShellProps) {
     return (
       <div className="min-h-screen bg-white dark:bg-zinc-950">
         <CommandPalette />
+        <KeyboardShortcutsModal />
         <main className="min-h-screen">
           {children}
         </main>
@@ -45,9 +47,10 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className={cn('min-h-screen bg-zinc-50 dark:bg-zinc-950', densityClasses[density])}>
       <CommandPalette />
+      <KeyboardShortcutsModal />
       <LeftRail />
       <TopBar />
-      
+
       <main
         className={cn(
           'pt-14 min-h-screen transition-all duration-200',
@@ -58,7 +61,7 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </div>
       </main>
-      
+
       <ToastContainer />
       <UndoToast />
     </div>

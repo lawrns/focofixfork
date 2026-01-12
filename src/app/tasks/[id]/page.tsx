@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useFocusModeStore } from '@/lib/stores/foco-store';
+import { PriorityIndicator } from '@/features/tasks/components/priority-indicator';
 import {
   ArrowLeft,
   CheckCircle2,

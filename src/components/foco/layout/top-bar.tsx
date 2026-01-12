@@ -1,6 +1,7 @@
 'use client';
 
 import { useCommandPaletteStore, useInboxStore, useUIPreferencesStore } from '@/lib/stores/foco-store';
+import { useKeyboardShortcutsModalStore } from '@/lib/hooks/use-keyboard-shortcuts-modal';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import {

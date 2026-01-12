@@ -22,12 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Users, Building, Settings, Loader2, Mail, Crown, Shield, User, Edit, Trash2, Clock } from 'lucide-react'
+import { Plus, Users, Building, Settings, Mail, Crown, Shield, User, Edit, Trash2, Clock, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/data-display/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PageLoadingSkeleton, InlineLoadingSkeleton } from '@/components/skeleton-screens'
 import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import { InvitationWithDetails } from '@/lib/models/invitations'
 import { InvitationModel } from '@/lib/models/invitations'
@@ -492,9 +493,7 @@ function OrganizationsContent() {
   if (!user) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+        <PageLoadingSkeleton />
       </MainLayout>
     )
   }
@@ -883,7 +882,7 @@ function OrganizationsContent() {
                               >
                                 {isInviting ? (
                                   <>
-                                    <Clock className="w-4 h-4 animate-spin" />
+                                    <InlineLoadingSkeleton size="sm" />
                                     Sending...
                                   </>
                                 ) : (
@@ -1068,7 +1067,7 @@ function OrganizationsContent() {
                 >
                   {isInviting ? (
                     <>
-                      <Clock className="w-4 h-4 animate-spin" />
+                      <InlineLoadingSkeleton size="sm" />
                       Sending...
                     </>
                   ) : (
@@ -1160,7 +1159,7 @@ function OrganizationsContent() {
                 >
                   {isCreating ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <InlineLoadingSkeleton size="sm" />
                       Creating...
                     </>
                   ) : (

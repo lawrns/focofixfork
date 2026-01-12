@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, FolderKanban, CheckSquare, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { InlineLoadingSkeleton } from '@/components/skeleton-screens';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 
 interface SearchResult {
@@ -32,22 +34,12 @@ interface SearchResult {
 export default function SearchPage() {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [results, setResults] = useState<SearchResult>({ tasks: [], projects: [] });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(query);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
   // Fetch search results
-  const fetchResults = useCallback(async () => {
-    if (!debouncedQuery.trim() || !user) {
+  const fetchResults = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim() || !user) {
       setResults({ tasks: [], projects: [] });
       return;
     }
@@ -55,7 +47,7 @@ export default function SearchPage() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/search?q=${encodeURIComponent(debouncedQuery)}`,
+        `/api/search?q=${encodeURIComponent(searchQuery)}`,
         {
           credentials: 'include',
         }
@@ -73,11 +65,10 @@ export default function SearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedQuery, user]);
+  }, [user]);
 
-  useEffect(() => {
-    fetchResults();
-  }, [fetchResults]);
+  // Debounce search query with 300ms delay (search fields)
+  useDebounce(query, fetchResults, 300);
 
   const totalResults = results.tasks.length + results.projects.length;
 
@@ -102,7 +93,7 @@ export default function SearchPage() {
       </div>
 
       {/* Results */}
-      {debouncedQuery && (
+      {query && (
         <div className="mb-4">
           <p className="text-sm text-zinc-500">
             {isLoading ? 'Searching...' : `Found ${totalResults} result${totalResults !== 1 ? 's' : ''}`}
@@ -111,7 +102,7 @@ export default function SearchPage() {
       )}
 
       {/* Empty State */}
-      {!debouncedQuery && (
+      {!query && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Search className="h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-4" />
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -124,7 +115,7 @@ export default function SearchPage() {
       )}
 
       {/* No Results */}
-      {debouncedQuery && !isLoading && totalResults === 0 && (
+      {query && !isLoading && totalResults === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Search className="h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-4" />
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">

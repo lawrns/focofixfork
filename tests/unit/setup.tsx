@@ -210,6 +210,10 @@ vi.mock('lucide-react', () => ({
   Archive: () => <svg data-testid="archive-icon" />,
   Inbox: () => <svg data-testid="inbox-icon" />,
   Filter: () => <svg data-testid="filter-icon" />,
+  Copy: () => <svg data-testid="copy-icon" />,
+  CheckSquare: () => <svg data-testid="check-square-icon" />,
+  FolderKanban: () => <svg data-testid="folder-kanban-icon" />,
+  Hash: () => <svg data-testid="hash-icon" />,
 }));
 
 // Custom test utilities

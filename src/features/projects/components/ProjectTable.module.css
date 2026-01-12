@@ -1,3 +1,8 @@
+/* Desktop Table View - Default for larger screens */
+.desktopTableView {
+  display: block !important;
+}
+
 /* Force table visibility - Override any cached styles */
 .projectTable {
   width: 100% !important;
@@ -67,11 +72,40 @@
   width: 90px !important;
 }
 
-/* Mobile card view */
+/* Mobile card view - Touch-friendly layout for small screens */
 .mobileCardView {
   display: block;
 }
 
+/* Ensure mobile cards have proper spacing and touch targets */
+.mobileCardView > div {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Ensure checkboxes are touch-friendly */
+.mobileCardView input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  cursor: pointer;
+}
+
+/* Ensure buttons are touch-friendly */
+.mobileCardView button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem;
+}
+
+/* Responsive breakpoints */
 @media (min-width: 640px) {
   .mobileCardView {
     display: none;
@@ -85,5 +119,18 @@
 @media (max-width: 639px) {
   .desktopTableView {
     display: none !important;
+  }
+
+  /* Ensure horizontal scroll container doesn't break layout */
+  .desktopTableView + div {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent layout shift from scrollbars */
+  body {
+    overflow-x: hidden;
   }
 }

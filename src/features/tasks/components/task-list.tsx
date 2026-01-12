@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { Task } from '../types'
+import styles from './task-list.module.css'
 
 interface TaskListProps {
   projectId?: string
@@ -409,9 +410,9 @@ export function TaskList({
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      {/* Filters - Responsive layout */}
+      <div className={`${styles.taskFilters}`}>
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search tasks..."
@@ -422,9 +423,9 @@ export function TaskList({
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32" aria-label="Filter tasks by status">
+            <SelectTrigger className="w-32 sm:w-auto" aria-label="Filter tasks by status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -438,7 +439,7 @@ export function TaskList({
           </Select>
 
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-32" aria-label="Filter tasks by priority">
+            <SelectTrigger className="w-32 sm:w-auto" aria-label="Filter tasks by priority">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -496,10 +497,10 @@ export function TaskList({
         </div>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="w-full overflow-x-auto pb-4" role="region" aria-label="Task board with four columns - drag tasks to change status">
+          <div className={`${styles.kanbanBoard}`} role="region" aria-label="Task board with four columns - drag tasks to change status">
             <div className="flex gap-6 min-w-max">
               {/* To Do Column */}
-              <div className="flex-shrink-0 w-80 space-y-4" role="group" aria-labelledby="todo-heading">
+              <div className={`${styles.kanbanColumn} space-y-4`} role="group" aria-labelledby="todo-heading">
                 <div className="flex items-center gap-2 pb-2 border-b">
                   <div className="w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"></div>
                   <h3 id="todo-heading" className="font-semibold text-foreground">To Do</h3>

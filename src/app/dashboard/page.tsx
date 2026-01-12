@@ -26,6 +26,7 @@ import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklis
 import { useKeyboardShortcuts, commonShortcuts } from '@/lib/hooks/use-keyboard-shortcuts'
 import { dialogs, placeholders, buttons } from '@/lib/copy'
 import { showProjectCreated, showError } from '@/lib/toast-helpers'
+import ErrorBoundary from '@/components/error/error-boundary'
 
 // Lazy load heavy components
 const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
@@ -371,9 +372,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <PageShell>
-      <OnboardingChecklist />
-      <PageHeader
+    <ErrorBoundary>
+      <PageShell>
+        <OnboardingChecklist />
+        <PageHeader
         title="Dashboard"
         subtitle={`${projects.length} projects`}
         primaryAction={

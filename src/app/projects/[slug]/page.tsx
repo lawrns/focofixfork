@@ -47,23 +47,6 @@ interface Project {
   organization_id: string;
 }
 
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
-  due_date?: string;
-  assigned_to?: string;
-  project_id: string;
-  created_at: string;
-  updated_at: string;
-  assignee?: {
-    id: string;
-    email: string;
-    full_name: string;
-  };
-}
 
 interface TeamMember {
   id: string;
@@ -244,7 +227,7 @@ export default function ProjectPage() {
   const [activeTab, setActiveTab] = useState('board');
   const { addItem } = useRecentItems();
   const [project, setProject] = useState<Project | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<WorkItem[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -262,7 +245,7 @@ export default function ProjectPage() {
 
         // Fetch project
         const { data: projectData, error: projectError } = await supabase
-          .from('projects')
+          .from('foco_projects')
           .select('*')
           .eq('slug', slug)
           .single();
@@ -279,30 +262,72 @@ export default function ProjectPage() {
           name: projectData.name,
         });
 
-        // Fetch tasks for this project
+        // Fetch work items (tasks) for this project
         const { data: tasksData, error: tasksError } = await supabase
-          .from('tasks')
-          .select(`
-            *,
-            assignee:user_profiles!tasks_assigned_to_fkey(id, email, full_name)
-          `)
+          .from('work_items')
+          .select('*')
           .eq('project_id', projectData.id)
           .order('created_at', { ascending: false });
 
         if (tasksError) throw tasksError;
-        setTasks(tasksData || []);
+        
+        // Fetch assignee profiles for work items that have assignees
+        const assigneeIds = [...new Set((tasksData || []).map(t => t.assignee_id).filter(Boolean))];
+        let assigneeMap: Record<string, any> = {};
+        
+        if (assigneeIds.length > 0) {
+          const { data: assigneesData } = await supabase
+            .from('user_profiles')
+            .select('id, email, full_name')
+            .in('id', assigneeIds);
+          
+          if (assigneesData) {
+            assigneeMap = Object.fromEntries(
+              assigneesData.map(a => [a.id, a])
+            );
+          }
+        }
+        
+        // Map assignee data to work items
+        const tasksWithAssignees = (tasksData || []).map(task => ({
+          ...task,
+          assignee: task.assignee_id ? assigneeMap[task.assignee_id] : undefined
+        }));
+        
+        setTasks(tasksWithAssignees);
 
         // Fetch team members
         const { data: membersData, error: membersError } = await supabase
-          .from('project_members')
-          .select(`
-            *,
-            user_profiles(full_name, email)
-          `)
+          .from('foco_project_members')
+          .select('*')
           .eq('project_id', projectData.id);
 
         if (membersError) throw membersError;
-        setTeamMembers(membersData || []);
+        
+        // Fetch user profiles for team members
+        const memberUserIds = (membersData || []).map(m => m.user_id);
+        let memberProfilesMap: Record<string, any> = {};
+        
+        if (memberUserIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('user_profiles')
+            .select('id, email, full_name')
+            .in('id', memberUserIds);
+          
+          if (profilesData) {
+            memberProfilesMap = Object.fromEntries(
+              profilesData.map(p => [p.id, p])
+            );
+          }
+        }
+        
+        // Map user profiles to team members
+        const membersWithProfiles = (membersData || []).map(member => ({
+          ...member,
+          user_profiles: memberProfilesMap[member.user_id]
+        }));
+        
+        setTeamMembers(membersWithProfiles);
 
       } catch (err: any) {
         console.error('Error fetching project data:', err);

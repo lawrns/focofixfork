@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRecentItems } from '@/hooks/useRecentItems';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { supabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   LayoutGrid,
@@ -35,40 +37,43 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { WorkItem, WorkItemStatus, PriorityLevel } from '@/types/foco';
 
-// Mock project data
-const project = {
-  id: '1',
-  name: 'Website Redesign',
-  slug: 'website-redesign',
-  description: 'Complete overhaul of the company website with modern design and improved UX',
-  brief: 'Launch a new website that improves conversion by 25% and reduces bounce rate by 40%. Key deliverables include new homepage, product pages, and checkout flow.',
-  color: '#6366F1',
-  isPinned: true,
-};
+interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  brief?: string;
+  color?: string;
+  organization_id: string;
+}
 
-// Mock work items
-const workItems: WorkItem[] = [
-  // Backlog
-  { id: '1', workspace_id: '1', project_id: '1', type: 'feature', title: 'Add dark mode support', status: 'backlog', priority: 'low', position: 0, created_at: '', updated_at: '', ai_context_sources: [], metadata: {} },
-  { id: '2', workspace_id: '1', project_id: '1', type: 'task', title: 'Mobile responsive audit', status: 'backlog', priority: 'medium', position: 1, created_at: '', updated_at: '', ai_context_sources: [], metadata: {} },
-  
-  // Next
-  { id: '3', workspace_id: '1', project_id: '1', type: 'task', title: 'Product page templates', status: 'next', priority: 'medium', due_date: '2026-01-18', position: 0, created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, assignee: { id: '1', email: '', full_name: 'Sarah Chen' } as any },
-  { id: '4', workspace_id: '1', project_id: '1', type: 'task', title: 'Checkout flow redesign', status: 'next', priority: 'high', due_date: '2026-01-22', position: 1, created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, assignee: { id: '2', email: '', full_name: 'Mike Johnson' } as any },
-  
-  // In Progress
-  { id: '5', workspace_id: '1', project_id: '1', type: 'task', title: 'Design homepage mockups', status: 'in_progress', priority: 'high', due_date: '2026-01-15', position: 0, created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, assignee: { id: '1', email: '', full_name: 'Sarah Chen' } as any },
-  
-  // Review
-  { id: '6', workspace_id: '1', project_id: '1', type: 'bug', title: 'Fix navigation dropdown on Safari', status: 'review', priority: 'urgent', due_date: '2026-01-12', position: 0, created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, assignee: { id: '3', email: '', full_name: 'Alex Kim' } as any },
-  
-  // Blocked
-  { id: '7', workspace_id: '1', project_id: '1', type: 'task', title: 'SEO optimization audit', status: 'blocked', priority: 'medium', due_date: '2026-01-28', blocked_reason: 'Waiting for design mockups', position: 0, created_at: '', updated_at: '', ai_context_sources: [], metadata: {} },
-  
-  // Done
-  { id: '8', workspace_id: '1', project_id: '1', type: 'task', title: 'Create homepage wireframes', status: 'done', priority: 'high', position: 0, created_at: '', updated_at: '', ai_context_sources: [], metadata: {}, assignee: { id: '1', email: '', full_name: 'Sarah Chen' } as any },
-  { id: '9', workspace_id: '1', project_id: '1', type: 'task', title: 'Content migration plan', status: 'done', priority: 'high', position: 1, created_at: '', updated_at: '', ai_context_sources: [], metadata: {} },
-];
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: string;
+  due_date?: string;
+  assigned_to?: string;
+  project_id: string;
+  created_at: string;
+  updated_at: string;
+  assignee?: {
+    id: string;
+    email: string;
+    full_name: string;
+  };
+}
+
+interface TeamMember {
+  id: string;
+  user_id: string;
+  role: string;
+  user_profiles?: {
+    full_name?: string;
+    email: string;
+  };
+}
 
 const columns: { status: WorkItemStatus; label: string; color: string }[] = [
   { status: 'backlog', label: 'Backlog', color: 'bg-zinc-400' },
@@ -235,21 +240,123 @@ function AISuggestionStrip() {
 
 export default function ProjectPage() {
   const params = useParams();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('board');
   const { addItem } = useRecentItems();
+  const [project, setProject] = useState<Project | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Track this project in recent items when component mounts
+  const slug = params.slug as string;
+
+  // Fetch project data
   useEffect(() => {
-    addItem({
-      type: 'project',
-      id: project.id,
-      name: project.name,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    async function fetchProjectData() {
+      if (!user || !slug) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch project
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('slug', slug)
+          .single();
+
+        if (projectError) throw projectError;
+        if (!projectData) throw new Error('Project not found');
+
+        setProject(projectData);
+
+        // Track in recent items
+        addItem({
+          type: 'project',
+          id: projectData.id,
+          name: projectData.name,
+        });
+
+        // Fetch tasks for this project
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('tasks')
+          .select(`
+            *,
+            assignee:user_profiles!tasks_assigned_to_fkey(id, email, full_name)
+          `)
+          .eq('project_id', projectData.id)
+          .order('created_at', { ascending: false });
+
+        if (tasksError) throw tasksError;
+        setTasks(tasksData || []);
+
+        // Fetch team members
+        const { data: membersData, error: membersError } = await supabase
+          .from('project_members')
+          .select(`
+            *,
+            user_profiles(full_name, email)
+          `)
+          .eq('project_id', projectData.id);
+
+        if (membersError) throw membersError;
+        setTeamMembers(membersData || []);
+
+      } catch (err: any) {
+        console.error('Error fetching project data:', err);
+        setError(err.message || 'Failed to load project');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProjectData();
+  }, [user, slug, addItem]);
 
   const getItemsByStatus = (status: WorkItemStatus) =>
-    workItems.filter(item => item.status === status);
+    tasks.filter(item => item.status === status);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="max-w-full">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+            <p className="mt-4 text-sm text-zinc-500">Loading project...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !project) {
+    return (
+      <div className="max-w-full">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+              {error || 'Project not found'}
+            </h2>
+            <p className="text-sm text-zinc-500 mb-4">
+              The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+            </p>
+            <Button asChild>
+              <Link href="/projects">Back to Projects</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const completedTasks = tasks.filter(t => t.status === 'done').length;
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+  const blockedTasks = tasks.filter(t => t.status === 'blocked').length;
 
   return (
     <div className="max-w-full">
@@ -258,21 +365,18 @@ export default function ProjectPage() {
         <div className="flex items-center gap-4">
           <div
             className="h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-bold"
-            style={{ backgroundColor: project.color }}
+            style={{ backgroundColor: project.color || '#6366F1' }}
           >
-            W
+            {project.name.charAt(0).toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
                 {project.name}
               </h1>
-              {project.isPinned && (
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              )}
             </div>
             <p className="text-zinc-500 mt-0.5">
-              {project.description}
+              {project.description || 'No description'}
             </p>
           </div>
         </div>
@@ -293,27 +397,27 @@ export default function ProjectPage() {
         <div className="flex items-center justify-between mb-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="board">
+            <TabsTrigger value="board" className="gap-2">
               <LayoutGrid className="h-4 w-4" />
               Board
             </TabsTrigger>
-            <TabsTrigger value="list">
+            <TabsTrigger value="list" className="gap-2">
               <List className="h-4 w-4" />
               List
             </TabsTrigger>
-            <TabsTrigger value="timeline">
+            <TabsTrigger value="timeline" className="gap-2">
               <CalendarIcon className="h-4 w-4" />
               Timeline
             </TabsTrigger>
-            <TabsTrigger value="docs">
+            <TabsTrigger value="docs" className="gap-2">
               <FileText className="h-4 w-4" />
               Docs
             </TabsTrigger>
-            <TabsTrigger value="people">
+            <TabsTrigger value="people" className="gap-2">
               <Users className="h-4 w-4" />
               People
             </TabsTrigger>
-            <TabsTrigger value="settings">
+            <TabsTrigger value="settings" className="gap-2">
               <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
@@ -367,7 +471,7 @@ export default function ProjectPage() {
               <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
                 <h3 className="font-medium mb-2">Project Brief</h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                  {project.brief}
+                  {project.brief || project.description || 'No project brief available.'}
                 </p>
               </div>
 
@@ -413,15 +517,15 @@ export default function ProjectPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-zinc-500">Completed</span>
-                    <span className="font-medium">12 / 26</span>
+                    <span className="font-medium">{completedTasks} / {tasks.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-zinc-500">In Progress</span>
-                    <span className="font-medium">5</span>
+                    <span className="font-medium">{inProgressTasks}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-zinc-500">Blocked</span>
-                    <span className="font-medium text-red-500">1</span>
+                    <span className="font-medium text-red-500">{blockedTasks}</span>
                   </div>
                 </div>
               </div>
@@ -430,16 +534,25 @@ export default function ProjectPage() {
               <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
                 <h3 className="font-medium mb-3">Team</h3>
                 <div className="space-y-2">
-                  {['Sarah Chen', 'Mike Johnson', 'Alex Kim', 'Lisa Park'].map((name) => (
-                    <div key={name} className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-[10px]">
-                          {name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">{name}</span>
-                    </div>
-                  ))}
+                  {teamMembers.length === 0 ? (
+                    <p className="text-sm text-zinc-500">No team members yet</p>
+                  ) : (
+                    teamMembers.map((member) => (
+                      <div key={member.id} className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-[10px]">
+                            {member.user_profiles?.full_name
+                              ?.split(' ')
+                              .map(n => n[0])
+                              .join('') || member.user_profiles?.email.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">
+                          {member.user_profiles?.full_name || member.user_profiles?.email}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

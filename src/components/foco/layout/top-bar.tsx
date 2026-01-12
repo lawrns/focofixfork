@@ -42,6 +42,7 @@ interface TopBarProps {
 
 export function TopBar({ className }: TopBarProps) {
   const { open: openCommandPalette } = useCommandPaletteStore();
+  const { open: openKeyboardShortcuts } = useKeyboardShortcutsModalStore();
   const { unreadCount } = useInboxStore();
   const { sidebarCollapsed, density, setDensity } = useUIPreferencesStore();
   const { theme, setTheme } = useTheme();

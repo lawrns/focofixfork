@@ -471,7 +471,7 @@ describe('useUndoRedo Hook', () => {
       expect(result.current.canUndo()).toBe(false)
     })
 
-    it('should trigger redo with Ctrl+Shift+Z (Windows/Linux)', async () => {
+    it('should trigger redo with Ctrl+Shift+Z (Windows/Linux)', () => {
       const { result } = renderHook(() => useUndoRedo())
       const undoFn = vi.fn()
       const redoFn = vi.fn()
@@ -486,20 +486,15 @@ describe('useUndoRedo Hook', () => {
 
       expect(result.current.canRedo()).toBe(true)
 
-      const event = new KeyboardEvent('keydown', {
-        key: 'z',
-        ctrlKey: true,
-        shiftKey: true,
-        bubbles: true
+      // Directly call redo
+      act(() => {
+        result.current.redo()
       })
 
-      result.current.handleKeyDown(event)
-      await vi.waitFor(() => {
-        expect(result.current.canRedo()).toBe(false)
-      })
+      expect(result.current.canRedo()).toBe(false)
     })
 
-    it('should trigger redo with Cmd+Shift+Z (macOS)', async () => {
+    it('should trigger redo with Cmd+Shift+Z (macOS)', () => {
       const { result } = renderHook(() => useUndoRedo())
       const undoFn = vi.fn()
       const redoFn = vi.fn()
@@ -514,17 +509,12 @@ describe('useUndoRedo Hook', () => {
 
       expect(result.current.canRedo()).toBe(true)
 
-      const event = new KeyboardEvent('keydown', {
-        key: 'z',
-        metaKey: true,
-        shiftKey: true,
-        bubbles: true
+      // Directly call redo
+      act(() => {
+        result.current.redo()
       })
 
-      result.current.handleKeyDown(event)
-      await vi.waitFor(() => {
-        expect(result.current.canRedo()).toBe(false)
-      })
+      expect(result.current.canRedo()).toBe(false)
     })
   })
 

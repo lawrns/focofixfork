@@ -77,7 +77,7 @@ export const IconButton = React.forwardRef<
     <AccessibleButton
       ref={ref}
       variant="ghost"
-      size="compact"
+      size="sm"
       aria-label={label}
       {...props}
     >

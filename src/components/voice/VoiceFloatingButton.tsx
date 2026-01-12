@@ -14,6 +14,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useAuth } from '@/lib/hooks/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, Loader2, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -40,7 +41,9 @@ export function VoiceFloatingButton({
     clearRecording,
   } = useVoiceRecorder()
 
+  const [transcription, setTranscription] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const { user } = useAuth()
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
 
@@ -94,7 +97,7 @@ export function VoiceFloatingButton({
       // 2. Quick capture: Convert to task
       const result = await voiceService.quickCapture({
         transcript: transcript.text,
-        user_id: 'current-user', // TODO: Get from auth context
+        user_id: user?.id || 'anonymous'
       })
 
       onTaskCreated?.(result.task)

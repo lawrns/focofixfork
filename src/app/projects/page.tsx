@@ -64,7 +64,6 @@ interface ProjectData {
   updatedAt: string;
 }
 
-// TODO: Remove this - mock data deleted, now using real API data only
 
 const riskColors = {
   none: '',

@@ -1,28 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-
-// TODO: Move to centralized auth utility
-async function getAuthUser(req: NextRequest) {
-  const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        cookie: cookieStore.toString()
-      }
-    }
-  })
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
-    return { user: null, supabase, error: 'Unauthorized' }
-  }
-  
-  return { user, supabase, error: null }
-}
+import { getAuthUser } from '@/lib/api/auth-helper'
 
 export async function GET(
   req: NextRequest,
@@ -38,7 +15,7 @@ export async function GET(
     const { id } = await params
 
     const { data, error: queryError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .select('*')
       .eq('id', id)
       .single()
@@ -85,7 +62,7 @@ export async function PATCH(
     updateData.updated_at = new Date().toISOString()
 
     const { data, error: updateError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .update(updateData)
       .eq('id', id)
       .select()
@@ -117,7 +94,7 @@ export async function DELETE(
     const { id } = await params
 
     const { error: deleteError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .delete()
       .eq('id', id)
 

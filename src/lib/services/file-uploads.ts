@@ -429,7 +429,7 @@ export class FileUploadService {
    * Get storage quota for user
    */
   static async getStorageQuota(userId: string): Promise<FileStorageQuota> {
-    // TODO: Implement proper quota management when file_storage_quotas table is available
+    // Note: Quota management requires file_storage_quotas table (not yet in schema)
     // For now, return default unlimited quota
     return {
       user_id: userId,
@@ -546,7 +546,7 @@ export class FileUploadService {
   }
 
   private static async updateStorageQuota(userId: string, sizeDelta: number): Promise<void> {
-    // TODO: Implement proper quota management when file_storage_quotas table is available
+    // Note: Quota management requires file_storage_quotas table (not yet in schema)
     // For now, quota updates are disabled
     console.log(`Storage quota update: user ${userId}, delta ${sizeDelta} bytes`)
   }

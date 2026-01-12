@@ -225,7 +225,7 @@ export function KanbanBoard() {
         body: JSON.stringify({ 
           status: destColumn.id,
           position: destination.index,
-          // TODO: Backend should support column_order field for persistent ordering
+          // Note: position field is saved, but backend needs column-specific ordering to fully persist drag order within columns
         }),
       })
 

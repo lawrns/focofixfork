@@ -158,7 +158,7 @@ export class ConflictResolutionService {
    * Note: This functionality requires a conflict_logs table that is not currently implemented
    */
   static async storeConflict(conflict: ConflictData): Promise<void> {
-    // TODO: Implement conflict logging table
+    // Note: Conflict logging table not yet in schema
     console.warn('Conflict logging not implemented:', conflict)
   }
 
@@ -167,7 +167,7 @@ export class ConflictResolutionService {
    * Note: This functionality requires a conflict_logs table that is not currently implemented
    */
   static async getPendingConflicts(userId: string): Promise<ConflictData[]> {
-    // TODO: Implement conflict logging table
+    // Note: Conflict logging table not yet in schema
     console.warn('Conflict retrieval not implemented for user:', userId)
     return []
   }
@@ -177,7 +177,7 @@ export class ConflictResolutionService {
    * Note: This functionality requires a conflict_logs table that is not currently implemented
    */
   static async markConflictResolved(conflictId: string, resolution: ResolutionResult): Promise<void> {
-    // TODO: Implement conflict logging table
+    // Note: Conflict logging table not yet in schema
     console.warn('Conflict resolution logging not implemented:', conflictId, resolution)
   }
 }

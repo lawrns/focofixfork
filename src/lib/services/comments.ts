@@ -383,7 +383,7 @@ export class CommentsService {
 
   /**
    * Add reaction to comment
-   * TODO: Implement when comment_reactions table is created
+   * Note: Requires comment_reactions table - not yet in schema
    */
   static async addReaction(commentId: string, emoji: string, userId: string, userName: string): Promise<void> {
     // Temporarily disabled - comment_reactions table not in schema
@@ -393,7 +393,7 @@ export class CommentsService {
 
   /**
    * Remove reaction from comment
-   * TODO: Implement when comment_reactions table is created
+   * Note: Requires comment_reactions table - not yet in schema
    */
   static async removeReaction(commentId: string, emoji: string, userId: string): Promise<void> {
     // Temporarily disabled - comment_reactions table not in schema

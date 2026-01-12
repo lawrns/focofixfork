@@ -55,12 +55,12 @@ export function AppShell({ children }: AppShellProps) {
 
       <main
         className={cn(
-          'pt-14 min-h-screen transition-all duration-200',
+          'pt-12 md:pt-14 min-h-screen transition-all duration-200',
           'md:pl-64',
           sidebarCollapsed && 'md:pl-16'
         )}
       >
-        <div className="p-6">
+        <div className="p-3 md:p-6">
           {children}
         </div>
       </main>

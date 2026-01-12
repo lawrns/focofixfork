@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, Plus, Search, Trash2, GripVertical } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Loader2, Plus, Search, Trash2, GripVertical, Download } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import {
   AlertDialog,
@@ -22,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { Task } from '../types'
+import { useTaskExport } from '../hooks/use-task-export'
 
 interface TaskListProps {
   projectId?: string
@@ -49,9 +56,11 @@ export function TaskList({
   initialAssignee,
 }: TaskListProps) {
   const { user } = useAuth()
+  const { exportTasks, isExporting } = useTaskExport()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [projectName, setProjectName] = useState<string>('')
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
@@ -277,6 +286,24 @@ export function TaskList({
     }
   }
 
+  const handleExport = async (format: 'csv' | 'json') => {
+    if (!projectId) {
+      toast.error('Project ID is required for export')
+      return
+    }
+
+    await exportTasks({
+      format,
+      projectId,
+      projectName: projectName || 'tasks',
+      filters: {
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+        assigneeId: assigneeFilter !== 'all' ? assigneeFilter : undefined,
+      },
+    })
+  }
+
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result
 
@@ -399,6 +426,36 @@ export function TaskList({
               <Trash2 className="h-4 w-4" aria-hidden="true" />
               Delete ({selectedTasks.size})
             </Button>
+          )}
+
+          {filteredTasks.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isExporting}
+                  aria-label="Export tasks"
+                >
+                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => handleExport('csv')}
+                  disabled={isExporting}
+                >
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleExport('json')}
+                  disabled={isExporting}
+                >
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {showCreateButton && onCreateTask && (

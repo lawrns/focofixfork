@@ -37,6 +37,7 @@ export const TaskSchema = z.object({
   assignee_id: z.string().uuid().nullable(),
   created_by: z.string().uuid(),
   due_date: z.string().datetime().nullable(),
+  reminder_at: z.string().datetime().nullable().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   is_recurring: z.boolean().optional(),
@@ -64,6 +65,13 @@ export const CreateTaskSchema = z.object({
       if (!date) return true // Optional field
       return new Date(date) > new Date()
     }, 'Due date must be in the future')
+    .optional()
+    .nullable(),
+  reminder_at: z.string().datetime()
+    .refine((date) => {
+      if (!date) return true // Optional field
+      return new Date(date) > new Date()
+    }, 'Reminder date must be in the future')
     .optional()
     .nullable(),
   is_recurring: z.boolean().optional().default(false),

@@ -5,6 +5,7 @@ import { Search, Filter, Share2, MoreHorizontal, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { RecentItemsDropdown } from '@/components/navigation/recent-items-dropdown'
 
 interface HeaderNewProps {
   title?: string
@@ -75,6 +76,8 @@ export function HeaderNew({
           )}
 
           {actions}
+
+          <RecentItemsDropdown />
 
           <Button variant="ghost" size="icon">
             <MoreHorizontal className="w-4 h-4" />

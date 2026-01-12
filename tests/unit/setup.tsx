@@ -94,6 +94,21 @@ Object.defineProperty(navigator, 'serviceWorker', {
   },
 });
 
+// Mock NProgress
+global.NProgress = {
+  start: vi.fn(),
+  done: vi.fn(),
+  inc: vi.fn(),
+  set: vi.fn(),
+  configure: vi.fn(),
+  remove: vi.fn(),
+  VERSION: '0.2.0',
+} as any;
+
+Object.defineProperty(window, 'NProgress', {
+  value: global.NProgress,
+});
+
 // Cleanup after each test case (e.g. clearing jsdom)
 afterEach(() => {
   cleanup();

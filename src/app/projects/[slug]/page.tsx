@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useRecentItems } from '@/hooks/useRecentItems';
 import { cn } from '@/lib/utils';
 import {
   LayoutGrid,
@@ -235,8 +236,19 @@ function AISuggestionStrip() {
 export default function ProjectPage() {
   const params = useParams();
   const [activeTab, setActiveTab] = useState('board');
+  const { addItem } = useRecentItems();
 
-  const getItemsByStatus = (status: WorkItemStatus) => 
+  // Track this project in recent items when component mounts
+  useEffect(() => {
+    addItem({
+      type: 'project',
+      id: project.id,
+      name: project.name,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getItemsByStatus = (status: WorkItemStatus) =>
     workItems.filter(item => item.status === status);
 
   return (

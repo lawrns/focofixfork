@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/data-display/a
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { MarkdownPreview } from '@/components/markdown-preview/markdown-preview'
 import {
   MessageCircle,
   Reply,
@@ -328,13 +329,11 @@ export default function CommentsSection({
             </Avatar>
 
             <div className="flex-1 space-y-2">
-              <Textarea
-                ref={commentInputRef}
-                placeholder="Write a comment..."
+              <MarkdownPreview
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                onChange={(value) => setNewComment(value)}
+                placeholder="Write a comment... Supports markdown formatting"
                 rows={3}
-                className="resize-none"
               />
 
               <div className="flex justify-between items-center">

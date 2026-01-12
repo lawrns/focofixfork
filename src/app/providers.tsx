@@ -10,6 +10,8 @@ import ErrorBoundary from '@/components/error/error-boundary';
 import { Toaster } from 'sonner';
 import { ToastProvider } from '@/components/ui/toast';
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav';
+import { ProgressBar } from '@/components/progress-bar';
+import NProgress from 'nprogress';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -23,6 +25,24 @@ function ConditionalMobileNav() {
   }
 
   return <MobileBottomNav showFab={false} />;
+}
+
+function RouteProgressHandler() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    NProgress.start();
+
+    const timer = setTimeout(() => {
+      NProgress.done();
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [pathname]);
+
+  return null;
 }
 
 export function Providers({ children }: ProvidersProps) {
@@ -51,6 +71,8 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
         <ErrorBoundary>
+          <ProgressBar />
+          <RouteProgressHandler />
           <I18nProvider>
             <ToastProvider>
               <AuthProvider>

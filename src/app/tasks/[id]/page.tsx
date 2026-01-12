@@ -261,18 +261,24 @@ function Inspector({ item }: { item: WorkItem }) {
         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-2">
           Priority
         </label>
+        <div className="flex items-center gap-2 mb-2">
+          <PriorityIndicator
+            priority={priority as any}
+            variant="badge"
+          />
+        </div>
         <Select value={priority} onValueChange={(v) => setPriority(v as PriorityLevel)}>
           <SelectTrigger>
-            <div className="flex items-center gap-2">
-              <div className={cn('h-2 w-2 rounded-full', currentPriority?.color)} />
-              <SelectValue />
-            </div>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {priorityOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 <div className="flex items-center gap-2">
-                  <div className={cn('h-2 w-2 rounded-full', option.color)} />
+                  <PriorityIndicator
+                    priority={option.value as any}
+                    variant="dot"
+                  />
                   {option.label}
                 </div>
               </SelectItem>

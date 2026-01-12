@@ -1,419 +1,260 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/use-auth';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { useUIPreferencesStore } from '@/lib/stores/foco-store';
-import {
-  Play,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  ChevronRight,
-  Zap,
-  RefreshCw,
-  MoreHorizontal,
+import { motion } from 'framer-motion';
+import { 
+  ArrowRight, 
+  CheckCircle2, 
+  Zap, 
+  BarChart3, 
+  MessageSquare, 
   Calendar,
-  ArrowRight,
   Sparkles,
   TrendingUp,
   Users,
+  Workflow
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import type { WorkItem, PriorityLevel } from '@/types/foco';
+import { cn } from '@/lib/utils';
 
-// Mock data for demo
-const todayTasks: WorkItem[] = [
+const features = [
   {
-    id: '1',
-    workspace_id: '1',
-    project_id: '1',
-    type: 'task',
-    title: 'Design homepage mockups',
-    status: 'in_progress',
-    priority: 'high',
-    due_date: '2026-01-10',
-    position: 0,
-    created_at: '',
-    updated_at: '',
-    ai_context_sources: [],
-    metadata: {},
-    project: { id: '1', name: 'Website Redesign', color: '#6366F1' } as any,
+    icon: Zap,
+    title: 'Velocidad sin igual',
+    description: 'Interfaz ultrarrápida diseñada para equipos modernos que no pierden el tiempo.'
   },
   {
-    id: '2',
-    workspace_id: '1',
-    project_id: '2',
-    type: 'bug',
-    title: 'Fix navigation dropdown on Safari',
-    status: 'review',
-    priority: 'urgent',
-    due_date: '2026-01-10',
-    position: 1,
-    created_at: '',
-    updated_at: '',
-    ai_context_sources: [],
-    metadata: {},
-    project: { id: '2', name: 'Mobile App v2', color: '#10B981' } as any,
+    icon: Sparkles,
+    title: 'IA Integrada',
+    description: 'Sugerencias inteligentes y automatización que aprende de tu forma de trabajar.'
   },
   {
-    id: '3',
-    workspace_id: '1',
-    project_id: '1',
-    type: 'task',
-    title: 'Review PR for checkout flow',
-    status: 'next',
-    priority: 'medium',
-    due_date: '2026-01-10',
-    position: 2,
-    created_at: '',
-    updated_at: '',
-    ai_context_sources: [],
-    metadata: {},
-    project: { id: '1', name: 'Website Redesign', color: '#6366F1' } as any,
+    icon: Workflow,
+    title: 'Flujos personalizados',
+    description: 'Adapta cada proyecto a tu metodología. Kanban, Scrum, o lo que necesites.'
   },
+  {
+    icon: BarChart3,
+    title: 'Analíticas en tiempo real',
+    description: 'Datos precisos sobre el progreso de tu equipo, sin esperas ni confusión.'
+  },
+  {
+    icon: MessageSquare,
+    title: 'Colaboración fluida',
+    description: 'Comentarios, menciones y actualizaciones que mantienen a todos sincronizados.'
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Resultados medibles',
+    description: 'Seguimiento claro de objetivos y logros que impulsan a tu equipo.'
+  }
 ];
 
-const projectPulse = [
-  { id: '1', name: 'Website Redesign', progress: 45, status: 'on_track', tasksCompleted: 12, totalTasks: 26 },
-  { id: '2', name: 'Mobile App v2', progress: 68, status: 'at_risk', tasksCompleted: 22, totalTasks: 32 },
-  { id: '3', name: 'API Platform', progress: 23, status: 'on_track', tasksCompleted: 7, totalTasks: 30 },
-];
+export default function LandingPage() {
+  const { user } = useAuth();
+  const router = useRouter();
 
-const aiSuggestions = [
-  {
-    id: '1',
-    title: 'Team capacity is 92% next week',
-    description: 'Consider moving "Design Review" by 2 days to balance workload',
-    confidence: 0.89,
-    type: 'capacity',
-  },
-  {
-    id: '2',
-    title: 'Mobile App v2 milestone at risk',
-    description: '3 tasks are blocked and need attention before the Feb 1 deadline',
-    confidence: 0.94,
-    type: 'risk',
-  },
-];
-
-const priorityColors: Record<PriorityLevel, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-blue-500',
-  low: 'bg-zinc-400',
-  none: 'bg-zinc-300',
-};
-
-function PriorityDot({ priority }: { priority: PriorityLevel }) {
-  return (
-    <div className={cn('h-2 w-2 rounded-full', priorityColors[priority])} />
-  );
-}
-
-function TodayStack() {
-  const { density } = useUIPreferencesStore();
-  
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-zinc-500" />
-            Today
-          </CardTitle>
-          <Button variant="ghost" size="sm" className="h-8">
-            <Play className="h-3.5 w-3.5 mr-1" />
-            Start Focus
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-1">
-        {todayTasks.map((task) => (
-          <Link
-            key={task.id}
-            href={`/tasks/${task.id}`}
-            className={cn(
-              'flex items-center gap-3 p-3 -mx-2 rounded-lg',
-              'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors',
-              'group'
-            )}
-          >
-            <PriorityDot priority={task.priority} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-zinc-900 dark:text-zinc-50 truncate">
-                  {task.title}
-                </span>
-                {task.type === 'bug' && (
-                  <Badge variant="outline" className="h-5 text-[10px] text-red-600 border-red-200">
-                    Bug
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-zinc-500">
-                <span 
-                  className="flex items-center gap-1"
-                  style={{ color: task.project?.color }}
-                >
-                  <div 
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: task.project?.color }}
-                  />
-                  {task.project?.name}
-                </span>
-                <span>•</span>
-                <span className="capitalize">{task.status.replace('_', ' ')}</span>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </Link>
-        ))}
-        
-        <div className="pt-2">
-          <Button variant="ghost" size="sm" className="w-full justify-start text-zinc-500">
-            <Clock className="h-3.5 w-3.5 mr-2" />
-            View all due today (8 items)
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AIDailyBrief() {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1500);
-  };
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   return (
-    <Card className="border-indigo-100 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-zinc-950">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-indigo-500" />
-            AI Daily Brief
-          </CardTitle>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={handleRefresh}
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Summary */}
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          Good morning! You have <strong>8 tasks</strong> due today, <strong>2 blocked items</strong> need attention, 
-          and <strong>Mobile App v2</strong> milestone is at risk.
-        </p>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: 'Due Today', value: 8, icon: Calendar },
-            { label: 'In Progress', value: 5, icon: Play },
-            { label: 'Blocked', value: 2, icon: AlertTriangle, highlight: true },
-            { label: 'Completed', value: 3, icon: CheckCircle2 },
-          ].map((stat) => (
-            <div 
-              key={stat.label}
-              className={cn(
-                'p-2 rounded-lg text-center',
-                stat.highlight 
-                  ? 'bg-amber-50 dark:bg-amber-950/30' 
-                  : 'bg-zinc-50 dark:bg-zinc-800/50'
-              )}
-            >
-              <div className={cn(
-                'text-lg font-semibold',
-                stat.highlight ? 'text-amber-600' : 'text-zinc-900 dark:text-zinc-50'
-              )}>
-                {stat.value}
-              </div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-wider">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* AI Suggestions */}
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-            Suggestions
-          </div>
-          {aiSuggestions.map((suggestion) => (
-            <div
-              key={suggestion.id}
-              className={cn(
-                'p-3 rounded-lg border',
-                suggestion.type === 'risk' 
-                  ? 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50'
-                  : 'bg-white border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                    {suggestion.title}
-                  </div>
-                  <div className="text-xs text-zinc-500 mt-0.5">
-                    {suggestion.description}
-                  </div>
-                </div>
-                <Badge 
-                  variant="secondary" 
-                  className="text-[10px] shrink-0"
-                >
-                  {Math.round(suggestion.confidence * 100)}% confident
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Button size="sm" variant="default" className="h-7 text-xs">
-                  Apply
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs">
-                  Explain why
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ProjectPulse() {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-zinc-500" />
-            Project Pulse
-          </CardTitle>
-          <Button variant="ghost" size="sm" className="h-8" asChild>
-            <Link href="/projects">
-              View all
-              <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            </Link>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {projectPulse.map((project) => (
-          <Link
-            key={project.id}
-            href={`/projects/${project.id}`}
-            className="block group"
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-medium text-sm text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                {project.name}
+    <div className="min-h-screen bg-gradient-to-b from-white via-zinc-50 to-white dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <Workflow className="h-6 w-6 text-indigo-600" />
+              <span className="text-xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Foco
               </span>
-              <div className="flex items-center gap-2">
-                {project.status === 'at_risk' && (
-                  <Badge variant="outline" className="h-5 text-[10px] text-amber-600 border-amber-200 bg-amber-50">
-                    At Risk
-                  </Badge>
-                )}
-                <span className="text-xs text-zinc-500">
-                  {project.tasksCompleted}/{project.totalTasks}
-                </span>
-              </div>
             </div>
-            <Progress 
-              value={project.progress} 
-              className={cn(
-                'h-1.5',
-                project.status === 'at_risk' && '[&>div]:bg-amber-500'
-              )}
-            />
-          </Link>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-function RecentActivity() {
-  const activities = [
-    { id: '1', user: 'Sarah', action: 'completed', target: 'Create wireframes', time: '2m ago', avatar: 'S' },
-    { id: '2', user: 'Mike', action: 'commented on', target: 'API Documentation', time: '15m ago', avatar: 'M' },
-    { id: '3', user: 'You', action: 'moved', target: 'Homepage mockups', extra: 'to In Progress', time: '1h ago', avatar: 'Y' },
-  ];
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Users className="h-4 w-4 text-zinc-500" />
-            Team Activity
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {activities.map((activity) => (
-          <div key={activity.id} className="flex items-start gap-3">
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-xs">{activity.avatar}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm">
-                <span className="font-medium">{activity.user}</span>
-                {' '}{activity.action}{' '}
-                <span className="font-medium">{activity.target}</span>
-                {activity.extra && <span className="text-zinc-500">{' '}{activity.extra}</span>}
-              </p>
-              <p className="text-xs text-zinc-500">{activity.time}</p>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" asChild className="text-sm font-medium">
+                <Link href="/login">Iniciar sesión</Link>
+              </Button>
+              <Button asChild className="text-sm font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+                <Link href="/register">Comenzar gratis</Link>
+              </Button>
             </div>
           </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <div className="max-w-6xl mx-auto">
-      {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          Good morning, John
-        </h1>
-        <p className="text-zinc-500 mt-1">
-          Here&apos;s what needs your attention today.
-        </p>
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Column - Today */}
-        <div className="lg:col-span-3 space-y-6">
-          <TodayStack />
-          <ProjectPulse />
         </div>
+      </nav>
 
-        {/* Right Column - AI & Activity */}
-        <div className="lg:col-span-2 space-y-6">
-          <AIDailyBrief />
-          <RecentActivity />
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 px-6 lg:px-8 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 blur-3xl" />
+        
+        <div className="relative max-w-5xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 mb-8">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+              <span className="text-xs font-medium text-indigo-900 dark:text-indigo-100">
+                Gestión de proyectos con IA
+              </span>
+            </div>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-5xl lg:text-7xl font-bold tracking-tight mb-6"
+          >
+            <span className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-50 bg-clip-text text-transparent">
+              Tu equipo, 
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              enfocado en lo importante
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-xl text-zinc-600 dark:text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed"
+          >
+            La plataforma de gestión de proyectos que elimina el caos.
+            <br />
+            Rápida, inteligente y diseñada para equipos que construyen productos excepcionales.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Button
+              size="lg"
+              asChild
+              className="text-base px-8 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/30 group"
+            >
+              <Link href="/register">
+                Comenzar gratis
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="text-base px-8 h-12 border-2"
+            >
+              <Link href="/login">Ver demo</Link>
+            </Button>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="mt-8 text-sm text-zinc-500 dark:text-zinc-500"
+          >
+            ✨ Sin tarjeta de crédito • Configuración en 2 minutos
+          </motion.div>
         </div>
-      </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 bg-gradient-to-r from-zinc-900 to-zinc-700 dark:from-zinc-50 dark:to-zinc-300 bg-clip-text text-transparent">
+              Todo lo que necesitas, nada que sobre
+            </h2>
+            <p className="text-lg text-zinc-600 dark:text-zinc-400">
+              Herramientas poderosas que se sienten naturales
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group relative p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300"
+              >
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <feature.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-zinc-900 dark:text-zinc-50">
+                    {feature.title}
+                  </h3>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative p-12 rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]" />
+            <div className="relative text-center">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+                ¿Listo para trabajar mejor?
+              </h2>
+              <p className="text-lg text-indigo-100 mb-8">
+                Únete a los equipos que ya están construyendo el futuro con Foco
+              </p>
+              <Button
+                size="lg"
+                asChild
+                className="bg-white text-indigo-600 hover:bg-zinc-50 text-base px-8 h-12 shadow-xl group"
+              >
+                <Link href="/register">
+                  Comenzar gratis
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-zinc-200 dark:border-zinc-800 py-12 px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Workflow className="h-5 w-5 text-indigo-600" />
+              <span className="font-semibold text-zinc-900 dark:text-zinc-50">Foco</span>
+            </div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400">
+              © 2026 Foco. Construido para equipos que no se conforman.
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

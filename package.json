@@ -116,6 +116,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@axe-core/react": "^4.11.0",
     "@next/bundle-analyzer": "^15.5.6",
     "@playwright/test": "^1.44.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -134,6 +135,7 @@
     "chrome-launcher": "^1.2.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
+    "jest-axe": "^10.0.0",
     "jsdom": "^24.1.0",
     "lighthouse": "^13.0.1",
     "msw": "^2.11.5",

@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import { useDuplicateDetection } from '../hooks/use-duplicate-detection'
 import { DuplicateWarningDialog } from './duplicate-warning-dialog'
 import { TasksService } from '../services/taskService'
+import { SmartDateInput } from '@/components/forms/smart-date-input'
 import type { Task } from '../utils/duplicate-detection'
 
 const taskSchema = z.object({
@@ -405,15 +406,14 @@ export function TaskForm({
       </div>
 
       {/* Due Date */}
-      <div className="space-y-2">
-        <Label htmlFor="due_date">Due Date (Optional)</Label>
-        <Input
-          id="due_date"
-          type="date"
-          {...register('due_date')}
-          disabled={isSubmitting}
-        />
-      </div>
+      <SmartDateInput
+        value={watch('due_date')}
+        onDateStringChange={(dateStr) => setValue('due_date', dateStr || '', { shouldDirty: true })}
+        label="Due Date (Optional)"
+        placeholder="Enter date or natural language (e.g., 'tomorrow', 'next friday', 'in 3 days')"
+        disabled={isSubmitting}
+        error={errors.due_date?.message}
+      />
 
       {/* Form Actions */}
       <div className="flex justify-end space-x-4 pt-6">

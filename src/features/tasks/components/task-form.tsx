@@ -17,6 +17,7 @@ import { useDuplicateDetection } from '../hooks/use-duplicate-detection'
 import { DuplicateWarningDialog } from './duplicate-warning-dialog'
 import { TasksService } from '../services/taskService'
 import { SmartDateInput } from '@/components/forms/smart-date-input'
+import { SuggestionChips } from './suggestion-chips'
 import type { Task } from '../utils/duplicate-detection'
 
 const taskSchema = z.object({
@@ -68,6 +69,13 @@ export function TaskForm({
   const [error, setError] = useState<string | null>(null)
   const [allProjectTasks, setAllProjectTasks] = useState<Task[]>(projectTasks)
   const [shouldCreateAnyway, setShouldCreateAnyway] = useState(false)
+
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestionsFocusedField, setSuggestionsFocusedField] = useState<'title' | 'description' | null>(null)
 
   const {
     duplicates,
@@ -157,6 +165,65 @@ export function TaskForm({
     closeDuplicateDialog()
   }, [closeDuplicateDialog])
 
+  // Generate suggestions
+  const generateSuggestions = useCallback(async () => {
+    if (!watchedProjectId) {
+      setSuggestionsError('Please select a project first')
+      return
+    }
+
+    setSuggestionsLoading(true)
+    setSuggestionsError(null)
+
+    try {
+      const selectedProject = projects.find(p => p.id === watchedProjectId)
+      const partialTitle = suggestionsFocusedField === 'title' ? watchedTitle : ''
+      const partialDescription = suggestionsFocusedField === 'description' ? watch('description') : ''
+
+      const response = await fetch('/api/tasks/suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId: watchedProjectId,
+          projectName: selectedProject?.name || '',
+          partialTitle,
+          partialDescription,
+          existingTasks: allProjectTasks.map(t => ({
+            title: t.title,
+            description: t.description,
+          })),
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate suggestions')
+      }
+
+      const data = await response.json()
+      setSuggestions(data.data?.suggestions || [])
+      setShowSuggestions(true)
+    } catch (err: any) {
+      console.error('Suggestions error:', err)
+      setSuggestionsError(err.message || 'Failed to generate suggestions')
+    } finally {
+      setSuggestionsLoading(false)
+    }
+  }, [watchedProjectId, watchedTitle, watch, allProjectTasks, projects, suggestionsFocusedField])
+
+  // Handle suggestion selection
+  const handleSelectSuggestion = useCallback((suggestion: string) => {
+    if (suggestionsFocusedField === 'title') {
+      setValue('title', suggestion, { shouldDirty: true })
+    } else if (suggestionsFocusedField === 'description') {
+      setValue('description', suggestion, { shouldDirty: true })
+    }
+    setShowSuggestions(false)
+    setSuggestions([])
+  }, [suggestionsFocusedField, setValue])
+
   const onSubmit = async (data: any) => {
     if (!user) return
 
@@ -217,7 +284,25 @@ export function TaskForm({
 
       {/* Task Title */}
       <div className="space-y-2">
-        <Label htmlFor="title">Task Title *</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="title">Task Title *</Label>
+          {watchedProjectId && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSuggestionsFocusedField('title')
+                generateSuggestions()
+              }}
+              disabled={suggestionsLoading}
+              className="text-xs h-auto p-1"
+            >
+              {suggestionsLoading && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              ✨ Get suggestions
+            </Button>
+          )}
+        </div>
         <Input
           id="title"
           {...register('title', { onBlur: handleTitleBlur })}
@@ -230,6 +315,19 @@ export function TaskForm({
           <p id="title-error" className="text-sm text-red-600 dark:text-red-400">
             {errors.title.message}
           </p>
+        )}
+        {showSuggestions && suggestionsFocusedField === 'title' && (
+          <SuggestionChips
+            suggestions={suggestions}
+            isLoading={suggestionsLoading}
+            error={suggestionsError}
+            onSelectSuggestion={handleSelectSuggestion}
+            onRegenerate={generateSuggestions}
+            onClose={() => {
+              setShowSuggestions(false)
+              setSuggestions([])
+            }}
+          />
         )}
       </div>
 

@@ -119,11 +119,14 @@ export async function POST(
     }
 
     // Increment template usage count
-    await supabase
+    const { error: usageError } = await supabase
       .from('project_templates')
       .update({ usage_count: (template.usage_count || 0) + 1 })
       .eq('id', params.templateId)
-      .catch(err => console.warn('Failed to update usage count:', err))
+
+    if (usageError) {
+      console.warn('Failed to update usage count:', usageError)
+    }
 
     return NextResponse.json(
       {

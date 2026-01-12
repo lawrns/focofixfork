@@ -30,6 +30,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 interface Project {
   id: string
   name: string
+  slug: string
   status: string
   organization_id: string | null
 }
@@ -292,13 +293,14 @@ export default function Sidebar() {
                   projects.slice(0, 10).map((project) => (
                     <Link
                       key={project.id}
-                      href={`/projects/${project.id}`}
+                      href={`/projects/${project.slug}`}
+                      title={project.name}
                       className={`block rounded-md px-2 py-1 text-xs transition-colors ${
-                        pathname === `/projects/${project.id}`
+                        pathname === `/projects/${project.slug}`
                           ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50'
                           : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
                       }`}
-                      aria-current={pathname === `/projects/${project.id}` ? 'page' : undefined}
+                      aria-current={pathname === `/projects/${project.slug}` ? 'page' : undefined}
                     >
                       {project.name}
                     </Link>

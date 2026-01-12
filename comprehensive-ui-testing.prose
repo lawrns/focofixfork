@@ -1,0 +1,399 @@
+// Comprehensive UI Testing Program - 10 Specialized Testing Agents
+// Testing all frontend elements to identify non-functional UI components
+
+// Phase 1: Parallel Testing (10 specialized agents)
+spawn button_tester {
+  prompt: """
+  Test ALL buttons and clickable elements across the entire application.
+
+  For EVERY button/link you find:
+  1. Locate the button in the code (file path and line number)
+  2. Check if it has a real onClick handler or just console.log
+  3. Test if it actually performs its intended action
+  4. Check if there are any errors in console when clicked
+  5. Verify if state updates correctly after interaction
+
+  Focus on:
+  - Command palette buttons (New Task, New Project, New Team, etc.)
+  - Navigation buttons (sidebar, top bar)
+  - Form submit buttons
+  - Action buttons (Save, Delete, Edit, etc.)
+  - Modal buttons (Close, Cancel, Confirm)
+  - Dropdown menu items
+
+  For each broken button, document:
+  - File path and line number
+  - Expected behavior
+  - Actual behavior
+  - Error messages (if any)
+  - Root cause (missing handler, wrong handler, state issues, etc.)
+
+  Output: Detailed list of ALL non-functional buttons with exact locations and root causes.
+  """
+}
+
+spawn form_tester {
+  prompt: """
+  Test ALL forms and input interactions across the entire application.
+
+  For EVERY form you find:
+  1. Test input field validation
+  2. Test form submission (does it actually save?)
+  3. Check if data persists after submission
+  4. Test error handling for invalid inputs
+  5. Check if loading states work correctly
+
+  Focus on:
+  - Task creation/edit forms
+  - Project creation/edit forms
+  - Settings forms
+  - Search inputs
+  - Filter inputs
+  - Date pickers
+  - Dropdown selects
+
+  For each broken form, document:
+  - File path and line number
+  - Which fields don't work
+  - Expected vs actual behavior
+  - Data flow issues
+  - Validation problems
+
+  Output: Detailed list of ALL form issues with exact locations and root causes.
+  """
+}
+
+spawn drag_drop_tester {
+  prompt: """
+  Test ALL drag-and-drop functionality across the application.
+
+  For EVERY drag-drop area you find:
+  1. Test if drag actually works (can you pick up items?)
+  2. Test if drop works (does it land where expected?)
+  3. Test if order persists after page refresh
+  4. Test keyboard accessibility (can you use keyboard?)
+  5. Check for position/order persistence bugs
+
+  Focus on:
+  - Kanban board task dragging
+  - Task reordering
+  - List reordering
+  - Any sortable lists
+
+  For each broken drag-drop, document:
+  - File path and line number
+  - What doesn't work
+  - State management issues
+  - Persistence problems
+  - Accessibility gaps
+
+  Output: Detailed list of ALL drag-drop issues with exact locations and root causes.
+  """
+}
+
+spawn navigation_tester {
+  prompt: """
+  Test ALL navigation and routing across the application.
+
+  For EVERY navigation element:
+  1. Click every link and verify it goes to correct page
+  2. Check for 404 errors
+  3. Test browser back/forward buttons
+  4. Test direct URL access
+  5. Check for broken route params
+
+  Focus on:
+  - Sidebar navigation links
+  - Top bar navigation
+  - Breadcrumbs
+  - Internal links in content
+  - Dynamic routes (tasks/[id], projects/[slug])
+  - Authentication redirects
+
+  For each broken navigation, document:
+  - File path and line number
+  - Link text and href
+  - Expected vs actual destination
+  - Error messages or 404s
+  - Root cause
+
+  Output: Detailed list of ALL navigation issues with exact locations and root causes.
+  """
+}
+
+spawn state_tester {
+  prompt: """
+  Test ALL state management and data flow across the application.
+
+  For EVERY stateful interaction:
+  1. Test if state updates correctly
+  2. Check for stale closures
+  3. Test if UI reflects state changes
+  4. Check for race conditions
+  5. Test state persistence (localStorage, Supabase)
+
+  Focus on:
+  - Task state updates (status changes, edits)
+  - Project state updates
+  - User session state
+  - Filter/sort state
+  - Modal state
+  - Command palette state
+
+  For each state issue, document:
+  - File path and line number
+  - State variable name
+  - Expected vs actual behavior
+  - Root cause (stale closure, missing dependency, etc.)
+
+  Output: Detailed list of ALL state management issues with exact locations and root causes.
+  """
+}
+
+spawn modal_dialog_tester {
+  prompt: """
+  Test ALL modals, dialogs, popovers, and overlays.
+
+  For EVERY modal/dialog:
+  1. Test if it opens correctly
+  2. Test if it closes correctly (X button, outside click, ESC key)
+  3. Test if form submission works inside modal
+  4. Check if focus management works
+  5. Test if backdrop/overlay works
+
+  Focus on:
+  - Command palette modal
+  - Task creation modals
+  - Project creation modals
+  - Confirmation dialogs
+  - Settings modals
+  - Dropdown menus/popovers
+
+  For each broken modal, document:
+  - File path and line number
+  - What doesn't work (open, close, submit, etc.)
+  - Focus trap issues
+  - Accessibility problems
+
+  Output: Detailed list of ALL modal/dialog issues with exact locations and root causes.
+  """
+}
+
+spawn data_loading_tester {
+  prompt: """
+  Test ALL data loading and API interactions.
+
+  For EVERY data fetch:
+  1. Test if loading states show correctly
+  2. Test if error states show correctly
+  3. Test if data actually loads
+  4. Check for infinite loops
+  5. Test if data refreshes correctly
+
+  Focus on:
+  - Task list loading
+  - Project list loading
+  - User data loading
+  - Dashboard data
+  - Timeline data
+  - Real-time updates
+
+  For each data loading issue, document:
+  - File path and line number
+  - What API/query is called
+  - Expected vs actual behavior
+  - Error messages
+  - Root cause (useEffect issues, missing dependencies, etc.)
+
+  Output: Detailed list of ALL data loading issues with exact locations and root causes.
+  """
+}
+
+spawn authentication_tester {
+  prompt: """
+  Test ALL authentication and authorization flows.
+
+  Test these scenarios:
+  1. Login with laurence@fyves.com / hennie12
+  2. Test protected routes (do they redirect?)
+  3. Test logout functionality
+  4. Test session persistence
+  5. Test user data display (is "John Doe" hardcoded?)
+
+  Focus on:
+  - Login form functionality
+  - Logout button functionality
+  - Protected route redirects
+  - User data display in UI
+  - Session token handling
+  - Cookie/localStorage auth state
+
+  For each auth issue, document:
+  - File path and line number
+  - What doesn't work
+  - Hardcoded values
+  - Missing auth checks
+
+  Output: Detailed list of ALL authentication issues with exact locations and root causes.
+  """
+}
+
+spawn accessibility_tester {
+  prompt: """
+  Test ALL accessibility features.
+
+  For EVERY interactive element:
+  1. Test keyboard navigation (Tab, Enter, Space, Arrow keys)
+  2. Check for ARIA labels
+  3. Test screen reader announcements
+  4. Check focus indicators
+  5. Test keyboard shortcuts
+
+  Focus on:
+  - Keyboard-only navigation through entire app
+  - Command palette keyboard shortcuts
+  - Form field keyboard access
+  - Modal keyboard traps
+  - Drag-drop keyboard alternatives
+
+  For each accessibility issue, document:
+  - File path and line number
+  - What's missing (ARIA, keyboard handler, focus, etc.)
+  - WCAG violation level
+
+  Output: Detailed list of ALL accessibility issues with exact locations and root causes.
+  """
+}
+
+spawn mobile_responsive_tester {
+  prompt: """
+  Test ALL mobile and responsive behavior.
+
+  For EVERY component:
+  1. Test at mobile viewport (375px width)
+  2. Test touch interactions
+  3. Check if layout breaks
+  4. Test if buttons are tappable (44px minimum)
+  5. Test if modals work on mobile
+
+  Focus on:
+  - Sidebar collapse on mobile
+  - Touch-friendly buttons
+  - Mobile navigation
+  - Modal behavior on small screens
+  - Form inputs on mobile
+  - Drag-drop touch support
+
+  For each mobile issue, document:
+  - File path and line number
+  - What breaks at mobile size
+  - Touch interaction problems
+  - Layout overflow issues
+
+  Output: Detailed list of ALL mobile/responsive issues with exact locations and root causes.
+  """
+}
+
+// Phase 2: Collect and Synthesize Results
+spawn synthesizer {
+  prompt: """
+  You are the synthesis agent. Wait for all 10 testing agents to complete.
+
+  Read the output from each testing agent:
+  1. button_tester results
+  2. form_tester results
+  3. drag_drop_tester results
+  4. navigation_tester results
+  5. state_tester results
+  6. modal_dialog_tester results
+  7. data_loading_tester results
+  8. authentication_tester results
+  9. accessibility_tester results
+  10. mobile_responsive_tester results
+
+  Create a comprehensive report: BROKEN_UI_ELEMENTS_REPORT.md
+
+  Structure:
+  # Broken UI Elements - Comprehensive Test Results
+
+  ## Executive Summary
+  - Total issues found
+  - Critical issues (app-breaking)
+  - High priority issues (major functionality broken)
+  - Medium priority issues (minor functionality broken)
+  - Low priority issues (polish/UX)
+
+  ## Issues by Category
+
+  ### 1. Non-Functional Buttons (X issues)
+  [List all from button_tester]
+
+  ### 2. Broken Forms (X issues)
+  [List all from form_tester]
+
+  ### 3. Drag-Drop Issues (X issues)
+  [List all from drag_drop_tester]
+
+  ### 4. Navigation Problems (X issues)
+  [List all from navigation_tester]
+
+  ### 5. State Management Issues (X issues)
+  [List all from state_tester]
+
+  ### 6. Modal/Dialog Issues (X issues)
+  [List all from modal_dialog_tester]
+
+  ### 7. Data Loading Issues (X issues)
+  [List all from data_loading_tester]
+
+  ### 8. Authentication Issues (X issues)
+  [List all from authentication_tester]
+
+  ### 9. Accessibility Issues (X issues)
+  [List all from accessibility_tester]
+
+  ### 10. Mobile/Responsive Issues (X issues)
+  [List all from mobile_responsive_tester]
+
+  ## Root Cause Analysis
+  Identify patterns across all categories:
+  - Common root causes
+  - Systemic issues
+  - Quick wins (easy fixes that solve multiple issues)
+
+  ## Recommended Fix Priority
+  1. Critical (must fix immediately)
+  2. High (fix in this session)
+  3. Medium (fix after critical/high)
+  4. Low (polish for later)
+  """
+}
+
+// Phase 3: Production Testing with Real Credentials
+spawn production_tester {
+  prompt: """
+  Test the production site at the deployed URL with real credentials.
+
+  Credentials: laurence@fyves.com / hennie12
+
+  Test flow:
+  1. Navigate to production URL
+  2. Test login with provided credentials
+  3. Navigate through entire app
+  4. Test all critical user flows:
+     - Create a task
+     - Edit a task
+     - Change task status
+     - Create a project
+     - Navigate to project
+     - Use command palette
+     - Test all sidebar links
+
+  For EVERY issue found in production:
+  - Document exact steps to reproduce
+  - Take note of console errors
+  - Compare to local development behavior
+
+  Output: Production-specific issues that may not appear in dev environment.
+  """
+}

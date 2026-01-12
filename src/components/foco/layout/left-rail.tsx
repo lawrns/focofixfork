@@ -44,8 +44,8 @@ const workspaceNavItems: NavItem[] = [
 ];
 
 const pinnedProjects = [
-  { id: '1', name: 'Website Redesign', color: '#6366F1' },
-  { id: '2', name: 'Mobile App v2', color: '#10B981' },
+  { id: '1', name: 'Website Redesign', slug: 'website-redesign', color: '#6366F1' },
+  { id: '2', name: 'Mobile App v2', slug: 'mobile-app-v2', color: '#10B981' },
 ];
 
 export function LeftRail() {
@@ -174,7 +174,8 @@ export function LeftRail() {
               {pinnedProjects.map((project) => (
                 <Link
                   key={project.id}
-                  href={`/projects/${project.id}`}
+                  href={`/projects/${project.slug}`}
+                  title={project.name}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm',
                     'hover:bg-zinc-100 dark:hover:bg-zinc-800',

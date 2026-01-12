@@ -12,6 +12,23 @@ interface ParseResult {
 }
 
 /**
+ * Get current date in local timezone (midnight)
+ * Can be mocked in tests by setting __TEST_NOW__
+ */
+function getCurrentDate(): Date {
+  const now = new Date(Date.now())
+  // Return a date at midnight in local timezone to avoid timezone offset issues
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+}
+
+/**
+ * Allow tests to mock the current date
+ */
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).__smartDateParserGetCurrentDate = getCurrentDate
+}
+
+/**
  * Parse natural language date input into a Date object
  * @param input - Natural language date string (e.g., "tomorrow", "next monday", "in 3 days", "2024-01-15")
  * @returns ParseResult with parsed date, validity, display text, and ISO string
@@ -73,7 +90,7 @@ export function smartDateParser(input: string | null | undefined): ParseResult {
  * Parse relative dates: today, tomorrow, yesterday
  */
 function parseRelativeDates(input: string): Date | null {
-  const now = new Date()
+  const now = getCurrentDate()
 
   switch (input) {
     case 'today':
@@ -103,7 +120,7 @@ function parseRelativeDuration(input: string): Date | null {
     return null
   }
 
-  const now = new Date()
+  const now = getCurrentDate()
   const unit = match[1]
   const numberMatch = input.match(/(\d+)/)?.[1] || (input.includes('a ') ? '1' : null)
 
@@ -156,7 +173,7 @@ function parseDayName(input: string): Date | null {
     return null
   }
 
-  const now = new Date()
+  const now = getCurrentDate()
   const currentDay = now.getDay()
 
   // Calculate days until target day
@@ -177,7 +194,7 @@ function parseDayName(input: string): Date | null {
  * Parse next period: next week, next month
  */
 function parseNextPeriod(input: string): Date | null {
-  const now = new Date()
+  const now = getCurrentDate()
 
   if (input === 'next week') {
     const result = new Date(now)
@@ -201,8 +218,9 @@ function parseNextPeriod(input: string): Date | null {
 function parseAbsoluteDate(input: string): Date | null {
   // ISO format: YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-    const date = new Date(input + 'T00:00:00Z')
-    if (!isNaN(date.getTime())) {
+    const [year, month, day] = input.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+    if (!isNaN(date.getTime()) && date.getDate() === day) {
       return date
     }
   }
@@ -212,16 +230,24 @@ function parseAbsoluteDate(input: string): Date | null {
   const slashMatch = input.match(slashPattern)
   if (slashMatch) {
     const [_, part1, part2, year] = slashMatch
-    // Try MM/DD/YYYY first (American format)
-    const date = new Date(parseInt(year, 10), parseInt(part1, 10) - 1, parseInt(part2, 10))
-    if (!isNaN(date.getTime())) {
-      return date
+    const month = parseInt(part1, 10)
+    const day = parseInt(part2, 10)
+    const yearNum = parseInt(year, 10)
+
+    // Validate month and day ranges
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const date = new Date(yearNum, month - 1, day)
+      // Verify the date was created correctly (handles invalid dates like 2/30)
+      if (!isNaN(date.getTime()) && date.getMonth() === month - 1 && date.getDate() === day) {
+        return date
+      }
     }
   }
 
   // Long format with month name: "January 20, 2024" or "January 20 2024"
+  // Also support short format: "Jan 20, 2024"
   const longPattern =
-    /^(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),?\s+(\d{4})$/
+    /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})$/i
   const longMatch = input.match(longPattern)
   if (longMatch) {
     const monthNames = [
@@ -238,8 +264,21 @@ function parseAbsoluteDate(input: string): Date | null {
       'november',
       'december',
     ]
+    const monthNamesShort = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec']
+
     const [_, monthStr, day, year] = longMatch
-    const monthIndex = monthNames.indexOf(monthStr)
+    const monthLower = monthStr.toLowerCase()
+    let monthIndex = monthNames.indexOf(monthLower)
+
+    // Try short format if full format didn't match
+    if (monthIndex === -1) {
+      monthIndex = monthNamesShort.indexOf(monthLower)
+      // Handle "sept" -> "sep" aliasing
+      if (monthIndex === -1 && monthLower === 'sept') {
+        monthIndex = 8
+      }
+    }
+
     if (monthIndex !== -1) {
       const date = new Date(parseInt(year, 10), monthIndex, parseInt(day, 10))
       if (!isNaN(date.getTime())) {

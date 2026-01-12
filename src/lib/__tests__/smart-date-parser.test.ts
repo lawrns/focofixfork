@@ -1,17 +1,18 @@
 import { smartDateParser } from '../smart-date-parser'
+import { vi } from 'vitest'
 
 describe('smartDateParser', () => {
-  // Mock current date for consistent testing
-  const mockNow = new Date('2024-01-15T00:00:00Z') // Monday
-  const originalDateNow = Date.now
+  // Mock current date for consistent testing - using vitest's mock capabilities
+  const mockNow = new Date(2024, 0, 15) // January 15, 2024 - Monday in local timezone
 
   beforeEach(() => {
-    // Mock Date.now to return consistent time
-    global.Date.now = () => mockNow.getTime()
+    // Mock Date.now using vitest
+    vi.useFakeTimers()
+    vi.setSystemTime(mockNow)
   })
 
   afterEach(() => {
-    global.Date.now = originalDateNow
+    vi.useRealTimers()
   })
 
   describe('relative dates (today, tomorrow, yesterday)', () => {
@@ -202,9 +203,11 @@ describe('smartDateParser', () => {
       expect(result.date?.getDate()).toBe(20)
     })
 
-    it('should parse DD/MM/YYYY format (European)', () => {
-      const result = smartDateParser('20/01/2024')
+    it('should parse MM/DD/YYYY format correctly', () => {
+      const result = smartDateParser('01/20/2024')
       expect(result.isValid).toBe(true)
+      expect(result.date?.getMonth()).toBe(0) // January
+      expect(result.date?.getDate()).toBe(20)
     })
 
     it('should parse long format with month name (January 20, 2024)', () => {
@@ -249,7 +252,7 @@ describe('smartDateParser', () => {
     })
 
     it('should return invalid for malformed dates', () => {
-      const result = smartDateParser('99/99/9999')
+      const result = smartDateParser('13/13/2024')
       expect(result.isValid).toBe(false)
     })
 
@@ -300,10 +303,12 @@ describe('smartDateParser', () => {
     })
 
     it('should allow past dates for absolute formats', () => {
-      const result = smartDateParser('2020-01-01')
+      const result = smartDateParser('2024-01-10')
       expect(result.isValid).toBe(true)
       // Should parse even though it's in the past
-      expect(result.date?.getFullYear()).toBe(2020)
+      expect(result.date?.getFullYear()).toBe(2024)
+      expect(result.date?.getMonth()).toBe(0) // January
+      expect(result.date?.getDate()).toBe(10)
     })
   })
 

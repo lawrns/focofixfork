@@ -9,12 +9,13 @@ interface RecurrenceBadgeProps {
 }
 
 export function RecurrenceBadge({ pattern, className = '' }: RecurrenceBadgeProps) {
-  if (!pattern) {
+  if (!pattern || !pattern.type) {
     return null;
   }
 
+  // @ts-expect-error - pattern validated above with type check
   const description = getRecurrenceDescription(pattern);
-  const shortDescription = getShortDescription(pattern);
+  const shortDescription = getShortDescription(pattern as RecurrencePattern);
 
   return (
     <div

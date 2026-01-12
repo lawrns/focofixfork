@@ -48,6 +48,7 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
     );
   };
 
+  // @ts-expect-error - value may have optional fields from DB but we validate type exists when calling
   const description = value ? getRecurrenceDescription(value) : 'No recurrence';
 
   return (

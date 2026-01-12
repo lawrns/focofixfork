@@ -47,11 +47,11 @@ interface CommentsSectionProps {
 }
 
 const REACTION_EMOJIS = [
-  { emoji: '❤️', label: 'Heart', icon: Heart },
-  { emoji: '👍', label: 'Thumbs Up', icon: ThumbsUp },
-  { emoji: '😄', label: 'Laugh', icon: Laugh },
-  { emoji: '😢', label: 'Sad', icon: Frown },
-  { emoji: '😠', label: 'Angry', icon: Angry }
+  { emoji: 'heart', label: 'Heart', icon: Heart },
+  { emoji: 'thumbs-up', label: 'Thumbs Up', icon: ThumbsUp },
+  { emoji: 'laugh', label: 'Laugh', icon: Laugh },
+  { emoji: 'frown', label: 'Sad', icon: Frown },
+  { emoji: 'angry', label: 'Angry', icon: Angry }
 ]
 
 export default function CommentsSection({
@@ -568,17 +568,22 @@ function CommentItem({
             {/* Reactions */}
             {comment.reactions.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {comment.reactions.slice(0, 3).map((reaction, index) => (
-                  <Button
-                    key={`${reaction.emoji}-${index}`}
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => onReaction(comment.id, reaction.emoji)}
-                  >
-                    {reaction.emoji} {reaction.user_id === currentUser.id && '✓'}
-                  </Button>
-                ))}
+                {comment.reactions.slice(0, 3).map((reaction, index) => {
+                  const reactionConfig = REACTION_EMOJIS.find(r => r.emoji === reaction.emoji)
+                  const ReactionIcon = reactionConfig?.icon || Heart
+                  return (
+                    <Button
+                      key={`${reaction.emoji}-${index}`}
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => onReaction(comment.id, reaction.emoji)}
+                    >
+                      <ReactionIcon className="w-3 h-3 mr-1" />
+                      {reaction.user_id === currentUser.id && <span className="ml-1">✓</span>}
+                    </Button>
+                  )
+                })}
                 {comment.reactions.length > 3 && (
                   <span className="text-xs text-muted-foreground px-2">
                     +{comment.reactions.length - 3}

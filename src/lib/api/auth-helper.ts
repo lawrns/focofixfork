@@ -18,11 +18,15 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   
+  // Get auth token from cookie
+  const authToken = cookieStore.get('sb-access-token')?.value || 
+                    cookieStore.get('sb-ouvqnyfqipgnrjnuqsqq-auth-token')?.value
+  
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
-      headers: {
-        cookie: cookieStore.toString()
-      }
+      headers: authToken ? {
+        Authorization: `Bearer ${authToken}`
+      } : {}
     }
   })
   

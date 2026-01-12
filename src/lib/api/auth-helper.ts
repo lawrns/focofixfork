@@ -1,6 +1,5 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 
 export interface AuthResult {
@@ -11,24 +10,26 @@ export interface AuthResult {
 
 /**
  * Get authenticated user from request
- * Creates Supabase server client with proper cookie handling
+ * Creates Supabase server client with proper cookie handling from request
  */
 export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
-  const cookieStore = await cookies()
+  let response = NextResponse.next()
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return req.cookies.getAll().map(cookie => ({
+            name: cookie.name,
+            value: cookie.value,
+          }))
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options })
+        setAll(cookies) {
+          cookies.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }

@@ -163,6 +163,15 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
     }
   }
 
+  // Validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Check if submit button should be enabled
+  const isFormValid = formData.email && formData.password && isValidEmail(formData.email)
+
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true)
@@ -205,6 +214,97 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
       setError('Failed to sign in with Apple. Please try again.')
       setIsLoading(false)
     }
+  }
+
+  // If 2FA is required, show the 2FA verification form
+  if (needs2FA) {
+    return (
+      <div className="w-full max-w-sm mx-auto">
+        {/* Header - Centered, Minimal */}
+        <div className="mb-8 text-center">
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/focologo.png"
+              alt="Foco Logo"
+              width={48}
+              height={48}
+              className="h-12 w-auto"
+            />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mb-2">
+            Two-Factor Authentication
+          </h1>
+          <p className="text-sm text-zinc-600">
+            Enter the 6-digit code from your authenticator app
+          </p>
+        </div>
+
+        <form onSubmit={handleVerify2FA} className="space-y-4">
+          {/* 2FA Code Field */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="twoFactorToken"
+              className="text-xs font-medium text-zinc-700 uppercase tracking-wide"
+            >
+              Authentication Code
+            </Label>
+            <Input
+              id="twoFactorToken"
+              name="twoFactorToken"
+              type="text"
+              placeholder="000000"
+              value={twoFactorToken}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                setTwoFactorToken(value)
+              }}
+              maxLength={6}
+              disabled={isLoading}
+              autoComplete="off"
+              data-testid="2fa-token-input"
+              className="h-10 px-3 text-sm border-zinc-200 bg-white focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-colors text-center tracking-widest"
+            />
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="px-3 py-2 text-xs border border-red-200 bg-red-50 text-red-900 rounded-md">
+              {error}
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            className="w-full h-10 text-sm font-medium bg-zinc-900 hover:bg-zinc-800 text-white transition-colors"
+            disabled={isLoading || twoFactorToken.length !== 6}
+            data-testid="verify-2fa-button"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              'Verify Code'
+            )}
+          </Button>
+
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setNeeds2FA(false)
+              setTwoFactorToken('')
+              setError(null)
+            }}
+            className="w-full h-10 text-sm font-medium text-zinc-900 hover:text-zinc-700 transition-colors"
+          >
+            Back to Login
+          </button>
+        </form>
+      </div>
+    )
   }
 
   return (
@@ -305,7 +405,7 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
         <Button
           type="submit"
           className="w-full h-10 text-sm font-medium bg-zinc-900 hover:bg-zinc-800 text-white transition-colors"
-          disabled={isLoading || !formData.email || !formData.password}
+          disabled={isLoading || !isFormValid}
           data-testid="login-button"
         >
           {isLoading ? (

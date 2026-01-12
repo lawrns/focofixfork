@@ -175,7 +175,7 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 ${
                   isActive
                     ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50'
                     : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
@@ -192,7 +192,7 @@ export default function Sidebar() {
           <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               onClick={() => setProjectsExpanded(!projectsExpanded)}
-              className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+              className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
               aria-expanded={projectsExpanded}
               aria-label={projectsExpanded ? 'Collapse projects list' : 'Expand projects list'}
             >
@@ -226,7 +226,7 @@ export default function Sidebar() {
                       key={project.id}
                       href={`/projects/${project.slug}`}
                       title={project.name}
-                      className={`block rounded-md px-2 py-1 text-xs transition-colors ${
+                      className={`block rounded-md px-2 py-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 ${
                         pathname === `/projects/${project.slug}`
                           ? 'bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50'
                           : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
@@ -252,7 +252,7 @@ export default function Sidebar() {
         <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-0.5">
           <button
             onClick={handleNewProject}
-            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md bg-zinc-900 px-3 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+            className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md bg-zinc-900 px-3 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
           >
             <Plus className="h-3.5 w-3.5" />
             New Project
@@ -260,7 +260,7 @@ export default function Sidebar() {
 
           <Link
             href="/organizations"
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
           >
             <Users className="h-4 w-4" />
             Organizations
@@ -268,7 +268,7 @@ export default function Sidebar() {
 
           <Link
             href="/dashboard/settings"
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
           >
             <Settings className="h-4 w-4" />
             Settings

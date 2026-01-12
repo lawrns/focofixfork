@@ -167,8 +167,9 @@ export function CommandPalette() {
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 px-3 py-4 bg-transparent text-sm outline-none placeholder:text-zinc-400"
+            className="flex-1 px-3 py-4 bg-transparent text-sm outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
             autoFocus
+            aria-label="Command search"
           />
           <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500">
             ESC
@@ -195,13 +196,15 @@ export function CommandPalette() {
                     <button
                       key={cmd.id}
                       className={cn(
-                        'w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors',
+                        'w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0',
                         isSelected
-                          ? 'bg-zinc-100 dark:bg-zinc-800'
+                          ? 'bg-zinc-100 dark:bg-zinc-800 ring-2 ring-blue-500'
                           : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
                       )}
                       onClick={() => executeCommand(cmd)}
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
+                      role="option"
+                      aria-selected={isSelected}
                     >
                       <cmd.icon className="h-4 w-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                       <div className="flex-1 text-left">

@@ -232,7 +232,9 @@ describe('Settings Auto-save with Debouncing', () => {
       expect(result.current.syncStatus).toBe('synced')
 
       // Reset timer
-      vi.advanceTimersByTime(2000)
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
 
       // Second save cycle
       act(() => {

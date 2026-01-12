@@ -79,56 +79,56 @@
 
   /* ===== Glassmorphism Utilities ===== */
   .glass {
-    background: rgba(255, 255, 255, 0.7);
+    background: hsl(0 0% 100% / 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid hsl(0 0% 100% / 0.18);
   }
 
   .glass-dark {
-    background: rgba(15, 23, 42, 0.7);
+    background: hsl(222 47% 11% / 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid hsl(0 0% 100% / 0.1);
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.8);
+    background: hsl(0 0% 100% / 0.8);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    border: 1px solid hsl(214 32% 91% / 0.6);
+    box-shadow: 0 8px 32px 0 hsl(227 25% 33% / 0.07);
   }
 
   .glass-subtle {
-    background: rgba(255, 255, 255, 0.95);
+    background: hsl(0 0% 100% / 0.95);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
 
   /* ===== Gradient Utilities (Minimal zinc-based) ===== */
   .gradient-primary {
-    background: linear-gradient(135deg, rgb(24 24 27) 0%, rgb(39 39 42) 100%); /* zinc-900 to zinc-800 */
+    background: linear-gradient(135deg, hsl(240 5.9% 10%) 0%, hsl(240 3.7% 15.9%) 100%); /* zinc-900 to zinc-800 */
   }
 
   .gradient-primary-soft {
-    background: linear-gradient(135deg, rgb(250 250 250) 0%, rgb(244 244 245) 100%); /* zinc-50 to zinc-100 */
+    background: linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(240 4.8% 95.9%) 100%); /* zinc-50 to zinc-100 */
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, rgb(39 39 42) 0%, rgb(63 63 70) 100%); /* zinc-800 to zinc-700 */
+    background: linear-gradient(135deg, hsl(240 3.7% 15.9%) 0%, hsl(240 3.8% 46.1%) 100%); /* zinc-800 to zinc-700 */
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, rgb(34 197 94) 0%, rgb(22 163 74) 100%); /* green-500 to green-600 */
+    background: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 71% 45%) 100%); /* green-500 to green-600 */
   }
 
   .gradient-mesh {
     background:
-      radial-gradient(at 0% 0%, rgb(161 161 170 / 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgb(113 113 122 / 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgb(161 161 170 / 0.08) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, rgb(113 113 122 / 0.08) 0px, transparent 50%); /* subtle zinc gradients */
+      radial-gradient(at 0% 0%, hsl(240 5.3% 64.9% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(240 3.8% 46.1% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(240 5.3% 64.9% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(240 3.8% 46.1% / 0.08) 0px, transparent 50%); /* subtle zinc gradients */
   }
 
   /* ===== Hover Effects ===== */
@@ -272,7 +272,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, rgb(161 161 170), rgb(113 113 122)); /* zinc-400 to zinc-500 */
+    background: linear-gradient(135deg, hsl(240 5.3% 64.9%), hsl(240 3.8% 46.1%)); /* zinc-400 to zinc-500 */
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -292,10 +292,10 @@
   .shimmer {
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.2) 20%,
-      rgba(255, 255, 255, 0.5) 60%,
-      rgba(255, 255, 255, 0)
+      hsl(0 0% 100% / 0) 0%,
+      hsl(0 0% 100% / 0.2) 20%,
+      hsl(0 0% 100% / 0.5) 60%,
+      hsl(0 0% 100% / 0)
     );
     background-size: 1000px 100%;
     animation: shimmer 2s infinite;
@@ -313,17 +313,17 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgb(241 245 249);
+    background: hsl(214 32% 96%);
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgb(203 213 225);
+    background: hsl(215 20% 82%);
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgb(148 163 184);
+    background: hsl(215 16% 65%);
   }
 }
 
@@ -395,50 +395,6 @@
   }
 }
 
-:root {
-  /* Minimal zinc-based color scheme - Linear/Notion inspired */
-  --background: 0 0% 100%;             /* #FFFFFF - Pure white */
-  --foreground: 240 5.9% 10%;          /* zinc-900 */
-  --card: 0 0% 100%;                   /* #FFFFFF */
-  --card-foreground: 240 5.9% 10%;     /* zinc-900 */
-  --popover: 0 0% 100%;                /* #FFFFFF */
-  --popover-foreground: 240 5.9% 10%;  /* zinc-900 */
-  --primary-foreground: 0 0% 100%;     /* #FFFFFF */
-  --secondary: 240 4.8% 95.9%;         /* zinc-100 */
-  --secondary-foreground: 240 5.9% 10%; /* zinc-900 */
-  --muted: 240 4.8% 95.9%;             /* zinc-100 */
-  --muted-foreground: 240 3.8% 46.1%;  /* zinc-500 */
-  --accent: 240 4.8% 95.9%;            /* zinc-100 */
-  --accent-foreground: 240 5.9% 10%;   /* zinc-900 */
-  --destructive: 0 84.2% 60.2%;        /* red-500 */
-  --destructive-foreground: 0 0% 100%; /* white */
-  --border: 240 5.9% 90%;              /* zinc-200 */
-  --input: 240 5.9% 90%;               /* zinc-200 */
-  --ring: 240 5.9% 10%;                /* zinc-900 */
-}
-
-.dark {
-  /* Dark mode - zinc-950 base */
-  --background: 240 10% 3.9%;          /* zinc-950 */
-  --foreground: 0 0% 98%;              /* zinc-50 */
-  --card: 240 10% 3.9%;                /* zinc-950 */
-  --card-foreground: 0 0% 98%;         /* zinc-50 */
-  --popover: 240 10% 3.9%;             /* zinc-950 */
-  --popover-foreground: 0 0% 98%;      /* zinc-50 */
-  --primary-foreground: 240 10% 3.9%;  /* zinc-950 */
-  --secondary: 240 3.7% 15.9%;         /* zinc-800 */
-  --secondary-foreground: 0 0% 98%;    /* zinc-50 */
-  --muted: 240 3.7% 15.9%;             /* zinc-800 */
-  --muted-foreground: 240 5% 64.9%;    /* zinc-400 */
-  --accent: 240 3.7% 15.9%;            /* zinc-800 */
-  --accent-foreground: 0 0% 98%;       /* zinc-50 */
-  --destructive: 0 62.8% 30.6%;        /* dark red */
-  --destructive-foreground: 0 0% 98%;  /* zinc-50 */
-  --border: 240 3.7% 15.9%;            /* zinc-800 */
-  --input: 240 3.7% 15.9%;             /* zinc-800 */
-  --ring: 240 4.9% 83.9%;              /* zinc-300 */
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -459,21 +415,21 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid rgb(24 24 27);    /* zinc-900 */
+  outline: 2px solid hsl(240 5.9% 10%);    /* zinc-900 */
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid rgb(24 24 27);    /* zinc-900 */
+  outline: 2px solid hsl(240 5.9% 10%);    /* zinc-900 */
   outline-offset: 2px;
 }
 
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid rgb(24 24 27);    /* zinc-900 */
+  outline: 2px solid hsl(240 5.9% 10%);    /* zinc-900 */
   outline-offset: 0px;
-  box-shadow: 0 0 0 3px rgb(24 24 27 / 0.1); /* zinc-900 with opacity */
+  box-shadow: 0 0 0 3px hsl(240 5.9% 10% / 0.1); /* zinc-900 with opacity */
 }

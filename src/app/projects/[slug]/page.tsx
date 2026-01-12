@@ -86,11 +86,11 @@ function WorkItemCard({ item }: { item: WorkItem }) {
         'group cursor-pointer min-h-[44px]'
       )}
     >
-      <div className="flex items-start gap-1.5 md:gap-2">
-        <GripVertical className="h-3.5 w-3.5 md:h-4 md:w-4 text-zinc-300 opacity-0 group-hover:opacity-100 mt-0.5 cursor-grab shrink-0" />
+      <div className="flex items-start gap-2">
+        <GripVertical className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100 mt-0.5 cursor-grab shrink-0" />
         <div className="flex-1 min-w-0">
           {/* Title & Type */}
-          <div className="flex items-start gap-1.5 md:gap-2 mb-1.5 md:mb-2">
+          <div className="flex items-start gap-2 mb-2">
             <div className={cn('h-1.5 w-1.5 md:h-2 md:w-2 rounded-full mt-1.5 shrink-0', priorityColors[item.priority])} />
             <span className="font-medium text-xs md:text-sm text-zinc-900 dark:text-zinc-50 line-clamp-2">
               {item.title}
@@ -98,9 +98,9 @@ function WorkItemCard({ item }: { item: WorkItem }) {
           </div>
           
           {/* Labels */}
-          <div className="flex items-center gap-1 md:gap-1.5 mb-1.5 md:mb-2 flex-wrap">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             {item.type === 'bug' && (
-              <Badge variant="outline" className="h-4 md:h-5 text-[9px] md:text-[10px] text-red-600 border-red-200 bg-red-50">
+              <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
                 Bug
               </Badge>
             )}
@@ -110,8 +110,8 @@ function WorkItemCard({ item }: { item: WorkItem }) {
               </Badge>
             )}
             {item.status === 'blocked' && item.blocked_reason && (
-              <Badge variant="outline" className="h-4 md:h-5 text-[9px] md:text-[10px] text-red-600 border-red-200 bg-red-50">
-                <AlertTriangle className="h-2 w-2 md:h-2.5 md:w-2.5 mr-0.5" />
+              <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
+                <AlertTriangle className="h-3 w-3 mr-1" />
                 Blocked
               </Badge>
             )}
@@ -119,15 +119,15 @@ function WorkItemCard({ item }: { item: WorkItem }) {
 
           {/* Footer */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               {item.due_date && (
                 <span className={cn(
-                  'flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs',
+                  'flex items-center gap-1 text-xs',
                   new Date(item.due_date) < new Date() 
                     ? 'text-red-500' 
                     : 'text-zinc-500'
                 )}>
-                  <Clock className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" />
+                  <Clock className="h-3 w-3 shrink-0" />
                   <span className="truncate">{new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </span>
               )}
@@ -155,20 +155,20 @@ function BoardColumn({ status, label, color, items }: {
   return (
     <div className="flex flex-col w-full md:w-72 min-w-[280px] shrink-0">
       {/* Column Header */}
-      <div className="flex items-center gap-1 md:gap-2 px-1 md:px-2 py-1 md:py-2 mb-2">
+      <div className="flex items-center gap-2 px-2 py-2 mb-2">
         <div className={cn('h-1.5 w-1.5 md:h-2 md:w-2 rounded-full shrink-0', color)} />
         <span className="font-medium text-xs md:text-sm text-zinc-900 dark:text-zinc-50 truncate">
           {label}
         </span>
-        <span className="text-[10px] md:text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1 md:px-1.5 rounded shrink-0">
+        <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 rounded shrink-0">
           {items.length}
         </span>
         <div className="flex-1" />
-        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
-          <Plus className="h-3 w-3 md:h-3.5 md:w-3.5" />
+        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" aria-label="Add task to column">
+          <Plus className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
-          <MoreHorizontal className="h-3 w-3 md:h-3.5 md:w-3.5" />
+        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" aria-label="Column options">
+          <MoreHorizontal className="h-4 w-4" />
         </Button>
       </div>
 
@@ -194,8 +194,8 @@ function BoardColumn({ status, label, color, items }: {
 
 function AISuggestionStrip() {
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 p-2 md:p-3 mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-      <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-3 mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded shrink-0">
           <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
         </div>
@@ -410,11 +410,11 @@ export default function ProjectPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]">
+          <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]" aria-label="Generate status report">
             <Zap className="h-4 w-4" />
             <span className="hidden md:inline">Generate Status</span>
           </Button>
-          <Button size="sm" className="flex-1 md:flex-none min-h-[44px]">
+          <Button size="sm" className="flex-1 md:flex-none min-h-[44px]" aria-label="Add new task">
             <Plus className="h-4 w-4" />
             <span className="hidden md:inline">Add Task</span>
           </Button>
@@ -427,8 +427,8 @@ export default function ProjectPage() {
           {/* Tabs List - Scrollable on mobile */}
           <div className="relative w-full md:w-auto">
             {/* Scroll fade indicators for mobile */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10 md:hidden" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10 md:hidden" />
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-1 md:hidden" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-1 md:hidden" />
             
             <TabsList className="w-full md:w-auto overflow-x-auto scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <TabsTrigger value="overview" className="px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">

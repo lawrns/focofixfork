@@ -87,7 +87,7 @@ export function SavedViews({
       {/* Saved Views Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="compact" className="flex items-center space-x-2 whitespace-nowrap">
+          <Button variant="outline" size="sm" className="flex items-center space-x-2 whitespace-nowrap">
             <Eye className="h-4 w-4" />
             <span className="hidden lg:inline text-sm">
               {activeView?.name || 'All Projects'}

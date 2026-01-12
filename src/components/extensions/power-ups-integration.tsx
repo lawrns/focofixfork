@@ -266,7 +266,7 @@ export function PowerUpsIntegration({
                 const troubleshooting = powerUpsRegistry.getTroubleshootingGuide(powerUp.manifest.id)
                 
                 // TODO: Show modal with instructions and troubleshooting
-                console.log('Power-up details:', { instructions, troubleshooting })
+                // Power-up details loaded
               }}
             >
               <Info className="w-4 h-4" />

@@ -300,7 +300,7 @@ export const defaultTourSteps: TourStep[] = [
       label: 'Try Creating a Project',
       onClick: () => {
         // Trigger project creation modal
-        console.log('Opening project creation modal')
+        // Opening project creation modal
       }
     }
   },

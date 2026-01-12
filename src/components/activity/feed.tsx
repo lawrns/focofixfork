@@ -152,7 +152,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
             <Activity className="h-5 w-5" />
             Activity Feed
             {isSubscribed && (
-              <Badge variant="success" className="text-xs">
+              <Badge variant="secondary" className="text-xs">
                 Live
               </Badge>
             )}

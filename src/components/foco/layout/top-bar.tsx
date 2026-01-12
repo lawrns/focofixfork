@@ -62,14 +62,16 @@ export function TopBar({ className }: TopBarProps) {
             setWorkspace(data.data[0]);
           }
         })
-        .catch(err => console.error('Failed to load workspace:', err));
+        .catch(() => {
+          // Silently fail - workspace loading is not critical
+        });
     }
   }, [user]);
 
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 z-20 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
+        'fixed top-0 right-0 z-40 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
         'flex items-center gap-2 md:gap-4',
         'transition-all duration-200',
         'left-0 md:left-64',
@@ -142,7 +144,7 @@ export function TopBar({ className }: TopBarProps) {
         </DropdownMenu>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 min-h-[44px] min-w-[44px]">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 min-h-[44px] min-w-[44px]" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <Badge
@@ -269,8 +271,8 @@ export function TopBar({ className }: TopBarProps) {
                   const { error } = await supabase.auth.signOut();
                   if (error) throw error;
                   router.push('/login');
-                } catch (err) {
-                  console.error('Sign out failed:', err);
+                } catch {
+                  // Sign out error handled by redirect
                 }
               }}
             >

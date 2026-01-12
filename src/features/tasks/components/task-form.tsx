@@ -68,7 +68,7 @@ export function TaskForm({
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [allProjectTasks, setAllProjectTasks] = useState<Task[]>(projectTasks)
+  const [allProjectTasks, setAllProjectTasks] = useState<DuplicateTask[]>(projectTasks)
   const [shouldCreateAnyway, setShouldCreateAnyway] = useState(false)
 
   // Suggestions state

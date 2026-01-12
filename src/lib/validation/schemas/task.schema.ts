@@ -99,6 +99,13 @@ export const UpdateTaskSchema = z.object({
     }, 'Due date must be in the future')
     .optional()
     .nullable(),
+  reminder_at: z.string().datetime()
+    .refine((date) => {
+      if (!date) return true // Optional field
+      return new Date(date) > new Date()
+    }, 'Reminder date must be in the future')
+    .optional()
+    .nullable(),
   is_recurring: z.boolean().optional(),
   recurrence_pattern: RecurrencePatternSchema.optional().nullable(),
 }).refine(

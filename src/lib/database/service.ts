@@ -91,7 +91,7 @@ export class DatabaseService {
       }
 
       return await query
-    })
+    }) as unknown as Promise<DatabaseResult<Workspace[]>>
   }
 
   async getWorkspaceById(id: string): Promise<DatabaseResult<Workspace>> {
@@ -108,10 +108,10 @@ export class DatabaseService {
     return this.executeQuery(async (client) => {
       return await client
         .from('workspaces')
-        .insert(data)
+        .insert(data as any)
         .select()
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<Workspace>>
   }
 
   // Projects (using foco_projects table)
@@ -127,7 +127,7 @@ export class DatabaseService {
       }
 
       return await query
-    })
+    }) as unknown as Promise<DatabaseResult<Project[]>>
   }
 
   async getProjectById(id: string): Promise<DatabaseResult<Project>> {
@@ -137,17 +137,17 @@ export class DatabaseService {
         .select('*')
         .eq('id', id)
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<Project>>
   }
 
   async createProject(data: ProjectInsert): Promise<DatabaseResult<Project>> {
     return this.executeQuery(async (client) => {
       return await client
         .from('foco_projects')
-        .insert(data)
+        .insert(data as any)
         .select()
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<Project>>
   }
 
   // Work Items (formerly Tasks, using work_items table)
@@ -163,7 +163,7 @@ export class DatabaseService {
       }
 
       return await query
-    })
+    }) as unknown as Promise<DatabaseResult<WorkItem[]>>
   }
 
   async getWorkItemById(id: string): Promise<DatabaseResult<WorkItem>> {
@@ -173,28 +173,28 @@ export class DatabaseService {
         .select('*')
         .eq('id', id)
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<WorkItem>>
   }
 
   async createWorkItem(data: WorkItemInsert): Promise<DatabaseResult<WorkItem>> {
     return this.executeQuery(async (client) => {
       return await client
         .from('work_items')
-        .insert(data)
+        .insert(data as any)
         .select()
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<WorkItem>>
   }
 
   async updateWorkItem(id: string, data: Partial<WorkItem>): Promise<DatabaseResult<WorkItem>> {
     return this.executeQuery(async (client) => {
       return await client
         .from('work_items')
-        .update(data)
+        .update(data as any)
         .eq('id', id)
         .select()
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<WorkItem>>
   }
 
   // Milestones

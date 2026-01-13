@@ -13,7 +13,7 @@ export function useTasks(filters?: TaskFilters) {
       setError(null)
       const result = await TasksService.getUserTasks('current-user', filters)
       if (result.success && result.data) {
-        setTasks(result.data as Task[])
+        setTasks(result.data as unknown as Task[])
       } else {
         setError(result.error || 'Failed to fetch tasks')
       }
@@ -32,7 +32,7 @@ export function useTasks(filters?: TaskFilters) {
     try {
       const result = await TasksService.createTask('current-user', taskData)
       if (result.success && result.data) {
-        setTasks(prev => [result.data as Task, ...prev])
+        setTasks(prev => [result.data as unknown as Task, ...prev])
         return { success: true }
       }
       return { success: false, error: result.error }
@@ -47,7 +47,7 @@ export function useTasks(filters?: TaskFilters) {
     try {
       const result = await TasksService.updateTask('current-user', id, updates)
       if (result.success && result.data) {
-        setTasks(prev => prev.map(task => task.id === id ? result.data as Task : task))
+        setTasks(prev => prev.map(task => task.id === id ? result.data as unknown as Task : task))
         return { success: true }
       }
       return { success: false, error: result.error }
@@ -95,7 +95,7 @@ export function useTask(id: string) {
       setError(null)
       const result = await TasksService.getTaskById('current-user', id)
       if (result.success && result.data) {
-        setTask(result.data as Task)
+        setTask(result.data as unknown as Task)
       } else {
         setError(result.error || 'Task not found')
       }
@@ -116,7 +116,7 @@ export function useTask(id: string) {
     try {
       const result = await TasksService.updateTask('current-user', id, updates)
       if (result.success && result.data) {
-        setTask(result.data as Task)
+        setTask(result.data as unknown as Task)
         return { success: true }
       }
       return { success: false, error: result.error }

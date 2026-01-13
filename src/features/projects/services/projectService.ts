@@ -222,7 +222,7 @@ export class ProjectsService {
         data: {
           ...data,
           description: data.description || null,
-          organization_id: data.organization_id || null,
+          workspace_id: data.workspace_id || null,
           created_by: data.created_by || '',
           start_date: data.start_date || null,
           due_date: data.due_date || null,
@@ -265,7 +265,7 @@ export class ProjectsService {
       const dataToInsert = {
         name: projectData.name,
         description: projectData.description,
-        organization_id: projectData.organization_id,
+        workspace_id: projectData.workspace_id,
         status: projectData.status || 'planning',
         priority: projectData.priority || 'medium',
         start_date: projectData.start_date,
@@ -277,7 +277,7 @@ export class ProjectsService {
       console.log('ProjectsService.createProject: Data to insert:', dataToInsert)
 
       const { data, error } = await supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .insert(dataToInsert)
         .select()
         .single()
@@ -298,7 +298,7 @@ export class ProjectsService {
         if (error.code === '23503') { // foreign_key_violation
           return {
             success: false,
-            error: 'Invalid organization selected. Please check your organization membership.'
+            error: 'Invalid workspace selected. Please check your workspace membership.'
           }
         }
 
@@ -324,7 +324,7 @@ export class ProjectsService {
           id: data.id,
           name: data.name,
           description: data.description || null,
-          organization_id: data.organization_id || null,
+          workspace_id: data.workspace_id || null,
           status: data.status as ProjectStatus,
           priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
           created_by: data.created_by || '',
@@ -365,7 +365,7 @@ export class ProjectsService {
 
       // Check if user can update this project (user must be creator)
       const { data: existingProject, error: fetchError } = await supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .select('id, created_by, name, status, priority')
         .eq('id', projectId)
         .single()
@@ -402,13 +402,13 @@ export class ProjectsService {
 
       console.log('ProjectsService.updateProject: Permission check passed, proceeding with update')
       const { data, error } = await supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
         })
         .eq('id', projectId)
-        .select('id, name, description, status, priority, organization_id, created_by, start_date, due_date, progress_percentage, created_at, updated_at')
+        .select('id, name, description, status, priority, workspace_id, created_by, start_date, due_date, progress_percentage, created_at, updated_at')
         .single()
 
       console.log('ProjectsService.updateProject: Database update result:', { success: !error, error: error?.message, data })
@@ -436,7 +436,7 @@ export class ProjectsService {
         if (error.code === '23503') { // foreign_key_violation
           return {
             success: false,
-            error: 'Invalid organization selected. Please check your organization membership.'
+            error: 'Invalid workspace selected. Please check your workspace membership.'
           }
         }
 
@@ -462,7 +462,7 @@ export class ProjectsService {
           id: data.id,
           name: data.name,
           description: data.description || null,
-          organization_id: data.organization_id || null,
+          workspace_id: data.workspace_id || null,
           status: data.status as ProjectStatus,
           priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
           created_by: data.created_by || '',
@@ -502,7 +502,7 @@ export class ProjectsService {
 
       // Check if user can delete this project (user must be creator)
       const { data: project, error: fetchError } = await supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .select('created_by')
         .eq('id', projectId)
         .single()
@@ -537,7 +537,7 @@ export class ProjectsService {
 
            // First, check if project exists and belongs to user
            const { data: existingProject, error: checkError } = await supabaseAdmin
-             .from('projects')
+             .from('foco_projects')
              .select('id, created_by')
              .eq('id', projectId)
              .eq('created_by', userId)
@@ -553,7 +553,7 @@ export class ProjectsService {
 
       // Execute delete
            const { error: projectError } = await supabaseAdmin
-             .from('projects')
+             .from('foco_projects')
              .delete()
              .eq('id', projectId)
 
@@ -577,7 +577,7 @@ export class ProjectsService {
         }
 
              const { data: verifyData, error: verifyError } = await supabaseAdmin
-               .from('projects')
+               .from('foco_projects')
                .select('id')
                .eq('id', projectId)
                .single()
@@ -637,7 +637,7 @@ export class ProjectsService {
 
       // Get all projects for the user
       const { data: projects, error } = await supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .select('status, due_date')
         .eq('created_by', userId)
 

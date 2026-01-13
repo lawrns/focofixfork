@@ -243,20 +243,17 @@ export class TimeTrackingService {
    */
   static async getTimeEntries(filters: {
     user_id?: string
-    project_id?: string
-    milestone_id?: string
-    task_id?: string
+    work_item_id?: string
     start_date?: string
     end_date?: string
-    status?: string[]
-    billable?: boolean
+    is_billable?: boolean
     limit?: number
     offset?: number
   } = {}): Promise<{ entries: TimeEntry[]; total: number }> {
     let query = untypedSupabase
       .from('time_entries')
       .select('*', { count: 'exact' })
-      .order('date', { ascending: false })
+      .order('started_at', { ascending: false })
 
     // @ts-ignore - Avoiding deep type instantiation issues with Supabase query chaining
     if (filters.user_id) {
@@ -264,39 +261,24 @@ export class TimeTrackingService {
       query = query.eq('user_id', filters.user_id)
     }
 
-    if (filters.project_id) {
+    if (filters.work_item_id) {
       // @ts-ignore
-      query = query.eq('project_id', filters.project_id)
-    }
-
-    if (filters.milestone_id) {
-      // @ts-ignore
-      query = query.eq('milestone_id', filters.milestone_id)
-    }
-
-    if (filters.task_id) {
-      // @ts-ignore
-      query = query.eq('task_id', filters.task_id)
+      query = query.eq('work_item_id', filters.work_item_id)
     }
 
     if (filters.start_date) {
       // @ts-ignore
-      query = query.gte('date', filters.start_date)
+      query = query.gte('started_at', filters.start_date)
     }
 
     if (filters.end_date) {
       // @ts-ignore
-      query = query.lte('date', filters.end_date)
+      query = query.lte('started_at', filters.end_date)
     }
 
-    if (filters.status?.length) {
+    if (filters.is_billable !== undefined) {
       // @ts-ignore
-      query = query.in('status', filters.status)
-    }
-
-    if (filters.billable !== undefined) {
-      // @ts-ignore
-      query = query.eq('billable', filters.billable)
+      query = query.eq('is_billable', filters.is_billable)
     }
 
     if (filters.limit) {
@@ -317,7 +299,7 @@ export class TimeTrackingService {
     }
 
     return {
-      entries: data?.map(entry => TimeEntryModel.fromDatabase(entry)) || [],
+      entries: data?.map((entry: any) => TimeEntryModel.fromDatabase(entry)) || [],
       total: count || 0
     }
   }
@@ -338,15 +320,12 @@ export class TimeTrackingService {
 
     const totalHours = entries.reduce((sum, entry) => sum + (entry.duration_minutes / 60), 0)
     const billableHours = entries
-      .filter(entry => entry.billable)
+      .filter((entry: any) => entry.is_billable)
       .reduce((sum, entry) => sum + (entry.duration_minutes / 60), 0)
 
-    const totalAmount = entries
-      .filter(entry => entry.billable && entry.billable_rate)
-      .reduce((sum, entry) => sum + TimeEntryModel.calculateBillableAmount(
-        entry.duration_minutes,
-        entry.billable_rate!
-      ), 0)
+    // NOTE: billable_rate column doesn't exist in DB, so total_amount will always be 0
+    // TODO(DB_MIGRATION): Add billable_rate column if billing functionality is needed
+    const totalAmount = 0
 
     // Calculate average daily hours (simplified)
     const daysDiff = startDate && endDate ?
@@ -356,20 +335,20 @@ export class TimeTrackingService {
     // Find most productive day (simplified - just return a placeholder)
     const mostProductiveDay = 'Monday'
 
-    // Top projects (placeholder implementation)
-    const projectHours: { [key: string]: { name: string; hours: number } } = {}
-    entries.forEach(entry => {
-      if (entry.project_id) {
-        if (!projectHours[entry.project_id]) {
-          projectHours[entry.project_id] = { name: `Project ${entry.project_id}`, hours: 0 }
+    // Top work items (using work_item_id instead of project_id)
+    const workItemHours: { [key: string]: { name: string; hours: number } } = {}
+    entries.forEach((entry: any) => {
+      if (entry.work_item_id) {
+        if (!workItemHours[entry.work_item_id]) {
+          workItemHours[entry.work_item_id] = { name: `Work Item ${entry.work_item_id}`, hours: 0 }
         }
-        projectHours[entry.project_id].hours += entry.duration_minutes / 60
+        workItemHours[entry.work_item_id].hours += entry.duration_minutes / 60
       }
     })
 
-    const topProjects = Object.entries(projectHours)
-      .map(([projectId, data]) => ({
-        project_id: projectId,
+    const topProjects = Object.entries(workItemHours)
+      .map(([workItemId, data]) => ({
+        project_id: workItemId, // Using project_id key for backward compatibility with interface
         project_name: data.name,
         hours: data.hours
       }))

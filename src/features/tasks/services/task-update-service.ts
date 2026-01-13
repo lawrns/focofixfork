@@ -13,6 +13,7 @@ export interface TaskUpdateData {
   actual_hours?: number | null
   due_date?: string | null
   parent_id?: string | null
+  milestone_id?: string | null
 }
 
 export class TaskUpdateService {

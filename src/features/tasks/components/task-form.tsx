@@ -133,7 +133,7 @@ export function TaskForm({
           project_id: watchedProjectId,
         })
         if (response.success && response.data) {
-          setAllProjectTasks(response.data as Task[])
+          setAllProjectTasks(response.data as unknown as Task[])
         }
       } catch (err) {
         console.error('Failed to load project tasks for duplicate detection:', err)

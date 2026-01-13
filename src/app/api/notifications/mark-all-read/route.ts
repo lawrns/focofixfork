@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 import { supabase } from '@/lib/supabase-client';
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any;
+
 export async function PATCH(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthUser(request);
@@ -14,7 +17,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update ALL unread notifications for the user
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('notifications')
       .update({
         is_read: true,

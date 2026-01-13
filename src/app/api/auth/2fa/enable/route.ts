@@ -6,21 +6,15 @@ export async function POST(request: NextRequest) {
   try {
     const { id: userId, email, supabase } = await requireAuth();
 
-    // Get user profile to check if 2FA is already enabled
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('two_factor_enabled')
-      .eq('id', userId)
-      .single();
+    // Check if 2FA is already enabled
+    const { data: existingFactors, error: checkError } = await supabase
+      .from('mfa_factors')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'verified')
+      .limit(1);
 
-    if (profileError) {
-      return NextResponse.json(
-        { error: 'Failed to fetch user profile' },
-        { status: 400 }
-      );
-    }
-
-    if (profile?.two_factor_enabled) {
+    if (!checkError && (existingFactors?.length || 0) > 0) {
       return NextResponse.json(
         { error: '2FA is already enabled' },
         { status: 400 }

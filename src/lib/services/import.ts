@@ -115,7 +115,7 @@ export class ImportService {
       for (const project of validProjects) {
         try {
           // Check if project already exists (by name and organization)
-          let query = supabase
+          let query = untypedSupabase
             .from('foco_projects')
             .select('id')
             .eq('name', project.name)
@@ -124,7 +124,6 @@ export class ImportService {
             query = query.eq('organization_id', project.organization_id)
           }
 
-          // @ts-ignore - Avoiding deep type instantiation issue
           const response = await query.single()
 
           if (response.data) {

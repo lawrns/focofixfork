@@ -50,11 +50,11 @@ export async function testDatabaseConnection(): Promise<{
     }
   })
 
-  // Test 3: Organizations table access
-  await runTest('Organizations Table Access', async () => {
-    const result = await databaseService.getOrganizations({ limit: 1 })
+  // Test 3: Workspaces table access (formerly Organizations)
+  await runTest('Workspaces Table Access', async () => {
+    const result = await databaseService.getWorkspaces({ limit: 1 })
     if (!result.success && !result.error?.includes('does not exist')) {
-      throw new Error(result.error || 'Failed to access organizations table')
+      throw new Error(result.error || 'Failed to access workspaces table')
     }
   })
 
@@ -66,11 +66,11 @@ export async function testDatabaseConnection(): Promise<{
     }
   })
 
-  // Test 5: Tasks table access
-  await runTest('Tasks Table Access', async () => {
-    const result = await databaseService.getTasks(undefined, { limit: 1 })
+  // Test 5: Work Items table access (formerly Tasks)
+  await runTest('Work Items Table Access', async () => {
+    const result = await databaseService.getWorkItems(undefined, { limit: 1 })
     if (!result.success && !result.error?.includes('does not exist')) {
-      throw new Error(result.error || 'Failed to access tasks table')
+      throw new Error(result.error || 'Failed to access work_items table')
     }
   })
 

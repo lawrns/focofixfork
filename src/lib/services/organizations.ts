@@ -210,15 +210,14 @@ export class OrganizationsService {
       console.log('Organization created:', organization)
 
       // Add creator as member of the organization
-      console.log('Adding creator as member:', { organization_id: organization.id, user_id: data.created_by })
+      console.log('Adding creator as member:', { workspace_id: organization.id, user_id: data.created_by })
 
       const { error: memberError } = await client
-        .from('organization_members')
+        .from('workspace_members')
         .insert({
-          organization_id: organization.id,
+          workspace_id: organization.id,
           user_id: data.created_by,
-          role: 'member',
-          joined_at: new Date().toISOString()
+          role: 'member'
         })
 
       if (memberError) {
@@ -251,15 +250,15 @@ export class OrganizationsService {
   static async getOrganizationMembers(organizationId: string): Promise<OrganizationsResponse<OrganizationMemberWithDetails[]>> {
     try {
       const { data, error } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select(`
           id,
-          organization_id,
+          workspace_id,
           user_id,
           role,
           created_at
         `)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
 
       if (error) {
         console.error('Get members error:', error)
@@ -368,7 +367,7 @@ export class OrganizationsService {
 
       // Get organization details
       const { data: orgData, error: orgError } = await supabaseAdmin
-        .from('organizations')
+        .from('workspaces')
         .select('name')
         .eq('id', organizationId)
         .single()
@@ -399,9 +398,9 @@ export class OrganizationsService {
       if (existingProfile) {
         // User exists, check if already a member
         const { data: existingMember } = await supabaseAdmin
-          .from('organization_members')
+          .from('workspace_members')
           .select('id')
-          .eq('organization_id', organizationId)
+          .eq('workspace_id', organizationId)
           .eq('user_id', existingProfile.id)
           .single()
 
@@ -414,12 +413,11 @@ export class OrganizationsService {
 
         // Add existing user directly
         const { error: memberError } = await supabaseAdmin
-          .from('organization_members')
+          .from('workspace_members')
           .insert({
-            organization_id: organizationId,
+            workspace_id: organizationId,
             user_id: existingProfile.id,
-            role: data.role || 'member',
-            joined_at: new Date().toISOString()
+            role: data.role || 'member'
           })
 
         if (memberError) {
@@ -520,10 +518,10 @@ export class OrganizationsService {
 
       // Get current member data
       const { data: currentMember, error: fetchError } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select('*')
         .eq('id', memberId)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .single()
 
       if (fetchError || !currentMember) {
@@ -550,10 +548,10 @@ export class OrganizationsService {
 
       // Update role
       const { data: updatedMember, error: updateError } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .update({ role: data.role })
         .eq('id', memberId)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .select()
         .single()
 
@@ -592,10 +590,10 @@ export class OrganizationsService {
 
       // Get member data
       const { data: member, error: fetchError } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select('*')
         .eq('id', memberId)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .single()
 
       if (fetchError || !member) {
@@ -607,9 +605,9 @@ export class OrganizationsService {
 
       // Get total directors count
       const { data: directors } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select('id')
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .eq('role', 'director')
 
       const totalDirectors = directors?.length || 0
@@ -624,10 +622,10 @@ export class OrganizationsService {
 
       // Remove member
       const { error: deleteError } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .delete()
         .eq('id', memberId)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
 
       if (deleteError) {
         console.error('Remove member error:', deleteError)
@@ -656,10 +654,10 @@ export class OrganizationsService {
   private static async getUserRoleInOrganization(userId: string, organizationId: string): Promise<'admin' | 'member'> {
     try {
       const { data, error } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select('role')
         .eq('user_id', userId)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .single()
 
       if (error || !data) {

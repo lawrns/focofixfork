@@ -318,6 +318,45 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_members: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string
+          role: string
+          is_active: boolean | null
+          invited_by: string | null
+          invited_at: string | null
+          joined_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id: string
+          role?: string
+          is_active?: boolean | null
+          invited_by?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string
+          role?: string
+          is_active?: boolean | null
+          invited_by?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           id: string

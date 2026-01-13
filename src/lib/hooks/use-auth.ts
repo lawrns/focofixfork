@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useAuth as useAuthContext } from '@/lib/contexts/auth-context'
 import { supabase } from '@/lib/supabase-client'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 // Re-export the auth context hook to maintain compatibility
 // This prevents breaking changes while consolidating auth management
 export { useAuth } from '@/lib/contexts/auth-context'
@@ -18,7 +21,7 @@ export function usePermissions() {
     if (!user) return false
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await untypedSupabase
         .from('organization_members')
         .select('role')
         .eq('organization_id', organizationId)
@@ -41,7 +44,7 @@ export function usePermissions() {
     if (!user) return false
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await untypedSupabase
         .from('organization_members')
         .select('role')
         .eq('organization_id', organizationId)
@@ -64,7 +67,7 @@ export function usePermissions() {
     if (!user) return false
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await untypedSupabase
         .from('organization_members')
         .select('role')
         .eq('organization_id', organizationId)
@@ -107,7 +110,7 @@ export function useUserProfile() {
 
     const fetchProfile = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await untypedSupabase
           .from('user_profiles')
           .select('*')
           .eq('id', user.id)
@@ -132,7 +135,7 @@ export function useUserProfile() {
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await untypedSupabase
         .from('user_profiles')
         .upsert({
           id: user.id,

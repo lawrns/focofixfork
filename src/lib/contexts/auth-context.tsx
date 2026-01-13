@@ -185,11 +185,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshSession = async () => {
     try {
-      console.log('[ManualRefresh] Starting manual session refresh at', new Date().toISOString())
+      const startTime = new Date().toISOString()
+      console.log('[ManualRefresh] Starting manual session refresh at', startTime)
       const { data, error } = await supabase.auth.refreshSession()
-      
+      const endTime = new Date().toISOString()
+
       if (error) {
-        console.error('[ManualRefresh] Failed:', error.status, error.message)
+        console.error('[ManualRefresh] Failed at', endTime, '- Status:', error.status, 'Message:', error.message)
         if (error.status === 400 || error.message.includes('Invalid Refresh Token')) {
           console.log('[ManualRefresh] Invalid token - clearing localStorage and forcing sign-out')
           localStorage.removeItem('supabase.auth.token')
@@ -199,11 +201,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         throw error
       }
-      
+
       if (data.session) {
-        console.log('[ManualRefresh] Success. User:', data.session.user.id)
+        console.log('[ManualRefresh] Success at', endTime, '- User:', data.session.user.id, '- New expiry:', data.session.expires_at, '- WARNING: Cookies may take milliseconds to sync to server')
         setSession(data.session)
         setUser(data.session.user)
+
+        // Give cookies time to sync - this is a workaround for the race condition
+        // The proper fix is in the API routes using mergeAuthResponse()
+        await new Promise(resolve => setTimeout(resolve, 10))
+        console.log('[ManualRefresh] Cookie sync wait complete - safe to call API now')
       } else {
         console.warn('[ManualRefresh] No session returned - user may need to sign in')
         setUser(null)

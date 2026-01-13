@@ -268,7 +268,7 @@ export default function ProjectPage() {
         // Fetch work items (tasks) for this project
         const { data: tasksData, error: tasksError } = (await supabase
           .from('work_items')
-          .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, tags, created_at, updated_at')
+          .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, created_at, updated_at')
           .eq('project_id', projectData.id)
           .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
 

@@ -26,11 +26,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = (await supabase
       .from('user_profiles')
       .select('preferences')
       .eq('user_id', user.id)
-      .single()
+      .single()) as { data: any; error: any }
 
     if (profileError && profileError.code !== 'PGRST116') {
       return NextResponse.json(
@@ -91,11 +91,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get current preferences first
-    const { data: currentProfile } = await supabase
+    const { data: currentProfile } = (await supabase
       .from('user_profiles')
       .select('preferences')
       .eq('user_id', user.id)
-      .single()
+      .single()) as { data: any; error: any }
 
     const currentPrefs = (currentProfile?.preferences as any) || {}
 
@@ -107,13 +107,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update in database
-    const { error: updateError } = await supabase
+    const { error: updateError } = (await supabase
       .from('user_profiles')
       .update({
         preferences: mergedPreferences,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', user.id)
+      .eq('user_id', user.id)) as { error: any }
 
     if (updateError) {
       console.error('Database update error:', updateError)

@@ -427,14 +427,12 @@ export class OpenAIWhisperService {
     data: any
   ): Promise<void> {
     try {
-      const event = EventBuilder.voiceTranscriptReady(
-        context.organizationId,
-        'whisper-transcription',
-        context.userId,
-        { eventType, ...data }
-      )
-
-      console.log(`[WHISPER] Transcription event emitted:`, eventType, event.build())
+      // Log transcription event for monitoring
+      console.log(`[WHISPER] Transcription event:`, eventType, { 
+        userId: context.userId,
+        organizationId: context.organizationId,
+        data 
+      })
     } catch (error) {
       console.error('Failed to emit transcription event:', error)
     }

@@ -39,6 +39,7 @@ interface ProjectCardProps {
   project: {
     id: string
     name: string
+    slug: string
     description: string | null
     status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
     priority: 'low' | 'medium' | 'high' | 'urgent'
@@ -190,7 +191,7 @@ export function ProjectCard({
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <Link
-                href={`/projects/${currentProject.id}`}
+                href={`/projects/${currentProject.slug}`}
                 className="block"
               >
                 <h3 className="font-semibold text-lg leading-tight hover:text-primary transition-colors truncate">
@@ -231,7 +232,7 @@ export function ProjectCard({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href={`/projects/${currentProject.id}`}>
+                    <Link href={`/projects/${currentProject.slug}`}>
                       <Eye className="h-4 w-4" />
                       View Details
                     </Link>
@@ -299,7 +300,7 @@ export function ProjectCard({
         {/* Footer with action button */}
         <div className="pt-2">
           <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href={`/projects/${currentProject.id}`} className="flex items-center justify-center">
+            <Link href={`/projects/${currentProject.slug}`} className="flex items-center justify-center">
               <Eye className="h-4 w-4" />
               View Project
             </Link>

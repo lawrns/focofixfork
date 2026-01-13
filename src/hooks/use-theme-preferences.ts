@@ -15,6 +15,9 @@ import {
 } from '@/lib/theme/constants'
 import { supabase } from '@/lib/supabase-client'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 interface UseThemePreferencesOptions {
   loadFromServer?: boolean
 }
@@ -54,13 +57,13 @@ export function useThemePreferences(options: UseThemePreferencesOptions = {}) {
     const loadFromServerAsync = async () => {
       setIsLoading(true)
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await untypedSupabase.auth.getUser()
         if (!user) {
           setError('User not authenticated')
           return
         }
 
-        const { data: profile, error: err } = await supabase
+        const { data: profile, error: err } = await untypedSupabase
           .from('user_profiles')
           .select('*')
           .eq('user_id', user.id)
@@ -120,13 +123,13 @@ export function useThemePreferences(options: UseThemePreferencesOptions = {}) {
   // Sync to server
   const syncToServer = useCallback(async (updates: Partial<UserPreferences>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await untypedSupabase.auth.getUser()
       if (!user) {
         setError('User not authenticated')
         return
       }
 
-      const { error: err } = await supabase
+      const { error: err } = await untypedSupabase
         .from('user_profiles')
         .upsert({
           user_id: user.id,

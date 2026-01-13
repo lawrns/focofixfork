@@ -1,4 +1,8 @@
 import { supabase } from '@/lib/supabase-client'
+
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 import type {
   UserSettings,
   UserSettingsUpdate,
@@ -21,11 +25,11 @@ export class SettingsService {
    * Get current user settings
    */
   static async getUserSettings(): Promise<UserSettings> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
     // Get user info from users table
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await untypedSupabase
       .from('users')
       .select('*')
       .eq('id', user.id)
@@ -34,7 +38,7 @@ export class SettingsService {
     if (userError && userError.code !== 'PGRST116') throw userError
 
     // Get user profile from user_profiles table
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await untypedSupabase
       .from('user_profiles')
       .select('*')
       .eq('user_id', user.id)
@@ -43,7 +47,7 @@ export class SettingsService {
     if (profileError && profileError.code !== 'PGRST116') throw profileError
 
     // Get notification preferences
-    const { data: notifications, error: notificationsError } = await supabase
+    const { data: notifications, error: notificationsError } = await untypedSupabase
       .from('user_notification_preferences')
       .select('*')
       .eq('user_id', user.id)
@@ -77,13 +81,13 @@ export class SettingsService {
    * Update user settings
    */
   static async updateUserSettings(updates: UserSettingsUpdate): Promise<UserSettings> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
     // Update user profile if provided
     if (updates.profile) {
       // Update users table for full_name and avatar_url
-      const { error: userError } = await supabase
+      const { error: userError } = await untypedSupabase
         .from('users')
         .update({
           full_name: updates.profile.fullName || null,
@@ -95,7 +99,7 @@ export class SettingsService {
       if (userError) throw userError
 
       // Update user_profiles table for bio
-      const { error: profileError } = await supabase
+      const { error: profileError } = await untypedSupabase
         .from('user_profiles')
         .upsert({
           user_id: user.id,
@@ -108,7 +112,7 @@ export class SettingsService {
 
     // Update preferences if provided
     if (updates.preferences) {
-      const { error: prefsError } = await supabase
+      const { error: prefsError } = await untypedSupabase
         .from('user_profiles')
         .upsert({
           user_id: user.id,
@@ -121,7 +125,7 @@ export class SettingsService {
 
     // Update notifications if provided
     if (updates.notifications) {
-      const { error: notificationsError } = await supabase
+      const { error: notificationsError } = await untypedSupabase
         .from('user_notification_preferences')
         .upsert({
           user_id: user.id,
@@ -228,7 +232,7 @@ export class SettingsService {
    * Export user data
    */
   static async exportUserData(request: DataExportRequest): Promise<DataExportResponse> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
     // This would typically create a background job for data export
@@ -287,10 +291,10 @@ export class SettingsService {
    * Check if user has access to organization
    */
   private static async checkOrganizationAccess(organizationId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) return false
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('organization_members')
       .select('user_id')
       .eq('organization_id', organizationId)
@@ -304,10 +308,10 @@ export class SettingsService {
    * Check if user has admin access to organization
    */
   private static async checkOrganizationAdminAccess(organizationId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) return false
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('organization_members')
       .select('role')
       .eq('organization_id', organizationId)
@@ -321,10 +325,10 @@ export class SettingsService {
    * Check if user has access to project
    */
   private static async checkProjectAccess(projectId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) return false
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('project_team_assignments')
       .select('user_id')
       .eq('project_id', projectId)
@@ -338,10 +342,10 @@ export class SettingsService {
    * Check if user has manager access to project
    */
   private static async checkProjectManagerAccess(projectId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) return false
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('project_team_assignments')
       .select('role')
       .eq('project_id', projectId)

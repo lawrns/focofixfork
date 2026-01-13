@@ -36,6 +36,13 @@ import { EmptyState } from '@/components/ui/empty-state-standard';
 import { emptyStates, buttons } from '@/lib/copy';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 interface TeamMember {
   id: string;
@@ -254,6 +261,27 @@ const aiInsightsMock = [
 ];
 
 function AIInsights() {
+  const [dismissedInsights, setDismissedInsights] = useState<string[]>([]);
+
+  const handleApply = (insightId: string) => {
+    // TODO: Implement apply logic based on insight type
+    toast.success('Insight applied! This feature is coming soon.');
+    setDismissedInsights([...dismissedInsights, insightId]);
+  };
+
+  const handleDismiss = (insightId: string) => {
+    setDismissedInsights([...dismissedInsights, insightId]);
+    toast('Insight dismissed');
+  };
+
+  const visibleInsights = aiInsightsMock.filter(
+    (insight) => !dismissedInsights.includes(insight.id)
+  );
+
+  if (visibleInsights.length === 0) {
+    return null;
+  }
+
   return (
     <Card className="mb-6 border-indigo-100 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-zinc-950">
       <CardHeader className="pb-3">
@@ -263,7 +291,7 @@ function AIInsights() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {aiInsightsMock.map((insight) => (
+        {visibleInsights.map((insight) => (
           <div
             key={insight.id}
             className={cn(
@@ -290,10 +318,20 @@ function AIInsights() {
               </Badge>
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <Button size="sm" variant="default" className="h-7 text-xs">
+              <Button
+                size="sm"
+                variant="default"
+                className="h-7 text-xs"
+                onClick={() => handleApply(insight.id)}
+              >
                 Apply
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => handleDismiss(insight.id)}
+              >
                 Dismiss
               </Button>
             </div>
@@ -310,38 +348,52 @@ export default function PeoplePage() {
   const [view, setView] = useState<'roster' | 'capacity'>('roster');
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
 
   const fetchMembers = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
-      const response = await fetch('/api/user/profile');
-      const data = await response.json();
-      
-      if (data.success && data.data?.workspace_id) {
-        // Fetch workspace members
-        const membersRes = await fetch(`/api/organizations/${data.data.workspace_id}/members`);
-        const membersData = await membersRes.json();
-        
-        if (membersData.success) {
-          setMembers(membersData.data.map((m: any) => ({
-            id: m.user_id,
-            name: m.user?.full_name || m.user?.email?.split('@')[0] || 'Unknown',
-            email: m.user?.email || '',
-            role: m.role || 'Member',
-            avatar: m.user?.avatar_url,
-            status: 'online', // Default
-            capacity: {
-              current: m.capacity_hours_per_week ? Math.round((m.focus_hours_per_day * 5 / m.capacity_hours_per_week) * 100) : 80,
-              max: 100,
-              trend: 'stable'
-            },
-            tasks: { assigned: 0, completed: 0, overdue: 0, blocked: 0 },
-            focusHours: m.focus_hours_per_day || 4,
-            timezone: m.timezone || 'UTC'
-          })));
-        }
+
+      // Get current workspace from localStorage or use default
+      const currentWorkspaceSlug = localStorage.getItem('lastWorkspace') || 'fyves-team';
+
+      // First, get all workspaces to find the workspace ID
+      const workspacesRes = await fetch('/api/workspaces');
+      const workspacesData = await workspacesRes.json();
+
+      const currentWorkspace = workspacesData.workspaces?.find(
+        (w: any) => w.slug === currentWorkspaceSlug
+      );
+
+      if (!currentWorkspace) {
+        console.error('No workspace found');
+        setMembers([]);
+        return;
+      }
+
+      // Fetch workspace members using the correct endpoint
+      const membersRes = await fetch(`/api/workspaces/${currentWorkspace.id}/members`);
+      const membersData = await membersRes.json();
+
+      if (membersData.success && membersData.data) {
+        setMembers(membersData.data.map((m: any) => ({
+          id: m.user_id,
+          name: m.user_name || m.email?.split('@')[0] || 'Unknown',
+          email: m.email || '',
+          role: m.role || 'Member',
+          avatar: m.user?.avatar_url,
+          status: 'online',
+          capacity: {
+            current: m.capacity_hours_per_week ? Math.round((m.focus_hours_per_day * 5 / m.capacity_hours_per_week) * 100) : 80,
+            max: 100,
+            trend: 'stable'
+          },
+          tasks: { assigned: 0, completed: 0, overdue: 0, blocked: 0 },
+          focusHours: m.focus_hours_per_day || 4,
+          timezone: m.timezone || 'UTC'
+        })));
       }
     } catch (error) {
       console.error('Failed to fetch members:', error);
@@ -379,7 +431,7 @@ export default function PeoplePage() {
         title="People"
         subtitle={`${members.length} team members`}
         primaryAction={
-          <Button>
+          <Button onClick={() => setShowInviteDialog(true)}>
             <Plus className="h-4 w-4" />
             {buttons.inviteMember}
           </Button>
@@ -433,6 +485,48 @@ export default function PeoplePage() {
           }}
         />
       )}
+
+      {/* Invite Member Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                placeholder="teammate@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-role">Role</Label>
+              <Input
+                id="invite-role"
+                placeholder="Member"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowInviteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                toast.success('Invitation feature coming soon!');
+                setShowInviteDialog(false);
+              }}
+            >
+              Send Invitation
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

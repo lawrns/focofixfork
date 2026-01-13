@@ -50,28 +50,40 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch user's organizations/workspaces
-    const { data: organizations, error: orgError } = await supabase
-      .from('organizations')
-      .select('id, name, slug, logo_url')
-      .eq('is_active', true)
-      .order('name', { ascending: true })
+    // Fetch user's workspaces with member check
+    const { data: workspaceMembers, error: memberError } = await supabase
+      .from('workspace_members')
+      .select(`
+        workspace_id,
+        workspaces (
+          id,
+          name,
+          slug,
+          logo_url
+        )
+      `)
+      .eq('user_id', user.id)
 
-    if (orgError) {
-      console.error('Error fetching organizations:', orgError)
+    if (memberError) {
+      console.error('Error fetching workspace members:', memberError)
       return NextResponse.json(
         { error: 'Failed to fetch workspaces', workspaces: [] },
         { status: 500 }
       )
     }
 
-    // Map organizations to workspace format
-    const workspaces = (organizations || []).map(org => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      icon: org.logo_url ? undefined : '📦', // Default icon if no logo
-    }))
+    // Map to workspace format
+    const workspaces = (workspaceMembers || [])
+      .filter(wm => wm.workspaces)
+      .map(wm => {
+        const ws = wm.workspaces as any
+        return {
+          id: ws.id,
+          name: ws.name,
+          slug: ws.slug,
+          icon: ws.logo_url ? undefined : '📦',
+        }
+      })
 
     return NextResponse.json({
       workspaces,

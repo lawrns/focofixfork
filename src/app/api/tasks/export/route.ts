@@ -90,10 +90,22 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Build query for tasks
+    // Build query for tasks with labels via join table
     let query = supabase
       .from('work_items')
-      .select('id, title, description, status, priority, due_date, assignee_id, tags, created_at')
+      .select(`
+        id,
+        title,
+        description,
+        status,
+        priority,
+        due_date,
+        assignee_id,
+        created_at,
+        work_item_labels!inner(
+          labels(id, name, color)
+        )
+      `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 

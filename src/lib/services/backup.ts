@@ -47,7 +47,7 @@ export class BackupService {
 
       // Get user's organizations
       const { data: organizations } = await untypedSupabase
-        .from('organizations')
+        .from('workspaces')
         .select('*')
         .eq('created_by', user.id);
 
@@ -60,7 +60,7 @@ export class BackupService {
       if (organizations?.length) {
         const orgIds = organizations.map(org => org.id);
         const { data: projects } = await untypedSupabase
-          .from('projects')
+          .from('foco_projects')
           .select('*')
           .in('organization_id', orgIds);
 
@@ -79,7 +79,7 @@ export class BackupService {
           }
 
           const { data: tasks } = await untypedSupabase
-            .from('tasks')
+            .from('work_items')
             .select('*')
             .in('project_id', projectIds);
 
@@ -164,14 +164,14 @@ export class BackupService {
       // Restore organizations (skip if they already exist)
       for (const org of backupData.organizations || []) {
         const { data: existing } = await untypedSupabase
-          .from('organizations')
+          .from('workspaces')
           .select('id')
           .eq('slug', org.slug)
           .single();
 
         if (!existing) {
           const { error } = await untypedSupabase
-            .from('organizations')
+            .from('workspaces')
             .insert({
               ...org,
               created_by: user.id, // Ensure user owns restored org
@@ -184,7 +184,7 @@ export class BackupService {
       // Restore projects
       for (const project of backupData.projects) {
         const { data: existing } = await untypedSupabase
-          .from('projects')
+          .from('foco_projects')
           .select('id')
           .eq('name', project.name)
           .eq('organization_id', project.organization_id)
@@ -192,7 +192,7 @@ export class BackupService {
 
         if (!existing) {
           const { error } = await untypedSupabase
-            .from('projects')
+            .from('foco_projects')
             .insert(project);
 
           if (error) throw error;
@@ -219,7 +219,7 @@ export class BackupService {
 
       for (const task of backupData.tasks || []) {
         const { data: existing } = await untypedSupabase
-          .from('tasks')
+          .from('work_items')
           .select('id')
           .eq('title', task.title)
           .eq('milestone_id', task.milestone_id)
@@ -227,7 +227,7 @@ export class BackupService {
 
         if (!existing) {
           const { error } = await untypedSupabase
-            .from('tasks')
+            .from('work_items')
             .insert(task);
 
           if (error) throw error;

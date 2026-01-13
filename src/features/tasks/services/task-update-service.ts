@@ -12,7 +12,7 @@ export interface TaskUpdateData {
   estimated_hours?: number | null
   actual_hours?: number | null
   due_date?: string | null
-  milestone_id?: string | null
+  parent_id?: string | null
 }
 
 export class TaskUpdateService {
@@ -22,7 +22,7 @@ export class TaskUpdateService {
   static async updateTask(taskId: string, updates: TaskUpdateData): Promise<any> {
     try {
       const { data, error } = await untypedSupabase
-        .from('tasks')
+        .from('work_items')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
@@ -101,7 +101,7 @@ export class TaskUpdateService {
    * Update task milestone
    */
   static async updateTaskMilestone(taskId: string, milestoneId: string | null): Promise<any> {
-    return this.updateTask(taskId, { milestone_id: milestoneId })
+    return this.updateTask(taskId, { parent_id: milestoneId })
   }
 
   /**

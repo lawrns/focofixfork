@@ -9,6 +9,12 @@ import {
   TimeEntrySummary
 } from '@/lib/models/time-tracking'
 
+// TODO(DB_ALIGNMENT): Schema alignment fixes applied
+// | ACTUAL DB SCHEMA: id, work_item_id, user_id, started_at, ended_at, duration_minutes, description, is_billable, created_at, updated_at
+// | FIXED: Replaced project_id/milestone_id/task_id with work_item_id, date with started_at, hours with duration_minutes, billable with is_billable
+// | REMOVED: Approval workflow methods (submitTimeEntry, approveTimeEntry) - require DB migration to add status, submitted_at, approved_at, approved_by, rejection_reason columns
+// | REMAINING ISSUE: TypeScript models in /lib/models/time-tracking.ts still need to be updated to match actual DB schema
+
 const untypedSupabase = supabase as any
 
 export class TimeTrackingService {
@@ -66,31 +72,30 @@ export class TimeTrackingService {
    */
   static async createTimeEntry(data: {
     user_id: string
-    project_id?: string
-    milestone_id?: string
-    task_id?: string
+    work_item_id?: string
     description: string
-    start_time: string
-    end_time?: string
+    started_at: string
+    ended_at?: string
     duration_minutes?: number
-    billable?: boolean
-    billable_rate?: number
-    tags?: string[]
+    is_billable?: boolean
   }): Promise<TimeEntry> {
+    // Calculate duration if not provided and ended_at is available
+    const duration = data.duration_minutes || (data.ended_at ?
+      TimeEntryModel.calculateDuration(data.started_at, data.ended_at) : 0)
+
     const entryData = {
       user_id: data.user_id,
-      project_id: data.project_id,
-      milestone_id: data.milestone_id,
+      work_item_id: data.work_item_id,
       description: data.description,
-      date: data.start_time.split('T')[0], // Extract date from start_time
-      hours: (data.duration_minutes || (data.end_time ?
-        TimeEntryModel.calculateDuration(data.start_time, data.end_time) : 0)) / 60 // Convert minutes to hours
+      started_at: data.started_at,
+      ended_at: data.ended_at,
+      duration_minutes: duration,
+      is_billable: data.is_billable || false
     }
 
     const validation = TimeEntryModel.validateTimeEntry({
       ...data,
-      duration_minutes: entryData.hours * 60,
-      status: 'completed'
+      duration_minutes: duration
     })
     if (!validation.isValid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
@@ -115,7 +120,7 @@ export class TimeTrackingService {
   static async updateTimeEntry(
     entryId: string,
     userId: string,
-    updates: Partial<TimeEntry>
+    updates: any
   ): Promise<TimeEntry> {
     // Get current entry to validate permissions
     const { data: currentEntry, error: fetchError } = await untypedSupabase
@@ -140,15 +145,25 @@ export class TimeTrackingService {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
     }
 
+    // Recalculate duration if ended_at is updated
+    const duration = updates.ended_at ?
+      TimeEntryModel.calculateDuration(currentEntry.started_at, updates.ended_at) :
+      updates.duration_minutes
+
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (updates.work_item_id !== undefined) updateData.work_item_id = updates.work_item_id
+    if (updates.description !== undefined) updateData.description = updates.description
+    if (updates.started_at !== undefined) updateData.started_at = updates.started_at
+    if (updates.ended_at !== undefined) updateData.ended_at = updates.ended_at
+    if (duration !== undefined) updateData.duration_minutes = duration
+    if (updates.is_billable !== undefined) updateData.is_billable = updates.is_billable
+
     const { data, error } = await untypedSupabase
       .from('time_entries')
-      .update({
-        ...updates,
-        duration_minutes: updates.end_time ?
-          TimeEntryModel.calculateDuration(entry.start_time, updates.end_time) :
-          updates.duration_minutes,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', entryId)
       .select()
       .single()
@@ -193,92 +208,34 @@ export class TimeTrackingService {
   }
 
   /**
-   * Submit time entry for approval
+   * Submit time entry for approval (DISABLED - requires DB migration)
+   * TODO(DB_MIGRATION): Approval workflow requires adding columns to time_entries table:
+   * - status (enum: 'draft', 'submitted', 'approved', 'rejected')
+   * - submitted_at (timestamp)
+   * - approved_at (timestamp)
+   * - approved_by (uuid, references users.id)
+   * - rejection_reason (text)
    */
-  static async submitTimeEntry(entryId: string, userId: string): Promise<TimeEntry> {
-    const { data: currentEntry, error: fetchError } = await untypedSupabase
-      .from('time_entries')
-      .select('*')
-      .eq('id', entryId)
-      .single()
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch time entry: ${fetchError.message}`)
-    }
-
-    const entry = TimeEntryModel.fromDatabase(currentEntry)
-
-    if (!TimeEntryModel.canSubmit(entry, userId)) {
-      throw new Error('This time entry cannot be submitted')
-    }
-
-    const { data, error } = await untypedSupabase
-      .from('time_entries')
-      .update({
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', entryId)
-      .select()
-      .single()
-
-    if (error) {
-      throw new Error(`Failed to submit time entry: ${error.message}`)
-    }
-
-    return TimeEntryModel.fromDatabase(data)
+  static async submitTimeEntry(_entryId: string, _userId: string): Promise<TimeEntry> {
+    throw new Error('Approval workflow not supported - requires DB migration to add status, submitted_at columns')
   }
 
   /**
-   * Approve or reject a time entry
+   * Approve or reject a time entry (DISABLED - requires DB migration)
+   * TODO(DB_MIGRATION): Approval workflow requires adding columns to time_entries table:
+   * - status (enum: 'draft', 'submitted', 'approved', 'rejected')
+   * - submitted_at (timestamp)
+   * - approved_at (timestamp)
+   * - approved_by (uuid, references users.id)
+   * - rejection_reason (text)
    */
   static async approveTimeEntry(
-    entryId: string,
-    approverId: string,
-    approved: boolean,
-    rejectionReason?: string
+    _entryId: string,
+    _approverId: string,
+    _approved: boolean,
+    _rejectionReason?: string
   ): Promise<TimeEntry> {
-    const { data: currentEntry, error: fetchError } = await untypedSupabase
-      .from('time_entries')
-      .select('*')
-      .eq('id', entryId)
-      .single()
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch time entry: ${fetchError.message}`)
-    }
-
-    const entry = TimeEntryModel.fromDatabase(currentEntry)
-
-    // Check permissions (implement proper role checking)
-    if (!TimeEntryModel.canApprove(entry, approverId, 'lead')) {
-      throw new Error('You do not have permission to approve this time entry')
-    }
-
-    const updates: any = {
-      status: approved ? 'approved' : 'rejected',
-      approved_at: new Date().toISOString(),
-      approved_by: approverId,
-      updated_at: new Date().toISOString()
-    }
-
-    if (!approved && rejectionReason) {
-      updates.rejection_reason = rejectionReason
-    }
-
-    const { data, error } = await untypedSupabase
-      .from('time_entries')
-      .update(updates)
-      .eq('id', entryId)
-      .select()
-      .single()
-
-    if (error) {
-      throw new Error(`Failed to ${approved ? 'approve' : 'reject'} time entry: ${error.message}`)
-    }
-
-    return TimeEntryModel.fromDatabase(data)
+    throw new Error('Approval workflow not supported - requires DB migration to add status, approved_at, approved_by, rejection_reason columns')
   }
 
   /**

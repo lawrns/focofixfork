@@ -79,7 +79,7 @@ export class AnalyticsService {
   static async getProjectMetricsDetailed(projectId: string, dateRange: { start: Date, end: Date }): Promise<ProjectMetrics | null> {
     // Get project basic info
     const { data: project, error: projectError } = await untypedSupabaseAdmin
-      .from('projects')
+      .from('foco_projects')
       .select('id, name')
       .eq('id', projectId)
       .single()
@@ -88,7 +88,7 @@ export class AnalyticsService {
 
     // Get tasks for the project
     const { data: tasks, error: tasksError } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .select('id, status, created_at, updated_at, due_date')
       .eq('project_id', projectId)
       .gte('created_at', dateRange.start.toISOString())
@@ -184,7 +184,7 @@ export class AnalyticsService {
   ): Promise<TeamMetrics> {
     // Get tasks assigned to this user in the projects
     const { data: tasks, error: tasksError } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .select('id, status, created_at, updated_at, due_date')
       .eq('assignee_id', userId)
       .in('project_id', projectIds)
@@ -368,7 +368,7 @@ export class AnalyticsService {
         .from('project_members')
         .select(`
           project_id,
-          projects!inner(
+          foco_projects!inner(
             id,
             organization_id
           )
@@ -376,7 +376,7 @@ export class AnalyticsService {
         .eq('user_id', userId)
 
       if (organizationId) {
-        membersQuery = membersQuery.eq('projects.organization_id', organizationId)
+        membersQuery = membersQuery.eq('foco_projects.organization_id', organizationId)
       }
 
       const { data: memberData, error: memberError } = await membersQuery
@@ -388,7 +388,7 @@ export class AnalyticsService {
 
       // Get projects created by the user
       let createdQuery = untypedSupabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .select('id, organization_id')
         .eq('created_by', userId)
 
@@ -451,7 +451,7 @@ export class AnalyticsService {
    */
   private static async getCompletionRateForDate(projectIds: string[], start: Date, end: Date): Promise<number> {
     const { data: tasks, error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .select('status')
       .in('project_id', projectIds)
       .gte('created_at', start.toISOString())

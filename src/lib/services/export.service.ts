@@ -222,9 +222,9 @@ export class ExportService {
 
       // Fetch tasks
       const { data: tasks } = await untypedSupabase
-        .from('tasks')
-        .select('id, title, milestone_id, start_date, due_date, status, assignee_id')
-        .in('milestone_id', milestones?.map(m => m.id) || [])
+        .from('work_items')
+        .select('id, title, parent_id, start_date, due_date, status, assignee_id')
+        .in('parent_id', milestones?.map(m => m.id) || [])
 
       const exportData = {
         project_id: projectId,
@@ -253,7 +253,7 @@ export class ExportService {
             type: 'task',
             id: t.id,
             title: t.title,
-            milestone_id: t.milestone_id,
+            milestone_id: t.parent_id,
             due_date: this.formatDate(t.due_date || null),
             status: t.status || 'todo',
           }))

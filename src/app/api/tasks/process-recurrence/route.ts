@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // Find all recurring tasks where next_occurrence_date is past due
     const { data: tasksToProcess, error: fetchError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .select('*')
       .eq('is_recurring', true)
       .not('next_occurrence_date', 'is', null)
@@ -89,11 +89,11 @@ export async function POST(req: NextRequest) {
           title: task.title,
           description: task.description,
           project_id: task.project_id,
-          milestone_id: task.milestone_id,
+          parent_id: task.parent_id,
           priority: task.priority,
           assignee_id: task.assignee_id,
           due_date: nextDate.toISOString().split('T')[0],
-          created_by: task.created_by,
+          reporter_id: task.reporter_id,
           is_recurring: true,
           recurrence_pattern: pattern,
           parent_recurring_task_id: task.parent_recurring_task_id || task.id,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         };
 
         const { error: insertError } = await supabase
-          .from('tasks')
+          .from('work_items')
           .insert([newTask]);
 
         if (insertError) {
@@ -151,12 +151,12 @@ export async function GET(req: NextRequest) {
 
     // Get stats about recurring tasks
     const { data: allRecurring, error: error1 } = await supabase
-      .from('tasks')
+      .from('work_items')
       .select('count')
       .eq('is_recurring', true);
 
     const { data: overdue, error: error2 } = await supabase
-      .from('tasks')
+      .from('work_items')
       .select('count')
       .eq('is_recurring', true)
       .not('next_occurrence_date', 'is', null)

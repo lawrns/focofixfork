@@ -38,6 +38,7 @@ interface Project {
   progress_percentage?: number
   created_at: string
   organization_id?: string
+  workspace_id?: string
   archived_at?: string | null
 }
 
@@ -158,9 +159,10 @@ export default function ProjectTable({
   const [showArchived, setShowArchived] = useState(false)
   const { toast: toastNotification } = useToast()
 
-  // Subscribe to global project store
+  // Subscribe to global project store - SINGLE SOURCE OF TRUTH for data fetching
+  // This consolidates all fetch triggers to prevent race conditions
   useEffect(() => {
-    console.log('ProjectTable: subscribing to project store')
+    console.log('ProjectTable: subscribing to project store, showArchived:', showArchived)
     const unsubscribe = projectStore.subscribe((storeProjects) => {
       console.log('ProjectTable: received projects from store:', storeProjects.length)
       if (storeProjects.length > 0) {
@@ -170,20 +172,15 @@ export default function ProjectTable({
       setLoading(false)
     })
 
-    // If store is empty on mount, use the store's refresh method with built-in debouncing
-    const currentProjects = projectStore.getProjects()
-    if (currentProjects.length === 0) {
-      console.log('ProjectTable: store is empty on mount, refreshing via store')
-      // Use store's refresh method which has built-in debouncing
-      projectStore.refreshProjects().then(() => {
-        setLoading(false)
-      })
-    } else {
+    // Always refresh via the store with the current archived filter
+    // The store handles debouncing internally to prevent duplicate requests
+    console.log('ProjectTable: refreshing via store with archived:', showArchived)
+    projectStore.refreshProjects(showArchived).then(() => {
       setLoading(false)
-    }
+    })
 
     return unsubscribe
-  }, [])
+  }, [showArchived]) // Re-subscribe and refresh when showArchived changes
 
   // Listen for force refresh events
   useEffect(() => {
@@ -338,6 +335,7 @@ export default function ProjectTable({
           status: 'planning',
           priority: project.priority,
           due_date: project.due_date,
+          workspace_id: project.workspace_id,
         }),
       })
 
@@ -352,8 +350,8 @@ export default function ProjectTable({
         description: `Project "${project.name}" has been duplicated.`
       })
 
-      // Refresh projects list
-      fetchProjects()
+      // Refresh projects list via store (single source of truth)
+      projectStore.refreshProjects(showArchived)
     } catch (error) {
       console.error('Error duplicating project:', error)
       toast({
@@ -391,9 +389,9 @@ export default function ProjectTable({
           description: 'Project has been restored.'
         })
 
-        // Refresh the archived projects view
-        if (showArchived && fetchProjectsRef.current) {
-          fetchProjectsRef.current(true)
+        // Refresh the archived projects view via store (single source of truth)
+        if (showArchived) {
+          projectStore.refreshProjects(true)
         }
       }
     } catch (error) {
@@ -869,17 +867,14 @@ export default function ProjectTable({
     }
   }, [user?.id]) // Only depend on user.id
 
-  // Store latest fetchProjects in ref
+  // Store latest fetchProjects in ref (used only for unarchive action)
   useEffect(() => {
     fetchProjectsRef.current = fetchProjects
   }, [fetchProjects])
 
-  // Initial fetch and refetch when showArchived changes
-  useEffect(() => {
-    if (user && fetchProjectsRef.current) {
-      fetchProjectsRef.current(showArchived)
-    }
-  }, [user, showArchived])
+  // NOTE: Removed duplicate fetch trigger that was causing race conditions
+  // Data fetching is now consolidated in the store subscription useEffect above
+  // which handles both initial load and showArchived changes via projectStore.refreshProjects()
 
   // Apply filtering and sorting
   useEffect(() => {

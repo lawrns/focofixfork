@@ -116,7 +116,7 @@ export class ImportService {
         try {
           // Check if project already exists (by name and organization)
           let query = supabase
-            .from('projects')
+            .from('foco_projects')
             .select('id')
             .eq('name', project.name)
 
@@ -131,7 +131,7 @@ export class ImportService {
             if (options.updateExisting) {
               // Update existing project
               const { error } = await untypedSupabase
-                .from('projects')
+                .from('foco_projects')
                 .update(project)
                 .eq('id', response.data.id)
 
@@ -149,7 +149,7 @@ export class ImportService {
           } else {
             // Create new project
             const { error } = await untypedSupabase
-              .from('projects')
+              .from('foco_projects')
               .insert(project)
 
             if (error) {
@@ -222,7 +222,7 @@ export class ImportService {
           if (!projectId && row.project_name?.trim()) {
             // @ts-ignore - Avoiding deep type instantiation issue
             const response = await untypedSupabase
-              .from('projects')
+              .from('foco_projects')
               .select('id')
               .eq('name', row.project_name.trim())
               .single()
@@ -377,8 +377,8 @@ export class ImportService {
               ? row.priority.toLowerCase() : 'medium',
             start_date: this.parseDate(row.start_date),
             due_date: this.parseDate(row.due_date),
-            milestone_id: milestoneId,
-            assigned_to: assigneeId || null
+            parent_id: milestoneId,
+            assignee_id: assigneeId || null
           }
 
           validTasks.push(taskData)

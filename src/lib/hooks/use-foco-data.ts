@@ -1,5 +1,10 @@
 'use client';
 
+// FIXED(DB_ALIGNMENT): Table names now correctly aligned with actual database schema
+// ✅ useWorkspaces/useCurrentWorkspace - using .from('workspaces')
+// ✅ useProjects/useProject - using .from('foco_projects')
+// ✅ useWorkItems/useWorkItem - using .from('work_items')
+
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
 
@@ -31,7 +36,7 @@ export function useWorkspaces() {
     async function fetchWorkspaces() {
       try {
         const { data, error } = await untypedSupabase
-          .from('organizations')
+          .from('workspaces')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -61,7 +66,7 @@ export function useCurrentWorkspace() {
       try {
         // Try to get demo workspace first
         const { data } = await untypedSupabase
-          .from('organizations')
+          .from('workspaces')
           .select('*')
           .eq('id', DEMO_WORKSPACE_ID)
           .single();
@@ -72,7 +77,7 @@ export function useCurrentWorkspace() {
       } catch (err) {
         // Fallback to first workspace
         const { data } = await untypedSupabase
-          .from('organizations')
+          .from('workspaces')
           .select('*')
           .limit(1)
           .single();
@@ -108,8 +113,8 @@ export function useProjects(workspaceId?: string) {
     
     setLoading(true);
     try {
-      const { data, error } = await (supabase
-        .from('projects') as any)
+      const { data, error } = await untypedSupabase
+        .from('foco_projects')
         .select('*')
         .eq('workspace_id', wsId)
         .order('position', { ascending: true });
@@ -138,7 +143,7 @@ export function useProjects(workspaceId?: string) {
         {
           event: '*',
           schema: 'public',
-          table: 'projects',
+          table: 'foco_projects',
           filter: `workspace_id=eq.${wsId}`,
         },
         () => {
@@ -165,8 +170,8 @@ export function useProject(projectId: string) {
 
     async function fetchProject() {
       try {
-        const { data, error } = await (supabase
-          .from('projects') as any)
+        const { data, error } = await untypedSupabase
+          .from('foco_projects')
           .select('*')
           .eq('id', projectId)
           .single();
@@ -208,11 +213,11 @@ export function useWorkItems(options?: {
 
     setLoading(true);
     try {
-      let query = (untypedSupabase
-        .from('tasks') as any)
+      let query = untypedSupabase
+        .from('work_items')
         .select(`
           *,
-          project:projects(id, name, slug, color)
+          project:foco_projects(id, name, slug, color)
         `)
         .eq('workspace_id', wsId)
         .order('position', { ascending: true });
@@ -281,8 +286,8 @@ export function useWorkItem(workItemId: string) {
     if (!workItemId) return;
 
     try {
-      const { data, error } = await (supabase
-        .from('tasks') as any)
+      const { data, error } = await untypedSupabase
+        .from('tasks')
         .select(`
           *,
           project:projects(id, name, slug, color)
@@ -344,8 +349,8 @@ export function useInbox(userId: string) {
     if (!userId) return;
 
     try {
-      const { data, error } = await (supabase
-        .from('notifications') as any)
+      const { data, error } = await untypedSupabase
+        .from('notifications')
         .select(`
           *,
           work_item:tasks(id, title, status, priority),
@@ -412,8 +417,8 @@ export function useLabels(workspaceId?: string) {
 
     async function fetchLabels() {
       try {
-        const { data, error } = await (untypedSupabase
-          .from('project_settings') as any)
+        const { data, error } = await untypedSupabase
+          .from('project_settings')
           .select('*')
           .eq('workspace_id', wsId);
 

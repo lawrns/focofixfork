@@ -1,5 +1,9 @@
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+// ✅ FIXED: Database alignment completed - all table and column names now match actual schema
+// Tables: workspace_members, foco_projects, foco_project_members
+// Columns: workspace_id (not organization_id), no is_active column
+
 /**
  * Authorization middleware for role-based access control
  */
@@ -28,11 +32,10 @@ export async function checkOrganizationRole(
 ): Promise<boolean> {
   try {
     const { data: member, error } = await supabaseAdmin
-      .from('organization_members')
+      .from('workspace_members')
       .select('role')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('user_id', userId)
-      .eq('is_active', true)
       .single()
 
     if (error || !member) {
@@ -55,11 +58,10 @@ export async function checkOrganizationMembership(
 ): Promise<boolean> {
   try {
     const { data: member, error } = await supabaseAdmin
-      .from('organization_members')
+      .from('workspace_members')
       .select('id')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('user_id', userId)
-      .eq('is_active', true)
       .single()
 
     return !error && !!member
@@ -80,8 +82,8 @@ export async function checkProjectPermission(
   try {
     // First check if user is the project creator
     const { data: project, error: projectError } = await supabaseAdmin
-      .from('projects')
-      .select('created_by, organization_id')
+      .from('foco_projects')
+      .select('owner_id, workspace_id')
       .eq('id', projectId)
       .single()
 
@@ -90,17 +92,16 @@ export async function checkProjectPermission(
     }
 
     // Creator has all permissions
-    if (project.created_by === userId) {
+    if (project.owner_id === userId) {
       return true
     }
 
     // Check organization membership and role
     const { data: orgMember } = await supabaseAdmin
-      .from('organization_members')
+      .from('workspace_members')
       .select('role')
-      .eq('organization_id', project.organization_id)
+      .eq('workspace_id', project.workspace_id)
       .eq('user_id', userId)
-      .eq('is_active', true)
       .single()
 
     // Organization owners and admins have all project permissions
@@ -110,11 +111,10 @@ export async function checkProjectPermission(
 
     // Check project team assignment
     const { data: teamMember, error: teamError } = await supabaseAdmin
-      .from('project_team_assignments')
-      .select('role, permissions')
+      .from('foco_project_members')
+      .select('role')
       .eq('project_id', projectId)
       .eq('user_id', userId)
-      .eq('is_active', true)
       .single()
 
     if (teamError || !teamMember) {
@@ -131,11 +131,8 @@ export async function checkProjectPermission(
 
     const allowedPermissions = rolePermissions[teamMember.role as ProjectRole] || []
 
-    // Check if permission is in role permissions or custom permissions array
-    return (
-      allowedPermissions.includes(permission) ||
-      (teamMember.permissions && teamMember.permissions.includes(permission))
-    )
+    // Check if permission is in role permissions
+    return allowedPermissions.includes(permission)
   } catch (error) {
     console.error('Check project permission error:', error)
     return false
@@ -181,11 +178,10 @@ export async function getUserOrganizationRole(
 ): Promise<OrganizationRole | null> {
   try {
     const { data: member, error } = await supabaseAdmin
-      .from('organization_members')
+      .from('workspace_members')
       .select('role')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('user_id', userId)
-      .eq('is_active', true)
       .single()
 
     if (error || !member) {
@@ -209,22 +205,21 @@ export async function getUserProjectRole(
   try {
     // Check if user is project creator first
     const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('created_by')
+      .from('foco_projects')
+      .select('owner_id')
       .eq('id', projectId)
       .single()
 
-    if (project && project.created_by === userId) {
+    if (project && project.owner_id === userId) {
       return 'owner'
     }
 
     // Check team assignment
     const { data: teamMember, error } = await supabaseAdmin
-      .from('project_team_assignments')
+      .from('foco_project_members')
       .select('role')
       .eq('project_id', projectId)
       .eq('user_id', userId)
-      .eq('is_active', true)
       .single()
 
     if (error || !teamMember) {

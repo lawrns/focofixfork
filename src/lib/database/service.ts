@@ -2,10 +2,14 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '../supabase/types'
 import { getDatabase } from './connection'
 import { logger } from '@/lib/logger'
+import { Workspace, Project, WorkItem } from '@/types/foco'
 
-type OrganizationInsert = Database['public']['Tables']['organizations']['Insert']
-type ProjectInsert = Database['public']['Tables']['projects']['Insert']
-type TaskInsert = Database['public']['Tables']['tasks']['Insert']
+// FIXED(DB_ALIGNMENT): Using correct table names and types
+// workspaces, foco_projects, work_items match actual DB schema
+
+type WorkspaceInsert = Partial<Omit<Workspace, 'id' | 'created_at' | 'updated_at'>>
+type ProjectInsert = Partial<Omit<Project, 'id' | 'created_at' | 'updated_at'>>
+type WorkItemInsert = Partial<Omit<WorkItem, 'id' | 'created_at' | 'updated_at'>>
 
 // Type definitions for database operations
 export type DatabaseResult<T> = {
@@ -75,11 +79,11 @@ export class DatabaseService {
     }
   }
 
-  // Organizations
-  async getOrganizations(options: QueryOptions = {}): Promise<DatabaseResult<Database['public']['Tables']['organizations']['Row'][]>> {
+  // Workspaces (formerly Organizations)
+  async getWorkspaces(options: QueryOptions = {}): Promise<DatabaseResult<Workspace[]>> {
     return this.executeQuery(async (client) => {
-      let query = client.from('organizations').select('*')
-      
+      let query = client.from('workspaces').select('*')
+
       if (options.limit) query = query.limit(options.limit)
       if (options.offset) query = query.range(options.offset, (options.offset + (options.limit || 10)) - 1)
       if (options.orderBy) {
@@ -90,32 +94,32 @@ export class DatabaseService {
     })
   }
 
-  async getOrganizationById(id: string): Promise<DatabaseResult<Database['public']['Tables']['organizations']['Row']>> {
+  async getWorkspaceById(id: string): Promise<DatabaseResult<Workspace>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('organizations')
+        .from('workspaces')
         .select('*')
         .eq('id', id)
         .single()
     })
   }
 
-  async createOrganization(data: OrganizationInsert): Promise<DatabaseResult<Database['public']['Tables']['organizations']['Row']>> {
+  async createWorkspace(data: WorkspaceInsert): Promise<DatabaseResult<Workspace>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('organizations')
+        .from('workspaces')
         .insert(data)
         .select()
         .single()
     })
   }
 
-  // Projects
-  async getProjects(organizationId?: string, options: QueryOptions = {}): Promise<DatabaseResult<Database['public']['Tables']['projects']['Row'][]>> {
+  // Projects (using foco_projects table)
+  async getProjects(workspaceId?: string, options: QueryOptions = {}): Promise<DatabaseResult<Project[]>> {
     return this.executeQuery(async (client) => {
-      let query = client.from('projects').select('*')
-      
-      if (organizationId) query = query.eq('organization_id', organizationId)
+      let query = client.from('foco_projects').select('*')
+
+      if (workspaceId) query = query.eq('workspace_id', workspaceId)
       if (options.limit) query = query.limit(options.limit)
       if (options.offset) query = query.range(options.offset, (options.offset + (options.limit || 10)) - 1)
       if (options.orderBy) {
@@ -126,31 +130,31 @@ export class DatabaseService {
     })
   }
 
-  async getProjectById(id: string): Promise<DatabaseResult<Database['public']['Tables']['projects']['Row']>> {
+  async getProjectById(id: string): Promise<DatabaseResult<Project>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('projects')
+        .from('foco_projects')
         .select('*')
         .eq('id', id)
         .single()
     })
   }
 
-  async createProject(data: ProjectInsert): Promise<DatabaseResult<Database['public']['Tables']['projects']['Row']>> {
+  async createProject(data: ProjectInsert): Promise<DatabaseResult<Project>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('projects')
+        .from('foco_projects')
         .insert(data)
         .select()
         .single()
     })
   }
 
-  // Tasks
-  async getTasks(projectId?: string, options: QueryOptions = {}): Promise<DatabaseResult<Database['public']['Tables']['tasks']['Row'][]>> {
+  // Work Items (formerly Tasks, using work_items table)
+  async getWorkItems(projectId?: string, options: QueryOptions = {}): Promise<DatabaseResult<WorkItem[]>> {
     return this.executeQuery(async (client) => {
-      let query = client.from('tasks').select('*')
-      
+      let query = client.from('work_items').select('*')
+
       if (projectId) query = query.eq('project_id', projectId)
       if (options.limit) query = query.limit(options.limit)
       if (options.offset) query = query.range(options.offset, (options.offset + (options.limit || 10)) - 1)
@@ -162,30 +166,30 @@ export class DatabaseService {
     })
   }
 
-  async getTaskById(id: string): Promise<DatabaseResult<Database['public']['Tables']['tasks']['Row']>> {
+  async getWorkItemById(id: string): Promise<DatabaseResult<WorkItem>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('tasks')
+        .from('work_items')
         .select('*')
         .eq('id', id)
         .single()
     })
   }
 
-  async createTask(data: TaskInsert): Promise<DatabaseResult<Database['public']['Tables']['tasks']['Row']>> {
+  async createWorkItem(data: WorkItemInsert): Promise<DatabaseResult<WorkItem>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('tasks')
+        .from('work_items')
         .insert(data)
         .select()
         .single()
     })
   }
 
-  async updateTask(id: string, data: Database['public']['Tables']['tasks']['Update']): Promise<DatabaseResult<Database['public']['Tables']['tasks']['Row']>> {
+  async updateWorkItem(id: string, data: Partial<WorkItem>): Promise<DatabaseResult<WorkItem>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('tasks')
+        .from('work_items')
         .update(data)
         .eq('id', id)
         .select()
@@ -267,7 +271,7 @@ export class DatabaseService {
   async healthCheck(): Promise<DatabaseResult<{ status: string; timestamp: string }>> {
     return this.executeQuery(async (client) => {
       const { data, error } = await client
-        .from('organizations')
+        .from('workspaces')
         .select('count')
         .limit(1)
 

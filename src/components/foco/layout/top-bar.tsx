@@ -201,7 +201,7 @@ export function TopBar({ className }: TopBarProps) {
             <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9 min-h-[44px] min-w-[44px]">
               <Avatar className="h-7 w-7">
-                <AvatarImage src="/images/avatar.jpg" />
+                <AvatarImage src={user?.user_metadata?.avatar_url} />
                 <AvatarFallback className="text-xs">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
             </Button>

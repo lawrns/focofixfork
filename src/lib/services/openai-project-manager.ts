@@ -174,7 +174,7 @@ Return ONLY valid JSON, no explanations.`
     try {
       // 1. Create Project
       const { data: project, error: projectError } = await supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .insert({
           name: parsedProject.project.name,
           description: parsedProject.project.description,
@@ -219,17 +219,17 @@ Return ONLY valid JSON, no explanations.`
       // 3. Create Tasks
       const tasksData = parsedProject.tasks.map(t => ({
         project_id: project.id,
-        milestone_id: milestones[t.milestone_index]?.id || null,
+        parent_id: milestones[t.milestone_index]?.id || null,
         title: t.title,
         description: t.description,
         status: t.status,
         priority: t.priority,
         estimated_hours: t.estimated_hours,
-        created_by: userId
+        reporter_id: userId
       }))
 
       const { data: tasks, error: tasksError } = await supabaseAdmin
-        .from('tasks')
+        .from('work_items')
         .insert(tasksData)
         .select()
 
@@ -260,7 +260,7 @@ Return ONLY valid JSON, no explanations.`
   ): Promise<{ success: boolean; changes: any }> {
     // Get current project state
     const { data: project } = await supabaseAdmin
-      .from('projects')
+      .from('foco_projects')
       .select('*')
       .eq('id', projectId)
       .single()
@@ -307,7 +307,7 @@ Return ONLY valid JSON.`
 
     // Apply updates
     const { data: updated, error } = await supabaseAdmin
-      .from('projects')
+      .from('foco_projects')
       .update(updates)
       .eq('id', projectId)
       .select()
@@ -428,16 +428,16 @@ Return ONLY valid JSON.`
     const taskData = JSON.parse(jsonText)
 
     const { data: task, error } = await supabaseAdmin
-      .from('tasks')
+      .from('work_items')
       .insert({
         project_id: projectId,
-        milestone_id: milestoneId,
+        parent_id: milestoneId,
         title: taskData.title,
         description: taskData.description,
         status: taskData.status,
         priority: taskData.priority,
         estimated_hours: taskData.estimated_hours,
-        created_by: userId
+        reporter_id: userId
       })
       .select()
       .single()

@@ -100,7 +100,7 @@ export class InsightsService {
 
     // Fetch tasks
     const { data: recentTasks } = await this.supabase
-      .from('tasks')
+      .from('work_items')
       .select('id, title, status, priority, created_at, updated_at, due_date, assignee_id')
       .or(`assignee_id.eq.${userId},created_by.eq.${userId}`)
       .gte('created_at', twoWeeksAgo.toISOString())
@@ -109,7 +109,7 @@ export class InsightsService {
 
     // Fetch projects
     const { data: activeProjects } = await this.supabase
-      .from('projects')
+      .from('foco_projects')
       .select('id, title, status, created_at, updated_at, due_date')
       .in('status', ['active', 'planning'])
       .order('created_at', { ascending: false })

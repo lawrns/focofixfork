@@ -49,13 +49,13 @@ export function useSearch(options: SearchOptions) {
   // Define search functions first (before performSearch)
   const searchProjects = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
     const { data, error } = await untypedSupabase
-      .from('projects')
+      .from('foco_projects')
       .select(`
         id,
         name,
         description,
         organization_id,
-        organizations (
+        workspaces (
           name
         )
       `)
@@ -68,7 +68,7 @@ export function useSearch(options: SearchOptions) {
       id: project.id,
       type: 'project' as const,
       title: project.name,
-      subtitle: (project.organizations as any)?.name,
+      subtitle: (project.workspaces as any)?.name,
       description: project.description || undefined,
       url: `/projects/${project.id}`,
       metadata: {
@@ -79,7 +79,7 @@ export function useSearch(options: SearchOptions) {
   }, [])
 
   const searchMilestones = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
-    let queryBuilder = supabase
+    let queryBuilder = untypedSupabase
       .from('milestones')
       .select(`
         id,
@@ -88,10 +88,10 @@ export function useSearch(options: SearchOptions) {
         project_id,
         status,
         priority,
-        projects (
+        foco_projects (
           name,
           organization_id,
-          organizations (
+          workspaces (
             name
           )
         )
@@ -111,14 +111,14 @@ export function useSearch(options: SearchOptions) {
       id: milestone.id,
       type: 'milestone' as const,
       title: milestone.name,
-      subtitle: (milestone.projects as any)?.name,
+      subtitle: (milestone.foco_projects as any)?.name,
       description: milestone.description || undefined,
       url: `/milestones/${milestone.id}`,
       metadata: {
         status: milestone.status,
         priority: milestone.priority,
         projectId: milestone.project_id,
-        organizationName: (milestone.projects as any)?.organizations?.name
+        organizationName: (milestone.foco_projects as any)?.workspaces?.name
       },
       score: calculateRelevanceScore(query, milestone.name, milestone.description || undefined)
     }))
@@ -130,7 +130,7 @@ export function useSearch(options: SearchOptions) {
       .select(`
         user_id,
         role,
-        organizations (
+        workspaces (
           id,
           name
         )
@@ -147,12 +147,12 @@ export function useSearch(options: SearchOptions) {
           id: member.user_id,
           type: 'user' as const,
           title: `User ${member.user_id.slice(-8)}`,
-          subtitle: (member.organizations as any)?.name,
+          subtitle: (member.workspaces as any)?.name,
           description: `Role: ${member.role}`,
           url: `/users/${member.user_id}`,
           metadata: {
             role: member.role,
-            organizationId: (member.organizations as any)?.id
+            organizationId: (member.workspaces as any)?.id
           },
           score: 0.5
         })

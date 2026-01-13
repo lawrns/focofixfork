@@ -1,12 +1,18 @@
 import { supabaseAdmin } from '../../../lib/supabase-server'
 
+// ✅ FIXED(DB_ALIGNMENT): All table names and column mappings aligned with actual DB schema
+// - 'projects' → 'foco_projects'
+// - 'organization_members' → 'workspace_members'
+// - 'organizations' → 'workspaces'
+// - 'organization_id' → 'workspace_id'
+
 type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
 
 interface Project {
   id: string
   name: string
   description: string | null
-  organization_id: string | null
+  workspace_id: string | null
   status: ProjectStatus
   priority: 'low' | 'medium' | 'high' | 'urgent'
   created_by: string | null
@@ -15,7 +21,7 @@ interface Project {
   progress_percentage: number | null
   created_at: string | null
   updated_at: string | null
-  organizations?: {
+  workspaces?: {
     name: string
   }
 }
@@ -44,7 +50,7 @@ export class ProjectsService {
   static async getUserProjects(
     userId: string,
     options?: {
-      organization_id?: string
+      workspace_id?: string
       status?: string
       priority?: string
       limit?: number
@@ -59,43 +65,43 @@ export class ProjectsService {
         }
       }
 
-      // Get user's organization memberships first
-      const { data: userOrgs, error: orgError } = await supabaseAdmin
-        .from('organization_members')
-        .select('organization_id')
+      // Get user's workspace memberships first
+      const { data: userWorkspaces, error: workspaceError } = await supabaseAdmin
+        .from('workspace_members')
+        .select('workspace_id')
         .eq('user_id', userId)
 
-      if (orgError) {
-        console.error('Error fetching user organizations:', orgError)
+      if (workspaceError) {
+        console.error('Error fetching user workspaces:', workspaceError)
         return {
           success: false,
-          error: 'Failed to fetch user organizations'
+          error: 'Failed to fetch user workspaces'
         }
       }
 
-      const userOrgIds = userOrgs?.map(org => org.organization_id) || []
+      const userWorkspaceIds = userWorkspaces?.map(ws => ws.workspace_id) || []
 
       // Build query to get all projects user has access to:
       // 1. Projects they created
-      // 2. Projects in organizations they belong to
+      // 2. Projects in workspaces they belong to
       // Simplified query without nested joins for better performance
       let query = supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .select('*')
 
       // Apply access filters - user can see projects if:
       // - They created it, OR
-      // - It belongs to an organization they're a member of
-      if (userOrgIds.length > 0) {
-        query = query.or(`created_by.eq.${userId},organization_id.in.(${userOrgIds.join(',')})`)
+      // - It belongs to a workspace they're a member of
+      if (userWorkspaceIds.length > 0) {
+        query = query.or(`created_by.eq.${userId},workspace_id.in.(${userWorkspaceIds.join(',')})`)
       } else {
-        // If user has no organization memberships, only show projects they created
+        // If user has no workspace memberships, only show projects they created
         query = query.eq('created_by', userId)
       }
 
       // Apply filters
-      if (options?.organization_id) {
-        query = query.eq('organization_id', options.organization_id)
+      if (options?.workspace_id) {
+        query = query.eq('workspace_id', options.workspace_id)
       }
 
       if (options?.status && options.status !== 'all') {
@@ -133,7 +139,7 @@ export class ProjectsService {
           id: project.id,
           name: project.name,
           description: project.description,
-          organization_id: project.organization_id,
+          workspace_id: project.workspace_id,
           status: project.status as ProjectStatus,
           priority: project.priority as 'low' | 'medium' | 'high' | 'urgent',
           created_by: project.created_by,
@@ -174,23 +180,23 @@ export class ProjectsService {
       }
 
       // First check if user has access to this project
-      // User can access if they created it, are in the organization, or are a project member
-      const { data: userOrgs } = await supabaseAdmin
-        .from('organization_members')
-        .select('organization_id')
+      // User can access if they created it, are in the workspace, or are a project member
+      const { data: userWorkspaces } = await supabaseAdmin
+        .from('workspace_members')
+        .select('workspace_id')
         .eq('user_id', userId)
 
-      const orgIds = Array.isArray(userOrgs) ? userOrgs.map(org => org.organization_id) : []
+      const workspaceIds = Array.isArray(userWorkspaces) ? userWorkspaces.map(ws => ws.workspace_id) : []
 
       // Build query with access control
       let query = supabaseAdmin
-        .from('projects')
+        .from('foco_projects')
         .select('*')
         .eq('id', projectId)
 
       // Add RLS-like filtering for access control
-      if (orgIds.length > 0) {
-        query = query.or(`created_by.eq.${userId},organization_id.in.(${orgIds.join(',')})`)
+      if (workspaceIds.length > 0) {
+        query = query.or(`created_by.eq.${userId},workspace_id.in.(${workspaceIds.join(',')})`)
       } else {
         query = query.eq('created_by', userId)
       }

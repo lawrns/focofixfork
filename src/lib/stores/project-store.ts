@@ -60,14 +60,15 @@ class ProjectStore {
   }
 
   // Refresh projects from API
-  async refreshProjects(): Promise<void> {
+  async refreshProjects(archived: boolean = false): Promise<void> {
     if (!this.shouldFetch()) {
       return
     }
 
     try {
       this.fetchInProgress = true
-      const response = await fetch('/api/projects', {
+      const url = archived ? '/api/projects?archived=true' : '/api/projects'
+      const response = await fetch(url, {
         headers: {
           'Cache-Control': 'no-cache',
         },

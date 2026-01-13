@@ -10,6 +10,12 @@
  * - ProjectMember deprecated (use Project.team_members)
  */
 
+// TODO(DB_ALIGNMENT): CRITICAL - This entire file defines tables that DO NOT EXIST in the database
+// | expected (this file defines): users, organizations, organization_members, projects, project_members, milestones, tasks, goals, activities, user_profiles, time_entries, time_entries_archive
+// | actual (DB has): workspaces, workspace_members, foco_projects, work_items, labels, work_item_labels, comments, time_entries, files, notifications, automation_rules, docs, doc_blocks, saved_filters, notification_preferences
+// The correct types are in /src/types/foco.ts - this file should be DELETED or regenerated from actual schema
+// WRONG TABLE NAMES: organizations→workspaces, projects→foco_projects, tasks→work_items, organization_members→workspace_members
+
 export type Json =
   | string
   | number

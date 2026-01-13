@@ -125,7 +125,7 @@ export function SmartInbox({ userId, className }: SmartInboxProps) {
       case 'task':
         return `/tasks/${item.id}`
       case 'project':
-        return `/projects/${item.id}`
+        return `/projects/${(item as any).slug || item.id}`
       case 'comment':
         return `/tasks/${item.id}#comments`
       case 'mention':

@@ -25,6 +25,7 @@ import { supabase } from '@/lib/supabase-client'
 interface SearchResult {
   id: string
   name: string
+  slug?: string
   type: 'project' | 'task' | 'milestone'
   description?: string
 }
@@ -88,7 +89,7 @@ export default function Header() {
   const handleResultClick = useCallback((result: SearchResult) => {
     // Navigate to the result
     if (result.type === 'project') {
-      router.push(`/projects/${result.id}`)
+      router.push(`/projects/${result.slug || result.id}`)
     } else if (result.type === 'task') {
       router.push(`/tasks/${result.id}`)
     } else if (result.type === 'milestone') {

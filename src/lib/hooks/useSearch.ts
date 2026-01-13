@@ -53,6 +53,7 @@ export function useSearch(options: SearchOptions) {
       .select(`
         id,
         name,
+        slug,
         description,
         organization_id,
         workspaces (
@@ -70,7 +71,7 @@ export function useSearch(options: SearchOptions) {
       title: project.name,
       subtitle: (project.workspaces as any)?.name,
       description: project.description || undefined,
-      url: `/projects/${project.id}`,
+      url: `/projects/${project.slug || project.id}`,
       metadata: {
         organizationId: project.organization_id
       },

@@ -296,7 +296,7 @@ export class TimeTrackingService {
     limit?: number
     offset?: number
   } = {}): Promise<{ entries: TimeEntry[]; total: number }> {
-    let query = supabase
+    let query = untypedSupabase
       .from('time_entries')
       .select('*', { count: 'exact' })
       .order('date', { ascending: false })

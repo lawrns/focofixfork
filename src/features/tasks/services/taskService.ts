@@ -1,12 +1,17 @@
 import { supabase } from '@/lib/supabase-client'
 import type { Database } from '@/lib/supabase/types'
 
+// FIXED(DB_ALIGNMENT): This service now uses correct 'work_items' table with proper column mappings
+// | Table: work_items (was: tasks)
+// | Columns: assignee_id (was: assigned_to), parent_id (was: milestone_id), reporter_id (was: created_by)
+// | Additional columns: workspace_id, type, start_date, completed_at, estimate_hours (was: estimated_hours), position, section, blocked_reason, blocked_by_id, closure_note, ai_context_sources, metadata
+
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any
 
-type Task = Database['public']['Tables']['tasks']['Row']
-type TaskInsert = Database['public']['Tables']['tasks']['Insert']
-type TaskUpdate = Database['public']['Tables']['tasks']['Update']
+type Task = Database['public']['Tables']['work_items']['Row']
+type TaskInsert = Database['public']['Tables']['work_items']['Insert']
+type TaskUpdate = Database['public']['Tables']['work_items']['Update']
 
 export interface TasksListResponse {
   success: boolean
@@ -32,8 +37,9 @@ export class TasksService {
   static async getUserTasks(
     userId: string,
     options?: {
+      workspace_id?: string
       project_id?: string
-      milestone_id?: string
+      parent_id?: string
       status?: string
       priority?: string
       assignee_id?: string
@@ -54,17 +60,21 @@ export class TasksService {
       const client = supabaseClient || untypedSupabase
 
       let query = client
-        .from('tasks')
+        .from('work_items')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
 
       // Add filters
+      if (options?.workspace_id) {
+        query = query.eq('workspace_id', options.workspace_id)
+      }
+
       if (options?.project_id) {
         query = query.eq('project_id', options.project_id)
       }
 
-      if (options?.milestone_id) {
-        query = query.eq('milestone_id', options.milestone_id)
+      if (options?.parent_id) {
+        query = query.eq('parent_id', options.parent_id)
       }
 
       if (options?.status && options.status !== 'all') {
@@ -128,8 +138,8 @@ export class TasksService {
         }
       }
 
-      const { data, error } = await supabase
-        .from('tasks')
+      const { data, error } = await untypedSupabase
+        .from('work_items')
         .select('*')
         .eq('id', taskId)
         .single()
@@ -183,11 +193,11 @@ export class TasksService {
       // Ensure the user is creating the task
       const dataToInsert = {
         ...taskData,
-        created_by: userId,
+        reporter_id: userId,
       }
 
       const { data, error } = await client
-        .from('tasks')
+        .from('work_items')
         .insert(dataToInsert)
         .select()
         .single()
@@ -230,7 +240,7 @@ export class TasksService {
       }
 
       const { data, error } = await supabase
-        .from('tasks')
+        .from('work_items')
         .update(updates)
         .eq('id', taskId)
         .select()
@@ -279,7 +289,7 @@ export class TasksService {
       }
 
       const { error } = await supabase
-        .from('tasks')
+        .from('work_items')
         .delete()
         .eq('id', taskId)
 
@@ -331,7 +341,7 @@ export class TasksService {
       }
 
       let query = supabase
-        .from('tasks')
+        .from('work_items')
         .select('status, due_date')
 
       if (projectId) {
@@ -399,7 +409,7 @@ export class TasksService {
 
       // Get current task status
       const { data: currentTask, error: fetchError } = await supabase
-        .from('tasks')
+        .from('work_items')
         .select('status')
         .eq('id', taskId)
         .single()
@@ -413,7 +423,7 @@ export class TasksService {
 
       // Allow any status change for now (can add validation later)
       const { data, error } = await supabase
-        .from('tasks')
+        .from('work_items')
         .update({ status: newStatus })
         .eq('id', taskId)
         .select()

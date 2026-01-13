@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase-client'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { TeamMember } from '@/lib/validation/schemas/team-member.schema'
 
+const untypedSupabase = supabase as any
+
 interface UseRealtimeTeamOptions {
   projectId?: string
   organizationId?: string
@@ -94,14 +96,14 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
         let error: any = null
 
         if (projectId) {
-          const result = await (supabase as any)
+          const result = await untypedSupabase
             .from(table)
             .select('*')
             .eq('project_id', projectId)
           data = result.data
           error = result.error
         } else if (organizationId) {
-          const result = await (supabase as any)
+          const result = await untypedSupabase
             .from(table)
             .select('*')
             .eq('organization_id', organizationId)
@@ -215,14 +217,14 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
       let error: any = null
 
       if (projectId) {
-        const result = await (supabase as any)
+        const result = await untypedSupabase
           .from(table)
           .select('*')
           .eq('project_id', projectId)
         data = result.data
         error = result.error
       } else if (organizationId) {
-        const result = await (supabase as any)
+        const result = await untypedSupabase
           .from(table)
           .select('*')
           .eq('organization_id', organizationId)

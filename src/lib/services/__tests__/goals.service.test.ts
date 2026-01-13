@@ -1,3 +1,9 @@
+// TODO(DB_ALIGNMENT): This test file uses mocks based on WRONG schema
+// | expected (test mocks): 'goals' table with organization_id, project_id, name, status columns
+// | actual (DB has): 'goals' table exists but with workspace_id (not organization_id)
+// FIX: Update mocks to use workspace_id instead of organization_id
+// FIX: Consider if 'goals' table is still used or if milestones.type='goal' is the canonical approach
+
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { GoalsService } from '../goals.service'
 import { supabaseAdmin } from '../../supabase-server'

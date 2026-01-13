@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase/client'
 import { AutomationRule, AutomationExecution, AutomationTemplate, AutomationTrigger, AutomationCondition, AutomationAction } from '@/lib/models/automation'
 
+// TODO(DB_ALIGNMENT): Verify automation_rules and automation_executions tables exist in DB
+// | expected: automation_rules with columns (id, name, description, project_id, created_by, is_active, trigger, conditions, actions, tags, priority, execution_count, last_executed_at, created_at, updated_at)
+// | expected: automation_executions with columns (id, rule_id, status, started_at, completed_at, trigger_data, affected_entities, actions_executed, actions_succeeded, actions_failed, execution_time_ms, error_message, error_details)
+// | actual: Need to verify against live DB - automation_rules exists but column structure may differ
+// FIX: Run psql to confirm table structure matches these queries
+
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any
 
@@ -112,7 +118,7 @@ export class AutomationService {
 
     try {
       // Update execution status to running
-      await supabase
+      await untypedSupabase
         .from('automation_executions' as any)
         .update({ status: 'running' })
         .eq('id', execRecord.id)
@@ -122,7 +128,7 @@ export class AutomationService {
       // Check conditions
       const conditionsMet = await this.checkConditions(rule.conditions, triggerData)
       if (!conditionsMet) {
-        await supabase
+        await untypedSupabase
           .from('automation_executions' as any)
           .update({
             status: 'completed',
@@ -138,7 +144,7 @@ export class AutomationService {
       const results = await this.executeActions(rule.actions, triggerData)
 
       // Update execution record with results
-      await supabase
+      await untypedSupabase
         .from('automation_executions' as any)
         .update({
           status: 'completed',
@@ -152,7 +158,7 @@ export class AutomationService {
         .eq('id', execRecord.id)
 
       // Update rule execution count
-      await supabase
+      await untypedSupabase
         .from('automation_rules' as any)
         .update({
           execution_count: rule.execution_count + 1,
@@ -173,7 +179,7 @@ export class AutomationService {
 
     } catch (error: any) {
       // Update execution record with error
-      await supabase
+      await untypedSupabase
         .from('automation_executions' as any)
         .update({
           status: 'failed',
@@ -347,13 +353,16 @@ export class AutomationService {
     }
   }
 
+  // FIXED(DB_ALIGNMENT): Updated to use 'work_items' table and work_item_id field
+  // | expected: 'work_items' table with work_item_id field
+  // | actual: DB has 'work_items' table instead of 'tasks'
   private static async executeUpdateTask(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!action.task_updates || !triggerData.task_id) return
+    if (!action.task_updates || !triggerData.work_item_id) return
 
     const { error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .update(action.task_updates)
-      .eq('id', triggerData.task_id)
+      .eq('id', triggerData.work_item_id)
 
     if (error) throw error
   }
@@ -362,7 +371,7 @@ export class AutomationService {
     if (!action.task_updates) return
 
     const { error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .insert({
         ...action.task_updates,
         project_id: triggerData.project_id,
@@ -373,18 +382,18 @@ export class AutomationService {
   }
 
   private static async executeAssignUser(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!action.assignee_id || !triggerData.task_id) return
+    if (!action.assignee_id || !triggerData.work_item_id) return
 
     const { error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .update({ assignee_id: action.assignee_id })
-      .eq('id', triggerData.task_id)
+      .eq('id', triggerData.work_item_id)
 
     if (error) throw error
   }
 
   private static async executeSetDueDate(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!triggerData.task_id) return
+    if (!triggerData.work_item_id) return
 
     let dueDate: string | null = null
 
@@ -397,25 +406,25 @@ export class AutomationService {
     }
 
     const { error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .update({ due_date: dueDate })
-      .eq('id', triggerData.task_id)
+      .eq('id', triggerData.work_item_id)
 
     if (error) throw error
   }
 
   private static async executeAddLabel(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!action.label_name || !triggerData.task_id) return
+    if (!action.label_name || !triggerData.work_item_id) return
 
-    // Implementation would add label to task
-    console.log(`Adding label ${action.label_name} to task ${triggerData.task_id}`)
+    // Implementation would add label to work item
+    console.log(`Adding label ${action.label_name} to work item ${triggerData.work_item_id}`)
   }
 
   private static async executeRemoveLabel(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!action.label_name || !triggerData.task_id) return
+    if (!action.label_name || !triggerData.work_item_id) return
 
-    // Implementation would remove label from task
-    console.log(`Removing label ${action.label_name} from task ${triggerData.task_id}`)
+    // Implementation would remove label from work item
+    console.log(`Removing label ${action.label_name} from work item ${triggerData.work_item_id}`)
   }
 
   private static async executeSendNotification(action: AutomationAction, triggerData: any): Promise<void> {
@@ -433,23 +442,23 @@ export class AutomationService {
   }
 
   private static async executeMoveToColumn(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!action.target_column || !triggerData.task_id) return
+    if (!action.target_column || !triggerData.work_item_id) return
 
     const { error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .update({ status: action.target_column })
-      .eq('id', triggerData.task_id)
+      .eq('id', triggerData.work_item_id)
 
     if (error) throw error
   }
 
   private static async executeArchiveTask(action: AutomationAction, triggerData: any): Promise<void> {
-    if (!triggerData.task_id) return
+    if (!triggerData.work_item_id) return
 
     const { error } = await untypedSupabase
-      .from('tasks')
+      .from('work_items')
       .update({ status: 'archived' })
-      .eq('id', triggerData.task_id)
+      .eq('id', triggerData.work_item_id)
 
     if (error) throw error
   }

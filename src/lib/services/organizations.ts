@@ -3,6 +3,11 @@
  * Handles organization CRUD operations and member management
  */
 
+// ✅ FIXED(DB_ALIGNMENT): All table and column names aligned with actual database schema
+// | Table mappings: organizations → workspaces, organization_members → workspace_members
+// | Column mappings: organization_id → workspace_id
+// Note: Service class keeps 'OrganizationsService' name for API consistency while using correct DB tables
+
 import { supabaseAdmin } from '../supabase-server'
 import type { Organization } from '../models/organizations'
 import { OrganizationModel } from '../models/organizations'
@@ -43,7 +48,7 @@ export class OrganizationsService {
       
       // Get organizations created by user
       const { data: ownedOrgs, error: ownedError } = await client
-        .from('organizations')
+        .from('workspaces')
         .select(`
           id,
           name,
@@ -63,9 +68,9 @@ export class OrganizationsService {
 
       // Get organizations where user is a member
       const { data: memberOrgs, error: memberError } = await client
-        .from('organization_members')
+        .from('workspace_members')
         .select(`
-          organizations (
+          workspaces (
             id,
             name,
             created_by,
@@ -86,7 +91,7 @@ export class OrganizationsService {
       // Combine and deduplicate organizations
       const ownedOrganizations = ownedOrgs?.map(org => OrganizationModel.fromDatabase(org)) || []
       const memberOrganizations = memberOrgs
-        ?.map(item => item.organizations)
+        ?.map(item => item.workspaces)
         .filter(Boolean)
         .map(org => OrganizationModel.fromDatabase(org)) || []
 
@@ -150,7 +155,7 @@ export class OrganizationsService {
       // Check if slug exists and generate unique slug
       while (true) {
         const { data: existingOrg } = await client
-          .from('organizations')
+          .from('workspaces')
           .select('id')
           .eq('slug', slug)
           .single();
@@ -172,7 +177,7 @@ export class OrganizationsService {
       console.log('Inserting organization:', { name: data.name, slug, created_by: data.created_by })
 
       const { data: organization, error: orgError } = await client
-        .from('organizations')
+        .from('workspaces')
         .insert({
           name: data.name,
           slug: slug,
@@ -188,7 +193,7 @@ export class OrganizationsService {
 
         // Handle specific database constraint errors with user-friendly messages
         if (orgError.code === '23505') { // unique_violation
-          if (orgError.message.includes('organizations_name_key')) {
+          if (orgError.message.includes('workspaces_name_key') || orgError.message.includes('organizations_name_key')) {
             return {
               success: false,
               error: 'An organization with this name already exists. Please choose a different name.'

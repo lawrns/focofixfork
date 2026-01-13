@@ -17,7 +17,7 @@ export async function POST(
     const { id } = await params;
 
     const { data: task, error: taskError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .select('*')
       .eq('id', id)
       .single();
@@ -74,11 +74,11 @@ export async function POST(
       title: task.title,
       description: task.description,
       project_id: task.project_id,
-      milestone_id: task.milestone_id,
+      parent_id: task.parent_id,
       priority: task.priority,
       assignee_id: task.assignee_id,
       due_date: nextDate.toISOString().split('T')[0],
-      created_by: user.id,
+      reporter_id: user.id,
       is_recurring: true,
       recurrence_pattern: pattern,
       parent_recurring_task_id: task.parent_recurring_task_id || id,
@@ -88,7 +88,7 @@ export async function POST(
     };
 
     const { data: createdTask, error: createError } = await supabase
-      .from('tasks')
+      .from('work_items')
       .insert([nextTask])
       .select()
       .single();

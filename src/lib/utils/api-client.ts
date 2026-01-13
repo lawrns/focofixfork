@@ -44,7 +44,7 @@ export class APIClient {
   // Projects API with tracking
   static async getProjects(organizationId?: string) {
     return this.trackRequest('projects', 'GET', async () => {
-      let query = untypedSupabase.from('projects').select('*');
+      let query = untypedSupabase.from('foco_projects').select('*');
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
       }
@@ -54,19 +54,19 @@ export class APIClient {
 
   static async createProject(project: any) {
     return this.trackRequest('projects', 'POST', async () =>
-      untypedSupabase.from('projects').insert(project).select().single()
+      untypedSupabase.from('foco_projects').insert(project).select().single()
     );
   }
 
   static async updateProject(id: string, updates: any) {
     return this.trackRequest('projects', 'PATCH', async () =>
-      untypedSupabase.from('projects').update(updates).eq('id', id).select().single()
+      untypedSupabase.from('foco_projects').update(updates).eq('id', id).select().single()
     );
   }
 
   static async deleteProject(id: string) {
     return this.trackRequest('projects', 'DELETE', async () =>
-      untypedSupabase.from('projects').delete().eq('id', id)
+      untypedSupabase.from('foco_projects').delete().eq('id', id)
     );
   }
 
@@ -102,7 +102,7 @@ export class APIClient {
   // Tasks API with tracking
   static async getTasks(milestoneId?: string, projectId?: string) {
     return this.trackRequest('tasks', 'GET', async () => {
-      let query = untypedSupabase.from('tasks').select('*');
+      let query = untypedSupabase.from('work_items').select('*');
       if (milestoneId) {
         query = query.eq('milestone_id', milestoneId);
       }
@@ -115,32 +115,32 @@ export class APIClient {
 
   static async createTask(task: any) {
     return this.trackRequest('tasks', 'POST', async () =>
-      untypedSupabase.from('tasks').insert(task).select().single()
+      untypedSupabase.from('work_items').insert(task).select().single()
     );
   }
 
   static async updateTask(id: string, updates: any) {
     return this.trackRequest('tasks', 'PATCH', async () =>
-      untypedSupabase.from('tasks').update(updates).eq('id', id).select().single()
+      untypedSupabase.from('work_items').update(updates).eq('id', id).select().single()
     );
   }
 
   static async deleteTask(id: string) {
     return this.trackRequest('tasks', 'DELETE', async () =>
-      untypedSupabase.from('tasks').delete().eq('id', id)
+      untypedSupabase.from('work_items').delete().eq('id', id)
     );
   }
 
   // Organizations API with tracking
   static async getOrganizations() {
     return this.trackRequest('organizations', 'GET', async () =>
-      untypedSupabase.from('organizations').select('*')
+      untypedSupabase.from('workspaces').select('*')
     );
   }
 
   static async createOrganization(organization: any) {
     return this.trackRequest('organizations', 'POST', async () =>
-      untypedSupabase.from('organizations').insert(organization).select().single()
+      untypedSupabase.from('workspaces').insert(organization).select().single()
     );
   }
 

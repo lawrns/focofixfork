@@ -440,7 +440,7 @@ export class MilestonesService {
         (milestonesResult.data || []).map(async (milestone) => {
           // Get tasks for this milestone
           const { data: tasks, error } = await supabase
-            .from('tasks')
+            .from('work_items')
             .select('status')
             .eq('milestone_id', milestone.id)
 

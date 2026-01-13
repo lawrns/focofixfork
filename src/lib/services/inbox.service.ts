@@ -87,13 +87,13 @@ export class InboxService {
    */
   private async fetchUserItems(userId: string): Promise<any[]> {
     const { data: tasks } = await this.supabase
-      .from('tasks')
+      .from('work_items')
       .select(`
         *,
         project:projects(title),
         assignee:users(full_name)
       `)
-      .or(`assignee_id.eq.${userId},created_by.eq.${userId}`)
+      .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
       .in('status', ['todo', 'in_progress', 'blocked'])
       .order('created_at', { ascending: false })
       .limit(50)
@@ -102,7 +102,7 @@ export class InboxService {
       .from('comments')
       .select(`
         *,
-        work_item:tasks(title, project_id),
+        work_item:work_items(title, project_id),
         author:profiles(full_name)
       `)
       .or(`mentions.cs.{${userId}},user_id.eq.${userId}`)

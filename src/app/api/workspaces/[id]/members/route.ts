@@ -76,7 +76,7 @@ export async function GET(
 
     // Get user emails from auth (if not in profiles)
     const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
-    const authUserMap = new Map(authUsers?.map(u => [u.id, u]) || [])
+    const authUserMap = new Map<string, any>(authUsers?.map(u => [u.id, u] as [string, any]) || [])
 
     // Combine member data with user details
     const membersWithDetails = members?.map(member => {

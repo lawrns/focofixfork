@@ -10,6 +10,9 @@ import type {
   TrendsQueryParams
 } from '@/lib/validation/schemas/analytics'
 
+const untypedSupabase = supabase as any
+const untypedSupabaseAdmin = supabaseAdmin as any
+
 // AnalyticsService class for calculating and aggregating analytics data
 export class AnalyticsService {
   // ===============================
@@ -75,7 +78,7 @@ export class AnalyticsService {
    */
   static async getProjectMetricsDetailed(projectId: string, dateRange: { start: Date, end: Date }): Promise<ProjectMetrics | null> {
     // Get project basic info
-    const { data: project, error: projectError } = await supabaseAdmin
+    const { data: project, error: projectError } = await untypedSupabaseAdmin
       .from('projects')
       .select('id, name')
       .eq('id', projectId)
@@ -84,7 +87,7 @@ export class AnalyticsService {
     if (projectError || !project) return null
 
     // Get tasks for the project
-    const { data: tasks, error: tasksError } = await supabase
+    const { data: tasks, error: tasksError } = await untypedSupabase
       .from('tasks')
       .select('id, status, created_at, updated_at, due_date')
       .eq('project_id', projectId)
@@ -145,7 +148,7 @@ export class AnalyticsService {
    */
   static async getTeamMetrics(projectIds: string[], dateRange: { start: Date, end: Date }): Promise<TeamMetrics[]> {
     // Get all team members for the projects
-    const { data: projectMembers, error: membersError } = await supabaseAdmin
+    const { data: projectMembers, error: membersError } = await untypedSupabaseAdmin
       .from('project_team_assignments')
       .select('user_id')
       .in('project_id', projectIds)
@@ -180,7 +183,7 @@ export class AnalyticsService {
     dateRange: { start: Date, end: Date }
   ): Promise<TeamMetrics> {
     // Get tasks assigned to this user in the projects
-    const { data: tasks, error: tasksError } = await supabase
+    const { data: tasks, error: tasksError } = await untypedSupabase
       .from('tasks')
       .select('id, status, created_at, updated_at, due_date')
       .eq('assignee_id', userId)
@@ -361,7 +364,7 @@ export class AnalyticsService {
 
     try {
       // Get projects where user is a member
-      let membersQuery = supabaseAdmin
+      let membersQuery = untypedSupabaseAdmin
         .from('project_members')
         .select(`
           project_id,
@@ -384,7 +387,7 @@ export class AnalyticsService {
       }
 
       // Get projects created by the user
-      let createdQuery = supabaseAdmin
+      let createdQuery = untypedSupabaseAdmin
         .from('projects')
         .select('id, organization_id')
         .eq('created_by', userId)
@@ -447,7 +450,7 @@ export class AnalyticsService {
    * Calculate completion rate for a specific date
    */
   private static async getCompletionRateForDate(projectIds: string[], start: Date, end: Date): Promise<number> {
-    const { data: tasks, error } = await supabase
+    const { data: tasks, error } = await untypedSupabase
       .from('tasks')
       .select('status')
       .in('project_id', projectIds)
@@ -570,7 +573,7 @@ export class AnalyticsService {
       const dayEnd = new Date(date)
       dayEnd.setHours(23, 59, 59, 999)
 
-      const { data: tasks } = await supabase
+      const { data: tasks } = await untypedSupabase
         .from('tasks')
         .select('id')
         .in('project_id', projectIds)
@@ -607,7 +610,7 @@ export class AnalyticsService {
       const weekEnd = new Date(date)
       weekEnd.setDate(date.getDate() + 3)
 
-      const { data: tasks } = await supabase
+      const { data: tasks } = await untypedSupabase
         .from('tasks')
         .select('created_at, updated_at')
         .in('project_id', projectIds)
@@ -649,7 +652,7 @@ export class AnalyticsService {
       const date = new Date(dateRange.end)
       date.setDate(date.getDate() - (days - 1 - i))
 
-      const { data: tasks } = await supabase
+      const { data: tasks } = await untypedSupabase
         .from('tasks')
         .select('id')
         .in('project_id', projectIds)

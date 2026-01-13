@@ -11,6 +11,8 @@ import {
   FileType
 } from '@/lib/models/file-uploads'
 
+const untypedSupabase = supabase as any
+
 export class FileUploadService {
   private static uploadQueue: Map<string, UploadQueueItem> = new Map()
   private static listeners: Map<string, (queue: UploadQueueItem[]) => void> = new Map()
@@ -57,7 +59,7 @@ export class FileUploadService {
       ...(entityType === 'milestone' && { milestone_id: entityId })
     }
 
-    const { data: attachment, error: insertError } = await supabase
+    const { data: attachment, error: insertError } = await untypedSupabase
       .from('files')
       .insert(attachmentData)
       .select()
@@ -84,7 +86,7 @@ export class FileUploadService {
         .getPublicUrl(storagePath)
 
       // Update attachment with the file URL
-      const { data: updatedAttachment, error: updateError } = await supabase
+      const { data: updatedAttachment, error: updateError } = await untypedSupabase
         .from('files')
         .update({
           url: urlData.publicUrl
@@ -104,7 +106,7 @@ export class FileUploadService {
 
     } catch (error: any) {
       // Delete the failed file record since we can't track status in the files table
-      await supabase
+      await untypedSupabase
         .from('files')
         .delete()
         .eq('id', fileAttachment.id)
@@ -226,7 +228,7 @@ export class FileUploadService {
     entityId: string,
     filters: FileSearchFilters = {}
   ): Promise<{ attachments: FileAttachment[]; total: number }> {
-    let query = supabase
+    let query = untypedSupabase
       .from('files')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -288,7 +290,7 @@ export class FileUploadService {
     userId: string
   ): Promise<void> {
     // Get attachment to check permissions
-    const { data: attachment, error: fetchError } = await supabase
+    const { data: attachment, error: fetchError } = await untypedSupabase
       .from('files')
       .select('*')
       .eq('id', attachmentId)
@@ -305,7 +307,7 @@ export class FileUploadService {
     }
 
     // Delete the attachment (hard delete since files table doesn't support soft delete)
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await untypedSupabase
       .from('files')
       .delete()
       .eq('id', attachmentId)
@@ -322,7 +324,7 @@ export class FileUploadService {
    * Download file attachment
    */
   static async downloadFileAttachment(attachmentId: string): Promise<void> {
-    const { data: attachment, error } = await supabase
+    const { data: attachment, error } = await untypedSupabase
       .from('files')
       .select('*')
       .eq('id', attachmentId)
@@ -349,7 +351,7 @@ export class FileUploadService {
    * Get file preview
    */
   static async getFilePreview(attachmentId: string): Promise<FilePreview> {
-    const { data: attachment, error } = await supabase
+    const { data: attachment, error } = await untypedSupabase
       .from('files')
       .select('*')
       .eq('id', attachmentId)

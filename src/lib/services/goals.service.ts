@@ -13,6 +13,9 @@ import type {
   GoalProgress
 } from '@/lib/validation/schemas/goals'
 
+const untypedSupabase = supabase as any
+const untypedSupabaseAdmin = supabaseAdmin as any
+
 // GoalsService class for managing goal-related operations
 export class GoalsService {
   // ===============================
@@ -26,7 +29,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      let query = supabaseAdmin
+      let query = untypedSupabaseAdmin
         .from('goals')
         .select('*')
         .order('created_at', { ascending: false })
@@ -56,7 +59,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      const { data: goal, error: goalError } = await (supabaseAdmin as any)
+      const { data: goal, error: goalError } = await untypedSupabaseAdmin
         .from('goals')
         .select('*')
         .eq('id', id)
@@ -66,14 +69,14 @@ export class GoalsService {
       if (!goal) return null
 
       // Fetch milestones
-      const { data: milestones } = await (supabaseAdmin as any)
+      const { data: milestones } = await untypedSupabaseAdmin
         .from('goal_milestones')
         .select('*')
         .eq('goal_id', id)
         .order('sort_order', { ascending: true })
 
       // Fetch linked projects
-      const { data: projectLinks } = await (supabaseAdmin as any)
+      const { data: projectLinks } = await untypedSupabaseAdmin
         .from('goal_project_links')
         .select('*, projects(*)')
         .eq('goal_id', id)
@@ -97,7 +100,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goals')
         .insert({
           ...goalData,
@@ -123,7 +126,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goals')
         .update({
           ...updates,
@@ -149,7 +152,7 @@ export class GoalsService {
 
     try {
       // First verify the goal exists and user has permission
-      const { data: goal, error: fetchError } = await (supabaseAdmin as any)
+      const { data: goal, error: fetchError } = await untypedSupabaseAdmin
         .from('goals')
         .select('id, owner_id, organization_id')
         .eq('id', id)
@@ -168,7 +171,7 @@ export class GoalsService {
       if (goal.owner_id !== userId) {
         // Check if user is admin/owner in the organization
         if (goal.organization_id) {
-          const { data: membership } = await (supabaseAdmin as any)
+          const { data: membership } = await untypedSupabaseAdmin
             .from('organization_members')
             .select('role')
             .eq('user_id', userId)
@@ -184,7 +187,7 @@ export class GoalsService {
       }
 
       // Now delete the goal
-      const { error } = await (supabaseAdmin as any)
+      const { error } = await untypedSupabaseAdmin
         .from('goals')
         .delete()
         .eq('id', id)
@@ -213,7 +216,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goal_milestones')
         .select('*')
         .eq('goal_id', goalId)
@@ -234,7 +237,7 @@ export class GoalsService {
     if (!userId) throw new Error('User not authenticated')
 
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goal_milestones')
         .insert({
           ...milestoneData,
@@ -258,7 +261,7 @@ export class GoalsService {
    */
   static async updateMilestone(id: string, updates: UpdateMilestone): Promise<GoalMilestone> {
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goal_milestones')
         .update({
           ...updates,
@@ -285,7 +288,7 @@ export class GoalsService {
    */
   static async getLinkedProjects(goalId: string): Promise<any[]> {
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goal_project_links')
         .select('*, projects(*)')
         .eq('goal_id', goalId)
@@ -303,7 +306,7 @@ export class GoalsService {
    */
   static async linkProject(goalId: string, projectId: string): Promise<GoalProjectLink> {
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goal_project_links')
         .insert({
           goal_id: goalId,
@@ -327,7 +330,7 @@ export class GoalsService {
    */
   static async unlinkProject(goalId: string, projectId: string): Promise<void> {
     try {
-      const { error } = await (supabaseAdmin as any)
+      const { error } = await untypedSupabaseAdmin
         .from('goal_project_links')
         .delete()
         .eq('goal_id', goalId)
@@ -349,7 +352,7 @@ export class GoalsService {
    */
   private static async getAccessibleGoalIds(userId: string): Promise<string[]> {
     try {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await untypedSupabaseAdmin
         .from('goals')
         .select('id')
 
@@ -397,7 +400,7 @@ export class GoalsService {
   static async getGoalProgress(goalId: string, userId: string): Promise<GoalProgress> {
     try {
       const milestones = await this.getMilestones(goalId, userId)
-      const { data: goal } = await (supabaseAdmin as any)
+      const { data: goal } = await untypedSupabaseAdmin
         .from('goals')
         .select('end_date, status')
         .eq('id', goalId)

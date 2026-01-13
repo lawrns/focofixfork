@@ -10,6 +10,8 @@ import {
   Mention
 } from '@/lib/models/comments'
 
+const untypedSupabase = supabase as any
+
 export class CommentsService {
   /**
    * Create a new comment
@@ -50,7 +52,7 @@ export class CommentsService {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
     }
 
-    const { data: result, error } = await supabase
+    const { data: result, error } = await untypedSupabase
       .from('comments')
       .insert(dbData)
       .select()
@@ -86,7 +88,7 @@ export class CommentsService {
     updates: Partial<Comment>
   ): Promise<Comment> {
     // Get current comment to validate permissions
-    const { data: currentComment, error: fetchError } = await supabase
+    const { data: currentComment, error: fetchError } = await untypedSupabase
       .from('comments')
       .select('*')
       .eq('id', commentId)
@@ -117,7 +119,7 @@ export class CommentsService {
     // Always update updated_at
     updateData.updated_at = new Date().toISOString()
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('comments')
       .update(updateData)
       .eq('id', commentId)
@@ -140,7 +142,7 @@ export class CommentsService {
    */
   static async deleteComment(commentId: string, userId: string): Promise<void> {
     // Get current comment to validate permissions
-    const { data: currentComment, error: fetchError } = await supabase
+    const { data: currentComment, error: fetchError } = await untypedSupabase
       .from('comments')
       .select('*')
       .eq('id', commentId)
@@ -158,7 +160,7 @@ export class CommentsService {
     }
 
     // Since we can't mark as deleted in the database, we'll just delete the record
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('comments')
       .delete()
       .eq('id', commentId)
@@ -177,7 +179,7 @@ export class CommentsService {
     threads: CommentThread[]
     total: number
   }> {
-    let query = supabase
+    let query = untypedSupabase
       .from('comments')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: true })

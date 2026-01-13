@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase-client'
 import Papa from 'papaparse'
 
+const untypedSupabase = supabase as any
+
 export interface ImportResult {
   success: boolean
   totalRows: number
@@ -128,7 +130,7 @@ export class ImportService {
           if (response.data) {
             if (options.updateExisting) {
               // Update existing project
-              const { error } = await supabase
+              const { error } = await untypedSupabase
                 .from('projects')
                 .update(project)
                 .eq('id', response.data.id)
@@ -146,7 +148,7 @@ export class ImportService {
             }
           } else {
             // Create new project
-            const { error } = await supabase
+            const { error } = await untypedSupabase
               .from('projects')
               .insert(project)
 
@@ -219,7 +221,7 @@ export class ImportService {
           let projectId = row.project_id?.trim()
           if (!projectId && row.project_name?.trim()) {
             // @ts-ignore - Avoiding deep type instantiation issue
-            const response = await supabase
+            const response = await untypedSupabase
               .from('projects')
               .select('id')
               .eq('name', row.project_name.trim())
@@ -263,7 +265,7 @@ export class ImportService {
       let importedCount = 0
       for (const milestone of validMilestones) {
         try {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('milestones')
             .insert(milestone)
 
@@ -335,7 +337,7 @@ export class ImportService {
           let milestoneId = row.milestone_id?.trim()
           if (!milestoneId && row.milestone_name?.trim()) {
             // @ts-ignore - Avoiding deep type instantiation issue
-            const response = await supabase
+            const response = await untypedSupabase
               .from('milestones')
               .select('id')
               .eq('name', row.milestone_name.trim())
@@ -353,7 +355,7 @@ export class ImportService {
           let assigneeId = row.assignee_id?.trim()
           if (!assigneeId && row.assignee_name?.trim()) {
             // @ts-ignore - Avoiding deep type instantiation issue
-            const response = await supabase
+            const response = await untypedSupabase
               .from('user_profiles')
               .select('id')
               .eq('display_name', row.assignee_name.trim())
@@ -396,7 +398,7 @@ export class ImportService {
       let importedCount = 0
       for (const task of validTasks) {
         try {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('tasks')
             .insert(task)
 

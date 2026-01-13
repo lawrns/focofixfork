@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase-client'
 import type { Database } from '@/lib/supabase/types'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 type Task = Database['public']['Tables']['tasks']['Row']
 type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 type TaskUpdate = Database['public']['Tables']['tasks']['Update']
@@ -48,7 +51,7 @@ export class TasksService {
       }
 
       // Use provided client or default client
-      const client = supabaseClient || supabase
+      const client = supabaseClient || untypedSupabase
 
       let query = client
         .from('tasks')
@@ -175,7 +178,7 @@ export class TasksService {
       }
 
       // Use provided client or default client
-      const client = supabaseClient || supabase
+      const client = supabaseClient || untypedSupabase
 
       // Ensure the user is creating the task
       const dataToInsert = {

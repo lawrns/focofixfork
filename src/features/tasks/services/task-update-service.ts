@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase-client'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 export interface TaskUpdateData {
   title?: string
   description?: string | null
@@ -18,7 +21,7 @@ export class TaskUpdateService {
    */
   static async updateTask(taskId: string, updates: TaskUpdateData): Promise<any> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await untypedSupabase
         .from('tasks')
         .update({
           ...updates,

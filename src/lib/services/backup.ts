@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase-client';
 
+const untypedSupabase = supabase as any;
+
 export interface BackupOptions {
   includeFiles?: boolean;
   includeComments?: boolean;
@@ -27,7 +29,7 @@ export interface BackupData {
 export class BackupService {
   static async createBackup(options: BackupOptions = {}): Promise<BackupData> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await untypedSupabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const backupData: BackupData = {
@@ -44,7 +46,7 @@ export class BackupService {
       };
 
       // Get user's organizations
-      const { data: organizations } = await supabase
+      const { data: organizations } = await untypedSupabase
         .from('organizations')
         .select('*')
         .eq('created_by', user.id);
@@ -57,7 +59,7 @@ export class BackupService {
       // Get projects for user's organizations
       if (organizations?.length) {
         const orgIds = organizations.map(org => org.id);
-        const { data: projects } = await supabase
+        const { data: projects } = await untypedSupabase
           .from('projects')
           .select('*')
           .in('organization_id', orgIds);
@@ -67,7 +69,7 @@ export class BackupService {
 
           // Get milestones and tasks for these projects
           const projectIds = projects.map(p => p.id);
-          const { data: milestones } = await supabase
+          const { data: milestones } = await untypedSupabase
             .from('milestones')
             .select('*')
             .in('project_id', projectIds);
@@ -76,7 +78,7 @@ export class BackupService {
             backupData.milestones = milestones;
           }
 
-          const { data: tasks } = await supabase
+          const { data: tasks } = await untypedSupabase
             .from('tasks')
             .select('*')
             .in('project_id', projectIds);
@@ -87,7 +89,7 @@ export class BackupService {
         }
 
         // Get organization members
-        const { data: members } = await supabase
+        const { data: members } = await untypedSupabase
           .from('organization_members')
           .select('*')
           .in('organization_id', orgIds);
@@ -100,7 +102,7 @@ export class BackupService {
       // Optional data based on options
       if (options.includeComments) {
         const orgIds = organizations?.map(o => o.id) || [];
-        const { data: comments } = await (supabase as any)
+        const { data: comments } = await untypedSupabase
           .from('milestone_comments')
           .select('*')
           .in('organization_id', orgIds);
@@ -111,7 +113,7 @@ export class BackupService {
       }
 
       if (options.includeTimeTracking) {
-        const { data: timeEntries } = await supabase
+        const { data: timeEntries } = await untypedSupabase
           .from('time_entries')
           .select('*')
           .eq('user_id', user.id);
@@ -151,7 +153,7 @@ export class BackupService {
 
   static async restoreBackup(backupData: BackupData): Promise<void> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await untypedSupabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       // Validate backup data
@@ -161,14 +163,14 @@ export class BackupService {
 
       // Restore organizations (skip if they already exist)
       for (const org of backupData.organizations || []) {
-        const { data: existing } = await supabase
+        const { data: existing } = await untypedSupabase
           .from('organizations')
           .select('id')
           .eq('slug', org.slug)
           .single();
 
         if (!existing) {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('organizations')
             .insert({
               ...org,
@@ -181,7 +183,7 @@ export class BackupService {
 
       // Restore projects
       for (const project of backupData.projects) {
-        const { data: existing } = await supabase
+        const { data: existing } = await untypedSupabase
           .from('projects')
           .select('id')
           .eq('name', project.name)
@@ -189,7 +191,7 @@ export class BackupService {
           .single();
 
         if (!existing) {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('projects')
             .insert(project);
 
@@ -199,7 +201,7 @@ export class BackupService {
 
       // Restore milestones and tasks
       for (const milestone of backupData.milestones || []) {
-        const { data: existing } = await supabase
+        const { data: existing } = await untypedSupabase
           .from('milestones')
           .select('id')
           .eq('title', milestone.title)
@@ -207,7 +209,7 @@ export class BackupService {
           .single();
 
         if (!existing) {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('milestones')
             .insert(milestone);
 
@@ -216,7 +218,7 @@ export class BackupService {
       }
 
       for (const task of backupData.tasks || []) {
-        const { data: existing } = await supabase
+        const { data: existing } = await untypedSupabase
           .from('tasks')
           .select('id')
           .eq('title', task.title)
@@ -224,7 +226,7 @@ export class BackupService {
           .single();
 
         if (!existing) {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('tasks')
             .insert(task);
 
@@ -235,7 +237,7 @@ export class BackupService {
       // Restore optional data
       if (backupData.comments) {
         for (const comment of backupData.comments) {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('milestone_comments')
             .insert(comment);
 
@@ -247,7 +249,7 @@ export class BackupService {
 
       if (backupData.timeEntries) {
         for (const entry of backupData.timeEntries) {
-          const { error } = await supabase
+          const { error } = await untypedSupabase
             .from('time_entries')
             .insert({
               ...entry,

@@ -1,0 +1,189 @@
+{
+  "testDate": "2026-01-13T17:25:00Z",
+  "site": "https://foco.mx",
+  "user": {
+    "email": "laurence@fyves.com",
+    "userId": "60c44927-9d61-40e2-8c41-7e44cf7f7981"
+  },
+  "summary": {
+    "totalErrors": 4,
+    "criticalErrors": 2,
+    "uiIssues": 2,
+    "apiErrors": 1,
+    "javascriptErrors": 1
+  },
+  "errors": [
+    {
+      "id": "error-001",
+      "severity": "critical",
+      "category": "api",
+      "title": "Inbox API Returns HTTP 500",
+      "description": "The notifications/inbox API endpoint is returning a 500 Internal Server Error, preventing the inbox from loading.",
+      "location": {
+        "page": "/inbox",
+        "endpoint": "/api/notifications",
+        "method": "GET"
+      },
+      "symptoms": [
+        "Toast notification displays: 'Failed to load inbox'",
+        "Console error: 'Failed to fetch notifications: HTTP 500'",
+        "Inbox page shows empty state with error message"
+      ],
+      "networkDetails": {
+        "url": "https://foco.mx/api/notifications",
+        "statusCode": 500,
+        "timestamp": "2026-01-13T17:25:36.448Z"
+      },
+      "impact": "Users cannot view or manage their inbox notifications",
+      "reproduction": "Navigate to /inbox page"
+    },
+    {
+      "id": "error-002",
+      "severity": "critical",
+      "category": "javascript",
+      "title": "Settings Page Element Not Found Error",
+      "description": "JavaScript error occurs when attempting to interact with the Settings page, indicating a missing DOM element.",
+      "location": {
+        "page": "/settings",
+        "line": 412
+      },
+      "symptoms": [
+        "Console error: 'Uncaught Error: Element not found'",
+        "Error occurs at line 412 of settings page",
+        "Browser automation fails when clicking Settings link"
+      ],
+      "consoleDetails": {
+        "message": "Uncaught Error: Element not found",
+        "source": "https://foco.mx/settings:412",
+        "timestamp": "2026-01-13T17:26:07.684Z"
+      },
+      "impact": "Settings page may not function correctly, potentially preventing users from accessing settings",
+      "reproduction": "Navigate to /settings page or click Settings link"
+    },
+    {
+      "id": "error-003",
+      "severity": "medium",
+      "category": "ui",
+      "title": "Project Cards Display Raw Timestamps",
+      "description": "Project cards on the Projects page display raw ISO 8601 timestamps instead of human-readable formatted dates.",
+      "location": {
+        "page": "/projects",
+        "component": "ProjectCard"
+      },
+      "symptoms": [
+        "Project cards show: 'Updated 2026-01-12T01:52:07.080707+00:00'",
+        "All three projects (Campfire, Locomotion, Mintory) display raw timestamps",
+        "Poor user experience with unformatted dates"
+      ],
+      "examples": [
+        "Campfire Updated 2026-01-12T01:52:07.080707+00:00",
+        "Locomotion Updated 2026-01-12T01:52:07.080707+00:00",
+        "Mintory Updated 2026-01-12T01:52:07.080707+00:00"
+      ],
+      "impact": "Poor user experience, dates are not human-readable",
+      "reproduction": "Navigate to /projects page and view project cards",
+      "recommendedFix": "Format timestamps using date formatting utility (e.g., '2 days ago', 'Jan 12, 2026')"
+    },
+    {
+      "id": "error-004",
+      "severity": "low",
+      "category": "ui",
+      "title": "Project Card Accessibility Text Issues",
+      "description": "Project card link accessibility text contains raw data and formatting issues that make it difficult for screen readers.",
+      "location": {
+        "page": "/projects",
+        "component": "ProjectCard link"
+      },
+      "symptoms": [
+        "Link name contains: 'Campfire Updated 2026-01-12T01:52:07.080707+00:00 Campfire project Progre 0 / 0 ta k U Unknown 0'",
+        "Text appears truncated or malformed ('ta k' instead of 'task', 'Progre' instead of 'Progress')",
+        "Accessibility text is not user-friendly"
+      ],
+      "examples": [
+        "Campfire Updated 2026-01-12T01:52:07.080707+00:00 Campfire project Progre 0 / 0 ta k U Unknown 0",
+        "Locomotion Updated 2026-01-12T01:52:07.080707+00:00 Locomotion project Progre 0 / 0 ta k U Unknown 0"
+      ],
+      "impact": "Poor accessibility for screen reader users, confusing link descriptions",
+      "reproduction": "Navigate to /projects page and inspect project card links",
+      "recommendedFix": "Improve accessibility text with proper formatting and human-readable descriptions"
+    }
+  ],
+  "warnings": [
+    {
+      "id": "warning-001",
+      "category": "console",
+      "message": "Multiple console warnings about auth initialization",
+      "description": "Console shows warnings about initial session loading and token in localStorage, but these are informational and not errors.",
+      "impact": "low",
+      "notes": "These appear to be debug/informational messages, not actual errors"
+    }
+  ],
+  "pagesTested": [
+    {
+      "path": "/dashboard",
+      "status": "working",
+      "notes": "Dashboard loads correctly, shows 3 projects"
+    },
+    {
+      "path": "/inbox",
+      "status": "error",
+      "notes": "API error prevents loading"
+    },
+    {
+      "path": "/my-work",
+      "status": "working",
+      "notes": "Page loads correctly"
+    },
+    {
+      "path": "/projects",
+      "status": "partial",
+      "notes": "Page loads but has UI formatting issues"
+    },
+    {
+      "path": "/settings",
+      "status": "error",
+      "notes": "JavaScript error on page"
+    }
+  ],
+  "networkStatus": {
+    "totalRequests": 50,
+    "failedRequests": 1,
+    "successfulRequests": 49,
+    "failedEndpoints": [
+      {
+        "url": "/api/notifications",
+        "statusCode": 500,
+        "method": "GET"
+      }
+    ]
+  },
+  "recommendations": [
+    {
+      "priority": "high",
+      "issue": "error-001",
+      "action": "Investigate and fix the /api/notifications endpoint returning HTTP 500. Check server logs and database connectivity."
+    },
+    {
+      "priority": "high",
+      "issue": "error-002",
+      "action": "Fix the Settings page JavaScript error. Ensure all required DOM elements are present before accessing them."
+    },
+    {
+      "priority": "medium",
+      "issue": "error-003",
+      "action": "Implement date formatting utility to display human-readable dates on project cards (e.g., '2 days ago', 'Jan 12, 2026')."
+    },
+    {
+      "priority": "low",
+      "issue": "error-004",
+      "action": "Improve accessibility text on project cards with proper formatting and clear descriptions for screen readers."
+    }
+  ],
+  "testEnvironment": {
+    "browser": "Chromium (automated)",
+    "userAgent": "Browser automation tool",
+    "viewport": "Unknown",
+    "timestamp": "2026-01-13T17:25:00Z"
+  }
+}
+

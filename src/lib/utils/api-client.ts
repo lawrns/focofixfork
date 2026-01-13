@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase-client';
 import { PerformanceService } from '@/lib/services/performance';
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any;
+
 export class APIClient {
   static async trackRequest<T>(
     endpoint: string,
@@ -41,7 +44,7 @@ export class APIClient {
   // Projects API with tracking
   static async getProjects(organizationId?: string) {
     return this.trackRequest('projects', 'GET', async () => {
-      let query = supabase.from('projects').select('*');
+      let query = untypedSupabase.from('projects').select('*');
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
       }
@@ -51,26 +54,26 @@ export class APIClient {
 
   static async createProject(project: any) {
     return this.trackRequest('projects', 'POST', async () =>
-      supabase.from('projects').insert(project).select().single()
+      untypedSupabase.from('projects').insert(project).select().single()
     );
   }
 
   static async updateProject(id: string, updates: any) {
     return this.trackRequest('projects', 'PATCH', async () =>
-      supabase.from('projects').update(updates).eq('id', id).select().single()
+      untypedSupabase.from('projects').update(updates).eq('id', id).select().single()
     );
   }
 
   static async deleteProject(id: string) {
     return this.trackRequest('projects', 'DELETE', async () =>
-      supabase.from('projects').delete().eq('id', id)
+      untypedSupabase.from('projects').delete().eq('id', id)
     );
   }
 
   // Milestones API with tracking
   static async getMilestones(projectId?: string) {
     return this.trackRequest('milestones', 'GET', async () => {
-      let query = supabase.from('milestones').select('*');
+      let query = untypedSupabase.from('milestones').select('*');
       if (projectId) {
         query = query.eq('project_id', projectId);
       }
@@ -80,26 +83,26 @@ export class APIClient {
 
   static async createMilestone(milestone: any) {
     return this.trackRequest('milestones', 'POST', async () =>
-      supabase.from('milestones').insert(milestone).select().single()
+      untypedSupabase.from('milestones').insert(milestone).select().single()
     );
   }
 
   static async updateMilestone(id: string, updates: any) {
     return this.trackRequest('milestones', 'PATCH', async () =>
-      supabase.from('milestones').update(updates).eq('id', id).select().single()
+      untypedSupabase.from('milestones').update(updates).eq('id', id).select().single()
     );
   }
 
   static async deleteMilestone(id: string) {
     return this.trackRequest('milestones', 'DELETE', async () =>
-      supabase.from('milestones').delete().eq('id', id)
+      untypedSupabase.from('milestones').delete().eq('id', id)
     );
   }
 
   // Tasks API with tracking
   static async getTasks(milestoneId?: string, projectId?: string) {
     return this.trackRequest('tasks', 'GET', async () => {
-      let query = supabase.from('tasks').select('*');
+      let query = untypedSupabase.from('tasks').select('*');
       if (milestoneId) {
         query = query.eq('milestone_id', milestoneId);
       }
@@ -112,39 +115,39 @@ export class APIClient {
 
   static async createTask(task: any) {
     return this.trackRequest('tasks', 'POST', async () =>
-      supabase.from('tasks').insert(task).select().single()
+      untypedSupabase.from('tasks').insert(task).select().single()
     );
   }
 
   static async updateTask(id: string, updates: any) {
     return this.trackRequest('tasks', 'PATCH', async () =>
-      supabase.from('tasks').update(updates).eq('id', id).select().single()
+      untypedSupabase.from('tasks').update(updates).eq('id', id).select().single()
     );
   }
 
   static async deleteTask(id: string) {
     return this.trackRequest('tasks', 'DELETE', async () =>
-      supabase.from('tasks').delete().eq('id', id)
+      untypedSupabase.from('tasks').delete().eq('id', id)
     );
   }
 
   // Organizations API with tracking
   static async getOrganizations() {
     return this.trackRequest('organizations', 'GET', async () =>
-      supabase.from('organizations').select('*')
+      untypedSupabase.from('organizations').select('*')
     );
   }
 
   static async createOrganization(organization: any) {
     return this.trackRequest('organizations', 'POST', async () =>
-      supabase.from('organizations').insert(organization).select().single()
+      untypedSupabase.from('organizations').insert(organization).select().single()
     );
   }
 
   // Time tracking API with tracking
   static async getTimeEntries(userId?: string) {
     return this.trackRequest('time-entries', 'GET', async () => {
-      let query = supabase.from('time_entries').select('*');
+      let query = untypedSupabase.from('time_entries').select('*');
       if (userId) {
         query = query.eq('user_id', userId);
       }
@@ -154,13 +157,13 @@ export class APIClient {
 
   static async createTimeEntry(entry: any) {
     return this.trackRequest('time-entries', 'POST', async () =>
-      supabase.from('time_entries').insert(entry).select().single()
+      untypedSupabase.from('time_entries').insert(entry).select().single()
     );
   }
 
   static async updateTimeEntry(id: string, updates: any) {
     return this.trackRequest('time-entries', 'PATCH', async () =>
-      supabase.from('time_entries').update(updates).eq('id', id).select().single()
+      untypedSupabase.from('time_entries').update(updates).eq('id', id).select().single()
     );
   }
 

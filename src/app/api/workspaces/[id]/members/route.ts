@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 /**
  * GET /api/workspaces/[id]/members
@@ -10,32 +10,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = request.cookies.get('sb-token')?.value
+    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
-    if (!token) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    )
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Failed to get user', success: false },
         { status: 401 }
       )
     }
@@ -59,10 +38,11 @@ export async function GET(
 
     if (membersError) {
       console.error('Error fetching workspace members:', membersError)
-      return NextResponse.json(
+      const errorRes = NextResponse.json(
         { error: 'Failed to fetch members', success: false },
         { status: 500 }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Fetch user details for each member from auth.users
@@ -96,10 +76,11 @@ export async function GET(
       }
     }) || []
 
-    return NextResponse.json({
+    const successRes = NextResponse.json({
       success: true,
       data: membersWithDetails,
     })
+    return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Workspace members fetch error:', error)
     return NextResponse.json(

@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { CreateWorkspaceDialog } from '@/components/dialogs/create-workspace-dialog'
 
 export interface Workspace {
   id: string
@@ -40,6 +41,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const [announcement, setAnnouncement] = useState('')
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -50,33 +52,10 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const current = currentWorkspace || localStorage.getItem('lastWorkspace') || ''
   const currentWorkspaceData = workspaces.find(w => w.slug === current)
 
-  // Fetch workspaces
+  // Fetch workspaces on mount
   useEffect(() => {
-    const fetchWorkspaces = async () => {
-      if (!user) return
-
-      try {
-        setIsLoading(true)
-        const response = await fetch('/api/workspaces')
-        if (!response.ok) throw new Error('Failed to fetch workspaces')
-
-        const data = await response.json()
-        setWorkspaces(data.workspaces || [])
-      } catch (error) {
-        console.error('Error fetching workspaces:', error)
-        // Retry after delay
-        setTimeout(() => {
-          fetch('/api/workspaces')
-            .then(res => res.json())
-            .then(data => setWorkspaces(data.workspaces || []))
-            .catch(err => console.error('Retry failed:', err))
-        }, 2000)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchWorkspaces()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Filter workspaces based on search
@@ -129,7 +108,36 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
   const handleCreateWorkspace = () => {
     setIsOpen(false)
+    setShowCreateDialog(true)
     onCreateOpen?.()
+  }
+
+  const handleWorkspaceCreated = () => {
+    // Refresh workspace list
+    fetchWorkspaces()
+  }
+
+  const fetchWorkspaces = async () => {
+    if (!user) return
+
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/workspaces')
+      if (!response.ok) throw new Error('Failed to fetch workspaces')
+
+      const data = await response.json()
+      setWorkspaces(data.workspaces || [])
+    } catch (error) {
+      console.error('Error fetching workspaces:', error)
+      setTimeout(() => {
+        fetch('/api/workspaces')
+          .then(res => res.json())
+          .then(data => setWorkspaces(data.workspaces || []))
+          .catch(err => console.error('Retry failed:', err))
+      }, 2000)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleKeyNavigation = (event: React.KeyboardEvent) => {
@@ -170,6 +178,13 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
       >
         {announcement}
       </div>
+
+      {/* Create Workspace Dialog */}
+      <CreateWorkspaceDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={handleWorkspaceCreated}
+      />
 
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>

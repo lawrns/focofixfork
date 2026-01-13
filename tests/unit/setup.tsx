@@ -197,6 +197,8 @@ vi.mock('lucide-react', () => ({
   User: () => <svg data-testid="user-icon" />,
   Settings: () => <svg data-testid="settings-icon" />,
   Home: () => <svg data-testid="home-icon" />,
+  Building: () => <svg data-testid="building-icon" />,
+  Loader2: () => <svg data-testid="loader-icon" />,
   Bell: () => <svg data-testid="bell-icon" />,
   Calendar: () => <svg data-testid="calendar-icon" />,
   Clock: () => <svg data-testid="clock-icon" />,

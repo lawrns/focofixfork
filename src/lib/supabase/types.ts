@@ -462,6 +462,96 @@ export type Database = {
         }
         Relationships: []
       }
+      files: {
+        Row: {
+          id: string
+          name: string
+          original_name: string
+          url: string
+          mime_type: string | null
+          size_bytes: number | null
+          project_id: string | null
+          milestone_id: string | null
+          uploaded_by: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          original_name: string
+          url: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          project_id?: string | null
+          milestone_id?: string | null
+          uploaded_by?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          original_name?: string
+          url?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          project_id?: string | null
+          milestone_id?: string | null
+          uploaded_by?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          id: string
+          content: string
+          author_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          content: string
+          author_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          content?: string
+          author_id?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      activity_log: {
+        Row: {
+          id: string
+          action: string
+          resource_type: string
+          resource_id: string | null
+          user_id: string | null
+          details: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          action: string
+          resource_type: string
+          resource_id?: string | null
+          user_id?: string | null
+          details?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          action?: string
+          resource_type?: string
+          resource_id?: string | null
+          user_id?: string | null
+          details?: Json | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

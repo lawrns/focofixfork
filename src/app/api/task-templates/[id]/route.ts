@@ -16,11 +16,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const { id } = params
 
     // Verify the template belongs to the user
-    const { data: template, error: fetchError } = await supabase
+    const { data: template, error: fetchError } = (await supabase
       .from('task_templates')
       .select('user_id')
       .eq('id', id)
-      .single()
+      .single()) as { data: any; error: any }
 
     if (fetchError || !template) {
       return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 })
@@ -31,7 +31,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     // Delete the template
-    const { error: deleteError } = await supabase.from('task_templates').delete().eq('id', id)
+    const { error: deleteError } = (await supabase.from('task_templates').delete().eq('id', id)) as { error: any }
 
     if (deleteError) {
       console.error('Task template delete error:', deleteError)

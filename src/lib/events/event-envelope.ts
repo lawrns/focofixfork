@@ -8,12 +8,6 @@ import { randomUUID } from 'crypto'
 
 // Event type enum for type safety
 export const EventTypeEnum = z.enum([
-  'voice.session_started',
-  'voice.session_ended',
-  'voice.audio_uploaded',
-  'voice.transcript_ready',
-  'voice.transcription_failed',
-  'voice.intent_extracted',
   'plan.draft_ready',
   'plan.draft_failed',
   'plan.refined',
@@ -131,27 +125,12 @@ export class EventBuilder {
     }
   }
 
-  static voiceSessionStarted(orgId: string, sessionId: string, userId: string): EventBuilder {
-    return new EventBuilder('voice.session_started', orgId)
-      .setSessionId(sessionId)
-      .setUserId(userId)
-      .addTags('voice', 'session', 'api')
-  }
-
-  static voiceTranscriptReady(orgId: string, sessionId: string, userId: string, transcript: string): EventBuilder {
-    return new EventBuilder('voice.transcript_ready', orgId)
-      .setSessionId(sessionId)
-      .setUserId(userId)
-      .setPayload({ transcript, language: 'en' })
-      .addTags('voice', 'transcript', 'ai')
-  }
-
   static planDraftReady(orgId: string, sessionId: string, userId: string, plan: any): EventBuilder {
     return new EventBuilder('plan.draft_ready', orgId)
       .setSessionId(sessionId)
       .setUserId(userId)
       .setPayload({ plan, confidence_score: plan.metadata?.confidence_score })
-      .addTags('plan', 'draft', 'ai', 'voice')
+      .addTags('plan', 'draft', 'ai')
   }
 
   static planCommitSuccess(orgId: string, sessionId: string, userId: string, result: any): EventBuilder {
@@ -165,7 +144,7 @@ export class EventBuilder {
         confidence_score: result.confidenceScore,
         processing_time_ms: result.processingTimeMs
       })
-      .addTags('plan', 'commit', 'success', 'voice')
+      .addTags('plan', 'commit', 'success')
   }
 
   static taskStatusChanged(orgId: string, userId: string, taskId: string, oldStatus: string, newStatus: string): EventBuilder {

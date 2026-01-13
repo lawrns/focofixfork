@@ -33,7 +33,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
     useCommandPaletteStore.getState().open('search');
     render(<CommandPalette />);
 
-    const homeButton = screen.getByRole('button', { name: /go to home/i });
+    const homeButton = screen.getByRole('option', { name: /go to home/i });
     await userEvent.click(homeButton);
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard');
@@ -43,7 +43,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
     useCommandPaletteStore.getState().open('search');
     render(<CommandPalette />);
 
-    const inboxButton = screen.getByRole('button', { name: /go to inbox/i });
+    const inboxButton = screen.getByRole('option', { name: /go to inbox/i });
     await userEvent.click(inboxButton);
 
     expect(mockPush).toHaveBeenCalledWith('/inbox');
@@ -55,7 +55,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
 
     render(<CommandPalette />);
 
-    const homeButton = screen.getByRole('button', { name: /go to home/i });
+    const homeButton = screen.getByRole('option', { name: /go to home/i });
     await userEvent.click(homeButton);
 
     await waitFor(() => {
@@ -67,7 +67,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
     useCommandPaletteStore.getState().open('search');
     render(<CommandPalette />);
 
-    const homeButton = screen.getByRole('button', { name: /go to home/i });
+    const homeButton = screen.getByRole('option', { name: /go to home/i });
     await userEvent.click(homeButton);
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard');

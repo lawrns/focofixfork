@@ -11,8 +11,7 @@ import {
   Settings,
   Plus,
   MessageSquare,
-  Bell,
-  Mic
+  Bell
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -93,13 +92,6 @@ export function MobileBottomNav({
       label: 'Home',
       icon: Home,
       href: '/dashboard',
-      requiresAuth: true
-    },
-    {
-      id: 'voice',
-      label: 'Voice',
-      icon: Mic,
-      href: '/voice',
       requiresAuth: true
     },
     {

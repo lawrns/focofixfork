@@ -500,11 +500,11 @@ function OrganizationsContent() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 px-4 py-6 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Organizations</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-2xl sm:text-3xl font-bold">Organizations</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
               Manage your organizations and team members
             </p>
           </div>
@@ -519,24 +519,24 @@ function OrganizationsContent() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {organizations.map((org) => (
               <Card key={org.id} className="hover:shadow-lg transition-shadow cursor-pointer"
                     onClick={() => openOrganizationModal(org)}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
                         <Building className="w-5 h-5 text-primary-foreground" />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{org.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base sm:text-lg truncate">{org.name}</CardTitle>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Created {new Date(org.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -545,35 +545,35 @@ function OrganizationsContent() {
                           openInviteModalForOrg(org)
                         }}
                         title="Invite member"
+                        className="h-9 w-9 p-0"
                       >
                         <Mail className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
                         <Settings className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-muted-foreground mb-4 text-sm line-clamp-2">
                     {org.description || 'No description provided'}
                   </p>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">
                         {org.members_count || 0} members
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge variant="secondary" className="text-xs sm:text-sm">
                         {org.role || 'Member'}
                       </Badge>
                     </div>
                   </div>
 
-                  {/* Mock projects count - would come from API */}
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Projects</span>
@@ -586,21 +586,20 @@ function OrganizationsContent() {
           </div>
         )}
 
-        {/* Quick Actions - only show when organizations exist */}
         {organizations.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" className="justify-start">
-                  <Plus className="w-4 h-4" aria-hidden="true" />
-                  Invite Team Members
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <Button variant="outline" className="justify-start h-10 text-sm">
+                  <Plus className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span className="truncate">Invite Team Members</span>
                 </Button>
-                <Button variant="outline" className="justify-start">
-                  <Settings className="w-4 h-4" aria-hidden="true" />
-                  Organization Settings
+                <Button variant="outline" className="justify-start h-10 text-sm">
+                  <Settings className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span className="truncate">Organization Settings</span>
                 </Button>
               </div>
             </CardContent>
@@ -609,27 +608,27 @@ function OrganizationsContent() {
 
         {/* Organization Detail Modal */}
         <Dialog open={showOrgModal} onOpenChange={setShowOrgModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-full sm:w-[calc(100%-2rem)] px-4 sm:px-6">
             {selectedOrganization && (
               <>
                 <DialogHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
                         <Building className="w-6 h-6 text-primary-foreground" />
                       </div>
-                      <div>
-                        <DialogTitle className="text-xl">{selectedOrganization.name}</DialogTitle>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <DialogTitle className="text-lg sm:text-xl truncate">{selectedOrganization.name}</DialogTitle>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {orgMembers.length} member{orgMembers.length !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
 
                     {canManageMembers && (
-                      <Button onClick={() => setShowInviteModal(true)}>
-                        <Plus className="w-4 h-4" aria-hidden="true" />
-                        Invite Member
+                      <Button onClick={() => setShowInviteModal(true)} className="sm:flex-shrink-0 text-sm h-9 sm:h-10">
+                        <Plus className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                        <span className="hidden sm:inline">Invite Member</span>
                       </Button>
                     )}
                   </div>
@@ -639,10 +638,10 @@ function OrganizationsContent() {
                   {/* Organization Info */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Organization Details</CardTitle>
+                      <CardTitle className="text-lg">Organization Details</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div>
                           <h3 className="font-medium mb-2">Description</h3>
                           <p className="text-muted-foreground">
@@ -668,7 +667,8 @@ function OrganizationsContent() {
 
                   {/* Tabs for Team, Invite, Permissions, and Invitations */}
                   <Tabs defaultValue="invite" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto overflow-hidden">
+
                       <TabsTrigger value="team" className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         Team Members
@@ -691,19 +691,19 @@ function OrganizationsContent() {
                       {/* Team Members */}
                       <Card>
                         <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
                               <Users className="w-5 h-5" />
                               Team Members
                             </CardTitle>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <Badge variant="secondary" className="text-xs sm:text-sm">
                                 {orgMembers.length} member{orgMembers.length !== 1 ? 's' : ''}
                               </Badge>
                               {canManageMembers && (
-                                <Button onClick={() => setShowInviteModal(true)} size="sm">
-                                  <Mail className="w-4 h-4" />
-                                  Add Members by Email
+                                <Button onClick={() => setShowInviteModal(true)} size="sm" className="text-xs sm:text-sm h-8 sm:h-9">
+                                  <Mail className="w-4 h-4 flex-shrink-0" />
+                                  <span className="hidden sm:inline">Add Members by Email</span>
                                 </Button>
                               )}
                             </div>
@@ -718,18 +718,18 @@ function OrganizationsContent() {
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: 20 }}
-                                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                                 >
-                                  <div className="flex items-center space-x-3">
-                                    <Avatar>
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <Avatar className="flex-shrink-0">
                                       <AvatarImage src="" />
                                       <AvatarFallback>
                                         {member.email?.charAt(0).toUpperCase() || '?'}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <div>
-                                      <div className="flex items-center space-x-2">
-                                        <span className="font-medium">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                        <span className="font-medium text-sm truncate">
                                           {member.user_name || member.email || 'Unknown User'}
                                         </span>
                                         {editingMember === member.id ? (
@@ -740,7 +740,7 @@ function OrganizationsContent() {
                                               handleUpdateRole(member.id, value as MemberRole)
                                             }}
                                           >
-                                            <SelectTrigger className="w-32">
+                                            <SelectTrigger className="w-32 text-xs h-8">
                                               <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -750,22 +750,22 @@ function OrganizationsContent() {
                                             </SelectContent>
                                           </Select>
                                         ) : (
-                                          <Badge variant="secondary" className={getRoleColor(member.role)}>
-                                            <span className="flex items-center space-x-1">
+                                          <Badge variant="secondary" className={`${getRoleColor(member.role)} text-xs`}>
+                                            <span className="flex items-center gap-1">
                                               {getRoleIcon(member.role)}
                                               <span className="capitalize">{member.role}</span>
                                             </span>
                                           </Badge>
                                         )}
                                       </div>
-                                      <p className="text-sm text-muted-foreground">
+                                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                                         {member.email}
                                       </p>
                                     </div>
                                   </div>
 
                                   {canManageMembers && (
-                                    <div className="flex items-center space-x-1">
+                                    <div className="flex items-center gap-1 flex-shrink-0">
                                       {editingMember !== member.id && (
                                         <>
                                           <Button
@@ -775,6 +775,7 @@ function OrganizationsContent() {
                                               setEditingMember(member.id)
                                               setEditRole(member.role)
                                             }}
+                                            className="h-8 w-8 p-0"
                                           >
                                             <Edit className="w-4 h-4" />
                                           </Button>
@@ -783,7 +784,7 @@ function OrganizationsContent() {
                                               variant="ghost"
                                               size="sm"
                                               onClick={() => handleRemoveMember(member.id)}
-                                              className="text-destructive hover:text-destructive"
+                                              className="text-destructive hover:text-destructive h-8 w-8 p-0"
                                             >
                                               <Trash2 className="w-4 h-4" />
                                             </Button>
@@ -795,6 +796,7 @@ function OrganizationsContent() {
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => setEditingMember(null)}
+                                          className="text-xs h-8"
                                         >
                                           Cancel
                                         </Button>
@@ -828,14 +830,14 @@ function OrganizationsContent() {
                     <TabsContent value="invite">
                       <Card>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
+                          <CardTitle className="flex items-center gap-2 text-lg">
                             <Mail className="w-5 h-5" />
                             Invite Team Member
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                               <div className="space-y-2">
                                 <Label htmlFor="invite-email">Email Address</Label>
                                 <Input
@@ -915,12 +917,12 @@ function OrganizationsContent() {
                     <TabsContent value="invitations">
                       <Card>
                         <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="flex items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
                               <Mail className="w-5 h-5" />
                               Invitations
                             </CardTitle>
-                            <Badge variant="secondary">
+                            <Badge variant="secondary" className="text-xs sm:text-sm w-fit">
                               {orgInvitations.length} invitation{orgInvitations.length !== 1 ? 's' : ''}
                             </Badge>
                           </div>
@@ -938,20 +940,20 @@ function OrganizationsContent() {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                                   >
-                                    <div className="flex items-center space-x-3">
-                                      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-10 h-10 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
                                         <Mail className="w-5 h-5 text-primary-foreground" />
                                       </div>
-                                      <div>
-                                        <div className="flex items-center space-x-2">
-                                          <span className="font-medium">{invitation.email}</span>
-                                          <Badge variant="secondary" className={InvitationModel.getStatusInfo(invitation.status).color}>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                          <span className="font-medium text-sm truncate">{invitation.email}</span>
+                                          <Badge variant="secondary" className={`${InvitationModel.getStatusInfo(invitation.status).color} text-xs`}>
                                             {InvitationModel.getStatusInfo(invitation.status).icon} {InvitationModel.getStatusInfo(invitation.status).label}
                                           </Badge>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-xs sm:text-sm text-muted-foreground">
                                           Invited by {invitation.invited_by_name} • {new Date(invitation.invited_at).toLocaleDateString()}
                                         </p>
                                         {invitation.status === 'pending' && (
@@ -963,12 +965,13 @@ function OrganizationsContent() {
                                     </div>
 
                                     {canManageMembers && invitation.status === 'pending' && (
-                                      <div className="flex items-center space-x-1">
+                                      <div className="flex items-center gap-1 flex-shrink-0">
                                         <Button
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleResendInvitation(invitation.id)}
                                           title="Resend invitation"
+                                          className="h-8 w-8 p-0"
                                         >
                                           <Mail className="w-4 h-4" />
                                         </Button>
@@ -976,7 +979,7 @@ function OrganizationsContent() {
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleCancelInvitation(invitation.id)}
-                                          className="text-destructive hover:text-destructive"
+                                          className="text-destructive hover:text-destructive h-8 w-8 p-0"
                                           title="Cancel invitation"
                                         >
                                           <Trash2 className="w-4 h-4" />
@@ -1010,25 +1013,26 @@ function OrganizationsContent() {
 
         {/* Invite Member Modal */}
         <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
-          <DialogContent>
+          <DialogContent className="w-full sm:w-[calc(100%-2rem)] px-4 sm:px-6">
             <DialogHeader>
-              <DialogTitle>Invite Team Member</DialogTitle>
+              <DialogTitle className="text-lg">Invite Team Member</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="invite-email">Email Address</Label>
+                <Label htmlFor="invite-email" className="text-sm">Email Address</Label>
                 <Input
                   id="invite-email"
                   type="email"
                   placeholder="member@example.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
+                  className="h-10"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="invite-role">Role</Label>
+                <Label htmlFor="invite-role" className="text-sm">Role</Label>
                 <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as MemberRole)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1047,23 +1051,25 @@ function OrganizationsContent() {
                     exit={{ opacity: 0, height: 0 }}
                   >
                     <Alert variant={inviteResult.success ? 'default' : 'destructive'}>
-                      <AlertDescription>{inviteResult.message}</AlertDescription>
+                      <AlertDescription className="text-xs sm:text-sm">{inviteResult.message}</AlertDescription>
                     </Alert>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-4">
                 <Button
                   variant="outline"
                   onClick={() => setShowInviteModal(false)}
                   disabled={isInviting}
+                  className="h-10 text-sm"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleInviteMember}
                   disabled={!inviteEmail.trim() || isInviting}
+                  className="h-10 text-sm"
                 >
                   {isInviting ? (
                     <>
@@ -1072,8 +1078,8 @@ function OrganizationsContent() {
                     </>
                   ) : (
                     <>
-                      <Mail className="w-4 h-4" />
-                      Send Invitation
+                      <Mail className="w-4 h-4 flex-shrink-0" />
+                      <span className="hidden sm:inline">Send Invitation</span>
                     </>
                   )}
                 </Button>
@@ -1126,36 +1132,39 @@ function OrganizationsContent() {
 
         {/* Create Organization Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent>
+          <DialogContent className="w-full sm:w-[calc(100%-2rem)] px-4 sm:px-6">
             <DialogHeader>
-              <DialogTitle>Create New Organization</DialogTitle>
+              <DialogTitle className="text-lg">Create New Organization</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="org-name">Organization Name</Label>
+                <Label htmlFor="org-name" className="text-sm">Organization Name</Label>
                 <Input
                   id="org-name"
                   placeholder="Enter organization name"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
+                  className="h-10"
                 />
               </div>
               {createResult && (
                 <Alert variant={createResult.success ? 'default' : 'destructive'}>
-                  <AlertDescription>{createResult.message}</AlertDescription>
+                  <AlertDescription className="text-xs sm:text-sm">{createResult.message}</AlertDescription>
                 </Alert>
               )}
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-4">
                 <Button
                   variant="outline"
                   onClick={() => setShowCreateDialog(false)}
                   disabled={isCreating}
+                  className="h-10 text-sm"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreateOrganization}
                   disabled={!orgName.trim() || isCreating}
+                  className="h-10 text-sm"
                 >
                   {isCreating ? (
                     <>
@@ -1164,8 +1173,8 @@ function OrganizationsContent() {
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4" />
-                      Create Organization
+                      <Plus className="w-4 h-4 flex-shrink-0" />
+                      <span className="hidden sm:inline">Create Organization</span>
                     </>
                   )}
                 </Button>

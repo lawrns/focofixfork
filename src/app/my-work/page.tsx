@@ -177,10 +177,12 @@ function Section({
   section, 
   items,
   onStartFocus,
+  onAddTask,
 }: { 
   section: 'now' | 'next' | 'later' | 'waiting';
   items: (WorkItem & { section: string })[];
   onStartFocus: (item: WorkItem) => void;
+  onAddTask: (section: 'now' | 'next' | 'later' | 'waiting') => void;
 }) {
   const config = sectionConfig[section];
   const Icon = config.icon;
@@ -208,7 +210,12 @@ function Section({
           </div>
         )}
         
-        <Button variant="ghost" size="sm" className="w-full justify-start text-zinc-500 mt-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-full justify-start text-zinc-500 mt-2"
+          onClick={() => onAddTask(section)}
+        >
           <Plus className="h-3.5 w-3.5" />
           Add task
         </Button>
@@ -420,6 +427,8 @@ export default function MyWorkPage() {
   const { isActive, currentWorkItem, activate, deactivate } = useFocusModeStore();
   const [items, setItems] = useState<(WorkItem & { section: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilter, setShowFilter] = useState(false);
+  const [isPlanning, setIsPlanning] = useState(false);
 
   const fetchWorkItems = useCallback(async () => {
     if (!user) return;
@@ -450,6 +459,36 @@ export default function MyWorkPage() {
 
   const handleStartFocus = (item: WorkItem) => {
     activate(item);
+  };
+
+  const handlePlanMyDay = async () => {
+    if (!user) return;
+    
+    setIsPlanning(true);
+    try {
+      const response = await fetch('/api/my-work/plan-day', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || 'Day planned successfully!');
+        await fetchWorkItems(); // Refresh to show new organization
+      } else {
+        throw new Error('Failed to plan day');
+      }
+    } catch (error) {
+      console.error('Failed to plan day:', error);
+      toast.error('Failed to plan your day');
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  const handleAddTask = (section: 'now' | 'next' | 'later' | 'waiting') => {
+    // Navigate to create task with section pre-selected
+    window.location.href = `/tasks/new?section=${section}`;
   };
 
   if (isActive && currentWorkItem) {
@@ -489,13 +528,22 @@ export default function MyWorkPage() {
         subtitle={`${completedToday} of ${totalToday} items completed`}
         primaryAction={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowFilter(!showFilter)}
+            >
               <Filter className="h-4 w-4" />
               Filter
             </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handlePlanMyDay}
+              disabled={isPlanning}
+            >
               <Zap className="h-4 w-4" />
-              Plan my day
+              {isPlanning ? 'Planning...' : 'Plan my day'}
             </Button>
           </div>
         }
@@ -511,10 +559,10 @@ export default function MyWorkPage() {
         <Progress value={totalToday > 0 ? (completedToday / totalToday) * 100 : 0} className="h-2" />
       </div>
 
-      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} />
-      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} />
-      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} />
-      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} />
+      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
+      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
+      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
+      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
     </PageShell>
   );
 }

@@ -5,25 +5,20 @@ export async function GET(request: NextRequest) {
   try {
     const { id: userId, email, supabase } = await requireAuth();
 
-    // Get user's 2FA status
-    const { data: profile, error } = await supabase
-      .from('user_profiles')
-      .select('two_factor_enabled')
-      .eq('id', userId)
-      .single();
+    // Check if user has MFA factors enabled
+    const { data: mfaFactors, error: mfaError } = await supabase
+      .from('mfa_factors')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'verified')
+      .limit(1);
 
-    if (error) {
-      console.error('Failed to fetch user profile:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch user status' },
-        { status: 500 }
-      );
-    }
+    const twoFactorEnabled = !mfaError && (mfaFactors?.length || 0) > 0;
 
     return NextResponse.json({
       userId: userId,
       email: email,
-      twoFactorEnabled: profile?.two_factor_enabled || false,
+      twoFactorEnabled: twoFactorEnabled,
     });
   } catch (error) {
     console.error('Auth status error:', error);

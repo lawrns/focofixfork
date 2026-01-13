@@ -5,40 +5,29 @@ export async function POST(request: NextRequest) {
   try {
     const { id: userId, supabase } = await requireAuth();
 
-    // Get current user to verify 2FA is enabled
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('two_factor_enabled')
-      .eq('id', userId)
-      .single();
+    // Check if 2FA is enabled
+    const { data: mfaFactors, error: checkError } = await supabase
+      .from('mfa_factors')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'verified')
+      .limit(1);
 
-    if (profileError) {
-      return NextResponse.json(
-        { error: 'Failed to fetch user profile' },
-        { status: 400 }
-      );
-    }
-
-    if (!profile?.two_factor_enabled) {
+    if (checkError || !mfaFactors || mfaFactors.length === 0) {
       return NextResponse.json(
         { error: '2FA is not enabled' },
         { status: 400 }
       );
     }
 
-    // Disable 2FA
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({
-        two_factor_enabled: false,
-        two_factor_secret: null,
-        two_factor_backup_codes: [],
-        two_factor_enabled_at: null,
-      })
-      .eq('id', userId);
+    // Delete all MFA factors for the user
+    const { error: deleteError } = await supabase
+      .from('mfa_factors')
+      .delete()
+      .eq('user_id', userId);
 
-    if (updateError) {
-      console.error('Failed to disable 2FA:', updateError);
+    if (deleteError) {
+      console.error('Failed to disable 2FA:', deleteError);
       return NextResponse.json(
         { error: 'Failed to disable 2FA' },
         { status: 500 }

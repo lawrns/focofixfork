@@ -4,6 +4,9 @@ import { supabase } from '@/lib/supabase-client'
 import type { UserPreferencesUpdate } from '@/lib/theme/types'
 import { THEME_OPTIONS, ACCENT_COLORS, FONT_SIZE_OPTIONS } from '@/lib/theme/constants'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 // Request body schema for updating preferences
 const UpdatePreferencesSchema = z.object({
   theme: z.enum(['light', 'dark', 'auto', 'high-contrast', 'sepia']).optional(),
@@ -17,7 +20,7 @@ const UpdatePreferencesSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await untypedSupabase.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json(
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { data: profile, error: profileError } = (await supabase
+    const { data: profile, error: profileError } = (await untypedSupabase
       .from('user_profiles')
       .select('preferences')
       .eq('user_id', user.id)
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await untypedSupabase.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json(
@@ -91,7 +94,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get current preferences first
-    const { data: currentProfile } = (await supabase
+    const { data: currentProfile } = (await untypedSupabase
       .from('user_profiles')
       .select('preferences')
       .eq('user_id', user.id)
@@ -107,7 +110,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update in database
-    const { error: updateError } = (await supabase
+    const { error: updateError } = (await untypedSupabase
       .from('user_profiles')
       .update({
         preferences: mergedPreferences,

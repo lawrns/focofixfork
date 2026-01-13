@@ -198,6 +198,198 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          id: string
+          project_id: string
+          title: string
+          description: string | null
+          status: string | null
+          priority: string | null
+          assignee_id: string | null
+          created_by: string
+          reporter_id: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          actual_hours: number | null
+          milestone_id: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          project_id?: string | null
+          title: string
+          description?: string | null
+          status?: string | null
+          priority?: string | null
+          assignee_id?: string | null
+          created_by?: string | null
+          reporter_id?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          actual_hours?: number | null
+          milestone_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string | null
+          title?: string
+          description?: string | null
+          status?: string | null
+          priority?: string | null
+          assignee_id?: string | null
+          created_by?: string | null
+          reporter_id?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          actual_hours?: number | null
+          milestone_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      workspace_members: {
+        Row: {
+          id: string
+          workspace_id: string
+          user_id: string
+          role: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          user_id: string
+          role: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          user_id?: string
+          role?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organizations: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          logo_url: string | null
+          website: string | null
+          created_by: string | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          logo_url?: string | null
+          website?: string | null
+          created_by?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          logo_url?: string | null
+          website?: string | null
+          created_by?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          organization_id: string | null
+          status: string | null
+          priority: string | null
+          color: string | null
+          due_date: string | null
+          start_date: string | null
+          progress_percentage: number | null
+          is_active: boolean | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          organization_id?: string | null
+          status?: string | null
+          priority?: string | null
+          color?: string | null
+          due_date?: string | null
+          start_date?: string | null
+          progress_percentage?: number | null
+          is_active?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          organization_id?: string | null
+          status?: string | null
+          priority?: string | null
+          color?: string | null
+          due_date?: string | null
+          start_date?: string | null
+          progress_percentage?: number | null
+          is_active?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          id: string
+          name: string
+          color: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          color?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          color?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           id: string

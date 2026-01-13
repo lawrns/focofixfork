@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
+
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any;
 import { useWorkspaceStore, useInboxStore } from '@/lib/stores/foco-store';
 import type { 
   Workspace, 
@@ -27,7 +30,7 @@ export function useWorkspaces() {
   useEffect(() => {
     async function fetchWorkspaces() {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await untypedSupabase
           .from('organizations')
           .select('*')
           .order('created_at', { ascending: false });
@@ -57,7 +60,7 @@ export function useCurrentWorkspace() {
     async function fetchDefaultWorkspace() {
       try {
         // Try to get demo workspace first
-        const { data } = await supabase
+        const { data } = await untypedSupabase
           .from('organizations')
           .select('*')
           .eq('id', DEMO_WORKSPACE_ID)
@@ -68,7 +71,7 @@ export function useCurrentWorkspace() {
         }
       } catch (err) {
         // Fallback to first workspace
-        const { data } = await supabase
+        const { data } = await untypedSupabase
           .from('organizations')
           .select('*')
           .limit(1)
@@ -128,7 +131,7 @@ export function useProjects(workspaceId?: string) {
   useEffect(() => {
     if (!wsId) return;
 
-    const channel = supabase
+    const channel = untypedSupabase
       .channel(`projects-${wsId}`)
       .on(
         'postgres_changes',
@@ -205,7 +208,7 @@ export function useWorkItems(options?: {
 
     setLoading(true);
     try {
-      let query = (supabase
+      let query = (untypedSupabase
         .from('tasks') as any)
         .select(`
           *,
@@ -245,7 +248,7 @@ export function useWorkItems(options?: {
   useEffect(() => {
     if (!wsId) return;
 
-    const channel = supabase
+    const channel = untypedSupabase
       .channel(`work-items-${wsId}`)
       .on(
         'postgres_changes',
@@ -304,7 +307,7 @@ export function useWorkItem(workItemId: string) {
   useEffect(() => {
     if (!workItemId) return;
 
-    const channel = supabase
+    const channel = untypedSupabase
       .channel(`work-item-${workItemId}`)
       .on(
         'postgres_changes',
@@ -369,7 +372,7 @@ export function useInbox(userId: string) {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
+    const channel = untypedSupabase
       .channel(`inbox-${userId}`)
       .on(
         'postgres_changes',

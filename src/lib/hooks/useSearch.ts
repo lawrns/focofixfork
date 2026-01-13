@@ -3,6 +3,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase-client'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 export interface SearchResult {
   id: string
   type: 'project' | 'milestone' | 'user' | 'organization'
@@ -45,7 +48,7 @@ export function useSearch(options: SearchOptions) {
 
   // Define search functions first (before performSearch)
   const searchProjects = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('projects')
       .select(`
         id,
@@ -122,7 +125,7 @@ export function useSearch(options: SearchOptions) {
   }, [options.projectId])
 
   const searchUsers = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('organization_members')
       .select(`
         user_id,
@@ -160,7 +163,7 @@ export function useSearch(options: SearchOptions) {
   }, [])
 
   const searchOrganizations = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('organizations')
       .select('id, name, created_at')
       .ilike('name', `%${query}%`)

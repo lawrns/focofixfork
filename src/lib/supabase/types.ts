@@ -198,6 +198,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string | null
+          title: string
+          message: string | null
+          type: string | null
+          data: Json | null
+          is_read: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          title: string
+          message?: string | null
+          type?: string | null
+          data?: Json | null
+          is_read?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          title?: string
+          message?: string | null
+          type?: string | null
+          data?: Json | null
+          is_read?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

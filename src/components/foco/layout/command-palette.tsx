@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Search,
@@ -152,7 +153,8 @@ export function CommandPalette() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="p-0 max-w-xl overflow-hidden">
+      <DialogContent className="p-0 max-w-xl overflow-hidden" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">Command Palette</DialogTitle>
         {/* Search Input */}
         <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 px-4">
           <Search className="h-4 w-4 text-zinc-400" />

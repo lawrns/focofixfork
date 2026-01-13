@@ -10,7 +10,6 @@ import { QuickActions, createProjectActions } from '@/components/ui/quick-action
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Archive, Trash2, Users } from 'lucide-react'
-import AdvancedFilterBuilder from '@/components/filters/advanced-filter-builder'
 import { FilteringService, FilterCondition, SortCondition } from '@/lib/services/filtering'
 import ProjectEditDialog from '@/components/dialogs/project-edit-dialog'
 import ProjectDeleteDialog from '@/components/dialogs/project-delete-dialog'
@@ -1030,24 +1029,9 @@ export default function ProjectTable({
   return (
     <div className={`w-full space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
 
-      {/* Advanced Filtering */}
+      {/* Filtering Controls */}
       <div className="mb-4 flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
-          <AdvancedFilterBuilder
-            fields={[
-              { key: 'name', label: 'Name', type: 'string' },
-              { key: 'status', label: 'Status', type: 'string', options: ['planning', 'active', 'on_hold', 'completed', 'cancelled'] },
-              { key: 'priority', label: 'Priority', type: 'string', options: ['low', 'medium', 'high', 'urgent'] },
-              { key: 'progress_percentage', label: 'Progress', type: 'number' },
-              { key: 'due_date', label: 'Due Date', type: 'date' },
-              { key: 'created_at', label: 'Created', type: 'date' },
-              { key: 'organizations.name', label: 'Organization', type: 'string' }
-            ]}
-            currentFilters={filters}
-            currentSort={sortConditions}
-            onFiltersChange={setFilters}
-            onSortChange={setSortConditions}
-          />
           <Button
             variant={showArchived ? 'default' : 'outline'}
             size="sm"

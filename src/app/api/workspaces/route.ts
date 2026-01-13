@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 /**
  * GET /api/workspaces
@@ -17,35 +17,12 @@ import { createClient } from '@supabase/supabase-js'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get auth token from cookies
-    const token = request.cookies.get('sb-token')?.value
+    // Get authenticated user - this handles token refresh and returns updated response
+    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
-    if (!token) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized', workspaces: [] },
-        { status: 401 }
-      )
-    }
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    )
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Failed to get user', workspaces: [] },
         { status: 401 }
       )
     }
@@ -66,10 +43,11 @@ export async function GET(request: NextRequest) {
 
     if (memberError) {
       console.error('Error fetching workspace members:', memberError)
-      return NextResponse.json(
+      const errorRes = NextResponse.json(
         { error: 'Failed to fetch workspaces', workspaces: [] },
         { status: 500 }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Map to workspace format
@@ -85,10 +63,11 @@ export async function GET(request: NextRequest) {
         }
       })
 
-    return NextResponse.json({
+    const successRes = NextResponse.json({
       workspaces,
       total: workspaces.length,
     })
+    return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Workspace fetch error:', error)
     return NextResponse.json(
@@ -111,9 +90,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('sb-token')?.value
+    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
-    if (!token) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -124,32 +103,11 @@ export async function POST(request: NextRequest) {
     const { name, slug, icon } = body
 
     if (!name || !slug) {
-      return NextResponse.json(
+      const errorRes = NextResponse.json(
         { error: 'Missing required fields: name, slug' },
         { status: 400 }
       )
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    )
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Failed to get user' },
-        { status: 401 }
-      )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Create new organization/workspace
@@ -168,10 +126,11 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       console.error('Error creating organization:', createError)
-      return NextResponse.json(
+      const errorRes = NextResponse.json(
         { error: 'Failed to create workspace' },
         { status: 500 }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Add creator as organization member
@@ -193,13 +152,14 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq('id', newOrg.id)
 
-      return NextResponse.json(
+      const errorRes = NextResponse.json(
         { error: 'Failed to set up workspace' },
         { status: 500 }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return NextResponse.json(
+    const successRes = NextResponse.json(
       {
         workspace: {
           id: newOrg.id,
@@ -210,6 +170,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     )
+    return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Workspace creation error:', error)
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { supabase as supabaseClient } from '@/lib/supabase-client';
-import { 
-  MermaidDiagram, 
-  MermaidDiagramVersion, 
+import {
+  MermaidDiagram,
+  MermaidDiagramVersion,
   MermaidDiagramShare,
   CreateMermaidDiagramRequest,
   UpdateMermaidDiagramRequest,
@@ -13,6 +13,9 @@ import {
   validateMermaidCode,
   generateShareToken
 } from '@/lib/models/mermaid';
+
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabaseClient as any;
 
 // Simple mapping function without Zod validation
 const mapDatabaseToMermaidDiagramSimple = (row: any): MermaidDiagram => {
@@ -55,7 +58,7 @@ const mapDatabaseToMermaidDiagramShareSimple = (row: any): MermaidDiagramShare =
 };
 
 export class MermaidService {
-  private supabase = supabaseClient;
+  private supabase = untypedSupabase;
 
   // Diagram CRUD operations
   async createDiagram(data: CreateMermaidDiagramRequest): Promise<MermaidDiagram> {

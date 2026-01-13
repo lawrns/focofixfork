@@ -12,6 +12,9 @@ import {
   NotificationPriority
 } from '@/lib/models/notifications'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 export class NotificationsService {
   /**
    * Create a notification
@@ -53,7 +56,7 @@ export class NotificationsService {
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('notifications')
       .insert({
         ...notification,
@@ -160,7 +163,7 @@ export class NotificationsService {
    * Mark notification as read
    */
   static async markAsRead(notificationId: string, userId: string): Promise<Notification> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('notifications')
       .update({
         is_read: true
@@ -178,7 +181,7 @@ export class NotificationsService {
    * Mark multiple notifications as read
    */
   static async markMultipleAsRead(notificationIds: string[], userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('notifications')
       .update({
         is_read: true
@@ -260,7 +263,7 @@ export class NotificationsService {
    * Get notification summary for user
    */
   static async getNotificationSummary(userId: string): Promise<NotificationSummary> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('notifications')
       .select('is_read, type, created_at')
       .eq('user_id', userId)

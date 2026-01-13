@@ -412,7 +412,7 @@ export function useLabels(workspaceId?: string) {
 
     async function fetchLabels() {
       try {
-        const { data, error } = await (supabase
+        const { data, error } = await (untypedSupabase
           .from('project_settings') as any)
           .select('*')
           .eq('workspace_id', wsId);

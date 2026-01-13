@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { useUIPreferencesStore } from '@/lib/stores/foco-store';
 import {
   Settings,
   Users,
@@ -165,7 +164,7 @@ function WorkspaceSettings() {
 
 function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
-  const { density, setDensity } = useUIPreferencesStore();
+  const [density, setDensity] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable');
 
   const themes = [
     { value: 'light', label: 'Light', icon: Sun },

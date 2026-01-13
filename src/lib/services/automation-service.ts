@@ -1,10 +1,13 @@
 import { supabase } from '@/lib/supabase/client'
 import { AutomationRule, AutomationExecution, AutomationTemplate, AutomationTrigger, AutomationCondition, AutomationAction } from '@/lib/models/automation'
 
+// Use untyped supabase client to avoid type instantiation depth issues
+const untypedSupabase = supabase as any
+
 export class AutomationService {
   // Rule Management
   static async createRule(rule: Omit<AutomationRule, 'id' | 'created_at' | 'updated_at' | 'execution_count'>): Promise<AutomationRule> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('automation_rules' as any)
       .insert({
         ...rule,
@@ -18,7 +21,7 @@ export class AutomationService {
   }
 
   static async getRules(projectId?: string, userId?: string): Promise<AutomationRule[]> {
-    let query = supabase.from('automation_rules' as any).select('*')
+    let query = untypedSupabase.from('automation_rules' as any).select('*')
 
     if (projectId) {
       query = query.eq('project_id', projectId)
@@ -35,7 +38,7 @@ export class AutomationService {
   }
 
   static async getRule(ruleId: string): Promise<AutomationRule | null> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('automation_rules' as any)
       .select('*')
       .eq('id', ruleId)
@@ -50,7 +53,7 @@ export class AutomationService {
   }
 
   static async updateRule(ruleId: string, updates: Partial<AutomationRule>): Promise<AutomationRule> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('automation_rules' as any)
       .update({
         ...updates,
@@ -65,7 +68,7 @@ export class AutomationService {
   }
 
   static async deleteRule(ruleId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('automation_rules' as any)
       .delete()
       .eq('id', ruleId)
@@ -97,7 +100,7 @@ export class AutomationService {
     }
 
     // Create execution record
-    const { data: executionRecord, error: createError } = await supabase
+    const { data: executionRecord, error: createError } = await untypedSupabase
       .from('automation_executions' as any)
       .insert(execution)
       .select()
@@ -347,7 +350,7 @@ export class AutomationService {
   private static async executeUpdateTask(action: AutomationAction, triggerData: any): Promise<void> {
     if (!action.task_updates || !triggerData.task_id) return
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('tasks')
       .update(action.task_updates)
       .eq('id', triggerData.task_id)
@@ -358,7 +361,7 @@ export class AutomationService {
   private static async executeCreateTask(action: AutomationAction, triggerData: any): Promise<void> {
     if (!action.task_updates) return
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('tasks')
       .insert({
         ...action.task_updates,
@@ -372,7 +375,7 @@ export class AutomationService {
   private static async executeAssignUser(action: AutomationAction, triggerData: any): Promise<void> {
     if (!action.assignee_id || !triggerData.task_id) return
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('tasks')
       .update({ assignee_id: action.assignee_id })
       .eq('id', triggerData.task_id)
@@ -393,7 +396,7 @@ export class AutomationService {
       dueDate = date.toISOString().split('T')[0]
     }
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('tasks')
       .update({ due_date: dueDate })
       .eq('id', triggerData.task_id)
@@ -432,7 +435,7 @@ export class AutomationService {
   private static async executeMoveToColumn(action: AutomationAction, triggerData: any): Promise<void> {
     if (!action.target_column || !triggerData.task_id) return
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('tasks')
       .update({ status: action.target_column })
       .eq('id', triggerData.task_id)
@@ -443,7 +446,7 @@ export class AutomationService {
   private static async executeArchiveTask(action: AutomationAction, triggerData: any): Promise<void> {
     if (!triggerData.task_id) return
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('tasks')
       .update({ status: 'archived' })
       .eq('id', triggerData.task_id)
@@ -511,7 +514,7 @@ export class AutomationService {
 
   // Analytics
   static async getRuleAnalytics(ruleId: string): Promise<any> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('automation_executions' as any)
       .select('*')
       .eq('rule_id', ruleId)
@@ -535,7 +538,7 @@ export class AutomationService {
 
   // Scheduled Execution
   static async getScheduledRules(): Promise<AutomationRule[]> {
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('automation_rules' as any)
       .select('*')
       .eq('is_active', true)

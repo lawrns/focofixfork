@@ -248,7 +248,7 @@ export function useSearch(options: SearchOptions) {
         hasMore: false
       })
     }
-  }, [debouncedQuery, searchProjects, searchMilestones, searchUsers, searchOrganizations])
+  }, [debouncedQuery, searchProjects, searchMilestones, searchUsers, searchOrganizations, options.limit, options.types])
 
   // Perform search when debounced query changes
   useEffect(() => {

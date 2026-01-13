@@ -552,6 +552,63 @@ export type Database = {
         }
         Relationships: []
       }
+      milestones: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          title: string
+          status: string
+          deadline: string
+          description: string | null
+          due_date: string | null
+          notes: string | null
+          priority: string | null
+          progress_percentage: number | null
+          list_id: string | null
+          assigned_to: string | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          title?: string
+          status?: string
+          deadline: string
+          description?: string | null
+          due_date?: string | null
+          notes?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          list_id?: string | null
+          assigned_to?: string | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          title?: string
+          status?: string
+          deadline?: string
+          description?: string | null
+          due_date?: string | null
+          notes?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          list_id?: string | null
+          assigned_to?: string | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

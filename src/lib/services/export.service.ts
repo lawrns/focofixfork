@@ -6,6 +6,8 @@
 
 import { supabase as supabaseClient } from '@/lib/supabase-client'
 
+const untypedSupabase = supabaseClient as any
+
 export interface ExportOptions {
   format?: 'csv' | 'json' | 'excel' | 'pdf'
   includeHeaders?: boolean
@@ -211,17 +213,15 @@ export class ExportService {
    */
   static async exportGanttData(projectId: string, options: ExportOptions = {}): Promise<void> {
     try {
-      const supabase = supabaseClient
-
       // Fetch milestones with timeline data
-      const { data: milestones } = await supabase
+      const { data: milestones } = await untypedSupabase
         .from('milestones')
         .select('*')
         .eq('project_id', projectId)
         .order('start_date', { ascending: true })
 
       // Fetch tasks
-      const { data: tasks } = await supabase
+      const { data: tasks } = await untypedSupabase
         .from('tasks')
         .select('id, title, milestone_id, start_date, due_date, status, assignee_id')
         .in('milestone_id', milestones?.map(m => m.id) || [])
@@ -291,10 +291,8 @@ export class ExportService {
    */
   static async exportTimeTracking(userId: string, options: ExportOptions = {}): Promise<void> {
     try {
-      const supabase = supabaseClient
-
       // Query archive table instead of time_entries
-      let query = (supabase as any)
+      let query = untypedSupabase
         .from('time_entries_archive')
         .select('*')
         .eq('user_id', userId)

@@ -10,6 +10,8 @@
 import { aiService } from './openai'
 import { supabase as supabaseClient } from '@/lib/supabase-client'
 
+const untypedSupabase = supabaseClient as any
+
 export interface InboxItem {
   id: string
   type: 'task' | 'project' | 'comment' | 'mention'
@@ -45,7 +47,7 @@ export interface SmartInboxResponse {
 }
 
 export class InboxService {
-  private supabase = supabaseClient
+  private supabase = untypedSupabase
 
   /**
    * Get AI-curated Smart Inbox
@@ -96,8 +98,8 @@ export class InboxService {
       .order('created_at', { ascending: false })
       .limit(50)
 
-    const { data: comments } = await (this.supabase
-      .from('comments') as any)
+    const { data: comments } = await this.supabase
+      .from('comments')
       .select(`
         *,
         work_item:tasks(title, project_id),

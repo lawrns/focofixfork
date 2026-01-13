@@ -17,6 +17,8 @@
 import { aiService } from './openai'
 import { supabase as supabaseClient } from '@/lib/supabase-client'
 
+const untypedSupabase = supabaseClient as any
+
 export type InsightType =
   | 'velocity'          // Team velocity trends
   | 'forecast'          // Project completion predictions
@@ -58,7 +60,7 @@ export interface InsightsResponse {
 }
 
 export class InsightsService {
-  private supabase = supabaseClient
+  private supabase = untypedSupabase
 
   /**
    * Generate contextual AI insights for user

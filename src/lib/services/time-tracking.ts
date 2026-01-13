@@ -9,6 +9,8 @@ import {
   TimeEntrySummary
 } from '@/lib/models/time-tracking'
 
+const untypedSupabase = supabase as any
+
 export class TimeTrackingService {
   /**
    * Start a new timer session (disabled - timer_sessions table not in schema)
@@ -94,7 +96,7 @@ export class TimeTrackingService {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
     }
 
-    const { data: result, error } = await supabase
+    const { data: result, error } = await untypedSupabase
       .from('time_entries')
       .insert(entryData)
       .select()
@@ -116,7 +118,7 @@ export class TimeTrackingService {
     updates: Partial<TimeEntry>
   ): Promise<TimeEntry> {
     // Get current entry to validate permissions
-    const { data: currentEntry, error: fetchError } = await supabase
+    const { data: currentEntry, error: fetchError } = await untypedSupabase
       .from('time_entries')
       .select('*')
       .eq('id', entryId)
@@ -138,7 +140,7 @@ export class TimeTrackingService {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`)
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('time_entries')
       .update({
         ...updates,
@@ -163,7 +165,7 @@ export class TimeTrackingService {
    */
   static async deleteTimeEntry(entryId: string, userId: string): Promise<void> {
     // Get current entry to validate permissions
-    const { data: currentEntry, error: fetchError } = await supabase
+    const { data: currentEntry, error: fetchError } = await untypedSupabase
       .from('time_entries')
       .select('*')
       .eq('id', entryId)
@@ -180,7 +182,7 @@ export class TimeTrackingService {
       throw new Error('You do not have permission to delete this time entry')
     }
 
-    const { error } = await supabase
+    const { error } = await untypedSupabase
       .from('time_entries')
       .delete()
       .eq('id', entryId)
@@ -194,7 +196,7 @@ export class TimeTrackingService {
    * Submit time entry for approval
    */
   static async submitTimeEntry(entryId: string, userId: string): Promise<TimeEntry> {
-    const { data: currentEntry, error: fetchError } = await supabase
+    const { data: currentEntry, error: fetchError } = await untypedSupabase
       .from('time_entries')
       .select('*')
       .eq('id', entryId)
@@ -210,7 +212,7 @@ export class TimeTrackingService {
       throw new Error('This time entry cannot be submitted')
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('time_entries')
       .update({
         status: 'submitted',
@@ -237,7 +239,7 @@ export class TimeTrackingService {
     approved: boolean,
     rejectionReason?: string
   ): Promise<TimeEntry> {
-    const { data: currentEntry, error: fetchError } = await supabase
+    const { data: currentEntry, error: fetchError } = await untypedSupabase
       .from('time_entries')
       .select('*')
       .eq('id', entryId)
@@ -265,7 +267,7 @@ export class TimeTrackingService {
       updates.rejection_reason = rejectionReason
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await untypedSupabase
       .from('time_entries')
       .update(updates)
       .eq('id', entryId)

@@ -14,6 +14,8 @@ import {
   sanitizeHtml
 } from '@/lib/validation/schemas';
 
+const untypedSupabase = supabase as any
+
 export interface IntegrityCheckResult {
   entity: string;
   totalRecords: number;
@@ -89,7 +91,7 @@ export class DataIntegrityService {
     };
 
     try {
-      let query = supabase.from('organizations').select('*');
+      let query = untypedSupabase.from('organizations').select('*');
       if (organizationId) {
         query = query.eq('id', organizationId);
       }
@@ -138,7 +140,7 @@ export class DataIntegrityService {
 
         // Check for creator existence
         if (org.created_by) {
-          const { data: user } = await supabase
+          const { data: user } = await untypedSupabase
             .from('profiles')
             .select('id')
             .eq('id', org.created_by)
@@ -179,7 +181,7 @@ export class DataIntegrityService {
     };
 
     try {
-      let query = supabase.from('projects').select('*');
+      let query = untypedSupabase.from('projects').select('*');
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
       }
@@ -208,7 +210,7 @@ export class DataIntegrityService {
 
         // Check organization reference
         if (project.organization_id) {
-          const { data: org } = await supabase
+          const { data: org } = await untypedSupabase
             .from('organizations')
             .select('id')
             .eq('id', project.organization_id)
@@ -234,7 +236,7 @@ export class DataIntegrityService {
 
         // Check creator reference
         if (project.created_by) {
-          const { data: user } = await supabase
+          const { data: user } = await untypedSupabase
             .from('profiles')
             .select('id')
             .eq('id', project.created_by)
@@ -290,7 +292,7 @@ export class DataIntegrityService {
     };
 
     try {
-      let query = supabase.from('milestones').select('*, projects!inner(organization_id)');
+      let query = untypedSupabase.from('milestones').select('*, projects!inner(organization_id)');
       if (organizationId) {
         query = query.eq('projects.organization_id', organizationId);
       }
@@ -318,7 +320,7 @@ export class DataIntegrityService {
         }
 
         // Check project reference
-        const { data: project } = await supabase
+        const { data: project } = await untypedSupabase
           .from('projects')
           .select('id')
           .eq('id', milestone.project_id)
@@ -490,10 +492,10 @@ export class DataIntegrityService {
 
     try {
       // Check for orphaned organization members
-      const { data: orphanedMembers } = await supabase
+      const { data: orphanedMembers } = await untypedSupabase
         .from('organization_members')
         .select('id, user_id, organization_id')
-        .not('user_id', 'in', `(${supabase.from('profiles').select('id')})`);
+        .not('user_id', 'in', `(${untypedSupabase.from('profiles').select('id')})`);
 
       if (orphanedMembers && orphanedMembers.length > 0) {
         result.orphanedRecords += orphanedMembers.length;
@@ -506,10 +508,10 @@ export class DataIntegrityService {
       }
 
       // Check for projects without organizations
-      const { data: orphanedProjects } = await supabase
+      const { data: orphanedProjects } = await untypedSupabase
         .from('projects')
         .select('id, name, organization_id')
-        .not('organization_id', 'in', `(${supabase.from('organizations').select('id')})`);
+        .not('organization_id', 'in', `(${untypedSupabase.from('organizations').select('id')})`);
 
       if (orphanedProjects && orphanedProjects.length > 0) {
         result.orphanedRecords += orphanedProjects.length;
@@ -522,10 +524,10 @@ export class DataIntegrityService {
       }
 
       // Check for milestones without projects
-      const { data: orphanedMilestones } = await supabase
+      const { data: orphanedMilestones } = await untypedSupabase
         .from('milestones')
         .select('id, title, project_id')
-        .not('project_id', 'in', `(${supabase.from('projects').select('id')})`);
+        .not('project_id', 'in', `(${untypedSupabase.from('projects').select('id')})`);
 
       if (orphanedMilestones && orphanedMilestones.length > 0) {
         result.orphanedRecords += orphanedMilestones.length;
@@ -538,10 +540,10 @@ export class DataIntegrityService {
       }
 
       // Check for tasks without projects
-      const { data: orphanedTasks } = await supabase
+      const { data: orphanedTasks } = await untypedSupabase
         .from('tasks')
         .select('id, title, project_id')
-        .not('project_id', 'in', `(${supabase.from('projects').select('id')})`);
+        .not('project_id', 'in', `(${untypedSupabase.from('projects').select('id')})`);
 
       if (orphanedTasks && orphanedTasks.length > 0) {
         result.orphanedRecords += orphanedTasks.length;

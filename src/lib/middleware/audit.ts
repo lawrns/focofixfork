@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuditService, AuditAction, EntityType, RiskLevel } from '@/lib/services/audit-log';
 import { supabase } from '@/lib/supabase-client';
 
+const untypedSupabase = supabase as any
+
 // Audit middleware for API routes
 export function withAuditLogging(
   handler: (request: NextRequest, context?: any) => Promise<NextResponse> | NextResponse,
@@ -25,7 +27,7 @@ export function withAuditLogging(
       // Note: This audit middleware is being phased out in favor of the wrapRoute pattern
       // which includes built-in correlation ID tracking and structured logging
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await untypedSupabase.auth.getUser();
         if (user) {
           userId = user.id;
           userEmail = user.email;

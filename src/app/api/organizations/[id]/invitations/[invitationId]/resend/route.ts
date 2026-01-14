@@ -1,5 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { NextRequest } from 'next/server'
+import { getAuthUser } from '@/lib/api/auth-helper'
+import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
+import { WorkspaceInvitationRepository } from '@/lib/repositories/workspace-invitation-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  authRequiredResponse,
+  successResponse,
+  workspaceAccessDeniedResponse,
+  databaseErrorResponse,
+  workspaceNotFoundResponse
+} from '@/lib/api/response-helpers'
 
 /**
  * POST /api/organizations/[id]/invitations/[invitationId]/resend
@@ -10,44 +20,45 @@ export async function POST(
   { params }: { params: { id: string; invitationId: string } }
 ) {
   try {
-    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, supabase, error } = await getAuthUser(request)
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
     const { id: workspaceId, invitationId } = params
+    const workspaceRepo = new WorkspaceRepository(supabase)
 
-    // Verify user is admin
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!userMembership || userMembership.role !== 'admin') {
-      const errorRes = NextResponse.json(
-        { error: 'Admin access required', success: false },
-        { status: 403 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+    // Verify workspace exists
+    const workspaceResult = await workspaceRepo.findById(workspaceId)
+    if (isError(workspaceResult)) {
+      if (workspaceResult.error.code === 'NOT_FOUND') {
+        return workspaceNotFoundResponse(workspaceId)
+      }
+      return databaseErrorResponse(workspaceResult.error.message, workspaceResult.error.details)
     }
 
-    // TODO: Implement invitation resend when invitations table exists
-    const successRes = NextResponse.json({
-      success: true,
-      message: 'Invitation resent successfully'
-    })
-    return mergeAuthResponse(successRes, authResponse)
-  } catch (error) {
-    console.error('Invitation resend error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    // Verify user is admin
+    const adminResult = await workspaceRepo.hasAdminAccess(workspaceId, user.id)
+    if (isError(adminResult)) {
+      return databaseErrorResponse(adminResult.error.message, adminResult.error.details)
+    }
+
+    if (!adminResult.data) {
+      return workspaceAccessDeniedResponse(workspaceId)
+    }
+
+    // Resend invitation
+    const invitationRepo = new WorkspaceInvitationRepository(supabase)
+    const resendResult = await invitationRepo.resendInvitation(invitationId)
+
+    if (isError(resendResult)) {
+      return databaseErrorResponse(resendResult.error.message, resendResult.error.details)
+    }
+
+    return successResponse({ message: 'Invitation resent successfully' })
+  } catch (err) {
+    console.error('Invitation resend error:', err)
+    return databaseErrorResponse('Failed to resend invitation', err)
   }
 }

@@ -41,8 +41,8 @@ export async function POST(
 
     // Verify user has access to this project
     const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('organization_id')
+      .from('foco_projects')
+      .select('workspace_id')
       .eq('id', projectId)
       .single()
 
@@ -53,11 +53,11 @@ export async function POST(
       )
     }
 
-    // Verify user is member of the organization
+    // Verify user is member of the workspace
     const { data: orgMember, error: memberError } = await supabase
-      .from('organization_members')
+      .from('workspace_members')
       .select('id')
-      .eq('organization_id', project.organization_id)
+      .eq('workspace_id', project.workspace_id)
       .eq('user_id', user.id)
       .single()
 
@@ -154,8 +154,8 @@ export async function DELETE(
 
     // Verify user has access to this project
     const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('organization_id')
+      .from('foco_projects')
+      .select('workspace_id')
       .eq('id', projectId)
       .single()
 
@@ -166,11 +166,11 @@ export async function DELETE(
       )
     }
 
-    // Verify user is member of the organization
+    // Verify user is member of the workspace
     const { data: orgMember, error: memberError } = await supabase
-      .from('organization_members')
+      .from('workspace_members')
       .select('id')
-      .eq('organization_id', project.organization_id)
+      .eq('workspace_id', project.workspace_id)
       .eq('user_id', user.id)
       .single()
 

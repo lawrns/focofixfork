@@ -1,80 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { NextRequest } from 'next/server'
+import { getAuthUser } from '@/lib/api/auth-helper'
+import { SettingsRepository } from '@/lib/repositories/settings-repository'
+import type { UserSettings } from '@/lib/repositories/settings-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { user, supabase, error: authError } = await getAuthUser(request);
+    const { user, supabase, error: authError } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return authRequiredResponse()
     }
 
-    // Parse the request body
-    const body = await request.json();
-    const { workspaceName, workspaceSlug, workspaceDescription, aiPolicy, notifications } = body;
+    const body = await request.json()
+    const { workspaceName, workspaceSlug, workspaceDescription, aiPolicy, notifications } = body
 
-    // First, get the current settings
-    const { data: currentProfile, error: fetchError } = await supabase
-      .from('user_profiles')
-      .select('settings')
-      .eq('id', user.id)
-      .single();
+    const repo = new SettingsRepository(supabase)
 
-    if (fetchError) {
-      console.error('Error fetching current settings:', fetchError);
-      return NextResponse.json(
-        { error: 'Failed to fetch current settings' },
-        { status: 500 }
-      );
+    // Build update object with only provided fields
+    const updates: Partial<UserSettings> = {}
+
+    if (workspaceName !== undefined) {
+      updates.workspaceName = workspaceName
     }
-
-    // Merge the new settings with existing settings
-    const currentSettings = (currentProfile?.settings as Record<string, unknown>) || {};
-    const updatedSettings: Record<string, unknown> = { ...currentSettings };
-
-    // Update workspace settings if provided
-    if (workspaceName !== undefined || workspaceSlug !== undefined || workspaceDescription !== undefined) {
-      updatedSettings.workspaceName = workspaceName;
-      updatedSettings.workspaceSlug = workspaceSlug;
-      updatedSettings.workspaceDescription = workspaceDescription;
+    if (workspaceSlug !== undefined) {
+      updates.workspaceSlug = workspaceSlug
     }
-
-    // Update AI policy settings if provided
+    if (workspaceDescription !== undefined) {
+      updates.workspaceDescription = workspaceDescription
+    }
     if (aiPolicy !== undefined) {
-      updatedSettings.aiPolicy = aiPolicy;
+      updates.aiPolicy = aiPolicy
     }
-
-    // Update notification settings if provided
     if (notifications !== undefined) {
-      updatedSettings.notifications = notifications;
+      updates.notifications = notifications
     }
 
-    // Update user_profiles settings
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({
-        settings: updatedSettings,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
+    const result = await repo.updateSettings(user.id, updates)
 
-    if (updateError) {
-      console.error('Error updating settings:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to save settings' },
-        { status: 500 }
-      );
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true });
+    return successResponse({ success: true, settings: result.data })
   } catch (error) {
-    console.error('Error in settings API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Error in settings API:', error)
+    return databaseErrorResponse('Failed to update settings', error)
   }
 }

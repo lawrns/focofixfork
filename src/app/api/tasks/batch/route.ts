@@ -1,5 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
+import { TaskRepository } from '@/lib/repositories/task-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  authRequiredResponse,
+  successResponse,
+  validationFailedResponse,
+  forbiddenResponse,
+  databaseErrorResponse,
+  internalErrorResponse,
+} from '@/lib/api/response-helpers'
 
 type BatchOperation = 'complete' | 'move' | 'priority' | 'assign' | 'tag' | 'delete'
 
@@ -14,176 +24,99 @@ export async function POST(req: NextRequest) {
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
     const body: BatchOperationRequest = await req.json()
 
     // Validate request
     if (!body.taskIds || !Array.isArray(body.taskIds) || body.taskIds.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'taskIds must be a non-empty array' },
-        { status: 400 }
-      )
+      return validationFailedResponse('taskIds must be a non-empty array')
     }
 
     if (!body.operation || !['complete', 'move', 'priority', 'assign', 'tag', 'delete'].includes(body.operation)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid operation type' },
-        { status: 400 }
-      )
+      return validationFailedResponse('Invalid operation type')
     }
 
+    const repo = new TaskRepository(supabase)
+
+    // Verify user has access to all tasks
+    const accessResult = await repo.verifyUserAccess(body.taskIds, user.id)
+    if (isError(accessResult)) {
+      if (accessResult.error.code === 'NOT_FOUND') {
+        return validationFailedResponse('No tasks found', { taskIds: body.taskIds })
+      }
+      return databaseErrorResponse(accessResult.error.message, accessResult.error.details)
+    }
+
+    if (!accessResult.data) {
+      return forbiddenResponse('You do not have access to all selected tasks')
+    }
+
+    // Prepare update data based on operation
     let updateData: any = {}
     let isDelete = false
 
-    // Prepare update data based on operation
     switch (body.operation) {
       case 'complete':
-        updateData = { status: 'done', updated_at: new Date().toISOString() }
+        updateData = { status: 'done' }
         break
       case 'move':
         if (!body.value) {
-          return NextResponse.json(
-            { success: false, error: 'value (project_id) is required for move operation' },
-            { status: 400 }
-          )
+          return validationFailedResponse('value (project_id) is required for move operation')
         }
-        updateData = { project_id: body.value, updated_at: new Date().toISOString() }
+        updateData = { project_id: body.value }
         break
       case 'priority':
-        if (!body.value || !['low', 'medium', 'high', 'urgent'].includes(body.value)) {
-          return NextResponse.json(
-            { success: false, error: 'value must be a valid priority level' },
-            { status: 400 }
-          )
+        if (!body.value || !['low', 'medium', 'high', 'urgent', 'none'].includes(body.value)) {
+          return validationFailedResponse('value must be a valid priority level')
         }
-        updateData = { priority: body.value, updated_at: new Date().toISOString() }
+        updateData = { priority: body.value }
         break
       case 'assign':
-        updateData = { assignee_id: body.value || null, updated_at: new Date().toISOString() }
+        updateData = { assignee_id: body.value || null }
         break
       case 'tag':
         if (!body.value || !Array.isArray(body.value)) {
-          return NextResponse.json(
-            { success: false, error: 'value must be an array of tags' },
-            { status: 400 }
-          )
+          return validationFailedResponse('value must be an array of tags')
         }
-        updateData = { tags: body.value, updated_at: new Date().toISOString() }
+        updateData = { tags: body.value }
         break
       case 'delete':
         isDelete = true
         break
     }
 
-    let updatedCount = 0
-    let failedCount = 0
-    const updatedTasks: any[] = []
-    const errors: Array<{ id: string; error: string }> = []
-
-    // Fetch tasks first to verify ownership and get current data
-    const { data: tasksData, error: fetchError } = await supabase
-      .from('work_items')
-      .select('*')
-      .in('id', body.taskIds)
-
-    if (fetchError) {
-      return NextResponse.json(
-        { success: false, error: fetchError.message },
-        { status: 500 }
-      )
-    }
-
-    if (!tasksData || tasksData.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'No tasks found' },
-        { status: 404 }
-      )
-    }
-
-    // Verify user has access to all tasks (check workspace ownership)
-    const { data: userWorkspaces } = await supabase
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('user_id', user.id)
-
-    const userWorkspaceIds = userWorkspaces?.map(w => w.workspace_id) || []
-
-    const hasAccessToAllTasks = tasksData.every(task =>
-      userWorkspaceIds.includes(task.workspace_id)
-    )
-
-    if (!hasAccessToAllTasks) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have access to all selected tasks' },
-        { status: 403 }
-      )
-    }
-
     // Perform batch operation
     if (isDelete) {
-      // Delete operation
-      const { error: deleteError } = await supabase
-        .from('work_items')
-        .delete()
-        .in('id', body.taskIds)
-
-      if (deleteError) {
-        return NextResponse.json(
-          { success: false, error: deleteError.message },
-          { status: 500 }
-        )
+      const deleteResult = await repo.batchDelete(body.taskIds)
+      if (isError(deleteResult)) {
+        return databaseErrorResponse(deleteResult.error.message, deleteResult.error.details)
       }
 
-      updatedCount = body.taskIds.length
+      return successResponse({
+        operation: body.operation,
+        updated: deleteResult.data,
+        failed: 0,
+      })
     } else {
-      // Update operation
-      const { data: updated, error: updateError } = await supabase
-        .from('work_items')
-        .update(updateData)
-        .in('id', body.taskIds)
-        .select()
-
-      if (updateError) {
-        return NextResponse.json(
-          { success: false, error: updateError.message },
-          { status: 500 }
-        )
+      const updateResult = await repo.batchUpdate(body.taskIds, updateData)
+      if (isError(updateResult)) {
+        return databaseErrorResponse(updateResult.error.message, updateResult.error.details)
       }
 
-      updatedCount = updated?.length || 0
-      if (updated) {
-        updatedTasks.push(...updated)
-      }
-    }
+      const updatedCount = updateResult.data.length
+      const failedCount = body.taskIds.length - updatedCount
 
-    // Track any failures
-    if (body.taskIds.length > updatedCount) {
-      failedCount = body.taskIds.length - updatedCount
+      return successResponse({
+        operation: body.operation,
+        updated: updatedCount,
+        failed: failedCount,
+        tasks: updateResult.data,
+      })
     }
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          operation: body.operation,
-          updated: updatedCount,
-          failed: failedCount,
-          tasks: updatedTasks,
-          errors: errors.length > 0 ? errors : undefined,
-        },
-      },
-      { status: 200 }
-    )
   } catch (err: any) {
     console.error('Batch operations error:', err)
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    )
+    return internalErrorResponse('Failed to perform batch operation', err)
   }
 }

@@ -1,5 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { NextRequest } from 'next/server'
+import { getAuthUser } from '@/lib/api/auth-helper'
+import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
+import { WorkspaceInvitationRepository } from '@/lib/repositories/workspace-invitation-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  authRequiredResponse,
+  successResponse,
+  workspaceAccessDeniedResponse,
+  databaseErrorResponse,
+  workspaceNotFoundResponse,
+  missingFieldResponse,
+  conflictResponse
+} from '@/lib/api/response-helpers'
 
 /**
  * GET /api/organizations/[id]/invitations
@@ -10,46 +22,46 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, supabase, error } = await getAuthUser(request)
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
     const workspaceId = params.id
+    const workspaceRepo = new WorkspaceRepository(supabase)
 
-    // Verify user has access to this workspace
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!userMembership) {
-      const errorRes = NextResponse.json(
-        { error: 'Access denied', success: false },
-        { status: 403 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+    // Verify workspace exists
+    const workspaceResult = await workspaceRepo.findById(workspaceId)
+    if (isError(workspaceResult)) {
+      if (workspaceResult.error.code === 'NOT_FOUND') {
+        return workspaceNotFoundResponse(workspaceId)
+      }
+      return databaseErrorResponse(workspaceResult.error.message, workspaceResult.error.details)
     }
 
-    // Fetch invitations - assuming invitations table exists or return empty array
-    // TODO: Check if invitations table exists for workspaces
-    const successRes = NextResponse.json({
-      success: true,
-      data: [] // Placeholder - needs invitations table implementation
-    })
-    return mergeAuthResponse(successRes, authResponse)
-  } catch (error) {
-    console.error('Invitations fetch error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    // Verify user has access to this workspace
+    const memberResult = await workspaceRepo.isMember(workspaceId, user.id)
+    if (isError(memberResult)) {
+      return databaseErrorResponse(memberResult.error.message, memberResult.error.details)
+    }
+
+    if (!memberResult.data) {
+      return workspaceAccessDeniedResponse(workspaceId)
+    }
+
+    // Fetch invitations
+    const invitationRepo = new WorkspaceInvitationRepository(supabase)
+    const invitationsResult = await invitationRepo.findPendingByWorkspace(workspaceId)
+
+    if (isError(invitationsResult)) {
+      return databaseErrorResponse(invitationsResult.error.message, invitationsResult.error.details)
+    }
+
+    return successResponse(invitationsResult.data)
+  } catch (err) {
+    console.error('Invitations fetch error:', err)
+    return databaseErrorResponse('Failed to fetch invitations', err)
   }
 }
 
@@ -62,104 +74,81 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, supabase, error } = await getAuthUser(request)
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
     const workspaceId = params.id
+    const workspaceRepo = new WorkspaceRepository(supabase)
+
+    // Verify workspace exists
+    const workspaceResult = await workspaceRepo.findById(workspaceId)
+    if (isError(workspaceResult)) {
+      if (workspaceResult.error.code === 'NOT_FOUND') {
+        return workspaceNotFoundResponse(workspaceId)
+      }
+      return databaseErrorResponse(workspaceResult.error.message, workspaceResult.error.details)
+    }
 
     // Verify user is admin
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
+    const adminResult = await workspaceRepo.hasAdminAccess(workspaceId, user.id)
+    if (isError(adminResult)) {
+      return databaseErrorResponse(adminResult.error.message, adminResult.error.details)
+    }
 
-    if (!userMembership || userMembership.role !== 'admin') {
-      const errorRes = NextResponse.json(
-        { error: 'Admin access required', success: false },
-        { status: 403 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+    if (!adminResult.data) {
+      return workspaceAccessDeniedResponse(workspaceId)
     }
 
     const body = await request.json()
 
     if (!body.email) {
-      const errorRes = NextResponse.json(
-        { error: 'Email is required', success: false },
-        { status: 400 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+      return missingFieldResponse('email')
     }
 
+    const invitationRepo = new WorkspaceInvitationRepository(supabase)
+
     // Check if user already exists and add directly as member
-    const { data: existingUser } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('email', body.email)
-      .single()
+    const userResult = await invitationRepo.findUserByEmail(body.email)
+    if (isError(userResult)) {
+      return databaseErrorResponse(userResult.error.message, userResult.error.details)
+    }
+
+    const existingUser = userResult.data
 
     if (existingUser) {
       // Check if already a member
-      const { data: existingMember } = await supabase
-        .from('workspace_members')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', existingUser.id)
-        .single()
+      const memberResult = await invitationRepo.isMember(workspaceId, existingUser.id)
+      if (isError(memberResult)) {
+        return databaseErrorResponse(memberResult.error.message, memberResult.error.details)
+      }
 
-      if (existingMember) {
-        const errorRes = NextResponse.json(
-          { error: 'User is already a member', success: false },
-          { status: 400 }
-        )
-        return mergeAuthResponse(errorRes, authResponse)
+      if (memberResult.data) {
+        return conflictResponse('User is already a member', { email: body.email })
       }
 
       // Add user directly as member
-      const { error: addError } = await supabase
-        .from('workspace_members')
-        .insert({
-          workspace_id: workspaceId,
-          user_id: existingUser.id,
-          role: body.role || 'member'
-        })
+      const addResult = await invitationRepo.addMemberDirectly(
+        workspaceId,
+        existingUser.id,
+        body.role || 'member'
+      )
 
-      if (addError) {
-        console.error('Error adding member:', addError)
-        const errorRes = NextResponse.json(
-          { error: addError.message, success: false },
-          { status: 500 }
-        )
-        return mergeAuthResponse(errorRes, authResponse)
+      if (isError(addResult)) {
+        return databaseErrorResponse(addResult.error.message, addResult.error.details)
       }
 
-      const successRes = NextResponse.json({
-        success: true,
-        message: 'Member added successfully'
-      })
-      return mergeAuthResponse(successRes, authResponse)
+      return successResponse({ message: 'Member added successfully' })
     }
 
-    // TODO: Implement invitation system for non-existing users
-    // For now, return success with a message
-    const successRes = NextResponse.json({
-      success: true,
+    // User doesn't exist - would create invitation (not implemented yet)
+    return successResponse({
       message: 'Invitation sent (user will be added when they sign up)'
     })
-    return mergeAuthResponse(successRes, authResponse)
-  } catch (error) {
-    console.error('Invitation creation error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+  } catch (err) {
+    console.error('Invitation creation error:', err)
+    return databaseErrorResponse('Failed to create invitation', err)
   }
 }

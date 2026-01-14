@@ -1,149 +1,83 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { getAuthUser } from '@/lib/api/auth-helper'
+import { TimeEntryRepository } from '@/lib/repositories/time-entry-repository'
+import type { UpdateTimeEntryData } from '@/lib/repositories/time-entry-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  authRequiredResponse,
+  successResponse,
+  databaseErrorResponse,
+  notFoundResponse
+} from '@/lib/api/response-helpers'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params }: { params: Promise<{ id: string; entryId: string }> }
 ) {
   try {
-    const taskId = params.id
-    const entryId = params.entryId
+    const { user, supabase, error } = await getAuthUser(request)
+
+    if (error || !user) {
+      return authRequiredResponse()
+    }
+
+    const { id, entryId } = await params
+    const taskId = id
     const body = await request.json()
 
     const { notes } = body
 
     if (notes === undefined) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required field: notes' },
-        { status: 400 }
-      )
+      return databaseErrorResponse('Missing required field: notes')
     }
 
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
+    const repo = new TimeEntryRepository(supabase)
+
+    const updateData: UpdateTimeEntryData = {
+      notes,
+    }
+
+    const result = await repo.updateTimeEntry(entryId, taskId, user.id, updateData)
+
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        return notFoundResponse('Time entry', entryId)
       }
-    )
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    const { data, error } = await supabase
-      .from('task_time_entries')
-      .update({ notes })
-      .eq('id', entryId)
-      .eq('task_id', taskId)
-      .eq('user_id', user.id)
-      .select()
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json(
-          { success: false, error: 'Time entry not found' },
-          { status: 404 }
-        )
-      }
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ success: true, data })
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    return successResponse(result.data)
+  } catch (err: any) {
+    console.error('Time entry PUT error:', err)
+    return databaseErrorResponse('Failed to update time entry', err)
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params }: { params: Promise<{ id: string; entryId: string }> }
 ) {
   try {
-    const taskId = params.id
-    const entryId = params.entryId
+    const { user, supabase, error } = await getAuthUser(request)
 
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      }
-    )
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
-    const { error } = await supabase
-      .from('task_time_entries')
-      .delete()
-      .eq('id', entryId)
-      .eq('task_id', taskId)
-      .eq('user_id', user.id)
+    const { id, entryId } = await params
+    const taskId = id
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      )
+    const repo = new TimeEntryRepository(supabase)
+
+    const result = await repo.deleteTimeEntry(entryId, taskId, user.id)
+
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true, data: null })
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    return successResponse(null)
+  } catch (err: any) {
+    console.error('Time entry DELETE error:', err)
+    return databaseErrorResponse('Failed to delete time entry', err)
   }
 }

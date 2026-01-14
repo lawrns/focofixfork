@@ -61,8 +61,8 @@ function NewTaskForm() {
         // Fetch projects
         const projectsRes = await fetch('/api/projects');
         const projectsData = await projectsRes.json();
-        if (projectsData.success) {
-          setProjects(projectsData.data || []);
+        if (projectsData.success && projectsData.data?.data) {
+          setProjects(Array.isArray(projectsData.data.data) ? projectsData.data.data : []);
         }
 
         // Fetch workspace members
@@ -77,8 +77,8 @@ function NewTaskForm() {
         if (currentWorkspace) {
           const membersRes = await fetch(`/api/workspaces/${currentWorkspace.id}/members`);
           const membersData = await membersRes.json();
-          
-          if (membersData.success && membersData.data) {
+
+          if (membersData.success && Array.isArray(membersData.data)) {
             setTeamMembers(membersData.data.map((m: any) => ({
               user_id: m.user_id,
               email: m.email || '',

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('full_name, timezone, language, avatar_url')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
     const { data, error } = await supabase
       .from('user_profiles')
       .update(updateData)
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .select()
       .single();
 

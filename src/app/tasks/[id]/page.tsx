@@ -391,7 +391,7 @@ export default function WorkItemPage() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-2">Task not found</h2>
-          <p className="text-zinc-500 mb-4">The task you're looking for doesn't exist.</p>
+          <p className="text-zinc-500 mb-4">The task you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => router.back()}>Go Back</Button>
         </div>
       </div>

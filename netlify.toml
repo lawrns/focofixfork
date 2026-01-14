@@ -15,7 +15,7 @@
   # Supabase environment variables
   NEXT_PUBLIC_SUPABASE_URL = "https://ouvqnyfqipgnrjnuqsqq.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_6m9EbrvSIdMQ5tBTxfgVMA_WQjeipVO"
-  SUPABASE_SERVICE_ROLE_KEY = "sb_publishable_6m9EbrvSIdMQ5tBTxfgVMA_WQjeipVO"
+  SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91dnFueWZxaXBnbnJqbnVxc3FxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjc5Mjg4MiwiZXhwIjoyMDUyMzY4ODgyfQ.p0k2vI2RIk2lWJx4Zo2X5fE5gY8X4x2w2w2w2w2w2w"
 
   # AI environment variables
   AI_PROVIDER = "deepseek"

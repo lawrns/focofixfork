@@ -50,94 +50,7 @@ import {
 } from '@/components/ui/select';
 import type { WorkItem, WorkItemStatus, PriorityLevel, Comment } from '@/types/foco';
 
-// Mock data
-const workItem: WorkItem = {
-  id: '1',
-  workspace_id: '1',
-  project_id: '1',
-  type: 'task',
-  title: 'Design homepage mockups',
-  description: `Create high-fidelity mockups for the new homepage layout with final colors, typography, and imagery.
-
-## Requirements
-- Hero section with animated background
-- Featured products carousel
-- Testimonials section
-- Newsletter signup
-- Footer redesign
-
-## Design Notes
-- Follow the new brand guidelines
-- Mobile-first approach
-- Ensure accessibility compliance (WCAG 2.2 AA)`,
-  status: 'in_progress',
-  priority: 'high',
-  assignee_id: '1',
-  reporter_id: '2',
-  due_date: '2026-01-15',
-  start_date: '2026-01-08',
-  estimate_hours: 16,
-  actual_hours: 8,
-  position: 0,
-  created_at: '2026-01-05T10:00:00Z',
-  updated_at: '2026-01-10T14:30:00Z',
-  ai_context_sources: [],
-  metadata: {},
-  assignee: { id: '1', email: 'sarah@acme.com', full_name: 'Sarah Chen' } as any,
-  reporter: { id: '2', email: 'mike@acme.com', full_name: 'Mike Johnson' } as any,
-  project: { id: '1', name: 'Website Redesign', color: '#6366F1', slug: 'website-redesign' } as any,
-  labels: [
-    { id: '1', workspace_id: '1', name: 'design', color: '#EC4899', created_at: '' },
-    { id: '2', workspace_id: '1', name: 'frontend', color: '#F59E0B', created_at: '' },
-  ],
-};
-
-const comments: Comment[] = [
-  {
-    id: '1',
-    work_item_id: '1',
-    user_id: '2',
-    content: 'Started working on this. The wireframes are approved, moving to high-fidelity.',
-    mentions: [],
-    attachments: [],
-    is_ai_generated: false,
-    created_at: '2026-01-08T11:00:00Z',
-    updated_at: '2026-01-08T11:00:00Z',
-    user: { id: '2', email: '', full_name: 'Mike Johnson' } as any,
-  },
-  {
-    id: '2',
-    work_item_id: '1',
-    user_id: '1',
-    content: 'Looking great! Can we add some micro-interactions to the hero section? Think subtle parallax effects.',
-    mentions: [],
-    attachments: [],
-    is_ai_generated: false,
-    created_at: '2026-01-09T15:30:00Z',
-    updated_at: '2026-01-09T15:30:00Z',
-    user: { id: '1', email: '', full_name: 'Sarah Chen' } as any,
-  },
-  {
-    id: '3',
-    work_item_id: '1',
-    user_id: '3',
-    content: 'AI Summary: This task is 50% complete based on the checklist items. Estimated 2 more days to completion at current velocity.',
-    mentions: [],
-    attachments: [],
-    is_ai_generated: true,
-    ai_sources: { tasks: ['1'], comments: ['1', '2'] },
-    created_at: '2026-01-10T09:00:00Z',
-    updated_at: '2026-01-10T09:00:00Z',
-    user: { id: '3', email: '', full_name: 'Foco AI' } as any,
-  },
-];
-
-const activityLog = [
-  { id: '1', action: 'created', user: 'Mike Johnson', time: 'Jan 5, 2026' },
-  { id: '2', action: 'assigned to Sarah Chen', user: 'Mike Johnson', time: 'Jan 5, 2026' },
-  { id: '3', action: 'moved to In Progress', user: 'Sarah Chen', time: 'Jan 8, 2026' },
-  { id: '4', action: 'added label "design"', user: 'Sarah Chen', time: 'Jan 8, 2026' },
-];
+// No mock data - fetch from API
 
 const statusOptions: { value: WorkItemStatus; label: string; color: string }[] = [
   { value: 'backlog', label: 'Backlog', color: 'bg-zinc-400' },
@@ -421,21 +334,69 @@ export default function WorkItemPage() {
   const { activate } = useFocusModeStore();
   const { addItem } = useRecentItems();
   const [newComment, setNewComment] = useState('');
-  const [isCompleted, setIsCompleted] = useState(workItem.status === 'done');
+  const [workItem, setWorkItem] = useState<WorkItem | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [activityLog, setActivityLog] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  // Track this task in recent items when component mounts
   useEffect(() => {
-    addItem({
-      type: 'task',
-      id: workItem.id,
-      name: workItem.title,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const fetchTask = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/tasks/${params.id}`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          setWorkItem(data.data);
+          setIsCompleted(data.data.status === 'done');
+          
+          addItem({
+            type: 'task',
+            id: data.data.id,
+            name: data.data.title,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch task:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchTask();
+    }
+  }, [params.id, addItem]);
 
   const handleStartFocus = () => {
-    activate(workItem);
+    if (workItem) {
+      activate(workItem);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-zinc-500">Loading task...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!workItem) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">Task not found</h2>
+          <p className="text-zinc-500 mb-4">The task you're looking for doesn't exist.</p>
+          <Button onClick={() => router.back()}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">

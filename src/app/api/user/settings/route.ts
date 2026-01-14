@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     updateData.updated_at = new Date().toISOString();
 
-    const { data, error } = await untypedSupabase
+    const { data, error } = await supabase
       .from('user_profiles')
       .update(updateData)
       .eq('user_id', user.id)

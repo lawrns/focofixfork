@@ -42,7 +42,11 @@ export const supabase = globalThis.__supabase ?? createBrowserClient<Database>(
         if (typeof document === 'undefined') return []
         const cookies: { name: string; value: string }[] = []
         document.cookie.split(';').forEach(cookie => {
-          const [name, value] = cookie.trim().split('=')
+          const trimmed = cookie.trim()
+          const eqIndex = trimmed.indexOf('=')
+          if (eqIndex === -1) return
+          const name = trimmed.slice(0, eqIndex)
+          const value = trimmed.slice(eqIndex + 1)
           if (name && value) {
             cookies.push({ name: decodeURIComponent(name), value: decodeURIComponent(value) })
           }

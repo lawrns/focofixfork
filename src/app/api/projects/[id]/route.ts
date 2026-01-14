@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
+import { ProjectRepository } from '@/lib/repositories/project-repository'
+import type { UpdateProjectData } from '@/lib/repositories/project-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import { authRequiredResponse, successResponse, databaseErrorResponse, projectNotFoundResponse, validateUUID } from '@/lib/api/response-helpers'
 
 export async function GET(
   req: NextRequest,
@@ -9,36 +13,37 @@ export async function GET(
     const { user, supabase, error } = await getAuthUser(req)
     
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
+    const repo = new ProjectRepository(supabase)
 
-    // Try to find by ID first, then by slug
-    let { data, error: queryError } = await supabase
-      .from('foco_projects')
-      .select('*')
-      .eq('id', id)
-      .single()
+    // Try to find by ID first
+    let result = await repo.findById(id)
 
-    if (queryError) {
-      // Try by slug
-      const { data: slugData, error: slugError } = await supabase
-        .from('foco_projects')
-        .select('*')
-        .eq('slug', id)
-        .single()
+    // If not found and ID doesn't look like UUID, try by slug
+    if (isError(result) && result.error.code === 'NOT_FOUND') {
+      // Extract workspace_id from query params for slug lookup
+      const { searchParams } = new URL(req.url)
+      const workspaceId = searchParams.get('workspace_id')
 
-      if (slugError) {
-        return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
+      if (workspaceId) {
+        result = await repo.findBySlug(workspaceId, id)
       }
-      data = slugData
     }
 
-    return NextResponse.json({ success: true, data })
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        return projectNotFoundResponse(id)
+      }
+      return databaseErrorResponse(result.error.message, result.error.details)
+    }
+
+    return successResponse(result.data)
   } catch (err: any) {
     console.error('Project GET error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to fetch project', err)
   }
 }
 
@@ -50,14 +55,22 @@ export async function PATCH(
     const { user, supabase, error } = await getAuthUser(req)
     
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
+    
+    // Validate UUID format
+    const uuidError = validateUUID('id', id)
+    if (uuidError) {
+      return uuidError
+    }
+
     const body = await req.json()
+    const repo = new ProjectRepository(supabase)
 
     // Build update object with only provided fields
-    const updateData: Record<string, any> = {}
+    const updateData: UpdateProjectData = {}
 
     if (body.name !== undefined) updateData.name = body.name
     if (body.slug !== undefined) updateData.slug = body.slug
@@ -68,24 +81,22 @@ export async function PATCH(
     if (body.is_pinned !== undefined) updateData.is_pinned = body.is_pinned
     if (body.archived_at !== undefined) updateData.archived_at = body.archived_at
 
-    updateData.updated_at = new Date().toISOString()
+    const result = await repo.updateProject(id, updateData)
 
-    const { data, error: updateError } = await supabase
-      .from('foco_projects')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (updateError) {
-      console.error('Project update error:', updateError)
-      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        return projectNotFoundResponse(id)
+      }
+      if (result.error.code === 'DUPLICATE_SLUG') {
+        return databaseErrorResponse('Slug already exists in workspace', result.error.details)
+      }
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true, data })
+    return successResponse(result.data)
   } catch (err: any) {
     console.error('Project PATCH error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to update project', err)
   }
 }
 
@@ -97,24 +108,27 @@ export async function DELETE(
     const { user, supabase, error } = await getAuthUser(req)
     
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
-
-    const { error: deleteError } = await supabase
-      .from('foco_projects')
-      .delete()
-      .eq('id', id)
-
-    if (deleteError) {
-      console.error('Project delete error:', deleteError)
-      return NextResponse.json({ success: false, error: deleteError.message }, { status: 500 })
+    
+    // Validate UUID format
+    const uuidError = validateUUID('id', id)
+    if (uuidError) {
+      return uuidError
     }
 
-    return NextResponse.json({ success: true, data: { deleted: true } })
+    const repo = new ProjectRepository(supabase)
+    const result = await repo.delete(id)
+
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
+    }
+
+    return successResponse({ deleted: true })
   } catch (err: any) {
     console.error('Project DELETE error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to delete project', err)
   }
 }

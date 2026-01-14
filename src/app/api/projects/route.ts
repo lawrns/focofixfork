@@ -1,61 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
+import { ProjectRepository } from '@/lib/repositories/project-repository'
+import type { CreateProjectData } from '@/lib/repositories/project-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import { authRequiredResponse, successResponse, databaseErrorResponse, createPaginationMeta, missingFieldResponse, duplicateSlugResponse, isValidUUID, workspaceNotFoundResponse } from '@/lib/api/response-helpers'
 
 export async function GET(req: NextRequest) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { searchParams } = new URL(req.url)
     const workspaceId = searchParams.get('workspace_id')
     const status = searchParams.get('status')
-    const archived = searchParams.get('archived') // true to show archived, false/null for active
+    const archived = searchParams.get('archived')
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = supabase
-      .from('foco_projects')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+    const repo = new ProjectRepository(supabase)
 
+    // If workspace_id provided, use workspace-scoped query
     if (workspaceId) {
-      query = query.eq('workspace_id', workspaceId)
-    }
+      const result = await repo.findByWorkspace(workspaceId, {
+        status: status as any,
+        archived: archived === 'true' ? true : archived === 'false' ? false : undefined,
+        limit,
+        offset,
+      })
 
-    if (status) {
-      query = query.eq('status', status)
-    }
-
-    // Filter by archive status
-    if (archived === 'true') {
-      // Show only archived projects
-      query = query.not('archived_at', 'is', null)
-    } else {
-      // Show only active projects (default behavior)
-      query = query.is('archived_at', null)
-    }
-
-    const { data, error: queryError } = await query
-
-    if (queryError) {
-      console.error('Projects fetch error:', queryError)
-      return NextResponse.json({ success: false, error: queryError.message }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        data: data || [],
-        pagination: { limit, offset, total: data?.length || 0 }
+      if (isError(result)) {
+        return databaseErrorResponse(result.error.message, result.error.details)
       }
-    })
+
+      const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
+      return successResponse(result.data, meta)
+    }
+
+    // Otherwise, use generic findMany with filters
+    const filters: Record<string, any> = {}
+    if (status) filters.status = status
+
+    const result = await repo.findMany(filters, { limit, offset })
+
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
+    }
+
+    const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
+    return successResponse(result.data, meta)
   } catch (err: any) {
     console.error('Projects API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to fetch projects', err)
   }
 }
 
@@ -64,71 +62,55 @@ export async function POST(req: NextRequest) {
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const body = await req.json()
 
     // Validate required fields
     if (!body.name) {
-      return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
+      return missingFieldResponse('name')
     }
 
     if (!body.workspace_id) {
-      return NextResponse.json({ success: false, error: 'Workspace ID is required' }, { status: 400 })
+      return missingFieldResponse('workspace_id')
+    }
+
+    // Validate workspace_id format
+    if (!isValidUUID(body.workspace_id)) {
+      return workspaceNotFoundResponse(body.workspace_id)
     }
 
     // Generate slug from name if not provided
     const slug = body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
-    // Check if slug already exists in workspace
-    const { data: existingProject, error: checkError } = await supabase
-      .from('foco_projects')
-      .select('id')
-      .eq('workspace_id', body.workspace_id)
-      .eq('slug', slug)
-      .limit(1)
-      .maybeSingle()
+    const repo = new ProjectRepository(supabase)
 
-    if (checkError) {
-      console.error('Slug check error:', checkError)
-      return NextResponse.json({ success: false, error: checkError.message }, { status: 500 })
-    }
-
-    if (existingProject) {
-      return NextResponse.json({ success: false, error: 'Slug already exists' }, { status: 409 })
-    }
-
-    const projectData = {
+    const projectData: CreateProjectData = {
+      workspace_id: body.workspace_id,
       name: body.name,
       slug,
       description: body.description || null,
       brief: body.brief || null,
-      color: body.color || '#6366F1',
-      icon: body.icon || 'folder',
-      status: body.status || 'active',
-      workspace_id: body.workspace_id,
+      color: body.color,
+      icon: body.icon,
+      status: body.status,
       owner_id: user.id,
     }
 
-    const { data, error: insertError } = await supabase
-      .from('foco_projects')
-      .insert(projectData)
-      .select()
-      .single()
+    const result = await repo.createProject(projectData)
 
-    if (insertError) {
-      console.error('Project create error:', insertError)
-      // Handle unique constraint violation
-      if (insertError.code === '23505') {
-        return NextResponse.json({ success: false, error: 'Slug already exists' }, { status: 409 })
+    if (isError(result)) {
+      // Handle specific error codes
+      if (result.error.code === 'DUPLICATE_SLUG') {
+        return duplicateSlugResponse(slug)
       }
-      return NextResponse.json({ success: false, error: insertError.message }, { status: 500 })
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true, data }, { status: 201 })
+    return successResponse(result.data, undefined, 201)
   } catch (err: any) {
     console.error('Projects POST error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to create project', err)
   }
 }

@@ -1,5 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { ReminderService } from '@/features/tasks/services/reminder-service'
+import {
+  authRequiredResponse,
+  successResponse,
+  databaseErrorResponse
+} from '@/lib/api/response-helpers'
 
 /**
  * Cron job to check and send pending reminders
@@ -12,33 +17,21 @@ export async function GET(request: NextRequest) {
     const expectedToken = process.env.CRON_SECRET
 
     if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return authRequiredResponse('Invalid or missing cron token')
     }
 
     // Check and send pending reminders
     const result = await ReminderService.checkAndSendReminders()
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        checked: result.checked,
-        sent: result.sent,
-        failed: result.failed,
-        errors: result.errors,
-      },
+    return successResponse({
+      checked: result.checked,
+      sent: result.sent,
+      failed: result.failed,
+      errors: result.errors,
     })
-  } catch (error: any) {
-    console.error('Reminder check error:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to check reminders',
-      },
-      { status: 500 }
-    )
+  } catch (err: any) {
+    console.error('Reminder check error:', err)
+    return databaseErrorResponse('Failed to check reminders', err)
   }
 }
 

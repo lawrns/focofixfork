@@ -1,224 +1,177 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 import { z } from 'zod';
+import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
+import { isError } from '@/lib/repositories/base-repository';
+import {
+  authRequiredResponse,
+  successResponse,
+  databaseErrorResponse,
+  taskNotFoundResponse,
+  workspaceAccessDeniedResponse,
+  validationFailedResponse,
+  notFoundResponse,
+  validateUUID,
+} from '@/lib/api/response-helpers';
 
 const AssignTagSchema = z.object({
   tag_ids: z.array(z.string().uuid()).min(1, 'At least one tag is required'),
 });
 
-const RemoveTagSchema = z.object({
-  tag_id: z.string().uuid('Invalid tag ID'),
-});
-
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req);
 
     if (error || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return authRequiredResponse();
     }
 
-    const taskId = params.id;
+    const { id: taskId } = await params;
 
-    // Verify task exists and user has access
-    const { data: task } = await supabase
-      .from('work_items')
-      .select('id, workspace_id')
-      .eq('id', taskId)
-      .single();
-
-    if (!task) {
-      return NextResponse.json(
-        { success: false, error: 'Task not found' },
-        { status: 404 }
-      );
+    const uuidError = validateUUID('id', taskId);
+    if (uuidError) {
+      return uuidError;
     }
 
-    // Verify user has access to workspace
-    const { data: workspaceAccess } = await supabase
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .single();
+    const repo = new TaskTagRepository(supabase);
 
-    if (!workspaceAccess) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      );
+    const taskResult = await repo.getTaskWithWorkspace(taskId);
+    if (isError(taskResult)) {
+      if (taskResult.error.code === 'NOT_FOUND') {
+        return taskNotFoundResponse(taskId);
+      }
+      return databaseErrorResponse(taskResult.error.message, taskResult.error.details);
     }
 
-    // Fetch task tags
-    const { data: tags, error: tagsError } = await supabase
-      .from('task_tags')
-      .select('tag_id, tags(id, name, color, workspace_id)')
-      .eq('task_id', taskId);
+    const task = taskResult.data;
 
-    if (tagsError) {
-      console.error('Task tags fetch error:', tagsError);
-      return NextResponse.json(
-        { success: false, error: tagsError.message },
-        { status: 500 }
-      );
+    const accessResult = await repo.verifyWorkspaceAccess(task.workspace_id, user.id);
+    if (isError(accessResult)) {
+      if (accessResult.error.code === 'WORKSPACE_ACCESS_DENIED') {
+        return workspaceAccessDeniedResponse(task.workspace_id);
+      }
+      return databaseErrorResponse(accessResult.error.message, accessResult.error.details);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        task_id: taskId,
-        tags: tags.map((t: any) => t.tags).filter(Boolean),
-      },
-    });
+    const tagsResult = await repo.getTagsForTask(taskId);
+    if (isError(tagsResult)) {
+      return databaseErrorResponse(tagsResult.error.message, tagsResult.error.details);
+    }
+
+    return successResponse(tagsResult.data);
   } catch (err: any) {
     console.error('Task tags GET error:', err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return databaseErrorResponse('Failed to fetch task tags', err);
   }
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req);
 
     if (error || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return authRequiredResponse();
     }
 
-    const taskId = params.id;
+    const { id: taskId } = await params;
+
+    const uuidError = validateUUID('id', taskId);
+    if (uuidError) {
+      return uuidError;
+    }
+
     const body = await req.json();
 
-    // Validate request
     const validationResult = AssignTagSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid request',
-          details: validationResult.error.errors,
-        },
-        { status: 400 }
+      return validationFailedResponse(
+        'Invalid request',
+        validationResult.error.errors
       );
     }
 
     const { tag_ids } = validationResult.data;
 
-    // Verify task exists and user has access
-    const { data: task } = await supabase
-      .from('work_items')
-      .select('id, workspace_id')
-      .eq('id', taskId)
-      .single();
+    const repo = new TaskTagRepository(supabase);
 
-    if (!task) {
-      return NextResponse.json(
-        { success: false, error: 'Task not found' },
-        { status: 404 }
+    const taskResult = await repo.getTaskWithWorkspace(taskId);
+    if (isError(taskResult)) {
+      if (taskResult.error.code === 'NOT_FOUND') {
+        return taskNotFoundResponse(taskId);
+      }
+      return databaseErrorResponse(taskResult.error.message, taskResult.error.details);
+    }
+
+    const task = taskResult.data;
+
+    const accessResult = await repo.verifyWorkspaceAccess(task.workspace_id, user.id);
+    if (isError(accessResult)) {
+      if (accessResult.error.code === 'WORKSPACE_ACCESS_DENIED') {
+        return workspaceAccessDeniedResponse(task.workspace_id);
+      }
+      return databaseErrorResponse(accessResult.error.message, accessResult.error.details);
+    }
+
+    const tagsResult = await repo.verifyTagsInWorkspace(tag_ids, task.workspace_id);
+    if (isError(tagsResult)) {
+      if (tagsResult.error.code === 'NOT_FOUND') {
+        return notFoundResponse('tags', tag_ids.join(','));
+      }
+      if (tagsResult.error.code === 'VALIDATION_FAILED') {
+        return validationFailedResponse(
+          tagsResult.error.message,
+          tagsResult.error.details
+        );
+      }
+      return databaseErrorResponse(tagsResult.error.message, tagsResult.error.details);
+    }
+
+    const existingTagIdsResult = await repo.getExistingTagIds(taskId);
+    if (isError(existingTagIdsResult)) {
+      return databaseErrorResponse(
+        existingTagIdsResult.error.message,
+        existingTagIdsResult.error.details
       );
     }
 
-    // Verify user has access to workspace
-    const { data: workspaceAccess } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!workspaceAccess) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      );
-    }
-
-    // Verify all tags belong to the same workspace
-    const { data: tags } = await supabase
-      .from('tags')
-      .select('id, workspace_id')
-      .in('id', tag_ids);
-
-    if (!tags || tags.length !== tag_ids.length) {
-      return NextResponse.json(
-        { success: false, error: 'One or more tags not found' },
-        { status: 404 }
-      );
-    }
-
-    if (!tags.every(t => t.workspace_id === task.workspace_id)) {
-      return NextResponse.json(
-        { success: false, error: 'Tags must belong to the same workspace' },
-        { status: 400 }
-      );
-    }
-
-    // Get existing tags for this task
-    const { data: existingTags } = await supabase
-      .from('task_tags')
-      .select('tag_id')
-      .eq('task_id', taskId);
-
-    const existingTagIds = (existingTags || []).map(t => t.tag_id);
-
-    // Find tags to add (new ones)
+    const existingTagIds = existingTagIdsResult.data;
     const tagsToAdd = tag_ids.filter(id => !existingTagIds.includes(id));
 
-    // Insert new tag assignments
     if (tagsToAdd.length > 0) {
-      const insertData = tagsToAdd.map(tag_id => ({
-        task_id: taskId,
-        tag_id,
-      }));
-
-      const { error: insertError } = await supabase
-        .from('task_tags')
-        .insert(insertData);
-
-      if (insertError) {
-        console.error('Tag assignment error:', insertError);
-        return NextResponse.json(
-          { success: false, error: insertError.message },
-          { status: 500 }
+      const assignResult = await repo.assignTagsToTask(taskId, tagsToAdd);
+      if (isError(assignResult)) {
+        return databaseErrorResponse(
+          assignResult.error.message,
+          assignResult.error.details
         );
       }
     }
 
-    // Fetch and return all tags for the task
-    const { data: updatedTags } = await supabase
-      .from('task_tags')
-      .select('tags(id, name, color)')
-      .eq('task_id', taskId);
+    const updatedTagsResult = await repo.getTagsForTask(taskId);
+    if (isError(updatedTagsResult)) {
+      return databaseErrorResponse(
+        updatedTagsResult.error.message,
+        updatedTagsResult.error.details
+      );
+    }
 
-    return NextResponse.json(
+    return successResponse(
       {
-        success: true,
-        data: {
-          task_id: taskId,
-          tags: updatedTags?.map(t => (t as any).tags).filter(Boolean) || [],
-          added_count: tagsToAdd.length,
-        },
+        task_id: taskId,
+        tags: updatedTagsResult.data.tags,
+        added_count: tagsToAdd.length,
       },
-      { status: 201 }
+      undefined,
+      201
     );
   } catch (err: any) {
     console.error('Task tags POST error:', err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return databaseErrorResponse('Failed to assign tags', err);
   }
 }

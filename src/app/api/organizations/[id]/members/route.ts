@@ -1,5 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  authRequiredResponse,
+  successResponse,
+  workspaceAccessDeniedResponse,
+  databaseErrorResponse,
+  internalErrorResponse
+} from '@/lib/api/response-helpers'
 
 /**
  * GET /api/organizations/[id]/members
@@ -13,58 +22,36 @@ export async function GET(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
     const workspaceId = params.id
+    const repo = new WorkspaceRepository(supabase)
 
     // Verify user has access to this workspace
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
+    const membershipResult = await repo.isMember(workspaceId, user.id)
 
-    if (!userMembership) {
-      const errorRes = NextResponse.json(
-        { error: 'Access denied', success: false },
-        { status: 403 }
-      )
+    if (isError(membershipResult)) {
+      console.error('Error checking workspace membership:', membershipResult.error)
+      const errorRes = databaseErrorResponse(membershipResult.error.message, membershipResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    // Fetch all workspace members with user details
-    const { data: members, error: membersError } = await supabase
-      .from('workspace_members')
-      .select(`
-        id,
-        user_id,
-        role,
-        capacity_hours_per_week,
-        focus_hours_per_day,
-        timezone,
-        settings,
-        created_at,
-        updated_at
-      `)
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: true })
+    if (!membershipResult.data) {
+      return mergeAuthResponse(workspaceAccessDeniedResponse(workspaceId), authResponse)
+    }
 
-    if (membersError) {
-      console.error('Error fetching workspace members:', membersError)
-      const errorRes = NextResponse.json(
-        { error: 'Failed to fetch members', success: false },
-        { status: 500 }
-      )
+    // Fetch all workspace members
+    const membersResult = await repo.getMembers(workspaceId)
+
+    if (isError(membersResult)) {
+      console.error('Error fetching workspace members:', membersResult.error)
+      const errorRes = databaseErrorResponse(membersResult.error.message, membersResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    // Fetch user details for each member
-    const memberIds = members?.map(m => m.user_id) || []
+    const members = membersResult.data
+    const memberIds = members.map(m => m.user_id)
 
     // Get user profiles
     const { data: profiles } = await supabase
@@ -77,7 +64,7 @@ export async function GET(
     const authUserMap = new Map<string, any>(authUsers?.map(u => [u.id, u] as [string, any]) || [])
 
     // Combine member data with user details
-    const membersWithDetails = members?.map(member => {
+    const membersWithDetails = members.map(member => {
       const profile = profiles?.find(p => p.id === member.user_id)
       const authUser = authUserMap.get(member.user_id)
 
@@ -92,18 +79,12 @@ export async function GET(
         email: profile?.email || authUser?.email || '',
         user_name: profile?.full_name || authUser?.email?.split('@')[0] || 'Unknown User',
       }
-    }) || []
-
-    const successRes = NextResponse.json({
-      success: true,
-      data: membersWithDetails,
     })
+
+    const successRes = successResponse(membersWithDetails)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Workspace members fetch error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    return internalErrorResponse('Failed to fetch workspace members', error)
   }
 }

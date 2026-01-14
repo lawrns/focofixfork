@@ -1,109 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
+import { OrganizationRepository } from '@/lib/repositories/organization-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  successResponse,
+  authRequiredResponse,
+  databaseErrorResponse,
+  missingFieldResponse,
+  conflictResponse,
+  internalErrorResponse,
+} from '@/lib/api/response-helpers'
 
 export async function GET(req: NextRequest) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
-    // Get user's workspaces (organizations)
-    const { data: workspaces, error: queryError } = await supabase
-      .from('workspace_members')
-      .select(`
-        workspace_id,
-        role,
-        workspaces!inner (
-          id,
-          name,
-          slug,
-          description,
-          logo_url,
-          created_at,
-          updated_at
-        )
-      `)
-      .eq('user_id', user.id)
+    const orgRepo = new OrganizationRepository(supabase)
+    const result = await orgRepo.findByUser(user.id)
 
-    if (queryError) {
-      console.error('Organizations fetch error:', queryError)
-      return NextResponse.json({ success: false, error: queryError.message }, { status: 500 })
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    // Transform data to match expected format
-    const organizations = workspaces?.map((wm: any) => ({
-      id: wm.workspaces?.id || wm.workspace_id,
-      name: wm.workspaces?.name,
-      slug: wm.workspaces?.slug,
-      description: wm.workspaces?.description,
-      logo_url: wm.workspaces?.logo_url,
-      role: wm.role,
-      created_at: wm.workspaces?.created_at,
-      updated_at: wm.workspaces?.updated_at
-    })) || []
-
-    return NextResponse.json({
-      success: true,
-      data: organizations
-    })
+    return successResponse(result.data)
   } catch (err: any) {
     console.error('Organizations API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalErrorResponse('Failed to fetch organizations', err.message)
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const body = await req.json()
-    
+
     if (!body.name) {
-      return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
+      return missingFieldResponse('name')
     }
 
     // Generate slug
     const slug = body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
-    // Create workspace
-    const { data: workspace, error: createError } = await supabase
-      .from('workspaces')
-      .insert({
+    const orgRepo = new OrganizationRepository(supabase)
+    const result = await orgRepo.createWithMember(
+      {
         name: body.name,
         slug,
         description: body.description || null,
-        logo_url: body.logo_url || null
-      })
-      .select()
-      .single()
+        logo_url: body.logo_url || null,
+      },
+      user.id
+    )
 
-    if (createError) {
-      console.error('Organization create error:', createError)
-      return NextResponse.json({ success: false, error: createError.message }, { status: 500 })
+    if (isError(result)) {
+      if (result.error.code === 'DUPLICATE_ENTRY') {
+        return conflictResponse(result.error.message, result.error.details)
+      }
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    // Add creator as admin
-    const { error: memberError } = await supabase
-      .from('workspace_members')
-      .insert({
-        workspace_id: workspace.id,
-        user_id: user.id,
-        role: 'admin'
-      })
-
-    if (memberError) {
-      console.error('Member add error:', memberError)
-    }
-
-    return NextResponse.json({ success: true, data: workspace }, { status: 201 })
+    return successResponse(result.data, undefined, 201)
   } catch (err: any) {
     console.error('Organizations POST error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalErrorResponse('Failed to create organization', err.message)
   }
 }

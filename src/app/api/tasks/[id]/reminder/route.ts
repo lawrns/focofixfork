@@ -1,69 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { NextRequest } from 'next/server'
+import { getAuthUser } from '@/lib/api/auth-helper'
 import { ReminderService } from '@/features/tasks/services/reminder-service'
+import {
+  authRequiredResponse,
+  successResponse,
+  missingFieldResponse,
+  validationFailedResponse,
+  databaseErrorResponse
+} from '@/lib/api/response-helpers'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    )
+    const { user, error } = await getAuthUser(request)
 
-    // Get authenticated user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
-    const taskId = params.id
+    const { id } = await params
+    const taskId = id
     const body = await request.json()
     const { reminder_at, option = 'custom' } = body
 
     if (!reminder_at) {
-      return NextResponse.json(
-        { error: 'reminder_at is required' },
-        { status: 400 }
-      )
+      return missingFieldResponse('reminder_at')
     }
 
     const reminderDate = new Date(reminder_at)
     if (isNaN(reminderDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid reminder_at date format' },
-        { status: 400 }
+      return validationFailedResponse(
+        'Invalid reminder_at date format',
+        { reminder_at }
       )
     }
 
     if (reminderDate <= new Date()) {
-      return NextResponse.json(
-        { error: 'Reminder date must be in the future' },
-        { status: 400 }
+      return validationFailedResponse(
+        'Reminder date must be in the future',
+        { reminder_at }
       )
     }
 
@@ -75,145 +52,75 @@ export async function POST(
     )
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
+      return databaseErrorResponse(
+        result.error || 'Failed to set reminder',
+        { taskId, option }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Reminder API error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to set reminder' },
-      { status: 500 }
-    )
+    return successResponse(result.data, undefined, 201)
+  } catch (err: any) {
+    console.error('Reminder API error:', err)
+    return databaseErrorResponse('Failed to set reminder', err)
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    )
+    const { user, error } = await getAuthUser(request)
 
-    // Get authenticated user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
-    const taskId = params.id
+    const { id } = await params
+    const taskId = id
 
     const result = await ReminderService.removeReminder(user.id, taskId)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
+      return databaseErrorResponse(
+        result.error || 'Failed to remove reminder',
+        { taskId }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Reminder removed',
-    })
-  } catch (error: any) {
-    console.error('Remove reminder API error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to remove reminder' },
-      { status: 500 }
-    )
+    return successResponse({ message: 'Reminder removed' })
+  } catch (err: any) {
+    console.error('Remove reminder API error:', err)
+    return databaseErrorResponse('Failed to remove reminder', err)
   }
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
-            }
-          },
-        },
-      }
-    )
+    const { user, error } = await getAuthUser(request)
 
-    // Get authenticated user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (error || !user) {
+      return authRequiredResponse()
     }
 
-    const taskId = params.id
+    const { id } = await params
+    const taskId = id
 
     const result = await ReminderService.getTaskReminders(taskId)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
+      return databaseErrorResponse(
+        result.error || 'Failed to get reminders',
+        { taskId }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('Get reminders API error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to get reminders' },
-      { status: 500 }
-    )
+    return successResponse(result.data)
+  } catch (err: any) {
+    console.error('Get reminders API error:', err)
+    return databaseErrorResponse('Failed to get reminders', err)
   }
 }

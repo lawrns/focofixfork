@@ -1,97 +1,84 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
+import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
+import { isError } from '@/lib/repositories/base-repository';
+import {
+  authRequiredResponse,
+  successResponse,
+  databaseErrorResponse,
+  taskNotFoundResponse,
+  workspaceAccessDeniedResponse,
+  notFoundResponse,
+  validateUUID,
+} from '@/lib/api/response-helpers';
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; tag_id: string } }
+  { params }: { params: Promise<{ id: string; tag_id: string }> }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req);
 
     if (error || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return authRequiredResponse();
     }
 
-    const taskId = params.id;
-    const tagId = params.tag_id;
+    const { id: taskId, tag_id: tagId } = await params;
 
-    // Verify task exists and user has access
-    const { data: task } = await supabase
-      .from('work_items')
-      .select('id, workspace_id')
-      .eq('id', taskId)
-      .single();
-
-    if (!task) {
-      return NextResponse.json(
-        { success: false, error: 'Task not found' },
-        { status: 404 }
-      );
+    const taskUuidError = validateUUID('id', taskId);
+    if (taskUuidError) {
+      return taskUuidError;
     }
 
-    // Verify user has access to workspace
-    const { data: workspaceAccess } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!workspaceAccess) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      );
+    const tagUuidError = validateUUID('tag_id', tagId);
+    if (tagUuidError) {
+      return tagUuidError;
     }
 
-    // Verify tag exists in the workspace
-    const { data: tag } = await supabase
-      .from('tags')
-      .select('id, workspace_id')
-      .eq('id', tagId)
-      .single();
+    const repo = new TaskTagRepository(supabase);
 
-    if (!tag || tag.workspace_id !== task.workspace_id) {
-      return NextResponse.json(
-        { success: false, error: 'Tag not found' },
-        { status: 404 }
-      );
+    const taskResult = await repo.getTaskWithWorkspace(taskId);
+    if (isError(taskResult)) {
+      if (taskResult.error.code === 'NOT_FOUND') {
+        return taskNotFoundResponse(taskId);
+      }
+      return databaseErrorResponse(taskResult.error.message, taskResult.error.details);
     }
 
-    // Delete the tag assignment (idempotent operation)
-    const { error: deleteError } = await supabase
-      .from('task_tags')
-      .delete()
-      .eq('task_id', taskId)
-      .eq('tag_id', tagId);
+    const task = taskResult.data;
 
-    if (deleteError) {
-      console.error('Tag removal error:', deleteError);
-      return NextResponse.json(
-        { success: false, error: deleteError.message },
-        { status: 500 }
-      );
+    const accessResult = await repo.verifyWorkspaceAccess(task.workspace_id, user.id);
+    if (isError(accessResult)) {
+      if (accessResult.error.code === 'WORKSPACE_ACCESS_DENIED') {
+        return workspaceAccessDeniedResponse(task.workspace_id);
+      }
+      return databaseErrorResponse(accessResult.error.message, accessResult.error.details);
     }
 
-    return NextResponse.json(
+    const tagResult = await repo.verifyTagInWorkspace(tagId, task.workspace_id);
+    if (isError(tagResult)) {
+      if (tagResult.error.code === 'NOT_FOUND') {
+        return notFoundResponse('Tag', tagId);
+      }
+      return databaseErrorResponse(tagResult.error.message, tagResult.error.details);
+    }
+
+    const removeResult = await repo.removeTagFromTask(taskId, tagId);
+    if (isError(removeResult)) {
+      return databaseErrorResponse(removeResult.error.message, removeResult.error.details);
+    }
+
+    return successResponse(
       {
-        success: true,
-        data: {
-          task_id: taskId,
-          tag_id: tagId,
-          message: 'Tag removed from task',
-        },
+        task_id: taskId,
+        tag_id: tagId,
+        message: 'Tag removed from task',
       },
-      { status: 204 }
+      undefined,
+      200
     );
   } catch (err: any) {
     console.error('Tag removal error:', err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return databaseErrorResponse('Failed to remove tag from task', err);
   }
 }

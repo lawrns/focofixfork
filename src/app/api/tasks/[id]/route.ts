@@ -1,5 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
+import { TaskRepository } from '@/lib/repositories/task-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  successResponse,
+  authRequiredResponse,
+  taskNotFoundResponse,
+  internalErrorResponse,
+  databaseErrorResponse,
+} from '@/lib/api/response-helpers'
 
 export async function GET(
   req: NextRequest,
@@ -7,28 +16,26 @@ export async function GET(
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
+    const taskRepo = new TaskRepository(supabase)
+    const result = await taskRepo.findById(id)
 
-    const { data, error: queryError } = await supabase
-      .from('work_items')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (queryError) {
-      console.error('Task fetch error:', queryError)
-      return NextResponse.json({ success: false, error: 'Task not found' }, { status: 404 })
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        return taskNotFoundResponse(id)
+      }
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true, data })
+    return successResponse(result.data)
   } catch (err: any) {
     console.error('Task GET error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalErrorResponse('Failed to fetch task', err)
   }
 }
 
@@ -38,9 +45,9 @@ export async function PATCH(
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
@@ -48,7 +55,7 @@ export async function PATCH(
 
     // Build update object with only provided fields
     const updateData: Record<string, any> = {}
-    
+
     if (body.title !== undefined) updateData.title = body.title
     if (body.description !== undefined) updateData.description = body.description
     if (body.status !== undefined) updateData.status = body.status
@@ -59,24 +66,20 @@ export async function PATCH(
     if (body.due_date !== undefined) updateData.due_date = body.due_date
     if (body.project_id !== undefined) updateData.project_id = body.project_id
 
-    updateData.updated_at = new Date().toISOString()
+    const taskRepo = new TaskRepository(supabase)
+    const result = await taskRepo.updateTask(id, updateData)
 
-    const { data, error: updateError } = await supabase
-      .from('work_items')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (updateError) {
-      console.error('Task update error:', updateError)
-      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        return taskNotFoundResponse(id)
+      }
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true, data })
+    return successResponse(result.data)
   } catch (err: any) {
     console.error('Task PATCH error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalErrorResponse('Failed to update task', err)
   }
 }
 
@@ -86,26 +89,22 @@ export async function DELETE(
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
-    
+
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
+    const taskRepo = new TaskRepository(supabase)
+    const result = await taskRepo.delete(id)
 
-    const { error: deleteError } = await supabase
-      .from('work_items')
-      .delete()
-      .eq('id', id)
-
-    if (deleteError) {
-      console.error('Task delete error:', deleteError)
-      return NextResponse.json({ success: false, error: deleteError.message }, { status: 500 })
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({ success: true, data: { deleted: true } })
+    return successResponse({ deleted: true })
   } catch (err: any) {
     console.error('Task DELETE error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return internalErrorResponse('Failed to delete task', err)
   }
 }

@@ -1,4 +1,9 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import { authRequiredResponse, successResponse, databaseErrorResponse, missingFieldResponse, internalErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 /**
@@ -21,59 +26,34 @@ export async function GET(request: NextRequest) {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', workspaces: [] },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
-    // Fetch user's workspaces with member check
-    const { data: workspaceMembers, error: memberError } = await supabase
-      .from('workspace_members')
-      .select(`
-        workspace_id,
-        workspaces (
-          id,
-          name,
-          slug,
-          logo_url
-        )
-      `)
-      .eq('user_id', user.id)
+    const repo = new WorkspaceRepository(supabase)
+    const result = await repo.findByUser(user.id)
 
-    if (memberError) {
-      console.error('Error fetching workspace members:', memberError)
-      const errorRes = NextResponse.json(
-        { error: 'Failed to fetch workspaces', workspaces: [] },
-        { status: 500 }
-      )
+    if (isError(result)) {
+      console.error('Error fetching workspaces:', result.error)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    // Map to workspace format
-    const workspaces = (workspaceMembers || [])
-      .filter(wm => wm.workspaces)
-      .map(wm => {
-        const ws = wm.workspaces as any
-        return {
-          id: ws.id,
-          name: ws.name,
-          slug: ws.slug,
-          icon: ws.logo_url ? undefined : '📦',
-        }
-      })
+    // Map to workspace format with icon
+    const workspaces = result.data.map(ws => ({
+      id: ws.id,
+      name: ws.name,
+      slug: ws.slug,
+      icon: ws.logo_url ? undefined : '📦',
+    }))
 
-    const successRes = NextResponse.json({
+    const successRes = successResponse({
       workspaces,
       total: workspaces.length,
     })
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Workspace fetch error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', workspaces: [] },
-      { status: 500 }
-    )
+    return databaseErrorResponse('Failed to fetch workspaces', error)
   }
 }
 
@@ -93,21 +73,17 @@ export async function POST(request: NextRequest) {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
     const body = await request.json()
     const { name, slug, icon } = body
 
-    if (!name || !slug) {
-      const errorRes = NextResponse.json(
-        { error: 'Missing required fields: name, slug' },
-        { status: 400 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+    if (!name) {
+      return mergeAuthResponse(missingFieldResponse('name'), authResponse)
+    }
+    if (!slug) {
+      return mergeAuthResponse(missingFieldResponse('slug'), authResponse)
     }
 
     // Create new organization/workspace
@@ -126,11 +102,7 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       console.error('Error creating organization:', createError)
-      const errorRes = NextResponse.json(
-        { error: 'Failed to create workspace' },
-        { status: 500 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+      return mergeAuthResponse(databaseErrorResponse('Failed to create workspace', createError), authResponse)
     }
 
     // Add creator as organization member
@@ -152,30 +124,20 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq('id', newOrg.id)
 
-      const errorRes = NextResponse.json(
-        { error: 'Failed to set up workspace' },
-        { status: 500 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+      return mergeAuthResponse(databaseErrorResponse('Failed to set up workspace', memberError), authResponse)
     }
 
-    const successRes = NextResponse.json(
-      {
-        workspace: {
-          id: newOrg.id,
-          name: newOrg.name,
-          slug: newOrg.slug,
-          icon,
-        },
+    const successRes = successResponse({
+      workspace: {
+        id: newOrg.id,
+        name: newOrg.name,
+        slug: newOrg.slug,
+        icon,
       },
-      { status: 201 }
-    )
+    }, undefined, 201)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Workspace creation error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return internalErrorResponse('Workspace creation error', error)
   }
 }

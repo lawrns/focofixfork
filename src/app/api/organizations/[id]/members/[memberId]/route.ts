@@ -1,5 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  authRequiredResponse,
+  successResponse,
+  forbiddenResponse,
+  missingFieldResponse,
+  databaseErrorResponse,
+  internalErrorResponse
+} from '@/lib/api/response-helpers'
 
 /**
  * PATCH /api/organizations/[id]/members/[memberId]
@@ -13,67 +23,67 @@ export async function PATCH(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
     const { id: workspaceId, memberId } = params
+    const repo = new WorkspaceRepository(supabase)
 
-    // Verify user is admin
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
+    // Verify user has admin access
+    const adminAccessResult = await repo.hasAdminAccess(workspaceId, user.id)
 
-    if (!userMembership || userMembership.role !== 'admin') {
-      const errorRes = NextResponse.json(
-        { error: 'Admin access required', success: false },
-        { status: 403 }
-      )
+    if (isError(adminAccessResult)) {
+      console.error('Error checking admin access:', adminAccessResult.error)
+      const errorRes = databaseErrorResponse(adminAccessResult.error.message, adminAccessResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
+    }
+
+    if (!adminAccessResult.data) {
+      return mergeAuthResponse(forbiddenResponse('Admin access required'), authResponse)
     }
 
     const body = await request.json()
 
     if (!body.role) {
-      const errorRes = NextResponse.json(
-        { error: 'Role is required', success: false },
-        { status: 400 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+      return mergeAuthResponse(missingFieldResponse('role'), authResponse)
     }
 
-    // Update member role
-    const { error: updateError } = await supabase
+    // Get the member to find their user_id
+    const { data: memberData, error: memberError } = await supabase
       .from('workspace_members')
-      .update({ role: body.role })
+      .select('user_id')
       .eq('id', memberId)
       .eq('workspace_id', workspaceId)
+      .maybeSingle()
 
-    if (updateError) {
-      console.error('Error updating member role:', updateError)
-      const errorRes = NextResponse.json(
-        { error: updateError.message, success: false },
-        { status: 500 }
-      )
+    if (memberError) {
+      console.error('Error fetching member:', memberError)
+      const errorRes = databaseErrorResponse('Failed to fetch member', memberError)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    const successRes = NextResponse.json({
-      success: true,
-      message: 'Member role updated successfully'
+    if (!memberData) {
+      const errorRes = databaseErrorResponse('Member not found', { memberId, workspaceId })
+      return mergeAuthResponse(errorRes, authResponse)
+    }
+
+    // Update member role using repository
+    const updateResult = await repo.updateMemberRole(workspaceId, memberData.user_id, body.role)
+
+    if (isError(updateResult)) {
+      console.error('Error updating member role:', updateResult.error)
+      const errorRes = databaseErrorResponse(updateResult.error.message, updateResult.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
+    }
+
+    const successRes = successResponse({
+      message: 'Member role updated successfully',
+      member: updateResult.data
     })
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Member update error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    return internalErrorResponse('Failed to update member', error)
   }
 }
 
@@ -89,71 +99,66 @@ export async function DELETE(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
     const { id: workspaceId, memberId } = params
+    const repo = new WorkspaceRepository(supabase)
 
-    // Verify user is admin
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
+    // Verify user has admin access
+    const adminAccessResult = await repo.hasAdminAccess(workspaceId, user.id)
 
-    if (!userMembership || userMembership.role !== 'admin') {
-      const errorRes = NextResponse.json(
-        { error: 'Admin access required', success: false },
-        { status: 403 }
-      )
+    if (isError(adminAccessResult)) {
+      console.error('Error checking admin access:', adminAccessResult.error)
+      const errorRes = databaseErrorResponse(adminAccessResult.error.message, adminAccessResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    // Prevent removing self
-    const { data: memberToRemove } = await supabase
+    if (!adminAccessResult.data) {
+      return mergeAuthResponse(forbiddenResponse('Admin access required'), authResponse)
+    }
+
+    // Get the member to check if they're removing themselves
+    const { data: memberToRemove, error: memberError } = await supabase
       .from('workspace_members')
       .select('user_id')
       .eq('id', memberId)
-      .single()
-
-    if (memberToRemove?.user_id === user.id) {
-      const errorRes = NextResponse.json(
-        { error: 'Cannot remove yourself', success: false },
-        { status: 400 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
-    }
-
-    // Delete member
-    const { error: deleteError } = await supabase
-      .from('workspace_members')
-      .delete()
-      .eq('id', memberId)
       .eq('workspace_id', workspaceId)
+      .maybeSingle()
 
-    if (deleteError) {
-      console.error('Error removing member:', deleteError)
-      const errorRes = NextResponse.json(
-        { error: deleteError.message, success: false },
-        { status: 500 }
-      )
+    if (memberError) {
+      console.error('Error fetching member:', memberError)
+      const errorRes = databaseErrorResponse('Failed to fetch member', memberError)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    const successRes = NextResponse.json({
-      success: true,
+    if (!memberToRemove) {
+      const errorRes = databaseErrorResponse('Member not found', { memberId, workspaceId })
+      return mergeAuthResponse(errorRes, authResponse)
+    }
+
+    if (memberToRemove.user_id === user.id) {
+      return mergeAuthResponse(
+        forbiddenResponse('Cannot remove yourself from the workspace'),
+        authResponse
+      )
+    }
+
+    // Remove member using repository
+    const removeResult = await repo.removeMember(workspaceId, memberToRemove.user_id)
+
+    if (isError(removeResult)) {
+      console.error('Error removing member:', removeResult.error)
+      const errorRes = databaseErrorResponse(removeResult.error.message, removeResult.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
+    }
+
+    const successRes = successResponse({
       message: 'Member removed successfully'
     })
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Member deletion error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    return internalErrorResponse('Failed to remove member', error)
   }
 }

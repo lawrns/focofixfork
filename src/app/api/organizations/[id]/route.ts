@@ -1,5 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { OrganizationRepository } from '@/lib/repositories/organization-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import {
+  successResponse,
+  authRequiredResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  databaseErrorResponse,
+  internalErrorResponse,
+} from '@/lib/api/response-helpers'
 
 /**
  * GET /api/organizations/[id]
@@ -13,67 +23,39 @@ export async function GET(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
-    const workspaceId = params.id
+    const organizationId = params.id
+    const orgRepo = new OrganizationRepository(supabase)
 
-    // Verify user has access to this workspace
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
+    // Verify user has access to this organization
+    const memberResult = await orgRepo.isMember(organizationId, user.id)
+    if (isError(memberResult)) {
+      return databaseErrorResponse(memberResult.error.message, memberResult.error.details)
+    }
 
-    if (!userMembership) {
-      const errorRes = NextResponse.json(
-        { error: 'Access denied', success: false },
-        { status: 403 }
-      )
+    if (!memberResult.data) {
+      const errorRes = forbiddenResponse('Access denied to this organization')
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    // Fetch workspace details
-    const { data: workspace, error: workspaceError } = await supabase
-      .from('workspaces')
-      .select('*')
-      .eq('id', workspaceId)
-      .single()
+    // Fetch organization details
+    const result = await orgRepo.findById(organizationId)
 
-    if (workspaceError || !workspace) {
-      console.error('Error fetching workspace:', workspaceError)
-      const errorRes = NextResponse.json(
-        { error: 'Workspace not found', success: false },
-        { status: 404 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
-    }
-
-    const successRes = NextResponse.json({
-      success: true,
-      data: {
-        id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        description: workspace.description,
-        logo_url: workspace.logo_url,
-        is_active: true,
-        created_by: workspace.created_by || user.id,
-        created_at: workspace.created_at,
-        updated_at: workspace.updated_at
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        const errorRes = notFoundResponse('Organization', organizationId)
+        return mergeAuthResponse(errorRes, authResponse)
       }
-    })
+      return databaseErrorResponse(result.error.message, result.error.details)
+    }
+
+    const successRes = successResponse(result.data)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Organization fetch error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    return internalErrorResponse('Failed to fetch organization', error instanceof Error ? error.message : 'Unknown error')
   }
 }
 
@@ -89,27 +71,20 @@ export async function PATCH(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+      return authRequiredResponse()
     }
 
-    const workspaceId = params.id
+    const organizationId = params.id
+    const orgRepo = new OrganizationRepository(supabase)
 
-    // Verify user is admin
-    const { data: userMembership } = await supabase
-      .from('workspace_members')
-      .select('role')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single()
+    // Verify user has admin access
+    const adminResult = await orgRepo.hasAdminAccess(organizationId, user.id)
+    if (isError(adminResult)) {
+      return databaseErrorResponse(adminResult.error.message, adminResult.error.details)
+    }
 
-    if (!userMembership || userMembership.role !== 'admin') {
-      const errorRes = NextResponse.json(
-        { error: 'Admin access required', success: false },
-        { status: 403 }
-      )
+    if (!adminResult.data) {
+      const errorRes = forbiddenResponse('Admin access required')
       return mergeAuthResponse(errorRes, authResponse)
     }
 
@@ -120,32 +95,20 @@ export async function PATCH(
     if (body.description !== undefined) updates.description = body.description
     if (body.logo_url !== undefined) updates.logo_url = body.logo_url
 
-    const { data: workspace, error: updateError } = await supabase
-      .from('workspaces')
-      .update(updates)
-      .eq('id', workspaceId)
-      .select()
-      .single()
+    const result = await orgRepo.update(organizationId, updates)
 
-    if (updateError) {
-      console.error('Error updating workspace:', updateError)
-      const errorRes = NextResponse.json(
-        { error: updateError.message, success: false },
-        { status: 500 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
+    if (isError(result)) {
+      if (result.error.code === 'NOT_FOUND') {
+        const errorRes = notFoundResponse('Organization', organizationId)
+        return mergeAuthResponse(errorRes, authResponse)
+      }
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    const successRes = NextResponse.json({
-      success: true,
-      data: workspace
-    })
+    const successRes = successResponse(result.data)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
     console.error('Organization update error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', success: false },
-      { status: 500 }
-    )
+    return internalErrorResponse('Failed to update organization', error instanceof Error ? error.message : 'Unknown error')
   }
 }

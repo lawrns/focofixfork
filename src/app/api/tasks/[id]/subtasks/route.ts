@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 import { generateFractionalIndex } from '@/lib/utils/fractional-indexing'
+import { SubtaskRepository } from '@/lib/repositories/subtask-repository'
+import { isError } from '@/lib/repositories/base-repository'
+import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
 
 export async function GET(
   req: NextRequest,
@@ -10,30 +13,22 @@ export async function GET(
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
 
-    // Get all subtasks for the task, ordered by position
-    const { data, error: queryError } = await supabase
-      .from('task_subtasks')
-      .select('*')
-      .eq('task_id', id)
-      .order('position', { ascending: true })
+    const repo = new SubtaskRepository(supabase)
+    const result = await repo.findByTaskId(id)
 
-    if (queryError) {
-      console.error('Subtasks fetch error:', queryError)
-      return NextResponse.json({ success: false, error: queryError.message }, { status: 500 })
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json({
-      success: true,
-      data: data || [],
-    })
+    return successResponse(result.data)
   } catch (err: any) {
     console.error('Get subtasks error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to fetch subtasks', err)
   }
 }
 
@@ -45,7 +40,7 @@ export async function POST(
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return authRequiredResponse()
     }
 
     const { id } = await params
@@ -54,61 +49,44 @@ export async function POST(
 
     // Validation
     if (!title || typeof title !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'Title is required and must be a string' },
-        { status: 400 }
-      )
+      return databaseErrorResponse('Title is required and must be a string')
     }
 
     if (title.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Title cannot be empty' },
-        { status: 400 }
-      )
+      return databaseErrorResponse('Title cannot be empty')
     }
 
     if (title.length > 500) {
-      return NextResponse.json(
-        { success: false, error: 'Title must be 500 characters or less' },
-        { status: 400 }
-      )
+      return databaseErrorResponse('Title must be 500 characters or less')
     }
 
-    // Get the last subtask to determine position
-    const { data: lastSubtask } = await supabase
-      .from('task_subtasks')
-      .select('position')
-      .eq('task_id', id)
-      .order('position', { ascending: false })
-      .limit(1)
-      .single()
+    const repo = new SubtaskRepository(supabase)
 
-    const lastPosition = lastSubtask?.position || 'a0'
+    // Get the last subtask to determine position
+    const lastResult = await repo.getLastSubtask(id)
+
+    if (isError(lastResult)) {
+      return databaseErrorResponse(lastResult.error.message, lastResult.error.details)
+    }
+
+    const lastPosition = lastResult.data?.position || 'a0'
     const newPosition = generateFractionalIndex(lastPosition, null)
 
     // Create new subtask
-    const { data, error: createError } = await supabase
-      .from('task_subtasks')
-      .insert({
-        task_id: id,
-        title: title.trim(),
-        completed: false,
-        position: newPosition,
-      })
-      .select()
-      .single()
+    const result = await repo.createSubtask({
+      task_id: id,
+      title: title.trim(),
+      completed: false,
+      position: newPosition,
+    })
 
-    if (createError) {
-      console.error('Create subtask error:', createError)
-      return NextResponse.json({ success: false, error: createError.message }, { status: 500 })
+    if (isError(result)) {
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return NextResponse.json(
-      { success: true, data },
-      { status: 201 }
-    )
+    return successResponse(result.data, undefined, 201)
   } catch (err: any) {
     console.error('Create subtask error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return databaseErrorResponse('Failed to create subtask', err)
   }
 }

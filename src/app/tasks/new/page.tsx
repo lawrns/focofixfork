@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ interface TeamMember {
   full_name: string | null;
 }
 
-export default function NewTaskPage() {
+function NewTaskForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -295,5 +295,20 @@ export default function NewTaskPage() {
         </div>
       </form>
     </PageShell>
+  );
+}
+
+export default function NewTaskPage() {
+  return (
+    <Suspense fallback={
+      <PageShell maxWidth="2xl">
+        <PageHeader title="Create New Task" subtitle="Loading..." />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+        </div>
+      </PageShell>
+    }>
+      <NewTaskForm />
+    </Suspense>
   );
 }

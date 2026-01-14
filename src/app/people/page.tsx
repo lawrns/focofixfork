@@ -243,42 +243,34 @@ function CapacityOverview({ members }: { members: TeamMember[] }) {
   );
 }
 
-const aiInsightsMock = [
-  {
-    id: '1',
-    type: 'warning',
-    title: 'High capacity warning',
-    description: 'Some team members are approaching or exceeding 100% capacity.',
-    confidence: 0.92,
-  },
-  {
-    id: '2',
-    type: 'suggestion',
-    title: 'Workload balancing',
-    description: 'AI suggests redistributing tasks to members with available capacity.',
-    confidence: 0.88,
-  },
-];
+function AIInsights({ members }: { members: TeamMember[] }) {
+  // Generate real insights based on actual team data
+  const insights = [];
+  
+  const overloadedMembers = members.filter(m => m.capacity.current > 100);
+  const availableMembers = members.filter(m => m.capacity.current < 70);
+  
+  if (overloadedMembers.length > 0 && availableMembers.length > 0) {
+    insights.push({
+      id: 'workload-balance',
+      type: 'suggestion',
+      title: 'Workload balancing opportunity',
+      description: `${overloadedMembers.length} team member${overloadedMembers.length > 1 ? 's are' : ' is'} overloaded while ${availableMembers.length} member${availableMembers.length > 1 ? 's have' : ' has'} available capacity.`,
+      confidence: 0.88,
+    });
+  }
+  
+  if (overloadedMembers.length > 0) {
+    insights.push({
+      id: 'capacity-warning',
+      type: 'warning',
+      title: 'High capacity warning',
+      description: `${overloadedMembers.map(m => m.name).join(', ')} ${overloadedMembers.length > 1 ? 'are' : 'is'} approaching or exceeding 100% capacity.`,
+      confidence: 0.92,
+    });
+  }
 
-function AIInsights() {
-  const [dismissedInsights, setDismissedInsights] = useState<string[]>([]);
-
-  const handleApply = (insightId: string) => {
-    // TODO: Implement apply logic based on insight type
-    toast.success('Insight applied! This feature is coming soon.');
-    setDismissedInsights([...dismissedInsights, insightId]);
-  };
-
-  const handleDismiss = (insightId: string) => {
-    setDismissedInsights([...dismissedInsights, insightId]);
-    toast('Insight dismissed');
-  };
-
-  const visibleInsights = aiInsightsMock.filter(
-    (insight) => !dismissedInsights.includes(insight.id)
-  );
-
-  if (visibleInsights.length === 0) {
+  if (insights.length === 0) {
     return null;
   }
 
@@ -291,7 +283,7 @@ function AIInsights() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {visibleInsights.map((insight) => (
+        {insights.map((insight) => (
           <div
             key={insight.id}
             className={cn(
@@ -316,24 +308,6 @@ function AIInsights() {
               <Badge variant="secondary" className="text-[10px] shrink-0">
                 {Math.round(insight.confidence * 100)}%
               </Badge>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <Button
-                size="sm"
-                variant="default"
-                className="h-7 text-xs"
-                onClick={() => handleApply(insight.id)}
-              >
-                Apply
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={() => handleDismiss(insight.id)}
-              >
-                Dismiss
-              </Button>
             </div>
           </div>
         ))}
@@ -378,22 +352,60 @@ export default function PeoplePage() {
       const membersData = await membersRes.json();
 
       if (membersData.success && membersData.data) {
-        setMembers(membersData.data.map((m: any) => ({
-          id: m.user_id,
-          name: m.user_name || m.email?.split('@')[0] || 'Unknown',
-          email: m.email || '',
-          role: m.role || 'Member',
-          avatar: m.user?.avatar_url,
-          status: 'online',
-          capacity: {
-            current: m.capacity_hours_per_week ? Math.round((m.focus_hours_per_day * 5 / m.capacity_hours_per_week) * 100) : 80,
-            max: 100,
-            trend: 'stable'
-          },
-          tasks: { assigned: 0, completed: 0, overdue: 0, blocked: 0 },
-          focusHours: m.focus_hours_per_day || 4,
-          timezone: m.timezone || 'UTC'
-        })));
+        // Fetch task stats for each member
+        const membersWithStats = await Promise.all(
+          membersData.data.map(async (m: any) => {
+            try {
+              const tasksRes = await fetch(`/api/tasks?assignee_id=${m.user_id}`);
+              const tasksData = await tasksRes.json();
+              const tasks = tasksData.data?.data || tasksData.data || [];
+
+              const assigned = tasks.filter((t: any) => t.status !== 'done').length;
+              const completed = tasks.filter((t: any) => t.status === 'done').length;
+              const overdue = tasks.filter((t: any) => 
+                t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done'
+              ).length;
+              const blocked = tasks.filter((t: any) => t.status === 'blocked').length;
+
+              return {
+                id: m.user_id,
+                name: m.user?.full_name || m.user_name || m.email?.split('@')[0] || 'Unknown User',
+                email: m.email || m.user?.email || '',
+                role: m.role || 'member',
+                avatar: m.user?.avatar_url,
+                status: 'online' as const,
+                capacity: {
+                  current: assigned > 0 ? Math.min(Math.round((assigned / 10) * 100), 150) : 50,
+                  max: 100,
+                  trend: assigned > 10 ? 'up' as const : assigned > 5 ? 'stable' as const : 'down' as const
+                },
+                tasks: { assigned, completed, overdue, blocked },
+                focusHours: m.focus_hours_per_day || 4,
+                timezone: m.timezone || 'UTC'
+              };
+            } catch (err) {
+              console.error('Failed to fetch tasks for member:', m.user_id, err);
+              return {
+                id: m.user_id,
+                name: m.user?.full_name || m.user_name || m.email?.split('@')[0] || 'Unknown User',
+                email: m.email || m.user?.email || '',
+                role: m.role || 'member',
+                avatar: m.user?.avatar_url,
+                status: 'online' as const,
+                capacity: {
+                  current: 50,
+                  max: 100,
+                  trend: 'stable' as const
+                },
+                tasks: { assigned: 0, completed: 0, overdue: 0, blocked: 0 },
+                focusHours: m.focus_hours_per_day || 4,
+                timezone: m.timezone || 'UTC'
+              };
+            }
+          })
+        );
+
+        setMembers(membersWithStats);
       }
     } catch (error) {
       console.error('Failed to fetch members:', error);
@@ -463,7 +475,7 @@ export default function PeoplePage() {
       </Tabs>
 
       <CapacityOverview members={members} />
-      <AIInsights />
+      <AIInsights members={members} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredMembers.map((member) => (

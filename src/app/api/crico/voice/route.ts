@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, transcript, sttConfidence, commandId, environment } = body;
+    const { action, transcript, audio, sttConfidence, commandId, environment } = body;
 
     // Validate required fields
     if (!action) {
@@ -47,16 +47,32 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'process': {
-        if (!transcript || sttConfidence === undefined) {
+        // For now, accept either transcript directly or simulate transcription
+        // In production, this would use OpenAI Whisper API for audio transcription
+        let processedTranscript = transcript;
+        let processedConfidence = sttConfidence || 0.95;
+
+        if (audio && !transcript) {
+          // TODO: Implement Whisper API integration
+          // const transcription = await transcribeAudio(audio);
+          // processedTranscript = transcription.text;
+          // processedConfidence = transcription.confidence;
           return NextResponse.json(
-            { error: 'Transcript and sttConfidence are required' },
+            { error: 'Audio transcription not yet implemented. Please provide transcript directly.' },
+            { status: 501 }
+          );
+        }
+
+        if (!processedTranscript) {
+          return NextResponse.json(
+            { error: 'Transcript is required' },
             { status: 400 }
           );
         }
 
         const result = await processVoiceCommand(
-          transcript,
-          sttConfidence,
+          processedTranscript,
+          processedConfidence,
           userId,
           sessionId,
           env

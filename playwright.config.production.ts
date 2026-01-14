@@ -5,24 +5,35 @@ import { defineConfig, devices } from '@playwright/test'
  * Tests against live foco.mx site
  */
 export default defineConfig({
-  testDir: './tests/e2e',
-  fullyParallel: false, // Run sequentially for production testing
+  testDir: './tests/smoke',
+  fullyParallel: false,
   forbidOnly: true,
-  retries: 2, // Retry failed tests due to network issues
-  workers: 1, // Single worker for production
-  reporter: [['html', { outputFolder: 'playwright-report-production' }], ['list']],
-  timeout: 30000, // 30 second timeout per test
+  retries: 2,
+  workers: 1,
+  reporter: [
+    ['html', { outputFolder: 'test-results/production-smoke-report' }],
+    ['json', { outputFile: 'test-results/production-smoke-results.json' }],
+    ['list']
+  ],
+  timeout: 60000,
   use: {
     baseURL: 'https://foco.mx',
     trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
     video: 'retain-on-failure',
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
+  },
+  expect: {
+    timeout: 10000,
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+      },
     },
   ],
-  // No webServer needed - testing production site
 })

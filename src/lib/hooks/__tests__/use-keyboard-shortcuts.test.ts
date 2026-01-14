@@ -1,9 +1,10 @@
 import { renderHook } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
 import { useKeyboardShortcuts } from '../use-keyboard-shortcuts'
 
 describe('useKeyboardShortcuts', () => {
   it('should register keyboard shortcuts', () => {
-    const mockAction = jest.fn()
+    const mockAction = vi.fn()
     const shortcuts = [
       {
         key: 'k',
@@ -25,7 +26,7 @@ describe('useKeyboardShortcuts', () => {
   })
 
   it('should not trigger when disabled', () => {
-    const mockAction = jest.fn()
+    const mockAction = vi.fn()
     const shortcuts = [
       {
         key: 'k',

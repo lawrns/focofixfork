@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { cachedFetch } from '@/lib/cache/redis'
+import { CACHE_TTL, CACHE_KEYS } from '@/lib/cache/cache-config'
 
 /**
  * GET /api/workspaces/[id]/members
  * Fetches all members for a specific workspace
+ * OPTIMIZED: Fixed N+1 query problem with single JOIN query + caching
  */
 export async function GET(
   request: NextRequest,
@@ -19,62 +22,73 @@ export async function GET(
       )
     }
 
-    // Fetch workspace members with user details
-    const { data: members, error: membersError } = await supabase
-      .from('workspace_members')
-      .select(`
-        id,
-        user_id,
-        role,
-        capacity_hours_per_week,
-        focus_hours_per_day,
-        timezone,
-        settings,
-        created_at,
-        updated_at
-      `)
-      .eq('workspace_id', params.id)
-      .order('created_at', { ascending: true })
+    const cacheKey = CACHE_KEYS.WORKSPACE_MEMBERS(params.id)
 
-    if (membersError) {
-      console.error('Error fetching workspace members:', membersError)
-      const errorRes = NextResponse.json(
-        { error: 'Failed to fetch members', success: false },
-        { status: 500 }
-      )
-      return mergeAuthResponse(errorRes, authResponse)
-    }
+    const membersWithDetails = await cachedFetch(
+      cacheKey,
+      async () => {
+        // OPTIMIZATION: Single query with JOIN instead of N+1 queries
+        const { data: members, error: membersError } = await supabase
+          .from('workspace_members')
+          .select(`
+            id,
+            user_id,
+            role,
+            capacity_hours_per_week,
+            focus_hours_per_day,
+            timezone,
+            settings,
+            created_at,
+            updated_at,
+            user_profiles!inner (
+              id,
+              full_name,
+              avatar_url,
+              email
+            )
+          `)
+          .eq('workspace_id', params.id)
+          .order('created_at', { ascending: true })
 
-    // Fetch user details for each member from auth.users
-    const memberIds = members?.map(m => m.user_id) || []
+        if (membersError) {
+          console.error('Error fetching workspace members:', membersError)
+          throw new Error('Failed to fetch members')
+        }
 
-    // Get user profiles
-    const { data: profiles } = await supabase
-      .from('user_profiles')
-      .select('id, full_name, avatar_url, email')
-      .in('id', memberIds)
+        // Get auth users for fallback emails
+        const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
+        const authUserMap = new Map<string, any>(authUsers?.map(u => [u.id, u] as [string, any]) || [])
 
-    // Get user emails from auth (if not in profiles)
-    const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
-    const authUserMap = new Map<string, any>(authUsers?.map(u => [u.id, u] as [string, any]) || [])
+        // Transform the joined data
+        return members?.map(member => {
+          const profile = Array.isArray(member.user_profiles)
+            ? member.user_profiles[0]
+            : member.user_profiles
+          const authUser = authUserMap.get(member.user_id)
 
-    // Combine member data with user details
-    const membersWithDetails = members?.map(member => {
-      const profile = profiles?.find(p => p.id === member.user_id)
-      const authUser = authUserMap.get(member.user_id)
-
-      return {
-        ...member,
-        user: {
-          id: member.user_id,
-          email: profile?.email || authUser?.email || '',
-          full_name: profile?.full_name || '',
-          avatar_url: profile?.avatar_url || '',
-        },
-        email: profile?.email || authUser?.email || '',
-        user_name: profile?.full_name || authUser?.email?.split('@')[0] || 'Unknown User',
-      }
-    }) || []
+          return {
+            id: member.id,
+            user_id: member.user_id,
+            role: member.role,
+            capacity_hours_per_week: member.capacity_hours_per_week,
+            focus_hours_per_day: member.focus_hours_per_day,
+            timezone: member.timezone,
+            settings: member.settings,
+            created_at: member.created_at,
+            updated_at: member.updated_at,
+            user: {
+              id: member.user_id,
+              email: profile?.email || authUser?.email || '',
+              full_name: profile?.full_name || '',
+              avatar_url: profile?.avatar_url || '',
+            },
+            email: profile?.email || authUser?.email || '',
+            user_name: profile?.full_name || authUser?.email?.split('@')[0] || 'Unknown User',
+          }
+        }) || []
+      },
+      { ttl: CACHE_TTL.WORKSPACE_MEMBERS }
+    )
 
     const successRes = NextResponse.json({
       success: true,

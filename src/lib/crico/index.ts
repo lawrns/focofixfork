@@ -102,6 +102,163 @@ export {
 } from './audit/trust-calibration';
 
 // ============================================================================
+// NEW CRICO ALIGNMENT ENGINE COMPONENTS
+// ============================================================================
+
+// Schema Alignment Checker
+export {
+  SchemaAlignmentChecker,
+  type SchemaField,
+  type SchemaDefinition,
+  type AlignmentCheckResult,
+  type SchemaAlignmentConfig,
+} from './alignment/SchemaAlignmentChecker';
+
+// Type Coherence Analyzer
+export {
+  TypeCoherenceAnalyzer,
+  type TypeDefinition,
+  type TypeProperty,
+  type TypeReference,
+  type CoherenceCheckResult,
+  type TypeMismatch,
+  type TypeWarning,
+} from './alignment/TypeCoherenceAnalyzer';
+
+// Test Reality Scorer
+export {
+  TestRealityScorer,
+  type TestFile,
+  type FileCoverage,
+  type MockAnalysis,
+  type AssertionAnalysis,
+  type BehaviorCoverage,
+  type TestRealityScore,
+  type TestWarning,
+} from './alignment/TestRealityScorer';
+
+// Doc Freshness Tracker
+export {
+  DocFreshnessTracker,
+  type DocumentationFile,
+  type CodeFile,
+  type APIElement,
+  type DocFreshnessResult,
+  type DriftDetail,
+  type OverallFreshnessScore,
+} from './alignment/DocFreshnessTracker';
+
+// Spec Implementation Mapper
+export {
+  SpecImplementationMapper,
+  type Specification,
+  type AcceptanceCriterion,
+  type Requirement,
+  type CodeReference,
+  type SpecImplementationMapping,
+  type MappingIssue,
+} from './alignment/SpecImplementationMapper';
+
+// Alignment Graph
+export {
+  AlignmentGraphBuilder,
+  AlignmentCalculator,
+  detectDrift,
+  generateAlignmentClaims,
+  type Intent,
+  type Implementation as AlignmentImplementation,
+  type RuntimeBehavior,
+  type TypeDefinitionNode,
+  type TestCoverageNode,
+  type DocumentationNode,
+  type AlignmentGraph,
+  type AlignmentEdge,
+  type AlignmentLayer,
+  type AlignmentScore,
+  type DriftWarning,
+  type SuggestedFix,
+} from './alignment/AlignmentGraph';
+
+// Drift Detector
+export {
+  DriftDetector,
+  analyzeComplexity,
+  checkComplexityThresholds,
+  type DriftTrigger,
+  type DriftCheckConfig,
+  type DriftResult,
+  type DriftIssue,
+  type DriftSuggestion,
+} from './alignment/DriftDetector';
+
+// VSCode Integration
+export {
+  VSCodeIntegration,
+  DEFAULT_DECORATION_CONFIG,
+  type InlineIndicator,
+  type QuickFix,
+  type TextEdit,
+  type Command,
+  type HoverContent,
+  type SidebarPanelData,
+  type WarningItem,
+  type ActionItem,
+  type ActivityItem,
+  type FileConfidence,
+  type VSCodeMessage,
+  type DecorationConfig,
+  type DecorationStyle,
+  type StatusBarItem,
+} from './ide/VSCodeIntegration';
+
+// Suggestion Hunter
+export {
+  SuggestionHuntingOrchestrator,
+  ArchitecturalSimplificationHunter,
+  TestGapHunter,
+  PerformanceRiskHunter,
+  DeadCodeHunter,
+  NamingDriftHunter,
+  BaseHunter,
+  type HuntConfig,
+  type HuntSession,
+  type HuntResult as SuggestionHuntResult,
+  type SuggestionCandidate,
+  type FileChange,
+} from './suggestions/SuggestionHunter';
+
+// Agent Orchestra
+export {
+  AgentOrchestra,
+  ConductorAgent,
+  PlannerAgent,
+  CodeAuditorAgent,
+  TestArchitectAgent,
+  SchemaIntegrityAgent,
+  RiskRegressionAgent,
+  type TaskRequest,
+  type TaskResult,
+  type OrchestraState,
+} from './agents/AgentOrchestra';
+
+// Confidence Scoring
+export {
+  ConfidenceCalculator,
+  DEFAULT_CONFIDENCE_CONFIG,
+  aggregateConfidence,
+  getConfidenceColor,
+  getConfidenceLabel,
+  getSourceIcon,
+  formatConfidence,
+  type ConfidenceSource,
+  type ConfidenceRange,
+  type ConfidenceConfig,
+  type ConfidenceScore,
+  type ConfidenceFactor,
+  type ConfidenceFlag,
+} from './confidence/ConfidenceScoring';
+
+// ============================================================================
 // CRICO SINGLETON
 // ============================================================================
 

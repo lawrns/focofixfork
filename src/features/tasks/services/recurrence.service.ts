@@ -92,7 +92,7 @@ export function calculateNextRecurrenceDate(
  * Calculate next daily recurrence
  */
 function calculateNextDailyDate(baseDate: Date, interval: number): Date {
-  const nextDate = new Date(baseDate);
+  const nextDate = new Date(baseDate.getTime());
   nextDate.setDate(nextDate.getDate() + interval);
   return nextDate;
 }
@@ -101,23 +101,24 @@ function calculateNextDailyDate(baseDate: Date, interval: number): Date {
  * Calculate next weekly recurrence
  */
 function calculateNextWeeklyDate(baseDate: Date, interval: number, daysOfWeek: number[]): Date {
-  const nextDate = new Date(baseDate);
+  const nextDate = new Date(baseDate.getTime());
   const currentDay = nextDate.getDay();
 
   // Find the next occurrence of any of the selected days
   // First, check if any selected days remain this week
   const remainingDaysThisWeek = daysOfWeek.filter((day) => day > currentDay);
 
-  if (remainingDaysThisWeek.length > 0) {
-    // Go to the next occurrence of the closest day
+  if (remainingDaysThisWeek.length > 0 && interval === 1) {
+    // Go to the next occurrence of the closest day in the same week
     const nextDay = Math.min(...remainingDaysThisWeek);
     const daysToAdd = nextDay - currentDay;
     nextDate.setDate(nextDate.getDate() + daysToAdd);
     return nextDate;
   }
 
-  // No remaining days this week, go to next week(s)
-  const daysUntilNextWeek = 7 - currentDay + Math.min(...daysOfWeek);
+  // No remaining days this week, or custom interval - go to next occurrence
+  const targetDay = Math.min(...daysOfWeek);
+  const daysUntilNextWeek = (7 - currentDay + targetDay) % 7 || 7;
   const totalDaysToAdd = daysUntilNextWeek + (interval - 1) * 7;
   nextDate.setDate(nextDate.getDate() + totalDaysToAdd);
   return nextDate;
@@ -127,24 +128,27 @@ function calculateNextWeeklyDate(baseDate: Date, interval: number, daysOfWeek: n
  * Calculate next monthly recurrence
  */
 function calculateNextMonthlyDate(baseDate: Date, interval: number): Date {
-  const nextDate = new Date(baseDate);
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth();
   const dayOfMonth = baseDate.getDate();
-
-  // Add months
-  nextDate.setMonth(nextDate.getMonth() + interval);
-
-  // Handle end-of-month edge case
-  // If the original day doesn't exist in the target month, use the last day of that month
-  if (nextDate.getDate() !== dayOfMonth) {
-    // setDate with 0 gives us the last day of the previous month
-    nextDate.setDate(0);
-    // Move to the correct month if we went back
-    if (nextDate.getMonth() !== (baseDate.getMonth() + interval) % 12) {
-      nextDate.setDate(dayOfMonth);
-    }
-  }
-
-  return nextDate;
+  const hours = baseDate.getHours();
+  const minutes = baseDate.getMinutes();
+  const seconds = baseDate.getSeconds();
+  const milliseconds = baseDate.getMilliseconds();
+  
+  // Calculate target month and year
+  const targetMonth = month + interval;
+  const targetYear = year + Math.floor(targetMonth / 12);
+  const normalizedMonth = targetMonth % 12;
+  
+  // Get the last day of the target month
+  const lastDayOfMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+  
+  // Use the original day or the last day of the month, whichever is smaller
+  const targetDay = Math.min(dayOfMonth, lastDayOfMonth);
+  
+  // Create the next date with all time components preserved
+  return new Date(targetYear, normalizedMonth, targetDay, hours, minutes, seconds, milliseconds);
 }
 
 /**

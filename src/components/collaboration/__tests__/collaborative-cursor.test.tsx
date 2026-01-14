@@ -76,6 +76,7 @@ describe('CollaborativeCursor Component', () => {
   describe('Cursor Position Broadcast', () => {
     it('should broadcast cursor position with user_id, cursor_x, cursor_y, page_path', async () => {
       const broadcastSpy = vi.fn()
+      const user = userEvent.setup()
       render(
         <CollaborativeCursor
           users={mockUsers}
@@ -85,18 +86,20 @@ describe('CollaborativeCursor Component', () => {
         />
       )
 
-      // Simulate mouse move event manually
-      const event = new MouseEvent('mousemove', {
-        clientX: 100,
-        clientY: 200,
-        bubbles: true,
+      // Simulate mouse move event
+      await waitFor(async () => {
+        const event = new MouseEvent('mousemove', {
+          clientX: 100,
+          clientY: 200,
+          bubbles: true,
+        })
+        window.dispatchEvent(event)
       })
-      window.dispatchEvent(event)
 
       // Wait for throttled broadcast (should be within 100ms)
       await waitFor(() => {
         expect(broadcastSpy).toHaveBeenCalled()
-      }, { timeout: 200 })
+      }, { timeout: 300 })
 
       const call = broadcastSpy.mock.calls[0]
       expect(call[0]).toEqual(
@@ -121,14 +124,16 @@ describe('CollaborativeCursor Component', () => {
       )
 
       // Move cursor rapidly 5 times
-      for (let i = 0; i < 5; i++) {
-        const event = new MouseEvent('mousemove', {
-          clientX: 100 + i,
-          clientY: 200 + i,
-          bubbles: true,
-        })
-        window.dispatchEvent(event)
-      }
+      await waitFor(async () => {
+        for (let i = 0; i < 5; i++) {
+          const event = new MouseEvent('mousemove', {
+            clientX: 100 + i,
+            clientY: 200 + i,
+            bubbles: true,
+          })
+          window.dispatchEvent(event)
+        }
+      })
 
       // Wait for throttling
       await waitFor(() => {

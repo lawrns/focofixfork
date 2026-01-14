@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { Task } from '../types'
 import { useTaskUpdates } from '../hooks/use-task-updates'
 import { useTranslation } from '@/lib/i18n/context'
+import { filterValidSelectOptions, toSelectValueWithNone, fromSelectValue } from '@/lib/ui/select-validation'
 
 interface TaskEditDialogProps {
   isOpen: boolean
@@ -198,7 +199,7 @@ export function TaskEditDialog({
                   <SelectValue placeholder={t('task.selectProject')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map(project => (
+                  {filterValidSelectOptions(projects).map(project => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -212,8 +213,8 @@ export function TaskEditDialog({
                 {t('task.milestone')}
               </label>
               <Select
-                value={formData.milestone_id || ''}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, milestone_id: value || null }))}
+                value={toSelectValueWithNone(formData.milestone_id, 'none')}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, milestone_id: fromSelectValue(value, 'none') }))}
                 disabled={!formData.project_id}
               >
                 <SelectTrigger>
@@ -221,7 +222,7 @@ export function TaskEditDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t('task.noMilestone')}</SelectItem>
-                  {filteredMilestones.map(milestone => (
+                  {filterValidSelectOptions(filteredMilestones).map(milestone => (
                     <SelectItem key={milestone.id} value={milestone.id}>
                       {milestone.title}
                     </SelectItem>
@@ -238,15 +239,15 @@ export function TaskEditDialog({
                 {t('task.assignee')}
               </label>
               <Select
-                value={formData.assignee_id || ''}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, assignee_id: value || null }))}
+                value={toSelectValueWithNone(formData.assignee_id, 'unassigned')}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, assignee_id: fromSelectValue(value, 'unassigned') }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('task.selectAssignee')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">{t('task.unassigned')}</SelectItem>
-                  {assignees.map(assignee => (
+                  {filterValidSelectOptions(assignees).map(assignee => (
                     <SelectItem key={assignee.id} value={assignee.id}>
                       {assignee.name}
                     </SelectItem>

@@ -19,6 +19,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { filterValidSelectOptions, toSelectValue } from '@/lib/ui/select-validation';
 
 interface Project {
   id: string;
@@ -46,7 +47,7 @@ function NewTaskForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeId, setAssigneeId] = useState('unassigned');
   const [priority, setPriority] = useState('medium');
   const [status, setStatus] = useState(searchParams.get('section') || 'backlog');
   const [dueDate, setDueDate] = useState('');
@@ -120,7 +121,7 @@ function NewTaskForm() {
           title: title.trim(),
           description: description.trim(),
           project_id: projectId,
-          assignee_id: assigneeId || null,
+          assignee_id: assigneeId === 'unassigned' ? null : assigneeId,
           priority,
           status,
           due_date: dueDate || null,
@@ -202,10 +203,10 @@ function NewTaskForm() {
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                {projects.length === 0 ? (
+                {filterValidSelectOptions(projects).length === 0 ? (
                   <SelectItem value="none" disabled>No projects available</SelectItem>
                 ) : (
-                  projects.map((project) => (
+                  filterValidSelectOptions(projects).map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -222,8 +223,8 @@ function NewTaskForm() {
                 <SelectValue placeholder="Unassigned" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
-                {teamMembers.map((member) => (
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {teamMembers.filter(m => m.user_id && m.user_id !== '').map((member) => (
                   <SelectItem key={member.user_id} value={member.user_id}>
                     {member.full_name || member.email}
                   </SelectItem>

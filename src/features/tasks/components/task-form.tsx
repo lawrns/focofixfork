@@ -19,6 +19,7 @@ import { TasksService } from '../services/taskService'
 import { SmartDateInput } from '@/components/forms/smart-date-input'
 import { SuggestionChips } from './suggestion-chips'
 import { MarkdownPreview } from '@/components/markdown-preview/markdown-preview'
+import { filterValidSelectOptions, toSelectValueWithNone, fromSelectValue } from '@/lib/ui/select-validation'
 import type { Task } from '../types'
 
 const taskSchema = z.object({
@@ -365,7 +366,7 @@ export function TaskForm({
             <SelectValue placeholder="Select project" />
           </SelectTrigger>
           <SelectContent>
-            {projects.map((project) => (
+            {filterValidSelectOptions(projects).map((project) => (
               <SelectItem key={project.id} value={project.id}>
                 {project.name}
               </SelectItem>
@@ -383,8 +384,8 @@ export function TaskForm({
       <div className="space-y-2">
         <Label htmlFor="milestone">Milestone (Optional)</Label>
         <Select
-          value={watch('milestone_id') ?? 'none'}
-          onValueChange={(value) => setValue('milestone_id', value === 'none' ? null : value, { shouldDirty: true })}
+          value={toSelectValueWithNone(watch('milestone_id'), 'none')}
+          onValueChange={(value) => setValue('milestone_id', fromSelectValue(value, 'none'), { shouldDirty: true })}
           disabled={isSubmitting || !watchedProjectId}
         >
           <SelectTrigger>
@@ -392,7 +393,7 @@ export function TaskForm({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">No milestone</SelectItem>
-            {availableMilestones.map((milestone) => (
+            {filterValidSelectOptions(availableMilestones).map((milestone) => (
               <SelectItem key={milestone.id} value={milestone.id}>
                 {milestone.title}
               </SelectItem>
@@ -447,8 +448,8 @@ export function TaskForm({
       <div className="space-y-2">
         <Label htmlFor="assignee">Assignee (Optional)</Label>
         <Select
-          value={watchedAssigneeId ?? 'unassigned'}
-          onValueChange={(value) => setValue('assignee_id', value === 'unassigned' ? null : value, { shouldDirty: true })}
+          value={toSelectValueWithNone(watchedAssigneeId, 'unassigned')}
+          onValueChange={(value) => setValue('assignee_id', fromSelectValue(value, 'unassigned'), { shouldDirty: true })}
           disabled={isSubmitting}
         >
           <SelectTrigger>
@@ -456,7 +457,7 @@ export function TaskForm({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="unassigned">Unassigned</SelectItem>
-            {teamMembers.map((member) => (
+            {filterValidSelectOptions(teamMembers).map((member) => (
               <SelectItem key={member.id} value={member.id}>
                 {member.display_name}
               </SelectItem>

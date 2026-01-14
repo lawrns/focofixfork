@@ -15,6 +15,7 @@ import { Loader2, Calendar, X } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ColorPicker } from './color-picker'
 import { SmartDateInput } from '@/components/forms/smart-date-input'
+import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
@@ -289,7 +290,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
                 <SelectValue placeholder="Select organization" />
               </SelectTrigger>
               <SelectContent>
-                {organizations.map((org) => (
+                {filterValidSelectOptions(organizations).map((org) => (
                   <SelectItem key={org.id} value={org.id}>
                     {org.name}
                   </SelectItem>

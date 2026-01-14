@@ -26,6 +26,7 @@ import { useKeyboardShortcuts, commonShortcuts } from '@/lib/hooks/use-keyboard-
 import { dialogs, placeholders, buttons } from '@/lib/copy'
 import { showProjectCreated, showError } from '@/lib/toast-helpers'
 import ErrorBoundary from '@/components/error/error-boundary'
+import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 
 // Lazy load heavy components
 const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
@@ -447,7 +448,7 @@ export default function DashboardPageClient() {
                     <SelectValue placeholder="Select organization" />
                   </SelectTrigger>
                   <SelectContent>
-                    {organizations.map((org) => (
+                    {filterValidSelectOptions(organizations).map((org) => (
                       <SelectItem key={org.id} value={org.id}>
                         {org.name}
                       </SelectItem>

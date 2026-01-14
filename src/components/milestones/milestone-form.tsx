@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 
 const milestoneSchema = z.object({
   title: z.string().min(1, 'Milestone title is required').max(500, 'Title must be less than 500 characters'),
@@ -173,7 +174,7 @@ export function MilestoneForm({
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
               <SelectContent>
-                {projects.map((project) => (
+                {filterValidSelectOptions(projects).map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>

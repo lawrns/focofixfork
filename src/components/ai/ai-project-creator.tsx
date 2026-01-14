@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast as sonnerToast } from 'sonner'
 import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 
 interface AIProjectCreatorProps {
   onSuccess: (projectId: string) => void
@@ -122,7 +123,7 @@ export function AIProjectCreator({ onSuccess, onCancel }: AIProjectCreatorProps)
             <SelectValue placeholder={orgsLoading ? "Loading organizations..." : "Select organization"} />
           </SelectTrigger>
           <SelectContent>
-            {organizations.map((org) => (
+            {filterValidSelectOptions(organizations).map((org) => (
               <SelectItem key={org.id} value={org.id}>
                 {org.name}
               </SelectItem>

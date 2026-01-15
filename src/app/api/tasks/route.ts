@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     priority: body.priority || 'none',
     assignee_id: body.assignee_id || null,
     due_date: body.due_date || null,
-    position: body.position || 0,
+    position: body.position, // Let repository generate fractional index if not provided
     reporter_id: user.id,
     type: 'task',
   })

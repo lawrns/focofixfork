@@ -24,16 +24,21 @@ export interface Task {
 }
 
 export interface CreateTaskData {
+  workspace_id: string;
+  project_id: string;
   title: string;
   description?: string;
-  project_id: string;
-  milestone_id?: string;
+  parent_id?: string;
   status?: Task['status'];
   priority?: Task['priority'];
   assignee_id?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
+  reporter_id?: string;
   due_date?: string;
+  start_date?: string;
+  estimate_hours?: number;
+  actual_hours?: number;
+  position?: string;
+  type?: 'task' | 'bug' | 'feature' | 'milestone';
 }
 
 export interface UpdateTaskData {

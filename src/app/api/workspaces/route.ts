@@ -86,52 +86,50 @@ export async function POST(request: NextRequest) {
       return mergeAuthResponse(missingFieldResponse('slug'), authResponse)
     }
 
-    // Create new organization/workspace
-    const { data: newOrg, error: createError } = await supabase
-      .from('organizations')
+    // Create new workspace using the correct 'workspaces' table
+    const { data: newWorkspace, error: createError } = await supabase
+      .from('workspaces')
       .insert([
         {
           name,
           slug,
-          created_by: user.id,
-          is_active: true,
         },
       ])
       .select()
       .single()
 
     if (createError) {
-      console.error('Error creating organization:', createError)
+      console.error('Error creating workspace:', createError)
       return mergeAuthResponse(databaseErrorResponse('Failed to create workspace', createError), authResponse)
     }
 
-    // Add creator as organization member
+    // Add creator as workspace member with 'admin' role
     const { error: memberError } = await supabase
-      .from('organization_members')
+      .from('workspace_members')
       .insert([
         {
-          organization_id: newOrg.id,
+          workspace_id: newWorkspace.id,
           user_id: user.id,
-          role: 'owner',
+          role: 'admin',
         },
       ])
 
     if (memberError) {
-      console.error('Error adding organization member:', memberError)
-      // Clean up created organization
+      console.error('Error adding workspace member:', memberError)
+      // Clean up created workspace
       await supabase
-        .from('organizations')
+        .from('workspaces')
         .delete()
-        .eq('id', newOrg.id)
+        .eq('id', newWorkspace.id)
 
       return mergeAuthResponse(databaseErrorResponse('Failed to set up workspace', memberError), authResponse)
     }
 
     const successRes = successResponse({
       workspace: {
-        id: newOrg.id,
-        name: newOrg.name,
-        slug: newOrg.slug,
+        id: newWorkspace.id,
+        name: newWorkspace.name,
+        slug: newWorkspace.slug,
         icon,
       },
     }, undefined, 201)

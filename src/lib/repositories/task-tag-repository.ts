@@ -27,7 +27,7 @@ export interface TaskTagsResponse {
 }
 
 export class TaskTagRepository extends BaseRepository<TaskTag> {
-  protected table = 'task_tags'
+  protected table = 'work_item_labels'
 
   constructor(supabase: SupabaseClient) {
     super(supabase)
@@ -38,9 +38,9 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
    */
   async getTagsForTask(taskId: string): Promise<Result<TaskTagsResponse>> {
     const { data, error } = await this.supabase
-      .from('task_tags')
-      .select('tag_id, tags(id, name, color, workspace_id)')
-      .eq('task_id', taskId)
+      .from('work_item_labels')
+      .select('label_id, labels(id, name, color, workspace_id)')
+      .eq('work_item_id', taskId)
 
     if (error) {
       return Err({
@@ -51,7 +51,7 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
     }
 
     const tags = (data || [])
-      .map((t: any) => t.tags)
+      .map((t: any) => t.labels)
       .filter(Boolean) as Tag[]
 
     return Ok({
@@ -124,7 +124,7 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
    */
   async verifyTagsInWorkspace(tagIds: string[], workspaceId: string): Promise<Result<Tag[]>> {
     const { data, error } = await this.supabase
-      .from('tags')
+      .from('labels')
       .select('id, name, color, workspace_id')
       .in('id', tagIds)
 
@@ -162,9 +162,9 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
    */
   async getExistingTagIds(taskId: string): Promise<Result<string[]>> {
     const { data, error } = await this.supabase
-      .from('task_tags')
-      .select('tag_id')
-      .eq('task_id', taskId)
+      .from('work_item_labels')
+      .select('label_id')
+      .eq('work_item_id', taskId)
 
     if (error) {
       return Err({
@@ -174,7 +174,7 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
       })
     }
 
-    const tagIds = (data || []).map(t => t.tag_id)
+    const tagIds = (data || []).map((t: any) => t.label_id)
     return Ok(tagIds)
   }
 
@@ -186,13 +186,13 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
       return Ok(0)
     }
 
-    const insertData = tagIds.map(tag_id => ({
-      task_id: taskId,
-      tag_id,
+    const insertData = tagIds.map(label_id => ({
+      work_item_id: taskId,
+      label_id,
     }))
 
     const { error } = await this.supabase
-      .from('task_tags')
+      .from('work_item_labels')
       .insert(insertData)
 
     if (error) {
@@ -211,7 +211,7 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
    */
   async verifyTagInWorkspace(tagId: string, workspaceId: string): Promise<Result<Tag>> {
     const { data, error } = await this.supabase
-      .from('tags')
+      .from('labels')
       .select('id, name, color, workspace_id')
       .eq('id', tagId)
       .maybeSingle()
@@ -240,10 +240,10 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
    */
   async removeTagFromTask(taskId: string, tagId: string): Promise<Result<void>> {
     const { error } = await this.supabase
-      .from('task_tags')
+      .from('work_item_labels')
       .delete()
-      .eq('task_id', taskId)
-      .eq('tag_id', tagId)
+      .eq('work_item_id', taskId)
+      .eq('label_id', tagId)
 
     if (error) {
       return Err({

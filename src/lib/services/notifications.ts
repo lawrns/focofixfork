@@ -27,15 +27,20 @@ export class NotificationsService {
 
     if (!NotificationModel.shouldSendNotification(notification as Notification, preferences)) {
       // Create notification but mark as read immediately (since no dismissed status)
-      const dismissedNotification = {
-        ...notification,
-        data: notification.data as any, // Cast to any for JSON compatibility
+      // Map notification to inbox_items schema
+      const inboxItem = {
+        workspace_id: (notification as any).workspace_id || '00000000-0000-0000-0000-000000000000', // Default workspace for system notifications
+        user_id: notification.user_id,
+        type: notification.type,
+        title: notification.title,
+        body: notification.message,
+        metadata: notification.data as any,
         is_read: true
       }
 
-      const { data, error } = await supabase
-        .from('notifications')
-        .insert(dismissedNotification)
+      const { data, error } = await untypedSupabase
+        .from('inbox_items')
+        .insert(inboxItem)
         .select()
         .single()
 
@@ -56,12 +61,20 @@ export class NotificationsService {
       }
     }
 
+    // Map notification to inbox_items schema
+    const inboxItem = {
+      workspace_id: (notification as any).workspace_id || '00000000-0000-0000-0000-000000000000', // Default workspace for system notifications
+      user_id: notification.user_id,
+      type: notification.type,
+      title: notification.title,
+      body: notification.message,
+      metadata: notification.data as any,
+      is_read: false
+    }
+
     const { data, error } = await untypedSupabase
-      .from('notifications')
-      .insert({
-        ...notification,
-        data: notification.data as any // Cast to any for JSON compatibility
-      })
+      .from('inbox_items')
+      .insert(inboxItem)
       .select()
       .single()
 
@@ -164,7 +177,7 @@ export class NotificationsService {
    */
   static async markAsRead(notificationId: string, userId: string): Promise<Notification> {
     const { data, error } = await untypedSupabase
-      .from('notifications')
+      .from('inbox_items')
       .update({
         is_read: true
       })
@@ -182,7 +195,7 @@ export class NotificationsService {
    */
   static async markMultipleAsRead(notificationIds: string[], userId: string): Promise<void> {
     const { error } = await untypedSupabase
-      .from('notifications')
+      .from('inbox_items')
       .update({
         is_read: true
       })
@@ -220,7 +233,7 @@ export class NotificationsService {
     } = {}
   ): Promise<{ notifications: Notification[]; total: number }> {
     let query = supabase
-      .from('notifications')
+      .from('inbox_items')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -264,7 +277,7 @@ export class NotificationsService {
    */
   static async getNotificationSummary(userId: string): Promise<NotificationSummary> {
     const { data, error } = await untypedSupabase
-      .from('notifications')
+      .from('inbox_items')
       .select('is_read, type, created_at')
       .eq('user_id', userId)
 

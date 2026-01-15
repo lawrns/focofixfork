@@ -62,7 +62,7 @@ export class AuthService {
 
       // Get user role from database
       const { data: userData, error: userError } = await supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select('role')
         .eq('user_id', user.id)
         .single()
@@ -255,12 +255,12 @@ export class AuthService {
   static async getUserRole(userId: string, organizationId?: string): Promise<'director' | 'lead' | 'member'> {
     try {
       let query = supabaseAdmin
-        .from('organization_members')
+        .from('workspace_members')
         .select('role')
         .eq('user_id', userId)
 
       if (organizationId) {
-        query = query.eq('organization_id', organizationId)
+        query = query.eq('workspace_id', organizationId)
       }
 
       const { data, error } = await query.single()

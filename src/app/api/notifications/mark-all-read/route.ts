@@ -16,9 +16,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Update ALL unread notifications for the user
+    // Update ALL unread inbox items (notifications) for the user
     const { data, error } = await untypedSupabase
-      .from('notifications')
+      .from('inbox_items')
       .update({
         is_read: true,
         updated_at: new Date().toISOString(),

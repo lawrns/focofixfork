@@ -71,21 +71,30 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    * Find all workspaces for a user
    */
   async findByUser(userId: string): Promise<Result<Workspace[]>> {
-    const { data, error } = await this.supabase
+    // First get the workspace IDs the user is a member of
+    const { data: memberData, error: memberError } = await this.supabase
       .from('workspace_members')
-      .select(`
-        workspace_id,
-        workspaces (
-          id,
-          name,
-          slug,
-          description,
-          logo_url,
-          created_at,
-          updated_at
-        )
-      `)
+      .select('workspace_id')
       .eq('user_id', userId)
+
+    if (memberError) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch user workspace memberships',
+        details: memberError,
+      })
+    }
+
+    if (!memberData || memberData.length === 0) {
+      return Ok([])
+    }
+
+    // Then fetch the workspaces
+    const workspaceIds = memberData.map(m => m.workspace_id)
+    const { data, error } = await this.supabase
+      .from('workspaces')
+      .select('id, name, slug, description, logo_url, created_at, updated_at')
+      .in('id', workspaceIds)
 
     if (error) {
       return Err({
@@ -95,12 +104,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
       })
     }
 
-    // Extract workspaces and filter nulls
-    const workspaces = (data || [])
-      .map((item: any) => item.workspaces)
-      .filter((ws: any) => ws !== null) as Workspace[]
-
-    return Ok(workspaces)
+    return Ok((data || []) as Workspace[])
   }
 
   /**

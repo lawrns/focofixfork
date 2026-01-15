@@ -11,6 +11,14 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if OpenAI is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { success: false, error: 'AI features are not configured. Please set OPENAI_API_KEY environment variable.' },
+        { status: 503 }
+      )
+    }
+
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {

@@ -165,7 +165,7 @@ export function useSearch(options: SearchOptions) {
 
   const searchOrganizations = useCallback(async (query: string, limit: number): Promise<SearchResult[]> => {
     const { data, error } = await untypedSupabase
-      .from('organizations')
+      .from('workspaces')
       .select('id, name, created_at')
       .ilike('name', `%${query}%`)
       .limit(limit)
@@ -176,7 +176,7 @@ export function useSearch(options: SearchOptions) {
       id: org.id,
       type: 'organization' as const,
       title: org.name,
-      subtitle: 'Organization',
+      subtitle: 'Workspace',
       description: `Created ${org.created_at ? new Date(org.created_at).toLocaleDateString() : 'Unknown'}`,
       url: `/organizations/${org.id}`,
       metadata: {

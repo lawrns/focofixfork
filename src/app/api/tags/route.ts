@@ -46,12 +46,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch tags with usage count from the view
+    // Fetch labels (tags) from the database
     const { data, error: queryError } = await supabase
-      .from('tag_usage_counts')
-      .select('id, name, color, usage_count, created_at')
+      .from('labels')
+      .select('id, name, color, description, created_at')
       .eq('workspace_id', workspaceId)
-      .order('usage_count', { ascending: false })
       .order('name', { ascending: true })
       .range(offset, offset + limit - 1);
 
@@ -125,9 +124,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create tag
+    // Create label (tag)
     const { data, error: insertError } = await supabase
-      .from('tags')
+      .from('labels')
       .insert({
         workspace_id,
         name: name.trim(),

@@ -69,48 +69,84 @@ export type Database = {
       work_items: {
         Row: {
           id: string
+          workspace_id: string
           project_id: string
+          parent_id: string | null
+          type: string | null
           title: string
           description: string | null
-          type: string | null
-          status: string
-          priority: string
+          status: string | null
+          priority: string | null
           assignee_id: string | null
+          reporter_id: string | null
           due_date: string | null
+          start_date: string | null
+          completed_at: string | null
+          estimate_hours: number | null
+          actual_hours: number | null
+          section: string | null
           blocked_reason: string | null
-          tags: string[] | null
-          created_at: string
-          updated_at: string
+          blocked_by_id: string | null
+          closure_note: string | null
+          ai_context_sources: Json | null
+          metadata: Json | null
+          position: string
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: string
+          workspace_id: string
           project_id: string
+          parent_id?: string | null
+          type?: string | null
           title: string
           description?: string | null
-          type?: string | null
-          status?: string
-          priority?: string
+          status?: string | null
+          priority?: string | null
           assignee_id?: string | null
+          reporter_id?: string | null
           due_date?: string | null
+          start_date?: string | null
+          completed_at?: string | null
+          estimate_hours?: number | null
+          actual_hours?: number | null
+          section?: string | null
           blocked_reason?: string | null
-          tags?: string[] | null
-          created_at?: string
-          updated_at?: string
+          blocked_by_id?: string | null
+          closure_note?: string | null
+          ai_context_sources?: Json | null
+          metadata?: Json | null
+          position?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: string
+          workspace_id?: string
           project_id?: string
+          parent_id?: string | null
+          type?: string | null
           title?: string
           description?: string | null
-          type?: string | null
-          status?: string
-          priority?: string
+          status?: string | null
+          priority?: string | null
           assignee_id?: string | null
+          reporter_id?: string | null
           due_date?: string | null
+          start_date?: string | null
+          completed_at?: string | null
+          estimate_hours?: number | null
+          actual_hours?: number | null
+          section?: string | null
           blocked_reason?: string | null
-          tags?: string[] | null
-          created_at?: string
-          updated_at?: string
+          blocked_by_id?: string | null
+          closure_note?: string | null
+          ai_context_sources?: Json | null
+          metadata?: Json | null
+          position?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -174,27 +210,123 @@ export type Database = {
           name: string
           slug: string
           description: string | null
+          logo_url: string | null
           settings: Json | null
-          created_at: string
-          updated_at: string
+          ai_policy: Json | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: string
           name: string
           slug: string
           description?: string | null
+          logo_url?: string | null
           settings?: Json | null
-          created_at?: string
-          updated_at?: string
+          ai_policy?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: string
           name?: string
           slug?: string
           description?: string | null
+          logo_url?: string | null
           settings?: Json | null
-          created_at?: string
-          updated_at?: string
+          ai_policy?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      labels: {
+        Row: {
+          id: string
+          workspace_id: string
+          project_id: string | null
+          name: string
+          color: string | null
+          description: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          project_id?: string | null
+          name: string
+          color?: string | null
+          description?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          project_id?: string | null
+          name?: string
+          color?: string | null
+          description?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      inbox_items: {
+        Row: {
+          id: string
+          workspace_id: string
+          user_id: string
+          type: string
+          title: string
+          body: string | null
+          work_item_id: string | null
+          project_id: string | null
+          doc_id: string | null
+          comment_id: string | null
+          actor_id: string | null
+          is_read: boolean | null
+          is_resolved: boolean | null
+          snoozed_until: string | null
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          user_id: string
+          type: string
+          title: string
+          body?: string | null
+          work_item_id?: string | null
+          project_id?: string | null
+          doc_id?: string | null
+          comment_id?: string | null
+          actor_id?: string | null
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          snoozed_until?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string | null
+          work_item_id?: string | null
+          project_id?: string | null
+          doc_id?: string | null
+          comment_id?: string | null
+          actor_id?: string | null
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          snoozed_until?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

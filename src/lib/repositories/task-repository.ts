@@ -5,6 +5,7 @@
 
 import { BaseRepository, Result, Ok, Err, isError } from './base-repository'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { generateFractionalIndex } from '@/lib/utils/fractional-indexing'
 
 export interface Task {
   id: string
@@ -23,7 +24,7 @@ export interface Task {
   completed_at: string | null
   estimate_hours: number | null
   actual_hours: number | null
-  position: number
+  position: string
   section: string | null
   blocked_reason: string | null
   blocked_by_id: string | null
@@ -44,7 +45,7 @@ export interface CreateTaskData {
   assignee_id?: string | null
   reporter_id: string
   due_date?: string | null
-  position?: number
+  position?: string
   type?: Task['type']
 }
 
@@ -55,7 +56,7 @@ export interface UpdateTaskData {
   priority?: Task['priority']
   assignee_id?: string | null
   due_date?: string | null
-  position?: number
+  position?: string
   section?: string | null
   blocked_reason?: string | null
   blocked_by_id?: string | null
@@ -223,7 +224,7 @@ export class TaskRepository extends BaseRepository<Task> {
       assignee_id: data.assignee_id || null,
       reporter_id: data.reporter_id,
       due_date: data.due_date || null,
-      position: data.position || 0,
+      position: data.position || generateFractionalIndex(),
       type: data.type || 'task',
       ai_context_sources: [],
       metadata: {},

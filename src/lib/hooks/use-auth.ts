@@ -22,9 +22,9 @@ export function usePermissions() {
 
     try {
       const { data, error } = await untypedSupabase
-        .from('organization_members')
+        .from('workspace_members')
         .select('role')
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .eq('user_id', user.id)
         .single()
 
@@ -45,9 +45,9 @@ export function usePermissions() {
 
     try {
       const { data, error } = await untypedSupabase
-        .from('organization_members')
+        .from('workspace_members')
         .select('role')
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .eq('user_id', user.id)
         .single()
 
@@ -68,9 +68,9 @@ export function usePermissions() {
 
     try {
       const { data, error } = await untypedSupabase
-        .from('organization_members')
+        .from('workspace_members')
         .select('role')
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', organizationId)
         .eq('user_id', user.id)
         .single()
 

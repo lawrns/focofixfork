@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCommandPaletteStore } from '@/lib/stores/foco-store';
+import { useCreateTaskModal } from '@/features/tasks';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -43,6 +44,7 @@ export function CommandPalette() {
   const router = useRouter();
   const { isOpen, mode, query, close, setQuery } = useCommandPaletteStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { openTaskModal } = useCreateTaskModal();
 
   const commands: CommandItem[] = useMemo(() => [
     // Navigation
@@ -57,7 +59,7 @@ export function CommandPalette() {
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
     
     // Quick Actions
-    { id: 'create-task', label: 'Create Task', icon: Plus, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/my-work?create=task'), keywords: ['new', 'add'] },
+    { id: 'create-task', label: 'Create Task', icon: Plus, shortcut: 'C', group: 'Quick Actions', action: () => openTaskModal(), keywords: ['new', 'add'] },
     { id: 'create-project', label: 'Create Project', icon: FolderKanban, shortcut: 'P', group: 'Quick Actions', action: () => router.push('/projects?create=true'), keywords: ['new', 'add'] },
     { id: 'create-doc', label: 'Create Doc', icon: FileText, shortcut: 'D', group: 'Quick Actions', action: () => router.push('/docs?create=true'), keywords: ['new', 'add', 'document'] },
     
@@ -69,7 +71,7 @@ export function CommandPalette() {
     // Recent
     { id: 'recent-1', label: 'Website Redesign', description: 'Project', icon: FolderKanban, group: 'Recent', action: () => router.push('/projects/website-redesign') },
     { id: 'recent-2', label: 'Design homepage mockups', description: 'Task in Website Redesign', icon: CheckSquare, group: 'Recent', action: () => router.push('/my-work') },
-  ], [router]);
+  ], [router, openTaskModal]);
 
   const filteredCommands = useMemo(() => {
     if (!query) return commands;

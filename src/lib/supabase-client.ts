@@ -56,8 +56,20 @@ export const supabase = globalThis.__supabase ?? createBrowserClient<Database>(
       setAll(cookies) {
         if (typeof document === 'undefined') return
         cookies.forEach(({ name, value, options }) => {
-          const cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; max-age=${options?.maxAge || 31536000}; ${options?.secure ? 'secure;' : ''} ${options?.sameSite ? `samesite=${options.sameSite};` : ''}`
-          document.cookie = cookieString
+          // Set cookies with proper attributes for production
+          const parts = [
+            `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
+            'path=/',
+            `max-age=${options?.maxAge || 31536000}`,
+            'samesite=lax', // Changed from strict to lax for better compatibility
+          ]
+          
+          // Only set secure in production
+          if (window.location.protocol === 'https:') {
+            parts.push('secure')
+          }
+          
+          document.cookie = parts.join('; ')
         })
       },
     },

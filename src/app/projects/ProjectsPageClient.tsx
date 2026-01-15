@@ -438,7 +438,9 @@ export default function ProjectsPageClient() {
       if (!user) return;
 
       try {
-        const response = await fetch('/api/workspaces');
+        const response = await fetch('/api/workspaces', {
+          credentials: 'include'
+        });
         
         if (!response.ok) {
           console.error('Failed to fetch workspaces');
@@ -469,7 +471,9 @@ export default function ProjectsPageClient() {
     if (!user || !currentWorkspaceId) return;
 
     try {
-      const response = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`);
+      const response = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`, {
+        credentials: 'include'
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -544,6 +548,7 @@ export default function ProjectsPageClient() {
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -585,6 +590,7 @@ export default function ProjectsPageClient() {
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -613,7 +619,9 @@ export default function ProjectsPageClient() {
       if (data.success) {
         toast.success('Project duplicated successfully');
         // Refresh projects list
-        const refreshResponse = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`);
+        const refreshResponse = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`, {
+          credentials: 'include'
+        });
 
         if (!refreshResponse.ok) {
           console.error('Failed to refresh projects list');
@@ -664,6 +672,7 @@ export default function ProjectsPageClient() {
     try {
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

@@ -53,9 +53,18 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
     }
   )
 
+  // First try getUser() which validates the JWT from cookies
   const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
-    return { user: null, supabase, error: 'Unauthorized', response }
+  
+  // If getUser fails, log the error for debugging
+  if (error) {
+    console.error('[Auth] getUser error:', error.message)
+    return { user: null, supabase, error: error.message, response }
+  }
+  
+  if (!user) {
+    console.error('[Auth] No user found in session')
+    return { user: null, supabase, error: 'No user in session', response }
   }
 
   return { user, supabase, error: null, response }

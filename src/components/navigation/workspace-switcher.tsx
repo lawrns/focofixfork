@@ -122,17 +122,17 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
     try {
       setIsLoading(true)
-      const response = await fetch('/api/workspaces')
+      const response = await fetch('/api/workspaces', { credentials: 'include' })
       if (!response.ok) throw new Error('Failed to fetch workspaces')
 
       const data = await response.json()
-      setWorkspaces(data.workspaces || [])
+      setWorkspaces(data.data?.workspaces || data.workspaces || [])
     } catch (error) {
       console.error('Error fetching workspaces:', error)
       setTimeout(() => {
-        fetch('/api/workspaces')
+        fetch('/api/workspaces', { credentials: 'include' })
           .then(res => res.json())
-          .then(data => setWorkspaces(data.workspaces || []))
+          .then(data => setWorkspaces(data.data?.workspaces || data.workspaces || []))
           .catch(err => console.error('Retry failed:', err))
       }, 2000)
     } finally {

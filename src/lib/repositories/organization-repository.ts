@@ -45,24 +45,30 @@ export class OrganizationRepository extends BaseRepository<Organization> {
    * Find all organizations for a user with their role
    */
   async findByUser(userId: string): Promise<Result<OrganizationWithRole[]>> {
-    const { data, error } = await this.supabase
+    // First get the workspace memberships
+    const { data: memberData, error: memberError } = await this.supabase
       .from('workspace_members')
-      .select(`
-        workspace_id,
-        role,
-        workspaces!inner (
-          id,
-          name,
-          slug,
-          description,
-          logo_url,
-          settings,
-          ai_policy,
-          created_at,
-          updated_at
-        )
-      `)
+      .select('workspace_id, role')
       .eq('user_id', userId)
+
+    if (memberError) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch user organization memberships',
+        details: memberError,
+      })
+    }
+
+    if (!memberData || memberData.length === 0) {
+      return Ok([])
+    }
+
+    // Then fetch the workspaces
+    const workspaceIds = memberData.map(m => m.workspace_id)
+    const { data, error } = await this.supabase
+      .from('workspaces')
+      .select('id, name, slug, description, logo_url, settings, ai_policy, created_at, updated_at')
+      .in('id', workspaceIds)
 
     if (error) {
       return Err({
@@ -72,13 +78,12 @@ export class OrganizationRepository extends BaseRepository<Organization> {
       })
     }
 
-    // Transform the nested structure to flat organization with role
-    const organizations = (data || [])
-      .filter((item: any) => item.workspaces !== null)
-      .map((item: any) => ({
-        ...item.workspaces,
-        role: item.role,
-      })) as OrganizationWithRole[]
+    // Combine workspace data with roles
+    const roleMap = new Map(memberData.map(m => [m.workspace_id, m.role]))
+    const organizations = (data || []).map((ws: any) => ({
+      ...ws,
+      role: roleMap.get(ws.id) || 'member',
+    })) as OrganizationWithRole[]
 
     return Ok(organizations)
   }

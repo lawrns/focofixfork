@@ -52,14 +52,14 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Get and refresh session
-  let { data: { session } } = await supabase.auth.getSession()
+  // Get user from cookies (NOT getSession which uses memory)
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (!session || (session.expires_at && new Date(session.expires_at).getTime() < Date.now())) {
-    const { data: refreshData } = await supabase.auth.refreshSession()
-    if (refreshData.session) {
-      session = refreshData.session
-    }
+  // Build session object if user exists
+  let session = null
+  if (user && !authError) {
+    // User is authenticated, create minimal session object
+    session = { user }
   }
 
   const { pathname } = req.nextUrl

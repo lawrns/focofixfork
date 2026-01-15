@@ -15,12 +15,35 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const workspaceId = searchParams.get('workspace_id')
+    const id = searchParams.get('id')
     const status = searchParams.get('status')
     const archived = searchParams.get('archived')
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const repo = new ProjectRepository(supabase)
+
+    // If id provided, fetch single project
+    if (id) {
+      if (!isValidUUID(id)) {
+        return missingFieldResponse('Invalid project ID format')
+      }
+      
+      const result = await repo.findById(id)
+      
+      if (isError(result)) {
+        return databaseErrorResponse(result.error.message, result.error.details)
+      }
+      
+      if (!result.data) {
+        return NextResponse.json(
+          { success: false, error: 'Project not found' },
+          { status: 404 }
+        )
+      }
+      
+      return successResponse(result.data)
+    }
 
     // If workspace_id provided, use workspace-scoped query
     if (workspaceId) {

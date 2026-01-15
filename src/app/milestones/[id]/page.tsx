@@ -60,6 +60,7 @@ function MilestonePageContent() {
   const { user } = useAuth()
 
   const [milestone, setMilestone] = useState<Milestone | null>(null)
+  const [project, setProject] = useState<{ slug: string } | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -79,6 +80,15 @@ function MilestonePageContent() {
         return
       }
       setMilestone(milestoneResult.data!)
+
+      // Load project data for navigation
+      if (milestoneResult.data?.project_id) {
+        const projectRes = await fetch(`/api/projects?id=${milestoneResult.data.project_id}`)
+        const projectData = await projectRes.json()
+        if (projectData.success && projectData.data?.slug) {
+          setProject({ slug: projectData.data.slug })
+        }
+      }
 
       // Load comments (placeholder - implement when service is ready)
       setComments([])
@@ -192,8 +202,14 @@ function MilestonePageContent() {
 
       const result = await response.json()
       if (result.success) {
-        // Redirect back to the project or milestones page
-        window.location.href = `/projects/${milestone.project_id}`
+        // Fetch project to get slug
+        const projectRes = await fetch(`/api/projects?id=${milestone.project_id}`)
+        const projectData = await projectRes.json()
+        if (projectData.success && projectData.data?.slug) {
+          window.location.href = `/projects/${projectData.data.slug}`
+        } else {
+          window.location.href = '/projects'
+        }
       } else {
         throw new Error(result.error || 'Failed to delete milestone')
       }
@@ -256,7 +272,7 @@ function MilestonePageContent() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <Link href={`/projects/${milestone.project_id}`}>
+            <Link href={`/projects/${project?.slug || '#'}`}>
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Project

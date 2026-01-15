@@ -32,8 +32,9 @@ import {
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/providers/theme-provider';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useCreateTaskModal } from '@/features/tasks';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -44,6 +45,7 @@ interface TopBarProps {
 
 export function TopBar({ className }: TopBarProps) {
   const { open: openCommandPalette } = useCommandPaletteStore();
+  const { openTaskModal } = useCreateTaskModal();
   const { open: openKeyboardShortcuts } = useKeyboardShortcutsModalStore();
   const { unreadCount } = useInboxStore();
   const { sidebarCollapsed, density, setDensity } = useUIPreferencesStore();
@@ -124,20 +126,20 @@ export function TopBar({ className }: TopBarProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => openCommandPalette('create')}>
+            <DropdownMenuItem onClick={() => openTaskModal()}>
               <span>Task</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">C</kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openCommandPalette('create-project')}>
+            <DropdownMenuItem onClick={() => router.push('/projects?create=true')}>
               <span>Project</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">P</kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openCommandPalette('create-doc')}>
+            <DropdownMenuItem onClick={() => router.push('/docs?create=true')}>
               <span>Doc</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">D</kbd>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => openCommandPalette('import')}>
+            <DropdownMenuItem onClick={() => router.push('/projects?import=true')}>
               <span>Import...</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -228,7 +230,7 @@ export function TopBar({ className }: TopBarProps) {
                 Theme
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+                <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}>
                   <DropdownMenuRadioItem value="light">
                     <Sun className="h-4 w-4" />
                     Light

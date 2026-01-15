@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
+import { useCreateTaskModal } from '@/features/tasks';
 import {
   Home,
   Inbox,
@@ -51,6 +52,7 @@ const pinnedProjects = [
 export function LeftRail() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIPreferencesStore();
+  const { openTaskModal } = useCreateTaskModal();
 
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = pathname === item.href || 
@@ -139,6 +141,7 @@ export function LeftRail() {
             sidebarCollapsed ? 'px-2' : ''
           )}
           size={sidebarCollapsed ? 'icon' : 'md'}
+          onClick={() => openTaskModal()}
         >
           <Plus className="h-4 w-4" />
           {!sidebarCollapsed && <span className="ml-2">Create</span>}

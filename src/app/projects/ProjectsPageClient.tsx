@@ -444,9 +444,14 @@ export default function ProjectsPageClient() {
 
         const data = await response.json();
         
-        if (data.success && data.data && data.data.length > 0) {
+        // Handle both wrapped format { workspaces: [...] } and direct array format
+        const workspaces = data.data?.workspaces || data.data || [];
+        if (data.success && workspaces.length > 0) {
           // Use the first workspace the user has access to
-          setCurrentWorkspaceId(data.data[0].id);
+          setCurrentWorkspaceId(workspaces[0].id);
+        } else {
+          console.error('No workspaces found for user');
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Failed to fetch user workspace:', error);

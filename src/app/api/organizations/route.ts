@@ -16,20 +16,25 @@ export async function GET(req: NextRequest) {
     const { user, supabase, error } = await getAuthUser(req)
 
     if (error || !user) {
+      console.log('[Organizations API] Auth failed:', error)
       return authRequiredResponse()
     }
+
+    console.log('[Organizations API] User authenticated:', user.id)
 
     const orgRepo = new OrganizationRepository(supabase)
     const result = await orgRepo.findByUser(user.id)
 
     if (isError(result)) {
+      console.error('[Organizations API] Database error:', result.error)
       return databaseErrorResponse(result.error.message, result.error.details)
     }
 
+    console.log('[Organizations API] Found organizations:', result.data.length)
     return successResponse(result.data)
   } catch (err: any) {
-    console.error('Organizations API error:', err)
-    return internalErrorResponse('Failed to fetch organizations', err.message)
+    console.error('[Organizations API] Unexpected error:', err?.message || err, err?.stack)
+    return internalErrorResponse('Failed to fetch organizations', err?.message || 'Unknown error')
   }
 }
 

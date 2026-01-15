@@ -26,17 +26,22 @@ export async function GET(request: NextRequest) {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
+      console.log('[Workspaces API] Auth failed:', authError)
       return authRequiredResponse()
     }
+
+    console.log('[Workspaces API] User authenticated:', user.id)
 
     const repo = new WorkspaceRepository(supabase)
     const result = await repo.findByUser(user.id)
 
     if (isError(result)) {
-      console.error('Error fetching workspaces:', result.error)
+      console.error('[Workspaces API] Database error:', result.error)
       const errorRes = databaseErrorResponse(result.error.message, result.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
+
+    console.log('[Workspaces API] Found workspaces:', result.data.length)
 
     // Map to workspace format with icon
     const workspaces = result.data.map(ws => ({

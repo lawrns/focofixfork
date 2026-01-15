@@ -122,9 +122,11 @@ export function LeftRail() {
         sidebarCollapsed ? 'justify-center px-2' : 'px-4'
       )}>
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-zinc-900 dark:bg-zinc-50 flex items-center justify-center">
-            <span className="text-sm font-bold text-zinc-50 dark:text-zinc-900">F</span>
-          </div>
+          <img 
+            src="/focologo.png" 
+            alt="Foco" 
+            className="h-8 w-8 rounded-lg"
+          />
           {!sidebarCollapsed && (
             <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Foco</span>
           )}

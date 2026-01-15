@@ -89,7 +89,7 @@ export function useOrganizations(): UseOrganizationsReturn {
 
   const loadOrganizations = useCallback(async () => {
     try {
-      const response = await fetch('/api/organizations', {})
+      const response = await fetch('/api/organizations', { credentials: 'include' })
       if (response.ok) {
         const data = await response.json()
         setOrganizations(data.data || [])
@@ -106,9 +106,9 @@ export function useOrganizations(): UseOrganizationsReturn {
     setShowOrgModal(true)
     try {
       const results = await Promise.allSettled([
-        fetch(`/api/organizations/${organization.id}`),
-        fetch(`/api/organizations/${organization.id}/members`),
-        fetch(`/api/organizations/${organization.id}/invitations`)
+        fetch(`/api/organizations/${organization.id}`, { credentials: 'include' }),
+        fetch(`/api/organizations/${organization.id}/members`, { credentials: 'include' }),
+        fetch(`/api/organizations/${organization.id}/invitations`, { credentials: 'include' })
       ])
       if (results[0].status === 'fulfilled' && results[0].value.ok) {
         const orgData = await results[0].value.json()
@@ -139,7 +139,7 @@ export function useOrganizations(): UseOrganizationsReturn {
   }, [openOrganizationModal])
 
   const refreshMembers = useCallback(async (organizationId: string) => {
-    const response = await fetch(`/api/organizations/${organizationId}/members`)
+    const response = await fetch(`/api/organizations/${organizationId}/members`, { credentials: 'include' })
     if (response.ok) {
       const data = await response.json()
       if (data.success) setOrgMembers(data.data || [])
@@ -147,7 +147,7 @@ export function useOrganizations(): UseOrganizationsReturn {
   }, [])
 
   const refreshInvitations = useCallback(async (organizationId: string) => {
-    const response = await fetch(`/api/organizations/${organizationId}/invitations`)
+    const response = await fetch(`/api/organizations/${organizationId}/invitations`, { credentials: 'include' })
     if (response.ok) {
       const data = await response.json()
       if (data.success) setOrgInvitations(data.data || [])
@@ -161,6 +161,7 @@ export function useOrganizations(): UseOrganizationsReturn {
     try {
       const response = await fetch(`/api/organizations/${selectedOrganization.id}/members`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: inviteEmail, role: inviteRole, userId: user?.id }),
       })
@@ -188,6 +189,7 @@ export function useOrganizations(): UseOrganizationsReturn {
     try {
       const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole, userId: user?.id }),
       })
@@ -207,6 +209,7 @@ export function useOrganizations(): UseOrganizationsReturn {
     try {
       const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberToRemove}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user?.id }),
       })
@@ -221,7 +224,7 @@ export function useOrganizations(): UseOrganizationsReturn {
   const handleResendInvitation = useCallback(async (invitationId: string) => {
     if (!selectedOrganization) return
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, { method: 'POST' })
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, { method: 'POST', credentials: 'include' })
       if (response.ok) await refreshInvitations(selectedOrganization.id)
     } catch (error) {
       console.error('Failed to resend invitation:', error)
@@ -233,7 +236,7 @@ export function useOrganizations(): UseOrganizationsReturn {
   const confirmCancelInvitation = useCallback(async () => {
     if (!selectedOrganization || !invitationToCancel) return
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`, { method: 'DELETE' })
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`, { method: 'DELETE', credentials: 'include' })
       if (response.ok) await refreshInvitations(selectedOrganization.id)
     } catch (error) {
       console.error('Failed to cancel invitation:', error)
@@ -253,6 +256,7 @@ export function useOrganizations(): UseOrganizationsReturn {
     try {
       const response = await fetch('/api/organizations', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: orgName.trim() })
       })

@@ -57,10 +57,10 @@ export function TopBar({ className }: TopBarProps) {
 
   useEffect(() => {
     if (user) {
-      fetch('/api/organizations')
+      fetch('/api/organizations', { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
-          if (data.success && data.data && data.data.length > 0) {
+          if (data.ok && data.data && data.data.length > 0) {
             setWorkspace(data.data[0]);
           }
         })

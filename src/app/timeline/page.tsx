@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/hooks/use-auth';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -36,71 +37,7 @@ interface TimelineItem {
   assignee?: string;
 }
 
-const timelineItems: TimelineItem[] = [
-  {
-    id: '1',
-    title: 'Design Phase Complete',
-    project: { name: 'Website Redesign', color: '#6366F1' },
-    type: 'milestone',
-    startDate: '2026-01-01',
-    endDate: '2026-01-20',
-    progress: 65,
-    status: 'on_track',
-  },
-  {
-    id: '2',
-    title: 'Homepage Mockups',
-    project: { name: 'Website Redesign', color: '#6366F1' },
-    type: 'task',
-    startDate: '2026-01-08',
-    endDate: '2026-01-15',
-    progress: 50,
-    status: 'on_track',
-    assignee: 'Sarah Chen',
-  },
-  {
-    id: '3',
-    title: 'Beta Release',
-    project: { name: 'Mobile App v2', color: '#10B981' },
-    type: 'milestone',
-    startDate: '2026-01-15',
-    endDate: '2026-02-01',
-    progress: 40,
-    status: 'at_risk',
-  },
-  {
-    id: '4',
-    title: 'Offline Mode Implementation',
-    project: { name: 'Mobile App v2', color: '#10B981' },
-    type: 'task',
-    startDate: '2026-01-10',
-    endDate: '2026-01-25',
-    progress: 30,
-    status: 'at_risk',
-    assignee: 'Mike Johnson',
-  },
-  {
-    id: '5',
-    title: 'API v1 Launch',
-    project: { name: 'API Platform', color: '#F59E0B' },
-    type: 'milestone',
-    startDate: '2026-02-01',
-    endDate: '2026-03-01',
-    progress: 15,
-    status: 'on_track',
-  },
-  {
-    id: '6',
-    title: 'OAuth2 Implementation',
-    project: { name: 'API Platform', color: '#F59E0B' },
-    type: 'task',
-    startDate: '2026-01-15',
-    endDate: '2026-01-30',
-    progress: 60,
-    status: 'on_track',
-    assignee: 'Alex Kim',
-  },
-];
+// Timeline items will be fetched from API
 
 const statusColors = {
   on_track: 'bg-green-500',
@@ -214,8 +151,55 @@ function AISuggestionBanner() {
 }
 
 export default function TimelinePage() {
+  const { user } = useAuth();
   const [view, setView] = useState<'month' | 'quarter'>('month');
   const [currentMonth, setCurrentMonth] = useState('January 2026');
+  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch timeline data from API
+  useEffect(() => {
+    const fetchTimelineData = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch milestones and work items
+        const [milestonesRes, projectsRes] = await Promise.all([
+          fetch('/api/milestones', { credentials: 'include' }),
+          fetch('/api/projects', { credentials: 'include' })
+        ]);
+        
+        const items: TimelineItem[] = [];
+        
+        if (milestonesRes.ok) {
+          const milestonesData = await milestonesRes.json();
+          const milestones = milestonesData.data || [];
+          milestones.forEach((m: any) => {
+            if (m.start_date && m.end_date) {
+              items.push({
+                id: m.id,
+                title: m.title,
+                project: { name: m.project?.name || 'Unknown', color: m.project?.color || '#6366F1' },
+                type: 'milestone',
+                startDate: m.start_date,
+                endDate: m.end_date,
+                progress: m.progress_percentage || 0,
+                status: m.status === 'completed' ? 'completed' : m.status === 'at_risk' ? 'at_risk' : 'on_track',
+              });
+            }
+          });
+        }
+        
+        setTimelineItems(items);
+      } catch (error) {
+        console.error('Failed to fetch timeline data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTimelineData();
+  }, [user]);
 
   // Group items by project
   const groupedItems = timelineItems.reduce((acc, item) => {
@@ -226,6 +210,37 @@ export default function TimelinePage() {
     acc[projectName].items.push(item);
     return acc;
   }, {} as Record<string, { color: string; items: TimelineItem[] }>);
+
+  // Show empty state if no timeline items
+  if (!isLoading && timelineItems.length === 0) {
+    return (
+      <div className="max-w-full">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+              Timeline
+            </h1>
+            <p className="text-zinc-500 mt-1">
+              Visualize project schedules and milestones
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <Calendar className="h-12 w-12 text-zinc-300 dark:text-zinc-600 mb-4" />
+          <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-50 mb-2">
+            No timeline items yet
+          </h3>
+          <p className="text-zinc-500 text-center max-w-md mb-4">
+            Create milestones in your projects to see them visualized here on the timeline.
+          </p>
+          <Button onClick={() => window.location.href = '/projects'}>
+            <Plus className="h-4 w-4 mr-2" />
+            Go to Projects
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-full">
@@ -256,8 +271,8 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      {/* AI Suggestion */}
-      <AISuggestionBanner />
+      {/* Only show AI suggestion if there are items */}
+      {timelineItems.length > 0 && <AISuggestionBanner />}
 
       {/* Timeline Navigation */}
       <div className="flex items-center justify-between mb-4">

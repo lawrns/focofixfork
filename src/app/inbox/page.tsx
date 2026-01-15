@@ -179,7 +179,7 @@ export default function InboxPage() {
 
     try {
       setIsLoading(true);
-      const response = await fetch('/api/notifications');
+      const response = await fetch('/api/notifications', { credentials: 'include' });
 
       // Handle non-ok responses
       if (!response.ok) {
@@ -234,6 +234,7 @@ export default function InboxPage() {
     try {
       const response = await fetch('/api/notifications/mark-all-read', {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

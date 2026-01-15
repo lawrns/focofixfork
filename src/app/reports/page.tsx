@@ -181,7 +181,7 @@ export default function ReportsPage() {
     try {
       setIsLoading(true);
       // In a real app, these would be separate or a combined analytics endpoint
-      const response = await fetch(`/api/reports?timeRange=${timeRange}`);
+      const response = await fetch(`/api/reports?timeRange=${timeRange}`, { credentials: 'include' });
       const data = await response.json();
       
       if (data.success && data.data) {

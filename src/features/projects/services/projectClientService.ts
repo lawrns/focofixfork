@@ -12,7 +12,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api-client'
 import type { Project } from '../types'
 
 export interface ProjectFilters {
-  organization_id?: string
+  workspace_id?: string
   status?: string
   priority?: string
   limit?: number
@@ -54,7 +54,7 @@ export class ProjectClientService {
   ): Promise<ProjectsListResponse> {
     try {
       const params = new URLSearchParams()
-      if (filters?.organization_id) params.set('organization_id', filters.organization_id)
+      if (filters?.workspace_id) params.set('workspace_id', filters.workspace_id)
       if (filters?.status) params.set('status', filters.status)
       if (filters?.priority) params.set('priority', filters.priority)
       if (filters?.limit) params.set('limit', filters.limit.toString())

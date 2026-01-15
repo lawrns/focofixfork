@@ -417,6 +417,7 @@ export default function ProjectsPageClient() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectData | null>(null);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
 
   // Handle query parameters from command palette
   useEffect(() => {
@@ -428,75 +429,102 @@ export default function ProjectsPageClient() {
     }
   }, [searchParams, router, pathname]);
 
+  // Get user's workspace first
   useEffect(() => {
-    const fetchProjects = async () => {
+    const getUserWorkspace = async () => {
       if (!user) return;
 
       try {
-        const response = await fetch('/api/projects');
-
+        const response = await fetch('/api/workspaces');
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Projects API error:', {
-            status: response.status,
-            error: errorData.error
-          });
-
-          if (response.status === 401) {
-            toast.error('Session expired. Please sign in again.');
-          } else if (response.status === 403) {
-            toast.error('You do not have permission to access projects.');
-          } else {
-            toast.error('Failed to load projects');
-          }
-
-          setProjects([]);
+          console.error('Failed to fetch workspaces');
           return;
         }
 
         const data = await response.json();
-
-        if (data.success) {
-          const projectsData = data.data?.data || data.data || [];
-          setProjects(projectsData.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            slug: p.slug || p.id,
-            description: p.description,
-            color: p.color || '#6366F1',
-            icon: p.icon || 'folder',
-            status: p.status || 'active',
-            isPinned: p.is_pinned || false,
-            progress: p.progress || 0,
-            tasksCompleted: p.tasks_completed || 0,
-            totalTasks: p.total_tasks || 0,
-            risk: p.risk || 'none',
-            nextMilestone: p.next_milestone,
-            owner: p.owner || { name: 'Unknown' },
-            teamSize: p.team_size || 0,
-            updatedAt: p.updated_at || new Date().toISOString(),
-          })));
-        } else {
-          console.error('Projects API returned success: false', data.error);
-          toast.error(data.error || 'Failed to load projects');
-          setProjects([]);
+        
+        if (data.success && data.data && data.data.length > 0) {
+          // Use the first workspace the user has access to
+          setCurrentWorkspaceId(data.data[0].id);
         }
       } catch (error) {
-        console.error('Failed to fetch projects:', error);
-        toast.error('Failed to load projects');
-        setProjects([]);
-      } finally {
-        setIsLoading(false);
+        console.error('Failed to fetch user workspace:', error);
       }
     };
 
-    fetchProjects();
+    getUserWorkspace();
   }, [user]);
 
-  const handleEditProject = useCallback((project: ProjectData) => {
-    setEditingProject(project);
-    setEditDialogOpen(true);
-  }, []);
+  useEffect(() => {
+    const fetchProjects = async () => {
+    if (!user || !currentWorkspaceId) return;
+
+    try {
+      const response = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Projects API error:', {
+          status: response.status,
+          error: errorData.error
+        });
+
+        if (response.status === 401) {
+          toast.error('Session expired. Please sign in again.');
+        } else if (response.status === 403) {
+          toast.error('You do not have permission to access projects.');
+        } else {
+          toast.error('Failed to load projects');
+        }
+
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Projects API response:', data);
+
+      if (data.success && data.data) {
+        // Transform API response to component format
+        const transformedProjects = data.data.map((project: any) => ({
+          id: project.id,
+          name: project.name,
+          slug: project.slug,
+          description: project.description,
+          color: project.color || '#6366F1',
+          icon: project.icon || 'folder',
+          status: project.status || 'active',
+          isPinned: project.is_pinned || false,
+          progress: 0, // TODO: Calculate from tasks
+          tasksCompleted: 0,
+          totalTasks: 0,
+          risk: 'none' as const,
+          owner: {
+            name: user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown',
+            avatar: user?.user_metadata?.avatar_url
+          },
+          teamSize: 1,
+          updatedAt: project.updated_at
+        }));
+
+        setProjects(transformedProjects);
+      } else {
+        console.error('Invalid response format:', data);
+        setProjects([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+      toast.error('Failed to load projects');
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+    if (currentWorkspaceId) {
+      fetchProjects();
+    }
+  }, [user, currentWorkspaceId]);
 
   const handleDuplicateProject = useCallback(async (project: ProjectData) => {
     try {
@@ -511,7 +539,7 @@ export default function ProjectsPageClient() {
           color: project.color,
           icon: project.icon,
           status: project.status,
-          workspace_id: project.id, // This should be the actual workspace_id from the project
+          workspace_id: currentWorkspaceId,
         }),
       });
 
@@ -530,7 +558,7 @@ export default function ProjectsPageClient() {
       if (data.success) {
         toast.success('Project duplicated successfully');
         // Refresh projects list
-        const refreshResponse = await fetch('/api/projects');
+        const refreshResponse = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`);
 
         if (!refreshResponse.ok) {
           console.error('Failed to refresh projects list');
@@ -566,6 +594,11 @@ export default function ProjectsPageClient() {
       console.error('Duplicate project error:', error);
       toast.error('Failed to duplicate project');
     }
+  }, [currentWorkspaceId]);
+
+  const handleEditProject = useCallback((project: ProjectData) => {
+    setEditingProject(project);
+    setEditDialogOpen(true);
   }, []);
 
   const handleGenerateStatus = useCallback((project: ProjectData) => {

@@ -11,7 +11,7 @@ export interface Project {
   due_date?: string;
   progress_percentage: number;
   created_by: string;
-  organization_id: string | null;
+  workspace_id: string | null;
   created_at: string;
   updated_at: string;
   archived_at?: string | null;
@@ -24,7 +24,7 @@ export interface CreateProjectData {
   priority: Project['priority'];
   start_date: string | null;
   due_date: string | null;
-  organization_id: string | null;
+  workspace_id: string | null;
   created_by: string;
   progress_percentage: number;
 }
@@ -40,7 +40,7 @@ export interface UpdateProjectData {
 }
 
 export interface ProjectFilters {
-  organization_id?: string | null;
+  workspace_id?: string | null;
   status?: Project['status'];
   priority?: Project['priority'];
   limit?: number;

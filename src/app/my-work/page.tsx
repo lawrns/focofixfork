@@ -39,6 +39,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { toast } from 'sonner';
+import { useCreateTaskModal } from '@/features/tasks';
 import { Card } from '@/components/ui/card';
 
 const priorityColors: Record<PriorityLevel, string> = {
@@ -425,6 +426,7 @@ function FocusMode({
 export default function MyWorkPage() {
   const { user } = useAuth();
   const { isActive, currentWorkItem, activate, deactivate } = useFocusModeStore();
+  const { openTaskModal } = useCreateTaskModal();
   const [items, setItems] = useState<(WorkItem & { section: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
@@ -487,8 +489,8 @@ export default function MyWorkPage() {
   };
 
   const handleAddTask = (section: 'now' | 'next' | 'later' | 'waiting') => {
-    // Navigate to create task with section pre-selected
-    window.location.href = `/tasks/new?section=${section}`;
+    // Open task modal with section pre-selected
+    openTaskModal({ section });
   };
 
   if (isActive && currentWorkItem) {

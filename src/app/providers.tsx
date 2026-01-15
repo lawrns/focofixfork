@@ -11,6 +11,7 @@ import { Toaster } from 'sonner';
 import { ToastProvider } from '@/components/ui/toast';
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav';
 import { ProgressBar } from '@/components/progress-bar';
+import { CreateTaskModalProvider } from '@/features/tasks';
 import NProgress from 'nprogress';
 
 interface ProvidersProps {
@@ -85,6 +86,7 @@ export function Providers({ children }: ProvidersProps) {
           <I18nProvider>
             <ToastProvider>
               <AuthProvider>
+                <CreateTaskModalProvider />
                 {children}
                 {typeof window !== 'undefined' && <ConditionalMobileNav />}
               </AuthProvider>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ProjectClientService } from '../services/projectClientService'
 import type { Project, CreateProjectData, UpdateProjectData, ProjectFilters } from '../types/index'
 
-export function useProjects(organizationId?: string) {
+export function useProjects(workspaceId?: string) {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -12,8 +12,8 @@ export function useProjects(organizationId?: string) {
       setLoading(true)
       setError(null)
       const filters: ProjectFilters = {}
-      if (organizationId) {
-        filters.organization_id = organizationId
+      if (workspaceId) {
+        filters.workspace_id = workspaceId
       }
       const result = await ProjectClientService.getUserProjects(filters)
       if (result.success && result.data) {
@@ -26,7 +26,7 @@ export function useProjects(organizationId?: string) {
     } finally {
       setLoading(false)
     }
-  }, [organizationId])
+  }, [workspaceId])
 
   useEffect(() => {
     fetchProjects()

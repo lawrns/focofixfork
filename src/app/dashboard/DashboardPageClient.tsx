@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Plus, Sparkles, Download, Upload } from 'lucide-react'
+import { useCreateTaskModal } from '@/features/tasks';
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
 import { useCommandPaletteStore } from '@/lib/stores/foco-store'
@@ -27,6 +27,7 @@ import { dialogs, placeholders, buttons } from '@/lib/copy'
 import { showProjectCreated, showError } from '@/lib/toast-helpers'
 import ErrorBoundary from '@/components/error/error-boundary'
 import { filterValidSelectOptions } from '@/lib/ui/select-validation'
+import { Plus, Sparkles, Upload, Download, Loader2 } from 'lucide-react'
 
 // Lazy load heavy components
 const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
@@ -63,6 +64,7 @@ export default function DashboardPageClient() {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const { user, loading } = useAuth()
+  const { openTaskModal } = useCreateTaskModal()
   const { createView, setActiveView } = useSavedViews()
   const toast = useToastHelpers()
   
@@ -232,8 +234,7 @@ export default function DashboardPageClient() {
     }
 
     const handleOpenCreateTask = () => {
-      // For now, just show a toast. In a real implementation, this would open a task creation modal
-      toast.success('Task creation coming soon!')
+      openTaskModal()
     }
 
     const handleOpenCreateOrganization = () => {

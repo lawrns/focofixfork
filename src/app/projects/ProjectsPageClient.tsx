@@ -418,6 +418,9 @@ export default function ProjectsPageClient() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectData | null>(null);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   // Handle query parameters from command palette
   useEffect(() => {
@@ -530,6 +533,53 @@ export default function ProjectsPageClient() {
       fetchProjects();
     }
   }, [user, currentWorkspaceId]);
+
+  const handleCreateProject = useCallback(async () => {
+    if (!newProjectName.trim() || !currentWorkspaceId) {
+      toast.error('Please enter a project name');
+      return;
+    }
+
+    setIsCreatingProject(true);
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newProjectName.trim(),
+          description: newProjectDescription.trim() || null,
+          workspace_id: currentWorkspaceId,
+          status: 'active',
+          color: '#6366F1',
+          icon: 'folder',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Create project error:', errorData);
+        toast.error(errorData.error || 'Failed to create project');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        toast.success('Project created successfully');
+        setNewProjectName('');
+        setNewProjectDescription('');
+        setCreateDialogOpen(false);
+        // Navigate to the new project
+        router.push(`/projects/${data.data.slug}`);
+      }
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      toast.error('Failed to create project');
+    } finally {
+      setIsCreatingProject(false);
+    }
+  }, [newProjectName, newProjectDescription, currentWorkspaceId, router]);
 
   const handleDuplicateProject = useCallback(async (project: ProjectData) => {
     try {
@@ -853,7 +903,13 @@ export default function ProjectsPageClient() {
       </Dialog>
 
       {/* Create Project Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog open={createDialogOpen} onOpenChange={(open) => {
+        setCreateDialogOpen(open);
+        if (!open) {
+          setNewProjectName('');
+          setNewProjectDescription('');
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Project</DialogTitle>
@@ -868,6 +924,14 @@ export default function ProjectsPageClient() {
                 id="create-name"
                 placeholder="Project name"
                 autoFocus
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleCreateProject();
+                  }
+                }}
               />
             </div>
             <div className="grid gap-2">
@@ -876,14 +940,18 @@ export default function ProjectsPageClient() {
                 id="create-description"
                 placeholder="What is this project about?"
                 rows={3}
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={isCreatingProject}>
               Cancel
             </Button>
-            <Button onClick={() => setCreateDialogOpen(false)}>Create project</Button>
+            <Button onClick={handleCreateProject} disabled={isCreatingProject || !newProjectName.trim()}>
+              {isCreatingProject ? 'Creating...' : 'Create project'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

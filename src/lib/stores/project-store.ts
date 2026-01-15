@@ -2,10 +2,12 @@
 interface Project {
   id: string
   name: string
+  slug: string
   description: string | null
   status: string
   priority: string
   organization_id: string | null
+  workspace_id: string | null
   created_by: string
   created_at: string
   updated_at: string

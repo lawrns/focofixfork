@@ -30,6 +30,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react'
 interface Project {
   id: string
   name: string
+  slug: string
   description?: string | null
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
   due_date?: string
@@ -309,7 +310,10 @@ export default function ProjectTable({
 
   // Action handlers
   const handleViewProject = (projectId: string) => {
-    router.push(`/projects/${projectId}`)
+    const project = projects.find(p => p.id === projectId)
+    if (project) {
+      router.push(`/projects/${project.slug}`)
+    }
   }
 
   const handleEditProject = (projectId: string) => {

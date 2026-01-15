@@ -251,25 +251,27 @@ export default function ProjectPage() {
         const { data: projectData, error: projectError } = (await supabase
           .from('foco_projects')
           .select('id, workspace_id, name, slug, description, brief, color, icon, status, owner_id, default_status, settings, is_pinned, archived_at, created_at, updated_at')
-          .eq('slug', slug)
-          .single()) as { data: Project | null; error: any };
+          .eq('slug', slug)) as { data: Project[] | null; error: any };
 
         if (projectError) throw projectError;
-        if (!projectData) throw new Error('Project not found');
-        setProject(projectData);
+        if (!projectData || projectData.length === 0) throw new Error('Project not found');
+        if (projectData.length > 1) throw new Error('Multiple projects found with this slug');
+        
+        const project = projectData[0];
+        setProject(project);
 
         // Track in recent items
         addItem({
           type: 'project',
-          id: projectData.id,
-          name: projectData.name,
+          id: project.id,
+          name: project.name,
         });
 
         // Fetch work items (tasks) for this project
         const { data: tasksData, error: tasksError } = (await supabase
           .from('work_items')
           .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, created_at, updated_at')
-          .eq('project_id', projectData.id)
+          .eq('project_id', project.id)
           .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
 
         if (tasksError) throw tasksError;
@@ -303,7 +305,7 @@ export default function ProjectPage() {
         const { data: membersData, error: membersError } = (await supabase
           .from('foco_project_members')
           .select('id, project_id, user_id, role, created_at, updated_at')
-          .eq('project_id', projectData.id)) as { data: any[] | null; error: any };
+          .eq('project_id', project.id)) as { data: any[] | null; error: any };
 
         if (membersError) throw membersError;
 

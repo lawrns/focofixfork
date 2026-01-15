@@ -509,9 +509,21 @@ export default function DashboardPageClient() {
             </div>
           </DialogHeader>
           <AIProjectCreator
-            onSuccess={(projectId) => {
+            onSuccess={async (projectId) => {
               setShowAIProjectModal(false)
-              router.push(`/projects/${projectId}`)
+              // Fetch project to get slug
+              try {
+                const response = await fetch(`/api/projects?id=${projectId}`)
+                const data = await response.json()
+                if (data.success && data.data?.slug) {
+                  router.push(`/projects/${data.data.slug}`)
+                } else {
+                  router.push('/projects')
+                }
+              } catch (error) {
+                console.error('Failed to fetch project:', error)
+                router.push('/projects')
+              }
             }}
             onCancel={() => setShowAIProjectModal(false)}
           />

@@ -754,12 +754,6 @@ export default function ProjectsPageClient() {
       <PageHeader
         title="Projects"
         subtitle={`${projects.length} active projects`}
-        primaryAction={
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            {buttons.createProject}
-          </Button>
-        }
       />
 
       {/* Toolbar */}

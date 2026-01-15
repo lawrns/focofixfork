@@ -451,7 +451,7 @@ export default function ProjectsPageClient() {
         
         // Handle both wrapped format { workspaces: [...] } and direct array format
         const workspaces = data.data?.workspaces || data.data || [];
-        if (data.success && workspaces.length > 0) {
+        if (data.ok && workspaces.length > 0) {
           // Use the first workspace the user has access to
           setCurrentWorkspaceId(workspaces[0].id);
         } else {

@@ -44,10 +44,8 @@ const workspaceNavItems: NavItem[] = [
   { label: 'Reports', href: '/reports', icon: BarChart3, shortcut: 'G R' },
 ];
 
-const pinnedProjects = [
-  { id: '1', name: 'Website Redesign', slug: 'website-redesign', color: '#6366F1' },
-  { id: '2', name: 'Mobile App v2', slug: 'mobile-app-v2', color: '#10B981' },
-];
+// Pinned projects will be fetched from the API - empty by default
+const pinnedProjects: { id: string; name: string; slug: string; color: string }[] = [];
 
 export function LeftRail() {
   const pathname = usePathname();

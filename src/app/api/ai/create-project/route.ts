@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import { OpenAIProjectManager } from '@/lib/services/openai-project-manager'
+export const dynamic = 'force-dynamic'
+import { OpenAIProjectManager } from '@/lib/services/openai-project-manager'
 import { AICreateProjectSchema } from '@/lib/validation/schemas/ai-api.schema'
 import {
   successResponse,

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import { getCacheStats } from '@/lib/cache/redis'
+export const dynamic = 'force-dynamic'
+import { getCacheStats } from '@/lib/cache/redis'
 
 export async function GET(req: NextRequest) {
   try {

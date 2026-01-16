@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import { OrganizationRepository } from '@/lib/repositories/organization-repository'
+export const dynamic = 'force-dynamic'
+import { OrganizationRepository } from '@/lib/repositories/organization-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {
   successResponse,

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 
-export const dynamic = 'force-dynamic';import { NotificationsService } from '@/lib/services/notifications';
+export const dynamic = 'force-dynamic'
+import { NotificationsService } from '@/lib/services/notifications';
 
 export async function GET(request: NextRequest) {
   try {

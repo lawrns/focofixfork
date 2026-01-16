@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import {
+export const dynamic = 'force-dynamic'
+import {
   successResponse,
   authRequiredResponse,
   databaseErrorResponse,

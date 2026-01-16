@@ -23,6 +23,14 @@ export class AIService {
     // Determine provider and configuration
     const aiProvider = provider || (process.env.AI_PROVIDER as AIProvider) || 'deepseek';
     
+    console.log('[AIService] Constructor called with provider:', aiProvider)
+    console.log('[AIService] Environment variables:', {
+      AI_PROVIDER: process.env.AI_PROVIDER,
+      DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ? '***' + process.env.DEEPSEEK_API_KEY.slice(-4) : 'undefined',
+      DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+      DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL
+    })
+    
     if (aiProvider === 'deepseek') {
       this.config = {
         provider: 'deepseek',
@@ -37,6 +45,13 @@ export class AIService {
         model: process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
       };
     }
+
+    console.log('[AIService] Config:', {
+      provider: this.config.provider,
+      hasApiKey: !!this.config.apiKey,
+      model: this.config.model,
+      baseURL: this.config.baseURL
+    })
 
     if (!this.config.apiKey) {
       console.warn(`⚠️  ${this.config.provider} API key not configured - AI features will use mock responses`);

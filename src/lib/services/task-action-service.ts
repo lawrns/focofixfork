@@ -7,7 +7,6 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { AIService } from './ai-service'
 import { TaskRepository, type Task } from '../repositories/task-repository'
 import { isError } from '../repositories/base-repository'
-import { v4 as uuidv4 } from 'uuid'
 
 export type TaskActionType =
   | 'suggest_subtasks'
@@ -113,7 +112,7 @@ export class TaskActionService {
     // Parse AI response
     const parsedResponse = this.parseAIResponse(request.action, response)
 
-    const executionId = uuidv4()
+    const executionId = crypto.randomUUID()
     const preview: TaskActionPreview = {
       execution_id: executionId,
       action: request.action,
@@ -155,7 +154,7 @@ export class TaskActionService {
     }
 
     const { preview, taskId } = pending
-    const auditLogId = uuidv4()
+    const auditLogId = crypto.randomUUID()
 
     try {
       // Apply changes based on action type

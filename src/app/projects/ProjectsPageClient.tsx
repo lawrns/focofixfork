@@ -496,7 +496,8 @@ export default function ProjectsPageClient() {
       const data = await response.json();
       console.log('Projects API response:', data);
 
-      if (data.success && data.data) {
+      // API returns {ok: true, data: [...]} or {success: true, data: [...]}
+      if ((data.success || data.ok) && data.data) {
         // Transform API response to component format
         const transformedProjects = data.data.map((project: any) => ({
           id: project.id,
@@ -570,7 +571,8 @@ export default function ProjectsPageClient() {
       }
 
       const data = await response.json();
-      if (data.success && data.data) {
+      // API returns {ok: true, data: {...}} or {success: true, data: {...}}
+      if ((data.success || data.ok) && data.data) {
         toast.success('Project created successfully');
         setNewProjectName('');
         setNewProjectDescription('');

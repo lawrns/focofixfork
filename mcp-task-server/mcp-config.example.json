@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "foco-tasks": {
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp-task-server/dist/index.js"],
+      "env": {
+        "SUPABASE_URL": "https://ouvqnyfqipgnrjnuqsqq.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "YOUR_SERVICE_ROLE_KEY",
+        "ADMIN_EMAIL": "your-admin@email.com"
+      }
+    }
+  }
+}

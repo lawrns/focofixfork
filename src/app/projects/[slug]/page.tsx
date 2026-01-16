@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useRecentItems } from '@/hooks/useRecentItems';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
@@ -79,18 +79,46 @@ const priorityColors: Record<PriorityLevel, string> = {
   none: 'bg-zinc-300',
 };
 
-function WorkItemCard({ item }: { item: WorkItem }) {
+function WorkItemCard({ item, onDragStart, onDragEnd }: { 
+  item: WorkItem; 
+  onDragStart?: (item: WorkItem) => void;
+  onDragEnd?: () => void;
+}) {
+  const router = useRouter();
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    router.push(`/tasks/${item.id}`);
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', item.id);
+    e.dataTransfer.effectAllowed = 'move';
+    onDragStart?.(item);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    onDragEnd?.();
+  };
+
   return (
-    <Link
-      href={`/tasks/${item.id}`}
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDoubleClick={handleDoubleClick}
       className={cn(
-        'block p-2 md:p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
+        'p-2 md:p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all',
-        'group cursor-pointer min-h-[44px]'
+        'group cursor-grab active:cursor-grabbing min-h-[44px]',
+        isDragging && 'opacity-50 border-indigo-400 shadow-lg'
       )}
     >
       <div className="flex items-start gap-2">
-        <GripVertical className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100 mt-0.5 cursor-grab shrink-0" />
+        <GripVertical className="h-4 w-4 text-zinc-300 group-hover:text-zinc-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           {/* Title & Type */}
           <div className="flex items-start gap-2 mb-2">
@@ -145,16 +173,42 @@ function WorkItemCard({ item }: { item: WorkItem }) {
           </div>
         </div>
       </div>
-    </Link>
+      <p className="text-[10px] text-zinc-400 mt-1 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+        Double-click to open
+      </p>
+    </div>
   );
 }
 
-function BoardColumn({ status, label, color, items }: { 
+function BoardColumn({ status, label, color, items, onDrop, onAddTask }: { 
   status: WorkItemStatus; 
   label: string; 
   color: string;
   items: WorkItem[];
+  onDrop?: (taskId: string, newStatus: WorkItemStatus) => void;
+  onAddTask?: (status: WorkItemStatus) => void;
 }) {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (taskId) {
+      onDrop?.(taskId, status);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full md:w-72 min-w-[280px] shrink-0">
       {/* Column Header */}
@@ -167,7 +221,13 @@ function BoardColumn({ status, label, color, items }: {
           {items.length}
         </span>
         <div className="flex-1" />
-        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" aria-label="Add task to column">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" 
+          aria-label="Add task to column"
+          onClick={() => onAddTask?.(status)}
+        >
           <Plus className="h-4 w-4" />
         </Button>
         <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" aria-label="Column options">
@@ -175,8 +235,18 @@ function BoardColumn({ status, label, color, items }: {
         </Button>
       </div>
 
-      {/* Cards */}
-      <div className="flex-1 space-y-1 md:space-y-2 min-h-[200px] p-0.5 md:p-1 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/20">
+      {/* Cards - Drop Zone */}
+      <div 
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          'flex-1 space-y-1 md:space-y-2 min-h-[200px] p-0.5 md:p-1 rounded-lg transition-colors',
+          isDragOver 
+            ? 'bg-indigo-100/50 dark:bg-indigo-900/20 border-2 border-dashed border-indigo-400' 
+            : 'bg-zinc-50/50 dark:bg-zinc-800/20'
+        )}
+      >
         {items.map((item) => (
           <WorkItemCard key={item.id} item={item} />
         ))}
@@ -186,6 +256,7 @@ function BoardColumn({ status, label, color, items }: {
           variant="ghost"
           className="w-full justify-start text-zinc-500 h-9 md:h-9 min-h-[44px]"
           size="sm"
+          onClick={() => onAddTask?.(status)}
         >
           <Plus className="h-3.5 w-3.5" />
           <span className="text-xs md:text-sm">Add task</span>
@@ -366,6 +437,27 @@ export default function ProjectPage() {
   const handleAddTask = () => {
     // TODO: Implement task creation modal
     toast.info('Task creation coming soon');
+  };
+
+  // Drag and drop handler
+  const handleDrop = async (taskId: string, newStatus: WorkItemStatus) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) throw new Error('Failed to update task');
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      toast.success('Task moved');
+    } catch (error) {
+      toast.error('Failed to move task');
+    }
+  };
+
+  const handleAddTaskToColumn = (status: WorkItemStatus) => {
+    // TODO: Implement task creation modal with pre-selected status
+    toast.info(`Add task to ${status} - coming soon`);
   };
 
   // Team member handlers
@@ -603,6 +695,8 @@ export default function ProjectPage() {
                 label={column.label}
                 color={column.color}
                 items={getItemsByStatus(column.status)}
+                onDrop={handleDrop}
+                onAddTask={handleAddTaskToColumn}
               />
             ))}
           </div>

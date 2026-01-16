@@ -2,12 +2,14 @@ import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 import { TaskRepository } from '@/lib/repositories/task-repository'
 import { isError } from '@/lib/repositories/base-repository'
+import { supabaseAdmin } from '@/lib/supabase-server'
 import {
   successResponse,
   authRequiredResponse,
   taskNotFoundResponse,
   internalErrorResponse,
   databaseErrorResponse,
+  forbiddenResponse,
 } from '@/lib/api/response-helpers'
 
 export async function GET(
@@ -15,24 +17,78 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, error } = await getAuthUser(req)
 
     if (error || !user) {
       return authRequiredResponse()
     }
 
     const { id } = await params
-    const taskRepo = new TaskRepository(supabase)
-    const result = await taskRepo.findById(id)
 
-    if (isError(result)) {
-      if (result.error.code === 'NOT_FOUND') {
-        return taskNotFoundResponse(id)
-      }
-      return databaseErrorResponse(result.error.message, result.error.details)
+    // Use admin client to bypass RLS, then verify access manually
+    // This is more reliable than depending on RLS with server-side auth
+    const { data: task, error: taskError } = await supabaseAdmin
+      .from('work_items')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (taskError) {
+      console.error('Task fetch error:', taskError)
+      return databaseErrorResponse('Failed to fetch task', taskError)
     }
 
-    return successResponse(result.data)
+    if (!task) {
+      return taskNotFoundResponse(id)
+    }
+
+    // Verify user has access to this task's workspace
+    const { data: membership } = await supabaseAdmin
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', task.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!membership) {
+      return forbiddenResponse('You do not have access to this task')
+    }
+
+    // Fetch related data (project, assignee)
+    const { data: project } = await supabaseAdmin
+      .from('foco_projects')
+      .select('id, name, slug, color')
+      .eq('id', task.project_id)
+      .maybeSingle()
+
+    // Fetch assignee profile if exists
+    let assignee = null
+    if (task.assignee_id) {
+      const { data: assigneeProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .eq('id', task.assignee_id)
+        .maybeSingle()
+      assignee = assigneeProfile
+    }
+
+    // Fetch reporter profile if exists
+    let reporter = null
+    if (task.reporter_id) {
+      const { data: reporterProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .eq('id', task.reporter_id)
+        .maybeSingle()
+      reporter = reporterProfile
+    }
+
+    return successResponse({
+      ...task,
+      project,
+      assignee,
+      reporter,
+    })
   } catch (err: any) {
     console.error('Task GET error:', err)
     return internalErrorResponse('Failed to fetch task', err)
@@ -44,7 +100,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, error } = await getAuthUser(req)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -53,8 +109,33 @@ export async function PATCH(
     const { id } = await params
     const body = await req.json()
 
+    // Verify task exists and user has access
+    const { data: task } = await supabaseAdmin
+      .from('work_items')
+      .select('id, workspace_id')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (!task) {
+      return taskNotFoundResponse(id)
+    }
+
+    // Verify user has access to this task's workspace
+    const { data: membership } = await supabaseAdmin
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', task.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!membership) {
+      return forbiddenResponse('You do not have access to this task')
+    }
+
     // Build update object with only provided fields
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    }
 
     if (body.title !== undefined) updateData.title = body.title
     if (body.description !== undefined) updateData.description = body.description
@@ -62,21 +143,21 @@ export async function PATCH(
     if (body.priority !== undefined) updateData.priority = body.priority
     if (body.position !== undefined) updateData.position = body.position
     if (body.assignee_id !== undefined) updateData.assignee_id = body.assignee_id
-    if (body.milestone_id !== undefined) updateData.milestone_id = body.milestone_id
     if (body.due_date !== undefined) updateData.due_date = body.due_date
     if (body.project_id !== undefined) updateData.project_id = body.project_id
 
-    const taskRepo = new TaskRepository(supabase)
-    const result = await taskRepo.updateTask(id, updateData)
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('work_items')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
 
-    if (isError(result)) {
-      if (result.error.code === 'NOT_FOUND') {
-        return taskNotFoundResponse(id)
-      }
-      return databaseErrorResponse(result.error.message, result.error.details)
+    if (updateError) {
+      return databaseErrorResponse('Failed to update task', updateError)
     }
 
-    return successResponse(result.data)
+    return successResponse(updated)
   } catch (err: any) {
     console.error('Task PATCH error:', err)
     return internalErrorResponse('Failed to update task', err)
@@ -88,18 +169,49 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, error } = await getAuthUser(req)
 
     if (error || !user) {
       return authRequiredResponse()
     }
 
     const { id } = await params
-    const taskRepo = new TaskRepository(supabase)
-    const result = await taskRepo.delete(id)
 
-    if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+    // Verify task exists and user has access
+    const { data: task } = await supabaseAdmin
+      .from('work_items')
+      .select('id, workspace_id')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (!task) {
+      return taskNotFoundResponse(id)
+    }
+
+    // Verify user has access to this task's workspace
+    const { data: membership } = await supabaseAdmin
+      .from('workspace_members')
+      .select('id, role')
+      .eq('workspace_id', task.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!membership) {
+      return forbiddenResponse('You do not have access to this task')
+    }
+
+    // Only admins and owners can delete tasks
+    if (!['owner', 'admin'].includes(membership.role)) {
+      return forbiddenResponse('Only admins can delete tasks')
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from('work_items')
+      .delete()
+      .eq('id', id)
+
+    if (deleteError) {
+      return databaseErrorResponse('Failed to delete task', deleteError)
     }
 
     return successResponse({ deleted: true })

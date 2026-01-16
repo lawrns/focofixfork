@@ -19,7 +19,7 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(request)
@@ -28,7 +28,7 @@ export async function GET(
       return authRequiredResponse()
     }
 
-    const workspaceId = params.id
+    const { id: workspaceId } = await params
     const workspaceRepo = new WorkspaceRepository(supabase)
 
     // Verify workspace exists
@@ -71,7 +71,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(request)
@@ -80,7 +80,7 @@ export async function POST(
       return authRequiredResponse()
     }
 
-    const workspaceId = params.id
+    const { id: workspaceId } = await params
     const workspaceRepo = new WorkspaceRepository(supabase)
 
     // Verify workspace exists

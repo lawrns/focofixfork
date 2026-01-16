@@ -262,6 +262,7 @@ export function ExtensionLoader({
                   <div className="flex items-center gap-2">
                     {extension.manifest.icon && (
                       <div className="w-6 h-6 rounded overflow-hidden flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={extension.manifest.icon} 
                           alt={extension.manifest.name}

@@ -167,6 +167,7 @@ export function PowerUpsIntegration({
           <div className="flex items-center gap-3">
             {powerUp.manifest.icon && (
               <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={powerUp.manifest.icon} 
                   alt={powerUp.manifest.name}

@@ -156,6 +156,7 @@ export function LazyImage({
       {!isLoaded && <Skeleton className="absolute inset-0" />}
       
       {isInView && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt={alt}

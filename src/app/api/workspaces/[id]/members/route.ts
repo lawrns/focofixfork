@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { cachedFetch } from '@/lib/cache/redis'
 import { CACHE_TTL, CACHE_KEYS } from '@/lib/cache/cache-config'
+
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/workspaces/[id]/members

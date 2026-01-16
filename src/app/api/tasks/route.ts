@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { cachedFetch, generateCacheKey } from '@/lib/cache/redis'
 import { CACHE_TTL } from '@/lib/cache/cache-config'
 import { TaskRepository } from '@/lib/repositories/task-repository'
@@ -15,6 +14,8 @@ import {
   createPaginationMeta,
 } from '@/lib/api/response-helpers'
 import type { TaskFilters } from '@/lib/repositories/task-repository'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const { user, supabase, error } = await getAuthUser(req)

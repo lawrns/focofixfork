@@ -9,7 +9,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import {
   canCreateDependency,
   type Dependency,
@@ -18,6 +17,8 @@ import {
   addDependencySchema,
   removeDependencySchema,
 } from '@/features/tasks/validation/dependency.schema'
+
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/work-items/[id]/dependencies

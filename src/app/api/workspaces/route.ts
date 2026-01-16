@@ -6,7 +6,8 @@ import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, missingFieldResponse, internalErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/workspaces
  * Fetches all workspaces for the authenticated user

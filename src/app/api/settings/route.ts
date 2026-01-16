@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { SettingsRepository } from '@/lib/repositories/settings-repository'
 import type { UserSettings } from '@/lib/repositories/settings-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function PATCH(request: NextRequest) {
   try {

@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { TimeEntryRepository } from '@/lib/repositories/time-entry-repository'
 import type { UpdateTimeEntryData } from '@/lib/repositories/time-entry-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -11,6 +10,8 @@ import {
   databaseErrorResponse,
   notFoundResponse
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function PUT(
   request: NextRequest,

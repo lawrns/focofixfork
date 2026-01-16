@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { WorkspaceInvitationRepository } from '@/lib/repositories/workspace-invitation-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {
@@ -11,6 +10,8 @@ import {
   databaseErrorResponse,
   badRequestResponse
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/invitations/[token]

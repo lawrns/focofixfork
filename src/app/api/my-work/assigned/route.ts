@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 
-export const dynamic = 'force-dynamic';
 import { TaskRepository } from '@/lib/repositories/task-repository';
 import { isError } from '@/lib/repositories/base-repository';
 import {
@@ -9,6 +8,8 @@ import {
   authRequiredResponse,
   databaseErrorResponse,
 } from '@/lib/api/response-helpers';
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const { user, supabase, error } = await getAuthUser(req);

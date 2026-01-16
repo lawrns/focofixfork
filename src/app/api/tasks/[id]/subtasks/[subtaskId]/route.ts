@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { SubtaskRepository } from '@/lib/repositories/subtask-repository'
 import type { UpdateSubtaskData } from '@/lib/repositories/subtask-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, validationFailedResponse, notFoundResponse } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   req: NextRequest,

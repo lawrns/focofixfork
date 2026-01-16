@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { OrganizationRepository } from '@/lib/repositories/organization-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {
@@ -12,6 +11,8 @@ import {
   databaseErrorResponse,
   internalErrorResponse,
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/organizations/[id]

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/task-templates/:id/apply
  * Creates a task from a template

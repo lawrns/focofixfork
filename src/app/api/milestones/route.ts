@@ -1,12 +1,13 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import {
   successResponse,
   authRequiredResponse,
   databaseErrorResponse,
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {

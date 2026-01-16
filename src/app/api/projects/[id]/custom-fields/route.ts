@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/projects/[id]/custom-fields
  * List all custom fields for a project

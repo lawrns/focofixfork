@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
+export const dynamic = 'force-dynamic';
 /**
  * DELETE /api/task-templates/:id
  * Deletes a task template by ID

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/tasks/[id]/custom-values
  * Get all custom field values for a task

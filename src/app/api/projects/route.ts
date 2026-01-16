@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import { ProjectRepository } from '@/lib/repositories/project-repository'
+
+export const dynamic = 'force-dynamic';import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { CreateProjectData } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, createPaginationMeta, missingFieldResponse, duplicateSlugResponse, isValidUUID, workspaceNotFoundResponse } from '@/lib/api/response-helpers'

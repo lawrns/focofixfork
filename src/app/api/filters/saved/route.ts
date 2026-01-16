@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import { FilterRepository } from '@/lib/repositories/filter-repository'
+
+export const dynamic = 'force-dynamic';import { FilterRepository } from '@/lib/repositories/filter-repository'
 import type { CreateFilterData } from '@/lib/repositories/filter-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {

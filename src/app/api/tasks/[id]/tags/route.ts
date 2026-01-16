@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
-import { z } from 'zod';
+
+export const dynamic = 'force-dynamic';import { z } from 'zod';
 import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
 import { isError } from '@/lib/repositories/base-repository';
 import {

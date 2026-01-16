@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import { TaskRepository } from '@/lib/repositories/task-repository'
+
+export const dynamic = 'force-dynamic';import { TaskRepository } from '@/lib/repositories/task-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {

@@ -19,6 +19,7 @@ import {
 } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
+export const dynamic = 'force-dynamic';
 // Valid action types
 const VALID_ACTIONS: TaskActionType[] = [
   'suggest_subtasks',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
-import { supabase } from '@/lib/supabase-client';
+
+export const dynamic = 'force-dynamic';import { supabase } from '@/lib/supabase-client';
 
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any;

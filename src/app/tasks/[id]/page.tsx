@@ -347,14 +347,16 @@ export default function WorkItemPage() {
         const response = await fetch(`/api/tasks/${params.id}`);
         const data = await response.json();
         
-        if (data.success && data.data) {
-          setWorkItem(data.data);
-          setIsCompleted(data.data.status === 'done');
-          
+        // API returns { ok: true, data: {...} } format
+        const taskData = data.data || data;
+        if ((data.ok || data.success) && taskData) {
+          setWorkItem(taskData);
+          setIsCompleted(taskData.status === 'done');
+
           addItem({
             type: 'task',
-            id: data.data.id,
-            name: data.data.title,
+            id: taskData.id,
+            name: taskData.title,
           });
         }
       } catch (error) {

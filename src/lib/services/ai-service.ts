@@ -40,9 +40,12 @@ export class AIService {
       };
       
       // Handle different model names for DeepSeek
+      const originalModel = this.config.model
       if (this.config.model === 'deepseek-v3') {
         this.config.model = 'deepseek-chat';
         console.log('[AIService] Converted deepseek-v3 to deepseek-chat');
+      } else {
+        console.log('[AIService] No model conversion needed, using:', this.config.model)
       }
     } else {
       this.config = {

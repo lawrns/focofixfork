@@ -27,10 +27,12 @@ export async function userSetupMiddleware(
       }
     )
 
-    // Get authenticated user
-    const { data: { session } } = await supabaseClient.auth.getSession()
+    // Get authenticated user - MUST use getUser() not getSession()
+    // getSession() only works client-side, server-side it returns null
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
 
-    if (!session) {
+    if (authError || !user) {
+      console.error('[UserSetup] getUser failed:', authError?.message)
       return {
         error: NextResponse.json(
           { error: 'Authentication required' },
@@ -40,20 +42,24 @@ export async function userSetupMiddleware(
       }
     }
 
-    // Check if user has completed organization setup
-    const { data: profile, error } = await supabaseClient
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('user_id', session.user.id)
-      .single()
+    // Check if user is member of any workspace (this is the new setup check)
+    // The user_profiles table doesn't have organization_id column
+    // Instead, check workspace_members table
+    const { data: membership, error } = await supabaseClient
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
 
     if (error) {
-      // If profile doesn't exist or there's an error, user hasn't completed setup
-      return { completed: false }
+      console.error('[UserSetup] workspace membership check failed:', error.message)
+      // If there's an error, allow through (don't block on setup check failure)
+      return { completed: true }
     }
 
-    // If organization_id exists and is not null, setup is completed
-    const hasCompletedSetup = profile && profile.organization_id !== null
+    // If user is member of any workspace, setup is completed
+    const hasCompletedSetup = membership !== null
 
     return { completed: hasCompletedSetup }
   } catch (error) {

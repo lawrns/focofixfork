@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useFocusModeStore } from '@/lib/stores/foco-store';
@@ -13,7 +13,6 @@ import {
   ChevronRight,
   MoreHorizontal,
   Plus,
-  Filter,
   Zap,
   CheckCircle2,
   Circle,
@@ -41,6 +40,7 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { toast } from 'sonner';
 import { useCreateTaskModal } from '@/features/tasks';
 import { Card } from '@/components/ui/card';
+import { TaskFilterPopover, TaskFilters, defaultFilters } from '@/components/filters/task-filter-popover';
 
 const priorityColors: Record<PriorityLevel, string> = {
   urgent: 'bg-red-500',
@@ -179,14 +179,51 @@ function Section({
   items,
   onStartFocus,
   onAddTask,
+  onQuickAdd,
 }: { 
   section: 'now' | 'next' | 'later' | 'waiting';
   items: (WorkItem & { section: string })[];
   onStartFocus: (item: WorkItem) => void;
   onAddTask: (section: 'now' | 'next' | 'later' | 'waiting') => void;
+  onQuickAdd: (title: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
 }) {
   const config = sectionConfig[section];
   const Icon = config.icon;
+  const [showInlineInput, setShowInlineInput] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showInlineInput && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showInlineInput]);
+
+  const handleSubmit = async () => {
+    if (!inputValue.trim() || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onQuickAdd(inputValue.trim(), section);
+      setInputValue('');
+      setShowInlineInput(false);
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      setInputValue('');
+      setShowInlineInput(false);
+    }
+  };
 
   return (
     <div className="mb-8">
@@ -205,21 +242,48 @@ function Section({
           <WorkItemRow key={item.id} item={item} onStartFocus={onStartFocus} />
         ))}
         
-        {items.length === 0 && (
+        {items.length === 0 && !showInlineInput && (
           <div className="py-4 text-center text-sm text-zinc-400">
             No items in {config.label.toLowerCase()}
           </div>
         )}
         
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full justify-start text-zinc-500 mt-2"
-          onClick={() => onAddTask(section)}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add task
-        </Button>
+        {showInlineInput ? (
+          <div className="flex items-center gap-2 p-2 -mx-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
+            <Circle className="h-5 w-5 text-zinc-300 shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                if (!inputValue.trim()) {
+                  setShowInlineInput(false);
+                }
+              }}
+              placeholder="Task name..."
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400"
+              disabled={isSubmitting}
+            />
+            <div className="flex items-center gap-1 text-xs text-zinc-400">
+              <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded">↵</kbd>
+              <span>to add</span>
+              <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded ml-2">esc</kbd>
+              <span>to cancel</span>
+            </div>
+          </div>
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full justify-start text-zinc-500 mt-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+            onClick={() => setShowInlineInput(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add task
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -429,7 +493,7 @@ export default function MyWorkPage() {
   const { openTaskModal } = useCreateTaskModal();
   const [items, setItems] = useState<(WorkItem & { section: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showFilter, setShowFilter] = useState(false);
+  const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
   const [isPlanning, setIsPlanning] = useState(false);
 
   const fetchWorkItems = useCallback(async () => {
@@ -494,12 +558,87 @@ export default function MyWorkPage() {
     openTaskModal({ section });
   };
 
+  const handleQuickAdd = async (title: string, section: 'now' | 'next' | 'later' | 'waiting') => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          status: section === 'now' ? 'in_progress' : section === 'waiting' ? 'blocked' : section,
+          priority: 'medium',
+        }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to create task');
+      
+      const data = await response.json();
+      if (data.success && data.data) {
+        // Add the new task to the list
+        setItems(prev => [...prev, { ...data.data, section }]);
+        toast.success('Task created');
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      toast.error('Failed to create task');
+      throw error;
+    }
+  };
+
   if (isActive && currentWorkItem) {
     return <FocusMode item={currentWorkItem} onExit={deactivate} />;
   }
 
-  const getItemsBySection = (section: 'now' | 'next' | 'later' | 'waiting') =>
-    items.filter(item => item.section === section);
+  const getItemsBySection = (section: 'now' | 'next' | 'later' | 'waiting') => {
+    let filtered = items.filter(item => item.section === section);
+    
+    // Apply filters
+    if (filters.status.length > 0) {
+      filtered = filtered.filter(item => filters.status.includes(item.status));
+    }
+    if (filters.priority.length > 0) {
+      filtered = filtered.filter(item => filters.priority.includes(item.priority));
+    }
+    if (filters.assignee.length > 0) {
+      filtered = filtered.filter(item => {
+        if (filters.assignee.includes('unassigned')) {
+          return !item.assignee_id || filters.assignee.includes(item.assignee_id);
+        }
+        return item.assignee_id && filters.assignee.includes(item.assignee_id);
+      });
+    }
+    if (filters.dueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(today.getDate() + 7);
+      const endOfMonth = new Date(today);
+      endOfMonth.setMonth(today.getMonth() + 1);
+      
+      filtered = filtered.filter(item => {
+        if (!item.due_date && filters.dueDate?.preset === 'none') return true;
+        if (!item.due_date) return false;
+        
+        const dueDate = new Date(item.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        switch (filters.dueDate?.preset) {
+          case 'today':
+            return dueDate.getTime() === today.getTime();
+          case 'week':
+            return dueDate >= today && dueDate <= endOfWeek;
+          case 'month':
+            return dueDate >= today && dueDate <= endOfMonth;
+          case 'overdue':
+            return dueDate < today;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    return filtered;
+  };
 
   const completedToday = items.filter(i => i.status === 'done').length; // This is a simplification
   const totalToday = items.length;
@@ -531,14 +670,10 @@ export default function MyWorkPage() {
         subtitle={`${completedToday} of ${totalToday} items completed`}
         primaryAction={
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowFilter(!showFilter)}
-            >
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
+            <TaskFilterPopover
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
             <Button 
               variant="outline" 
               size="sm"
@@ -562,10 +697,10 @@ export default function MyWorkPage() {
         <Progress value={totalToday > 0 ? (completedToday / totalToday) * 100 : 0} className="h-2" />
       </div>
 
-      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
-      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
-      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
-      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} />
+      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
+      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
+      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
+      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
     </PageShell>
   );
 }

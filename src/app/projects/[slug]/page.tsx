@@ -304,7 +304,7 @@ export default function ProjectPage() {
         // Fetch team members
         const { data: membersData, error: membersError } = (await supabase
           .from('foco_project_members')
-          .select('id, project_id, user_id, role, created_at, updated_at')
+          .select('id, project_id, user_id, role, created_at')
           .eq('project_id', project.id)) as { data: any[] | null; error: any };
 
         if (membersError) throw membersError;

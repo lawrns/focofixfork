@@ -28,7 +28,12 @@ import {
   AlertTriangle,
   GitBranch,
   History,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
+import { AiPreviewModal } from '@/components/ai/ai-preview-modal';
+import type { TaskActionType } from '@/lib/services/task-action-service';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -310,7 +315,22 @@ function Inspector({ item }: { item: WorkItem }) {
   );
 }
 
-function AIPanel() {
+interface AIPanelProps {
+  taskId: string;
+  workspaceId: string;
+  aiLoading: TaskActionType | null;
+  onAction: (action: TaskActionType) => void;
+}
+
+function AIPanel({ taskId, workspaceId, aiLoading, onAction }: AIPanelProps) {
+  const actions: { action: TaskActionType; label: string }[] = [
+    { action: 'suggest_subtasks', label: 'Suggest subtasks' },
+    { action: 'draft_acceptance', label: 'Draft acceptance criteria' },
+    { action: 'summarize_thread', label: 'Summarize thread' },
+    { action: 'propose_next_step', label: 'Propose next step' },
+    { action: 'detect_blockers', label: 'Detect blockers' },
+  ];
+
   return (
     <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
       <div className="flex items-center gap-2 mb-3">
@@ -318,11 +338,22 @@ function AIPanel() {
         <span className="font-medium text-sm">AI Actions</span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm">Suggest subtasks</Button>
-        <Button variant="outline" size="sm">Draft acceptance criteria</Button>
-        <Button variant="outline" size="sm">Summarize thread</Button>
-        <Button variant="outline" size="sm">Propose next step</Button>
-        <Button variant="outline" size="sm">Detect blockers</Button>
+        {actions.map(({ action, label }) => (
+          <Button
+            key={action}
+            variant="outline"
+            size="sm"
+            disabled={aiLoading !== null}
+            onClick={() => onAction(action)}
+          >
+            {aiLoading === action ? (
+              <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+            ) : (
+              <Sparkles className="h-3 w-3 mr-1.5" />
+            )}
+            {label}
+          </Button>
+        ))}
       </div>
     </div>
   );
@@ -339,6 +370,14 @@ export default function WorkItemPage() {
   const [activityLog, setActivityLog] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // AI Action state
+  const [aiLoading, setAiLoading] = useState<TaskActionType | null>(null);
+  const [aiPreview, setAiPreview] = useState<{
+    action: TaskActionType;
+    preview: { explanation: string; proposed_changes: unknown };
+    applyUrl: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -374,6 +413,60 @@ export default function WorkItemPage() {
   const handleStartFocus = () => {
     if (workItem) {
       activate(workItem);
+    }
+  };
+
+  const handleAiAction = async (action: TaskActionType) => {
+    if (!workItem) return;
+
+    setAiLoading(action);
+    try {
+      const res = await fetch('/api/ai/task-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          task_id: workItem.id,
+          workspace_id: workItem.workspace_id
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setAiPreview({
+          action,
+          preview: data.preview,
+          applyUrl: `/api/ai/task-actions/${data.execution_id}/apply`
+        });
+      } else {
+        toast.error(data.error || 'Failed to generate AI preview');
+      }
+    } catch (error) {
+      console.error('AI action error:', error);
+      toast.error('Failed to connect to AI service');
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
+  const handleApplyPreview = async () => {
+    if (!aiPreview) return;
+
+    const res = await fetch(aiPreview.applyUrl, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      toast.success('Changes applied successfully');
+      // Refresh the task to show any changes
+      const taskResponse = await fetch(`/api/tasks/${params.id}`);
+      const taskData = await taskResponse.json();
+      const refreshedTask = taskData.data || taskData;
+      if ((taskData.ok || taskData.success) && refreshedTask) {
+        setWorkItem(refreshedTask);
+      }
+    } else {
+      throw new Error(data.error || 'Failed to apply changes');
     }
   };
 
@@ -471,8 +564,22 @@ export default function WorkItemPage() {
 
           {/* AI Panel */}
           <div className="mb-8">
-            <AIPanel />
+            <AIPanel
+              taskId={workItem.id}
+              workspaceId={workItem.workspace_id}
+              aiLoading={aiLoading}
+              onAction={handleAiAction}
+            />
           </div>
+
+          {/* AI Preview Modal */}
+          <AiPreviewModal
+            open={aiPreview !== null}
+            action={aiPreview?.action || null}
+            preview={aiPreview?.preview || null}
+            onApply={handleApplyPreview}
+            onCancel={() => setAiPreview(null)}
+          />
 
           <Separator className="my-8" />
 

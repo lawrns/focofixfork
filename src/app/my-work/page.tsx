@@ -20,7 +20,11 @@ import {
   Timer,
   Target,
   Layers,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
+import { AiPreviewModal } from '@/components/ai/ai-preview-modal';
+import type { TaskActionType } from '@/lib/services/task-action-service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -307,6 +311,59 @@ function FocusMode({
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // AI Action state
+  const [aiLoading, setAiLoading] = useState<TaskActionType | null>(null);
+  const [aiPreview, setAiPreview] = useState<{
+    action: TaskActionType;
+    preview: { explanation: string; proposed_changes: unknown };
+    applyUrl: string;
+  } | null>(null);
+
+  const handleAiAction = async (action: TaskActionType) => {
+    setAiLoading(action);
+    try {
+      const res = await fetch('/api/ai/task-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          task_id: item.id,
+          workspace_id: item.workspace_id
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setAiPreview({
+          action,
+          preview: data.preview,
+          applyUrl: `/api/ai/task-actions/${data.execution_id}/apply`
+        });
+      } else {
+        toast.error(data.error || 'Failed to generate AI preview');
+      }
+    } catch (error) {
+      console.error('AI action error:', error);
+      toast.error('Failed to connect to AI service');
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
+  const handleApplyPreview = async () => {
+    if (!aiPreview) return;
+
+    const res = await fetch(aiPreview.applyUrl, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      toast.success('Changes applied successfully');
+    } else {
+      throw new Error(data.error || 'Failed to apply changes');
+    }
+  };
+
   // Update elapsed time every second when timer is running
   useEffect(() => {
     let interval: any;
@@ -442,12 +499,69 @@ function FocusMode({
               <span className="font-medium text-sm">AI Helpers</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm">Break into subtasks</Button>
-              <Button variant="outline" size="sm">Draft update</Button>
-              <Button variant="outline" size="sm">Estimate time</Button>
-              <Button variant="outline" size="sm">Find similar work</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={aiLoading !== null}
+                onClick={() => handleAiAction('break_into_subtasks')}
+              >
+                {aiLoading === 'break_into_subtasks' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1.5" />
+                )}
+                Break into subtasks
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={aiLoading !== null}
+                onClick={() => handleAiAction('draft_update')}
+              >
+                {aiLoading === 'draft_update' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1.5" />
+                )}
+                Draft update
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={aiLoading !== null}
+                onClick={() => handleAiAction('estimate_time')}
+              >
+                {aiLoading === 'estimate_time' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1.5" />
+                )}
+                Estimate time
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={aiLoading !== null}
+                onClick={() => handleAiAction('find_similar')}
+              >
+                {aiLoading === 'find_similar' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1.5" />
+                )}
+                Find similar work
+              </Button>
             </div>
           </div>
+
+          {/* AI Preview Modal */}
+          <AiPreviewModal
+            open={aiPreview !== null}
+            action={aiPreview?.action || null}
+            preview={aiPreview?.preview || null}
+            onApply={handleApplyPreview}
+            onCancel={() => setAiPreview(null)}
+          />
         </div>
 
         <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50 dark:bg-zinc-900">

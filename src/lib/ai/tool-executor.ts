@@ -168,10 +168,10 @@ export class ToolExecutor {
       }
 
       // Check if approval is required
-      if (constraints.require_approval_for_writes === true) {
+      if (constraints.require_approval_for_changes === true) {
         throw new PolicyViolationError(
           'Write operations require manual approval',
-          'require_approval_for_writes'
+          'require_approval_for_changes'
         )
       }
     }

@@ -22,7 +22,7 @@ export interface WorkspaceAIPolicy {
     allow_task_deletion?: boolean
     allow_project_access?: boolean
     allow_team_access?: boolean
-    require_approval_for_writes?: boolean
+    require_approval_for_changes?: boolean
     max_tasks_per_operation?: number
   }
 }

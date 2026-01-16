@@ -92,25 +92,37 @@ export class TaskActionService {
     userId: string
   ): Promise<TaskActionPreview> {
     const startTime = Date.now()
+    console.log('[TaskActionService] generatePreview called:', { 
+      action: request.action, 
+      taskId: request.task_id, 
+      workspaceId: request.workspace_id,
+      userId 
+    })
 
-    // Fetch task details
+    // Validate task exists and user has access
     const taskResult = await this.taskRepo.getTaskWithDetails(request.task_id)
     if (isError(taskResult)) {
-      throw new Error(`Task not found: ${request.task_id}`)
+      console.error('[TaskActionService] Task not found:', taskResult.error)
+      throw new Error('Task not found')
     }
     const task = taskResult.data
+    console.log('[TaskActionService] Task found:', task.title)
 
     // Build prompt based on action type
     const prompt = this.buildPrompt(request.action, task, policy)
+    console.log('[TaskActionService] Prompt built')
 
     // Call AI service
+    console.log('[TaskActionService] Calling AI service...')
     const response = await this.aiService.chatCompletion([
       { role: 'system', content: this.getSystemPrompt(policy) },
       { role: 'user', content: prompt }
     ])
+    console.log('[TaskActionService] AI service responded')
 
     // Parse AI response
     const parsedResponse = this.parseAIResponse(request.action, response)
+    console.log('[TaskActionService] Response parsed')
 
     const executionId = crypto.randomUUID()
     const preview: TaskActionPreview = {
@@ -126,6 +138,7 @@ export class TaskActionService {
         policy_version: policy.version || 1
       }
     }
+    console.log('[TaskActionService] Preview created:', executionId)
 
     // Store preview for apply phase
     pendingPreviews.set(executionId, {
@@ -136,7 +149,9 @@ export class TaskActionService {
     })
 
     // Log to audit
+    console.log('[TaskActionService] Logging to audit...')
     await this.logAudit(request, preview, userId, true)
+    console.log('[TaskActionService] Audit logged')
 
     return preview
   }

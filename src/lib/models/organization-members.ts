@@ -3,7 +3,7 @@
  * Defines the structure and operations for organization membership data
  */
 
-export type MemberRole = 'admin' | 'member'
+export type MemberRole = 'owner' | 'admin' | 'member'
 
 export interface OrganizationMember {
   id: string
@@ -42,7 +42,7 @@ export class OrganizationMemberModel {
       errors.push('Please enter a valid email address')
     }
 
-    if (data.role && !['admin', 'member'].includes(data.role)) {
+    if (data.role && !['owner', 'admin', 'member'].includes(data.role)) {
       errors.push('Invalid role specified')
     }
 
@@ -58,7 +58,7 @@ export class OrganizationMemberModel {
   static validateRoleUpdate(data: UpdateMemberRoleData): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
 
-    if (!data.role || !['admin', 'member'].includes(data.role)) {
+    if (!data.role || !['owner', 'admin', 'member'].includes(data.role)) {
       errors.push('Valid role is required')
     }
 
@@ -78,6 +78,8 @@ export class OrganizationMemberModel {
     }
 
     switch (currentUserRole) {
+      case 'owner':
+        return true // Owners can change any role
       case 'admin':
         return true // Admins can change any role
       case 'member':
@@ -151,6 +153,8 @@ export class OrganizationMemberModel {
    */
   static getRoleLevel(role: MemberRole): number {
     switch (role) {
+      case 'owner':
+        return 3
       case 'admin':
         return 2
       case 'member':

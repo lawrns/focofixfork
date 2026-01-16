@@ -29,11 +29,13 @@ import {
   ArrowLeft,
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  Zap
 } from 'lucide-react'
 import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import PermissionsManager from '@/components/permissions/permissions-manager'
 import InvitationsManager from '@/components/invitations/invitations-manager'
+import AISettingsTab from '@/components/organizations/ai-settings-tab'
 
 interface Organization {
   id: string
@@ -379,9 +381,9 @@ export default function OrganizationDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Tabs for Team, Permissions, and Invitations */}
+        {/* Tabs for Team, Permissions, Invitations, and AI Settings */}
         <Tabs defaultValue="team" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="team" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Team Members
@@ -394,6 +396,12 @@ export default function OrganizationDetailPage() {
               <Mail className="w-4 h-4" />
               Invitations
             </TabsTrigger>
+            {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
+              <TabsTrigger value="ai-settings" className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                AI & Prompts
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="team">
@@ -539,6 +547,15 @@ export default function OrganizationDetailPage() {
               currentUserRole={currentUserRole}
             />
           </TabsContent>
+
+          {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
+            <TabsContent value="ai-settings">
+              <AISettingsTab
+                organizationId={organizationId}
+                currentUserRole={currentUserRole}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

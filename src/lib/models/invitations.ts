@@ -20,7 +20,7 @@ export interface OrganizationInvitation {
 
 export interface CreateInvitationData {
   email: string
-  role: 'admin' | 'member'
+  role: 'owner' | 'admin' | 'member'
 }
 
 export interface InvitationWithDetails extends OrganizationInvitation {

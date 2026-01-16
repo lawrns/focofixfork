@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 
-export const dynamic = 'force-dynamic'
 import { calculateNextRecurrenceDate, shouldCreateNextInstance } from '@/features/tasks/services/recurrence.service';
 import type { RecurrencePattern } from '@/lib/validation/schemas/task.schema';
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   req: NextRequest,

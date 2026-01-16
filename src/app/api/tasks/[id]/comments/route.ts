@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {
   successResponse,
@@ -12,6 +11,8 @@ import {
   forbiddenResponse,
   badRequestResponse,
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { UpdateProjectData } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, projectNotFoundResponse, validateUUID } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,

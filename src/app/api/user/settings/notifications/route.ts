@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 
-export const dynamic = 'force-dynamic'
 import { supabaseAdmin } from '@/lib/supabase-server';
+
+export const dynamic = 'force-dynamic'
 
 interface NotificationSettings {
   enable_push: boolean;

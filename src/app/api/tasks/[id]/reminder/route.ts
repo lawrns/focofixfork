@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { ReminderService } from '@/features/tasks/services/reminder-service'
 import {
   authRequiredResponse,
@@ -10,6 +9,8 @@ import {
   validationFailedResponse,
   databaseErrorResponse
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,

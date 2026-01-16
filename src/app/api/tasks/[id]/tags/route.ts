@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 
-export const dynamic = 'force-dynamic'
 import { z } from 'zod';
 import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
 import { isError } from '@/lib/repositories/base-repository';
@@ -15,6 +14,8 @@ import {
   notFoundResponse,
   validateUUID,
 } from '@/lib/api/response-helpers';
+
+export const dynamic = 'force-dynamic'
 
 const AssignTagSchema = z.object({
   tag_ids: z.array(z.string().uuid()).min(1, 'At least one tag is required'),

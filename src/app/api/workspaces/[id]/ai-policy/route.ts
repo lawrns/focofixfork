@@ -13,8 +13,9 @@ import {
 } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { z } from 'zod'
+
+export const dynamic = 'force-dynamic'
 
 // Schema for validating the AI policy update
 const WorkspaceAIPolicySchema = z.object({

@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic'
 import { FilterRepository } from '@/lib/repositories/filter-repository'
 import type { UpdateFilterData } from '@/lib/repositories/filter-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -12,6 +11,8 @@ import {
   notFoundResponse,
   forbiddenResponse
 } from '@/lib/api/response-helpers'
+
+export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   request: NextRequest,

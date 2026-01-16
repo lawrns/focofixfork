@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import { FileAttachmentModel } from '@/lib/models/file-uploads'
+
+export const dynamic = 'force-dynamic';import { FileAttachmentModel } from '@/lib/models/file-uploads'
 
 export async function POST(req: NextRequest) {
   try {

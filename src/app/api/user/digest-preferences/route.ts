@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
-import { createClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';import { createClient } from '@/lib/supabase/server';
 
 interface DigestTime {
   hour: number;

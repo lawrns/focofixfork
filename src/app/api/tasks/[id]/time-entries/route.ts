@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import { TimeEntryRepository } from '@/lib/repositories/time-entry-repository'
+
+export const dynamic = 'force-dynamic';import { TimeEntryRepository } from '@/lib/repositories/time-entry-repository'
 import type { CreateTimeEntryData } from '@/lib/repositories/time-entry-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {

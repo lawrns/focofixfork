@@ -8,7 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import {
+
+export const dynamic = 'force-dynamic';import {
   canCreateDependency,
   type Dependency,
 } from '@/features/tasks/validation/task-dependency-validation'

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
-import { z } from 'zod';
+
+export const dynamic = 'force-dynamic';import { z } from 'zod';
 
 const CreateTagSchema = z.object({
   workspace_id: z.string().uuid('Invalid workspace ID'),

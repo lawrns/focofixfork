@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
+export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { user, supabase, error } = await getAuthUser(req)

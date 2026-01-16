@@ -12,7 +12,8 @@ import {
   invalidUUIDResponse
 } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-import { z } from 'zod'
+
+export const dynamic = 'force-dynamic';import { z } from 'zod'
 
 // Schema for validating the AI policy update
 const WorkspaceAIPolicySchema = z.object({

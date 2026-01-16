@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
+export const dynamic = 'force-dynamic';
 // Helper to generate CSV from tasks
 function generateCSV(tasks: any[]): string {
   const headers = ['id', 'title', 'description', 'status', 'priority', 'due_date', 'assignee_id', 'tags', 'created_at']

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
-import { ProjectTemplateModel } from '@/lib/models/project-templates'
+
+export const dynamic = 'force-dynamic';import { ProjectTemplateModel } from '@/lib/models/project-templates'
 import { ProjectModel } from '@/lib/models/projects'
 
 /**

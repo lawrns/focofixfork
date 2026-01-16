@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
+
+export const dynamic = 'force-dynamic';import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {
   authRequiredResponse,

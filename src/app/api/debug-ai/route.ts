@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     // Check workspace access
     const workspaceRepo = new WorkspaceRepository(supabase)
     const isMemberResult = await workspaceRepo.isMember(body.workspace_id, user.id)
-    debugLog.push({ step: 'workspace_check', workspaceId: body.workspace_id, isMember: isMemberResult.data, error: isMemberResult.error })
+    debugLog.push({ step: 'workspace_check', workspaceId: body.workspace_id, isMember: isMemberResult.ok ? isMemberResult.data : null, error: isMemberResult.error })
 
-    if (isMemberResult.error || !isMemberResult.data) {
+    if (!isMemberResult.ok || !isMemberResult.data) {
       return NextResponse.json({ debugLog, error: 'Workspace access denied' }, { status: 403 })
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const workspaceResult = await workspaceRepo.findById(body.workspace_id)
     debugLog.push({ step: 'workspace_policy', hasPolicy: !!workspaceResult.data?.ai_policy, error: workspaceResult.error })
 
-    if (workspaceResult.error) {
+    if (!workspaceResult.ok) {
       return NextResponse.json({ debugLog, error: 'Failed to get workspace' }, { status: 500 })
     }
 

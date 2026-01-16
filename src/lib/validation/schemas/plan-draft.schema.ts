@@ -6,8 +6,8 @@ import { z } from 'zod'
  */
 
 // Base enums for consistency across the system
-export const TaskStatusSchema = z.enum(['todo', 'in_progress', 'review', 'done', 'blocked'])
-export const PrioritySchema = z.enum(['low', 'medium', 'high', 'critical'])
+export const TaskStatusSchema = z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done'])
+export const PrioritySchema = z.enum(['urgent', 'high', 'medium', 'low', 'none'])
 export const LanguageCodeSchema = z.string().regex(/^[a-z]{2}(-[A-Z]{2})?$/)
 
 // Task definition schema
@@ -21,8 +21,8 @@ export const TaskSchema = z.object({
     .max(2000, 'Task description must be less than 2000 characters')
     .optional(),
   
-  status: TaskStatusSchema.default('todo'),
-  priority: PrioritySchema.default('medium'),
+  status: TaskStatusSchema.default('backlog'),
+  priority: PrioritySchema.default('none'),
   
   assignee_hint: z.string()
     .max(100, 'Assignee hint must be less than 100 characters')
@@ -89,8 +89,8 @@ export const MilestoneSchema = z.object({
     .nullable()
     .optional(),
   
-  priority: PrioritySchema.default('medium'),
-  status: TaskStatusSchema.default('todo'),
+  priority: PrioritySchema.default('none'),
+  status: TaskStatusSchema.default('backlog'),
   
   progress_percentage: z.number()
     .min(0, 'Progress must be between 0 and 100')
@@ -341,13 +341,13 @@ export const EXAMPLE_PLAN_DRAFT: PlanDraft = {
       start_date: '2025-01-15T09:00:00Z',
       due_date: '2025-02-15T17:00:00Z',
       priority: 'high',
-      status: 'todo',
+      status: 'backlog',
       progress_percentage: 0,
       tasks: [
         {
           title: 'Create wireframes and mockups',
           description: 'Design all user interface screens',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           assignee_hint: 'design-team',
           estimate_hours: 40,
@@ -361,7 +361,7 @@ export const EXAMPLE_PLAN_DRAFT: PlanDraft = {
         {
           title: 'Technical architecture planning',
           description: 'Define system architecture and technology stack',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           assignee_hint: 'tech-lead',
           estimate_hours: 24,

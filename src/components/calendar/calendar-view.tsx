@@ -28,6 +28,9 @@ export function CalendarView({ className }: CalendarViewProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<CalendarFilter>({})
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [showFilterPanel, setShowFilterPanel] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
   const viewConfig: CalendarViewType = {
     type: viewType,
@@ -68,6 +71,159 @@ export function CalendarView({ className }: CalendarViewProps) {
       loadEvents()
     }
   }, [user, loadEvents])
+
+  const handleSync = useCallback(async () => {
+    if (!user) return
+    setIsSyncing(true)
+    try {
+      // Refresh events from all sources
+      await loadEvents()
+      addToast({
+        type: 'success',
+        title: t('calendar.syncSuccess'),
+        description: t('calendar.syncSuccessDescription'),
+      })
+    } catch (error: any) {
+      addToast({
+        type: 'error',
+        title: t('common.error'),
+        description: error.message || t('calendar.syncError'),
+      })
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [user, loadEvents, addToast, t])
+
+  const handleExport = useCallback(async () => {
+    if (!user || events.length === 0) {
+      addToast({
+        type: 'info',
+        title: t('calendar.export'),
+        description: t('calendar.noEventsToExport'),
+      })
+      return
+    }
+
+    try {
+      // Generate ICS content
+      const icsContent = generateICS(events)
+      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `foco-calendar-${format(new Date(), 'yyyy-MM-dd')}.ics`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      addToast({
+        type: 'success',
+        title: t('calendar.exportSuccess'),
+        description: t('calendar.exportSuccessDescription'),
+      })
+    } catch (error: any) {
+      addToast({
+        type: 'error',
+        title: t('common.error'),
+        description: error.message || t('calendar.exportError'),
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, events, addToast, t])
+
+  const handleCreateEvent = useCallback(() => {
+    addToast({
+      type: 'info',
+      title: t('calendar.createEvent'),
+      description: 'Event creation coming soon. For now, create tasks with due dates to see them on the calendar.',
+    })
+  }, [addToast, t])
+
+  const handleEventClick = useCallback((event: CalendarEvent) => {
+    setSelectedEvent(event)
+    // If it's a task event, navigate to the task
+    if (event.taskId) {
+      window.location.href = `/tasks/${event.taskId}`
+    } else if (event.milestoneId) {
+      window.location.href = `/milestones/${event.milestoneId}`
+    } else {
+      addToast({
+        type: 'info',
+        title: event.title,
+        description: event.description || formatEventTime(event),
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addToast])
+
+  const handleEventSettings = useCallback((event: CalendarEvent) => {
+    setSelectedEvent(event)
+    if (event.taskId) {
+      window.location.href = `/tasks/${event.taskId}`
+    } else if (event.milestoneId) {
+      window.location.href = `/milestones/${event.milestoneId}`
+    } else {
+      addToast({
+        type: 'info',
+        title: t('calendar.eventSettings'),
+        description: 'Event settings coming soon.',
+      })
+    }
+  }, [addToast, t])
+
+  const handleToggleFilter = useCallback(() => {
+    setShowFilterPanel(!showFilterPanel)
+    if (!showFilterPanel) {
+      addToast({
+        type: 'info',
+        title: t('calendar.filter'),
+        description: 'Filter panel coming soon. Currently showing all events.',
+      })
+    }
+  }, [showFilterPanel, addToast, t])
+
+  // Generate ICS file content
+  const generateICS = (eventsToExport: CalendarEvent[]): string => {
+    const lines: string[] = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Foco//Calendar Export//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+    ]
+
+    eventsToExport.forEach(event => {
+      const start = new Date(event.start)
+      const end = new Date(event.end)
+      const uid = `${event.id}@foco.app`
+
+      lines.push('BEGIN:VEVENT')
+      lines.push(`UID:${uid}`)
+      lines.push(`DTSTAMP:${formatICSDate(new Date())}`)
+      lines.push(`DTSTART:${formatICSDate(start)}`)
+      lines.push(`DTEND:${formatICSDate(end)}`)
+      lines.push(`SUMMARY:${escapeICSText(event.title)}`)
+      if (event.description) {
+        lines.push(`DESCRIPTION:${escapeICSText(event.description)}`)
+      }
+      if (event.location) {
+        lines.push(`LOCATION:${escapeICSText(event.location)}`)
+      }
+      lines.push('END:VEVENT')
+    })
+
+    lines.push('END:VCALENDAR')
+    return lines.join('\r\n')
+  }
+
+  const formatICSDate = (date: Date): string => {
+    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  }
+
+  const escapeICSText = (text: string): string => {
+    return text.replace(/[\\,;]/g, '\\$&').replace(/\n/g, '\\n')
+  }
 
   const getViewStartDate = (date: Date, view: string): Date => {
     switch (view) {
@@ -210,6 +366,7 @@ export function CalendarView({ className }: CalendarViewProps) {
                       getEventColor(event)
                     )}
                     title={`${event.title} - ${formatEventTime(event)}`}
+                    onClick={() => handleEventClick(event)}
                   >
                     {event.title}
                   </div>
@@ -268,6 +425,7 @@ export function CalendarView({ className }: CalendarViewProps) {
                       "text-xs p-2 rounded border cursor-pointer hover:opacity-80",
                       getEventColor(event)
                     )}
+                    onClick={() => handleEventClick(event)}
                   >
                     <div className="font-medium truncate">
                       {event.title}
@@ -363,7 +521,7 @@ export function CalendarView({ className }: CalendarViewProps) {
                     <Badge variant="secondary" className="text-xs">
                       {event.source === 'foco' ? t('calendar.focoEvent') : t('calendar.externalEvent')}
                     </Badge>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleEventSettings(event)}>
                       <Settings className="h-4 w-4" />
                     </Button>
                   </div>
@@ -444,7 +602,7 @@ export function CalendarView({ className }: CalendarViewProps) {
                     <Badge variant="secondary" className="text-xs">
                       {event.source === 'foco' ? t('calendar.focoEvent') : t('calendar.externalEvent')}
                     </Badge>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleEventSettings(event)}>
                       <Settings className="h-4 w-4" />
                     </Button>
                   </div>
@@ -495,15 +653,15 @@ export function CalendarView({ className }: CalendarViewProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Sync className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={handleSync} disabled={isSyncing}>
+            <Sync className={cn("h-4 w-4", isSyncing && "animate-spin")} />
             {t('calendar.sync')}
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4" />
             {t('calendar.export')}
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={handleCreateEvent}>
             <Plus className="h-4 w-4" />
             {t('calendar.createEvent')}
           </Button>
@@ -559,7 +717,7 @@ export function CalendarView({ className }: CalendarViewProps) {
                 </SelectContent>
               </Select>
               
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleToggleFilter}>
                 <Filter className="h-4 w-4" />
                 {t('calendar.filter')}
               </Button>

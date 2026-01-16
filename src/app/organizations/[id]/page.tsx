@@ -64,6 +64,7 @@ export default function OrganizationDetailPage() {
   const [inviteResult, setInviteResult] = useState<{ success: boolean; message: string } | null>(null)
   const [editingMember, setEditingMember] = useState<string | null>(null)
   const [editRole, setEditRole] = useState<MemberRole>('member')
+  const [activeTab, setActiveTab] = useState('team')
 
   const loadOrganization = useCallback(async () => {
     try {
@@ -344,7 +345,7 @@ export default function OrganizationDetailPage() {
               </Dialog>
             )}
 
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setActiveTab('ai-settings')}>
               <Settings className="w-4 h-4" />
               Settings
             </Button>
@@ -382,7 +383,7 @@ export default function OrganizationDetailPage() {
         </Card>
 
         {/* Tabs for Team, Permissions, Invitations, and AI Settings */}
-        <Tabs defaultValue="team" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="team" className="flex items-center gap-2">
               <Users className="w-4 h-4" />

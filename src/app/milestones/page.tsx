@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function MilestonesPage() {
   return (
@@ -52,6 +53,7 @@ function MilestonesContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const router = useRouter()
 
   const loadData = useCallback(async () => {
@@ -154,34 +156,41 @@ function MilestonesContent() {
     return project?.name || 'Unknown Project'
   }
 
-  const handleEditMilestone = (milestoneId: string) => {
-    // TODO: Implement milestone editing
-    console.log('Edit milestone:', milestoneId)
-    alert('Milestone editing functionality will be implemented soon')
+  const handleEditMilestone = (e: React.MouseEvent, milestoneId: string) => {
+    e.stopPropagation()
+    toast.info('Opening milestone editor...')
+    router.push(`/milestones/${milestoneId}?edit=true`)
   }
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
+  const handleCreateMilestone = () => {
+    // For now, show toast - in a full implementation, this would open a modal
+    toast.info('Milestone creation coming soon. You can create milestones from within a project.')
+  }
+
+  const handleDeleteMilestone = async (e: React.MouseEvent, milestoneId: string) => {
+    e.stopPropagation()
     if (!confirm('Are you sure you want to delete this milestone? This action cannot be undone.')) {
       return
     }
 
     try {
+      toast.loading('Deleting milestone...', { id: 'delete-milestone' })
       const response = await fetch(`/api/milestones/${milestoneId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
-      
+
       if (response.ok) {
-        alert('Milestone deleted successfully')
-        // Refresh the page to update the milestone list
-        window.location.reload()
+        toast.success('Milestone deleted successfully', { id: 'delete-milestone' })
+        setMilestones(prev => prev.filter(m => m.id !== milestoneId))
       } else {
         const errorData = await response.json().catch(() => ({}))
         console.error('Failed to delete milestone:', response.statusText, errorData)
-        alert(`Failed to delete milestone: ${errorData.error || response.statusText}`)
+        toast.error(`Failed to delete milestone: ${errorData.error || response.statusText}`, { id: 'delete-milestone' })
       }
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('Error deleting milestone')
+      toast.error('Error deleting milestone', { id: 'delete-milestone' })
     }
   }
 
@@ -230,7 +239,7 @@ function MilestonesContent() {
                 <h1 className="text-2xl font-bold">Milestones</h1>
                 <p className="text-muted-foreground mt-1">Track and manage all your project milestones</p>
               </div>
-              <Button size="sm"><Plus className="w-4 h-4" />New Milestone</Button>
+              <Button size="sm" onClick={handleCreateMilestone}><Plus className="w-4 h-4" />New Milestone</Button>
             </div>
           </CardHeader>
         </Card>
@@ -288,7 +297,7 @@ function MilestonesContent() {
                 }
               </p>
               {!searchTerm && filterStatus === 'all' && filterPriority === 'all' && (
-                <Button>
+                <Button onClick={handleCreateMilestone}>
                   <Plus className="w-4 h-4" />
                   Create Milestone
                 </Button>
@@ -328,13 +337,13 @@ function MilestonesContent() {
                               View Details
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditMilestone(milestone.id)}>
+                          <DropdownMenuItem onClick={(e) => handleEditMilestone(e, milestone.id)}>
                             <Edit className="h-4 w-4" />
                             Edit Milestone
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => handleDeleteMilestone(milestone.id)}
+                            onClick={(e) => handleDeleteMilestone(e, milestone.id)}
                             className="text-red-600 dark:text-red-400"
                           >
                             <Trash2 className="h-4 w-4" />

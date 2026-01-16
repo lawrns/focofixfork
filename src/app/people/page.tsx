@@ -73,7 +73,12 @@ const statusColors = {
   offline: 'bg-zinc-400',
 };
 
-function MemberCard({ member }: { member: TeamMember }) {
+function MemberCard({ member, onViewProfile, onViewTasks, onReassignTasks }: {
+  member: TeamMember;
+  onViewProfile: (member: TeamMember) => void;
+  onViewTasks: (member: TeamMember) => void;
+  onReassignTasks: (member: TeamMember) => void;
+}) {
   const isOverloaded = member.capacity.current > 100;
   
   return (
@@ -110,9 +115,9 @@ function MemberCard({ member }: { member: TeamMember }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View profile</DropdownMenuItem>
-            <DropdownMenuItem>View tasks</DropdownMenuItem>
-            <DropdownMenuItem>Reassign tasks</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onViewProfile(member)}>View profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onViewTasks(member)}>View tasks</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onReassignTasks(member)}>Reassign tasks</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -323,6 +328,84 @@ export default function PeoplePage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
+  const [isInviting, setIsInviting] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterRole, setFilterRole] = useState<string>('all');
+
+  const handleViewProfile = (member: TeamMember) => {
+    toast.info(`Viewing profile for ${member.name}`);
+    // Navigate to profile page
+    window.location.href = `/people/${member.id}`;
+  };
+
+  const handleViewTasks = (member: TeamMember) => {
+    toast.info(`Viewing tasks for ${member.name}`);
+    // Navigate to tasks filtered by assignee
+    window.location.href = `/tasks?assignee=${member.id}`;
+  };
+
+  const handleReassignTasks = (member: TeamMember) => {
+    toast.info(`Task reassignment for ${member.name} coming soon`);
+  };
+
+  const handleFilter = () => {
+    setShowFilter(!showFilter);
+    toast.info(showFilter ? 'Filter closed' : 'Filter by role coming soon');
+  };
+
+  const handleSendInvitation = async () => {
+    if (!inviteEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(inviteEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      toast.loading('Sending invitation...', { id: 'invite' });
+
+      // Get current workspace
+      const currentWorkspaceSlug = localStorage.getItem('lastWorkspace') || 'fyves-team';
+      const workspacesRes = await fetch('/api/workspaces');
+      const workspacesData = await workspacesRes.json();
+      const workspaces = workspacesData.data?.workspaces || workspacesData.workspaces || [];
+      const currentWorkspace = workspaces.find((w: any) => w.slug === currentWorkspaceSlug);
+
+      if (!currentWorkspace) {
+        throw new Error('No workspace found');
+      }
+
+      const response = await fetch(`/api/organizations/${currentWorkspace.id}/invitations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          role: inviteRole
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send invitation');
+      }
+
+      toast.success('Invitation sent successfully!', { id: 'invite' });
+      setShowInviteDialog(false);
+      setInviteEmail('');
+      setInviteRole('member');
+    } catch (error: any) {
+      console.error('Failed to send invitation:', error);
+      toast.error(error.message || 'Failed to send invitation', { id: 'invite' });
+    } finally {
+      setIsInviting(false);
+    }
+  };
 
   const fetchMembers = useCallback(async () => {
     if (!user) return;
@@ -469,7 +552,7 @@ export default function PeoplePage() {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" onClick={handleFilter}>
               <Filter className="h-4 w-4" />
             </Button>
           </div>
@@ -481,7 +564,13 @@ export default function PeoplePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredMembers.map((member) => (
-          <MemberCard key={member.id} member={member} />
+          <MemberCard
+            key={member.id}
+            member={member}
+            onViewProfile={handleViewProfile}
+            onViewTasks={handleViewTasks}
+            onReassignTasks={handleReassignTasks}
+          />
         ))}
       </div>
 
@@ -501,7 +590,13 @@ export default function PeoplePage() {
       )}
 
       {/* Invite Member Dialog */}
-      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+      <Dialog open={showInviteDialog} onOpenChange={(open) => {
+        setShowInviteDialog(open);
+        if (!open) {
+          setInviteEmail('');
+          setInviteRole('member');
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
@@ -513,30 +608,37 @@ export default function PeoplePage() {
                 id="invite-email"
                 type="email"
                 placeholder="teammate@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="invite-role">Role</Label>
-              <Input
+              <select
                 id="invite-role"
-                placeholder="Member"
-              />
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+                <option value="owner">Owner</option>
+              </select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setShowInviteDialog(false)}
+              disabled={isInviting}
             >
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                toast.success('Invitation feature coming soon!');
-                setShowInviteDialog(false);
-              }}
+              onClick={handleSendInvitation}
+              disabled={isInviting}
             >
-              Send Invitation
+              {isInviting ? 'Sending...' : 'Send Invitation'}
             </Button>
           </div>
         </DialogContent>

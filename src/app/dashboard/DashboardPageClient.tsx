@@ -116,6 +116,8 @@ export default function DashboardPageClient() {
   const [showAIProjectModal, setShowAIProjectModal] = useState(false)
   const [showBriefGeneration, setShowBriefGeneration] = useState(false)
   const [showAISuggestions, setShowAISuggestions] = useState(false)
+  const [showImportExportModal, setShowImportExportModal] = useState(false)
+  const [importExportTab, setImportExportTab] = useState<'export' | 'import'>('export')
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -379,8 +381,8 @@ export default function DashboardPageClient() {
             </div>
           }
           secondaryActions={[
-            { label: 'Import', onClick: () => {}, icon: Upload },
-            { label: 'Export', onClick: () => {}, icon: Download },
+            { label: 'Import', onClick: () => { setImportExportTab('import'); setShowImportExportModal(true); }, icon: Upload },
+            { label: 'Export', onClick: () => { setImportExportTab('export'); setShowImportExportModal(true); }, icon: Download },
           ]}
         />
 
@@ -547,22 +549,25 @@ export default function DashboardPageClient() {
         tasks={[]}
         organizations={organizations}
         labels={[]}
+        open={showImportExportModal}
+        onOpenChange={setShowImportExportModal}
+        defaultTab={importExportTab}
         onImportComplete={(result) => {
           if (result.success) {
-            toastNotification.addToast({ 
-              type: 'success', 
-              title: 'Import complete', 
-              description: `${result.imported.projects + result.imported.tasks} items imported` 
+            toastNotification.addToast({
+              type: 'success',
+              title: 'Import complete',
+              description: `${result.imported.projects + result.imported.tasks} items imported`
             })
             fetchOrganizations()
             fetchProjects()
           }
         }}
         onExportComplete={() => {
-          toastNotification.addToast({ 
-            type: 'success', 
-            title: 'Export complete', 
-            description: 'Your data has been exported' 
+          toastNotification.addToast({
+            type: 'success',
+            title: 'Export complete',
+            description: 'Your data has been exported'
           })
         }}
       />

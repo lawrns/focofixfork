@@ -152,7 +152,11 @@ function WorkspaceSettings() {
                 ))}
               </div>
             </div>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.info('Status customization coming soon')}
+            >
               Customize Statuses
             </Button>
           </div>
@@ -1119,7 +1123,11 @@ function BillingSettings() {
                 <div className="text-sm text-zinc-500">Expires 12/2027</div>
               </div>
             </div>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.info('Payment method update coming soon')}
+            >
               Update
             </Button>
           </div>
@@ -1152,7 +1160,11 @@ function BillingSettings() {
                   <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-950/20">
                     {invoice.status}
                   </Badge>
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toast.success('Invoice download started')}
+                  >
                     Download
                   </Button>
                 </div>

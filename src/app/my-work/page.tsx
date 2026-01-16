@@ -37,7 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { WorkItem, PriorityLevel } from '@/types/foco';
+import type { WorkItem, PriorityLevel, WorkItemStatus } from '@/types/foco';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -61,31 +61,41 @@ const sectionConfig = {
   waiting: { label: 'Waiting', icon: Clock, description: 'Blocked or waiting on others' },
 };
 
-function WorkItemRow({ 
-  item, 
-  onStartFocus 
-}: { 
-  item: WorkItem & { section: string }; 
+function WorkItemRow({
+  item,
+  onStartFocus,
+  onMoveToSection,
+  onRemoveFromMyWork,
+}: {
+  item: WorkItem & { section: string };
   onStartFocus: (item: WorkItem) => void;
+  onMoveToSection: (itemId: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
+  onRemoveFromMyWork: (itemId: string) => Promise<void>;
 }) {
   const [isCompleted, setIsCompleted] = useState(item.status === 'done');
 
   const handleToggleComplete = async () => {
     const nextStatus = !isCompleted ? 'done' : 'in_progress';
     setIsCompleted(!isCompleted);
-    
+
     try {
       const response = await fetch(`/api/tasks/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus })
       });
-      
+
       if (!response.ok) throw new Error('Failed to update task');
     } catch (error) {
       setIsCompleted(isCompleted); // revert
       toast.error('Failed to update task status');
     }
+  };
+
+  const handleSnooze = () => {
+    // For now, move to later section - a full implementation would add a snooze until date
+    onMoveToSection(item.id, 'later');
+    toast.info('Task snoozed until later');
   };
 
   return (
@@ -164,13 +174,32 @@ function WorkItemRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem>Move to Now</DropdownMenuItem>
-            <DropdownMenuItem>Move to Next</DropdownMenuItem>
-            <DropdownMenuItem>Move to Later</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/tasks/${item.id}`}>Edit</Link>
+            </DropdownMenuItem>
+            {item.section !== 'now' && (
+              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'now')}>
+                Move to Now
+              </DropdownMenuItem>
+            )}
+            {item.section !== 'next' && (
+              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'next')}>
+                Move to Next
+              </DropdownMenuItem>
+            )}
+            {item.section !== 'later' && (
+              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'later')}>
+                Move to Later
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Snooze</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">Remove from My Work</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSnooze}>Snooze</DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => onRemoveFromMyWork(item.id)}
+            >
+              Remove from My Work
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -178,18 +207,22 @@ function WorkItemRow({
   );
 }
 
-function Section({ 
-  section, 
+function Section({
+  section,
   items,
   onStartFocus,
   onAddTask,
   onQuickAdd,
-}: { 
+  onMoveToSection,
+  onRemoveFromMyWork,
+}: {
   section: 'now' | 'next' | 'later' | 'waiting';
   items: (WorkItem & { section: string })[];
   onStartFocus: (item: WorkItem) => void;
   onAddTask: (section: 'now' | 'next' | 'later' | 'waiting') => void;
   onQuickAdd: (title: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
+  onMoveToSection: (itemId: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
+  onRemoveFromMyWork: (itemId: string) => Promise<void>;
 }) {
   const config = sectionConfig[section];
   const Icon = config.icon;
@@ -243,7 +276,13 @@ function Section({
       
       <div className="space-y-1">
         {items.map((item) => (
-          <WorkItemRow key={item.id} item={item} onStartFocus={onStartFocus} />
+          <WorkItemRow
+            key={item.id}
+            item={item}
+            onStartFocus={onStartFocus}
+            onMoveToSection={onMoveToSection}
+            onRemoveFromMyWork={onRemoveFromMyWork}
+          />
         ))}
         
         {items.length === 0 && !showInlineInput && (
@@ -683,9 +722,9 @@ export default function MyWorkPage() {
           priority: 'medium',
         }),
       });
-      
+
       if (!response.ok) throw new Error('Failed to create task');
-      
+
       const data = await response.json();
       if (data.success && data.data) {
         // Add the new task to the list
@@ -698,6 +737,57 @@ export default function MyWorkPage() {
       throw error;
     }
   };
+
+  const handleMoveToSection = useCallback(async (itemId: string, targetSection: 'now' | 'next' | 'later' | 'waiting') => {
+    // Map section to status
+    const statusMap: Record<string, WorkItemStatus> = {
+      now: 'in_progress',
+      next: 'next',
+      later: 'backlog',
+      waiting: 'blocked'
+    };
+
+    try {
+      const response = await fetch(`/api/tasks/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: statusMap[targetSection] })
+      });
+
+      if (!response.ok) throw new Error('Failed to move task');
+
+      // Update local state
+      setItems(prev => prev.map(item =>
+        item.id === itemId
+          ? { ...item, section: targetSection, status: statusMap[targetSection] }
+          : item
+      ));
+      toast.success(`Moved to ${targetSection}`);
+    } catch (error) {
+      console.error('Failed to move task:', error);
+      toast.error('Failed to move task');
+    }
+  }, []);
+
+  const handleRemoveFromMyWork = useCallback(async (itemId: string) => {
+    try {
+      // Remove assignee to take off my work list
+      const response = await fetch(`/api/tasks/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee_id: null })
+      });
+
+      if (!response.ok) throw new Error('Failed to remove task');
+
+      // Remove from local state
+      setItems(prev => prev.filter(item => item.id !== itemId));
+      toast.success('Removed from My Work');
+    } catch (error) {
+      console.error('Failed to remove task:', error);
+      toast.error('Failed to remove task');
+    }
+  }, []);
 
   if (isActive && currentWorkItem) {
     return <FocusMode item={currentWorkItem} onExit={deactivate} />;
@@ -811,10 +901,10 @@ export default function MyWorkPage() {
         <Progress value={totalToday > 0 ? (completedToday / totalToday) * 100 : 0} className="h-2" />
       </div>
 
-      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
-      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
-      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
-      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} />
+      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
+      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
+      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
+      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
     </PageShell>
   );
 }

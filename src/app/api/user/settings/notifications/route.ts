@@ -1,43 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthUser } from '@/lib/api/auth-helper';
+import { supabaseAdmin } from '@/lib/supabase-server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+interface NotificationSettings {
+  enable_push: boolean;
+  notify_task_assignments: boolean;
+  notify_mentions: boolean;
+  notify_project_updates: boolean;
+  notify_deadlines: boolean;
+  notify_team_members: boolean;
+  notify_comments: boolean;
+  notify_status_changes: boolean;
+  enable_email: boolean;
+  email_digest_frequency: string;
+  enable_sound: boolean;
+  show_badges: boolean;
+}
+
+const DEFAULT_SETTINGS: Omit<NotificationSettings, 'user_id'> = {
+  enable_push: true,
+  notify_task_assignments: true,
+  notify_mentions: true,
+  notify_project_updates: true,
+  notify_deadlines: true,
+  notify_team_members: false,
+  notify_comments: true,
+  notify_status_changes: true,
+  enable_email: true,
+  email_digest_frequency: 'daily',
+  enable_sound: true,
+  show_badges: true,
+};
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user from auth header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { user, error: authError } = await getAuthUser(request);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile, error } = await supabase
-      .from('user_profiles')
-      .select('email_notifications, push_notifications, weekly_reports, marketing_emails')
-      .eq('id', user.id)
-      .single();
+    // Try to get existing settings
+    const { data: settings, error } = await supabaseAdmin
+      .from('user_notification_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error fetching notification settings:', error);
-      return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+      // Return defaults if table doesn't exist yet
+      return NextResponse.json({ 
+        success: true,
+        data: { user_id: user.id, ...DEFAULT_SETTINGS }
+      });
     }
 
+    // Return settings or defaults
     return NextResponse.json({ 
-      data: profile || {
-        email_notifications: true,
-        push_notifications: true,
-        weekly_reports: false,
-        marketing_emails: false
-      } 
+      success: true,
+      data: settings || { user_id: user.id, ...DEFAULT_SETTINGS }
     });
   } catch (error) {
     console.error('Error in GET /api/user/settings/notifications:', error);
@@ -47,33 +69,44 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // Get user from auth header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { user, error: authError } = await getAuthUser(request);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { email_notifications, push_notifications, weekly_reports, marketing_emails } = body;
 
-    const updateData: any = { updated_at: new Date().toISOString() };
-    if (email_notifications !== undefined) updateData.email_notifications = email_notifications;
-    if (push_notifications !== undefined) updateData.push_notifications = push_notifications;
-    if (weekly_reports !== undefined) updateData.weekly_reports = weekly_reports;
-    if (marketing_emails !== undefined) updateData.marketing_emails = marketing_emails;
+    // Build update data from allowed fields
+    const allowedFields = [
+      'enable_push',
+      'notify_task_assignments',
+      'notify_mentions', 
+      'notify_project_updates',
+      'notify_deadlines',
+      'notify_team_members',
+      'notify_comments',
+      'notify_status_changes',
+      'enable_email',
+      'email_digest_frequency',
+      'enable_sound',
+      'show_badges'
+    ];
 
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update(updateData)
-      .eq('id', user.id)
+    const updateData: Record<string, any> = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
+    // Upsert settings (insert if not exists, update if exists)
+    const { data, error } = await supabaseAdmin
+      .from('user_notification_settings')
+      .upsert(
+        { user_id: user.id, ...updateData },
+        { onConflict: 'user_id' }
+      )
       .select()
       .single();
 
@@ -82,7 +115,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
     }
 
-    return NextResponse.json({ data, message: 'Notification settings updated successfully' });
+    return NextResponse.json({ 
+      success: true,
+      data,
+      message: 'Notification settings updated successfully' 
+    });
   } catch (error) {
     console.error('Error in PUT /api/user/settings/notifications:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

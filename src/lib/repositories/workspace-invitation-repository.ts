@@ -124,43 +124,169 @@ export class WorkspaceInvitationRepository extends BaseRepository<WorkspaceInvit
   }
 
   /**
-   * Create invitation (placeholder - invitations table not implemented yet)
+   * Create invitation for a user to join a workspace
    */
   async createInvitation(
     workspaceId: string,
     email: string,
     role: 'owner' | 'admin' | 'member' | 'guest',
-    invitedBy: string
+    invitedBy: string,
+    message?: string
   ): Promise<Result<WorkspaceInvitation>> {
-    // TODO: Implement when invitations table exists
-    return Err({
-      code: 'NOT_IMPLEMENTED',
-      message: 'Invitations table not yet implemented',
-      details: { workspaceId, email, role, invitedBy },
-    })
+    // Check if there's already a pending invitation for this email
+    const { data: existing } = await this.supabase
+      .from(this.table)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq('email', email)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existing) {
+      return Err({
+        code: 'DUPLICATE_INVITATION',
+        message: 'An invitation has already been sent to this email',
+        details: { email },
+      })
+    }
+
+    const { data, error } = await this.supabase
+      .from(this.table)
+      .insert({
+        workspace_id: workspaceId,
+        email,
+        role,
+        invited_by: invitedBy,
+        message,
+        status: 'pending',
+      })
+      .select()
+      .single()
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to create invitation',
+        details: error,
+      })
+    }
+
+    return Ok(data as WorkspaceInvitation)
   }
 
   /**
    * Cancel/delete invitation
    */
   async cancelInvitation(invitationId: string): Promise<Result<void>> {
-    // TODO: Implement when invitations table exists
-    return Err({
-      code: 'NOT_IMPLEMENTED',
-      message: 'Invitations table not yet implemented',
-      details: { invitationId },
-    })
+    const { error } = await this.supabase
+      .from(this.table)
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', invitationId)
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to cancel invitation',
+        details: error,
+      })
+    }
+
+    return Ok(undefined)
   }
 
   /**
-   * Resend invitation
+   * Resend invitation - creates a new token and extends expiry
    */
-  async resendInvitation(invitationId: string): Promise<Result<void>> {
-    // TODO: Implement when invitations table exists
-    return Err({
-      code: 'NOT_IMPLEMENTED',
-      message: 'Invitations table not yet implemented',
-      details: { invitationId },
-    })
+  async resendInvitation(invitationId: string): Promise<Result<WorkspaceInvitation>> {
+    const { data, error } = await this.supabase
+      .from(this.table)
+      .update({
+        token: crypto.randomUUID(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', invitationId)
+      .eq('status', 'pending')
+      .select()
+      .single()
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to resend invitation',
+        details: error,
+      })
+    }
+
+    return Ok(data as WorkspaceInvitation)
+  }
+
+  /**
+   * Find invitation by token
+   */
+  async findByToken(token: string): Promise<Result<WorkspaceInvitation | null>> {
+    const { data, error } = await this.supabase
+      .from(this.table)
+      .select('*')
+      .eq('token', token)
+      .maybeSingle()
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to find invitation by token',
+        details: error,
+      })
+    }
+
+    return Ok(data ? (data as WorkspaceInvitation) : null)
+  }
+
+  /**
+   * Accept invitation - calls the database function
+   */
+  async acceptInvitation(token: string): Promise<Result<{ workspace_id: string }>> {
+    const { data, error } = await this.supabase
+      .rpc('accept_workspace_invitation', { invitation_token: token })
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to accept invitation',
+        details: error,
+      })
+    }
+
+    if (!data?.success) {
+      return Err({
+        code: 'INVITATION_ERROR',
+        message: data?.error || 'Failed to accept invitation',
+        details: data,
+      })
+    }
+
+    return Ok({ workspace_id: data.workspace_id })
+  }
+
+  /**
+   * Find all invitations for an email address
+   */
+  async findByEmail(email: string): Promise<Result<WorkspaceInvitation[]>> {
+    const { data, error } = await this.supabase
+      .from(this.table)
+      .select('*')
+      .eq('email', email)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch invitations by email',
+        details: error,
+      })
+    }
+
+    return Ok((data || []) as WorkspaceInvitation[])
   }
 }

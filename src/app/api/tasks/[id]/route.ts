@@ -145,6 +145,7 @@ export async function PATCH(
     if (body.assignee_id !== undefined) updateData.assignee_id = body.assignee_id
     if (body.due_date !== undefined) updateData.due_date = body.due_date
     if (body.project_id !== undefined) updateData.project_id = body.project_id
+    if (body.estimate_hours !== undefined) updateData.estimate_hours = body.estimate_hours
 
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('work_items')

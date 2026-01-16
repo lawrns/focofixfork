@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   ChevronDown,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   Circle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -64,21 +66,96 @@ interface ListViewProps {
   tasks: WorkItem[];
   onStatusChange?: (taskId: string, status: WorkItemStatus) => void;
   onAddTask?: () => void;
+  onEditTask?: (task: WorkItem) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onDuplicateTask?: (task: WorkItem) => void;
 }
 
-function TaskRow({ 
-  task, 
-  onStatusChange 
-}: { 
-  task: WorkItem; 
+function TaskRow({
+  task,
+  onStatusChange,
+  onEditTask,
+  onDeleteTask,
+  onDuplicateTask,
+}: {
+  task: WorkItem;
   onStatusChange?: (taskId: string, status: WorkItemStatus) => void;
+  onEditTask?: (task: WorkItem) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onDuplicateTask?: (task: WorkItem) => void;
 }) {
+  const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(task.status === 'done');
 
   const handleToggleComplete = async () => {
     const newStatus = isCompleted ? 'next' : 'done';
     setIsCompleted(!isCompleted);
     onStatusChange?.(task.id, newStatus);
+  };
+
+  const handleEdit = () => {
+    if (onEditTask) {
+      onEditTask(task);
+    } else {
+      router.push(`/tasks/${task.id}?edit=true`);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (onDuplicateTask) {
+      onDuplicateTask(task);
+    } else {
+      toast.loading('Duplicating task...', { id: 'duplicate-task' });
+      try {
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `${task.title} (Copy)`,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            project_id: task.project_id,
+          }),
+          credentials: 'include',
+        });
+        if (response.ok) {
+          toast.success('Task duplicated successfully', { id: 'duplicate-task' });
+          window.location.reload();
+        } else {
+          toast.error('Failed to duplicate task', { id: 'duplicate-task' });
+        }
+      } catch {
+        toast.error('Failed to duplicate task', { id: 'duplicate-task' });
+      }
+    }
+  };
+
+  const handleMoveToProject = () => {
+    toast.info('Move to project feature coming soon');
+  };
+
+  const handleDelete = async () => {
+    if (onDeleteTask) {
+      onDeleteTask(task.id);
+    } else {
+      if (!confirm(`Are you sure you want to delete "${task.title}"?`)) return;
+      toast.loading('Deleting task...', { id: 'delete-task' });
+      try {
+        const response = await fetch(`/api/tasks/${task.id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (response.ok) {
+          toast.success('Task deleted successfully', { id: 'delete-task' });
+          window.location.reload();
+        } else {
+          toast.error('Failed to delete task', { id: 'delete-task' });
+        }
+      } catch {
+        toast.error('Failed to delete task', { id: 'delete-task' });
+      }
+    }
   };
 
   return (
@@ -161,11 +238,11 @@ function TaskRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-            <DropdownMenuItem>Move to project...</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleEdit}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleMoveToProject}>Move to project...</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={handleDelete}>Delete</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
@@ -173,7 +250,7 @@ function TaskRow({
   );
 }
 
-export function ListView({ tasks, onStatusChange, onAddTask }: ListViewProps) {
+export function ListView({ tasks, onStatusChange, onAddTask, onEditTask, onDeleteTask, onDuplicateTask }: ListViewProps) {
   const [sortField, setSortField] = useState<'title' | 'status' | 'priority' | 'due_date'>('status');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -265,10 +342,13 @@ export function ListView({ tasks, onStatusChange, onAddTask }: ListViewProps) {
         </TableHeader>
         <TableBody>
           {sortedTasks.map((task) => (
-            <TaskRow 
-              key={task.id} 
-              task={task} 
+            <TaskRow
+              key={task.id}
+              task={task}
               onStatusChange={onStatusChange}
+              onEditTask={onEditTask}
+              onDeleteTask={onDeleteTask}
+              onDuplicateTask={onDuplicateTask}
             />
           ))}
           {tasks.length === 0 && (

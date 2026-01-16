@@ -10,8 +10,8 @@ export const nonNegativeNumberSchema = z.number().min(0);
 // Enum schemas
 export const projectStatusSchema = z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']);
 export const milestoneStatusSchema = z.enum(['planning', 'active', 'completed', 'cancelled']);
-export const taskStatusSchema = z.enum(['todo', 'in_progress', 'review', 'completed', 'cancelled']);
-export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'critical']);
+export const taskStatusSchema = z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']);
+export const taskPrioritySchema = z.enum(['urgent', 'high', 'medium', 'low', 'none']);
 export const userRoleSchema = z.enum(['director', 'lead', 'member', 'viewer']);
 export const organizationRoleSchema = z.enum(['owner', 'admin', 'member', 'viewer']);
 export const goalStatusSchema = z.enum(['draft', 'active', 'completed', 'cancelled', 'on_hold']);

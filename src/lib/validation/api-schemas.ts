@@ -87,7 +87,7 @@ export const createProjectSchema = z.object({
   start_date: dateStringSchema.optional().nullable(),
   end_date: dateStringSchema.optional().nullable(),
   budget: z.number().min(0).optional().nullable(),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'critical']).optional(),
+  priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
 })
 
 export const updateProjectSchema = z.object({
@@ -101,7 +101,7 @@ export const updateProjectSchema = z.object({
   start_date: dateStringSchema.optional().nullable(),
   end_date: dateStringSchema.optional().nullable(),
   budget: z.number().min(0).optional().nullable(),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'critical']).optional(),
+  priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
   archived_at: dateStringSchema.optional().nullable(),
 })
 
@@ -112,8 +112,8 @@ export const updateProjectSchema = z.object({
 export const createTaskSchema = z.object({
   title: z.string().min(1).max(200).trim(),
   description: z.string().max(10000).optional().nullable(),
-  status: z.enum(['backlog', 'todo', 'in_progress', 'review', 'done', 'cancelled']).optional(),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'critical']).optional(),
+  status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
+  priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
   project_id: uuidSchema,
   assignee_id: uuidSchema.optional().nullable(),
   reporter_id: uuidSchema.optional().nullable(),
@@ -130,8 +130,8 @@ export const createTaskSchema = z.object({
 export const updateTaskSchema = z.object({
   title: z.string().min(1).max(200).trim().optional(),
   description: z.string().max(10000).optional().nullable(),
-  status: z.enum(['backlog', 'todo', 'in_progress', 'review', 'done', 'cancelled']).optional(),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'critical']).optional(),
+  status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
+  priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
   assignee_id: uuidSchema.optional().nullable(),
   parent_id: uuidSchema.optional().nullable(),
   type: z.enum(['task', 'bug', 'feature', 'epic', 'story', 'subtask']).optional(),
@@ -148,8 +148,8 @@ export const updateTaskSchema = z.object({
 export const batchUpdateTasksSchema = z.object({
   task_ids: z.array(uuidSchema).min(1).max(100),
   updates: z.object({
-    status: z.enum(['backlog', 'todo', 'in_progress', 'review', 'done', 'cancelled']).optional(),
-    priority: z.enum(['none', 'low', 'medium', 'high', 'critical']).optional(),
+    status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
+    priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
     assignee_id: uuidSchema.optional().nullable(),
     project_id: uuidSchema.optional(),
     labels: z.array(z.string().max(50)).max(20).optional(),
@@ -330,8 +330,8 @@ export const paginationSchema = z.object({
 export const taskQuerySchema = paginationSchema.extend({
   project_id: uuidSchema.optional(),
   workspace_id: uuidSchema.optional(),
-  status: z.enum(['backlog', 'todo', 'in_progress', 'review', 'done', 'cancelled']).optional(),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'critical']).optional(),
+  status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
+  priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
   assignee_id: uuidSchema.optional(),
   search: z.string().max(200).optional(),
   labels: z.string().max(500).optional(), // Comma-separated

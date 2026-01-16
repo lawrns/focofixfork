@@ -69,6 +69,13 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
     large: 3,
   }
 
+  // Reset to defaults handler
+  const handleResetToDefaults = () => {
+    handleThemeChange('light')
+    handleAccentColorChange('blue')
+    handleFontSizeChange(2) // medium
+  }
+
   const previewStyle = {
     '--color-accent': ACCENT_COLOR_MAP[previewAccentColor],
     '--font-size-scale': previewFontSize === 'small' ? '0.875' : previewFontSize === 'large' ? '1.125' : '1',
@@ -164,7 +171,7 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
 
         {/* Reset Button */}
         <div className="flex items-end">
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" onClick={handleResetToDefaults}>
             Reset to Defaults
           </Button>
         </div>

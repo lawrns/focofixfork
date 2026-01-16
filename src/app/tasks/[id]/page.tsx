@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   Circle,
   MoreHorizontal,
-  Calendar,
+  Calendar as CalendarIcon,
   User,
   Flag,
   Tag,
@@ -30,6 +30,9 @@ import {
   History,
   Loader2,
   Sparkles,
+  Copy,
+  Trash2,
+  FolderInput,
 } from 'lucide-react';
 import { AiPreviewModal } from '@/components/ai/ai-preview-modal';
 import type { TaskActionType } from '@/lib/services/task-action-service';
@@ -53,6 +56,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { WorkItem, WorkItemStatus, PriorityLevel, Comment } from '@/types/foco';
 
 // No mock data - fetch from API
@@ -117,12 +137,111 @@ function CommentItem({ comment }: { comment: Comment }) {
   );
 }
 
-function Inspector({ item }: { item: WorkItem }) {
+interface InspectorProps {
+  item: WorkItem;
+  onUpdate: (updates: Partial<WorkItem>) => Promise<void>;
+  teamMembers: Array<{ id: string; full_name: string }>;
+}
+
+function Inspector({ item, onUpdate, teamMembers }: InspectorProps) {
   const [status, setStatus] = useState(item.status);
   const [priority, setPriority] = useState(item.priority);
+  const [dueDate, setDueDate] = useState<Date | undefined>(
+    item.due_date ? new Date(item.due_date) : undefined
+  );
+  const [estimateHours, setEstimateHours] = useState<string>(
+    item.estimate_hours?.toString() || ''
+  );
+  const [dueDateOpen, setDueDateOpen] = useState(false);
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const [estimateOpen, setEstimateOpen] = useState(false);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   const currentStatus = statusOptions.find(s => s.value === status);
   const currentPriority = priorityOptions.find(p => p.value === priority);
+
+  // Update local state when item changes
+  useEffect(() => {
+    setStatus(item.status);
+    setPriority(item.priority);
+    setDueDate(item.due_date ? new Date(item.due_date) : undefined);
+    setEstimateHours(item.estimate_hours?.toString() || '');
+  }, [item]);
+
+  const handleStatusChange = async (newStatus: WorkItemStatus) => {
+    setStatus(newStatus);
+    setUpdating('status');
+    try {
+      await onUpdate({ status: newStatus });
+      toast.success('Status updated');
+    } catch (error) {
+      setStatus(item.status); // Revert on error
+      toast.error('Failed to update status');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handlePriorityChange = async (newPriority: PriorityLevel) => {
+    setPriority(newPriority);
+    setUpdating('priority');
+    try {
+      await onUpdate({ priority: newPriority });
+      toast.success('Priority updated');
+    } catch (error) {
+      setPriority(item.priority); // Revert on error
+      toast.error('Failed to update priority');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDueDateChange = async (date: Date | undefined) => {
+    setDueDate(date);
+    setDueDateOpen(false);
+    setUpdating('due_date');
+    try {
+      await onUpdate({ due_date: date ? date.toISOString().split('T')[0] : null } as Partial<WorkItem>);
+      toast.success(date ? 'Due date updated' : 'Due date cleared');
+    } catch (error) {
+      setDueDate(item.due_date ? new Date(item.due_date) : undefined); // Revert on error
+      toast.error('Failed to update due date');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleAssigneeChange = async (assigneeId: string | null) => {
+    setAssigneeOpen(false);
+    setUpdating('assignee');
+    try {
+      await onUpdate({ assignee_id: assigneeId } as Partial<WorkItem>);
+      toast.success(assigneeId ? 'Assignee updated' : 'Assignee removed');
+    } catch (error) {
+      toast.error('Failed to update assignee');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleEstimateSubmit = async () => {
+    setEstimateOpen(false);
+    const hours = estimateHours ? parseFloat(estimateHours) : null;
+    if (estimateHours && isNaN(hours as number)) {
+      toast.error('Please enter a valid number');
+      return;
+    }
+    setUpdating('estimate');
+    try {
+      await onUpdate({ estimate_hours: hours } as Partial<WorkItem>);
+      toast.success(hours ? 'Estimate updated' : 'Estimate cleared');
+    } catch (error) {
+      setEstimateHours(item.estimate_hours?.toString() || '');
+      toast.error('Failed to update estimate');
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   return (
     <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 space-y-6 overflow-y-auto">
@@ -131,9 +250,14 @@ function Inspector({ item }: { item: WorkItem }) {
         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-2">
           Status
         </label>
-        <Select value={status} onValueChange={(v) => setStatus(v as WorkItemStatus)}>
+        <Select
+          value={status}
+          onValueChange={(v) => handleStatusChange(v as WorkItemStatus)}
+          disabled={updating === 'status'}
+        >
           <SelectTrigger>
             <div className="flex items-center gap-2">
+              {updating === 'status' && <Loader2 className="h-3 w-3 animate-spin" />}
               <div className={cn('h-2 w-2 rounded-full', currentStatus?.color)} />
               <SelectValue />
             </div>
@@ -156,23 +280,62 @@ function Inspector({ item }: { item: WorkItem }) {
         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-2">
           Assignee
         </label>
-        <Button variant="outline" className="w-full justify-start">
-          {item.assignee ? (
-            <div className="flex items-center gap-2">
-              <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-[10px]">
-                  {item.assignee.full_name?.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              {item.assignee.full_name}
+        <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={updating === 'assignee'}
+            >
+              {updating === 'assignee' && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
+              {item.assignee ? (
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarFallback className="text-[10px]">
+                      {item.assignee.full_name?.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  {item.assignee.full_name}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <User className="h-4 w-4" />
+                  Unassigned
+                </div>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2">
+            <div className="space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => handleAssigneeChange(null)}
+              >
+                <User className="h-4 w-4 mr-2 text-zinc-400" />
+                Unassigned
+              </Button>
+              {teamMembers.map((member) => (
+                <Button
+                  key={member.id}
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => handleAssigneeChange(member.id)}
+                >
+                  <Avatar className="h-5 w-5 mr-2">
+                    <AvatarFallback className="text-[10px]">
+                      {member.full_name?.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  {member.full_name}
+                </Button>
+              ))}
+              {teamMembers.length === 0 && (
+                <p className="text-xs text-zinc-400 p-2">No team members found</p>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-zinc-400">
-              <User className="h-4 w-4" />
-              Unassigned
-            </div>
-          )}
-        </Button>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Priority */}
@@ -186,8 +349,13 @@ function Inspector({ item }: { item: WorkItem }) {
             variant="badge"
           />
         </div>
-        <Select value={priority} onValueChange={(v) => setPriority(v as PriorityLevel)}>
+        <Select
+          value={priority}
+          onValueChange={(v) => handlePriorityChange(v as PriorityLevel)}
+          disabled={updating === 'priority'}
+        >
           <SelectTrigger>
+            {updating === 'priority' && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -211,13 +379,42 @@ function Inspector({ item }: { item: WorkItem }) {
         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-2">
           Due Date
         </label>
-        <Button variant="outline" className="w-full justify-start">
-          <Calendar className="h-4 w-4" />
-          {item.due_date 
-            ? new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : 'No due date'
-          }
-        </Button>
+        <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={updating === 'due_date'}
+            >
+              {updating === 'due_date' && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              {dueDate
+                ? dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'No due date'
+              }
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dueDate}
+              onSelect={handleDueDateChange}
+              initialFocus
+            />
+            {dueDate && (
+              <div className="p-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-red-600"
+                  onClick={() => handleDueDateChange(undefined)}
+                >
+                  Clear due date
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Labels */}
@@ -227,15 +424,20 @@ function Inspector({ item }: { item: WorkItem }) {
         </label>
         <div className="flex flex-wrap gap-1">
           {item.labels?.map((label) => (
-            <Badge 
-              key={label.id} 
+            <Badge
+              key={label.id}
               variant="outline"
               style={{ borderColor: label.color, backgroundColor: `${label.color}20` }}
             >
               {label.name}
             </Badge>
           ))}
-          <Button variant="ghost" size="sm" className="h-6 px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2"
+            onClick={() => toast.info('Labels management coming soon')}
+          >
             <Plus className="h-3 w-3" />
           </Button>
         </div>
@@ -246,10 +448,50 @@ function Inspector({ item }: { item: WorkItem }) {
         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-2">
           Estimate
         </label>
-        <Button variant="outline" className="w-full justify-start">
-          <Clock className="h-4 w-4" />
-          {item.estimate_hours ? `${item.estimate_hours}h estimated` : 'No estimate'}
-        </Button>
+        <Popover open={estimateOpen} onOpenChange={setEstimateOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={updating === 'estimate'}
+            >
+              {updating === 'estimate' && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
+              <Clock className="h-4 w-4 mr-2" />
+              {item.estimate_hours ? `${item.estimate_hours}h estimated` : 'No estimate'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-3" align="start">
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Hours</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="e.g., 4"
+                value={estimateHours}
+                onChange={(e) => setEstimateHours(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEstimateSubmit()}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleEstimateSubmit}>
+                  Save
+                </Button>
+                {estimateHours && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEstimateHours('');
+                      handleEstimateSubmit();
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Time Tracked */}
@@ -365,11 +607,15 @@ export default function WorkItemPage() {
   const { activate } = useFocusModeStore();
   const { addItem } = useRecentItems();
   const [newComment, setNewComment] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [workItem, setWorkItem] = useState<WorkItem | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [activityLog, setActivityLog] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // AI Action state
   const [aiLoading, setAiLoading] = useState<TaskActionType | null>(null);
@@ -379,36 +625,182 @@ export default function WorkItemPage() {
     applyUrl: string;
   } | null>(null);
 
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/tasks/${params.id}`);
-        const data = await response.json();
-        
-        // API returns { ok: true, data: {...} } format
-        const taskData = data.data || data;
-        if ((data.ok || data.success) && taskData) {
-          setWorkItem(taskData);
-          setIsCompleted(taskData.status === 'done');
+  // Fetch task data
+  const fetchTask = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/tasks/${params.id}`);
+      const data = await response.json();
 
-          addItem({
-            type: 'task',
-            id: taskData.id,
-            name: taskData.title,
-          });
+      // API returns { ok: true, data: {...} } format
+      const taskData = data.data || data;
+      if ((data.ok || data.success) && taskData) {
+        setWorkItem(taskData);
+        setIsCompleted(taskData.status === 'done');
+
+        addItem({
+          type: 'task',
+          id: taskData.id,
+          name: taskData.title,
+        });
+
+        // Fetch team members for assignee dropdown
+        if (taskData.workspace_id) {
+          const membersResponse = await fetch(`/api/workspaces/${taskData.workspace_id}/members`);
+          const membersData = await membersResponse.json();
+          if (membersData.ok || membersData.success) {
+            const members = (membersData.data || membersData.members || []).map((m: any) => ({
+              id: m.user_id || m.id,
+              full_name: m.user?.full_name || m.full_name || 'Unknown'
+            }));
+            setTeamMembers(members);
+          }
         }
-      } catch (error) {
-        console.error('Failed to fetch task:', error);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch task:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.id, addItem]);
 
+  useEffect(() => {
     if (params.id) {
       fetchTask();
     }
-  }, [params.id, addItem]);
+  }, [params.id, fetchTask]);
+
+  // Update task via API
+  const handleTaskUpdate = useCallback(async (updates: Partial<WorkItem>) => {
+    if (!workItem) return;
+
+    const response = await fetch(`/api/tasks/${workItem.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+
+    const data = await response.json();
+    if (!response.ok || (!data.ok && !data.success)) {
+      throw new Error(data.error || 'Failed to update task');
+    }
+
+    // Update local state with new data
+    const updatedTask = data.data || data;
+    setWorkItem(prev => prev ? { ...prev, ...updatedTask } : null);
+    // Check if the status indicates completion (no 'done' status in WorkItemStatus, completion tracked separately)
+    if (updates.status) {
+      // If status is explicitly set, task is not completed unless toggled via isCompleted
+      setIsCompleted(false);
+    }
+  }, [workItem]);
+
+  // Handle comment submission
+  const handleCommentSubmit = useCallback(async () => {
+    if (!workItem || !newComment.trim()) return;
+
+    setCommentSubmitting(true);
+    try {
+      const response = await fetch(`/api/tasks/${workItem.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newComment.trim() })
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.ok || data.success)) {
+        const newCommentData = data.data || data;
+        setComments(prev => [...prev, newCommentData]);
+        setNewComment('');
+        toast.success('Comment added');
+      } else {
+        toast.error(data.error || 'Failed to add comment');
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      toast.error('Failed to add comment');
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [workItem, newComment]);
+
+  // Copy link to clipboard
+  const handleCopyLink = useCallback(() => {
+    const url = `${window.location.origin}/tasks/${workItem?.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard');
+  }, [workItem]);
+
+  // Duplicate task
+  const handleDuplicate = useCallback(async () => {
+    if (!workItem) return;
+
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${workItem.title} (Copy)`,
+          description: workItem.description,
+          workspace_id: workItem.workspace_id,
+          project_id: workItem.project_id,
+          status: 'backlog',
+          priority: workItem.priority,
+          type: workItem.type
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.ok || data.success)) {
+        const newTask = data.data || data;
+        toast.success('Task duplicated');
+        router.push(`/tasks/${newTask.id}`);
+      } else {
+        toast.error(data.error || 'Failed to duplicate task');
+      }
+    } catch (error) {
+      console.error('Failed to duplicate task:', error);
+      toast.error('Failed to duplicate task');
+    }
+  }, [workItem, router]);
+
+  // Delete task
+  const handleDelete = useCallback(async () => {
+    if (!workItem) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/tasks/${workItem.id}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.ok || data.success)) {
+        toast.success('Task deleted');
+        router.push('/my-work');
+      } else {
+        toast.error(data.error || 'Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  }, [workItem, router]);
+
+  // Toggle task completion
+  const handleToggleComplete = useCallback(async () => {
+    const newStatus = isCompleted ? 'in_progress' : 'done';
+    setIsCompleted(!isCompleted);
+    try {
+      await handleTaskUpdate({ status: newStatus } as Partial<WorkItem>);
+    } catch (error) {
+      setIsCompleted(isCompleted); // Revert on error
+      toast.error('Failed to update status');
+    }
+  }, [isCompleted, handleTaskUpdate]);
 
   const handleStartFocus = () => {
     if (workItem) {
@@ -526,11 +918,26 @@ export default function WorkItemPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Copy link</DropdownMenuItem>
-                <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                <DropdownMenuItem>Move to project...</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDuplicate}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => toast.info('Move to project coming soon')}>
+                  <FolderInput className="h-4 w-4 mr-2" />
+                  Move to project...
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -538,7 +945,7 @@ export default function WorkItemPage() {
           {/* Title */}
           <div className="flex items-start gap-3 mb-6">
             <button
-              onClick={() => setIsCompleted(!isCompleted)}
+              onClick={handleToggleComplete}
               className="mt-1"
             >
               {isCompleted ? (
@@ -614,15 +1021,33 @@ export default function WorkItemPage() {
                 />
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => toast.info('File attachments coming soon')}
+                    >
                       <Paperclip className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleAiAction('propose_next_step')}
+                    >
                       <Zap className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button size="sm" disabled={!newComment.trim()}>
-                    <Send className="h-4 w-4" />
+                  <Button
+                    size="sm"
+                    disabled={!newComment.trim() || commentSubmitting}
+                    onClick={handleCommentSubmit}
+                  >
+                    {commentSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                     Comment
                   </Button>
                 </div>
@@ -653,7 +1078,36 @@ export default function WorkItemPage() {
       </div>
 
       {/* Inspector Panel */}
-      <Inspector item={workItem} />
+      <Inspector item={workItem} onUpdate={handleTaskUpdate} teamMembers={teamMembers} />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

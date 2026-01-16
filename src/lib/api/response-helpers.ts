@@ -171,6 +171,10 @@ export function missingFieldResponse(field: string): NextResponse<APIError> {
   )
 }
 
+export function badRequestResponse(message: string, details?: unknown): NextResponse<APIError> {
+  return errorResponse(ErrorCode.VALIDATION_FAILED, message, details)
+}
+
 /**
  * Conflict error helpers
  */

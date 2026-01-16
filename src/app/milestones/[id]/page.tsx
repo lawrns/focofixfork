@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import { MilestonesService } from '@/lib/services/milestones'
 import type { MilestoneStatus } from '@/lib/models/milestones'
 import { ProtectedRoute } from '@/components/auth/protected-route'
+import { toast } from 'sonner'
 
 interface Milestone {
   id: string
@@ -65,6 +66,7 @@ function MilestonePageContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
 
   const loadMilestoneData = useCallback(async () => {
     try {
@@ -169,6 +171,7 @@ function MilestonePageContent() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus })
       })
       if (!response.ok) {
@@ -177,10 +180,18 @@ function MilestonePageContent() {
       const result = await response.json()
       if (result.success) {
         setMilestone(result.data!)
+        toast.success(`Status updated to ${getStatusInfo(newStatus).label}`)
       }
     } catch (err) {
       console.error('Status update error:', err)
+      toast.error('Failed to update status')
     }
+  }
+
+  const handleEditMilestone = () => {
+    toast.info('Milestone editing mode enabled')
+    setIsEditing(true)
+    // In a full implementation, this would enable inline editing or open a modal
   }
 
   const handleDeleteMilestone = async () => {
@@ -192,8 +203,10 @@ function MilestonePageContent() {
     }
 
     try {
+      toast.loading('Deleting milestone...', { id: 'delete-milestone' })
       const response = await fetch(`/api/milestones/${milestoneId}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -202,6 +215,7 @@ function MilestonePageContent() {
 
       const result = await response.json()
       if (result.success) {
+        toast.success('Milestone deleted successfully', { id: 'delete-milestone' })
         // Fetch project to get slug
         const projectRes = await fetch(`/api/projects?id=${milestone.project_id}`)
         const projectData = await projectRes.json()
@@ -215,7 +229,7 @@ function MilestonePageContent() {
       }
     } catch (err) {
       console.error('Milestone delete error:', err)
-      alert('Failed to delete milestone. Please try again.')
+      toast.error('Failed to delete milestone. Please try again.', { id: 'delete-milestone' })
     }
   }
 
@@ -235,8 +249,10 @@ function MilestonePageContent() {
 
       setComments(prev => [...prev, comment])
       setNewComment('')
+      toast.success('Comment added')
     } catch (err) {
       console.error('Comment add error:', err)
+      toast.error('Failed to add comment')
     }
   }
 
@@ -289,7 +305,7 @@ function MilestonePageContent() {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" aria-label="Edit milestone">
+              <Button variant="outline" size="sm" aria-label="Edit milestone" onClick={handleEditMilestone}>
                 <Edit className="h-4 w-4" aria-hidden="true" />
                 Edit
               </Button>

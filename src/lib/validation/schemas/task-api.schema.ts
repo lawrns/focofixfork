@@ -7,8 +7,8 @@ export const GetTasksSchema = z.object({
   query: z.object({
     project_id: z.string().uuid().optional(),
     milestone_id: z.string().uuid().optional(),
-    status: z.enum(['todo', 'in_progress', 'review', 'done', 'blocked']).optional(),
-    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+    status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
+    priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
     assignee_id: z.string().uuid().optional(),
     limit: z.string().transform(val => parseInt(val, 10)).pipe(z.number().min(1).max(100)).optional(),
     offset: z.string().transform(val => parseInt(val, 10)).pipe(z.number().min(0)).optional()
@@ -25,8 +25,8 @@ export const CreateTaskSchema = z.object({
     description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
     project_id: z.string().min(1, 'Project is required'),
     milestone_id: z.string().nullable().optional(),
-    status: z.enum(['todo', 'in_progress', 'review', 'done', 'blocked']).default('todo'),
-    priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+    status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).default('backlog'),
+    priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).default('none'),
     assignee_id: z.string().nullable().optional(),
     estimated_hours: z.preprocess(
       (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
@@ -58,8 +58,8 @@ export const UpdateTaskSchema = z.object({
     description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
     project_id: z.string().min(1, 'Project is required').optional(),
     milestone_id: z.string().nullable().optional(),
-    status: z.enum(['todo', 'in_progress', 'review', 'done', 'blocked']).optional(),
-    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+    status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
+    priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
     assignee_id: z.string().nullable().optional(),
     estimated_hours: z.preprocess(
       (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),
@@ -79,12 +79,12 @@ export const UpdateTaskSchema = z.object({
  */
 export const PatchTaskSchema = z.object({
   body: z.object({
-    status: z.enum(['todo', 'in_progress', 'review', 'done', 'blocked']).optional(),
+    status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).optional(),
     title: z.string().min(1).max(500).optional(),
     description: z.string().max(2000).optional(),
     project_id: z.string().min(1).optional(),
     milestone_id: z.string().nullable().optional(),
-    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+    priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional(),
     assignee_id: z.string().nullable().optional(),
     estimated_hours: z.preprocess(
       (val) => val === '' || val === null || val === undefined || Number.isNaN(val) ? null : Number(val),

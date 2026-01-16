@@ -112,6 +112,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Task action error:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
 
     // Check for specific error types
     if (error instanceof Error) {
@@ -127,10 +132,21 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         )
       }
+      if (error.message.includes('infinite recursion')) {
+        return NextResponse.json(
+          { success: false, error: 'Database configuration error', code: 'DB_RLS_ERROR' },
+          { status: 500 }
+        )
+      }
     }
 
     return NextResponse.json(
-      { success: false, error: 'Failed to generate AI preview', code: 'INTERNAL_ERROR' },
+      { 
+        success: false, 
+        error: 'Failed to generate AI preview', 
+        code: 'INTERNAL_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

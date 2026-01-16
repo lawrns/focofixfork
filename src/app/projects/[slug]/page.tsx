@@ -37,6 +37,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { WorkItem, WorkItemStatus, PriorityLevel } from '@/types/foco';
+import { ListView, PeopleView, SettingsView, TimelineView } from '@/components/project';
+import { useCreateTaskModal } from '@/features/tasks';
+import { toast } from 'sonner';
 
 interface Project {
   id: string;
@@ -345,6 +348,82 @@ export default function ProjectPage() {
     fetchProjectData();
   }, [user, slug, addItem]);
 
+  // Task handlers
+  const handleStatusChange = async (taskId: string, status: WorkItemStatus) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error('Failed to update task');
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, status } : t));
+    } catch (error) {
+      toast.error('Failed to update task status');
+    }
+  };
+
+  const handleAddTask = () => {
+    // TODO: Implement task creation modal
+    toast.info('Task creation coming soon');
+  };
+
+  // Team member handlers
+  const handleAddMember = async (email: string, role: string) => {
+    // TODO: Implement via API
+    toast.info('Member invitation coming soon');
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    // TODO: Implement via API
+    toast.info('Member removal coming soon');
+  };
+
+  const handleUpdateRole = async (memberId: string, role: string) => {
+    // TODO: Implement via API
+    toast.info('Role update coming soon');
+  };
+
+  // Settings handlers
+  const handleSaveSettings = async (updates: Partial<Project>) => {
+    try {
+      const { error } = await supabase
+        .from('foco_projects')
+        .update(updates)
+        .eq('id', project?.id);
+      if (error) throw error;
+      setProject(prev => prev ? { ...prev, ...updates } : prev);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleArchiveProject = async () => {
+    try {
+      const { error } = await supabase
+        .from('foco_projects')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', project?.id);
+      if (error) throw error;
+      window.location.href = '/projects';
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    try {
+      const { error } = await supabase
+        .from('foco_projects')
+        .delete()
+        .eq('id', project?.id);
+      if (error) throw error;
+      window.location.href = '/projects';
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const getItemsByStatus = (status: WorkItemStatus) =>
     tasks.filter(item => item.status === status);
 
@@ -625,39 +704,48 @@ export default function ProjectPage() {
           </div>
         </TabsContent>
 
-        {/* List View Placeholder */}
+        {/* List View */}
         <TabsContent value="list">
-          <div className="text-center py-12 text-zinc-500">
-            List view coming soon
-          </div>
+          <ListView 
+            tasks={tasks} 
+            onStatusChange={handleStatusChange}
+            onAddTask={handleAddTask}
+          />
         </TabsContent>
 
-        {/* Timeline Placeholder */}
+        {/* Timeline View */}
         <TabsContent value="timeline">
-          <div className="text-center py-12 text-zinc-500">
-            Timeline view coming soon
-          </div>
+          <TimelineView tasks={tasks} />
         </TabsContent>
 
-        {/* Docs Placeholder */}
+        {/* Docs View - Coming Soon */}
         <TabsContent value="docs">
-          <div className="text-center py-12 text-zinc-500">
-            Docs view coming soon
+          <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700">
+            <FileText className="h-8 w-8 text-zinc-400 mx-auto mb-3" />
+            <p className="text-zinc-500 font-medium">Documentation Coming Soon</p>
+            <p className="text-sm text-zinc-400 mt-1">Project docs and wikis will be available here</p>
           </div>
         </TabsContent>
 
-        {/* People Placeholder */}
+        {/* People View */}
         <TabsContent value="people">
-          <div className="text-center py-12 text-zinc-500">
-            People view coming soon
-          </div>
+          <PeopleView 
+            projectId={project.id}
+            members={teamMembers}
+            onAddMember={handleAddMember}
+            onRemoveMember={handleRemoveMember}
+            onUpdateRole={handleUpdateRole}
+          />
         </TabsContent>
 
-        {/* Settings Placeholder */}
+        {/* Settings View */}
         <TabsContent value="settings">
-          <div className="text-center py-12 text-zinc-500">
-            Settings view coming soon
-          </div>
+          <SettingsView 
+            project={project}
+            onSave={handleSaveSettings}
+            onArchive={handleArchiveProject}
+            onDelete={handleDeleteProject}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -10,7 +10,7 @@ import { CACHE_TTL, CACHE_KEYS } from '@/lib/cache/cache-config'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
@@ -22,12 +22,14 @@ export async function GET(
       )
     }
 
-    const cacheKey = CACHE_KEYS.WORKSPACE_MEMBERS(params.id)
+    const { id: workspaceId } = await params
+    const cacheKey = CACHE_KEYS.WORKSPACE_MEMBERS(workspaceId)
 
     const membersWithDetails = await cachedFetch(
       cacheKey,
       async () => {
         // OPTIMIZATION: Single query with JOIN instead of N+1 queries
+        // Use LEFT JOIN (no !inner) to include members even if they lack a profile
         const { data: members, error: membersError } = await supabase
           .from('workspace_members')
           .select(`
@@ -40,14 +42,14 @@ export async function GET(
             settings,
             created_at,
             updated_at,
-            user_profiles!inner (
+            user_profiles (
               id,
               full_name,
               avatar_url,
               email
             )
           `)
-          .eq('workspace_id', params.id)
+          .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: true })
 
         if (membersError) {
@@ -55,16 +57,11 @@ export async function GET(
           throw new Error('Failed to fetch members')
         }
 
-        // Get auth users for fallback emails
-        const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
-        const authUserMap = new Map<string, any>(authUsers?.map(u => [u.id, u] as [string, any]) || [])
-
-        // Transform the joined data
+        // Transform the joined data - profile data comes from LEFT JOIN
         return members?.map(member => {
           const profile = Array.isArray(member.user_profiles)
             ? member.user_profiles[0]
             : member.user_profiles
-          const authUser = authUserMap.get(member.user_id)
 
           return {
             id: member.id,
@@ -78,12 +75,12 @@ export async function GET(
             updated_at: member.updated_at,
             user: {
               id: member.user_id,
-              email: profile?.email || authUser?.email || '',
+              email: profile?.email || '',
               full_name: profile?.full_name || '',
               avatar_url: profile?.avatar_url || '',
             },
-            email: profile?.email || authUser?.email || '',
-            user_name: profile?.full_name || authUser?.email?.split('@')[0] || 'Unknown User',
+            email: profile?.email || '',
+            user_name: profile?.full_name || profile?.email?.split('@')[0] || 'Unknown User',
           }
         }) || []
       },

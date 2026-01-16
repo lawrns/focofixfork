@@ -31,11 +31,35 @@ export function AppShell({ children }: AppShellProps) {
   // Landing page and auth pages should not have AppShell chrome
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password';
 
-  if (isPublicPage || focusModeActive) {
+  if (isPublicPage) {
     return (
       <div className="min-h-screen bg-white dark:bg-zinc-950">
         <CommandPalette />
         <KeyboardShortcutsModal />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <ToastContainer />
+        <UndoToast />
+      </div>
+    );
+  }
+
+  // Focus mode: show minimal UI with exit button
+  if (focusModeActive) {
+    const { deactivate } = useFocusModeStore.getState();
+    return (
+      <div className="min-h-screen bg-white dark:bg-zinc-950">
+        <CommandPalette />
+        <KeyboardShortcutsModal />
+        {/* Exit Focus Mode Button - Always visible */}
+        <button
+          onClick={() => deactivate()}
+          className="fixed top-4 right-4 z-50 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg shadow-lg hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors flex items-center gap-2 text-sm font-medium"
+        >
+          <span>✕</span>
+          Exit Focus Mode
+        </button>
         <main className="min-h-screen">
           {children}
         </main>

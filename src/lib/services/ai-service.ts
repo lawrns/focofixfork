@@ -38,6 +38,12 @@ export class AIService {
         baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
         model: process.env.DEEPSEEK_MODEL || 'deepseek-chat'
       };
+      
+      // Handle different model names for DeepSeek
+      if (this.config.model === 'deepseek-v3') {
+        this.config.model = 'deepseek-chat';
+        console.log('[AIService] Converted deepseek-v3 to deepseek-chat');
+      }
     } else {
       this.config = {
         provider: 'openai',

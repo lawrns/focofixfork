@@ -65,7 +65,13 @@ export class AIService {
     // Initialize OpenAI client (works with OpenAI-compatible APIs like DeepSeek)
     this.client = new OpenAI({
       apiKey: this.config.apiKey,
-      baseURL: this.config.baseURL
+      baseURL: this.config.baseURL,
+      // Add additional options for debugging
+      fetch: async (url, options) => {
+        console.log('[AIService] Fetch URL:', url)
+        console.log('[AIService] Fetch model being sent:', JSON.parse(options?.body as string || '{}')?.model)
+        return fetch(url, options)
+      }
     });
   }
 
@@ -74,6 +80,13 @@ export class AIService {
    */
   async chatCompletion(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>) {
     console.log('[AIService] chatCompletion called with', messages.length, 'messages')
+    console.log('[AIService] Current model:', this.config.model)
+    
+    // Force the correct model for DeepSeek
+    if (this.config.provider === 'deepseek' && this.config.model !== 'deepseek-chat') {
+      console.log('[AIService] WARNING: Wrong model detected, forcing deepseek-chat')
+      this.config.model = 'deepseek-chat'
+    }
     
     if (!this.config.apiKey) {
       console.error('[AIService] No API key configured for', this.config.provider)

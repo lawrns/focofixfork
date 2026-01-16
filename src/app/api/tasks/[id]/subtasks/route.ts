@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import { generateFractionalIndex } from '@/lib/utils/fractional-indexing'
+export const dynamic = 'force-dynamic'
+import { generateFractionalIndex } from '@/lib/utils/fractional-indexing'
 import { SubtaskRepository } from '@/lib/repositories/subtask-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'

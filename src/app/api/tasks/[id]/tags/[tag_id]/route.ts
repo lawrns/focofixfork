@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getAuthUser } from '@/lib/api/auth-helper';
 
-export const dynamic = 'force-dynamic';import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
+export const dynamic = 'force-dynamic'
+import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
 import { isError } from '@/lib/repositories/base-repository';
 import {
   authRequiredResponse,

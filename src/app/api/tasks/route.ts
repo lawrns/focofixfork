@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import { cachedFetch, generateCacheKey } from '@/lib/cache/redis'
+export const dynamic = 'force-dynamic'
+import { cachedFetch, generateCacheKey } from '@/lib/cache/redis'
 import { CACHE_TTL } from '@/lib/cache/cache-config'
 import { TaskRepository } from '@/lib/repositories/task-repository'
 import { isError } from '@/lib/repositories/base-repository'

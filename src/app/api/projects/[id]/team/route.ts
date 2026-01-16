@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 
-export const dynamic = 'force-dynamic';import { supabaseAdmin } from '@/lib/supabase-server'
+export const dynamic = 'force-dynamic'
+import { supabaseAdmin } from '@/lib/supabase-server'
 import {
   authRequiredResponse,
   successResponse,

@@ -103,9 +103,11 @@ export async function POST(request: NextRequest) {
     )
 
     return mergeAuthResponse(
-      successResponse({
+      NextResponse.json({
         success: true,
-        ...preview
+        execution_id: preview.execution_id,
+        preview: preview.preview,
+        metadata: preview.metadata
       }),
       authResponse
     )

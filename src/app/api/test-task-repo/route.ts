@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     console.log('Task result:', taskResult)
     
     if (!taskResult.ok) {
-      return NextResponse.json({ error: 'Task not found', details: taskResult.error || 'Unknown error' }, { status: 404 })
+      return NextResponse.json({ error: 'Task not found', details: (taskResult as any).error || 'Unknown error' }, { status: 404 })
     }
     
     return NextResponse.json({ 

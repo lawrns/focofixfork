@@ -437,12 +437,13 @@ export default function MyWorkPage() {
     
     try {
       setIsLoading(true);
-      const response = await fetch('/api/tasks');
+      // Fetch tasks assigned to the current user
+      const response = await fetch('/api/my-work/assigned');
       const data = await response.json();
       
       if (data.success) {
-        // Map backend tasks to sections (default logic)
-        setItems((data.data?.data || data.data || []).map((t: any) => ({
+        // Tasks already include section mapping from API
+        setItems((data.data?.tasks || []).map((t: any) => ({
           ...t,
           section: t.section || (t.status === 'in_progress' ? 'now' : t.status === 'next' ? 'next' : t.status === 'blocked' ? 'waiting' : 'later')
         })));

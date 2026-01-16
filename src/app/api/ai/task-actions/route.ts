@@ -118,23 +118,30 @@ export async function POST(request: NextRequest) {
       name: error instanceof Error ? error.name : undefined
     })
 
+    // Return detailed error in response for debugging
+    const errorDetails = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    }
+
     // Check for specific error types
     if (error instanceof Error) {
       if (error.message.includes('API key not configured')) {
         return NextResponse.json(
-          { success: false, error: 'AI service not configured', code: 'AI_NOT_CONFIGURED' },
+          { success: false, error: 'AI service not configured', code: 'AI_NOT_CONFIGURED', details: errorDetails },
           { status: 503 }
         )
       }
       if (error.message.includes('Task not found')) {
         return NextResponse.json(
-          { success: false, error: 'Task not found', code: 'TASK_NOT_FOUND' },
+          { success: false, error: 'Task not found', code: 'TASK_NOT_FOUND', details: errorDetails },
           { status: 404 }
         )
       }
       if (error.message.includes('infinite recursion')) {
         return NextResponse.json(
-          { success: false, error: 'Database configuration error', code: 'DB_RLS_ERROR' },
+          { success: false, error: 'Database configuration error', code: 'DB_RLS_ERROR', details: errorDetails },
           { status: 500 }
         )
       }
@@ -145,7 +152,7 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: 'Failed to generate AI preview', 
         code: 'INTERNAL_ERROR',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: errorDetails
       },
       { status: 500 }
     )

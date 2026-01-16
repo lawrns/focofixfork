@@ -150,8 +150,13 @@ export class TaskActionService {
 
     // Log to audit
     console.log('[TaskActionService] Logging to audit...')
-    await this.logAudit(request, preview, userId, true)
-    console.log('[TaskActionService] Audit logged')
+    try {
+      await this.logAudit(request, preview, userId, true)
+      console.log('[TaskActionService] Audit logged')
+    } catch (auditError) {
+      console.error('[TaskActionService] Audit logging failed:', auditError)
+      // Don't fail the whole operation if audit logging fails
+    }
 
     return preview
   }

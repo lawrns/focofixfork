@@ -36,17 +36,12 @@ export class AIService {
         provider: 'deepseek',
         apiKey: process.env.DEEPSEEK_API_KEY || '',
         baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat'
+        model: 'deepseek-chat' // Always use deepseek-chat as it's the correct model name
       };
       
-      // Handle different model names for DeepSeek
-      const originalModel = this.config.model
-      if (this.config.model === 'deepseek-v3') {
-        this.config.model = 'deepseek-chat';
-        console.log('[AIService] Converted deepseek-v3 to deepseek-chat');
-      } else {
-        console.log('[AIService] No model conversion needed, using:', this.config.model)
-      }
+      // Log what was configured vs what we're using
+      console.log('[AIService] Environment DEEPSEEK_MODEL:', process.env.DEEPSEEK_MODEL)
+      console.log('[AIService] Using model:', this.config.model)
     } else {
       this.config = {
         provider: 'openai',

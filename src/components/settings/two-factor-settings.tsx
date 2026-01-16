@@ -228,6 +228,7 @@ export function TwoFactorSettings({ twoFactorEnabled }: { twoFactorEnabled: bool
             <div className="space-y-4">
               {/* QR Code */}
               <div className="flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={setupData.qrCode}
                   alt="2FA QR Code"

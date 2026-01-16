@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
 import { useCreateTaskModal } from '@/features/tasks';
@@ -120,9 +121,11 @@ export function LeftRail() {
         sidebarCollapsed ? 'justify-center px-2' : 'px-4'
       )}>
         <Link href="/dashboard" className="flex items-center gap-2">
-          <img 
+          <Image 
             src="/focologo.png" 
             alt="Foco" 
+            width={32}
+            height={32}
             className="h-8 w-8 rounded-lg"
           />
           {!sidebarCollapsed && (

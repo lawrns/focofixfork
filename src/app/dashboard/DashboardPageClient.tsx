@@ -274,7 +274,7 @@ export default function DashboardPageClient() {
       window.removeEventListener('toggle-theme', handleToggleTheme)
       window.removeEventListener('show-shortcuts', handleShowShortcuts)
     }
-  }, [router, toast])
+  }, [router, toast, openTaskModal])
 
   // TODO: Load projects data for Gantt view when needed
 

@@ -414,6 +414,7 @@ export function ExtensionMarketplace({
                 <div className="flex items-center gap-3">
                   {extension.icon && (
                     <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={extension.icon} 
                         alt={extension.name}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PageShell } from '@/components/layout/page-shell';
@@ -367,7 +367,7 @@ function FolderTree({
   );
 }
 
-export default function DocsPage() {
+function DocsPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -666,5 +666,17 @@ export default function DocsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function DocsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <DocsPageContent />
+    </Suspense>
   );
 }

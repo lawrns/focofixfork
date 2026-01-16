@@ -81,7 +81,9 @@ export async function middleware(req: NextRequest) {
   const publicRoutes = [
     '/mermaid',
     '/mermaid/new',
-    '/mermaid/share'
+    '/mermaid/share',
+    '/docs',
+    '/help'
   ]
 
   // Auth routes (login, register, etc.)

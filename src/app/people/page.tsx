@@ -337,7 +337,9 @@ export default function PeoplePage() {
       const workspacesRes = await fetch('/api/workspaces');
       const workspacesData = await workspacesRes.json();
 
-      const currentWorkspace = workspacesData.workspaces?.find(
+      // API returns { ok: true, data: { workspaces: [...] } }
+      const workspaces = workspacesData.data?.workspaces || workspacesData.workspaces || [];
+      const currentWorkspace = workspaces.find(
         (w: any) => w.slug === currentWorkspaceSlug
       );
 

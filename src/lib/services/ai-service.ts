@@ -56,7 +56,8 @@ export class AIService {
       provider: this.config.provider,
       hasApiKey: !!this.config.apiKey,
       model: this.config.model,
-      baseURL: this.config.baseURL
+      baseURL: this.config.baseURL,
+      originalModel: process.env.DEEPSEEK_MODEL
     })
 
     if (!this.config.apiKey) {

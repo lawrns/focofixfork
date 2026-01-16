@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -49,18 +49,26 @@ interface ImportExportModalProps {
   labels?: LabelType[]
   onImportComplete?: (result: ImportResult) => void
   onExportComplete?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultTab?: 'export' | 'import'
 }
 
-export function ImportExportModal({ 
-  projects = [], 
-  tasks = [], 
-  organizations = [], 
+export function ImportExportModal({
+  projects = [],
+  tasks = [],
+  organizations = [],
   labels = [],
   onImportComplete,
-  onExportComplete
+  onExportComplete,
+  open,
+  onOpenChange,
+  defaultTab = 'export'
 }: ImportExportModalProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export')
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isOpen = open !== undefined ? open : internalOpen
+  const setIsOpen = onOpenChange ?? setInternalOpen
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(defaultTab)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('json')
   const [importFormat, setImportFormat] = useState<ImportFormat>('trello')
   const [csvMapping, setCsvMapping] = useState<CSVMapping>({})
@@ -69,6 +77,11 @@ export function ImportExportModal({
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [showMapping, setShowMapping] = useState(false)
   const { toast: toastNotification } = useToast()
+
+  // Sync activeTab with defaultTab when it changes (controlled component pattern)
+  useEffect(() => {
+    setActiveTab(defaultTab)
+  }, [defaultTab])
 
   // Export handlers
   const handleExport = useCallback(async () => {

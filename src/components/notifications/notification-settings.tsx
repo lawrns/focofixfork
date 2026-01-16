@@ -82,12 +82,34 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
     }
   }
 
-  const handlePreferenceChange = (key: string, value: boolean) => {
-    setPreferences(prev => ({
-      ...prev,
+  const handlePreferenceChange = async (key: string, value: boolean) => {
+    const newPreferences = {
+      ...preferences,
       [key]: value
-    }))
-    // TODO: Save preferences to database
+    }
+    setPreferences(newPreferences)
+    
+    // Map UI preference keys to API field names
+    const fieldMap: Record<string, string> = {
+      taskAssignments: 'notify_task_assignments',
+      mentions: 'notify_mentions',
+      projectUpdates: 'notify_project_updates',
+      deadlines: 'notify_deadlines',
+      teamMembers: 'notify_team_members'
+    }
+    
+    const apiField = fieldMap[key]
+    if (!apiField) return
+    
+    try {
+      await fetch('/api/user/settings/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [apiField]: value })
+      })
+    } catch (error) {
+      console.error('[NotificationSettings] Failed to save preference:', error)
+    }
   }
 
   return (

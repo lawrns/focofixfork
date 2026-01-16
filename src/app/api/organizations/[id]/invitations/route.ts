@@ -143,9 +143,25 @@ export async function POST(
       return successResponse({ message: 'Member added successfully' })
     }
 
-    // User doesn't exist - would create invitation (not implemented yet)
+    // User doesn't exist - create invitation
+    const inviteResult = await invitationRepo.createInvitation(
+      workspaceId,
+      body.email,
+      body.role || 'member',
+      user.id,
+      body.message
+    )
+
+    if (isError(inviteResult)) {
+      if (inviteResult.error.code === 'DUPLICATE_INVITATION') {
+        return conflictResponse('An invitation has already been sent to this email', { email: body.email })
+      }
+      return databaseErrorResponse(inviteResult.error.message, inviteResult.error.details)
+    }
+
     return successResponse({
-      message: 'Invitation sent (user will be added when they sign up)'
+      message: 'Invitation sent successfully',
+      invitation: inviteResult.data
     })
   } catch (err) {
     console.error('Invitation creation error:', err)

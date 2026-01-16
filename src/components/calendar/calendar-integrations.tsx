@@ -252,6 +252,22 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
     }
   }
 
+  const handleAddIntegration = useCallback(() => {
+    addToast({
+      type: 'info',
+      title: t('calendar.addIntegration'),
+      description: 'Calendar integration setup coming soon. Choose a provider below to get started.',
+    })
+  }, [addToast, t])
+
+  const handleConnectProvider = useCallback((provider: string, name: string) => {
+    addToast({
+      type: 'info',
+      title: `Connect ${name}`,
+      description: `${name} integration coming soon. This will allow you to sync events bidirectionally with your ${name}.`,
+    })
+  }, [addToast])
+
   if (!user) {
     return (
       <div className={cn("p-6", className)}>
@@ -274,7 +290,7 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
           </p>
         </div>
         
-        <Button>
+        <Button onClick={handleAddIntegration}>
           <Plus className="h-4 w-4" />
           {t('calendar.addIntegration')}
         </Button>
@@ -305,7 +321,7 @@ export function CalendarIntegrations({ className }: CalendarIntegrationsProps) {
                       <p className="text-sm text-muted-foreground">{description}</p>
                     </div>
                   </div>
-                  <Button className="w-full" size="sm">
+                  <Button className="w-full" size="sm" onClick={() => handleConnectProvider(provider, name)}>
                     <Plus className="h-4 w-4" />
                     {t('calendar.connect')}
                   </Button>

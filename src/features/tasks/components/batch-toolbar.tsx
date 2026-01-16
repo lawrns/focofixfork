@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -263,7 +264,10 @@ export function BatchToolbar({
                 )}
 
                 {/* Tags */}
-                <DropdownMenuItem className="gap-2">
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => toast.info('Bulk tag management coming soon')}
+                >
                   <Tag className="h-4 w-4" />
                   <span>Add Tags</span>
                 </DropdownMenuItem>

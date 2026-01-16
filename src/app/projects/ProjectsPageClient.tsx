@@ -421,6 +421,9 @@ export default function ProjectsPageClient() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [editProjectName, setEditProjectName] = useState('');
+  const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [isSavingProject, setIsSavingProject] = useState(false);
 
   // Handle query parameters from command palette
   useEffect(() => {
@@ -663,8 +666,47 @@ export default function ProjectsPageClient() {
 
   const handleEditProject = useCallback((project: ProjectData) => {
     setEditingProject(project);
+    setEditProjectName(project.name);
+    setEditProjectDescription(project.description || '');
     setEditDialogOpen(true);
   }, []);
+
+  const handleSaveProject = useCallback(async () => {
+    if (!editingProject) return;
+
+    setIsSavingProject(true);
+    try {
+      const response = await fetch(`/api/projects/${editingProject.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editProjectName,
+          description: editProjectDescription,
+        }),
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        toast.success('Project updated successfully');
+        setProjects(prev =>
+          prev.map(p =>
+            p.id === editingProject.id
+              ? { ...p, name: editProjectName, description: editProjectDescription }
+              : p
+          )
+        );
+        setEditDialogOpen(false);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to update project');
+      }
+    } catch (error) {
+      console.error('Save project error:', error);
+      toast.error('Failed to update project');
+    } finally {
+      setIsSavingProject(false);
+    }
+  }, [editingProject, editProjectName, editProjectDescription]);
 
   const handleGenerateStatus = useCallback((project: ProjectData) => {
     router.push(`/projects/${project.slug}/status-update`);
@@ -783,7 +825,7 @@ export default function ProjectsPageClient() {
           </SelectContent>
         </Select>
 
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" onClick={() => toast.info('Project filtering coming soon')}>
           <Filter className="h-4 w-4" />
         </Button>
 
@@ -855,14 +897,14 @@ export default function ProjectsPageClient() {
           description={search ? 'Try a different search term' : emptyStates.projects.description}
           primaryAction={!search ? {
             label: emptyStates.projects.primaryCta,
-            onClick: () => {},
+            onClick: () => setCreateDialogOpen(true),
           } : {
             label: 'Clear search',
             onClick: () => setSearch(''),
           }}
           secondaryAction={!search ? {
             label: emptyStates.projects.secondaryCta,
-            onClick: () => {},
+            onClick: () => toast.info('Project templates coming soon'),
           } : undefined}
         />
       )}
@@ -883,7 +925,8 @@ export default function ProjectsPageClient() {
               </label>
               <Input
                 id="name"
-                defaultValue={editingProject?.name}
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
                 placeholder="Project name"
               />
             </div>
@@ -893,16 +936,19 @@ export default function ProjectsPageClient() {
               </label>
               <Input
                 id="description"
-                defaultValue={editingProject?.description}
+                value={editProjectDescription}
+                onChange={(e) => setEditProjectDescription(e.target.value)}
                 placeholder="Project description"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={isSavingProject}>
               Cancel
             </Button>
-            <Button onClick={() => setEditDialogOpen(false)}>Save changes</Button>
+            <Button onClick={handleSaveProject} disabled={isSavingProject}>
+              {isSavingProject ? 'Saving...' : 'Save changes'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

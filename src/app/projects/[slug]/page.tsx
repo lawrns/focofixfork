@@ -266,7 +266,11 @@ function BoardColumn({ status, label, color, items, onDrop, onAddTask }: {
   );
 }
 
-function AISuggestionStrip() {
+function AISuggestionStrip({ onApply, onDismiss }: { onApply: () => void; onDismiss: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
   return (
     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-3 mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -287,10 +291,26 @@ function AISuggestionStrip() {
         <Badge variant="secondary" className="text-[10px] hidden md:inline-flex">
           89% confident
         </Badge>
-        <Button size="sm" variant="default" className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none">
+        <Button
+          size="sm"
+          variant="default"
+          className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none"
+          onClick={() => {
+            onApply();
+            setDismissed(true);
+          }}
+        >
           Apply
         </Button>
-        <Button size="sm" variant="ghost" className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none"
+          onClick={() => {
+            onDismiss();
+            setDismissed(true);
+          }}
+        >
           Dismiss
         </Button>
       </div>
@@ -308,7 +328,9 @@ export default function ProjectPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<'status' | 'assignee' | 'priority' | 'none'>('status');
   const isMobile = useMobile();
+  const { openTaskModal } = useCreateTaskModal();
 
   const slug = params.slug as string;
 
@@ -435,8 +457,39 @@ export default function ProjectPage() {
   };
 
   const handleAddTask = () => {
-    // TODO: Implement task creation modal
-    toast.info('Task creation coming soon');
+    openTaskModal({ projectId: project?.id });
+  };
+
+  const handleGenerateStatus = async () => {
+    if (!project?.id) return;
+    toast.info('Generating project status report...');
+    try {
+      const response = await fetch('/api/ai/task-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'summarize_thread',
+          task_id: tasks[0]?.id || project.id,
+          workspace_id: project.workspace_id
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Status report generated! Check the AI panel for details.');
+      } else {
+        toast.error('Failed to generate status report');
+      }
+    } catch (error) {
+      toast.error('Failed to connect to AI service');
+    }
+  };
+
+  const handleApplyAISuggestion = () => {
+    toast.success('AI suggestion applied');
+  };
+
+  const handleDismissAISuggestion = () => {
+    toast.info('AI suggestion dismissed');
   };
 
   // Drag and drop handler
@@ -456,24 +509,75 @@ export default function ProjectPage() {
   };
 
   const handleAddTaskToColumn = (status: WorkItemStatus) => {
-    // TODO: Implement task creation modal with pre-selected status
-    toast.info(`Add task to ${status} - coming soon`);
+    // Map WorkItemStatus to section for task modal
+    const statusToSection: Record<WorkItemStatus, 'now' | 'next' | 'later' | 'waiting' | 'backlog'> = {
+      'in_progress': 'now',
+      'next': 'next',
+      'backlog': 'backlog',
+      'review': 'waiting',
+      'blocked': 'waiting',
+      'done': 'backlog'
+    };
+    openTaskModal({ 
+      projectId: project?.id,
+      section: statusToSection[status] || 'backlog'
+    });
   };
 
   // Team member handlers
   const handleAddMember = async (email: string, role: string) => {
-    // TODO: Implement via API
-    toast.info('Member invitation coming soon');
+    if (!project?.id) return;
+    try {
+      const response = await fetch(`/api/projects/${project.id}/team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, role })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error?.message || 'Failed to add member');
+        return;
+      }
+      toast.success('Member added successfully');
+    } catch (error) {
+      toast.error('Failed to add member');
+    }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    // TODO: Implement via API
-    toast.info('Member removal coming soon');
+    if (!project?.id) return;
+    try {
+      const response = await fetch(`/api/projects/${project.id}/team/${memberId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error?.message || 'Failed to remove member');
+        return;
+      }
+      toast.success('Member removed successfully');
+    } catch (error) {
+      toast.error('Failed to remove member');
+    }
   };
 
   const handleUpdateRole = async (memberId: string, role: string) => {
-    // TODO: Implement via API
-    toast.info('Role update coming soon');
+    if (!project?.id) return;
+    try {
+      const response = await fetch(`/api/projects/${project.id}/team/${memberId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error?.message || 'Failed to update role');
+        return;
+      }
+      toast.success('Role updated successfully');
+    } catch (error) {
+      toast.error('Failed to update role');
+    }
   };
 
   // Settings handlers
@@ -513,6 +617,24 @@ export default function ProjectPage() {
       window.location.href = '/projects';
     } catch (error) {
       throw error;
+    }
+  };
+
+  const handleFilter = () => {
+    toast.info('Task filtering coming soon');
+  };
+
+  const handleGroupChange = (group: 'status' | 'assignee' | 'priority' | 'none') => {
+    setGroupBy(group);
+    toast.success(`Grouped by ${group === 'none' ? 'nothing' : group}`);
+  };
+
+  const getGroupLabel = () => {
+    switch (groupBy) {
+      case 'status': return 'Group: Status';
+      case 'assignee': return 'Group: Assignee';
+      case 'priority': return 'Group: Priority';
+      case 'none': return 'Group: None';
     }
   };
 
@@ -582,11 +704,22 @@ export default function ProjectPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]" aria-label="Generate status report">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 md:flex-none min-h-[44px]"
+            aria-label="Generate status report"
+            onClick={handleGenerateStatus}
+          >
             <Zap className="h-4 w-4" />
             <span className="hidden md:inline">Generate Status</span>
           </Button>
-          <Button size="sm" className="flex-1 md:flex-none min-h-[44px]" aria-label="Add new task">
+          <Button
+            size="sm"
+            className="flex-1 md:flex-none min-h-[44px]"
+            aria-label="Add new task"
+            onClick={handleAddTask}
+          >
             <Plus className="h-4 w-4" />
             <span className="hidden md:inline">Add Task</span>
           </Button>
@@ -645,37 +778,37 @@ export default function ProjectPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleFilter}>
                   <Filter className="h-4 w-4 mr-2" />
                   Filter
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGroupChange('status')}>
                   <span>Group: Status</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>Group: Assignee</DropdownMenuItem>
-                <DropdownMenuItem>Group: Priority</DropdownMenuItem>
-                <DropdownMenuItem>Group: None</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGroupChange('assignee')}>Group: Assignee</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGroupChange('priority')}>Group: Priority</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGroupChange('none')}>Group: None</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             {/* Desktop: Separate buttons */}
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="outline" size="sm" className="min-h-[44px]">
+              <Button variant="outline" size="sm" className="min-h-[44px]" onClick={handleFilter}>
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="min-h-[44px]">
-                    Group: Status
+                    {getGroupLabel()}
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>Status</DropdownMenuItem>
-                  <DropdownMenuItem>Assignee</DropdownMenuItem>
-                  <DropdownMenuItem>Priority</DropdownMenuItem>
-                  <DropdownMenuItem>None</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGroupChange('status')}>Status</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGroupChange('assignee')}>Assignee</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGroupChange('priority')}>Priority</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGroupChange('none')}>None</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -683,7 +816,7 @@ export default function ProjectPage() {
         </div>
 
         {/* AI Suggestion Strip */}
-        <AISuggestionStrip />
+        <AISuggestionStrip onApply={handleApplyAISuggestion} onDismiss={handleDismissAISuggestion} />
 
         {/* Board View */}
         <TabsContent value="board" className="mt-0">

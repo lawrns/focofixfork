@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 interface TimelineItem {
   id: string;
@@ -124,7 +125,16 @@ function TimelineBar({ item, dates }: { item: TimelineItem; dates: Date[] }) {
   );
 }
 
-function AISuggestionBanner() {
+function AISuggestionBanner({ onPreview, onDismiss }: { onPreview: () => void; onDismiss: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    onDismiss();
+  };
+
   return (
     <div className="flex items-center gap-3 p-3 mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
       <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded">
@@ -143,8 +153,8 @@ function AISuggestionBanner() {
       </div>
       <div className="flex items-center gap-2">
         <Badge variant="secondary" className="text-[10px]">94% confident</Badge>
-        <Button size="sm" variant="default" className="h-7">Preview</Button>
-        <Button size="sm" variant="ghost" className="h-7">Dismiss</Button>
+        <Button size="sm" variant="default" className="h-7" onClick={onPreview}>Preview</Button>
+        <Button size="sm" variant="ghost" className="h-7" onClick={handleDismiss}>Dismiss</Button>
       </div>
     </div>
   );
@@ -154,8 +164,10 @@ export default function TimelinePage() {
   const { user } = useAuth();
   const [view, setView] = useState<'month' | 'quarter'>('month');
   const [currentMonth, setCurrentMonth] = useState('January 2026');
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0); // 0 = Jan 2026
   const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilter, setShowFilter] = useState(false);
 
   // Fetch timeline data from API
   useEffect(() => {
@@ -211,6 +223,52 @@ export default function TimelinePage() {
     return acc;
   }, {} as Record<string, { color: string; items: TimelineItem[] }>);
 
+  const months = [
+    'January 2026', 'February 2026', 'March 2026', 'April 2026',
+    'May 2026', 'June 2026', 'July 2026', 'August 2026',
+    'September 2026', 'October 2026', 'November 2026', 'December 2026'
+  ];
+
+  const handlePrevMonth = () => {
+    if (currentMonthIndex > 0) {
+      setCurrentMonthIndex(prev => prev - 1);
+      setCurrentMonth(months[currentMonthIndex - 1]);
+    } else {
+      toast.info('Already at the beginning of 2026');
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonthIndex < months.length - 1) {
+      setCurrentMonthIndex(prev => prev + 1);
+      setCurrentMonth(months[currentMonthIndex + 1]);
+    } else {
+      toast.info('Already at the end of 2026');
+    }
+  };
+
+  const handleGoToToday = () => {
+    setCurrentMonthIndex(0);
+    setCurrentMonth('January 2026');
+    toast.success('Jumped to today');
+  };
+
+  const handleFilter = () => {
+    setShowFilter(!showFilter);
+    toast.info(showFilter ? 'Filter closed' : 'Filter options coming soon');
+  };
+
+  const handleAIPreview = () => {
+    toast.loading('Generating reschedule preview...', { id: 'ai-preview' });
+    setTimeout(() => {
+      toast.success('Preview generated - see suggested timeline changes', { id: 'ai-preview' });
+    }, 1500);
+  };
+
+  const handleAIDismiss = () => {
+    toast.success('Suggestion dismissed');
+  };
+
   // Show empty state if no timeline items
   if (!isLoading && timelineItems.length === 0) {
     return (
@@ -255,7 +313,7 @@ export default function TimelinePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleFilter}>
             <Filter className="h-4 w-4" />
             Filter
           </Button>
@@ -272,20 +330,20 @@ export default function TimelinePage() {
       </div>
 
       {/* Only show AI suggestion if there are items */}
-      {timelineItems.length > 0 && <AISuggestionBanner />}
+      {timelineItems.length > 0 && <AISuggestionBanner onPreview={handleAIPreview} onDismiss={handleAIDismiss} />}
 
       {/* Timeline Navigation */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handlePrevMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="font-medium">{currentMonth}</span>
-          <Button variant="outline" size="icon" className="h-8 w-8">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleNextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={handleGoToToday}>
           <Calendar className="h-4 w-4" />
           Today
         </Button>

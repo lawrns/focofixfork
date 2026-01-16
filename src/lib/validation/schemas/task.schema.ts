@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-// Task status enum
-export const TaskStatusSchema = z.enum(['todo', 'in_progress', 'review', 'done', 'blocked', 'completed', 'cancelled'])
+// Task status enum - aligned with DB work_item_status
+export const TaskStatusSchema = z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done'])
 
-// Task priority enum (shared with projects)
-export const TaskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent'])
+// Task priority enum - aligned with DB priority_level
+export const TaskPrioritySchema = z.enum(['urgent', 'high', 'medium', 'low', 'none'])
 
 // Recurrence type enum
 export const RecurrenceTypeSchema = z.enum(['daily', 'weekly', 'monthly'])

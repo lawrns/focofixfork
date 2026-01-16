@@ -22,7 +22,8 @@ import {
   Save,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -39,6 +40,7 @@ interface UserSettings {
   pushNotifications: boolean
   weeklyReports: boolean
   marketingEmails: boolean
+  fullName: string
 }
 
 interface OrganizationSettings {
@@ -56,6 +58,10 @@ export function SettingsDashboard() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isImporting, setIsImporting] = useState(false)
 
   const [userSettings, setUserSettings] = useState<UserSettings>({
     theme: 'system',
@@ -64,7 +70,8 @@ export function SettingsDashboard() {
     emailNotifications: true,
     pushNotifications: true,
     weeklyReports: false,
-    marketingEmails: false
+    marketingEmails: false,
+    fullName: ''
   })
 
   const [orgSettings, setOrgSettings] = useState<OrganizationSettings>({
@@ -94,7 +101,8 @@ export function SettingsDashboard() {
       emailNotifications: true,
       pushNotifications: true,
       weeklyReports: true,
-      marketingEmails: false
+      marketingEmails: false,
+      fullName: user?.user_metadata?.full_name || ''
     })
 
     setOrgSettings({
@@ -145,7 +153,7 @@ export function SettingsDashboard() {
     userSyncStatus.startSync()
     try {
       console.log('[Settings] Auto-saving user settings:', {
-        full_name: user.user_metadata?.full_name || user.email,
+        full_name: userSettings.fullName || user.email,
         timezone: userSettings.timezone,
         language: userSettings.language
       })
@@ -154,7 +162,7 @@ export function SettingsDashboard() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: user.user_metadata?.full_name || user.email,
+          full_name: userSettings.fullName || user.email,
           timezone: userSettings.timezone,
           language: userSettings.language
         })
@@ -206,7 +214,7 @@ export function SettingsDashboard() {
     setSaving(true)
     try {
       console.log('[Settings] Saving user settings:', {
-        full_name: user.user_metadata?.full_name || user.email,
+        full_name: userSettings.fullName || user.email,
         timezone: userSettings.timezone,
         language: userSettings.language
       })
@@ -215,7 +223,7 @@ export function SettingsDashboard() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: user.user_metadata?.full_name || user.email,
+          full_name: userSettings.fullName || user.email,
           timezone: userSettings.timezone,
           language: userSettings.language
         })
@@ -297,11 +305,98 @@ export function SettingsDashboard() {
     if (!user) return
 
     try {
-      // For demo purposes, simulate export
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      // Show download link
+      toast.loading('Preparing your data export...', { id: 'export-data' })
+      // Fetch user data for export
+      const response = await fetch('/api/user/export', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export data')
+      }
+
+      const data = await response.json()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `foco-data-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success('Data exported successfully', { id: 'export-data' })
     } catch (error) {
       console.error('Error exporting data:', error)
+      toast.error('Failed to export data', { id: 'export-data' })
+    }
+  }
+
+  const handleImportData = async () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json,.csv'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      setIsImporting(true)
+      try {
+        toast.loading('Importing your data...', { id: 'import-data' })
+        const content = await file.text()
+
+        const response = await fetch('/api/user/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: content, filename: file.name })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to import data')
+        }
+
+        toast.success('Data imported successfully', { id: 'import-data' })
+      } catch (error) {
+        console.error('Error importing data:', error)
+        toast.error('Failed to import data. Please check the file format.', { id: 'import-data' })
+      } finally {
+        setIsImporting(false)
+      }
+    }
+    input.click()
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      toast.error('Please type DELETE to confirm')
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      toast.loading('Deleting your account...', { id: 'delete-account' })
+
+      const response = await fetch('/api/user/account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete account')
+      }
+
+      toast.success('Account deleted successfully. Redirecting...', { id: 'delete-account' })
+      // Redirect to home page after deletion
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      toast.error('Failed to delete account. Please contact support.', { id: 'delete-account' })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText('')
     }
   }
 
@@ -370,7 +465,8 @@ export function SettingsDashboard() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={user?.user_metadata?.full_name || ''}
+                    value={userSettings.fullName}
+                    onChange={(e) => setUserSettings({...userSettings, fullName: e.target.value})}
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -749,24 +845,75 @@ export function SettingsDashboard() {
                       Import data from another project management tool.
                     </p>
                   </div>
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4" />
-                    Import Data
+                  <Button variant="outline" onClick={handleImportData} disabled={isImporting}>
+                    {isImporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {isImporting ? 'Importing...' : 'Import Data'}
                   </Button>
                 </div>
 
                 <div className="p-4 border rounded-lg border-destructive/50 bg-destructive/5">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-destructive">Delete Account</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Permanently delete your account and all associated data.
-                      </p>
+                  {!showDeleteConfirm ? (
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-destructive">Delete Account</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Permanently delete your account and all associated data.
+                        </p>
+                      </div>
+                      <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+                        Delete Account
+                      </Button>
                     </div>
-                    <Button variant="destructive">
-                      Delete Account
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-destructive">Confirm Account Deletion</h4>
+                        <p className="text-sm text-muted-foreground">
+                          This action is irreversible. All your data will be permanently deleted.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="delete-confirm">Type DELETE to confirm</Label>
+                        <Input
+                          id="delete-confirm"
+                          value={deleteConfirmText}
+                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          placeholder="DELETE"
+                          className="border-destructive"
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowDeleteConfirm(false)
+                            setDeleteConfirmText('')
+                          }}
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteAccount}
+                          disabled={isDeleting || deleteConfirmText !== 'DELETE'}
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            'Permanently Delete'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

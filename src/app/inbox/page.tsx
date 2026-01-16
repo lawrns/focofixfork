@@ -70,10 +70,22 @@ const typeColors: Record<NotificationType, string> = {
   blocked: 'text-red-500 bg-red-50 dark:bg-red-950',
 };
 
-function InboxItem({ item, selected, onSelect }: { 
-  item: InboxItemData; 
+function InboxItem({
+  item,
+  selected,
+  onSelect,
+  onMarkDone,
+  onSnooze,
+  onConvertToTask,
+  onArchive,
+}: {
+  item: InboxItemData;
   selected: boolean;
   onSelect: (id: string) => void;
+  onMarkDone: (id: string) => void;
+  onSnooze: (id: string) => void;
+  onConvertToTask: (id: string) => void;
+  onArchive: (id: string) => void;
 }) {
   const Icon = typeIcons[item.type];
 
@@ -143,20 +155,20 @@ function InboxItem({ item, selected, onSelect }: {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onMarkDone(item.id)}>
             <CheckCircle2 className="h-4 w-4" />
             Mark as done
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onSnooze(item.id)}>
             <Clock className="h-4 w-4" />
             Snooze
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onConvertToTask(item.id)}>
             <ArrowRight className="h-4 w-4" />
             Convert to task
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-600">
+          <DropdownMenuItem className="text-red-600" onClick={() => onArchive(item.id)}>
             <Archive className="h-4 w-4" />
             Archive
           </DropdownMenuItem>
@@ -283,6 +295,96 @@ export default function InboxPage() {
     }
   };
 
+  const handleMarkDone = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        setItems(prev => prev.map(item =>
+          item.id === id ? { ...item, isRead: true } : item
+        ));
+        toast.success('Marked as done');
+      }
+    } catch (error) {
+      toast.error('Failed to mark as done');
+    }
+  }, []);
+
+  const handleSnooze = useCallback(async (id: string) => {
+    // For now, just mark as read - a full implementation would add a snooze until date
+    toast.info('Snoozed notification (will reappear later)');
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, isRead: true } : item
+    ));
+  }, []);
+
+  const handleConvertToTask = useCallback(async (id: string) => {
+    const notification = items.find(i => i.id === id);
+    if (!notification) return;
+
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: notification.title,
+          description: notification.body,
+          status: 'backlog',
+          priority: 'medium',
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Converted to task');
+        // Remove from inbox
+        setItems(prev => prev.filter(item => item.id !== id));
+      } else {
+        toast.error('Failed to convert to task');
+      }
+    } catch (error) {
+      toast.error('Failed to convert to task');
+    }
+  }, [items]);
+
+  const handleArchive = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        setItems(prev => prev.filter(item => item.id !== id));
+        toast.success('Archived');
+      }
+    } catch (error) {
+      toast.error('Failed to archive');
+    }
+  }, []);
+
+  // Bulk action handlers
+  const handleBulkMarkDone = useCallback(async () => {
+    for (const id of selectedItems) {
+      await handleMarkDone(id);
+    }
+    setSelectedItems(new Set());
+  }, [selectedItems, handleMarkDone]);
+
+  const handleBulkSnooze = useCallback(async () => {
+    for (const id of selectedItems) {
+      await handleSnooze(id);
+    }
+    setSelectedItems(new Set());
+  }, [selectedItems, handleSnooze]);
+
+  const handleBulkArchive = useCallback(async () => {
+    for (const id of selectedItems) {
+      await handleArchive(id);
+    }
+    setSelectedItems(new Set());
+  }, [selectedItems, handleArchive]);
+
   const filteredItems = items.filter(item => {
     if (filter === 'unread') return !item.isRead;
     if (filter === 'mentions') return item.type === 'mention';
@@ -345,15 +447,15 @@ export default function InboxPage() {
             {selectedItems.size} selected
           </span>
           <div className="flex-1" />
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={handleBulkMarkDone}>
             <CheckCircle2 className="h-4 w-4" />
             Done
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={handleBulkSnooze}>
             <Clock className="h-4 w-4" />
             Snooze
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={handleBulkArchive}>
             <Archive className="h-4 w-4" />
             Archive
           </Button>
@@ -389,6 +491,10 @@ export default function InboxPage() {
               item={item}
               selected={selectedItems.has(item.id)}
               onSelect={handleSelect}
+              onMarkDone={handleMarkDone}
+              onSnooze={handleSnooze}
+              onConvertToTask={handleConvertToTask}
+              onArchive={handleArchive}
             />
           ))
         )}

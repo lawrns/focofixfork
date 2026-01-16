@@ -68,23 +68,34 @@ export class AIService {
    * Generate chat completion
    */
   async chatCompletion(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>) {
+    console.log('[AIService] chatCompletion called with', messages.length, 'messages')
+    
     if (!this.config.apiKey) {
+      console.error('[AIService] No API key configured for', this.config.provider)
       throw new Error(`${this.config.provider} API key not configured`);
     }
 
     try {
+      console.log('[AIService] Making API call to', this.config.baseURL, 'with model', this.config.model)
+      
       const response = await this.client.chat.completions.create({
         model: this.config.model,
         messages,
         temperature: 0.7,
         max_tokens: 2000
       });
-
+      
+      console.log('[AIService] API response received')
       return response.choices[0]?.message?.content || '';
-    } catch (error: any) {
-      console.error(`Error with ${this.config.provider} API:`, error);
-      console.error('Error details:', error.response?.data || error.message);
-      throw new Error(`Failed to get response from ${this.config.provider}: ${error.message}`);
+      
+    } catch (error) {
+      console.error('[AIService] API call failed:', error)
+      console.error('[AIService] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        status: (error as any)?.status,
+        code: (error as any)?.code
+      })
+      throw error;
     }
   }
 

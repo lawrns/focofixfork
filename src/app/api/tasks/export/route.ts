@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,10 +49,10 @@ function generateExportFilename(projectName: string, format: 'csv' | 'json'): st
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { searchParams } = new URL(req.url)
@@ -138,14 +138,14 @@ export async function GET(req: NextRequest) {
     const filename = generateExportFilename(project.name, format)
 
     // Return file with appropriate headers
-    return new NextResponse(content, {
+    return mergeAuthResponse(new NextResponse(content, {
       status: 200,
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Tasks export API error:', err)
     return NextResponse.json(

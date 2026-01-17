@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { TaskRepository } from '@/lib/repositories/task-repository'
 import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { AIService } from '@/lib/services/ai-service'
@@ -9,17 +9,19 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const steps: any[] = []
+  let authResponse: NextResponse | undefined;
   
   try {
     const body = await request.json()
     steps.push({ step: 'request_body', data: body })
 
     // Step 1: Auth
-    const { user, supabase, error: authError } = await getAuthUser(request)
+    const { user, supabase, error: authError, response } = await getAuthUser(request)
+    authResponse = response;
     
     if (authError || !user) {
       steps.push({ step: 'auth_failed', error: authError })
-      return NextResponse.json({ steps, error: 'Auth required' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ steps, error: 'Auth required' }, { status: 401 }), authResponse)
     }
     steps.push({ step: 'auth_success', userId: user.id, email: user.email })
 
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
     steps.push({ step: 'workspace_check', result: isMemberResult })
     
     if (!isMemberResult.ok || !isMemberResult.data) {
-      return NextResponse.json({ steps, error: 'Not a workspace member' }, { status: 403 })
+      return mergeAuthResponse(NextResponse.json({ steps, error: 'Not a workspace member' }, { status: 403 }), authResponse)
     }
 
     // Step 3: Get task
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
     
     if (isError(taskResult)) {
       steps.push({ step: 'task_error', error: taskResult.error })
-      return NextResponse.json({ steps, error: 'Task not found' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ steps, error: 'Task not found' }, { status: 404 }), authResponse)
     }
     steps.push({ step: 'task_found', title: taskResult.data.title })
 
@@ -52,11 +54,11 @@ export async function POST(request: NextRequest) {
     ])
     steps.push({ step: 'ai_response', response: aiResponse.substring(0, 200) })
 
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       success: true,
       steps,
       ai_response: aiResponse
-    })
+    }), authResponse)
 
   } catch (error) {
     steps.push({ 
@@ -64,6 +66,6 @@ export async function POST(request: NextRequest) {
       message: error instanceof Error ? error.message : 'Unknown',
       stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined
     })
-    return NextResponse.json({ steps }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ steps }, { status: 500 }), authResponse)
   }
 }

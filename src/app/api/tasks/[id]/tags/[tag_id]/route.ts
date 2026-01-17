@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
 import { isError } from '@/lib/repositories/base-repository';
@@ -20,10 +20,10 @@ export async function DELETE(
   { params }: { params: { id: string; tag_id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req);
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
     if (error || !user) {
-      return authRequiredResponse();
+      return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
 
     const { id: taskId, tag_id: tagId } = params;
@@ -68,10 +68,11 @@ export async function DELETE(
 
     const removeResult = await repo.removeTagFromTask(taskId, tagId);
     if (isError(removeResult)) {
-      return databaseErrorResponse(removeResult.error.message, removeResult.error.details);
+      const errorRes = databaseErrorResponse(removeResult.error.message, removeResult.error.details);
+      return mergeAuthResponse(errorRes, authResponse);
     }
 
-    return successResponse(
+    return mergeAuthResponse(successResponse(
       {
         task_id: taskId,
         tag_id: tagId,
@@ -79,7 +80,7 @@ export async function DELETE(
       },
       undefined,
       200
-    );
+    ), authResponse);
   } catch (err: any) {
     console.error('Tag removal error:', err);
     return databaseErrorResponse('Failed to remove tag from task', err);

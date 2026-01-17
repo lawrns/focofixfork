@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,11 +11,13 @@ export const dynamic = 'force-dynamic'
  *   - offset: pagination offset (default: 0)
  */
 export async function GET(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { searchParams } = new URL(req.url)
@@ -31,10 +33,10 @@ export async function GET(req: NextRequest) {
 
     if (queryError) {
       console.error('Task templates fetch error:', queryError)
-      return NextResponse.json({ success: false, error: queryError.message }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: queryError.message }, { status: 500 }), authResponse)
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: {
         templates: data || [],
@@ -44,10 +46,10 @@ export async function GET(req: NextRequest) {
           total: count || 0
         }
       }
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Task templates GET error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }
 
@@ -62,11 +64,13 @@ export async function GET(req: NextRequest) {
  *   - priority: string (optional) - priority level (low, medium, high, urgent)
  */
 export async function POST(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const body = await req.json()
@@ -112,12 +116,12 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Task template create error:', insertError)
-      return NextResponse.json({ success: false, error: insertError.message }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: insertError.message }, { status: 500 }), authResponse)
     }
 
-    return NextResponse.json({ success: true, data }, { status: 201 })
+    return mergeAuthResponse(NextResponse.json({ success: true, data }, { status: 201 }), authResponse)
   } catch (err: any) {
     console.error('Task templates POST error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }

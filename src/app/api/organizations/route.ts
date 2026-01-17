@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { OrganizationRepository } from '@/lib/repositories/organization-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
       console.log('[Organizations API] Auth failed:', error)
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     console.log('[Organizations API] Found organizations:', result.data.length)
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('[Organizations API] Unexpected error:', err?.message || err, err?.stack)
     return internalErrorResponse('Failed to fetch organizations', err?.message || 'Unknown error')
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return successResponse(result.data, undefined, 201)
+    return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
   } catch (err: any) {
     console.error('Organizations POST error:', err)
     return internalErrorResponse('Failed to create organization', err.message)

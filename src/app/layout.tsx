@@ -6,6 +6,7 @@ import { VoiceProvider } from '@/components/voice';
 import { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Foco - Project Management',
@@ -24,6 +25,53 @@ export default function AppLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <head>
+        <Script id="suppress-extension-errors" strategy="beforeInteractive">
+          {`
+            (function() {
+              const originalError = console.error;
+              const originalWarn = console.warn;
+              
+              const suppressedPatterns = [
+                'Unchecked runtime.lastError',
+                'Could not establish connection',
+                'Receiving end does not exist',
+                'The message port closed before a response was received',
+                'No tab with id',
+                '1password',
+                'extension'
+              ];
+
+              const shouldSuppress = (args) => {
+                const msg = args.map(arg => String(arg)).join(' ');
+                return suppressedPatterns.some(pattern => msg.includes(pattern));
+              };
+
+              console.error = function(...args) {
+                if (shouldSuppress(args)) return;
+                originalError.apply(console, args);
+              };
+
+              console.warn = function(...args) {
+                if (shouldSuppress(args)) return;
+                originalWarn.apply(console, args);
+              };
+              
+              window.addEventListener('error', function(event) {
+                if (event.message && suppressedPatterns.some(p => event.message.includes(p))) {
+                  event.stopImmediatePropagation();
+                }
+              }, true);
+
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && suppressedPatterns.some(p => String(event.reason).includes(p))) {
+                  event.stopImmediatePropagation();
+                }
+              }, true);
+            })();
+          `}
+        </Script>
+      </head>
       <body className={GeistSans.className}>
         <Providers>
           <TooltipProvider>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { z } from 'zod';
 
@@ -13,13 +13,13 @@ const CreateTagSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req);
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
     if (error || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      );
+      ), authResponse);
     }
 
     const { searchParams } = new URL(req.url);
@@ -59,19 +59,19 @@ export async function GET(req: NextRequest) {
 
     if (queryError) {
       console.error('Tags fetch error:', queryError);
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: queryError.message },
         { status: 500 }
-      );
+      ), authResponse);
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: {
         tags: data || [],
         pagination: { limit, offset, total: data?.length || 0 },
       },
-    });
+    }), authResponse);
   } catch (err: any) {
     console.error('Tags GET error:', err);
     return NextResponse.json(
@@ -83,13 +83,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req);
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
     if (error || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      );
+      ), authResponse);
     }
 
     const body = await req.json();
@@ -141,19 +141,19 @@ export async function POST(req: NextRequest) {
     if (insertError) {
       // Check if it's a unique constraint violation
       if (insertError.message.includes('unique constraint')) {
-        return NextResponse.json(
+        return mergeAuthResponse(NextResponse.json(
           { success: false, error: 'A tag with this name already exists' },
           { status: 409 }
-        );
+        ), authResponse);
       }
       console.error('Tag create error:', insertError);
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: insertError.message },
         { status: 500 }
-      );
+      ), authResponse);
     }
 
-    return NextResponse.json({ success: true, data }, { status: 201 });
+    return mergeAuthResponse(NextResponse.json({ success: true, data }, { status: 201 }), authResponse);
   } catch (err: any) {
     console.error('Tags POST error:', err);
     return NextResponse.json(

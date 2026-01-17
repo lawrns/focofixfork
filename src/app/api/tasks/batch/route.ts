@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { TaskRepository } from '@/lib/repositories/task-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -24,10 +24,10 @@ interface BatchOperationRequest {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body: BatchOperationRequest = await req.json()
@@ -97,11 +97,11 @@ export async function POST(req: NextRequest) {
         return databaseErrorResponse(deleteResult.error.message, deleteResult.error.details)
       }
 
-      return successResponse({
+      return mergeAuthResponse(successResponse({
         operation: body.operation,
         updated: deleteResult.data,
         failed: 0,
-      })
+      }), authResponse)
     } else {
       const updateResult = await repo.batchUpdate(body.taskIds, updateData)
       if (isError(updateResult)) {
@@ -111,12 +111,12 @@ export async function POST(req: NextRequest) {
       const updatedCount = updateResult.data.length
       const failedCount = body.taskIds.length - updatedCount
 
-      return successResponse({
+      return mergeAuthResponse(successResponse({
         operation: body.operation,
         updated: updatedCount,
         failed: failedCount,
         tasks: updateResult.data,
-      })
+      }), authResponse)
     }
   } catch (err: any) {
     console.error('Batch operations error:', err)

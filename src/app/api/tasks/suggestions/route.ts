@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -125,13 +125,13 @@ function generateSuggestions(
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser(req)
+    const { user, error: authError, response: authResponse } = await getAuthUser(req)
 
     if (authError || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      )
+      ), authResponse)
     }
 
     const body: SuggestionRequest = await req.json()
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       existingTasks
     )
 
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       {
         success: true,
         data: {
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
         },
       },
       { status: 200 }
-    )
+    ), authResponse)
   } catch (err: any) {
     console.error('Suggestions API error:', err)
     return NextResponse.json(

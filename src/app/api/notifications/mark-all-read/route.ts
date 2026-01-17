@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { supabase } from '@/lib/supabase-client';
 
@@ -9,14 +9,16 @@ export const dynamic = 'force-dynamic'
 const untypedSupabase = supabase as any;
 
 export async function PATCH(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, error: authError } = await getAuthUser(request);
+    const { user, error: authError, response } = await getAuthUser(request);
+    authResponse = response;
 
     if (authError || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
-      );
+      ), authResponse);
     }
 
     // Update ALL unread inbox items (notifications) for the user
@@ -32,24 +34,24 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Error marking all notifications as read:', error);
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { error: 'Failed to mark notifications as read' },
         { status: 500 }
-      );
+      ), authResponse);
     }
 
     const count = data?.length || 0;
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       count,
       message: `${count} notification${count !== 1 ? 's' : ''} marked as read`,
-    });
+    }), authResponse);
   } catch (error) {
     console.error('Error in mark-all-read endpoint:', error);
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    ), authResponse);
   }
 }

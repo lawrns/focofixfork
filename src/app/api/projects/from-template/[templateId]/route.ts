@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { ProjectTemplateModel } from '@/lib/models/project-templates'
 import { ProjectModel } from '@/lib/models/projects'
@@ -15,10 +15,10 @@ export async function POST(
   { params }: { params: { templateId: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const body = await req.json()
@@ -47,20 +47,20 @@ export async function POST(
 
     if (templateError || !templateData) {
       console.error('Template fetch error:', templateError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Template not found' },
         { status: 404 }
-      )
+      ), authResponse)
     }
 
     // Check access: user owns it or it's public
     const canAccess = templateData.user_id === user.id || templateData.is_public
 
     if (!canAccess) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Access denied' },
         { status: 403 }
-      )
+      ), authResponse)
     }
 
     const template = ProjectTemplateModel.fromDatabase(templateData)
@@ -80,19 +80,19 @@ export async function POST(
 
     if (projectError) {
       console.error('Project creation error:', projectError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to create project', details: projectError.message },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
     const newProject = projectData?.[0]
 
     if (!newProject) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to create project' },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
     // Create default tasks from template
@@ -131,7 +131,7 @@ export async function POST(
       console.warn('Failed to update usage count:', usageError)
     }
 
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       {
         success: true,
         data: {
@@ -142,7 +142,7 @@ export async function POST(
         message: `Project created from template with ${createdTasks.length} default tasks`,
       },
       { status: 201 }
-    )
+    ), authResponse)
   } catch (err: any) {
     console.error('Create from template API error:', err)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })

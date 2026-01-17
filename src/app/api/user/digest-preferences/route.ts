@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { createClient } from '@/lib/supabase/server';
 
@@ -25,14 +25,16 @@ interface DigestPreferences {
 }
 
 export async function PATCH(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error: authError } = await getAuthUser(request);
+    const { user, supabase, error: authError, response } = await getAuthUser(request);
+    authResponse = response;
 
     if (authError || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
-      );
+      ), authResponse);
     }
 
     // Parse the request body
@@ -123,28 +125,30 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       message: 'Email digest preferences saved successfully',
-    });
+    }), authResponse);
   } catch (error) {
     console.error('Error in digest preferences API:', error);
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    ), authResponse);
   }
 }
 
 export async function GET(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error: authError } = await getAuthUser(request);
+    const { user, supabase, error: authError, response } = await getAuthUser(request);
+    authResponse = response;
 
     if (authError || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
-      );
+      ), authResponse);
     }
 
     // Get the user's workspace membership settings
@@ -182,12 +186,12 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json({ digestPreferences });
+    return mergeAuthResponse(NextResponse.json({ digestPreferences }), authResponse);
   } catch (error) {
     console.error('Error in digest preferences GET API:', error);
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    ), authResponse);
   }
 }

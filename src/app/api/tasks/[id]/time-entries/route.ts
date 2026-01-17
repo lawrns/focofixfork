@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { TimeEntryRepository } from '@/lib/repositories/time-entry-repository'
 import type { CreateTimeEntryData } from '@/lib/repositories/time-entry-repository'
@@ -19,10 +19,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId } = params
@@ -31,13 +31,14 @@ export async function GET(
     const result = await repo.findByTaskAndUser(taskId, user.id)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       data: result.data.entries,
       totalSeconds: result.data.totalSeconds,
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Time entries GET error:', err)
     return databaseErrorResponse('Failed to fetch time entries', err)
@@ -49,10 +50,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId } = params
@@ -88,12 +89,14 @@ export async function POST(
 
     if (isError(result)) {
       if (result.error.code === 'VALIDATION_FAILED') {
-        return validationFailedResponse(result.error.message, result.error.details)
+        const errorRes = validationFailedResponse(result.error.message, result.error.details)
+        return mergeAuthResponse(errorRes, authResponse)
       }
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data, undefined, 201)
+    return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
   } catch (err: any) {
     console.error('Time entries POST error:', err)
     return databaseErrorResponse('Failed to create time entry', err)

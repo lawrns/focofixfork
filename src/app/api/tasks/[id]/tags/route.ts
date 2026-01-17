@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { z } from 'zod';
 import { TaskTagRepository } from '@/lib/repositories/task-tag-repository';
@@ -26,10 +26,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req);
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
     if (error || !user) {
-      return authRequiredResponse();
+      return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
 
     const { id: taskId } = params;
@@ -61,10 +61,11 @@ export async function GET(
 
     const tagsResult = await repo.getTagsForTask(taskId);
     if (isError(tagsResult)) {
-      return databaseErrorResponse(tagsResult.error.message, tagsResult.error.details);
+      const errorRes = databaseErrorResponse(tagsResult.error.message, tagsResult.error.details);
+      return mergeAuthResponse(errorRes, authResponse);
     }
 
-    return successResponse(tagsResult.data);
+    return mergeAuthResponse(successResponse(tagsResult.data), authResponse);
   } catch (err: any) {
     console.error('Task tags GET error:', err);
     return databaseErrorResponse('Failed to fetch task tags', err);
@@ -76,10 +77,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req);
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
     if (error || !user) {
-      return authRequiredResponse();
+      return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
 
     const { id: taskId } = params;
@@ -158,13 +159,14 @@ export async function POST(
 
     const updatedTagsResult = await repo.getTagsForTask(taskId);
     if (isError(updatedTagsResult)) {
-      return databaseErrorResponse(
+      const errorRes = databaseErrorResponse(
         updatedTagsResult.error.message,
         updatedTagsResult.error.details
       );
+      return mergeAuthResponse(errorRes, authResponse);
     }
 
-    return successResponse(
+    return mergeAuthResponse(successResponse(
       {
         task_id: taskId,
         tags: updatedTagsResult.data.tags,
@@ -172,7 +174,7 @@ export async function POST(
       },
       undefined,
       201
-    );
+    ), authResponse);
   } catch (err: any) {
     console.error('Task tags POST error:', err);
     return databaseErrorResponse('Failed to assign tags', err);

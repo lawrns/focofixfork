@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { TaskRepository } from '@/lib/repositories/task-repository';
 import { isError } from '@/lib/repositories/base-repository';
@@ -12,10 +12,10 @@ import {
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const { user, supabase, error } = await getAuthUser(req);
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
   if (error || !user) {
-    return authRequiredResponse();
+    return mergeAuthResponse(authRequiredResponse(), authResponse);
   }
 
   const { searchParams } = new URL(req.url);
@@ -71,11 +71,11 @@ export async function GET(req: NextRequest) {
     overdue: enrichedTasks.filter(t => t.due_date && new Date(t.due_date) < new Date()).length,
   };
 
-  return successResponse({
+  return mergeAuthResponse(successResponse({
     tasks: enrichedTasks,
     summary,
     pagination: tasksResult.data.pagination,
-  });
+  }), authResponse);
 }
 
 function mapStatusToSection(status: string, priority: string): string {

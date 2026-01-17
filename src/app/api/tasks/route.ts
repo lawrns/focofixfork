@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { cachedFetch, generateCacheKey } from '@/lib/cache/redis'
 import { CACHE_TTL } from '@/lib/cache/cache-config'
@@ -18,10 +18,10 @@ import type { TaskFilters } from '@/lib/repositories/task-repository'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const { user, supabase, error } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
   if (error || !user) {
-    return authRequiredResponse()
+    return mergeAuthResponse(authRequiredResponse(), authResponse)
   }
 
   const { searchParams } = new URL(req.url)
@@ -63,17 +63,17 @@ export async function GET(req: NextRequest) {
     { ttl: CACHE_TTL.TASKS }
   )
 
-  return successResponse(
+  return mergeAuthResponse(successResponse(
     result,
     createPaginationMeta(result.pagination.total, result.pagination.limit, result.pagination.offset)
-  )
+  ), authResponse)
 }
 
 export async function POST(req: NextRequest) {
-  const { user, supabase, error } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
   if (error || !user) {
-    return authRequiredResponse()
+    return mergeAuthResponse(authRequiredResponse(), authResponse)
   }
 
   const body = await req.json()
@@ -129,5 +129,5 @@ export async function POST(req: NextRequest) {
     CACHE_INVALIDATION_PATTERNS.TASK(project.workspace_id, body.project_id)
   )
 
-  return successResponse(taskResult.data, undefined, 201)
+  return mergeAuthResponse(successResponse(taskResult.data, undefined, 201), authResponse)
 }

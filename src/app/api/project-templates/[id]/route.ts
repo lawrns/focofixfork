@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { ProjectTemplateModel, UpdateTemplateData } from '@/lib/models/project-templates'
 
@@ -13,11 +13,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { data, error: queryError } = await supabase
@@ -28,32 +30,32 @@ export async function GET(
 
     if (queryError) {
       console.error('Template fetch error:', queryError)
-      return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 }), authResponse)
     }
 
     if (!data) {
-      return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 }), authResponse)
     }
 
     // Check access: user owns it or it's public
     const canAccess = data.user_id === user.id || data.is_public
 
     if (!canAccess) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Access denied' },
         { status: 403 }
-      )
+      ), authResponse)
     }
 
     const template = ProjectTemplateModel.fromDatabase(data)
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: template,
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Template fetch API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }
 
@@ -65,11 +67,13 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const body = await req.json()
@@ -103,10 +107,10 @@ export async function PUT(
 
     const validation = ProjectTemplateModel.validateUpdate(updateData)
     if (!validation.isValid) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Validation failed', errors: validation.errors },
         { status: 400 }
-      )
+      ), authResponse)
     }
 
     // Update template
@@ -124,22 +128,22 @@ export async function PUT(
 
     if (updateError) {
       console.error('Template update error:', updateError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to update template', details: updateError.message },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
     const updatedTemplate = updated?.[0] ? ProjectTemplateModel.fromDatabase(updated[0]) : null
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: updatedTemplate,
       message: 'Template updated successfully',
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Template update API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }
 
@@ -151,11 +155,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     // Verify ownership
@@ -184,18 +190,18 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Template deletion error:', deleteError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to delete template', details: deleteError.message },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       message: 'Template deleted successfully',
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Template deletion API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }

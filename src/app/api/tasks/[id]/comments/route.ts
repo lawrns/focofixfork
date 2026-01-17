@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {
@@ -19,10 +19,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(req)
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId } = params
@@ -69,7 +69,8 @@ export async function GET(
       .order('created_at', { ascending: true })
 
     if (commentsError) {
-      return databaseErrorResponse('Failed to fetch comments', commentsError)
+      const errorRes = databaseErrorResponse('Failed to fetch comments', commentsError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Fetch user profiles for comments
@@ -93,7 +94,7 @@ export async function GET(
       user: userProfiles[comment.user_id] || null
     }))
 
-    return successResponse(commentsWithUsers)
+    return mergeAuthResponse(successResponse(commentsWithUsers), authResponse)
   } catch (err: any) {
     console.error('Comments GET error:', err)
     return internalErrorResponse('Failed to fetch comments', err)
@@ -105,10 +106,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(req)
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId } = params
@@ -164,7 +165,8 @@ export async function POST(
       .single()
 
     if (createError) {
-      return databaseErrorResponse('Failed to create comment', createError)
+      const errorRes = databaseErrorResponse('Failed to create comment', createError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Get user profile for response
@@ -174,10 +176,10 @@ export async function POST(
       .eq('id', user.id)
       .maybeSingle()
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       ...comment,
       user: userProfile
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Comment POST error:', err)
     return internalErrorResponse('Failed to create comment', err)

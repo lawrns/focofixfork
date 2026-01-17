@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { calculateNextRecurrenceDate, shouldCreateNextInstance } from '@/features/tasks/services/recurrence.service';
 import type { RecurrencePattern } from '@/lib/validation/schemas/task.schema';
@@ -11,10 +11,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req);
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse);
     }
 
     const { id: taskId } = params;
@@ -98,17 +98,17 @@ export async function POST(
 
     if (createError) {
       console.error('Error creating next recurring task:', createError);
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: createError.message },
         { status: 500 }
-      );
+      ), authResponse);
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: createdTask,
       message: 'Next recurring task created successfully',
-    });
+    }), authResponse);
   } catch (err: any) {
     console.error('POST /api/tasks/[id]/create-next error:', err);
     return NextResponse.json(

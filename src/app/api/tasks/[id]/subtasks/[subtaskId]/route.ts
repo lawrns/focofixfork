@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { SubtaskRepository } from '@/lib/repositories/subtask-repository'
 import type { UpdateSubtaskData } from '@/lib/repositories/subtask-repository'
@@ -13,10 +13,10 @@ export async function PATCH(
   { params }: { params: { id: string; subtaskId: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId, subtaskId } = params
@@ -61,12 +61,14 @@ export async function PATCH(
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return notFoundResponse('Subtask', subtaskId)
+        const errorRes = notFoundResponse('Subtask', subtaskId)
+        return mergeAuthResponse(errorRes, authResponse)
       }
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('PATCH subtask error:', err)
     return databaseErrorResponse('Failed to update subtask', err)
@@ -78,10 +80,10 @@ export async function DELETE(
   { params }: { params: { id: string; subtaskId: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId, subtaskId } = params
@@ -90,10 +92,11 @@ export async function DELETE(
     const result = await repo.deleteSubtask(subtaskId, taskId)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse({ message: 'Subtask deleted' })
+    return mergeAuthResponse(successResponse({ message: 'Subtask deleted' }), authResponse)
   } catch (err: any) {
     console.error('DELETE subtask error:', err)
     return databaseErrorResponse('Failed to delete subtask', err)

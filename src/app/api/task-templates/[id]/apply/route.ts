@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,11 +12,13 @@ export const dynamic = 'force-dynamic'
  *   - description_override: string (optional) - override template description
  */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const body = await req.json()
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .single()
 
     if (templateError || !template) {
-      return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 }), authResponse)
     }
 
     // Get workspace_id from project
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .single()
 
     if (projectError || !projectData) {
-      return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 }), authResponse)
     }
 
     // Create task from template
@@ -74,12 +76,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     if (taskError) {
       console.error('Task create from template error:', taskError)
-      return NextResponse.json({ success: false, error: taskError.message }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: taskError.message }, { status: 500 }), authResponse)
     }
 
-    return NextResponse.json({ success: true, data: task }, { status: 201 })
+    return mergeAuthResponse(NextResponse.json({ success: true, data: task }, { status: 201 }), authResponse)
   } catch (err: any) {
     console.error('Task templates apply error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }

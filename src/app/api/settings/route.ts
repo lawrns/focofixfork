@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { SettingsRepository } from '@/lib/repositories/settings-repository'
 import type { UserSettings } from '@/lib/repositories/settings-repository'
@@ -9,11 +9,13 @@ import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/
 export const dynamic = 'force-dynamic'
 
 export async function PATCH(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error: authError } = await getAuthUser(request)
+    const { user, supabase, error: authError, response } = await getAuthUser(request)
+    authResponse = response;
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body = await request.json()
@@ -43,12 +45,12 @@ export async function PATCH(request: NextRequest) {
     const result = await repo.updateSettings(user.id, updates)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
     }
 
-    return successResponse({ success: true, settings: result.data })
+    return mergeAuthResponse(successResponse({ success: true, settings: result.data }), authResponse)
   } catch (error) {
     console.error('Error in settings API:', error)
-    return databaseErrorResponse('Failed to update settings', error)
+    return mergeAuthResponse(databaseErrorResponse('Failed to update settings', error), authResponse)
   }
 }

@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { ReminderService } from '@/features/tasks/services/reminder-service'
 import {
@@ -17,10 +17,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -55,13 +55,14 @@ export async function POST(
     )
 
     if (!result.success) {
-      return databaseErrorResponse(
+      const errorRes = databaseErrorResponse(
         result.error || 'Failed to set reminder',
         { taskId, option }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data, undefined, 201)
+    return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
   } catch (err: any) {
     console.error('Reminder API error:', err)
     return databaseErrorResponse('Failed to set reminder', err)
@@ -73,10 +74,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -85,13 +86,14 @@ export async function DELETE(
     const result = await ReminderService.removeReminder(user.id, taskId)
 
     if (!result.success) {
-      return databaseErrorResponse(
+      const errorRes = databaseErrorResponse(
         result.error || 'Failed to remove reminder',
         { taskId }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse({ message: 'Reminder removed' })
+    return mergeAuthResponse(successResponse({ message: 'Reminder removed' }), authResponse)
   } catch (err: any) {
     console.error('Remove reminder API error:', err)
     return databaseErrorResponse('Failed to remove reminder', err)
@@ -103,10 +105,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -115,13 +117,14 @@ export async function GET(
     const result = await ReminderService.getTaskReminders(taskId)
 
     if (!result.success) {
-      return databaseErrorResponse(
+      const errorRes = databaseErrorResponse(
         result.error || 'Failed to get reminders',
         { taskId }
       )
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('Get reminders API error:', err)
     return databaseErrorResponse('Failed to get reminders', err)

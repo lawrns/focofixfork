@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { UpdateProjectData } from '@/lib/repositories/project-repository'
@@ -13,10 +13,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
     
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -38,12 +38,12 @@ export async function GET(
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return projectNotFoundResponse(id)
+        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
       }
-      return databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('Project GET error:', err)
     return databaseErrorResponse('Failed to fetch project', err)
@@ -55,10 +55,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
     
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -88,15 +88,15 @@ export async function PATCH(
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return projectNotFoundResponse(id)
+        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
       }
       if (result.error.code === 'DUPLICATE_SLUG') {
-        return databaseErrorResponse('Slug already exists in workspace', result.error.details)
+        return mergeAuthResponse(databaseErrorResponse('Slug already exists in workspace', result.error.details), authResponse)
       }
-      return databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('Project PATCH error:', err)
     return databaseErrorResponse('Failed to update project', err)
@@ -108,10 +108,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
     
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -126,10 +126,10 @@ export async function DELETE(
     const result = await repo.delete(id)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
     }
 
-    return successResponse({ deleted: true })
+    return mergeAuthResponse(successResponse({ deleted: true }), authResponse)
   } catch (err: any) {
     console.error('Project DELETE error:', err)
     return databaseErrorResponse('Failed to delete project', err)

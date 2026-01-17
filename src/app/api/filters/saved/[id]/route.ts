@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { FilterRepository } from '@/lib/repositories/filter-repository'
 import type { UpdateFilterData } from '@/lib/repositories/filter-repository'
@@ -18,11 +18,13 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response } = await getAuthUser(request)
+    authResponse = response;
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const filterId = params.id
@@ -33,13 +35,13 @@ export async function PATCH(
 
     if (isError(ownershipResult)) {
       if (ownershipResult.error.code === 'NOT_FOUND') {
-        return notFoundResponse('Filter', filterId)
+        return mergeAuthResponse(notFoundResponse('Filter', filterId), authResponse)
       }
-      return databaseErrorResponse(ownershipResult.error.message, ownershipResult.error.details)
+      return mergeAuthResponse(databaseErrorResponse(ownershipResult.error.message, ownershipResult.error.details), authResponse)
     }
 
     if (!ownershipResult.data) {
-      return forbiddenResponse('You do not have permission to update this filter')
+      return mergeAuthResponse(forbiddenResponse('You do not have permission to update this filter'), authResponse)
     }
 
     const body = await request.json()
@@ -57,15 +59,15 @@ export async function PATCH(
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return notFoundResponse('Filter', filterId)
+        return mergeAuthResponse(notFoundResponse('Filter', filterId), authResponse)
       }
-      return databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('Error updating saved filter:', err)
-    return databaseErrorResponse('Failed to update saved filter', err)
+    return mergeAuthResponse(databaseErrorResponse('Failed to update saved filter', err), authResponse)
   }
 }
 
@@ -73,11 +75,13 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response } = await getAuthUser(request)
+    authResponse = response;
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const filterId = params.id
@@ -88,24 +92,24 @@ export async function DELETE(
 
     if (isError(ownershipResult)) {
       if (ownershipResult.error.code === 'NOT_FOUND') {
-        return notFoundResponse('Filter', filterId)
+        return mergeAuthResponse(notFoundResponse('Filter', filterId), authResponse)
       }
-      return databaseErrorResponse(ownershipResult.error.message, ownershipResult.error.details)
+      return mergeAuthResponse(databaseErrorResponse(ownershipResult.error.message, ownershipResult.error.details), authResponse)
     }
 
     if (!ownershipResult.data) {
-      return forbiddenResponse('You do not have permission to delete this filter')
+      return mergeAuthResponse(forbiddenResponse('You do not have permission to delete this filter'), authResponse)
     }
 
     const result = await repo.delete(filterId)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
     }
 
-    return successResponse({ id: filterId })
+    return mergeAuthResponse(successResponse({ id: filterId }), authResponse)
   } catch (err: any) {
     console.error('Error deleting saved filter:', err)
-    return databaseErrorResponse('Failed to delete saved filter', err)
+    return mergeAuthResponse(databaseErrorResponse('Failed to delete saved filter', err), authResponse)
   }
 }

@@ -35,18 +35,23 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    optimizePackageImports: [
+      'lucide-react',
+      'date-fns',
+      'framer-motion',
+      '@radix-ui/react-icons',
+      'recharts',
+    ],
   },
 
   // Compiler optimizations
   compiler: {
-    // Temporarily disabled to debug environment variables
-    // removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Bundle analyzer (conditionally)
+  // Bundle analyzer and optimizations
   webpack: (config, { isServer }) => {
     if (process.env.ANALYZE === 'true' && !isServer) {
-      // Enable bundle analyzer for production builds
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
       config.plugins.push(
         new BundleAnalyzerPlugin({
@@ -56,6 +61,35 @@ const nextConfig = {
         })
       )
     }
+    
+    // Split heavy libraries into separate chunks
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks?.cacheGroups,
+          framerMotion: {
+            test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
+            name: 'framer-motion',
+            chunks: 'all',
+            priority: 30,
+          },
+          mermaid: {
+            test: /[\\/]node_modules[\\/]mermaid[\\/]/,
+            name: 'mermaid',
+            chunks: 'all',
+            priority: 30,
+          },
+          radix: {
+            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+            name: 'radix-ui',
+            chunks: 'all',
+            priority: 20,
+          },
+        },
+      }
+    }
+    
     return config
   },
 

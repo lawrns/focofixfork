@@ -20,10 +20,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: projectId } = await params
+    const { id: projectId } = params
     const { user, error: authError } = await getAuthUser(request)
 
     if (authError || !user) {
@@ -93,10 +93,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: projectId } = await params
+    const { id: projectId } = params
     const { user, error: authError } = await getAuthUser(request)
 
     if (authError || !user) {

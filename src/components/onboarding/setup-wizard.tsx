@@ -278,6 +278,7 @@ export function SetupWizard({ isOpen, onClose, onComplete }: SetupWizardProps) {
                 <div key={index} className="flex gap-2">
                   <Input
                     type="email"
+                    inputMode="email"
                     placeholder="Enter email address"
                     value={email}
                     onChange={(e) => updateInviteEmail(index, e.target.value)}

@@ -475,6 +475,7 @@ export function SettingsDashboard() {
                   <Input
                     id="email"
                     type="email"
+                    inputMode="email"
                     value={user?.email || ''}
                     disabled
                   />

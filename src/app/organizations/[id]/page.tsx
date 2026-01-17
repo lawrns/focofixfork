@@ -282,6 +282,7 @@ export default function OrganizationDetailPage() {
                       <Input
                         id="email"
                         type="email"
+                        inputMode="email"
                         placeholder="member@example.com"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}

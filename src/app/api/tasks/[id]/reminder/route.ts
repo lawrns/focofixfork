@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, error } = await getAuthUser(request)
@@ -23,7 +23,7 @@ export async function POST(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     const taskId = id
     const body = await request.json()
     const { reminder_at, option = 'custom' } = body
@@ -70,7 +70,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, error } = await getAuthUser(request)
@@ -79,7 +79,7 @@ export async function DELETE(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     const taskId = id
 
     const result = await ReminderService.removeReminder(user.id, taskId)
@@ -100,7 +100,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, error } = await getAuthUser(request)
@@ -109,7 +109,7 @@ export async function GET(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     const taskId = id
 
     const result = await ReminderService.getTaskReminders(taskId)

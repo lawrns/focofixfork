@@ -256,6 +256,7 @@ export function RoleManagement() {
                   <Input
                     id="email"
                     type="email"
+                    inputMode="email"
                     value={inviteForm.email}
                     onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="Enter email address"

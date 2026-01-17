@@ -19,10 +19,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: { token: string } }
 ) {
   try {
-    const { token } = await params
+    const { token } = params
     const { user, supabase, error } = await getAuthUser(request)
 
     if (error || !user) {
@@ -70,10 +70,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: { token: string } }
 ) {
   try {
-    const { token } = await params
+    const { token } = params
     const { user, supabase, error } = await getAuthUser(request)
 
     if (error || !user) {

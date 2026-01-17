@@ -849,6 +849,7 @@ function OrganizationsContent() {
                                 <Input
                                   id="invite-email"
                                   type="email"
+                                  inputMode="email"
                                   placeholder="member@example.com"
                                   value={inviteEmail}
                                   onChange={(e) => setInviteEmail(e.target.value)}
@@ -1029,6 +1030,7 @@ function OrganizationsContent() {
                 <Input
                   id="invite-email"
                   type="email"
+                  inputMode="email"
                   placeholder="member@example.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}

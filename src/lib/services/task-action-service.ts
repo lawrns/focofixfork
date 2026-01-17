@@ -54,23 +54,7 @@ export interface WorkspacePolicy {
   version?: number
 }
 
-// In-memory store for pending previews (in production, use Redis or DB)
-const pendingPreviews = new Map<string, {
-  preview: TaskActionPreview
-  taskId: string
-  workspaceId: string
-  createdAt: Date
-}>()
-
-// Clean up old previews every 5 minutes
-setInterval(() => {
-  const cutoff = new Date(Date.now() - 30 * 60 * 1000) // 30 minutes
-  for (const [id, entry] of pendingPreviews.entries()) {
-    if (entry.createdAt < cutoff) {
-      pendingPreviews.delete(id)
-    }
-  }
-}, 5 * 60 * 1000)
+// Database-backed preview storage (no more in-memory Map that loses data on restart)
 
 export class TaskActionService {
   private aiService: AIService
@@ -140,13 +124,24 @@ export class TaskActionService {
     }
     console.log('[TaskActionService] Preview created:', executionId)
 
-    // Store preview for apply phase
-    pendingPreviews.set(executionId, {
-      preview,
-      taskId: request.task_id,
-      workspaceId: request.workspace_id,
-      createdAt: new Date()
-    })
+    // Store preview in database for apply phase (survives serverless restarts)
+    const { error: insertError } = await this.supabase
+      .from('ai_action_previews')
+      .insert({
+        execution_id: executionId,
+        task_id: request.task_id,
+        workspace_id: request.workspace_id,
+        user_id: userId,
+        action_type: request.action,
+        preview_data: preview.preview,
+        metadata: preview.metadata,
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
+      })
+
+    if (insertError) {
+      console.error('[TaskActionService] Failed to store preview:', insertError)
+      // Continue anyway - preview can still be returned to client
+    }
 
     // Log to audit
     console.log('[TaskActionService] Logging to audit...')
@@ -167,25 +162,47 @@ export class TaskActionService {
   async applyPreview(
     executionId: string,
     userId: string
-  ): Promise<{ success: boolean; applied_changes: unknown; audit_log_id: string }> {
-    const pending = pendingPreviews.get(executionId)
-    if (!pending) {
+  ): Promise<{ success: boolean; applied_changes: unknown; audit_log_id: string; already_applied?: boolean }> {
+    // Fetch preview from database (including already applied ones for idempotency)
+    const { data: pending, error: fetchError } = await this.supabase
+      .from('ai_action_previews')
+      .select('*')
+      .eq('execution_id', executionId)
+      .eq('user_id', userId)
+      .gt('expires_at', new Date().toISOString())
+      .single()
+
+    if (fetchError || !pending) {
+      console.error('[TaskActionService] Preview fetch error:', fetchError)
       throw new Error('Preview not found or expired')
     }
 
-    const { preview, taskId } = pending
+    // If already applied, return success but indicate it was already done
+    if (pending.applied_at) {
+      console.log('[TaskActionService] Preview already applied:', executionId)
+      return {
+        success: true,
+        already_applied: true,
+        applied_changes: { message: 'Changes were already applied' },
+        audit_log_id: 'already_applied'
+      }
+    }
+
     const auditLogId = crypto.randomUUID()
 
     try {
       // Apply changes based on action type
       const appliedChanges = await this.applyChanges(
-        preview.action,
-        taskId,
-        preview.preview.proposed_changes
+        pending.action_type as TaskActionType,
+        pending.task_id,
+        pending.preview_data.proposed_changes
       )
 
-      // Clean up pending preview
-      pendingPreviews.delete(executionId)
+      // Mark preview as applied in database
+      await this.supabase
+        .from('ai_action_previews')
+        .update({ applied_at: new Date().toISOString() })
+        .eq('execution_id', executionId)
 
       return {
         success: true,

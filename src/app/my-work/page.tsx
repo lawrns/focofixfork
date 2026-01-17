@@ -159,7 +159,7 @@ function WorkItemRow({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0"
           onClick={(e) => {
             e.preventDefault();
             onStartFocus(item);
@@ -169,7 +169,7 @@ function WorkItemRow({
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
+            <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0">
               <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
@@ -396,7 +396,7 @@ function FocusMode({
     const res = await fetch(aiPreview.applyUrl, { method: 'POST' });
     const data = await res.json();
 
-    if (data.success) {
+    if (data.success || data.ok) {
       toast.success('Changes applied successfully');
     } else {
       throw new Error(data.error || 'Failed to apply changes');

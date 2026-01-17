@@ -105,6 +105,7 @@ export default function ForgotPasswordPage() {
               id="email"
               name="email"
               type="email"
+              inputMode="email"
               placeholder="tu@correo.com"
               value={email}
               onChange={(e) => {

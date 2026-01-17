@@ -58,10 +58,10 @@ type WorkspaceAIPolicy = z.infer<typeof WorkspaceAIPolicySchema> & {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: workspaceId } = await params
+    const { id: workspaceId } = params
 
     // Validate UUID
     if (!isValidUUID(workspaceId)) {
@@ -146,10 +146,10 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: workspaceId } = await params
+    const { id: workspaceId } = params
 
     // Validate UUID
     if (!isValidUUID(workspaceId)) {

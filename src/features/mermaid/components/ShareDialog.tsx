@@ -156,6 +156,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({
               <div className="flex items-center space-x-2">
                 <input
                   type="email"
+                  inputMode="email"
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
                   placeholder="Enter email address"

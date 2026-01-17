@@ -239,6 +239,7 @@ export function PeopleView({
                   <Mail className="h-4 w-4 text-zinc-400" />
                   <Input
                     type="email"
+                    inputMode="email"
                     placeholder="colleague@company.com"
                     value={newMemberEmail}
                     onChange={(e) => setNewMemberEmail(e.target.value)}

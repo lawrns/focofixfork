@@ -37,9 +37,9 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn('flex items-start justify-between gap-4', className)}>
+    <div className={cn('flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4', className)}>
       <div className="min-w-0 flex-1">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+        <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-50 break-words">
           {title}
         </h1>
         {subtitle && (
@@ -49,7 +49,7 @@ export function PageHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
         {primaryAction}
         
         {secondaryActions && secondaryActions.length > 0 && (

@@ -473,6 +473,7 @@ export function TaskForm({
           <Input
             id="estimated_hours"
             type="number"
+            inputMode="decimal"
             min="0"
             step="0.5"
             {...register('estimated_hours')}
@@ -491,6 +492,7 @@ export function TaskForm({
           <Input
             id="actual_hours"
             type="number"
+            inputMode="decimal"
             min="0"
             step="0.5"
             {...register('actual_hours')}

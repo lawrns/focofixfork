@@ -17,10 +17,10 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: executionId } = await params
+    const executionId = params.id
 
     // Validate UUID
     if (!isValidUUID(executionId)) {
@@ -38,7 +38,13 @@ export async function POST(
     const taskActionService = new TaskActionService(supabase)
     const result = await taskActionService.applyPreview(executionId, user.id)
 
-    return mergeAuthResponse(successResponse(result), authResponse)
+    return mergeAuthResponse(
+      NextResponse.json({
+        success: true,
+        ...result
+      }),
+      authResponse
+    )
 
   } catch (error) {
     console.error('Apply task action error:', error)

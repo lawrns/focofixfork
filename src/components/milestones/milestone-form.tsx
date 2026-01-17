@@ -225,6 +225,7 @@ export function MilestoneForm({
               <Input
                 id="progress_percentage"
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max="100"
                 {...register('progress_percentage', { valueAsNumber: true })}

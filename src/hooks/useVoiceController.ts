@@ -1,14 +1,18 @@
 /**
  * Voice Controller Hook
  * Manages voice recording, transcription, and command execution
+ * Now with TTS feedback using ElevenLabs or browser fallback
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { VoiceFeedback, VoiceCommand } from '@/lib/crico/types';
+import { getTTSService, stopSpeaking } from '@/lib/voice/tts-service';
+import { useAuth } from '@/lib/contexts/auth-context';
 
 interface VoiceControllerState {
   isRecording: boolean;
   isProcessing: boolean;
+  isSpeaking: boolean;
   transcript: string;
   feedback: VoiceFeedback | null;
   error: string | null;
@@ -22,24 +26,36 @@ interface UseVoiceControllerReturn extends VoiceControllerState {
   cancelRecording: () => void;
   executeCommand: (commandId: string, confirmTranscript: string) => Promise<void>;
   clearError: () => void;
+  stopSpeaking: () => void;
   hasActiveCommand: boolean;
 }
 
-// Text-to-speech helper
-function speakText(text: string) {
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    window.speechSynthesis.speak(utterance);
+/**
+ * Enhanced TTS helper that uses ElevenLabs if available, falls back to browser
+ */
+async function speakText(text: string): Promise<void> {
+  try {
+    const tts = getTTSService();
+    await tts.speak(text);
+  } catch (error) {
+    console.error('[Voice Controller] TTS error:', error);
+    // Fallback to basic browser speech
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
   }
 }
 
 export function useVoiceController(): UseVoiceControllerReturn {
+  const { session } = useAuth();
   const [state, setState] = useState<VoiceControllerState>({
     isRecording: false,
     isProcessing: false,
+    isSpeaking: false,
     transcript: '',
     feedback: null,
     error: null,
@@ -52,6 +68,17 @@ export function useVoiceController(): UseVoiceControllerReturn {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // Helper to get auth headers
+  const getAuthHeaders = useCallback(() => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+    return headers;
+  }, [session?.access_token]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -145,9 +172,7 @@ export function useVoiceController(): UseVoiceControllerReturn {
     try {
       const response = await fetch('/api/crico/voice', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'process',
           transcript,
@@ -164,60 +189,14 @@ export function useVoiceController(): UseVoiceControllerReturn {
         error: error instanceof Error ? error.message : 'Failed to process command',
       }));
     }
-  }, [handleApiResponse]);
+  }, [handleApiResponse, getAuthHeaders]);
 
-  // Process audio
+  // Process audio - sends to server for Whisper transcription
   const processAudio = useCallback(async (audioBlob: Blob) => {
     try {
       setState(prev => ({ ...prev, isProcessing: true }));
 
-      // For demo/testing: Use Web Speech API for transcription
-      // In production, this would send audio to backend for Whisper transcription
-      const useBrowserSpeechAPI = true; // Toggle for demo mode
-
-      if (useBrowserSpeechAPI && 'webkitSpeechRecognition' in window) {
-        // Use browser's speech recognition for instant testing
-        // Web Speech API types are not available, using any
-        const SpeechRecognition = (window as Record<string, unknown>).webkitSpeechRecognition as new () => {
-          continuous: boolean;
-          interimResults: boolean;
-          onresult: ((event: { results: { [key: number]: { [key: number]: { transcript: string; confidence: number } } } }) => void) | null;
-          onerror: ((event: { error: string }) => void) | null;
-          start: () => void;
-        };
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = async (event) => {
-          const transcriptResult = event.results[0][0].transcript;
-          const confidence = event.results[0][0].confidence;
-
-          // Send transcript to backend
-          await processTranscript(transcriptResult, confidence);
-        };
-
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-          setState(prev => ({
-            ...prev,
-            isProcessing: false,
-            error: 'Failed to transcribe audio. Please try again.',
-          }));
-        };
-
-        // Create audio URL and play for recognition
-        const audioURL = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioURL);
-
-        // Start recognition when audio starts playing
-        audio.onplay = () => recognition.start();
-        audio.play();
-
-        return;
-      }
-
-      // Fallback: Send audio to backend (not implemented yet)
+      // Convert audio blob to base64 for server transmission
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
 
@@ -227,15 +206,14 @@ export function useVoiceController(): UseVoiceControllerReturn {
 
       const base64Audio = (reader.result as string).split(',')[1];
 
-      // Send to backend for processing
+      // Send to backend for Whisper transcription and command processing
       const response = await fetch('/api/crico/voice', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'process',
           audio: base64Audio,
+          mimeType: audioBlob.type || 'audio/webm',
         }),
       });
 
@@ -249,7 +227,7 @@ export function useVoiceController(): UseVoiceControllerReturn {
         error: error instanceof Error ? error.message : 'Failed to process command',
       }));
     }
-  }, [handleApiResponse, processTranscript]);
+  }, [handleApiResponse, getAuthHeaders]);
 
   // Start recording
   const startRecording = useCallback(async () => {
@@ -322,9 +300,11 @@ export function useVoiceController(): UseVoiceControllerReturn {
       audioChunksRef.current = [];
     }
     stopAudioLevelMonitoring();
+    stopSpeaking();
     setState({
       isRecording: false,
       isProcessing: false,
+      isSpeaking: false,
       transcript: '',
       feedback: null,
       error: null,
@@ -339,9 +319,7 @@ export function useVoiceController(): UseVoiceControllerReturn {
 
       const response = await fetch('/api/crico/voice', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           action: 'confirm',
           commandId,
@@ -377,10 +355,16 @@ export function useVoiceController(): UseVoiceControllerReturn {
         error: error instanceof Error ? error.message : 'Failed to execute command',
       }));
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   const clearError = useCallback(() => {
     setState(prev => ({ ...prev, error: null }));
+  }, []);
+
+  // Stop any ongoing TTS
+  const handleStopSpeaking = useCallback(() => {
+    stopSpeaking();
+    setState(prev => ({ ...prev, isSpeaking: false }));
   }, []);
 
   return {
@@ -390,6 +374,7 @@ export function useVoiceController(): UseVoiceControllerReturn {
     cancelRecording,
     executeCommand,
     clearError,
+    stopSpeaking: handleStopSpeaking,
     hasActiveCommand: state.command?.status === 'awaiting_confirmation' || false,
   };
 }

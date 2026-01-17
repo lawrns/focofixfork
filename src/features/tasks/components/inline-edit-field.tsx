@@ -95,6 +95,7 @@ export function InlineEditField({
               ref={inputRef as React.RefObject<HTMLInputElement>}
               data-testid={`inline-${fieldName}-edit`}
               type="number"
+              inputMode="decimal"
               value={editValue}
               onChange={(e) => onChange(parseFloat(e.target.value) || '')}
               onKeyDown={onKeyDown}

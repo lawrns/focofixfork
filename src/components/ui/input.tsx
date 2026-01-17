@@ -53,6 +53,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={!!error}
             className={cn(
               `w-full rounded-lg border bg-white px-3 py-2.5
+               min-h-[44px] [@media(pointer:coarse)]:min-h-[48px]
+               text-base sm:text-sm
                text-zinc-900 placeholder:text-zinc-400
                transition-colors duration-150
                focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400

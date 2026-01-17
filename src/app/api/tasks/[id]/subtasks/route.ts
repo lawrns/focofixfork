@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -19,10 +19,10 @@ export async function GET(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id: taskId } = params
 
     const repo = new SubtaskRepository(supabase)
-    const result = await repo.findByTaskId(id)
+    const result = await repo.findByTaskId(taskId)
 
     if (isError(result)) {
       return databaseErrorResponse(result.error.message, result.error.details)
@@ -37,7 +37,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -46,7 +46,7 @@ export async function POST(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id: taskId } = params
     const body = await req.json()
     const { title } = body
 
@@ -66,7 +66,7 @@ export async function POST(
     const repo = new SubtaskRepository(supabase)
 
     // Get the last subtask to determine position
-    const lastResult = await repo.getLastSubtask(id)
+    const lastResult = await repo.getLastSubtask(taskId)
 
     if (isError(lastResult)) {
       return databaseErrorResponse(lastResult.error.message, lastResult.error.details)
@@ -77,7 +77,7 @@ export async function POST(
 
     // Create new subtask
     const result = await repo.createSubtask({
-      task_id: id,
+      task_id: taskId,
       title: title.trim(),
       completed: false,
       position: newPosition,

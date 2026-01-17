@@ -154,6 +154,7 @@ export default function OrganizationSetupPage() {
                 id="website"
                 name="website"
                 type="url"
+                inputMode="url"
                 placeholder="https://your-organization.com"
                 value={website}
                 onChange={(e) => {

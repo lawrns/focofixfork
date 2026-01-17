@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useFocusModeStore } from '@/lib/stores/foco-store';
 import { useRecentItems } from '@/hooks/useRecentItems';
+import { useMobile } from '@/lib/hooks/use-mobile';
 import { PriorityIndicator } from '@/features/tasks/components/priority-indicator';
 import {
   ArrowLeft,
@@ -73,6 +74,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import type { WorkItem, WorkItemStatus, PriorityLevel, Comment } from '@/types/foco';
 
 // No mock data - fetch from API
@@ -141,9 +148,10 @@ interface InspectorProps {
   item: WorkItem;
   onUpdate: (updates: Partial<WorkItem>) => Promise<void>;
   teamMembers: Array<{ id: string; full_name: string }>;
+  inSheet?: boolean;
 }
 
-function Inspector({ item, onUpdate, teamMembers }: InspectorProps) {
+function Inspector({ item, onUpdate, teamMembers, inSheet = false }: InspectorProps) {
   const [status, setStatus] = useState(item.status);
   const [priority, setPriority] = useState(item.priority);
   const [dueDate, setDueDate] = useState<Date | undefined>(
@@ -244,7 +252,10 @@ function Inspector({ item, onUpdate, teamMembers }: InspectorProps) {
   };
 
   return (
-    <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 space-y-6 overflow-y-auto">
+    <div className={cn(
+      "space-y-6 overflow-y-auto",
+      inSheet ? "w-full p-0" : "w-80 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4"
+    )}>
       {/* Status */}
       <div>
         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-2">
@@ -465,6 +476,7 @@ function Inspector({ item, onUpdate, teamMembers }: InspectorProps) {
               <label className="text-xs font-medium">Hours</label>
               <Input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.5"
                 placeholder="e.g., 4"
@@ -606,6 +618,7 @@ export default function WorkItemPage() {
   const router = useRouter();
   const { activate } = useFocusModeStore();
   const { addItem } = useRecentItems();
+  const isMobile = useMobile();
   const [newComment, setNewComment] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [workItem, setWorkItem] = useState<WorkItem | null>(null);
@@ -616,6 +629,7 @@ export default function WorkItemPage() {
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; full_name: string }>>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [metadataSheetOpen, setMetadataSheetOpen] = useState(false);
 
   // AI Action state
   const [aiLoading, setAiLoading] = useState<TaskActionType | null>(null);
@@ -848,7 +862,7 @@ export default function WorkItemPage() {
     const res = await fetch(aiPreview.applyUrl, { method: 'POST' });
     const data = await res.json();
 
-    if (data.success) {
+    if (data.success || data.ok) {
       toast.success('Changes applied successfully');
       // Refresh the task to show any changes
       const taskResponse = await fetch(`/api/tasks/${params.id}`);
@@ -885,62 +899,120 @@ export default function WorkItemPage() {
     );
   }
 
+  // Mobile status bar data
+  const currentStatus = statusOptions.find(s => s.value === workItem.status);
+  const currentPriority = priorityOptions.find(p => p.value === workItem.priority);
+  const dueDate = workItem.due_date ? new Date(workItem.due_date) : undefined;
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-6">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-sm text-zinc-500 mb-1">
-                <Link 
-                  href={`/projects/${(workItem.project as any)?.slug}`}
-                  className="hover:text-indigo-600"
-                >
-                  {(workItem.project as any)?.name}
-                </Link>
-                <span>/</span>
-                <span>TASK-{workItem.id}</span>
+        <div className={cn(
+          "mx-auto p-6",
+          isMobile ? "pb-24" : "max-w-3xl"
+        )}>
+          {/* Header - Mobile */}
+          {isMobile && (
+            <div className="sticky top-0 -mx-6 -mt-6 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 mb-6 z-10">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-zinc-500 truncate">
+                    TASK-{workItem.id}
+                  </div>
+                  <div className="text-sm font-medium truncate">
+                    {(workItem.project as any)?.name}
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleCopyLink}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Duplicate
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast.info('Move to project coming soon')}>
+                      <FolderInput className="h-4 w-4 mr-2" />
+                      Move to project...
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => setDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleStartFocus}>
-              <Play className="h-4 w-4" />
-              Focus
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleCopyLink}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy link
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDuplicate}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toast.info('Move to project coming soon')}>
-                  <FolderInput className="h-4 w-4 mr-2" />
-                  Move to project...
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          )}
+
+          {/* Header - Desktop */}
+          {!isMobile && (
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 text-sm text-zinc-500 mb-1">
+                  <Link
+                    href={`/projects/${(workItem.project as any)?.slug}`}
+                    className="hover:text-indigo-600"
+                  >
+                    {(workItem.project as any)?.name}
+                  </Link>
+                  <span>/</span>
+                  <span>TASK-{workItem.id}</span>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleStartFocus}>
+                <Play className="h-4 w-4" />
+                Focus
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleCopyLink}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDuplicate}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Duplicate
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toast.info('Move to project coming soon')}>
+                    <FolderInput className="h-4 w-4 mr-2" />
+                    Move to project...
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
 
           {/* Title */}
           <div className="flex items-start gap-3 mb-6">
@@ -1077,8 +1149,55 @@ export default function WorkItemPage() {
         </div>
       </div>
 
-      {/* Inspector Panel */}
-      <Inspector item={workItem} onUpdate={handleTaskUpdate} teamMembers={teamMembers} />
+      {/* Inspector Panel - Desktop Only */}
+      {!isMobile && (
+        <Inspector item={workItem} onUpdate={handleTaskUpdate} teamMembers={teamMembers} />
+      )}
+
+      {/* Mobile Status Bar - Fixed at bottom */}
+      {isMobile && (
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 p-4 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-900 transition-colors z-20"
+          onClick={() => setMetadataSheetOpen(true)}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={cn('h-2 w-2 rounded-full flex-shrink-0', currentStatus?.color)} />
+              <span className="text-sm font-medium truncate">{currentStatus?.label}</span>
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <PriorityIndicator priority={workItem.priority as any} variant="dot" />
+              <span className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+                {currentPriority?.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <CalendarIcon className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+              <span className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+                {dueDate
+                  ? dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : 'No date'
+                }
+              </span>
+            </div>
+            <ChevronDown className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Metadata Sheet */}
+      {isMobile && (
+        <Sheet open={metadataSheetOpen} onOpenChange={setMetadataSheetOpen}>
+          <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Task Details</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <Inspector item={workItem} onUpdate={handleTaskUpdate} teamMembers={teamMembers} inSheet={true} />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

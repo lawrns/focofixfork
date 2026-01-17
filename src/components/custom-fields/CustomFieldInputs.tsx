@@ -126,6 +126,7 @@ export function CustomFieldInputs({
           {field.field_type === 'number' && (
             <Input
               type="number"
+              inputMode="decimal"
               placeholder={`Enter ${field.field_name.toLowerCase()}`}
               value={fieldValues[field.id] || ''}
               onChange={e =>

@@ -297,6 +297,7 @@ export function TaskEditDialog({
               <Input
                 id="estimated_hours"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.5"
                 value={formData.estimated_hours || ''}
@@ -312,6 +313,7 @@ export function TaskEditDialog({
               <Input
                 id="actual_hours"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.5"
                 value={formData.actual_hours || ''}

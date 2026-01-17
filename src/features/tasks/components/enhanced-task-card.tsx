@@ -549,6 +549,7 @@ export function EnhancedTaskCard({
               <label className="text-xs text-muted-foreground">Est. Hours</label>
               <Input
                 type="number"
+                inputMode="decimal"
                 value={editData.estimated_hours}
                 onChange={(e) => setEditData(prev => ({ ...prev, estimated_hours: e.target.value }))}
                 className="h-8 text-xs"

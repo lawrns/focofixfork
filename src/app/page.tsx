@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// CSS-only fade-in animation to avoid loading framer-motion
+const fadeInClass = "animate-in fade-in duration-500";
 
 const metrics = [
   { value: '10x', label: 'Más rápido que hojas de cálculo' },
@@ -58,45 +60,25 @@ export default function LandingPage() {
       {/* Hero - Linear style: bold, direct, minimal */}
       <section className="relative pt-40 pb-24 px-8">
         <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-7"
-          >
+          <div className={`${fadeInClass} mb-7`}>
             <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] bg-[#6366F1]/[0.08] dark:bg-[#8B8DFF]/10 border border-[#6366F1]/20 dark:border-[#8B8DFF]/20 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF] animate-pulse" />
               Gestión moderna de proyectos
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-            className="text-[64px] lg:text-[92px] font-bold tracking-[-0.04em] text-zinc-900 dark:text-white mb-8 leading-[0.95]"
-          >
+          <h1 className={`${fadeInClass} text-[64px] lg:text-[92px] font-bold tracking-[-0.04em] text-zinc-900 dark:text-white mb-8 leading-[0.95]`}>
             Proyectos que
             <br />
             <span className="bg-gradient-to-br from-[#6366F1] via-[#7C7DFF] to-[#8B8DFF] bg-clip-text text-transparent">avanzan solos</span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-xl lg:text-2xl text-zinc-600 dark:text-zinc-400 mb-12 max-w-2xl leading-relaxed font-light"
-          >
+          <p className={`${fadeInClass} text-xl lg:text-2xl text-zinc-600 dark:text-zinc-400 mb-12 max-w-2xl leading-relaxed font-light`}>
             La herramienta que elimina fricción. Tu equipo planifica, ejecuta y entrega
             sin perder tiempo en procesos que no importan.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center gap-4 mb-20"
-          >
+          <div className={`${fadeInClass} flex items-center gap-4 mb-20`}>
             <Button
               asChild
               size="lg"
@@ -108,15 +90,10 @@ export default function LandingPage() {
               </Link>
             </Button>
             <span className="text-[15px] text-zinc-500 dark:text-zinc-500 font-light">Gratis · Sin tarjeta</span>
-          </motion.div>
+          </div>
 
           {/* Metrics - Social proof */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="grid grid-cols-3 gap-12 pt-12 border-t border-zinc-200/80 dark:border-white/[0.08]"
-          >
+          <div className={`${fadeInClass} grid grid-cols-3 gap-12 pt-12 border-t border-zinc-200/80 dark:border-white/[0.08]`}>
             {metrics.map((metric, i) => (
               <div key={i}>
                 <div className="text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white mb-2">
@@ -127,7 +104,7 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -139,13 +116,7 @@ export default function LandingPage() {
           </h2>
 
           <div className="space-y-16">
-            <motion.div 
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="flex gap-8 group"
-            >
+            <div className="flex gap-8 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
                 <div className="w-6 h-6 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF]" />
               </div>
@@ -158,15 +129,9 @@ export default function LandingPage() {
                   Todo lo que necesitas, nada más.
                 </p>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex gap-8 group"
-            >
+            <div className="flex gap-8 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
                 <div className="w-6 h-6 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF]" />
               </div>
@@ -178,15 +143,9 @@ export default function LandingPage() {
                   Roadmaps, sprints y entregas visibles para todo el equipo. Saben qué hacer y por qué importa.
                 </p>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex gap-8 group"
-            >
+            <div className="flex gap-8 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
                 <div className="w-6 h-6 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF]" />
               </div>
@@ -198,7 +157,7 @@ export default function LandingPage() {
                   GitHub, Slack, Figma. Tu stack actual funciona mejor con Foco en el centro.
                 </p>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -206,30 +165,13 @@ export default function LandingPage() {
       {/* CTA - Simple and direct */}
       <section className="py-32 px-8 border-t border-zinc-200/50 dark:border-white/[0.06]">
         <div className="max-w-5xl mx-auto text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-[56px] font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-tight"
-          >
+          <h2 className={`${fadeInClass} text-[56px] font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-tight`}>
             Empieza hoy mismo
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="text-xl text-zinc-600 dark:text-zinc-400 mb-12 font-light"
-          >
+          </h2>
+          <p className={`${fadeInClass} text-xl text-zinc-600 dark:text-zinc-400 mb-12 font-light`}>
             Prueba Foco gratis. Sin tarjeta de crédito, sin trucos.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+          </p>
+          <div className={fadeInClass}>
             <Button
               asChild
               size="lg"
@@ -240,7 +182,7 @@ export default function LandingPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-          </motion.div>
+          </div>
         </div>
       </section>
 

@@ -8,9 +8,16 @@ import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, Edit, Trash2, Plus, AlertTriangle } from 'lucide-react'
+import { AlertCircle, Edit, Trash2, Plus, AlertTriangle, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/skeleton-screens'
+import { useMobile } from '@/lib/hooks/use-mobile'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 export interface SavedFilter {
   id: string
@@ -45,6 +52,7 @@ export function QuickFiltersSidebar({
 }: QuickFiltersSidebarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isMobile = useMobile()
 
   const [counts, setCounts] = useState<QuickFilterCounts | null>(null)
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([])
@@ -56,6 +64,7 @@ export function QuickFiltersSidebar({
   const [filterName, setFilterName] = useState('')
   const [editingFilter, setEditingFilter] = useState<SavedFilter | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
 
   // Fetch quick filter counts
   useEffect(() => {
@@ -206,15 +215,14 @@ export function QuickFiltersSidebar({
     { id: 'completed', label: 'Completed', key: 'completed' },
   ]
 
-  return (
-    <aside
-      className={cn(
-        'w-64 bg-white border-r border-gray-200 p-4 space-y-4 overflow-y-auto',
-        className
-      )}
-      role="region"
-      aria-label="Quick Filters"
-    >
+  const handleClearFilters = useCallback(() => {
+    onFilterChange(null)
+    router.push(`?`)
+  }, [onFilterChange, router])
+
+  // Shared filter content
+  const filterContent = (
+    <>
       {/* Pre-built Filters */}
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-700 px-2">Quick Filters</h3>
@@ -415,6 +423,61 @@ export function QuickFiltersSidebar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </aside>
+    </>
+  )
+
+  // Desktop: Fixed sidebar
+  if (!isMobile) {
+    return (
+      <aside
+        className={cn(
+          'w-64 bg-white border-r border-gray-200 p-4 space-y-4 overflow-y-auto',
+          className
+        )}
+        role="region"
+        aria-label="Quick Filters"
+      >
+        {filterContent}
+      </aside>
+    )
+  }
+
+  // Mobile: Bottom sheet with trigger button
+  return (
+    <>
+      {/* Filter trigger button for mobile */}
+      <Button
+        onClick={() => setMobileSheetOpen(true)}
+        variant="outline"
+        size="sm"
+        className="fixed bottom-4 right-4 z-40 shadow-lg flex items-center gap-2"
+      >
+        <Filter className="h-4 w-4" />
+        Filters
+      </Button>
+
+      {/* Bottom sheet */}
+      <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+        <SheetContent
+          side="bottom"
+          className="h-[80vh] overflow-y-auto p-4 space-y-4"
+        >
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <SheetTitle>Filters</SheetTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-sm"
+              >
+                Clear
+              </Button>
+            </div>
+          </SheetHeader>
+          {filterContent}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }

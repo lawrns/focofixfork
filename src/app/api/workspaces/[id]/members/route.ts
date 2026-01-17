@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
@@ -25,7 +25,7 @@ export async function GET(
       )
     }
 
-    const { id: workspaceId } = await params
+    const { id: workspaceId } = params
     const cacheKey = CACHE_KEYS.WORKSPACE_MEMBERS(workspaceId)
 
     const membersWithDetails = await cachedFetch(

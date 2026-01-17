@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -19,7 +19,7 @@ export async function GET(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     const repo = new ProjectRepository(supabase)
 
     // Try to find by ID first
@@ -52,7 +52,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -61,7 +61,7 @@ export async function PATCH(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     
     // Validate UUID format
     const uuidError = validateUUID('id', id)
@@ -105,7 +105,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -114,7 +114,7 @@ export async function DELETE(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     
     // Validate UUID format
     const uuidError = validateUUID('id', id)

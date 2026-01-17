@@ -272,6 +272,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
             id="email"
             name="email"
             type="email"
+            inputMode="email"
             placeholder="name@company.com"
             value={formData.email}
             onChange={handleInputChange}

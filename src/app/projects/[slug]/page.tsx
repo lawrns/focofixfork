@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useMobile } from '@/lib/hooks/use-mobile';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SwipeableTaskCard } from '@/components/ui/swipeable-task-card';
 import {
   LayoutGrid,
   List,
@@ -79,12 +81,15 @@ const priorityColors: Record<PriorityLevel, string> = {
   none: 'bg-zinc-300',
 };
 
-function WorkItemCard({ item, onDragStart, onDragEnd }: { 
-  item: WorkItem; 
+function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchive }: {
+  item: WorkItem;
   onDragStart?: (item: WorkItem) => void;
   onDragEnd?: () => void;
+  onComplete?: (item: WorkItem) => void;
+  onArchive?: (item: WorkItem) => void;
 }) {
   const router = useRouter();
+  const isMobile = useMobile();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -104,16 +109,25 @@ function WorkItemCard({ item, onDragStart, onDragEnd }: {
     onDragEnd?.();
   };
 
-  return (
+  const handleComplete = () => {
+    onComplete?.(item);
+  };
+
+  const handleArchive = () => {
+    onArchive?.(item);
+  };
+
+  const cardContent = (
     <div
-      draggable
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+      draggable={!isMobile}
+      onDragStart={!isMobile ? handleDragStart : undefined}
+      onDragEnd={!isMobile ? handleDragEnd : undefined}
       onDoubleClick={handleDoubleClick}
       className={cn(
         'p-2 md:p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all',
-        'group cursor-grab active:cursor-grabbing min-h-[44px]',
+        'group min-h-[44px]',
+        !isMobile && 'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-50 border-indigo-400 shadow-lg'
       )}
     >
@@ -178,15 +192,30 @@ function WorkItemCard({ item, onDragStart, onDragEnd }: {
       </p>
     </div>
   );
+
+  if (isMobile) {
+    return (
+      <SwipeableTaskCard
+        onComplete={handleComplete}
+        onArchive={handleArchive}
+      >
+        {cardContent}
+      </SwipeableTaskCard>
+    );
+  }
+
+  return cardContent;
 }
 
-function BoardColumn({ status, label, color, items, onDrop, onAddTask }: { 
-  status: WorkItemStatus; 
-  label: string; 
+function BoardColumn({ status, label, color, items, onDrop, onAddTask, onComplete, onArchive }: {
+  status: WorkItemStatus;
+  label: string;
   color: string;
   items: WorkItem[];
   onDrop?: (taskId: string, newStatus: WorkItemStatus) => void;
   onAddTask?: (status: WorkItemStatus) => void;
+  onComplete?: (item: WorkItem) => void;
+  onArchive?: (item: WorkItem) => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -248,7 +277,12 @@ function BoardColumn({ status, label, color, items, onDrop, onAddTask }: {
         )}
       >
         {items.map((item) => (
-          <WorkItemCard key={item.id} item={item} />
+          <WorkItemCard
+            key={item.id}
+            item={item}
+            onComplete={onComplete}
+            onArchive={onArchive}
+          />
         ))}
         
         {/* Add Card Button */}
@@ -331,6 +365,7 @@ export default function ProjectPage() {
   const [groupBy, setGroupBy] = useState<'status' | 'assignee' | 'priority' | 'none'>('status');
   const isMobile = useMobile();
   const { openTaskModal } = useCreateTaskModal();
+  const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
 
   const slug = params.slug as string;
 
@@ -641,6 +676,34 @@ export default function ProjectPage() {
   const getItemsByStatus = (status: WorkItemStatus) =>
     tasks.filter(item => item.status === status);
 
+  const handleCompleteTask = async (item: WorkItem) => {
+    try {
+      const response = await fetch(`/api/tasks/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'done' }),
+      });
+      if (!response.ok) throw new Error('Failed to update task');
+      setTasks(tasks.map(t => t.id === item.id ? { ...t, status: 'done' } : t));
+      toast.success('Task completed');
+    } catch (error) {
+      toast.error('Failed to complete task');
+    }
+  };
+
+  const handleArchiveTask = async (item: WorkItem) => {
+    try {
+      const response = await fetch(`/api/tasks/${item.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to archive task');
+      setTasks(tasks.filter(t => t.id !== item.id));
+      toast.success('Task archived');
+    } catch (error) {
+      toast.error('Failed to archive task');
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -820,19 +883,76 @@ export default function ProjectPage() {
 
         {/* Board View */}
         <TabsContent value="board" className="mt-0">
-          <div className="flex gap-2 md:gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {columns.map((column) => (
-              <BoardColumn
-                key={column.status}
-                status={column.status}
-                label={column.label}
-                color={column.color}
-                items={getItemsByStatus(column.status)}
-                onDrop={handleDrop}
-                onAddTask={handleAddTaskToColumn}
-              />
-            ))}
-          </div>
+          {isMobile ? (
+            <div className="relative">
+              {/* Mobile: Single column view with swipe navigation */}
+              <div className="overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentColumnIndex}
+                    initial={{ x: 100, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -100, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(e, { offset }) => {
+                      if (offset.x < -50 && currentColumnIndex < columns.length - 1) {
+                        setCurrentColumnIndex(currentColumnIndex + 1);
+                      } else if (offset.x > 50 && currentColumnIndex > 0) {
+                        setCurrentColumnIndex(currentColumnIndex - 1);
+                      }
+                    }}
+                  >
+                    <BoardColumn
+                      status={columns[currentColumnIndex].status}
+                      label={columns[currentColumnIndex].label}
+                      color={columns[currentColumnIndex].color}
+                      items={getItemsByStatus(columns[currentColumnIndex].status)}
+                      onDrop={handleDrop}
+                      onAddTask={handleAddTaskToColumn}
+                      onComplete={handleCompleteTask}
+                      onArchive={handleArchiveTask}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Column indicator dots */}
+              <div className="flex justify-center gap-2 mt-4">
+                {columns.map((column, index) => (
+                  <button
+                    key={column.status}
+                    onClick={() => setCurrentColumnIndex(index)}
+                    className={cn(
+                      'h-2 w-2 rounded-full transition-all',
+                      index === currentColumnIndex
+                        ? 'bg-indigo-500 w-6'
+                        : 'bg-zinc-300 dark:bg-zinc-700'
+                    )}
+                    aria-label={`Go to ${column.label}`}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2 md:gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {columns.map((column) => (
+                <BoardColumn
+                  key={column.status}
+                  status={column.status}
+                  label={column.label}
+                  color={column.color}
+                  items={getItemsByStatus(column.status)}
+                  onDrop={handleDrop}
+                  onAddTask={handleAddTaskToColumn}
+                  onComplete={handleCompleteTask}
+                  onArchive={handleArchiveTask}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Overview */}

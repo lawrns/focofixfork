@@ -129,3 +129,12 @@
     scroll-behavior: smooth;
   }
 }
+
+/* Mobile toolbar chip styles */
+@media (max-width: 639px) {
+  /* Ensure archived toggle is properly sized on mobile */
+  .mobileCardView + div button[aria-pressed] {
+    min-height: 36px;
+    touch-action: manipulation;
+  }
+}

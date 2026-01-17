@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -21,7 +21,7 @@ export async function DELETE(
       )
     }
 
-    const { id: fieldId } = await params
+    const { id: fieldId } = params
 
     // Verify field exists
     const { data: field, error: fieldError } = await supabase

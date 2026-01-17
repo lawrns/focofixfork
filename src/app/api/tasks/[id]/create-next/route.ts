@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req);
@@ -17,12 +17,12 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id: taskId } = params;
 
     const { data: task, error: taskError } = await supabase
       .from('work_items')
       .select('*')
-      .eq('id', id)
+      .eq('id', taskId)
       .single();
 
     if (taskError || !task) {
@@ -84,7 +84,7 @@ export async function POST(
       reporter_id: user.id,
       is_recurring: true,
       recurrence_pattern: pattern,
-      parent_recurring_task_id: task.parent_recurring_task_id || id,
+      parent_recurring_task_id: task.parent_recurring_task_id || taskId,
       occurrence_number: occurrenceCount + 1,
       next_occurrence_date: calculateNextRecurrenceDate(nextDate, pattern, occurrenceCount + 1)?.toISOString() || null,
       status: 'todo',

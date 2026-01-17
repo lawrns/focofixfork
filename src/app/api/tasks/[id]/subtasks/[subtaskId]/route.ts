@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string; subtaskId: string }> }
+  { params }: { params: { id: string; subtaskId: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -19,7 +19,7 @@ export async function PATCH(
       return authRequiredResponse()
     }
 
-    const { id, subtaskId } = await params
+    const { id: taskId, subtaskId } = params
     const body = await req.json()
 
     // Build update object with only provided fields
@@ -57,7 +57,7 @@ export async function PATCH(
     }
 
     const repo = new SubtaskRepository(supabase)
-    const result = await repo.updateSubtask(subtaskId, id, updateData)
+    const result = await repo.updateSubtask(subtaskId, taskId, updateData)
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
@@ -75,7 +75,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string; subtaskId: string }> }
+  { params }: { params: { id: string; subtaskId: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req)
@@ -84,10 +84,10 @@ export async function DELETE(
       return authRequiredResponse()
     }
 
-    const { id, subtaskId } = await params
+    const { id: taskId, subtaskId } = params
 
     const repo = new SubtaskRepository(supabase)
-    const result = await repo.deleteSubtask(subtaskId, id)
+    const result = await repo.deleteSubtask(subtaskId, taskId)
 
     if (isError(result)) {
       return databaseErrorResponse(result.error.message, result.error.details)

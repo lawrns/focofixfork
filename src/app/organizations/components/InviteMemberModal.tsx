@@ -46,6 +46,7 @@ export function InviteMemberModal({
             <Input
               id="invite-email"
               type="email"
+              inputMode="email"
               placeholder="member@example.com"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}

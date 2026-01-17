@@ -508,6 +508,7 @@ export default function AISettingsTab({
               <Input
                 id="max-tokens"
                 type="number"
+                inputMode="numeric"
                 min={256}
                 max={32768}
                 step={256}

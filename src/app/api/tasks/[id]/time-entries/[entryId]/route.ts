@@ -15,17 +15,16 @@ export const dynamic = 'force-dynamic'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; entryId: string }> }
+  { params }: { params: { id: string; entryId: string } }
 ) {
   try {
+    const { id: taskId, entryId } = params
     const { user, supabase, error } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
     }
 
-    const { id, entryId } = await params
-    const taskId = id
     const body = await request.json()
 
     const { notes } = body
@@ -58,17 +57,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; entryId: string }> }
+  { params }: { params: { id: string; entryId: string } }
 ) {
   try {
+    const { id: taskId, entryId } = params
     const { user, supabase, error } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
     }
-
-    const { id, entryId } = await params
-    const taskId = id
 
     const repo = new TimeEntryRepository(supabase)
 

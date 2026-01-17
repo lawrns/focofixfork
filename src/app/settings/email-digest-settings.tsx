@@ -175,6 +175,7 @@ export default function EmailDigestSettings() {
                     <Input
                       id="digest-hour"
                       type="number"
+                      inputMode="numeric"
                       min="0"
                       max="23"
                       value={String(digestTime.hour).padStart(2, '0')}
@@ -189,6 +190,7 @@ export default function EmailDigestSettings() {
                     <Input
                       id="digest-minute"
                       type="number"
+                      inputMode="numeric"
                       min="0"
                       max="59"
                       value={String(digestTime.minute).padStart(2, '0')}

@@ -16,6 +16,12 @@ import type {
   Environment,
   VOICE_RULES,
 } from '../types';
+import {
+  parseIntentWithLLM,
+  generateIntentResponse,
+  type ConversationContext,
+  type ParsedVoiceIntent,
+} from './llm-intent-parser';
 
 // ============================================================================
 // VOICE RULES & POLICIES
@@ -283,6 +289,62 @@ function getActionScope(domain: Intent['domain']): ActionScope {
 // VOICE COMMAND PROCESSING
 // ============================================================================
 
+// Flag to enable LLM-based parsing (set to true for better natural language understanding)
+const USE_LLM_PARSING = true;
+
+// In-memory conversation context (in production, store per session in Redis/DB)
+const conversationContexts = new Map<string, ConversationContext>();
+
+function getOrCreateContext(sessionId: string, userId: string, workspaceId?: string): ConversationContext {
+  let context = conversationContexts.get(sessionId);
+  if (!context) {
+    context = {
+      sessionId,
+      userId,
+      workspaceId: workspaceId || '',
+      recentCommands: [],
+    };
+    conversationContexts.set(sessionId, context);
+  }
+  return context;
+}
+
+function updateContextAfterCommand(
+  sessionId: string,
+  transcript: string,
+  intent: ParsedVoiceIntent,
+  result: 'success' | 'failed' | 'clarification'
+): void {
+  const context = conversationContexts.get(sessionId);
+  if (context) {
+    // Add to recent commands (keep last 5)
+    context.recentCommands.push({ transcript, intent, timestamp: Date.now() });
+    if (context.recentCommands.length > 5) {
+      context.recentCommands.shift();
+    }
+
+    // Update last mentioned entities
+    if (intent.entities.taskTitle || intent.entities.taskId) {
+      context.lastMentionedTask = {
+        id: intent.entities.taskId as string || '',
+        title: intent.entities.taskTitle as string || '',
+      };
+    }
+    if (intent.entities.projectName || intent.entities.projectId) {
+      context.lastMentionedProject = {
+        id: intent.entities.projectId as string || '',
+        name: intent.entities.projectName as string || '',
+      };
+    }
+    if (intent.entities.personName || intent.entities.personId) {
+      context.lastMentionedPerson = {
+        id: intent.entities.personId as string || '',
+        name: intent.entities.personName as string || '',
+      };
+    }
+  }
+}
+
 export interface ProcessVoiceResult {
   command: VoiceCommand;
   feedback: VoiceFeedback;
@@ -290,55 +352,100 @@ export interface ProcessVoiceResult {
 }
 
 /**
- * Process a voice command
+ * Process a voice command with LLM-based intent parsing
  */
 export async function processVoiceCommand(
   transcript: string,
   sttConfidence: number,
   userId?: string,
   sessionId?: string,
-  environment: Environment = 'development'
+  environment: Environment = 'development',
+  workspaceId?: string
 ): Promise<ProcessVoiceResult> {
   const commandId = crypto.randomUUID();
-  
+  const effectiveSessionId = sessionId || crypto.randomUUID();
+
   // Validate transcript
   if (transcript.length < VOICE_SAFETY_RULES.minTranscriptLength) {
-    return createErrorResult(commandId, transcript, sttConfidence, 'Transcript too short', userId, sessionId);
+    return createErrorResult(commandId, transcript, sttConfidence, 'Transcript too short', userId, effectiveSessionId);
   }
-  
+
   if (transcript.length > VOICE_SAFETY_RULES.maxTranscriptLength) {
-    return createErrorResult(commandId, transcript, sttConfidence, 'Transcript too long', userId, sessionId);
+    return createErrorResult(commandId, transcript, sttConfidence, 'Transcript too long', userId, effectiveSessionId);
   }
 
   // Check STT confidence
   if (sttConfidence < VOICE_SAFETY_RULES.requireHighConfidence) {
     return createClarificationResult(
-      commandId, 
-      transcript, 
+      commandId,
+      transcript,
       sttConfidence,
       `I'm not sure I heard you correctly (${(sttConfidence * 100).toFixed(0)}% confidence). Could you please repeat that?`,
       userId,
-      sessionId
+      effectiveSessionId
     );
   }
 
-  // Parse intent
-  const parsed = parseVoiceIntent(transcript);
-  
-  // Check if blocked
-  if (parsed.blockedReason) {
-    return createErrorResult(commandId, transcript, sttConfidence, parsed.blockedReason, userId, sessionId);
+  // Check for blocked keywords first (security)
+  const normalizedTranscript = transcript.toLowerCase().trim();
+  for (const keyword of BLOCKED_KEYWORDS) {
+    if (normalizedTranscript.includes(keyword)) {
+      return createErrorResult(
+        commandId,
+        transcript,
+        sttConfidence,
+        `Voice commands cannot reference sensitive data (${keyword})`,
+        userId,
+        effectiveSessionId
+      );
+    }
+  }
+
+  // Parse intent - use LLM if enabled, otherwise fall back to regex
+  let parsed: ParsedIntent;
+  let llmIntent: ParsedVoiceIntent | undefined;
+
+  if (USE_LLM_PARSING) {
+    try {
+      // Get conversation context for better understanding
+      const context = getOrCreateContext(effectiveSessionId, userId || '', workspaceId);
+
+      // Use LLM for natural language understanding
+      llmIntent = await parseIntentWithLLM(transcript, context);
+
+      // Convert LLM intent to internal format
+      parsed = {
+        intent: {
+          domain: llmIntent.domain === 'unknown' ? 'system' : llmIntent.domain as Intent['domain'],
+          action: llmIntent.action,
+          entities: llmIntent.entities,
+          confidence: llmIntent.confidence,
+        },
+        confidence: llmIntent.confidence,
+        requiresConfirmation: llmIntent.requiresConfirmation,
+      };
+
+      // Update context with this command
+      updateContextAfterCommand(effectiveSessionId, transcript, llmIntent, 'success');
+    } catch (error) {
+      console.error('[Voice Controller] LLM parsing failed, falling back to regex:', error);
+      parsed = parseVoiceIntent(transcript);
+    }
+  } else {
+    parsed = parseVoiceIntent(transcript);
   }
 
   // Check intent confidence
   if (parsed.confidence < 0.6) {
+    const clarificationMessage = llmIntent?.suggestedResponse ||
+      `I understood "${transcript}" but I'm not confident about what you want to do. Can you be more specific?`;
     return createClarificationResult(
       commandId,
       transcript,
       sttConfidence,
-      `I understood "${transcript}" but I'm not confident about what you want to do. Can you be more specific?`,
+      clarificationMessage,
       userId,
-      sessionId
+      effectiveSessionId
     );
   }
 

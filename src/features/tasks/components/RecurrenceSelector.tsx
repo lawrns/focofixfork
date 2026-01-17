@@ -99,6 +99,7 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
             <label className="text-sm font-medium">Interval</label>
             <input
               type="number"
+              inputMode="numeric"
               min="1"
               max="365"
               value={interval}
@@ -157,6 +158,7 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
                 {endType === 'after' && (
                   <input
                     type="number"
+                    inputMode="numeric"
                     min="1"
                     max="999"
                     value={endAfter}

@@ -53,6 +53,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state-standard';
 import { emptyStates, buttons } from '@/lib/copy';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useMobile } from '@/lib/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -118,9 +119,9 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
     <Link
       href={`/projects/${project.slug}`}
       className={cn(
-        'block p-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800',
+        'block p-4 sm:p-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800',
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all',
-        'group'
+        'group overflow-hidden'
       )}
     >
       {/* Header */}
@@ -223,7 +224,9 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
             {project.tasksCompleted}/{project.totalTasks} tasks
           </span>
         </div>
-        <Progress value={project.progress} className="h-1.5" />
+        <div className="overflow-hidden rounded-full">
+          <Progress value={project.progress} className="h-1.5" />
+        </div>
       </div>
 
       {/* Risk & Milestone */}
@@ -267,11 +270,128 @@ interface ProjectRowProps {
   onDuplicate: (project: ProjectData) => void;
   onGenerateStatus: (project: ProjectData) => void;
   onArchive: (project: ProjectData) => void;
+  isMobile?: boolean;
 }
 
-function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive }: ProjectRowProps) {
+function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, isMobile }: ProjectRowProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
+  // Mobile card layout
+  if (isMobile) {
+    return (
+      <Link
+        href={`/projects/${project.slug}`}
+        className={cn(
+          'block p-4 border-b border-zinc-100 dark:border-zinc-800',
+          'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors',
+          'group'
+        )}
+      >
+        {/* Header row: Icon + Name + Actions */}
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className="h-9 w-9 rounded-lg flex items-center justify-center text-white shrink-0"
+            style={{ backgroundColor: project.color }}
+          >
+            <FolderKanban className="h-4 w-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                {project.name}
+              </h3>
+              {isPinned && <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />}
+            </div>
+            {project.risk !== 'none' && (
+              <Badge variant="outline" className={cn('text-[10px] h-5 mt-1', riskColors[project.risk])}>
+                {project.risk} risk
+              </Badge>
+            )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={(e) => e.preventDefault()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsPinned(!isPinned);
+                }}
+              >
+                {isPinned ? 'Unpin' : 'Pin'} project
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onEdit(project);
+                }}
+              >
+                Edit project
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onDuplicate(project);
+                }}
+              >
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onGenerateStatus(project);
+                }}
+              >
+                Generate status update
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onArchive(project);
+                }}
+              >
+                Archive
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0 overflow-hidden rounded-full">
+              <Progress value={project.progress} className="h-1.5" />
+            </div>
+            <span className="text-xs text-zinc-500 w-8 shrink-0">{project.progress}%</span>
+          </div>
+        </div>
+
+        {/* Footer: Owner + Updated date */}
+        <div className="flex items-center gap-2 text-xs text-zinc-500">
+          <Avatar className="h-5 w-5">
+            <AvatarFallback className="text-[9px]">
+              {project.owner.name.split(' ').map(n => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate">{project.owner.name}</span>
+          <span className="text-zinc-300 dark:text-zinc-600">•</span>
+          <span>{formatRelativeDate(project.updatedAt)}</span>
+        </div>
+      </Link>
+    );
+  }
+
+  // Desktop row layout
   return (
     <Link
       href={`/projects/${project.slug}`}
@@ -312,8 +432,10 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive 
       {/* Progress */}
       <div className="w-32 shrink-0">
         <div className="flex items-center gap-2">
-          <Progress value={project.progress} className="h-1.5 flex-1" />
-          <span className="text-xs text-zinc-500 w-8">{project.progress}%</span>
+          <div className="flex-1 min-w-0 overflow-hidden rounded-full">
+            <Progress value={project.progress} className="h-1.5" />
+          </div>
+          <span className="text-xs text-zinc-500 w-8 shrink-0">{project.progress}%</span>
         </div>
       </div>
 
@@ -331,7 +453,7 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive 
 
       {/* Updated */}
       <div className="w-24 shrink-0 text-xs text-zinc-500">
-        {project.updatedAt}
+        {formatRelativeDate(project.updatedAt)}
       </div>
 
       {/* Actions */}
@@ -409,6 +531,7 @@ export default function ProjectsPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const isMobile = useMobile();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('updated');
@@ -801,8 +924,8 @@ export default function ProjectsPageClient() {
       />
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+        <div className="relative w-full sm:flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input
             placeholder="Search projects..."
@@ -812,40 +935,42 @@ export default function ProjectsPageClient() {
           />
         </div>
 
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[160px]">
-            <ArrowUpDown className="h-4 w-4" />
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="updated">Last updated</SelectItem>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="progress">Progress</SelectItem>
-            <SelectItem value="risk">Risk level</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[160px] flex-1 sm:flex-none">
+              <ArrowUpDown className="h-4 w-4" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated">Last updated</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="progress">Progress</SelectItem>
+              <SelectItem value="risk">Risk level</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Button variant="outline" size="icon" onClick={() => toast.info('Project filtering coming soon')}>
-          <Filter className="h-4 w-4" />
-        </Button>
+          <Button variant="outline" size="icon" className="shrink-0" onClick={() => toast.info('Project filtering coming soon')}>
+            <Filter className="h-4 w-4" />
+          </Button>
 
-        <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-lg p-0.5">
-          <Button
-            variant={view === 'grid' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setView('grid')}
-          >
-            <Grid3X3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={view === 'list' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setView('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-lg p-0.5 shrink-0">
+            <Button
+              variant={view === 'grid' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setView('grid')}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={view === 'list' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setView('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -865,8 +990,8 @@ export default function ProjectsPageClient() {
         </div>
       ) : (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-          {/* List Header */}
-          <div className="flex items-center gap-4 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          {/* List Header - hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-4 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-xs font-medium text-zinc-500 uppercase tracking-wider">
             <div className="w-9" />
             <div className="flex-1">Project</div>
             <div className="w-32">Progress</div>
@@ -884,6 +1009,7 @@ export default function ProjectsPageClient() {
               onDuplicate={handleDuplicateProject}
               onGenerateStatus={handleGenerateStatus}
               onArchive={handleArchiveProject}
+              isMobile={isMobile}
             />
           ))}
         </div>

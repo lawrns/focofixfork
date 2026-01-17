@@ -1033,33 +1033,42 @@ export default function ProjectTable({
   return (
     <div className={`w-full space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
 
-      {/* Filtering Controls */}
-      <div className="mb-4 flex items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant={showArchived ? 'default' : 'outline'}
-            size="sm"
+      {/* Filtering Controls - Mobile responsive toolbar */}
+      <div className="mb-4 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+          {/* Archived toggle as a chip/toggle */}
+          <button
             onClick={() => setShowArchived(!showArchived)}
-            className="whitespace-nowrap"
+            className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+              showArchived
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
+            }`}
+            aria-pressed={showArchived}
           >
-            {showArchived ? 'Viewing Archived' : 'View Archived'}
-          </Button>
+            <Archive className="h-3.5 w-3.5" />
+            <span>{showArchived ? 'Archived' : 'Archived'}</span>
+          </button>
+
+          {/* Filter count indicator */}
           {(filters.length > 0 || sortConditions.length > 0) && (
-            <span className="text-sm text-muted-foreground">
-              {filteredProjects.length} of {projects.length} projects
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+              {filteredProjects.length} of {projects.length}
             </span>
           )}
         </div>
+
+        {/* Active filters */}
         {(filters.length > 0) && (
           <div className="flex flex-wrap gap-2">
             {filters.map((f, idx) => (
-              <Badge key={idx} variant="outline" className="gap-1">
+              <Badge key={idx} variant="outline" className="gap-1 text-xs">
                 <span className="capitalize">{f.field}</span>
                 <span>:</span>
-                <span className="truncate max-w-[12ch]">{String(f.value)}</span>
+                <span className="truncate max-w-[8ch] sm:max-w-[12ch]">{String(f.value)}</span>
                 <button
                   onClick={() => setFilters(filters.filter((_, i) => i !== idx))}
-                  className="inline-flex items-center justify-center rounded-full hover:bg-muted"
+                  className="inline-flex items-center justify-center rounded-full hover:bg-muted ml-1"
                   aria-label="Remove filter"
                 >
                   <X className="h-3 w-3" />
@@ -1164,7 +1173,7 @@ export default function ProjectTable({
       {/* Desktop Table View - Hidden on mobile, visible on sm and up */}
       <div className={`${styles.desktopTableView} w-full rounded-xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700`}>
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <Table className={`${styles.projectTable} min-w-[900px]`}>
+          <Table className={styles.projectTable}>
             <TableHeader className="sticky top-0 z-10 bg-muted/50">
               <TableRow>
                 <TableHead style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-3">
@@ -1403,8 +1412,7 @@ export default function ProjectTable({
                 className="flex items-center space-x-1 sm:space-x-2"
               >
                 <Users className="h-4 w-4" />
-                <span className="hidden xs:inline">Manage Team</span>
-                <span className="xs:hidden">Team</span>
+                <span className="hidden sm:inline">Team</span>
               </Button>
               <Button
                 variant="outline"

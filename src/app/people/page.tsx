@@ -110,7 +110,7 @@ function MemberCard({ member, onViewProfile, onViewTasks, onReassignTasks }: {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -607,6 +607,7 @@ export default function PeoplePage() {
               <Input
                 id="invite-email"
                 type="email"
+                inputMode="email"
                 placeholder="teammate@example.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}

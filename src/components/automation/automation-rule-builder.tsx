@@ -557,6 +557,7 @@ export function AutomationRuleBuilder({
                               <Label>{t('automation.delay')}</Label>
                               <Input
                                 type="number"
+                                inputMode="numeric"
                                 value={action.delay_seconds || 0}
                                 onChange={(e) => updateAction(index, { delay_seconds: parseInt(e.target.value) || 0 })}
                                 placeholder="0"

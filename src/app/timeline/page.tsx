@@ -335,11 +335,11 @@ export default function TimelinePage() {
       {/* Timeline Navigation */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handlePrevMonth}>
+          <Button variant="outline" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0" onClick={handlePrevMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="font-medium">{currentMonth}</span>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleNextMonth}>
+          <Button variant="outline" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0" onClick={handleNextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

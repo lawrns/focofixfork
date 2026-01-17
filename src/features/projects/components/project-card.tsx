@@ -182,7 +182,7 @@ export function ProjectCard({
       transition={{ duration: 0.3 }}
     >
       <Card
-        className={`glass-card hover-lift border-l-4 ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}
+        className={`glass-card hover-lift border-l-4 overflow-hidden ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}
         style={{
           borderLeftColor: currentProject.color || '#6366F1',
         }}
@@ -278,7 +278,9 @@ export function ProjectCard({
             <span className="text-muted-foreground">Progress</span>
             <span className="font-medium">{currentProject.progress_percentage}%</span>
           </div>
-          <Progress value={currentProject.progress_percentage} className="h-2" />
+          <div className="overflow-hidden rounded-full">
+            <Progress value={currentProject.progress_percentage} className="h-2" />
+          </div>
         </div>
 
         {/* Dates */}

@@ -225,6 +225,7 @@ export function CardCoverSelector({
                     <Input
                       id="image-url"
                       type="url"
+                      inputMode="url"
                       placeholder="https://example.com/image.jpg"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}

@@ -46,6 +46,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { buttons } from '@/lib/copy';
 import { toast } from 'sonner';
 import { TwoFactorSettings } from '@/components/settings/two-factor-settings';
+import { useMobile } from '@/lib/hooks/use-mobile';
 
 const settingsSections = [
   { id: 'workspace', label: 'Workspace', icon: Settings },
@@ -192,7 +193,7 @@ function AppearanceSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {themes.map((t) => (
               <button
                 key={t.value}
@@ -887,24 +888,24 @@ function MembersSettings() {
             {members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-800"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-medium">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-medium">
                     {member.name.split(' ').map(n => n[0]).join('')}
                   </div>
-                  <div>
-                    <div className="font-medium">{member.name}</div>
-                    <div className="text-sm text-zinc-500">{member.email}</div>
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{member.name}</div>
+                    <div className="text-sm text-zinc-500 truncate">{member.email}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:shrink-0">
                   <Select
                     value={member.role}
                     onValueChange={(value) => handleRoleChange(member.id, value)}
                     disabled={member.role === 'owner'}
                   >
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-full sm:w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -919,7 +920,7 @@ function MembersSettings() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                      className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                       onClick={() => handleRemoveMember(member.id)}
                     >
                       <Users className="h-4 w-4" />
@@ -990,6 +991,7 @@ function MembersSettings() {
               <Input
                 id="email"
                 type="email"
+                inputMode="email"
                 placeholder="colleague@company.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
@@ -1087,7 +1089,7 @@ function BillingSettings() {
 
           <div className="mt-6">
             <h4 className="font-medium mb-3">Usage this month</h4>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900">
                 <div className="text-2xl font-semibold">8/20</div>
                 <div className="text-sm text-zinc-500">Team members</div>
@@ -1182,7 +1184,7 @@ function BillingSettings() {
               Select the plan that best fits your team
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-3 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 py-4">
             {plans.map((plan) => (
               <div
                 key={plan.id}
@@ -1231,6 +1233,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('workspace');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const isMobile = useMobile();
 
   useEffect(() => {
     // Fetch user's current 2FA status
@@ -1293,27 +1296,56 @@ export default function SettingsPage() {
       </div>
 
       {/* Settings Layout */}
-      <div className="flex gap-8">
-        {/* Sidebar */}
-        <nav className="w-56 shrink-0">
-          <div className="space-y-1">
-            {settingsSections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  activeSection === section.id
-                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
-                )}
-              >
-                <section.icon className="h-4 w-4" />
-                {section.label}
-              </button>
-            ))}
-          </div>
-        </nav>
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+        {/* Mobile Section Selector */}
+        {isMobile ? (
+          <Select value={activeSection} onValueChange={setActiveSection}>
+            <SelectTrigger className="w-full">
+              <SelectValue>
+                {(() => {
+                  const section = settingsSections.find(s => s.id === activeSection);
+                  return section ? (
+                    <span className="flex items-center gap-2">
+                      <section.icon className="h-4 w-4" />
+                      {section.label}
+                    </span>
+                  ) : null;
+                })()}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {settingsSections.map((section) => (
+                <SelectItem key={section.id} value={section.id}>
+                  <span className="flex items-center gap-2">
+                    <section.icon className="h-4 w-4" />
+                    {section.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          /* Desktop Sidebar */
+          <nav className="w-56 shrink-0">
+            <div className="space-y-1">
+              {settingsSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    activeSection === section.id
+                      ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                  )}
+                >
+                  <section.icon className="h-4 w-4" />
+                  {section.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+        )}
 
         {/* Content */}
         <div className="flex-1 min-w-0">

@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, error } = await getAuthUser(req)
@@ -26,7 +26,7 @@ export async function GET(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
 
     // Use admin client to bypass RLS, then verify access manually
     // This is more reliable than depending on RLS with server-side auth
@@ -100,7 +100,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, error } = await getAuthUser(req)
@@ -109,7 +109,7 @@ export async function PATCH(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
     const body = await req.json()
 
     // Verify task exists and user has access
@@ -170,7 +170,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, error } = await getAuthUser(req)
@@ -179,7 +179,7 @@ export async function DELETE(
       return authRequiredResponse()
     }
 
-    const { id } = await params
+    const { id } = params
 
     // Verify task exists and user has access
     const { data: task } = await supabaseAdmin

@@ -23,7 +23,7 @@ const AssignTagSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req);
@@ -32,7 +32,7 @@ export async function GET(
       return authRequiredResponse();
     }
 
-    const { id: taskId } = await params;
+    const { id: taskId } = params;
 
     const uuidError = validateUUID('id', taskId);
     if (uuidError) {
@@ -73,7 +73,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { user, supabase, error } = await getAuthUser(req);
@@ -82,7 +82,7 @@ export async function POST(
       return authRequiredResponse();
     }
 
-    const { id: taskId } = await params;
+    const { id: taskId } = params;
 
     const uuidError = validateUUID('id', taskId);
     if (uuidError) {

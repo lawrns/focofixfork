@@ -341,6 +341,7 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
             id="email"
             name="email"
             type="email"
+            inputMode="email"
             placeholder="name@company.com"
             value={formData.email}
             onChange={handleInputChange}

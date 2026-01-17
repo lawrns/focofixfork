@@ -13,8 +13,8 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
-  Download, 
-  Upload, 
+  Download,
+  Upload,
   FileText, 
   Table, 
   Code, 
@@ -22,7 +22,8 @@ import {
   AlertCircle, 
   X,
   Settings,
-  MapPin
+  MapPin,
+  Loader2
 } from 'lucide-react'
 import { 
   ExportFormat, 
@@ -41,6 +42,8 @@ import { Task } from '@/features/tasks/types'
 import { Organization } from '@/lib/models/organizations'
 import { Label as LabelType } from '@/lib/models/labels'
 import { useToast } from '@/components/toast/toast'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface ImportExportModalProps {
   projects?: Project[]

@@ -26,6 +26,9 @@ import styles from './ProjectTable.module.css'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { apiClient } from '@/lib/api-client'
 
 interface Project {
   id: string
@@ -329,34 +332,36 @@ export default function ProjectTable({
     if (!project || !user) return
 
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',        },
-        body: JSON.stringify({
-          name: `${project.name} (Copy)`,
-          status: 'planning',
-          priority: project.priority,
-          due_date: project.due_date,
-          workspace_id: project.workspace_id,
-        }),
+      const response = await apiClient.post('/api/projects', {
+        name: `${project.name} (Copy)`,
+        status: 'planning',
+        priority: project.priority,
+        due_date: project.due_date,
+        workspace_id: project.workspace_id,
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to duplicate project')
+      if (!response.success || !response.data) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to duplicate project')
       }
 
-      const result = await response.json()
+      audioService.play('complete')
+      hapticService.success()
       toast({
         variant: 'success',
         title: 'Success',
-        description: `Project "${project.name}" has been duplicated.`
+        description: response.data.queued ? 'Duplication queued for offline sync' : `Project "${project.name}" has been duplicated.`
       })
 
       // Refresh projects list via store (single source of truth)
-      projectStore.refreshProjects(showArchived)
+      if (!response.data.queued) {
+        projectStore.refreshProjects(showArchived)
+      }
     } catch (error) {
       console.error('Error duplicating project:', error)
+      audioService.play('error')
+      hapticService.error()
       toast({
         variant: 'destructive', title: 'Error',
         description: 'Failed to duplicate project. Please try again.',
@@ -372,33 +377,30 @@ export default function ProjectTable({
 
   const handleUnarchiveProject = async (projectId: string) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ archived_at: null }),
-      })
+      const response = await apiClient.patch(`/api/projects/${projectId}`, { archived_at: null })
 
-      if (!response.ok) {
-        throw new Error('Failed to unarchive project')
+      if (!response.success || !response.data) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to unarchive project')
       }
 
-      const result = await response.json()
-      if (result.success) {
-        toast({
-          variant: 'success',
-          title: 'Success',
-          description: 'Project has been restored.'
-        })
+      audioService.play('complete')
+      hapticService.success()
+      toast({
+        variant: 'success',
+        title: 'Success',
+        description: response.data.queued ? 'Restore queued for offline sync' : 'Project has been restored.'
+      })
 
-        // Refresh the archived projects view via store (single source of truth)
-        if (showArchived) {
-          projectStore.refreshProjects(true)
-        }
+      // Refresh the archived projects view via store (single source of truth)
+      if (!response.data.queued && showArchived) {
+        projectStore.refreshProjects(true)
       }
     } catch (error) {
       console.error('Error unarchiving project:', error)
+      audioService.play('error')
+      hapticService.error()
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -436,13 +438,11 @@ export default function ProjectTable({
   const fetchTeamMembers = async (projectId: string) => {
     setLoadingTeamMembers(true)
     try {
-      const response = await fetch(`/api/projects/${projectId}/team`, {
-              })
-      if (!response.ok) {
-        throw new Error('Failed to fetch team members')
+      const response = await apiClient.get(`/api/projects/${projectId}/team`)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch team members')
       }
-      const result = await response.json()
-      setTeamMembers(result.data || [])
+      setTeamMembers(response.data?.data || response.data || [])
     } catch (error) {
       console.error('Error fetching team members:', error)
       setTeamMembers([])
@@ -461,34 +461,32 @@ export default function ProjectTable({
       // Start operation tracking to prevent race conditions with real-time updates
       projectStore.startOperation(projectId)
 
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',        },
-        body: JSON.stringify(data),
-      })
+      const response = await apiClient.put(`/api/projects/${projectId}`, data)
 
-      if (!response.ok) {
+      if (!response.success || !response.data) {
         // End operation tracking on error
         projectStore.endOperation(projectId)
-        throw new Error('Failed to update project')
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to update project')
       }
 
       // Get the updated project data from response
-      const result = await response.json()
+      const result = response
 
       // End operation tracking first, then update the store
       projectStore.endOperation(projectId)
 
+      audioService.play('complete')
+      hapticService.success()
+
       // Immediately update the store with the new data for instant UI feedback
-      if (result.success && result.data) {
+      if (result.success && result.data && !result.data.queued) {
         console.log('ProjectTable: updating project in store after edit:', result.data.id, 'new name:', result.data.name, 'status:', result.data.status, 'priority:', result.data.priority)
-        console.log('ProjectTable: full result.data:', result.data)
         projectStore.updateProject(result.data.id, result.data)
 
         // Update selectedProject state if it's the same project
         if (selectedProject && selectedProject.id === result.data.id) {
-          console.log('ProjectTable: updating selectedProject from:', selectedProject.name, 'to:', result.data.name)
           setSelectedProject(result.data)
         }
 
@@ -496,10 +494,17 @@ export default function ProjectTable({
         window.dispatchEvent(new CustomEvent('projectUpdated', {
           detail: { projectId: result.data.id, project: result.data }
         }))
+      } else if (result.data?.queued) {
+        toast({
+          title: 'Queued',
+          description: 'Project update queued for offline sync',
+        })
       }
     } catch (error) {
       // Ensure operation tracking is ended on error
       projectStore.endOperation(projectId)
+      audioService.play('error')
+      hapticService.error()
       throw error
     }
   }
@@ -509,13 +514,13 @@ export default function ProjectTable({
       // Start operation tracking to prevent race conditions
       projectStore.startOperation(projectId)
 
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE',
-              })
+      const response = await apiClient.delete(`/api/projects/${projectId}`)
 
-      if (!response.ok) {
+      if (!response.success) {
         // End operation tracking on error
         projectStore.endOperation(projectId)
+        audioService.play('error')
+        hapticService.error()
 
         // If project is already deleted (404), consider it a success
         if (response.status === 404) {
@@ -524,12 +529,14 @@ export default function ProjectTable({
           projectStore.removeProject(projectId)
           return
         }
-        throw new Error('Failed to delete project')
+        throw new Error(response.error || 'Failed to delete project')
       }
 
       // Immediately remove from global store for instant UI feedback across all components
       console.log('Project deleted successfully, removing from store:', projectId)
-      projectStore.removeProject(projectId)
+      if (!response.data?.queued) {
+        projectStore.removeProject(projectId)
+      }
 
       // Clear the deleted project from selection state
       setSelectedProjects(prev => {
@@ -543,6 +550,9 @@ export default function ProjectTable({
         setSelectedProject(null)
       }
 
+      audioService.play('error') // Use error sound for deletion warning
+      hapticService.heavy()
+
       // Notify other components that a project was deleted
       window.dispatchEvent(new CustomEvent('projectDeleted', {
         detail: { projectId }
@@ -550,36 +560,31 @@ export default function ProjectTable({
     } catch (error) {
       // Ensure operation tracking is ended on error
       projectStore.endOperation(projectId)
+      audioService.play('error')
+      hapticService.error()
       throw error
     }
   }
 
   const handleAddTeamMember = async (projectId: string, data: any) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}/team`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',        },
-        body: JSON.stringify(data),
-      })
+      const response = await apiClient.post(`/api/projects/${projectId}/team`, data)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add team member')
+      if (!response.success) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to add team member')
       }
 
-      const result = await response.json()
-
+      audioService.play('complete')
+      hapticService.success()
       toast({
         variant: 'success', title: 'Success',
-        description: 'Team member added successfully',
+        description: response.data?.queued ? 'Add member queued for offline sync' : 'Team member added successfully',
       })
-
-      // Refresh team members if dialog is open
-      if (teamDialogOpen && selectedProject) {
-        // This would trigger a refresh of the team dialog
-      }
     } catch (error: any) {
+      audioService.play('error')
+      hapticService.error()
       toast({
         variant: 'destructive', title: 'Error',
         description: error.message || 'Failed to add team member',
@@ -590,25 +595,23 @@ export default function ProjectTable({
 
   const handleRemoveTeamMember = async (projectId: string, userId: string) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}/team/${userId}`, {
-        method: 'DELETE',
-              })
+      const response = await apiClient.delete(`/api/projects/${projectId}/team/${userId}`)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to remove team member')
+      if (!response.success) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to remove team member')
       }
 
+      audioService.play('error') // Warning sound for removal
+      hapticService.medium()
       toast({
         variant: 'success', title: 'Success',
-        description: 'Team member removed successfully',
+        description: response.data?.queued ? 'Removal queued for offline sync' : 'Team member removed successfully',
       })
-
-      // Refresh team members if dialog is open
-      if (teamDialogOpen && selectedProject) {
-        // This would trigger a refresh of the team dialog
-      }
     } catch (error: any) {
+      audioService.play('error')
+      hapticService.error()
       toast({
         variant: 'destructive', title: 'Error',
         description: error.message || 'Failed to remove team member',
@@ -619,28 +622,23 @@ export default function ProjectTable({
 
   const handleUpdateTeamRole = async (projectId: string, userId: string, role: string) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}/team/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',        },
-        body: JSON.stringify({ role }),
-      })
+      const response = await apiClient.put(`/api/projects/${projectId}/team/${userId}`, { role })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update team member role')
+      if (!response.success) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to update team member role')
       }
 
+      audioService.play('complete')
+      hapticService.light()
       toast({
         variant: 'success', title: 'Success',
-        description: 'Team member role updated successfully',
+        description: response.data?.queued ? 'Role update queued for offline sync' : 'Team member role updated successfully',
       })
-
-      // Refresh team members if dialog is open
-      if (teamDialogOpen && selectedProject) {
-        // This would trigger a refresh of the team dialog
-      }
     } catch (error: any) {
+      audioService.play('error')
+      hapticService.error()
       toast({
         variant: 'destructive', title: 'Error',
         description: error.message || 'Failed to update team member role',
@@ -656,16 +654,24 @@ export default function ProjectTable({
         projectStore.startOperation(projectId)
       })
 
-      const result = await ProjectClientService.bulkOperation(operation, projectIds, { force })
+      const response = await apiClient.post('/api/projects/bulk', {
+        operation,
+        project_ids: projectIds,
+        parameters: { force }
+      })
 
-      if (!result.success || !result.data) {
-        throw new Error(result.error || 'Bulk operation failed')
+      if (!response.success || !response.data) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Bulk operation failed')
       }
 
+      const result = response.data
+
       // Update store with successful operations
-      if (result.data.successful) {
-        result.data.successful.forEach((projectId: string) => {
-          if (operation === 'delete') {
+      if (result.successful) {
+        result.successful.forEach((projectId: string) => {
+          if (operation === 'delete' && !result.queued) {
             projectStore.removeProject(projectId)
 
             // Clear the deleted project from selection state
@@ -681,7 +687,6 @@ export default function ProjectTable({
             }
 
             // Notify other components that a project was deleted
-            console.log('ProjectTable: Dispatching projectDeleted event for projectId:', projectId)
             window.dispatchEvent(new CustomEvent('projectDeleted', {
               detail: { projectId }
             }))
@@ -690,8 +695,8 @@ export default function ProjectTable({
       }
 
       // End operation tracking for successful operations
-      if (result.data.successful) {
-        result.data.successful.forEach((projectId: string) => {
+      if (result.successful) {
+        result.successful.forEach((projectId: string) => {
           setTimeout(() => {
             projectStore.endOperation(projectId)
           }, 100)
@@ -699,44 +704,54 @@ export default function ProjectTable({
       }
 
       // End operation tracking for failed operations
-      if (result.data.failed) {
-        result.data.failed.forEach((failure) => {
+      if (result.failed) {
+        result.failed.forEach((failure: any) => {
           projectStore.endOperation(failure.id)
         })
       }
 
+      if (result.queued) {
+        audioService.play('sync')
+        hapticService.light()
+      } else {
+        audioService.play('complete')
+        hapticService.success()
+      }
+
       return {
-        successful: result.data.successful || [],
-        failed: result.data.failed || []
+        successful: result.successful || [],
+        failed: result.failed || []
       }
     } catch (error) {
       // Ensure operation tracking is ended on error
       projectIds.forEach(projectId => {
         projectStore.endOperation(projectId)
       })
+      audioService.play('error')
+      hapticService.error()
       throw error
     }
   }
 
   const handleSaveSettings = async (projectId: string, settings: any) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}/settings`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',        },
-        body: JSON.stringify(settings),
-      })
+      const response = await apiClient.patch(`/api/projects/${projectId}/settings`, settings)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save project settings')
+      if (!response.success) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to save project settings')
       }
 
+      audioService.play('complete')
+      hapticService.success()
       toast({
         variant: 'success', title: 'Success',
-        description: 'Project settings saved successfully',
+        description: response.data?.queued ? 'Settings queued for offline sync' : 'Project settings saved successfully',
       })
     } catch (error: any) {
+      audioService.play('error')
+      hapticService.error()
       toast({
         variant: 'destructive', title: 'Error',
         description: error.message || 'Failed to save project settings',

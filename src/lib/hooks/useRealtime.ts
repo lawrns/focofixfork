@@ -3,6 +3,8 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase-client'
+import { audioService } from '@/lib/audio/audio-service'
+import { AccessibilityService } from '@/lib/accessibility/accessibility'
 import type { RealTimeEvent } from '@/lib/models/real-time-events'
 
 export interface RealtimeOptions {
@@ -67,10 +69,37 @@ export function useRealtime(
           {
             event: '*',
             schema: 'public',
+            table: 'work_items',
+            filter: `project_id=eq.${options.projectId}`
+          },
+          (payload: RealtimePostgresChangesPayload<any>) => {
+            // World-class sensory feedback for remote task updates
+            audioService.play('sync');
+            const data = (payload.new || payload.old) as any;
+            AccessibilityService.announce(`Task ${payload.eventType === 'INSERT' ? 'created' : payload.eventType === 'UPDATE' ? 'updated' : 'deleted'}: ${data?.title || 'Unknown'}`);
+            
+            callbackRef.current({
+              eventType: payload.eventType,
+              new: payload.new,
+              old: payload.old,
+              table: 'work_items',
+              schema: 'public'
+            })
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
             table: 'milestones',
             filter: `project_id=eq.${options.projectId}`
           },
           (payload: RealtimePostgresChangesPayload<any>) => {
+            // World-class sensory feedback for remote updates
+            audioService.play('sync');
+            AccessibilityService.announce(`Milestone ${payload.eventType === 'INSERT' ? 'created' : payload.eventType === 'UPDATE' ? 'updated' : 'deleted'}`);
+            
             callbackRef.current({
               eventType: payload.eventType,
               new: payload.new,
@@ -151,6 +180,10 @@ export function useRealtime(
             filter: `organization_id=eq.${options.organizationId}`
           },
           (payload: RealtimePostgresChangesPayload<any>) => {
+            // World-class sensory feedback for remote updates
+            audioService.play('sync');
+            AccessibilityService.announce(`Project ${payload.eventType === 'INSERT' ? 'created' : payload.eventType === 'UPDATE' ? 'updated' : 'deleted'}`);
+            
             callbackRef.current({
               eventType: payload.eventType,
               new: payload.new,
@@ -169,6 +202,10 @@ export function useRealtime(
             filter: `organization_id=eq.${options.organizationId}`
           },
           (payload: RealtimePostgresChangesPayload<any>) => {
+            // World-class sensory feedback for remote updates
+            audioService.play('sync');
+            AccessibilityService.announce(`Organization member ${payload.eventType === 'INSERT' ? 'added' : payload.eventType === 'UPDATE' ? 'updated' : 'removed'}`);
+            
             callbackRef.current({
               eventType: payload.eventType,
               new: payload.new,

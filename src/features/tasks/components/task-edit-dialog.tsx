@@ -116,7 +116,7 @@ export function TaskEditDialog({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium">
+            <label htmlFor="title" className="text-sm font-semibold">
               {t('task.title')} *
             </label>
             <Input
@@ -125,12 +125,13 @@ export function TaskEditDialog({
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder={t('task.titlePlaceholder')}
               required
+              className="min-h-[44px]"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
+            <label htmlFor="description" className="text-sm font-semibold">
               {t('task.description')}
             </label>
             <Textarea
@@ -139,20 +140,21 @@ export function TaskEditDialog({
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder={t('task.descriptionPlaceholder')}
               rows={4}
+              className="min-h-[100px]"
             />
           </div>
 
           {/* Status and Priority */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="status" className="text-sm font-medium">
+              <label htmlFor="status" className="text-sm font-semibold">
                 {t('task.status')}
               </label>
               <Select
                 value={formData.status}
                 onValueChange={(value: Task['status']) => setFormData(prev => ({ ...prev, status: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder={t('task.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,14 +167,14 @@ export function TaskEditDialog({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="priority" className="text-sm font-medium">
+              <label htmlFor="priority" className="text-sm font-semibold">
                 {t('task.priority')}
               </label>
               <Select
                 value={formData.priority}
                 onValueChange={(value: Task['priority']) => setFormData(prev => ({ ...prev, priority: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder={t('task.selectPriority')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,16 +188,16 @@ export function TaskEditDialog({
           </div>
 
           {/* Project and Milestone */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="project" className="text-sm font-medium">
+              <label htmlFor="project" className="text-sm font-semibold">
                 {t('task.project')}
               </label>
               <Select
                 value={formData.project_id}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value, milestone_id: null }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder={t('task.selectProject')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -209,7 +211,7 @@ export function TaskEditDialog({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="milestone" className="text-sm font-medium">
+              <label htmlFor="milestone" className="text-sm font-semibold">
                 {t('task.milestone')}
               </label>
               <Select
@@ -217,7 +219,7 @@ export function TaskEditDialog({
                 onValueChange={(value) => setFormData(prev => ({ ...prev, milestone_id: fromSelectValue(value, 'none') }))}
                 disabled={!formData.project_id}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder={t('task.selectMilestone')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -233,16 +235,16 @@ export function TaskEditDialog({
           </div>
 
           {/* Assignee and Due Date */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="assignee" className="text-sm font-medium">
+              <label htmlFor="assignee" className="text-sm font-semibold">
                 {t('task.assignee')}
               </label>
               <Select
                 value={toSelectValueWithNone(formData.assignee_id, 'unassigned')}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, assignee_id: fromSelectValue(value, 'unassigned') }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder={t('task.selectAssignee')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -257,7 +259,7 @@ export function TaskEditDialog({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="due_date" className="text-sm font-medium">
+              <label htmlFor="due_date" className="text-sm font-semibold">
                 {t('task.dueDate')}
               </label>
               <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
@@ -265,11 +267,11 @@ export function TaskEditDialog({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal min-h-[44px]",
                       !formData.due_date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="h-4 w-4" />
+                    <CalendarIcon className="h-4 w-4 mr-2" />
                     {formData.due_date ? format(new Date(formData.due_date), "PPP") : t('task.selectDueDate')}
                   </Button>
                 </PopoverTrigger>
@@ -289,9 +291,9 @@ export function TaskEditDialog({
           </div>
 
           {/* Time Tracking */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="estimated_hours" className="text-sm font-medium">
+              <label htmlFor="estimated_hours" className="text-sm font-semibold">
                 {t('task.estimatedHours')}
               </label>
               <Input
@@ -303,11 +305,12 @@ export function TaskEditDialog({
                 value={formData.estimated_hours || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, estimated_hours: e.target.value ? parseFloat(e.target.value) : null }))}
                 placeholder="0"
+                className="min-h-[44px]"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="actual_hours" className="text-sm font-medium">
+              <label htmlFor="actual_hours" className="text-sm font-semibold">
                 {t('task.actualHours')}
               </label>
               <Input
@@ -319,17 +322,27 @@ export function TaskEditDialog({
                 value={formData.actual_hours || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, actual_hours: e.target.value ? parseFloat(e.target.value) : null }))}
                 placeholder="0"
+                className="min-h-[44px]"
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={handleCancel}>
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 pb-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCancel}
+              className="min-h-[44px] sm:min-h-[40px] order-2 sm:order-1"
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={isUpdating || !formData.title.trim()}>
-              {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button 
+              type="submit" 
+              disabled={isUpdating || !formData.title.trim()}
+              className="min-h-[44px] sm:min-h-[40px] order-1 sm:order-2 font-bold"
+            >
+              {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('common.save')}
             </Button>
           </div>

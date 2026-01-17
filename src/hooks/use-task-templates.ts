@@ -1,4 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
+import { apiClient } from '@/lib/api-client'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 export interface TaskTemplate {
   id: string
@@ -50,21 +53,28 @@ export function useTaskTemplates(): UseTaskTemplatesReturn {
   const createTemplate = useCallback(
     async (data: Omit<TaskTemplate, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
       try {
-        const response = await fetch('/api/task-templates', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        })
+        const response = await apiClient.post('/api/task-templates', data)
 
-        const result = await response.json()
-
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to create template')
+        if (!response.success || !response.data) {
+          audioService.play('error')
+          hapticService.error()
+          throw new Error(response.error || 'Failed to create template')
         }
 
-        setTemplates([...templates, result.data])
-        return result.data
+        const result = response.data
+        audioService.play('complete')
+        hapticService.success()
+
+        if (!result.queued) {
+          setTemplates([...templates, result])
+        } else {
+          // Templates list might be out of sync if we just add it locally
+          // but for UX we can add it with a 'queued' status if we had one
+        }
+        return result
       } catch (err: any) {
+        audioService.play('error')
+        hapticService.error()
         setError(err.message)
         throw err
       }
@@ -75,18 +85,23 @@ export function useTaskTemplates(): UseTaskTemplatesReturn {
   const deleteTemplate = useCallback(
     async (id: string) => {
       try {
-        const response = await fetch(`/api/task-templates/${id}`, {
-          method: 'DELETE'
-        })
+        const response = await apiClient.delete(`/api/task-templates/${id}`)
 
-        const result = await response.json()
-
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to delete template')
+        if (!response.success) {
+          audioService.play('error')
+          hapticService.error()
+          throw new Error(response.error || 'Failed to delete template')
         }
 
-        setTemplates(templates.filter(t => t.id !== id))
+        audioService.play('error') // Use error sound for deletion
+        hapticService.heavy()
+        
+        if (!response.data?.queued) {
+          setTemplates(templates.filter(t => t.id !== id))
+        }
       } catch (err: any) {
+        audioService.play('error')
+        hapticService.error()
         setError(err.message)
         throw err
       }
@@ -97,20 +112,20 @@ export function useTaskTemplates(): UseTaskTemplatesReturn {
   const applyTemplate = useCallback(
     async (id: string, projectId: string, overrides?: Record<string, any>) => {
       try {
-        const response = await fetch(`/api/task-templates/${id}/apply`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ project_id: projectId, ...overrides })
-        })
+        const response = await apiClient.post(`/api/task-templates/${id}/apply`, { project_id: projectId, ...overrides })
 
-        const result = await response.json()
-
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to apply template')
+        if (!response.success || !response.data) {
+          audioService.play('error')
+          hapticService.error()
+          throw new Error(response.error || 'Failed to apply template')
         }
 
-        return result.data
+        audioService.play('complete')
+        hapticService.success()
+        return response.data
       } catch (err: any) {
+        audioService.play('error')
+        hapticService.error()
         setError(err.message)
         throw err
       }

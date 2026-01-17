@@ -8,6 +8,8 @@ export interface AccessibilitySettings {
   screenReader: boolean;
   keyboardNavigation: boolean;
   focusVisible: boolean;
+  enableHapticFeedback: boolean;
+  enableSoundNotifications: boolean;
 }
 
 export class AccessibilityService {
@@ -18,6 +20,8 @@ export class AccessibilityService {
     screenReader: false,
     keyboardNavigation: true,
     focusVisible: true,
+    enableHapticFeedback: true,
+    enableSoundNotifications: true,
   };
 
   // Initialize accessibility features

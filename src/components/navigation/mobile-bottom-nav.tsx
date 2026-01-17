@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/contexts/auth-context'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface NavItem {
   id: string
@@ -131,6 +132,7 @@ export function MobileBottomNav({
   })
 
   const handleNavClick = (item: NavItem) => {
+    hapticService.light()
     router.push(item.href)
   }
 

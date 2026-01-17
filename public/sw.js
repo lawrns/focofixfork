@@ -95,10 +95,25 @@ self.addEventListener('fetch', (event) => {
   }
 })
 
-// API request handler - Bypass caching for now (hotfix)
+// API request handler - Stale-While-Revalidate strategy
 async function handleApiRequest(request) {
-  // Temporarily bypass all caching for API requests
-  return fetch(request)
+  const cache = await caches.open(DYNAMIC_CACHE)
+  const cachedResponse = await cache.match(request)
+  
+  const networkFetch = fetch(request).then(response => {
+    if (response.ok) {
+      cache.put(request, response.clone())
+    }
+    return response
+  }).catch(err => {
+    console.log('[SW] API fetch failed, returning cached data if available')
+    return cachedResponse || new Response(JSON.stringify({ error: 'Offline and no cached data available' }), { 
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  })
+
+  return cachedResponse || networkFetch
 }
 
 // Static asset handler - Cache first
@@ -222,31 +237,103 @@ self.addEventListener('sync', (event) => {
   }
 })
 
+// IndexedDB helpers for pending requests
+const DB_NAME_IDB = 'foco-pwa-db'
+const STORE_NAME_IDB = 'offline-actions'
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME_IDB, 1)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(request.result)
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result
+      if (!db.objectStoreNames.contains(STORE_NAME_IDB)) {
+        db.createObjectStore(STORE_NAME_IDB, { keyPath: 'id' })
+      }
+    }
+  })
+}
+
+async function getPendingRequests() {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME_IDB, 'readonly')
+    const store = transaction.objectStore(STORE_NAME_IDB)
+    const request = store.getAll()
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function removePendingRequest(id) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME_IDB, 'readwrite')
+    const store = transaction.objectStore(STORE_NAME_IDB)
+    const request = store.delete(id)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function updatePendingRequest(action) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME_IDB, 'readwrite')
+    const store = transaction.objectStore(STORE_NAME_IDB)
+    const request = store.put(action)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
+
 // Background sync implementation
 async function doBackgroundSync() {
+  console.log('[SW] Starting background sync...')
   try {
-    // Get pending requests from IndexedDB
     const pendingRequests = await getPendingRequests()
+    console.log(`[SW] Found ${pendingRequests.length} pending requests`)
     
-    for (const request of pendingRequests) {
+    for (const action of pendingRequests) {
       try {
-        const response = await fetch(request.url, {
-          method: request.method,
-          headers: request.headers,
-          body: request.body
+        const response = await fetch(action.url, {
+          method: action.method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...action.headers
+          },
+          body: typeof action.body === 'string' ? action.body : JSON.stringify(action.body)
         })
         
         if (response.ok) {
-          // Remove from pending requests
-          await removePendingRequest(request.id)
-          console.log('[SW] Synced request:', request.url)
+          await removePendingRequest(action.id)
+          console.log('[SW] Synced request successfully:', action.url)
+          
+          // Notify clients
+          const clients = await self.clients.matchAll()
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'SYNC_COMPLETE',
+              data: { id: action.id, url: action.url, success: true }
+            })
+          })
+        } else {
+          throw new Error(`HTTP ${response.status}`)
         }
       } catch (error) {
-        console.error('[SW] Failed to sync request:', request.url, error)
+        console.error('[SW] Failed to sync request:', action.url, error)
+        action.retryCount = (action.retryCount || 0) + 1
+        if (action.retryCount >= 3) {
+          await removePendingRequest(action.id)
+          console.log('[SW] Dropping request after 3 failures:', action.url)
+        } else {
+          await updatePendingRequest(action)
+        }
       }
     }
   } catch (error) {
-    console.error('[SW] Background sync failed:', error)
+    console.error('[SW] Background sync loop failed:', error)
   }
 }
 

@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,9 @@ import { InlineEditField } from './inline-edit-field'
 import { RecurrenceBadge } from './RecurrenceBadge'
 import { useInlineEdit } from '../hooks/use-inline-edit'
 import { Task } from '../types'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { apiClient } from '@/lib/api-client'
 
 interface TaskCardProps {
   task: Task & {
@@ -134,27 +138,30 @@ function TaskCardComponent({
       updatePayload[fieldName] = value
 
       // Send update to API
-      const response = await fetch(`/api/tasks/${currentTask.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(updatePayload),
-      })
+      const response = await apiClient.put(`/api/tasks/${currentTask.id}`, updatePayload)
 
-      if (!response.ok) {
-        const errorBody = await response.text()
-        throw new Error(`Failed to update task: ${response.status} - ${errorBody}`)
+      if (!response.success || !response.data) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error(response.error || 'Failed to update task')
       }
 
-      const updatedTask = await response.json()
+      const updatedTask = response.data
 
       // Update local state
-      setCurrentTask(updatedTask.data || updatedTask)
+      if (!updatedTask.queued) {
+        setCurrentTask(updatedTask)
+      } else {
+        toast.info('Update queued for offline sync')
+      }
+      
+      audioService.play('sync')
+      hapticService.light()
       setIsUpdated(true)
       setTimeout(() => setIsUpdated(false), 3000)
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to update task field:', error)
       throw error
     } finally {
@@ -206,7 +213,18 @@ function TaskCardComponent({
     setIsUpdating(true)
     try {
       await onStatusChange(currentTask.id, newStatus)
+      
+      // World-class sensory feedback
+      if (newStatus === 'done') {
+        audioService.play('complete')
+        hapticService.success()
+      } else {
+        audioService.play('sync')
+        hapticService.light()
+      }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to update task status:', error)
     } finally {
       setIsUpdating(false)
@@ -222,8 +240,12 @@ function TaskCardComponent({
 
     try {
       await onDelete(currentTask.id)
+      audioService.play('error')
+      hapticService.error()
       setShowDeleteDialog(false)
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to delete task:', error)
       setShowDeleteDialog(false)
     }

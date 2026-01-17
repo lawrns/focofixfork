@@ -9,6 +9,7 @@
  */
 
 import { apiCache } from './api-cache'
+import { PWAService } from './services/pwa'
 
 interface ApiClientOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -177,6 +178,24 @@ class ApiClient {
         const response = await fetch(url, fetchOptions)
         clearTimeout(timeoutId)
         lastResponse = response
+
+        // Handle offline scenario for mutations
+        if (!response.ok && !PWAService.isOnline && method !== 'GET') {
+          await PWAService.queueOfflineAction({
+            url,
+            method: method as any,
+            headers: {
+              ...headers,
+              'Content-Type': 'application/json'
+            },
+            body
+          })
+          return {
+            success: true, // Return success as it's queued
+            data: { queued: true } as any,
+            status: 202 // Accepted
+          }
+        }
 
         // Extract and store rate limit info
         const rateLimitInfo = this.extractRateLimitInfo(response.headers)

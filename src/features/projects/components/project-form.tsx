@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,6 +17,9 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import { ColorPicker } from './color-picker'
 import { SmartDateInput } from '@/components/forms/smart-date-input'
 import { filterValidSelectOptions } from '@/lib/ui/select-validation'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { apiClient } from '@/lib/api-client'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
@@ -164,8 +168,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
     try {
       const url = isEditing ? `/api/projects/${project.id}` : '/api/projects'
-      const method = isEditing ? 'PUT' : 'POST'
-
+      
       // Map organization_id to workspace_id for API
       const payload = {
         ...data,
@@ -173,22 +176,24 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
       }
       delete payload.organization_id
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
+      const response = await (isEditing 
+        ? apiClient.put(url, payload)
+        : apiClient.post(url, payload))
 
-      if (!response.ok) {
-        const errorData = await response.json()
+      if (!response.success) {
+        const errorData = response
+        audioService.play('error')
+        hapticService.error()
         throw new Error(errorData.error || 'Failed to save project')
       }
 
+      audioService.play('complete')
+      hapticService.success()
       onSuccess?.()
     } catch (err: any) {
       console.error('Project save error:', err)
+      audioService.play('error')
+      hapticService.error()
       setError(err.message || 'An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
@@ -212,12 +217,13 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
           {/* Project Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Project Name *</Label>
+            <Label htmlFor="name" className="text-sm font-semibold">Project Name *</Label>
             <Input
               id="name"
               {...register('name')}
               placeholder="Enter project name"
               disabled={isSubmitting}
+              className="min-h-[44px]"
             />
             {errors.name && (
               <p className="text-sm text-red-600 dark:text-red-400">
@@ -228,7 +234,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
           {/* Slug */}
           <div className="space-y-2">
-            <Label htmlFor="slug">
+            <Label htmlFor="slug" className="text-sm font-semibold">
               Slug *
               {isCheckingSlug && (
                 <span className="ml-2 text-xs text-gray-500">Checking availability...</span>
@@ -244,7 +250,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
               })}
               placeholder="project-slug"
               disabled={isSubmitting || isEditing}
-              className={slugError ? 'border-red-500' : ''}
+              className={cn("min-h-[44px]", slugError ? 'border-red-500' : '')}
             />
             {slugError && (
               <p className="text-sm text-red-600 dark:text-red-400">
@@ -263,13 +269,14 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
             <Textarea
               id="description"
               {...register('description')}
               placeholder="Describe your project..."
               rows={3}
               disabled={isSubmitting}
+              className="min-h-[100px]"
             />
             {errors.description && (
               <p className="text-sm text-red-600 dark:text-red-400">
@@ -280,13 +287,13 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
 
           {/* Organization */}
           <div className="space-y-2">
-            <Label htmlFor="organization">Organization *</Label>
+            <Label htmlFor="organization" className="text-sm font-semibold">Organization *</Label>
             <Select
               value={watchedOrganizationId}
               onValueChange={(value) => setValue('organization_id', value)}
               disabled={isSubmitting}
             >
-              <SelectTrigger>
+              <SelectTrigger className="min-h-[44px]">
                 <SelectValue placeholder="Select organization" />
               </SelectTrigger>
               <SelectContent>
@@ -305,15 +312,15 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
           </div>
 
           {/* Status and Priority Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
               <Select
                 value={watchedStatus}
                 onValueChange={(value: any) => setValue('status', value)}
                 disabled={isSubmitting}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -327,13 +334,13 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="priority" className="text-sm font-semibold">Priority</Label>
               <Select
                 value={watchedPriority}
                 onValueChange={(value: any) => setValue('priority', value)}
                 disabled={isSubmitting}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -347,28 +354,31 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
           </div>
 
           {/* Dates Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SmartDateInput
               value={watch('start_date')}
               onDateStringChange={(dateStr) => setValue('start_date', dateStr || '', { shouldDirty: true })}
               label="Start Date"
-              placeholder="Enter date or natural language (e.g., 'today', 'next monday')"
+              placeholder="Enter date or natural language"
               disabled={isSubmitting}
               error={errors.start_date?.message}
+              className="min-h-[44px]"
             />
 
             <SmartDateInput
               value={watch('due_date')}
               onDateStringChange={(dateStr) => setValue('due_date', dateStr || '', { shouldDirty: true })}
               label="Due Date"
-              placeholder="Enter date or natural language (e.g., 'in 3 months', '2024-03-15')"
+              placeholder="Enter date or natural language"
               disabled={isSubmitting}
               error={errors.due_date?.message}
+              className="min-h-[44px]"
             />
           </div>
 
           {/* Color Picker */}
           <div className="space-y-2">
+            <Label className="text-sm font-semibold">Project Color</Label>
             <ColorPicker
               currentColor={watchedColor}
               onColorChange={(color) => setValue('color', color)}
@@ -383,7 +393,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
           {/* Progress (only for existing projects) */}
           {isEditing && (
             <div className="space-y-2">
-              <Label htmlFor="progress_percentage">Progress (%)</Label>
+              <Label htmlFor="progress_percentage" className="text-sm font-semibold">Progress (%)</Label>
               <Input
                 id="progress_percentage"
                 type="number"
@@ -392,6 +402,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
                 max="100"
                 {...register('progress_percentage', { valueAsNumber: true })}
                 disabled={isSubmitting}
+                className="min-h-[44px]"
               />
               {errors.progress_percentage && (
                 <p className="text-sm text-red-600 dark:text-red-400">
@@ -402,13 +413,14 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
           )}
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6">
             {onCancel && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
+                className="min-h-[44px] sm:min-h-[40px] order-2 sm:order-1"
               >
                 Cancel
               </Button>
@@ -417,8 +429,9 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
             <Button
               type="submit"
               disabled={isSubmitting || isCheckingSlug || isSlugAvailable === false}
+              className="min-h-[44px] sm:min-h-[40px] order-1 sm:order-2 font-bold"
             >
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isEditing ? 'Update Project' : 'Create Project'}
             </Button>
           </div>

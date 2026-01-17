@@ -80,6 +80,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { audioService } from '@/lib/audio/audio-service';
+import { hapticService } from '@/lib/audio/haptic-service';
+import { apiClient } from '@/lib/api-client';
 import type { WorkItem, WorkItemStatus, PriorityLevel, Comment } from '@/types/foco';
 
 // No mock data - fetch from API
@@ -688,24 +691,39 @@ export default function WorkItemPage() {
   const handleTaskUpdate = useCallback(async (updates: Partial<WorkItem>) => {
     if (!workItem) return;
 
-    const response = await fetch(`/api/tasks/${workItem.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    });
+    try {
+      const response = await apiClient.patch(`/api/tasks/${workItem.id}`, updates);
 
-    const data = await response.json();
-    if (!response.ok || (!data.ok && !data.success)) {
-      throw new Error(data.error || 'Failed to update task');
-    }
+      if (!response.success) {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to update task');
+      }
 
-    // Update local state with new data
-    const updatedTask = data.data || data;
-    setWorkItem(prev => prev ? { ...prev, ...updatedTask } : null);
-    // Check if the status indicates completion (no 'done' status in WorkItemStatus, completion tracked separately)
-    if (updates.status) {
-      // If status is explicitly set, task is not completed unless toggled via isCompleted
-      setIsCompleted(false);
+      const data = response.data;
+      // Update local state with new data if not queued
+      if (!data.queued) {
+        const updatedTask = data.data || data;
+        setWorkItem(prev => prev ? { ...prev, ...updatedTask } : null);
+        toast.success('Task updated');
+        audioService.play('sync');
+        hapticService.light();
+      } else {
+        toast.info('Update queued for offline sync');
+        audioService.play('sync');
+        hapticService.light();
+      }
+
+      // Check if the status indicates completion (no 'done' status in WorkItemStatus, completion tracked separately)
+      if (updates.status) {
+        // If status is explicitly set, task is not completed unless toggled via isCompleted
+        setIsCompleted(false);
+      }
+    } catch (error) {
+      console.error('Task update error:', error);
+      audioService.play('error');
+      hapticService.error();
+      throw error;
     }
   }, [workItem]);
 
@@ -715,23 +733,29 @@ export default function WorkItemPage() {
 
     setCommentSubmitting(true);
     try {
-      const response = await fetch(`/api/tasks/${workItem.id}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment.trim() })
-      });
+      const response = await apiClient.post(`/api/tasks/${workItem.id}/comments`, { content: newComment.trim() });
 
-      const data = await response.json();
-      if (response.ok && (data.ok || data.success)) {
-        const newCommentData = data.data || data;
-        setComments(prev => [...prev, newCommentData]);
+      if (response.success && response.data) {
+        const data = response.data;
+        if (!data.queued) {
+          const newCommentData = data.data || data;
+          setComments(prev => [...prev, newCommentData]);
+          toast.success('Comment added');
+        } else {
+          toast.info('Comment queued for offline sync');
+        }
+        audioService.play('sync');
+        hapticService.light();
         setNewComment('');
-        toast.success('Comment added');
       } else {
-        toast.error(data.error || 'Failed to add comment');
+        audioService.play('error');
+        hapticService.error();
+        toast.error(response.error || 'Failed to add comment');
       }
     } catch (error) {
       console.error('Failed to add comment:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to add comment');
     } finally {
       setCommentSubmitting(false);
@@ -742,6 +766,8 @@ export default function WorkItemPage() {
   const handleCopyLink = useCallback(() => {
     const url = `${window.location.origin}/tasks/${workItem?.id}`;
     navigator.clipboard.writeText(url);
+    audioService.play('click');
+    hapticService.light();
     toast.success('Link copied to clipboard');
   }, [workItem]);
 
@@ -750,30 +776,36 @@ export default function WorkItemPage() {
     if (!workItem) return;
 
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: `${workItem.title} (Copy)`,
-          description: workItem.description,
-          workspace_id: workItem.workspace_id,
-          project_id: workItem.project_id,
-          status: 'backlog',
-          priority: workItem.priority,
-          type: workItem.type
-        })
+      const response = await apiClient.post('/api/tasks', {
+        title: `${workItem.title} (Copy)`,
+        description: workItem.description,
+        workspace_id: workItem.workspace_id,
+        project_id: workItem.project_id,
+        status: 'backlog',
+        priority: workItem.priority,
+        type: workItem.type
       });
 
-      const data = await response.json();
-      if (response.ok && (data.ok || data.success)) {
-        const newTask = data.data || data;
-        toast.success('Task duplicated');
-        router.push(`/tasks/${newTask.id}`);
+      if (response.success && response.data) {
+        const data = response.data;
+        audioService.play('complete');
+        hapticService.success();
+        if (!data.queued) {
+          const newTask = data.data || data;
+          toast.success('Task duplicated');
+          router.push(`/tasks/${newTask.id}`);
+        } else {
+          toast.info('Duplication queued for offline sync');
+        }
       } else {
-        toast.error(data.error || 'Failed to duplicate task');
+        audioService.play('error');
+        hapticService.error();
+        toast.error(response.error || 'Failed to duplicate task');
       }
     } catch (error) {
       console.error('Failed to duplicate task:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to duplicate task');
     }
   }, [workItem, router]);
@@ -784,19 +816,27 @@ export default function WorkItemPage() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/tasks/${workItem.id}`, {
-        method: 'DELETE'
-      });
+      const response = await apiClient.delete(`/api/tasks/${workItem.id}`);
 
-      const data = await response.json();
-      if (response.ok && (data.ok || data.success)) {
-        toast.success('Task deleted');
-        router.push('/my-work');
+      if (response.success) {
+        audioService.play('error'); // Warning sound for deletion
+        hapticService.heavy();
+        if (!response.data?.queued) {
+          toast.success('Task deleted');
+          router.push('/my-work');
+        } else {
+          toast.info('Deletion queued for offline sync');
+          router.push('/my-work');
+        }
       } else {
-        toast.error(data.error || 'Failed to delete task');
+        audioService.play('error');
+        hapticService.error();
+        toast.error(response.error || 'Failed to delete task');
       }
     } catch (error) {
       console.error('Failed to delete task:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to delete task');
     } finally {
       setDeleting(false);
@@ -810,6 +850,13 @@ export default function WorkItemPage() {
     setIsCompleted(!isCompleted);
     try {
       await handleTaskUpdate({ status: newStatus } as Partial<WorkItem>);
+      if (newStatus === 'done') {
+        audioService.play('complete');
+        hapticService.success();
+      } else {
+        audioService.play('sync');
+        hapticService.light();
+      }
     } catch (error) {
       setIsCompleted(isCompleted); // Revert on error
       toast.error('Failed to update status');
@@ -818,6 +865,7 @@ export default function WorkItemPage() {
 
   const handleStartFocus = () => {
     if (workItem) {
+      hapticService.light();
       activate(workItem);
     }
   };
@@ -826,30 +874,32 @@ export default function WorkItemPage() {
     if (!workItem) return;
 
     setAiLoading(action);
+    audioService.play('click');
+    hapticService.light();
     try {
-      const res = await fetch('/api/ai/task-actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          task_id: workItem.id,
-          workspace_id: workItem.workspace_id
-        })
+      const res = await apiClient.post('/api/ai/task-actions', {
+        action,
+        task_id: workItem.id,
+        workspace_id: workItem.workspace_id
       });
 
-      const data = await res.json();
-
-      if (data.success) {
+      if (res.success && res.data) {
+        const data = res.data;
+        audioService.play('complete'); // Use 'complete' or could use 'ai_spark' if implemented
         setAiPreview({
           action,
           preview: data.preview,
           applyUrl: `/api/ai/task-actions/${data.execution_id}/apply`
         });
       } else {
-        toast.error(data.error || 'Failed to generate AI preview');
+        audioService.play('error');
+        hapticService.error();
+        toast.error(res.error || 'Failed to generate AI preview');
       }
     } catch (error) {
       console.error('AI action error:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to connect to AI service');
     } finally {
       setAiLoading(null);
@@ -859,20 +909,26 @@ export default function WorkItemPage() {
   const handleApplyPreview = async () => {
     if (!aiPreview) return;
 
-    const res = await fetch(aiPreview.applyUrl, { method: 'POST' });
-    const data = await res.json();
+    try {
+      const response = await apiClient.post(aiPreview.applyUrl, {});
 
-    if (data.success || data.ok) {
-      toast.success('Changes applied successfully');
-      // Refresh the task to show any changes
-      const taskResponse = await fetch(`/api/tasks/${params.id}`);
-      const taskData = await taskResponse.json();
-      const refreshedTask = taskData.data || taskData;
-      if ((taskData.ok || taskData.success) && refreshedTask) {
-        setWorkItem(refreshedTask);
+      if (response.success) {
+        audioService.play('complete');
+        hapticService.success();
+        toast.success('Changes applied successfully');
+        setAiPreview(null);
+        // Refresh the task to show any changes
+        await fetchTask();
+      } else {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to apply changes');
       }
-    } else {
-      throw new Error(data.error || 'Failed to apply changes');
+    } catch (error) {
+      console.error('Failed to apply changes:', error);
+      audioService.play('error');
+      hapticService.error();
+      toast.error('Failed to apply changes');
     }
   };
 

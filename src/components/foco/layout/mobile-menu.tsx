@@ -179,7 +179,7 @@ export function MobileMenu() {
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                      'nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                       'hover:bg-zinc-100 dark:hover:bg-zinc-800',
                       active
                         ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'

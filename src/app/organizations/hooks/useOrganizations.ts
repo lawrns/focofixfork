@@ -4,6 +4,9 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import { InvitationWithDetails } from '@/lib/models/invitations'
+import { apiClient } from '@/lib/api-client'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 export interface Organization {
   id: string
@@ -159,25 +162,33 @@ export function useOrganizations(): UseOrganizationsReturn {
     setIsInviting(true)
     setInviteResult(null)
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole, userId: user?.id }),
+      const response = await apiClient.post(`/api/organizations/${selectedOrganization.id}/members`, {
+        email: inviteEmail,
+        role: inviteRole,
+        userId: user?.id
       })
-      const data = await response.json()
-      if (response.ok && data.success) {
-        const msg = data.data?.invitation_sent === false ? 'Invitation created but email could not be sent.' : data.message || 'Invitation sent!'
-        setInviteResult({ success: data.data?.invitation_sent !== false, message: msg })
+      
+      if (response.success && response.data) {
+        const data = response.data
+        const msg = data.invitation_sent === false ? 'Invitation created but email could not be sent.' : response.error || 'Invitation sent!'
+        
+        audioService.play('complete')
+        hapticService.success()
+        
+        setInviteResult({ success: data.invitation_sent !== false, message: msg })
         setInviteEmail('')
         setInviteRole('member')
         setShowInviteModal(false)
         await refreshMembers(selectedOrganization.id)
         await refreshInvitations(selectedOrganization.id)
       } else {
-        setInviteResult({ success: false, message: data.error || 'Failed to send invitation' })
+        audioService.play('error')
+        hapticService.error()
+        setInviteResult({ success: false, message: response.error || 'Failed to send invitation' })
       }
     } catch {
+      audioService.play('error')
+      hapticService.error()
       setInviteResult({ success: false, message: 'An unexpected error occurred' })
     } finally {
       setIsInviting(false)
@@ -187,17 +198,23 @@ export function useOrganizations(): UseOrganizationsReturn {
   const handleUpdateRole = useCallback(async (memberId: string, newRole: MemberRole) => {
     if (!selectedOrganization) return
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole, userId: user?.id }),
+      const response = await apiClient.patch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
+        role: newRole,
+        userId: user?.id
       })
-      if (response.ok) {
+      
+      if (response.success) {
+        audioService.play('sync')
+        hapticService.light()
         await refreshMembers(selectedOrganization.id)
         setEditingMember(null)
+      } else {
+        audioService.play('error')
+        hapticService.error()
       }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to update member role:', error)
     }
   }, [selectedOrganization, user?.id, refreshMembers])
@@ -207,14 +224,21 @@ export function useOrganizations(): UseOrganizationsReturn {
   const confirmRemoveMember = useCallback(async () => {
     if (!selectedOrganization || !memberToRemove) return
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberToRemove}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.id }),
+      const response = await apiClient.delete(`/api/organizations/${selectedOrganization.id}/members/${memberToRemove}`, {
+        body: { userId: user?.id }
       })
-      if (response.ok) await refreshMembers(selectedOrganization.id)
+      
+      if (response.success) {
+        audioService.play('error') // Use error sound for removal
+        hapticService.medium()
+        await refreshMembers(selectedOrganization.id)
+      } else {
+        audioService.play('error')
+        hapticService.error()
+      }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to remove member:', error)
     } finally {
       setMemberToRemove(null)
@@ -224,9 +248,19 @@ export function useOrganizations(): UseOrganizationsReturn {
   const handleResendInvitation = useCallback(async (invitationId: string) => {
     if (!selectedOrganization) return
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, { method: 'POST', credentials: 'include' })
-      if (response.ok) await refreshInvitations(selectedOrganization.id)
+      const response = await apiClient.post(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, {})
+      
+      if (response.success) {
+        audioService.play('complete')
+        hapticService.light()
+        await refreshInvitations(selectedOrganization.id)
+      } else {
+        audioService.play('error')
+        hapticService.error()
+      }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to resend invitation:', error)
     }
   }, [selectedOrganization, refreshInvitations])
@@ -236,9 +270,19 @@ export function useOrganizations(): UseOrganizationsReturn {
   const confirmCancelInvitation = useCallback(async () => {
     if (!selectedOrganization || !invitationToCancel) return
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`, { method: 'DELETE', credentials: 'include' })
-      if (response.ok) await refreshInvitations(selectedOrganization.id)
+      const response = await apiClient.delete(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`)
+      
+      if (response.success) {
+        audioService.play('error')
+        hapticService.light()
+        await refreshInvitations(selectedOrganization.id)
+      } else {
+        audioService.play('error')
+        hapticService.error()
+      }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to cancel invitation:', error)
     } finally {
       setInvitationToCancel(null)
@@ -254,22 +298,25 @@ export function useOrganizations(): UseOrganizationsReturn {
     setIsCreating(true)
     setCreateResult(null)
     try {
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: orgName.trim() })
+      const response = await apiClient.post('/api/organizations', {
+        name: orgName.trim()
       })
-      const data = await response.json()
-      if (response.ok && data.success) {
+      
+      if (response.success && response.data) {
+        audioService.play('complete')
+        hapticService.success()
         setCreateResult({ success: true, message: 'Organization created successfully!' })
         setOrgName('')
         setShowCreateDialog(false)
         await loadOrganizations()
       } else {
-        setCreateResult({ success: false, message: data.error || 'Failed to create organization' })
+        audioService.play('error')
+        hapticService.error()
+        setCreateResult({ success: false, message: response.error || 'Failed to create organization' })
       }
     } catch {
+      audioService.play('error')
+      hapticService.error()
       setCreateResult({ success: false, message: 'Network error occurred' })
     } finally {
       setIsCreating(false)

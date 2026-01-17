@@ -31,6 +31,8 @@ import { useSyncStatus } from '@/lib/hooks/useSyncStatus'
 import { SyncIndicator } from '@/components/ui/sync-indicator'
 import { RoleManagement } from './role-management'
 import { ExportDialog } from '@/components/deprecation/ExportDialog'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface UserSettings {
   theme: 'light' | 'dark' | 'system'
@@ -195,8 +197,12 @@ export function SettingsDashboard() {
       }
 
       userSyncStatus.completeSync()
+      audioService.play('sync')
+      hapticService.light()
     } catch (error) {
       console.error('[Settings] Error saving user settings:', error)
+      audioService.play('error')
+      hapticService.error()
       const errorMessage = error instanceof Error ? error.message : 'Failed to save settings'
       userSyncStatus.setSyncError(errorMessage)
       toast.error(errorMessage, {
@@ -233,6 +239,8 @@ export function SettingsDashboard() {
       console.log('[Settings] Profile update response:', response.status, responseData)
 
       if (!response.ok) {
+        audioService.play('error')
+        hapticService.error()
         console.error('[Settings] Profile update failed:', response.status, responseData)
         throw new Error(responseData.error || 'Failed to save settings')
       }
@@ -251,9 +259,13 @@ export function SettingsDashboard() {
         })
       })
 
+      audioService.play('complete')
+      hapticService.success()
       toast.success('Settings saved successfully')
     } catch (error) {
       console.error('[Settings] Error saving user settings:', error)
+      audioService.play('error')
+      hapticService.error()
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       toast.error('Failed to save settings: ' + errorMessage)
     } finally {
@@ -283,11 +295,20 @@ export function SettingsDashboard() {
         })
       })
 
-      if (!response.ok) throw new Error('Failed to save organization settings')
+      if (!response.ok) {
+        audioService.play('error')
+        hapticService.error()
+        throw new Error('Failed to save organization settings')
+      }
+      
       orgSyncStatus.completeSync()
+      audioService.play('complete')
+      hapticService.success()
       toast.success('Organization settings saved')
     } catch (error) {
       console.error('Error saving organization settings:', error)
+      audioService.play('error')
+      hapticService.error()
       const errorMessage = error instanceof Error ? error.message : 'Failed to save settings'
       orgSyncStatus.setSyncError(errorMessage)
       toast.error(errorMessage, {

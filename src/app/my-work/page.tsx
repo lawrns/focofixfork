@@ -37,6 +37,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { audioService } from '@/lib/audio/audio-service';
+import { hapticService } from '@/lib/audio/haptic-service';
+import { apiClient } from '@/lib/api-client';
 import type { WorkItem, PriorityLevel, WorkItemStatus } from '@/types/foco';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
@@ -79,15 +82,30 @@ function WorkItemRow({
     setIsCompleted(!isCompleted);
 
     try {
-      const response = await fetch(`/api/tasks/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus })
-      });
+      const response = await apiClient.patch(`/api/tasks/${item.id}`, { status: nextStatus });
 
-      if (!response.ok) throw new Error('Failed to update task');
+      if (!response.success) {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to update task');
+      }
+
+      const data = response.data;
+      if (data?.queued) {
+        toast.info('Status update queued for offline sync');
+      }
+      
+      if (nextStatus === 'done') {
+        audioService.play('complete');
+        hapticService.success();
+      } else {
+        audioService.play('sync');
+        hapticService.light();
+      }
     } catch (error) {
       setIsCompleted(isCompleted); // revert
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to update task status');
     }
   };
@@ -334,10 +352,12 @@ function Section({
 
 function FocusMode({
   item,
-  onExit
+  onExit,
+  onRefresh
 }: {
   item: WorkItem;
   onExit: () => void;
+  onRefresh?: () => Promise<void>;
 }) {
   const {
     isTimerRunning,
@@ -393,13 +413,25 @@ function FocusMode({
   const handleApplyPreview = async () => {
     if (!aiPreview) return;
 
-    const res = await fetch(aiPreview.applyUrl, { method: 'POST' });
-    const data = await res.json();
+    try {
+      const response = await apiClient.post(aiPreview.applyUrl, {});
 
-    if (data.success || data.ok) {
-      toast.success('Changes applied successfully');
-    } else {
-      throw new Error(data.error || 'Failed to apply changes');
+      if (response.success) {
+        audioService.play('complete');
+        hapticService.success();
+        toast.success('Changes applied successfully');
+        setAiPreview(null);
+        await onRefresh?.();
+      } else {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to apply changes');
+      }
+    } catch (error) {
+      console.error('Failed to apply changes:', error);
+      audioService.play('error');
+      hapticService.error();
+      toast.error('Failed to apply changes');
     }
   };
 
@@ -457,34 +489,36 @@ function FocusMode({
     try {
       // Stop timer and save to database
       await completeAndSave(async (taskId: string, duration: number) => {
-        // Save time entry to database
-        const response = await fetch('/api/time-entries', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            task_id: taskId,
-            duration_seconds: duration,
-            started_at: new Date(Date.now() - duration * 1000).toISOString(),
-            ended_at: new Date().toISOString(),
-          }),
+        // Save time entry to database via resilient client
+        const timeResponse = await apiClient.post('/api/time-entries', {
+          task_id: taskId,
+          duration_seconds: duration,
+          started_at: new Date(Date.now() - duration * 1000).toISOString(),
+          ended_at: new Date().toISOString(),
         });
 
-        if (!response.ok) {
+        if (!timeResponse.success) {
           console.error('Failed to save time entry');
         }
 
-        // Mark task as complete
-        await fetch(`/api/tasks/${taskId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'done' }),
-        });
+        // Mark task as complete via resilient client
+        const taskResponse = await apiClient.patch(`/api/tasks/${taskId}`, { status: 'done' });
+        
+        if (taskResponse.success) {
+          audioService.play('complete');
+          hapticService.success();
+        } else {
+          audioService.play('error');
+          hapticService.error();
+        }
       });
 
       toast.success('Task completed and time saved!');
       onExit();
     } catch (error) {
       console.error('Error completing task:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to save task completion');
       onExit();
     }
@@ -686,20 +720,23 @@ export default function MyWorkPage() {
     
     setIsPlanning(true);
     try {
-      const response = await fetch('/api/my-work/plan-day', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await apiClient.post('/api/my-work/plan-day', {});
       
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(data.message || 'Day planned successfully!');
+      if (response.success) {
+        audioService.play('complete');
+        hapticService.success();
+        const data = response.data;
+        toast.success(data?.message || 'Day planned successfully!');
         await fetchWorkItems(); // Refresh to show new organization
       } else {
-        throw new Error('Failed to plan day');
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to plan day');
       }
     } catch (error) {
       console.error('Failed to plan day:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to plan your day');
     } finally {
       setIsPlanning(false);
@@ -708,31 +745,38 @@ export default function MyWorkPage() {
 
   const handleAddTask = (section: 'now' | 'next' | 'later' | 'waiting') => {
     // Open task modal with section pre-selected
+    hapticService.light();
     openTaskModal({ section });
   };
 
   const handleQuickAdd = async (title: string, section: 'now' | 'next' | 'later' | 'waiting') => {
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          status: section === 'now' ? 'in_progress' : section === 'waiting' ? 'blocked' : section,
-          priority: 'medium',
-        }),
+      const response = await apiClient.post('/api/tasks', {
+        title,
+        status: section === 'now' ? 'in_progress' : section === 'waiting' ? 'blocked' : section,
+        priority: 'medium',
       });
 
-      if (!response.ok) throw new Error('Failed to create task');
+      if (!response.success || !response.data) {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to create task');
+      }
 
-      const data = await response.json();
-      if (data.success && data.data) {
+      const data = response.data;
+      if (data.queued) {
+        toast.info('Task creation queued for offline sync');
+      } else {
         // Add the new task to the list
-        setItems(prev => [...prev, { ...data.data, section }]);
+        setItems(prev => [...prev, { ...data, section }]);
         toast.success('Task created');
       }
+      audioService.play('sync');
+      hapticService.light();
     } catch (error) {
       console.error('Failed to create task:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to create task');
       throw error;
     }
@@ -748,23 +792,32 @@ export default function MyWorkPage() {
     };
 
     try {
-      const response = await fetch(`/api/tasks/${itemId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: statusMap[targetSection] })
-      });
+      const response = await apiClient.patch(`/api/tasks/${itemId}`, { status: statusMap[targetSection] });
 
-      if (!response.ok) throw new Error('Failed to move task');
+      if (!response.success || !response.data) {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to move task');
+      }
 
-      // Update local state
-      setItems(prev => prev.map(item =>
-        item.id === itemId
-          ? { ...item, section: targetSection, status: statusMap[targetSection] }
-          : item
-      ));
-      toast.success(`Moved to ${targetSection}`);
+      const data = response.data;
+      if (data.queued) {
+        toast.info('Move queued for offline sync');
+      } else {
+        // Update local state
+        setItems(prev => prev.map(item =>
+          item.id === itemId
+            ? { ...item, section: targetSection, status: statusMap[targetSection] }
+            : item
+        ));
+        toast.success(`Moved to ${targetSection}`);
+      }
+      audioService.play('sync');
+      hapticService.light();
     } catch (error) {
       console.error('Failed to move task:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to move task');
     }
   }, []);
@@ -772,19 +825,28 @@ export default function MyWorkPage() {
   const handleRemoveFromMyWork = useCallback(async (itemId: string) => {
     try {
       // Remove assignee to take off my work list
-      const response = await fetch(`/api/tasks/${itemId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignee_id: null })
-      });
+      const response = await apiClient.patch(`/api/tasks/${itemId}`, { assignee_id: null });
 
-      if (!response.ok) throw new Error('Failed to remove task');
+      if (!response.success || !response.data) {
+        audioService.play('error');
+        hapticService.error();
+        throw new Error(response.error || 'Failed to remove task');
+      }
 
-      // Remove from local state
-      setItems(prev => prev.filter(item => item.id !== itemId));
-      toast.success('Removed from My Work');
+      const data = response.data;
+      if (data.queued) {
+        toast.info('Removal queued for offline sync');
+      } else {
+        // Remove from local state
+        setItems(prev => prev.filter(item => item.id !== itemId));
+        toast.success('Removed from My Work');
+      }
+      audioService.play('error'); // Use warning sound for removal
+      hapticService.medium();
     } catch (error) {
       console.error('Failed to remove task:', error);
+      audioService.play('error');
+      hapticService.error();
       toast.error('Failed to remove task');
     }
   }, []);

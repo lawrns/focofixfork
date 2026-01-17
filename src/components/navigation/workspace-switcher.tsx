@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { CreateWorkspaceDialog } from '@/components/dialogs/create-workspace-dialog'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 export interface Workspace {
   id: string
@@ -99,6 +101,8 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
   const handleWorkspaceSwitch = (workspace: Workspace) => {
     localStorage.setItem('lastWorkspace', workspace.slug)
+    audioService.play('sync')
+    hapticService.light()
     setAnnouncement(`Switched to ${workspace.name}`)
     setIsOpen(false)
 
@@ -191,7 +195,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="flex items-center gap-2 px-3 py-2 h-10"
+            className="flex items-center gap-2 px-3 py-2 h-11 min-h-[44px]"
             aria-haspopup="menu"
             aria-expanded={isOpen}
           >

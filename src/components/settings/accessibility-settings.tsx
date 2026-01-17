@@ -240,6 +240,52 @@ export function AccessibilitySettings() {
         </CardContent>
       </Card>
 
+      {/* Sensory Feedback Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Volume2 className="w-5 h-5 text-[#00B894]" />
+            Sensory Feedback
+          </CardTitle>
+          <CardDescription>
+            Control how Foco uses sound and touch to guide your experience
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="haptic-feedback" className="text-sm font-medium">
+                Haptic Feedback
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Vibrate on successful actions (Mobile only)
+              </p>
+            </div>
+            <Switch
+              id="haptic-feedback"
+              checked={tempSettings.enableHapticFeedback}
+              onCheckedChange={(checked) => handleSettingChange('enableHapticFeedback', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="sound-notifications" className="text-sm font-medium">
+                Sound Notifications
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Play subtle audio cues for important events
+              </p>
+            </div>
+            <Switch
+              id="sound-notifications"
+              checked={tempSettings.enableSoundNotifications}
+              onCheckedChange={(checked) => handleSettingChange('enableSoundNotifications', checked)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Navigation Settings */}
       <Card>
         <CardHeader>

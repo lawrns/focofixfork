@@ -280,9 +280,9 @@ export default function TeamManagementDialog({
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="user_id">Select User</Label>
+                  <Label htmlFor="user_id" className="text-sm font-semibold">Select User</Label>
                   <Select onValueChange={(value) => setValue('user_id', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="min-h-[44px]">
                       <SelectValue placeholder="Choose a user" />
                     </SelectTrigger>
                     <SelectContent>
@@ -301,9 +301,9 @@ export default function TeamManagementDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="role" className="text-sm font-semibold">Role</Label>
                   <Select onValueChange={(value: TeamMemberRole) => setValue('role', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="min-h-[44px]">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -318,8 +318,8 @@ export default function TeamManagementDialog({
                 </div>
               </div>
 
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isLoading} className="w-full min-h-[44px] font-bold">
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Add Team Member
               </Button>
             </form>

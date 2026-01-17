@@ -1,15 +1,58 @@
-import { Redis } from '@upstash/redis'
+import { createClient, RedisClientType } from 'redis'
 
-// Check if Redis is configured - if not, we'll bypass caching entirely
-const REDIS_ENABLED = !!(process.env.UPSTASH_REDIS_URL && process.env.UPSTASH_REDIS_TOKEN)
+// Redis Cloud configuration
+const REDIS_HOST = process.env.REDIS_HOST || 'redis-16417.fcrce172.us-east-1-1.ec2.cloud.redislabs.com'
+const REDIS_PORT = parseInt(process.env.REDIS_PORT || '16417')
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || ''
+const REDIS_ENABLED = !!REDIS_PASSWORD
 
-// Only create Redis client if configured
-export const redis = REDIS_ENABLED 
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_URL!,
-      token: process.env.UPSTASH_REDIS_TOKEN!,
+// Singleton Redis client
+let redisClient: RedisClientType | null = null
+let isConnecting = false
+let isConnected = false
+
+async function getRedisClient(): Promise<RedisClientType | null> {
+  if (!REDIS_ENABLED) return null
+  
+  if (redisClient && isConnected) return redisClient
+  
+  if (isConnecting) {
+    // Wait for connection
+    await new Promise(resolve => setTimeout(resolve, 100))
+    return redisClient
+  }
+  
+  try {
+    isConnecting = true
+    redisClient = createClient({
+      username: 'default',
+      password: REDIS_PASSWORD,
+      socket: {
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+        connectTimeout: 5000,
+      }
     })
-  : null
+    
+    redisClient.on('error', () => {
+      isConnected = false
+    })
+    
+    redisClient.on('connect', () => {
+      isConnected = true
+    })
+    
+    await redisClient.connect()
+    isConnected = true
+    return redisClient
+  } catch (error) {
+    isConnecting = false
+    isConnected = false
+    return null
+  } finally {
+    isConnecting = false
+  }
+}
 
 export interface CacheOptions {
   ttl?: number
@@ -21,17 +64,19 @@ export async function cachedFetch<T>(
   fetcher: () => Promise<T>,
   options: CacheOptions = {}
 ): Promise<T> {
-  // Skip cache entirely if Redis not configured - direct fetch is faster than failed cache attempts
-  if (!redis) {
+  const client = await getRedisClient()
+  
+  // Skip cache if Redis not available
+  if (!client) {
     return fetcher()
   }
 
   const { ttl = 120 } = options
 
   try {
-    const cached = await redis.get(key)
-    if (cached) {
-      return cached as T
+    const cached = await client.get(key)
+    if (cached && typeof cached === 'string') {
+      return JSON.parse(cached) as T
     }
   } catch (error) {
     // Silent fail - just fetch directly
@@ -40,7 +85,7 @@ export async function cachedFetch<T>(
   const data = await fetcher()
 
   try {
-    await redis.setex(key, ttl, JSON.stringify(data))
+    await client.setEx(key, ttl, JSON.stringify(data))
   } catch (error) {
     // Silent fail on write
   }
@@ -49,13 +94,14 @@ export async function cachedFetch<T>(
 }
 
 export async function invalidateCache(patterns: string[]): Promise<void> {
-  if (!redis) return
+  const client = await getRedisClient()
+  if (!client) return
   
   try {
     const keys: string[] = []
     for (const pattern of patterns) {
       if (pattern.includes('*')) {
-        const matchedKeys = await redis.keys(pattern)
+        const matchedKeys = await client.keys(pattern)
         keys.push(...matchedKeys)
       } else {
         keys.push(pattern)
@@ -63,7 +109,7 @@ export async function invalidateCache(patterns: string[]): Promise<void> {
     }
 
     if (keys.length > 0) {
-      await Promise.all(keys.map(key => redis.del(key)))
+      await Promise.all(keys.map(key => client.del(key)))
     }
   } catch (error) {
     // Silent fail

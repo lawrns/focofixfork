@@ -85,6 +85,12 @@ function OrganizationsContent() {
   const [invitationToCancel, setInvitationToCancel] = useState<string | null>(null)
 
   const loadOrganizations = useCallback(async () => {
+    // Don't load if user is not authenticated yet
+    if (!user) {
+      console.log('[Organizations] Waiting for authentication...')
+      return
+    }
+    
     try {
       const response = await fetch('/api/organizations', {
               })
@@ -101,7 +107,7 @@ function OrganizationsContent() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     loadOrganizations()

@@ -1,9 +1,15 @@
 import { Redis } from '@upstash/redis'
 
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-})
+// Check if Redis is configured - if not, we'll bypass caching entirely
+const REDIS_ENABLED = !!(process.env.UPSTASH_REDIS_URL && process.env.UPSTASH_REDIS_TOKEN)
+
+// Only create Redis client if configured
+export const redis = REDIS_ENABLED 
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_URL!,
+      token: process.env.UPSTASH_REDIS_TOKEN!,
+    })
+  : null
 
 export interface CacheOptions {
   ttl?: number
@@ -15,31 +21,36 @@ export async function cachedFetch<T>(
   fetcher: () => Promise<T>,
   options: CacheOptions = {}
 ): Promise<T> {
+  // Skip cache entirely if Redis not configured - direct fetch is faster than failed cache attempts
+  if (!redis) {
+    return fetcher()
+  }
+
   const { ttl = 120 } = options
 
   try {
     const cached = await redis.get(key)
     if (cached) {
-      console.log(`[Cache HIT] ${key}`)
       return cached as T
     }
   } catch (error) {
-    console.error(`[Cache READ ERROR] ${key}:`, error)
+    // Silent fail - just fetch directly
   }
 
-  console.log(`[Cache MISS] ${key}`)
   const data = await fetcher()
 
   try {
     await redis.setex(key, ttl, JSON.stringify(data))
   } catch (error) {
-    console.error(`[Cache WRITE ERROR] ${key}:`, error)
+    // Silent fail on write
   }
 
   return data
 }
 
 export async function invalidateCache(patterns: string[]): Promise<void> {
+  if (!redis) return
+  
   try {
     const keys: string[] = []
     for (const pattern of patterns) {
@@ -53,10 +64,9 @@ export async function invalidateCache(patterns: string[]): Promise<void> {
 
     if (keys.length > 0) {
       await Promise.all(keys.map(key => redis.del(key)))
-      console.log(`[Cache INVALIDATED] ${keys.length} keys:`, keys)
     }
   } catch (error) {
-    console.error('[Cache INVALIDATION ERROR]:', error)
+    // Silent fail
   }
 }
 

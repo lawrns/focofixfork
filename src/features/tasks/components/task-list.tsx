@@ -78,7 +78,6 @@ export function TaskList({
     if (!user) return
 
     try {
-      console.log('[TaskFetch] Fetching tasks for user', user.id, 'Project:', projectId, 'Filters:', { statusFilter, priorityFilter, assigneeFilter })
       setLoading(true)
       setError(null)
 
@@ -124,7 +123,6 @@ export function TaskList({
         tasksData = data
       }
 
-      console.log('TaskList: loaded tasks:', tasksData.length)
       setTasks(tasksData)
     } catch (err) {
       console.error('Error fetching tasks:', err)
@@ -151,7 +149,6 @@ export function TaskList({
     if (!user) return
 
     try {
-      console.log('[TaskUpdate] Attempting status change for task', taskId, 'to', newStatus, 'User:', user.id)
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
@@ -162,8 +159,6 @@ export function TaskList({
       })
 
       if (!response.ok) {
-        const errorBody = await response.text()
-        console.error('[TaskUpdate] Failed with status', response.status, 'Body:', errorBody)
         if (response.status === 403) {
           toast.error('Permission denied. You may not have access to update this task.')
         } else if (response.status === 401) {
@@ -171,12 +166,11 @@ export function TaskList({
           // Trigger re-auth
           window.location.reload()
         } else {
-          throw new Error(`Failed to update task status: ${response.status} - ${errorBody}`)
+          throw new Error(`Failed to update task status: ${response.status}`)
         }
         return // Don't update local state on error
       }
 
-      console.log('[TaskUpdate] Success for task', taskId)
       // Update local state
       setTasks(prev => prev.map(task =>
         task.id === taskId

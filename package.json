@@ -114,6 +114,7 @@
     "react-hook-form": "^7.63.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.3.0",
+    "redis": "^5.10.0",
     "resend": "^6.1.1",
     "sonner": "^1.4.41",
     "speakeasy": "^2.0.0",

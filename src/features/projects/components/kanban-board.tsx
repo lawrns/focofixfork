@@ -8,10 +8,14 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, MoreHorizontal, X, Check, GripVertical, MessageSquare, Paperclip, Calendar } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Plus, MoreHorizontal, X, Check, GripVertical, MessageSquare, Paperclip, Calendar, Eye, List, EyeOff } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { AccessibilityService } from '@/lib/accessibility/accessibility'
 
 interface Task {
   id: string
@@ -49,7 +53,32 @@ export function KanbanBoard() {
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [isScreenReaderMode, setIsScreenReaderMode] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Initialize accessibility mode from preferences
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('foco_accessibility');
+      if (stored) {
+        const settings = JSON.parse(stored);
+        setIsScreenReaderMode(settings.screenReader || false);
+      }
+    }
+  }, [])
+
+  const toggleScreenReaderMode = () => {
+    const newValue = !isScreenReaderMode;
+    setIsScreenReaderMode(newValue);
+    AccessibilityService.announce(`Kanban board switched to ${newValue ? 'List' : 'Grid'} view`);
+    
+    // Update settings if possible
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('foco_accessibility');
+      const settings = stored ? JSON.parse(stored) : {};
+      localStorage.setItem('foco_accessibility', JSON.stringify({ ...settings, screenReader: newValue }));
+    }
+  }
 
   const loadTasks = useCallback(async () => {
     if (!user) return
@@ -233,6 +262,15 @@ export function KanbanBoard() {
 
     setColumns(newColumns)
 
+    // World-class sensory feedback
+    if (destColumn.id === 'done') {
+      audioService.play('complete')
+      hapticService.success()
+    } else {
+      audioService.play('sync')
+      hapticService.light()
+    }
+
     // Update backend with status and fractional position
     try {
       const response = await fetch(`/api/tasks/${draggableId}`, {
@@ -318,231 +356,337 @@ export function KanbanBoard() {
   }
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 h-full" role="region" aria-label="Kanban board">
-        {columns.map((column) => (
-          <div key={column.id} className="flex-shrink-0 w-72 md:w-80 flex flex-col h-full">
-            {/* Column Container */}
-            <div className="flex-1 bg-zinc-50 dark:bg-zinc-900 rounded-lg p-4 border border-zinc-100 dark:border-zinc-800 overflow-hidden flex flex-col">
-              {/* Column Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {column.title}
-                  </h3>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full font-medium" aria-label={`${column.tasks.length} tasks in ${column.title}`}>
-                    {column.tasks.length}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
+    <div className="flex flex-col h-full space-y-4">
+      {/* Kanban Header with Accessibility Toggle */}
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 sr-only">Project Kanban Board</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleScreenReaderMode}
+          className="flex items-center gap-2 text-xs h-8"
+          aria-label={isScreenReaderMode ? "Switch to Grid View" : "Switch to Accessible List View"}
+        >
+          {isScreenReaderMode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {isScreenReaderMode ? "Grid View" : "Accessible View"}
+        </Button>
+      </div>
+
+      {isScreenReaderMode ? (
+        /* Screen Reader Mode: Accessible Hierarchical List */
+        <div className="space-y-8" role="list" aria-label="Tasks by status">
+          {columns.map((column) => (
+            <section key={column.id} aria-labelledby={`col-head-${column.id}`}>
+              <div className="flex items-center justify-between mb-4 border-b pb-2">
+                <h3 id={`col-head-${column.id}`} className="text-base font-bold flex items-center gap-2">
+                  {column.title}
+                  <Badge variant="secondary">{column.tasks.length}</Badge>
+                </h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
                   onClick={() => setAddingToColumn(column.id)}
-                  className="h-6 w-6 p-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                  title={`Add task to ${column.title}`}
-                  aria-label={`Add new task to ${column.title}`}
+                  aria-label={`Add task to ${column.title}`}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* Column Content */}
-              <div className="flex-1 overflow-hidden">
-              <Droppable droppableId={column.id}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`h-full overflow-y-auto space-y-2 rounded-md p-1 transition-all duration-150 ${
-                      snapshot.isDraggingOver
-                        ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-100/50 dark:bg-zinc-800/50'
-                        : 'border-2 border-transparent'
-                    }`}
-                    role="region"
-                    aria-label={`${column.title} column with ${column.tasks.length} tasks`}
-                  >
-                    {column.tasks.map((task, index) => (
-                      <Draggable
-                        key={task.id}
-                        draggableId={task.id}
-                        index={index}
-                      >
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={`group relative bg-white dark:bg-zinc-900 rounded-md p-3 border cursor-pointer transition-all duration-150 ${
-                              snapshot.isDragging
-                                ? 'shadow-lg scale-[1.02] rotate-1 border-zinc-300 dark:border-zinc-600'
-                                : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-sm'
-                            } ${getPriorityColor(task.priority)} border-l-4`}
-                            onClick={() => handleCardClick(task.id)}
-                            role="article"
-                            aria-label={`Task: ${task.title}. Priority: ${task.priority}. ${task.description ? `Description: ${task.description}` : ''} ${task.assignee_name ? `Assigned to: ${task.assignee_name}` : ''}`}
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                handleCardClick(task.id)
-                              }
-                            }}
-                          >
-                            {/* Drag Handle - Only visible on hover */}
-                            <div
-                              {...provided.dragHandleProps}
-                              className="absolute left-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                              aria-label="Drag handle"
+              {column.tasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic py-2">No tasks in this section.</p>
+              ) : (
+                <div className="space-y-3">
+                  {column.tasks.map((task) => (
+                    <div 
+                      key={task.id} 
+                      className="p-4 bg-white dark:bg-zinc-900 border rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-primary"
+                      role="listitem"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm">
+                            <button 
+                              onClick={() => handleCardClick(task.id)}
+                              className="text-left hover:underline focus:outline-none"
                             >
-                              <GripVertical className="h-4 w-4 text-zinc-400" />
-                            </div>
+                              {task.title}
+                            </button>
+                          </h4>
+                          {task.description && <p className="text-xs text-muted-foreground mt-1">{task.description}</p>}
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="text-[10px]">{task.priority}</Badge>
+                            {task.due_date && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(task.due_date)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Select 
+                          value={task.status} 
+                          onValueChange={(newStatus) => {
+                            // Manual move for A11y mode
+                            const sourceColumn = column;
+                            const destColumn = columns.find(c => c.id === newStatus);
+                            if (destColumn) {
+                              handleDragEnd({
+                                draggableId: task.id,
+                                source: { droppableId: sourceColumn.id, index: sourceColumn.tasks.indexOf(task) },
+                                destination: { droppableId: destColumn.id, index: destColumn.tasks.length },
+                                mode: 'FLUID',
+                                type: 'DEFAULT'
+                              } as any);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-32 h-8 text-[10px]" aria-label="Move to status">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todo">To Do</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="review">Review</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      ) : (
+        /* Standard Grid Mode */
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 h-full" role="region" aria-label="Kanban board">
+            {columns.map((column) => (
+              <div key={column.id} className="flex-shrink-0 w-72 md:w-80 flex flex-col h-full">
+                {/* ... existing column code ... */}
+                <div className="flex-1 bg-zinc-50 dark:bg-zinc-900 rounded-lg p-4 border border-zinc-100 dark:border-zinc-800 overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-primary/20">
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        {column.title}
+                      </h3>
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full font-medium" aria-label={`${column.tasks.length} tasks in ${column.title}`}>
+                        {column.tasks.length}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAddingToColumn(column.id)}
+                      className="h-6 w-6 p-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      title={`Add task to ${column.title}`}
+                      aria-label={`Add new task to ${column.title}`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                            <div className="pl-4">
-                              {/* Card Header */}
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 leading-5">
-                                    {task.title}
-                                  </h4>
-                                  {task.description && (
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
-                                      {task.description}
-                                    </p>
-                                  )}
+                  {/* Column Content */}
+                  <div className="flex-1 overflow-hidden">
+                  <Droppable droppableId={column.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`h-full overflow-y-auto space-y-2 rounded-md p-1 transition-all duration-150 ${
+                          snapshot.isDraggingOver
+                            ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-100/50 dark:bg-zinc-800/50'
+                            : 'border-2 border-transparent'
+                        }`}
+                        role="region"
+                        aria-label={`${column.title} column with ${column.tasks.length} tasks`}
+                      >
+                        {column.tasks.map((task, index) => (
+                          <Draggable
+                            key={task.id}
+                            draggableId={task.id}
+                            index={index}
+                          >
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`group relative bg-white dark:bg-zinc-900 rounded-md p-3 border cursor-pointer transition-all duration-150 focus-within:ring-2 focus-within:ring-primary ${
+                                  snapshot.isDragging
+                                    ? 'shadow-lg scale-[1.02] rotate-1 border-zinc-300 dark:border-zinc-600'
+                                    : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-sm'
+                                } ${getPriorityColor(task.priority)} border-l-4`}
+                                onClick={() => handleCardClick(task.id)}
+                                role="article"
+                                aria-label={`Task: ${task.title}. Priority: ${task.priority}. ${task.description ? `Description: ${task.description}` : ''} ${task.assignee_name ? `Assigned to: ${task.assignee_name}` : ''}`}
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    handleCardClick(task.id)
+                                  }
+                                }}
+                              >
+                                {/* Drag Handle - Only visible on hover */}
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="absolute left-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  aria-label="Drag handle"
+                                >
+                                  <GripVertical className="h-4 w-4 text-zinc-400" />
                                 </div>
 
-                                {/* Menu Button - Only visible on hover */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 text-zinc-400 hover:text-zinc-600"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    // TODO: Open context menu
-                                  }}
-                                  aria-label={`Task options for ${task.title}`}
-                                >
-                                  <MoreHorizontal className="h-3 w-3" />
-                                </Button>
+                                <div className="pl-4">
+                                  {/* Card Header */}
+                                  <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 leading-5">
+                                        {task.title}
+                                      </h4>
+                                      {task.description && (
+                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
+                                          {task.description}
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    {/* Menu Button - Only visible on hover */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 text-zinc-400 hover:text-zinc-600"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        // TODO: Open context menu
+                                      }}
+                                      aria-label={`Task options for ${task.title}`}
+                                    >
+                                      <MoreHorizontal className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+
+                                  {/* Card Footer - Metadata */}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Priority Badge */}
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs ${getPriorityBadgeColor(task.priority)}`}
+                                      aria-label={`Priority: ${task.priority}`}
+                                    >
+                                      {task.priority}
+                                    </Badge>
+
+                                    {/* Due Date */}
+                                    {task.due_date && (
+                                      <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`Due date: ${formatDate(task.due_date)}`}>
+                                        <Calendar className="h-3 w-3" aria-hidden="true" />
+                                        <span>{formatDate(task.due_date)}</span>
+                                      </div>
+                                    )}
+
+                                    {/* Comments */}
+                                    {task.comment_count && task.comment_count > 0 && (
+                                      <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`${task.comment_count} comments`}>
+                                        <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                                        <span>{task.comment_count}</span>
+                                      </div>
+                                    )}
+
+                                    {/* Attachments */}
+                                    {task.attachment_count && task.attachment_count > 0 && (
+                                      <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`${task.attachment_count} attachments`}>
+                                        <Paperclip className="h-3 w-3" aria-hidden="true" />
+                                        <span>{task.attachment_count}</span>
+                                      </div>
+                                    )}
+
+                                    {/* Assignee */}
+                                    {task.assignee_id && (
+                                      <div className="ml-auto" aria-label={`Assigned to: ${task.assignee_name || task.assignee_id}`}>
+                                        <Avatar className="h-6 w-6">
+                                          <AvatarFallback className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                                            {task.assignee_name?.slice(0, 2).toUpperCase() ||
+                                             task.assignee_id.slice(0, 2).toUpperCase()}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
 
-                              {/* Card Footer - Metadata */}
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {/* Priority Badge */}
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${getPriorityBadgeColor(task.priority)}`}
-                                  aria-label={`Priority: ${task.priority}`}
+                        {/* Inline task creation form */}
+                        {addingToColumn === column.id && (
+                          <div className="bg-white dark:bg-zinc-900 rounded-md border-2 border-zinc-300 dark:border-zinc-600" role="form" aria-label="Create new task">
+                            <div className="p-3">
+                              <Input
+                                ref={inputRef}
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
+                                placeholder="Enter task title..."
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleCreateTask(column.id)
+                                  } else if (e.key === 'Escape') {
+                                    handleCancelAdd()
+                                  }
+                                }}
+                                disabled={isCreating}
+                                className="text-sm border-0 focus:ring-0 shadow-none resize-none bg-transparent"
+                                autoFocus
+                                aria-label="New task title"
+                              />
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleCreateTask(column.id)}
+                                  disabled={isCreating || !newTaskTitle.trim()}
+                                  className="flex-1 text-sm"
+                                  aria-label="Create new task"
                                 >
-                                  {task.priority}
-                                </Badge>
-
-                                {/* Due Date */}
-                                {task.due_date && (
-                                  <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`Due date: ${formatDate(task.due_date)}`}>
-                                    <Calendar className="h-3 w-3" aria-hidden="true" />
-                                    <span>{formatDate(task.due_date)}</span>
-                                  </div>
-                                )}
-
-                                {/* Comments */}
-                                {task.comment_count && task.comment_count > 0 && (
-                                  <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`${task.comment_count} comments`}>
-                                    <MessageSquare className="h-3 w-3" aria-hidden="true" />
-                                    <span>{task.comment_count}</span>
-                                  </div>
-                                )}
-
-                                {/* Attachments */}
-                                {task.attachment_count && task.attachment_count > 0 && (
-                                  <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400" aria-label={`${task.attachment_count} attachments`}>
-                                    <Paperclip className="h-3 w-3" aria-hidden="true" />
-                                    <span>{task.attachment_count}</span>
-                                  </div>
-                                )}
-
-                                {/* Assignee */}
-                                {task.assignee_id && (
-                                  <div className="ml-auto" aria-label={`Assigned to: ${task.assignee_name || task.assignee_id}`}>
-                                    <Avatar className="h-6 w-6">
-                                      <AvatarFallback className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                                        {task.assignee_name?.slice(0, 2).toUpperCase() ||
-                                         task.assignee_id.slice(0, 2).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </div>
-                                )}
+                                  <Check className="h-3 w-3" aria-hidden="true" />
+                                  {isCreating ? 'Creating...' : 'Add Task'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={handleCancelAdd}
+                                  disabled={isCreating}
+                                  aria-label="Cancel task creation"
+                                >
+                                  <X className="h-3 w-3" aria-hidden="true" />
+                                </Button>
                               </div>
                             </div>
                           </div>
                         )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
 
-                    {/* Inline task creation form */}
-                    {addingToColumn === column.id && (
-                      <div className="bg-white dark:bg-zinc-900 rounded-md border-2 border-zinc-300 dark:border-zinc-600" role="form" aria-label="Create new task">
-                        <div className="p-3">
-                          <Input
-                            ref={inputRef}
-                            value={newTaskTitle}
-                            onChange={(e) => setNewTaskTitle(e.target.value)}
-                            placeholder="Enter task title..."
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleCreateTask(column.id)
-                              } else if (e.key === 'Escape') {
-                                handleCancelAdd()
-                              }
-                            }}
-                            disabled={isCreating}
-                            className="text-sm border-0 focus:ring-0 shadow-none resize-none bg-transparent"
-                            autoFocus
-                            aria-label="New task title"
-                          />
-                          <div className="flex gap-2 mt-3">
-                            <Button
-                              size="sm"
-                              onClick={() => handleCreateTask(column.id)}
-                              disabled={isCreating || !newTaskTitle.trim()}
-                              className="flex-1 text-sm"
-                              aria-label="Create new task"
-                            >
-                              <Check className="h-3 w-3" aria-hidden="true" />
-                              {isCreating ? 'Creating...' : 'Add Task'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={handleCancelAdd}
-                              disabled={isCreating}
-                              aria-label="Cancel task creation"
-                            >
-                              <X className="h-3 w-3" aria-hidden="true" />
-                            </Button>
-                          </div>
-                        </div>
+                        {/* Empty State */}
+                        {column.tasks.length === 0 && addingToColumn !== column.id && (
+                          <button
+                            onClick={() => setAddingToColumn(column.id)}
+                            className="w-full p-3 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-md text-sm text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-all duration-150"
+                            aria-label={`Add task to ${column.title} column`}
+                          >
+                            + Add task
+                          </button>
+                        )}
                       </div>
                     )}
-
-                    {/* Empty State */}
-                    {column.tasks.length === 0 && addingToColumn !== column.id && (
-                      <button
-                        onClick={() => setAddingToColumn(column.id)}
-                        className="w-full p-3 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-md text-sm text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-all duration-150"
-                        aria-label={`Add task to ${column.title} column`}
-                      >
-                        + Add task
-                      </button>
-                    )}
+                  </Droppable>
                   </div>
-                )}
-              </Droppable>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </DragDropContext>
+        </DragDropContext>
+      )}
+    </div>
   )
 }

@@ -12,6 +12,9 @@ import { toast } from 'sonner'
 import { Loader2, X } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { filterValidSelectOptions } from '@/lib/ui/select-validation'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { apiClient } from '@/lib/api-client'
 
 interface CreateTaskModalProps {
   isOpen: boolean
@@ -132,37 +135,39 @@ export function CreateTaskModal({
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          project_id: projectId,
-          workspace_id: projects.find(p => p.id === projectId)?.workspace_id || null,
-          assignee_id: assigneeId === 'unassigned' ? null : assigneeId,
-          priority,
-          status,
-          due_date: dueDate || null,
-          type: 'task',
-        }),
+      const response = await apiClient.post('/api/tasks', {
+        title: title.trim(),
+        description: description.trim(),
+        project_id: projectId,
+        workspace_id: projects.find(p => p.id === projectId)?.workspace_id || null,
+        assignee_id: assigneeId === 'unassigned' ? null : assigneeId,
+        priority,
+        status,
+        due_date: dueDate || null,
+        type: 'task',
       })
 
-      const data = await response.json()
+      const data = response
 
-      if (response.ok && data.success) {
-        toast.success('Task created successfully!')
+      if (response.success && data.data) {
+        toast.success(data.data.queued ? 'Task queued for offline sync' : 'Task created successfully!')
+        audioService.play('complete')
+        hapticService.success()
         onSuccess?.(data.data)
         onClose()
         
-        // If we're not already on a task page, optionally navigate
-        if (window.location.pathname !== '/tasks/new') {
+        // If we're not already on a task page and it wasn't queued, optionally navigate
+        if (!data.data.queued && window.location.pathname !== '/tasks/new') {
           router.push(`/tasks/${data.data.id}`)
         }
       } else {
+        audioService.play('error')
+        hapticService.error()
         throw new Error(data.error || 'Failed to create task')
       }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Failed to create task:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create task')
     } finally {
@@ -172,7 +177,7 @@ export function CreateTaskModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Create New Task</DialogTitle>
@@ -180,7 +185,8 @@ export function CreateTaskModal({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-6 w-6"
+              className="h-8 w-8 rounded-full"
+              aria-label="Close dialog"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -194,7 +200,7 @@ export function CreateTaskModal({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title" className="text-sm font-semibold">Title *</Label>
               <Input
                 id="title"
                 placeholder="What needs to be done?"
@@ -202,25 +208,27 @@ export function CreateTaskModal({
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 autoFocus
+                className="min-h-[44px]"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
               <Textarea
                 id="description"
                 placeholder="Add more details about this task..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
+                className="min-h-[100px]"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="project">Project *</Label>
+                <Label htmlFor="project" className="text-sm font-semibold">Project *</Label>
                 <Select value={projectId} onValueChange={setProjectId} required>
-                  <SelectTrigger id="project">
+                  <SelectTrigger id="project" className="min-h-[44px]">
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,9 +246,9 @@ export function CreateTaskModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="assignee">Assignee</Label>
+                <Label htmlFor="assignee" className="text-sm font-semibold">Assignee</Label>
                 <Select value={assigneeId} onValueChange={setAssigneeId}>
-                  <SelectTrigger id="assignee">
+                  <SelectTrigger id="assignee" className="min-h-[44px]">
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
@@ -255,11 +263,11 @@ export function CreateTaskModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="priority" className="text-sm font-semibold">Priority</Label>
                 <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger id="priority">
+                  <SelectTrigger id="priority" className="min-h-[44px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -272,9 +280,9 @@ export function CreateTaskModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger id="status">
+                  <SelectTrigger id="status" className="min-h-[44px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -291,17 +299,22 @@ export function CreateTaskModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <Label htmlFor="dueDate" className="text-sm font-semibold">Due Date</Label>
               <Input
                 id="dueDate"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                className="min-h-[44px]"
               />
             </div>
 
-            <div className="flex items-center gap-3 pt-4">
-              <Button type="submit" disabled={isLoading || !title.trim() || !projectId}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 pb-2">
+              <Button 
+                type="submit" 
+                disabled={isLoading || !title.trim() || !projectId}
+                className="min-h-[48px] sm:min-h-[40px] flex-1 font-bold text-base"
+              >
                 {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Create Task
               </Button>
@@ -310,6 +323,7 @@ export function CreateTaskModal({
                 variant="outline"
                 onClick={onClose}
                 disabled={isLoading}
+                className="min-h-[48px] sm:min-h-[40px] flex-1"
               >
                 Cancel
               </Button>
@@ -318,5 +332,6 @@ export function CreateTaskModal({
         )}
       </DialogContent>
     </Dialog>
+
   )
 }

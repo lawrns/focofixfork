@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './tests/smoke',
+  testDir: './tests',
   fullyParallel: false,
   forbidOnly: true,
   retries: 2,
@@ -12,7 +12,7 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'test-results/production-report', open: 'never' }],
+    ['html', { outputFolder: 'playwright-report-production', open: 'never' }],
     ['json', { outputFile: 'test-results/production-results.json' }],
   ],
   use: {

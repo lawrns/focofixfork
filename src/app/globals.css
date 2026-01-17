@@ -259,6 +259,20 @@
     @apply focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-inset;
   }
 
+  /* World Class Focus within containers */
+  .focus-within-ring {
+    @apply focus-within:ring-2 focus-within:ring-zinc-900/20 focus-within:border-zinc-900/30 transition-all duration-200;
+  }
+
+  /* Specific enhancements for Cards and Sidebar */
+  .glass-card:focus-within {
+    @apply ring-2 ring-primary/20 border-primary/30 shadow-md;
+  }
+
+  .nav-link:focus-within {
+    @apply bg-zinc-100 dark:bg-zinc-800 ring-1 ring-inset ring-primary/10;
+  }
+
   /* ===== Border Gradient Utilities ===== */
   .border-gradient {
     border: 1px solid transparent;

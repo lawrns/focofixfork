@@ -20,6 +20,8 @@ import {
   X
 } from 'lucide-react'
 import { CSVMapping } from '@/lib/utils/import-export'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface CSVMappingWizardProps {
   csvHeaders: string[]
@@ -108,23 +110,33 @@ export function CSVMappingWizard({ csvHeaders, onMappingComplete, onCancel }: CS
 
   const handleNext = useCallback(() => {
     if (currentStep < csvHeaders.length - 1) {
+      audioService.play('click')
+      hapticService.light()
       setCurrentStep(prev => prev + 1)
     } else {
       // Complete mapping
+      audioService.play('complete')
+      hapticService.success()
       onMappingComplete(mappings)
     }
   }, [currentStep, csvHeaders.length, mappings, onMappingComplete])
 
   const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
+      audioService.play('click')
+      hapticService.light()
       setCurrentStep(prev => prev - 1)
     }
   }, [currentStep])
 
   const handleSkip = useCallback(() => {
     if (currentStep < csvHeaders.length - 1) {
+      audioService.play('click')
+      hapticService.light()
       setCurrentStep(prev => prev + 1)
     } else {
+      audioService.play('complete')
+      hapticService.success()
       onMappingComplete(mappings)
     }
   }, [currentStep, csvHeaders.length, mappings, onMappingComplete])
@@ -185,7 +197,7 @@ export function CSVMappingWizard({ csvHeaders, onMappingComplete, onCancel }: CS
                     value={currentMapping || ''}
                     onValueChange={(value) => handleMappingChange(currentHeader, value)}
                   >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:w-48 min-h-[44px]">
                       <SelectValue placeholder="Select field..." />
                     </SelectTrigger>
                     <SelectContent>

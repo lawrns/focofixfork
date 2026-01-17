@@ -14,6 +14,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { filterValidSelectOptions } from '@/lib/ui/select-validation'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { apiClient } from '@/lib/api-client'
 
 const milestoneSchema = z.object({
   title: z.string().min(1, 'Milestone title is required').max(500, 'Title must be less than 500 characters'),
@@ -82,24 +85,25 @@ export function MilestoneForm({
       }
 
       const url = isEditing ? `/api/milestones/${milestone.id}` : '/api/milestones'
-      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await (isEditing 
+        ? apiClient.put(url, submitData)
+        : apiClient.post(url, submitData))
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submitData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
+      if (!response.success) {
+        const errorData = response
+        audioService.play('error')
+        hapticService.error()
         throw new Error(errorData.error || 'Failed to save milestone')
       }
 
+      audioService.play('complete')
+      hapticService.success()
       onSuccess?.()
     } catch (err: any) {
       console.error('Milestone save error:', err)
+      audioService.play('error')
+      hapticService.error()
       setError(err.message || 'An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
@@ -114,9 +118,9 @@ export function MilestoneForm({
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto shadow-lg border-2">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-xl font-bold">
           {isEditing ? 'Edit Milestone' : 'Create New Milestone'}
         </CardTitle>
       </CardHeader>
@@ -131,12 +135,13 @@ export function MilestoneForm({
 
           {/* Milestone Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Milestone Title *</Label>
+            <Label htmlFor="title" className="text-sm font-semibold">Milestone Title *</Label>
             <Input
               id="title"
               {...register('title')}
               placeholder="Enter milestone title"
               disabled={isSubmitting}
+              className="min-h-[44px]"
             />
             {errors.title && (
               <p className="text-sm text-red-600 dark:text-red-400">
@@ -147,13 +152,14 @@ export function MilestoneForm({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
             <Textarea
               id="description"
               {...register('description')}
               placeholder="Describe what this milestone represents..."
               rows={3}
               disabled={isSubmitting}
+              className="min-h-[100px]"
             />
             {errors.description && (
               <p className="text-sm text-red-600 dark:text-red-400">
@@ -164,13 +170,13 @@ export function MilestoneForm({
 
           {/* Project */}
           <div className="space-y-2">
-            <Label htmlFor="project">Project *</Label>
+            <Label htmlFor="project" className="text-sm font-semibold">Project *</Label>
             <Select
               value={watchedProjectId}
               onValueChange={(value) => setValue('project_id', value)}
               disabled={isSubmitting}
             >
-              <SelectTrigger>
+              <SelectTrigger className="min-h-[44px]">
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
               <SelectContent>
@@ -190,13 +196,13 @@ export function MilestoneForm({
 
           {/* Status */}
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
             <Select
               value={watchedStatus}
               onValueChange={(value: any) => setValue('status', value)}
               disabled={isSubmitting}
             >
-              <SelectTrigger>
+              <SelectTrigger className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -209,19 +215,20 @@ export function MilestoneForm({
           </div>
 
           {/* Due Date and Progress Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="due_date">Due Date</Label>
+              <Label htmlFor="due_date" className="text-sm font-semibold">Due Date</Label>
               <Input
                 id="due_date"
                 type="date"
                 {...register('due_date')}
                 disabled={isSubmitting}
+                className="min-h-[44px]"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="progress_percentage">Progress (%)</Label>
+              <Label htmlFor="progress_percentage" className="text-sm font-semibold">Progress (%)</Label>
               <Input
                 id="progress_percentage"
                 type="number"
@@ -230,6 +237,7 @@ export function MilestoneForm({
                 max="100"
                 {...register('progress_percentage', { valueAsNumber: true })}
                 disabled={isSubmitting}
+                className="min-h-[44px]"
               />
               {errors.progress_percentage && (
                 <p className="text-sm text-red-600 dark:text-red-400">
@@ -240,13 +248,14 @@ export function MilestoneForm({
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6">
             {onCancel && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
+                className="min-h-[44px] sm:min-h-[40px] order-2 sm:order-1"
               >
                 Cancel
               </Button>
@@ -255,8 +264,9 @@ export function MilestoneForm({
             <Button
               type="submit"
               disabled={isSubmitting || !watchedProjectId}
+              className="min-h-[44px] sm:min-h-[40px] order-1 sm:order-2 font-bold"
             >
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isEditing ? 'Update Milestone' : 'Create Milestone'}
             </Button>
           </div>

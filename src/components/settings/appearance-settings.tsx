@@ -92,11 +92,11 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
       <div className="grid gap-6 md:grid-cols-2">
         {/* Theme Selector */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Theme
           </label>
           <Select value={theme} onValueChange={(value) => handleThemeChange(value as ThemeOption)}>
-            <SelectTrigger data-testid="theme-selector" className="w-full">
+            <SelectTrigger data-testid="theme-selector" className="w-full min-h-[44px]">
               <SelectValue placeholder="Select a theme" />
             </SelectTrigger>
             <SelectContent>
@@ -114,13 +114,13 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
 
         {/* Accent Color Picker */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Accent Color
           </label>
           <div
             data-testid="accent-color-picker"
             data-selected-color={accentColor}
-            className="grid grid-cols-6 gap-2"
+            className="grid grid-cols-6 gap-3"
           >
             {ACCENT_COLORS.map((color) => (
               <button
@@ -128,7 +128,7 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
                 data-testid={`accent-color-option-${color}`}
                 onClick={() => handleAccentColorChange(color)}
                 aria-pressed={accentColor === color}
-                className={`h-8 w-8 rounded-lg border-2 transition-all ${
+                className={`h-10 w-10 sm:h-8 sm:w-8 rounded-lg border-2 transition-all ${
                   accentColor === color
                     ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-600'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -145,10 +145,10 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
 
         {/* Font Size Slider */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Font Size: {fontSizeLabel[fontSize]}
           </label>
-          <div className="space-y-2">
+          <div className="space-y-4 py-2">
             <Slider
               data-testid="font-size-slider"
               min={1}
@@ -158,7 +158,7 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
               onValueChange={(value) => handleFontSizeChange(value[0])}
               className="w-full"
             />
-            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+            <div className="flex justify-between text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 font-medium px-1">
               <span>Small</span>
               <span>Medium</span>
               <span>Large</span>
@@ -170,8 +170,12 @@ export function AppearanceSettings({ initialPreferences }: AppearanceSettingsPro
         </div>
 
         {/* Reset Button */}
-        <div className="flex items-end">
-          <Button variant="outline" className="w-full" onClick={handleResetToDefaults}>
+        <div className="flex items-end pt-2">
+          <Button 
+            variant="outline" 
+            className="w-full min-h-[44px]" 
+            onClick={handleResetToDefaults}
+          >
             Reset to Defaults
           </Button>
         </div>

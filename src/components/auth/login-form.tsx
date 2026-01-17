@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -81,10 +83,14 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
       })
 
       if (authError) {
+        audioService.play('error')
+        hapticService.error()
         throw authError
       }
 
       if (data.user) {
+        audioService.play('complete')
+        hapticService.success()
         // Check if user has 2FA enabled
         const statusResponse = await fetch('/api/auth/status')
         if (statusResponse.ok) {
@@ -106,6 +112,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
       }
     } catch (error: any) {
       console.error('Login error:', error)
+      audioService.play('error')
+      hapticService.error()
 
       // Handle specific error types
       if (error.message?.includes('Invalid login credentials')) {
@@ -125,6 +133,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
   const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!twoFactorToken || twoFactorToken.length !== 6) {
+      audioService.play('error')
+      hapticService.error()
       setError('Please enter a valid 6-digit code')
       return
     }
@@ -145,10 +155,14 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
 
       if (!response.ok) {
         const data = await response.json()
+        audioService.play('error')
+        hapticService.error()
         throw new Error(data.error || 'Invalid 2FA code')
       }
 
       // Success - redirect or call onSuccess callback
+      audioService.play('complete')
+      hapticService.success()
       setNeeds2FA(false)
       if (onSuccess) {
         onSuccess()
@@ -157,6 +171,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
       }
     } catch (error: any) {
       console.error('2FA verification error:', error)
+      audioService.play('error')
+      hapticService.error()
       setError(error.message || 'Invalid 2FA code. Please try again.')
     } finally {
       setIsLoading(false)

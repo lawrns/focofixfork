@@ -20,6 +20,9 @@ import { SmartDateInput } from '@/components/forms/smart-date-input'
 import { SuggestionChips } from './suggestion-chips'
 import { MarkdownPreview } from '@/components/markdown-preview/markdown-preview'
 import { filterValidSelectOptions, toSelectValueWithNone, fromSelectValue } from '@/lib/ui/select-validation'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
+import { apiClient } from '@/lib/api-client'
 import type { Task } from '../types'
 
 const taskSchema = z.object({
@@ -247,22 +250,24 @@ export function TaskForm({
       const url = isEditing ? `/api/tasks/${task.id}` : '/api/tasks'
       const method = isEditing ? 'PUT' : 'POST'
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submitData),
-      })
+      const response = await (isEditing 
+        ? apiClient.put(url, submitData)
+        : apiClient.post(url, submitData))
 
-      if (!response.ok) {
-        const errorData = await response.json()
+      if (!response.success) {
+        const errorData = response
+        audioService.play('error')
+        hapticService.error()
         throw new Error(errorData.error || 'Failed to save task')
       }
 
+      audioService.play('complete')
+      hapticService.success()
       onSuccess?.()
     } catch (err: any) {
       console.error('Task save error:', err)
+      audioService.play('error')
+      hapticService.error()
       setError(err.message || 'An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
@@ -479,6 +484,7 @@ export function TaskForm({
             {...register('estimated_hours')}
             placeholder="0.0"
             disabled={isSubmitting}
+            className="min-h-[44px]"
           />
           {errors.estimated_hours && (
             <p className="text-sm text-red-600 dark:text-red-400">
@@ -498,6 +504,7 @@ export function TaskForm({
             {...register('actual_hours')}
             placeholder="0.0"
             disabled={isSubmitting}
+            className="min-h-[44px]"
           />
           {errors.actual_hours && (
             <p className="text-sm text-red-600 dark:text-red-400">

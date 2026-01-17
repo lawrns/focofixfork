@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Trash2, Plus, Copy } from 'lucide-react'
+import { Trash2, Plus, Copy, Loader2 } from 'lucide-react'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface TaskTemplatesManagerProps {
   onTemplateSelected?: (template: TaskTemplate) => void
@@ -27,6 +29,8 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
 
   const handleCreateTemplate = async () => {
     if (!formData.name || !formData.title_template) {
+      audioService.play('error')
+      hapticService.error()
       alert('Please fill in required fields')
       return
     }
@@ -44,6 +48,8 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
         priority: formData.priority
       })
 
+      audioService.play('complete')
+      hapticService.success()
       setFormData({
         name: '',
         title_template: '',
@@ -55,6 +61,8 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
       await refreshTemplates()
     } catch (err) {
       console.error('Failed to create template:', err)
+      audioService.play('error')
+      hapticService.error()
       alert('Failed to create template')
     }
   }
@@ -63,32 +71,36 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
     if (confirm('Are you sure you want to delete this template?')) {
       try {
         await deleteTemplate(id)
+        audioService.play('error')
+        hapticService.error()
         await refreshTemplates()
       } catch (err) {
         console.error('Failed to delete template:', err)
+        audioService.play('error')
+        hapticService.error()
         alert('Failed to delete template')
       }
     }
   }
 
   if (loading) {
-    return <div>Loading templates...</div>
+    return <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-2" /> Loading templates...</div>
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Task Templates</h2>
-        <Button onClick={() => setShowCreateDialog(true)} size="sm">
+        <Button onClick={() => setShowCreateDialog(true)} size="sm" className="min-h-[40px]">
           <Plus className="w-4 h-4 mr-2" />
           New Template
         </Button>
       </div>
 
-      {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded">{error}</div>}
+      {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">{error}</div>}
 
       {templates.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
+        <div className="text-center text-gray-500 py-12 border-2 border-dashed rounded-xl">
           <p>No templates yet. Create one to get started!</p>
         </div>
       ) : (
@@ -96,35 +108,40 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
           {templates.map(template => (
             <div
               key={template.id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors gap-4"
             >
-              <div className="flex-1">
-                <h3 className="font-medium text-sm">{template.name}</h3>
-                <p className="text-xs text-gray-600">{template.title_template}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">{template.name}</h3>
+                <p className="text-xs text-gray-600 truncate">{template.title_template}</p>
                 {template.tags && template.tags.length > 0 && (
-                  <div className="flex gap-1 mt-2">
+                  <div className="flex flex-wrap gap-1 mt-2">
                     {template.tags.map(tag => (
-                      <span key={tag} className="inline-block px-2 py-1 bg-gray-100 text-xs rounded">
+                      <span key={tag} className="inline-block px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-[10px] rounded font-medium">
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
               </div>
-              <div className="flex gap-2 ml-4">
+              <div className="flex gap-2 self-end sm:self-center">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  onClick={() => onTemplateSelected?.(template)}
-                  className="text-blue-600"
+                  onClick={() => {
+                    hapticService.light();
+                    onTemplateSelected?.(template);
+                  }}
+                  className="text-blue-600 h-10 w-10 sm:h-8 sm:w-8 p-0"
+                  aria-label={`Use template ${template.name}`}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDeleteTemplate(template.id)}
-                  className="text-red-600"
+                  className="text-red-600 h-10 w-10 sm:h-8 sm:w-8 p-0"
+                  aria-label={`Delete template ${template.name}`}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -135,48 +152,51 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
       )}
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Task Template</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Create Task Template</DialogTitle>
             <DialogDescription>Create a reusable template for common tasks</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Template Name</Label>
+          <div className="space-y-6 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-semibold">Template Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Bug Report, Feature Request"
+                className="min-h-[44px]"
               />
             </div>
 
-            <div>
-              <Label htmlFor="title_template">Title Template</Label>
+            <div className="space-y-2">
+              <Label htmlFor="title_template" className="text-sm font-semibold">Title Template *</Label>
               <Input
                 id="title_template"
                 value={formData.title_template}
                 onChange={e => setFormData({ ...formData, title_template: e.target.value })}
                 placeholder="e.g., Bug: {{description}}"
+                className="min-h-[44px]"
               />
             </div>
 
-            <div>
-              <Label htmlFor="description_template">Description Template</Label>
+            <div className="space-y-2">
+              <Label htmlFor="description_template" className="text-sm font-semibold">Description Template</Label>
               <Textarea
                 id="description_template"
                 value={formData.description_template}
                 onChange={e => setFormData({ ...formData, description_template: e.target.value })}
                 placeholder="e.g., Steps to reproduce..."
                 rows={4}
+                className="min-h-[100px]"
               />
             </div>
 
-            <div>
-              <Label htmlFor="priority">Priority</Label>
+            <div className="space-y-2">
+              <Label htmlFor="priority" className="text-sm font-semibold">Priority</Label>
               <Select value={formData.priority} onValueChange={val => setFormData({ ...formData, priority: val })}>
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -188,22 +208,32 @@ export function TaskTemplatesManager({ onTemplateSelected }: TaskTemplatesManage
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="tags">Tags (comma-separated)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="tags" className="text-sm font-semibold">Tags (comma-separated)</Label>
               <Input
                 id="tags"
                 value={formData.tags}
                 onChange={e => setFormData({ ...formData, tags: e.target.value })}
                 placeholder="e.g., bug, frontend, urgent"
+                className="min-h-[44px]"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateDialog(false)}
+              className="min-h-[44px] sm:min-h-[40px] order-2 sm:order-1 flex-1"
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreateTemplate}>Create Template</Button>
+            <Button 
+              onClick={handleCreateTemplate}
+              className="min-h-[44px] sm:min-h-[40px] order-1 sm:order-2 flex-1 font-bold"
+            >
+              Create Template
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

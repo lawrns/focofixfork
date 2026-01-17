@@ -33,6 +33,8 @@ import { CommentsService } from '@/lib/services/comments'
 import { CommentModel } from '@/lib/models/comments'
 import type { Comment, CommentThread, Mention } from '@/lib/models/comments'
 import { cn } from '@/lib/utils'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface CommentsSectionProps {
   entityType: 'project' | 'milestone' | 'task' | 'organization' | 'time_entry'
@@ -174,10 +176,14 @@ export default function CommentsSection({
         type: 'comment'
       })
 
+      audioService.play('sync')
+      hapticService.light()
       setNewComment('')
       await loadComments()
     } catch (error) {
       console.error('Failed to create comment:', error)
+      audioService.play('error')
+      hapticService.error()
       alert('Failed to post comment')
     } finally {
       setIsSubmitting(false)
@@ -189,8 +195,6 @@ export default function CommentsSection({
 
     setIsSubmitting(true)
     try {
-      const parentComment = findCommentById(parentId)
-
       await CommentsService.createComment({
         content: replyingTo.content,
         author_id: currentUser.id,
@@ -202,10 +206,14 @@ export default function CommentsSection({
         parent_id: parentId
       })
 
+      audioService.play('sync')
+      hapticService.light()
       setReplyingTo(null)
       await loadComments()
     } catch (error) {
       console.error('Failed to create reply:', error)
+      audioService.play('error')
+      hapticService.error()
       alert('Failed to post reply')
     } finally {
       setIsSubmitting(false)
@@ -220,11 +228,15 @@ export default function CommentsSection({
         content: editContent
       })
 
+      audioService.play('sync')
+      hapticService.light()
       setEditingComment(null)
       setEditContent('')
       await loadComments()
     } catch (error) {
       console.error('Failed to edit comment:', error)
+      audioService.play('error')
+      hapticService.error()
       alert('Failed to edit comment')
     }
   }
@@ -234,9 +246,13 @@ export default function CommentsSection({
 
     try {
       await CommentsService.deleteComment(commentId, currentUser.id)
+      audioService.play('error')
+      hapticService.error()
       await loadComments()
     } catch (error) {
       console.error('Failed to delete comment:', error)
+      audioService.play('error')
+      hapticService.error()
       alert('Failed to delete comment')
     }
   }
@@ -251,13 +267,18 @@ export default function CommentsSection({
 
       if (existingReaction) {
         await CommentsService.removeReaction(commentId, emoji, currentUser.id)
+        hapticService.light()
       } else {
         await CommentsService.addReaction(commentId, emoji, currentUser.id, currentUser.name)
+        audioService.play('click')
+        hapticService.light()
       }
 
       await loadComments()
     } catch (error) {
       console.error('Failed to toggle reaction:', error)
+      audioService.play('error')
+      hapticService.error()
     }
   }
 

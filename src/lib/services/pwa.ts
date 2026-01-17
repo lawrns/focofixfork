@@ -1,5 +1,7 @@
 import { toast } from 'sonner';
 import React from 'react';
+import { openDB, IDBPDatabase } from 'idb';
+import { audioService } from '../audio/audio-service';
 
 export interface PWACapabilities {
   isInstallable: boolean;
@@ -15,15 +17,18 @@ export interface OfflineAction {
   url: string;
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers: Record<string, string>;
-  body?: string;
+  body?: any;
   timestamp: number;
   retryCount: number;
 }
 
+const DB_NAME = 'foco-pwa-db';
+const STORE_NAME = 'offline-actions';
+
 export class PWAService {
   private static deferredPrompt: any = null;
   private static registration: ServiceWorkerRegistration | null = null;
-  private static offlineActions: OfflineAction[] = [];
+  private static db: IDBPDatabase | null = null;
 
   static get isOnline(): boolean {
     if (typeof navigator === 'undefined') return true;
@@ -34,8 +39,18 @@ export class PWAService {
   static async initialize(): Promise<void> {
     if (typeof window === 'undefined') return;
 
-    // Load offline actions from storage
-    this.loadOfflineActions();
+    // Initialize IndexedDB
+    try {
+      this.db = await openDB(DB_NAME, 1, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        },
+      });
+    } catch (e) {
+      console.error('[PWA] Failed to initialize IndexedDB:', e);
+    }
 
     // Register service worker
     if ('serviceWorker' in navigator) {
@@ -166,7 +181,12 @@ export class PWAService {
   }
 
   // Queue action for offline sync
-  static queueOfflineAction(action: Omit<OfflineAction, 'id' | 'timestamp' | 'retryCount'>): void {
+  static async queueOfflineAction(action: Omit<OfflineAction, 'id' | 'timestamp' | 'retryCount'>): Promise<void> {
+    if (!this.db) {
+      console.warn('[PWA] DB not initialized, falling back to basic execution');
+      return;
+    }
+
     const offlineAction: OfflineAction = {
       ...action,
       id: crypto.randomUUID(),
@@ -174,25 +194,29 @@ export class PWAService {
       retryCount: 0,
     };
 
-    this.offlineActions.push(offlineAction);
-    this.saveOfflineActions();
+    await this.db.add(STORE_NAME, offlineAction);
 
     if (this.isOffline) {
       toast.info('Action queued for when you\'re back online');
     }
+    
+    // Register background sync if available
+    this.requestBackgroundSync();
   }
 
   // Sync offline data
   static async syncOfflineData(): Promise<void> {
-    if (this.offlineActions.length === 0) return;
+    if (!this.db) return;
 
-    console.log('[PWA] Syncing offline data...');
+    const offlineActions = await this.db.getAll(STORE_NAME);
+    if (offlineActions.length === 0) return;
 
-    const actionsToRetry = [...this.offlineActions];
+    console.log(`[PWA] Syncing ${offlineActions.length} offline actions...`);
+
     const successfulActions: string[] = [];
     const failedActions: string[] = [];
 
-    for (const action of actionsToRetry) {
+    for (const action of offlineActions) {
       try {
         const response = await fetch(action.url, {
           method: action.method,
@@ -200,11 +224,12 @@ export class PWAService {
             'Content-Type': 'application/json',
             ...action.headers,
           },
-          body: action.body,
+          body: typeof action.body === 'string' ? action.body : JSON.stringify(action.body),
         });
 
         if (response.ok) {
           successfulActions.push(action.id);
+          await this.db.delete(STORE_NAME, action.id);
         } else {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -212,19 +237,14 @@ export class PWAService {
         console.error(`[PWA] Failed to sync action ${action.id}:`, error);
         action.retryCount++;
 
-        // Remove after 3 failed attempts
         if (action.retryCount >= 3) {
           failedActions.push(action.id);
+          await this.db.delete(STORE_NAME, action.id);
+        } else {
+          await this.db.put(STORE_NAME, action);
         }
       }
     }
-
-    // Remove successful actions
-    this.offlineActions = this.offlineActions.filter(action => !successfulActions.includes(action.id));
-    // Remove permanently failed actions
-    this.offlineActions = this.offlineActions.filter(action => !failedActions.includes(action.id));
-
-    this.saveOfflineActions();
 
     if (successfulActions.length > 0) {
       toast.success(`Synced ${successfulActions.length} offline actions`);
@@ -273,8 +293,8 @@ export class PWAService {
     if (Notification.permission !== 'granted') return;
 
     const defaultOptions: NotificationOptions & { vibrate?: number[] } = {
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      icon: '/icons/manifest-icon-192.maskable.png',
+      badge: '/icons/manifest-icon-192.maskable.png',
       vibrate: [100, 50, 100],
       ...options,
     };
@@ -296,6 +316,11 @@ export class PWAService {
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+
+    // Clear IndexedDB
+    if (this.db) {
+      await this.db.clear(STORE_NAME);
     }
 
     toast.success('Cache cleared successfully');
@@ -347,6 +372,7 @@ export class PWAService {
     switch (type) {
       case 'SYNC_COMPLETE':
         if (data.success) {
+          audioService.play('sync');
           toast.success('Offline data synced successfully');
         }
         break;
@@ -391,27 +417,6 @@ export class PWAService {
       }
     );
   }
-
-  // Offline actions storage
-  private static loadOfflineActions(): void {
-    try {
-      const stored = localStorage.getItem('foco_offline_actions');
-      if (stored) {
-        this.offlineActions = JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Failed to load offline actions:', error);
-      this.offlineActions = [];
-    }
-  }
-
-  private static saveOfflineActions(): void {
-    try {
-      localStorage.setItem('foco_offline_actions', JSON.stringify(this.offlineActions));
-    } catch (error) {
-      console.error('Failed to save offline actions:', error);
-    }
-  }
 }
 
 // React hook for PWA functionality
@@ -453,3 +458,4 @@ export function usePWA() {
     refreshCapabilities: updateCapabilities,
   };
 }
+

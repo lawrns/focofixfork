@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -133,10 +135,14 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
       })
 
       if (authError) {
+        audioService.play('error')
+        hapticService.error()
         throw authError
       }
 
       if (data.user) {
+        audioService.play('complete')
+        hapticService.success()
         // Check if email confirmation is required
         if (!data.session && data.user && !data.user.email_confirmed_at) {
           // Email confirmation required
@@ -165,6 +171,8 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
       }
     } catch (error: any) {
       console.error('Registration error:', error)
+      audioService.play('error')
+      hapticService.error()
 
       // Handle specific error types
       if (error.message?.includes('User already registered')) {

@@ -16,6 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Loader2, Plus, Search, Trash2, GripVertical, Download } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { apiClient } from '@/lib/api-client'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -149,44 +152,49 @@ export function TaskList({
     if (!user) return
 
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for session auth
-        body: JSON.stringify({ status: newStatus }),
-      })
+      const response = await apiClient.put(`/api/tasks/${taskId}`, { status: newStatus })
 
-      if (!response.ok) {
+      if (!response.success) {
+        audioService.play('error')
+        hapticService.error()
         if (response.status === 403) {
           toast.error('Permission denied. You may not have access to update this task.')
         } else if (response.status === 401) {
           toast.error('Authentication required. Please sign in again.')
-          // Trigger re-auth
           window.location.reload()
         } else {
-          throw new Error(`Failed to update task status: ${response.status}`)
+          throw new Error(response.error || `Failed to update task status: ${response.status}`)
         }
-        return // Don't update local state on error
+        return
       }
 
-      // Update local state
-      setTasks(prev => prev.map(task =>
-        task.id === taskId
-          ? { ...task, status: newStatus as any, updated_at: new Date().toISOString() }
-          : task
-      ))
+      const data = response.data
 
-      toast.success('Task status updated')
+      // Update local state
+      if (!data.queued) {
+        setTasks(prev => prev.map(task =>
+          task.id === taskId
+            ? { ...task, status: newStatus as any, updated_at: new Date().toISOString() }
+            : task
+        ))
+        toast.success('Task status updated')
+        audioService.play('sync')
+        hapticService.light()
+      } else {
+        toast.info('Update queued for offline sync')
+        audioService.play('sync')
+        hapticService.light()
+      }
+
       // Call optional callback
       onStatusChange?.(taskId, newStatus)
     } catch (err) {
       console.error('Error updating task status:', err)
+      audioService.play('error')
+      hapticService.error()
       toast.error('Failed to update task. Please try again.')
-      // Revert optimistic update if any
       await fetchTasks()
-      throw err // Re-throw to let TaskCard handle the error
+      throw err
     }
   }
 
@@ -195,36 +203,44 @@ export function TaskList({
 
     try {
       console.log('[TaskDelete] Deleting task', taskId, 'by user', user.id)
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'DELETE',
-        credentials: 'include', // Include cookies for session auth
-      })
+      const response = await apiClient.delete(`/api/tasks/${taskId}`)
 
-      if (!response.ok) {
-        const errorBody = await response.text()
-        console.error('[TaskDelete] Failed with status', response.status, 'Body:', errorBody)
+      if (!response.success) {
+        audioService.play('error')
+        hapticService.error()
         if (response.status === 403) {
           toast.error('Permission denied. You may not have access to delete this task.')
         } else if (response.status === 401) {
           toast.error('Authentication required. Please sign in again.')
           window.location.reload()
         } else {
-          throw new Error(`Failed to delete task: ${response.status} - ${errorBody}`)
+          throw new Error(response.error || `Failed to delete task: ${response.status}`)
         }
         return
       }
 
-      console.log('[TaskDelete] Success for task', taskId)
-      // Remove from local state
-      setTasks(prev => prev.filter(t => t.id !== taskId))
-      toast.success('Task deleted successfully')
+      const data = response.data
+
+      if (!data?.queued) {
+        console.log('[TaskDelete] Success for task', taskId)
+        setTasks(prev => prev.filter(t => t.id !== taskId))
+        toast.success('Task deleted successfully')
+        audioService.play('error') // Use error sound for deletion warning
+        hapticService.heavy()
+      } else {
+        toast.info('Deletion queued for offline sync')
+        audioService.play('sync')
+        hapticService.light()
+      }
 
       // Call optional callback
       onDeleteTask?.(taskId)
     } catch (err) {
       console.error('Error deleting task:', err)
+      audioService.play('error')
+      hapticService.error()
       toast.error('Failed to delete task. Please try again.')
-      throw err // Re-throw to let TaskCard handle the error
+      throw err
     }
   }
 
@@ -254,27 +270,40 @@ export function TaskList({
     setIsBulkDeleting(true)
     try {
       const deletePromises = Array.from(selectedTasks).map(taskId =>
-        fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+        apiClient.delete(`/api/tasks/${taskId}`)
       )
 
       const results = await Promise.allSettled(deletePromises)
 
-      const successCount = results.filter(r => r.status === 'fulfilled').length
-      const failCount = results.filter(r => r.status === 'rejected').length
+      const successCount = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length
+      const failCount = results.filter(r => r.status === 'rejected' || !(r.value as any).success).length
 
-      // Remove successfully deleted tasks from state
-      setTasks(prev => prev.filter(t => !selectedTasks.has(t.id)))
+      // Remove successfully deleted tasks from state if not queued
+      const successfulIds = results
+        .filter(r => r.status === 'fulfilled' && (r.value as any).success && !(r.value as any).data?.queued)
+        .map((_, i) => Array.from(selectedTasks)[i])
+
+      if (successfulIds.length > 0) {
+        setTasks(prev => prev.filter(t => !successfulIds.includes(t.id)))
+      }
+      
       setSelectedTasks(new Set())
 
       if (failCount > 0) {
+        audioService.play('error')
+        hapticService.error()
         toast.error(`Deleted ${successCount} tasks, but ${failCount} failed`)
       } else {
+        audioService.play('complete')
+        hapticService.heavy()
         toast.success(`Successfully deleted ${successCount} task(s)`)
       }
 
       setShowBulkDeleteDialog(false)
     } catch (err) {
       console.error('Error bulk deleting tasks:', err)
+      audioService.play('error')
+      hapticService.error()
       toast.error('Failed to delete tasks. Please try again.')
     } finally {
       setIsBulkDeleting(false)
@@ -326,40 +355,52 @@ export function TaskList({
     if (sourceStatus !== destStatus) {
       try {
         console.log('[TaskDrag] Moving task', taskId, 'from', sourceStatus, 'to', destStatus)
-        // Optimistically update local state
-        setTasks(prev => prev.map(t =>
-          t.id === taskId
-            ? { ...t, status: destStatus, updated_at: new Date().toISOString() }
-            : t
-        ))
+        
+        // Update on server via resilient client
+        const response = await apiClient.put(`/api/tasks/${taskId}`, { status: destStatus })
 
-        // Update on server
-        const response = await fetch(`/api/tasks/${taskId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', // Include cookies for session auth
-          body: JSON.stringify({ status: destStatus }),
-        })
-
-        if (!response.ok) {
-          const errorBody = await response.text()
-          console.error('[TaskDrag] Failed with status', response.status, 'Body:', errorBody)
+        if (!response.success) {
+          audioService.play('error')
+          hapticService.error()
           if (response.status === 403) {
             toast.error('Permission denied. You may not have access to move this task.')
           } else if (response.status === 401) {
             toast.error('Authentication required. Please sign in again.')
             window.location.reload()
           } else {
-            throw new Error(`Failed to move task: ${response.status} - ${errorBody}`)
+            throw new Error(response.error || `Failed to move task: ${response.status}`)
           }
-          return // Don't call callback on error
+          return
         }
 
-        console.log('[TaskDrag] Success for task', taskId)
-        toast.success('Task moved successfully')
+        const data = response.data
+
+        // Optimistically update local state if not queued
+        if (!data.queued) {
+          setTasks(prev => prev.map(t =>
+            t.id === taskId
+              ? { ...t, status: destStatus, updated_at: new Date().toISOString() }
+              : t
+          ))
+          toast.success('Task moved successfully')
+          if (destStatus === 'done') {
+            audioService.play('complete')
+            hapticService.success()
+          } else {
+            audioService.play('sync')
+            hapticService.light()
+          }
+        } else {
+          toast.info('Move queued for offline sync')
+          audioService.play('sync')
+          hapticService.light()
+        }
+
         onStatusChange?.(taskId, destStatus)
       } catch (err) {
         console.error('Error updating task:', err)
+        audioService.play('error')
+        hapticService.error()
         toast.error('Failed to move task. Please try again.')
         // Revert optimistic update
         await fetchTasks()

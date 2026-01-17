@@ -38,6 +38,8 @@ import { AutomationService } from '@/lib/services/automation-service'
 import { useToast } from '@/components/ui/toast'
 import { useTranslation } from '@/lib/i18n/context'
 import { cn } from '@/lib/utils'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface AutomationRuleBuilderProps {
   isOpen: boolean
@@ -140,6 +142,8 @@ export function AutomationRuleBuilder({
         savedRule = await AutomationService.createRule(ruleData)
       }
 
+      audioService.play('complete')
+      hapticService.success()
       addToast({
         type: 'success',
         title: t('common.success'),
@@ -150,6 +154,8 @@ export function AutomationRuleBuilder({
       onClose()
     } catch (error: any) {
       console.error('Failed to save automation rule:', error)
+      audioService.play('error')
+      hapticService.error()
       addToast({
         type: 'error',
         title: t('common.error'),
@@ -248,26 +254,27 @@ export function AutomationRuleBuilder({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-y-auto">
           {/* Basic Information */}
           <div className="space-y-4 p-4 border-b">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('automation.ruleName')} *</Label>
+                <Label htmlFor="name" className="text-sm font-semibold">{t('automation.ruleName')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder={t('automation.ruleNamePlaceholder')}
+                  className="min-h-[44px]"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="priority">{t('automation.priority')}</Label>
+                <Label htmlFor="priority" className="text-sm font-semibold">{t('automation.priority')}</Label>
                 <Select
                   value={formData.priority}
                   onValueChange={(value: 'low' | 'medium' | 'high') => setFormData(prev => ({ ...prev, priority: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="min-h-[44px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -279,23 +286,25 @@ export function AutomationRuleBuilder({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">{t('automation.description')}</Label>
+              <Label htmlFor="description" className="text-sm font-semibold">{t('automation.description')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder={t('automation.descriptionPlaceholder')}
                 rows={2}
+                className="min-h-[80px]"
               />
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center space-x-3">
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                  className="scale-110"
                 />
-                <Label htmlFor="is_active">{t('automation.active')}</Label>
+                <Label htmlFor="is_active" className="text-sm font-semibold">{t('automation.active')}</Label>
               </div>
             </div>
           </div>
@@ -327,12 +336,12 @@ export function AutomationRuleBuilder({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>{t('automation.triggerType')}</Label>
+                    <Label className="text-sm font-semibold">{t('automation.triggerType')}</Label>
                     <Select
                       value={trigger.type}
                       onValueChange={(value) => setTrigger(prev => ({ ...prev, type: value as any }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="min-h-[44px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -352,7 +361,7 @@ export function AutomationRuleBuilder({
                   {/* Trigger-specific settings */}
                   {trigger.type === 'task_created' && (
                     <div className="space-y-2">
-                      <Label>{t('automation.taskPriority')}</Label>
+                      <Label className="text-sm font-semibold">{t('automation.taskPriority')}</Label>
                       <Select
                         value={trigger.task_priority?.[0] || ''}
                         onValueChange={(value) => setTrigger(prev => ({ 
@@ -360,7 +369,7 @@ export function AutomationRuleBuilder({
                           task_priority: value ? [value] : undefined 
                         }))}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="min-h-[44px]">
                           <SelectValue placeholder={t('automation.anyPriority')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -376,7 +385,7 @@ export function AutomationRuleBuilder({
 
                   {trigger.type === 'schedule' && (
                     <div className="space-y-2">
-                      <Label>{t('automation.scheduleType')}</Label>
+                      <Label className="text-sm font-semibold">{t('automation.scheduleType')}</Label>
                       <Select
                         value={trigger.schedule_type || 'daily'}
                         onValueChange={(value) => setTrigger(prev => ({ 
@@ -384,7 +393,7 @@ export function AutomationRuleBuilder({
                           schedule_type: value as any 
                         }))}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="min-h-[44px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

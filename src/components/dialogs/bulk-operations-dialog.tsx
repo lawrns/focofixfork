@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/toast/toast'
 import { Loader2, Archive, Trash2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { type Project } from '@/lib/validation/schemas/project.schema'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 interface BulkOperationsDialogProps {
   selectedProjects: Project[]

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { TaskActionService } from '@/lib/services/task-action-service'
 
@@ -7,17 +7,19 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const logs: string[] = []
+  let authResponse: NextResponse | undefined;
   
   try {
     logs.push('=== AI Debug Start ===')
     
     // Step 1: Auth
     logs.push('Step 1: Getting auth user...')
-    const { user, supabase, error: authError } = await getAuthUser(request)
+    const { user, supabase, error: authError, response } = await getAuthUser(request)
+    authResponse = response;
     
     if (authError || !user) {
       logs.push(`Auth failed: ${authError}`)
-      return NextResponse.json({ logs, error: 'Auth required' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ logs, error: 'Auth required' }, { status: 401 }), authResponse)
     }
     logs.push(`Auth success for user: ${user.id}`)
 
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
     
     if (!isMemberResult.ok || !isMemberResult.data) {
       logs.push(`Workspace access denied: ${JSON.stringify(isMemberResult)}`)
-      return NextResponse.json({ logs, error: 'Workspace access denied' }, { status: 403 })
+      return mergeAuthResponse(NextResponse.json({ logs, error: 'Workspace access denied' }, { status: 403 }), authResponse)
     }
     logs.push('Workspace access granted')
 
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
     
     if (!workspaceResult.ok) {
       logs.push(`Failed to get workspace: ${JSON.stringify(workspaceResult)}`)
-      return NextResponse.json({ logs, error: 'Failed to get workspace' }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ logs, error: 'Failed to get workspace' }, { status: 500 }), authResponse)
     }
     
     const policy = workspaceResult.data.ai_policy || {}
@@ -75,12 +77,12 @@ export async function POST(request: NextRequest) {
       logs.push('Success! Execution ID: ' + preview.execution_id)
       logs.push('Console logs: ' + consoleLogs.join('\n'))
 
-      return NextResponse.json({ 
+      return mergeAuthResponse(NextResponse.json({ 
         success: true,
         logs,
         consoleLogs,
         execution_id: preview.execution_id
-      })
+      }), authResponse)
       
     } catch (error) {
       console.log = originalConsoleLog
@@ -93,10 +95,10 @@ export async function POST(request: NextRequest) {
     logs.push(`Final error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     logs.push(`Error stack: ${error instanceof Error ? error.stack : 'No stack'}`)
     
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       logs,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 })
+    }, { status: 500 }), authResponse)
   }
 }

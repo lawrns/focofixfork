@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { TaskRepository } from '@/lib/repositories/task-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -20,10 +20,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(req)
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -86,12 +86,13 @@ export async function GET(
       reporter = reporterProfile
     }
 
-    return successResponse({
+    const successRes = successResponse({
       ...task,
       project,
       assignee,
       reporter,
     })
+    return mergeAuthResponse(successRes, authResponse)
   } catch (err: any) {
     console.error('Task GET error:', err)
     return internalErrorResponse('Failed to fetch task', err)
@@ -103,10 +104,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(req)
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -158,10 +159,11 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      return databaseErrorResponse('Failed to update task', updateError)
+      const errorRes = databaseErrorResponse('Failed to update task', updateError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(updated)
+    return mergeAuthResponse(successResponse(updated), authResponse)
   } catch (err: any) {
     console.error('Task PATCH error:', err)
     return internalErrorResponse('Failed to update task', err)
@@ -173,10 +175,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error } = await getAuthUser(req)
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = params
@@ -215,10 +217,11 @@ export async function DELETE(
       .eq('id', id)
 
     if (deleteError) {
-      return databaseErrorResponse('Failed to delete task', deleteError)
+      const errorRes = databaseErrorResponse('Failed to delete task', deleteError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse({ deleted: true })
+    return mergeAuthResponse(successResponse({ deleted: true }), authResponse)
   } catch (err: any) {
     console.error('Task DELETE error:', err)
     return internalErrorResponse('Failed to delete task', err)

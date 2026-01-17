@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { ProjectTemplateModel, CreateTemplateData, ProjectTemplate } from '@/lib/models/project-templates'
 
@@ -10,11 +10,13 @@ export const dynamic = 'force-dynamic'
  * List templates for user (personal and team)
  */
 export async function GET(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { searchParams } = new URL(req.url)
@@ -55,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     if (userResult.error) {
       console.error('Templates fetch error:', userResult.error)
-      return NextResponse.json({ success: false, error: userResult.error.message }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: userResult.error.message }, { status: 500 }), authResponse)
     }
 
     const userTemplates = (userResult.data || []).map(ProjectTemplateModel.fromDatabase)
@@ -66,16 +68,16 @@ export async function GET(req: NextRequest) {
       arr.findIndex(x => x.id === t.id) === i
     )
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: {
         templates: allTemplates,
         pagination: { limit, offset, total: allTemplates.length },
       },
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Project templates API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }
 
@@ -84,11 +86,13 @@ export async function GET(req: NextRequest) {
  * Create a new template from project or custom structure
  */
 export async function POST(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const body = await req.json()
@@ -126,24 +130,24 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Template creation error:', insertError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to create template', details: insertError.message },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
     const template = data?.[0] ? ProjectTemplateModel.fromDatabase(data[0]) : null
 
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       {
         success: true,
         data: template,
         message: 'Template created successfully',
       },
       { status: 201 }
-    )
+    ), authResponse)
   } catch (err: any) {
     console.error('Template creation API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }

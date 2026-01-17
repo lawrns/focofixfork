@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { WorkspaceInvitationRepository } from '@/lib/repositories/workspace-invitation-repository'
@@ -23,7 +23,7 @@ export async function POST(
   { params }: { params: { id: string; invitationId: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -59,7 +59,7 @@ export async function POST(
       return databaseErrorResponse(resendResult.error.message, resendResult.error.details)
     }
 
-    return successResponse({ message: 'Invitation resent successfully' })
+    return mergeAuthResponse(successResponse({ message: 'Invitation resent successfully' }), authResponse)
   } catch (err) {
     console.error('Invitation resend error:', err)
     return databaseErrorResponse('Failed to resend invitation', err)

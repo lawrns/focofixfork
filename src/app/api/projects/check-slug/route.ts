@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const body = await req.json()
@@ -39,17 +39,17 @@ export async function POST(req: NextRequest) {
 
     if (queryError) {
       console.error('Slug check error:', queryError)
-      return NextResponse.json({ success: false, error: queryError.message }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: queryError.message }, { status: 500 }), authResponse)
     }
 
     // If data exists, slug is taken; otherwise it's available
     const available = !data || data.length === 0
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       available,
       slug: body.slug
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Check slug API error:', err)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })

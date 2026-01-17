@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { WorkspaceInvitationRepository } from '@/lib/repositories/workspace-invitation-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -23,7 +23,7 @@ export async function GET(
 ) {
   try {
     const { token } = params
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -50,14 +50,14 @@ export async function GET(
       return badRequestResponse('Invitation has expired')
     }
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       id: invitation.id,
       workspace_id: invitation.workspace_id,
       email: invitation.email,
       role: invitation.role,
       expires_at: invitation.expires_at,
       status: invitation.status
-    })
+    }), authResponse)
   } catch (err) {
     console.error('Invitation fetch error:', err)
     return databaseErrorResponse('Failed to fetch invitation', err)
@@ -74,7 +74,7 @@ export async function POST(
 ) {
   try {
     const { token } = params
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -113,10 +113,10 @@ export async function POST(
       return databaseErrorResponse(acceptResult.error.message, acceptResult.error.details)
     }
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       message: 'Invitation accepted successfully',
       workspace_id: acceptResult.data.workspace_id
-    })
+    }), authResponse)
   } catch (err) {
     console.error('Invitation accept error:', err)
     return databaseErrorResponse('Failed to accept invitation', err)

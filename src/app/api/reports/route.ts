@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import {
   successResponse,
@@ -10,11 +10,13 @@ import {
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { searchParams } = new URL(req.url)
@@ -27,15 +29,15 @@ export async function GET(req: NextRequest) {
       .eq('user_id', user.id)
 
     if (memberError) {
-      return databaseErrorResponse('Failed to fetch workspace memberships', memberError)
+      return mergeAuthResponse(databaseErrorResponse('Failed to fetch workspace memberships', memberError), authResponse)
     }
 
     if (!memberData || memberData.length === 0) {
-      return successResponse({
+      return mergeAuthResponse(successResponse({
         metrics: [],
         projectStatus: [],
         recentReports: []
-      })
+      }), authResponse)
     }
 
     const workspaceIds = memberData.map(m => m.workspace_id)
@@ -127,7 +129,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(5)
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       metrics,
       projectStatus,
       recentReports: (recentReports || []).map(r => ({
@@ -137,9 +139,9 @@ export async function GET(req: NextRequest) {
         date: new Date(r.created_at).toLocaleDateString(),
         aiGenerated: false
       }))
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Reports API error:', err)
-    return databaseErrorResponse('Failed to fetch reports', err.message)
+    return mergeAuthResponse(databaseErrorResponse('Failed to fetch reports', err.message), authResponse)
   }
 }

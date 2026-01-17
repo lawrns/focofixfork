@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {
@@ -22,10 +22,10 @@ export async function PATCH(
 ) {
   try {
     const { id: projectId, userId: targetUserId } = params
-    const { user, error: authError } = await getAuthUser(request)
+    const { user, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body = await request.json()
@@ -67,14 +67,16 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      return databaseErrorResponse('Failed to update member role', updateError)
+      const errorRes = databaseErrorResponse('Failed to update member role', updateError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
     if (!updatedMember) {
-      return notFoundResponse('Project member', targetUserId)
+      const errorRes = notFoundResponse('Project member', targetUserId)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(updatedMember)
+    return mergeAuthResponse(successResponse(updatedMember), authResponse)
   } catch (err) {
     console.error('Project team update error:', err)
     return databaseErrorResponse('Failed to update project member', err)
@@ -91,10 +93,10 @@ export async function DELETE(
 ) {
   try {
     const { id: projectId, userId: targetUserId } = params
-    const { user, error: authError } = await getAuthUser(request)
+    const { user, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     // Get project and verify access
@@ -132,10 +134,11 @@ export async function DELETE(
       .eq('user_id', targetUserId)
 
     if (deleteError) {
-      return databaseErrorResponse('Failed to remove project member', deleteError)
+      const errorRes = databaseErrorResponse('Failed to remove project member', deleteError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse({ message: 'Member removed successfully' })
+    return mergeAuthResponse(successResponse({ message: 'Member removed successfully' }), authResponse)
   } catch (err) {
     console.error('Project team delete error:', err)
     return databaseErrorResponse('Failed to remove project member', err)

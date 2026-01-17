@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,11 +8,13 @@ export const dynamic = 'force-dynamic'
  * Deletes a task template by ID
  */
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { id } = params
@@ -25,11 +27,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       .single()) as { data: any; error: any }
 
     if (fetchError || !template) {
-      return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 }), authResponse)
     }
 
     if (template.user_id !== user.id) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 }), authResponse)
     }
 
     // Delete the template
@@ -37,17 +39,17 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     if (deleteError) {
       console.error('Task template delete error:', deleteError)
-      return NextResponse.json({ success: false, error: deleteError.message }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: deleteError.message }, { status: 500 }), authResponse)
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: {
         message: 'Template deleted successfully'
       }
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Task templates DELETE error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }

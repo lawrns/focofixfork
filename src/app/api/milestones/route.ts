@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import {
   successResponse,
@@ -10,11 +10,13 @@ import {
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     // Get user's workspace IDs first
@@ -83,9 +85,9 @@ export async function GET(req: NextRequest) {
       project: m.project_id ? projectMap[m.project_id] : null
     }))
 
-    return successResponse(enrichedMilestones)
+    return mergeAuthResponse(successResponse(enrichedMilestones), authResponse)
   } catch (err: any) {
     console.error('Milestones API error:', err)
-    return databaseErrorResponse('Failed to fetch milestones', err.message)
+    return mergeAuthResponse(databaseErrorResponse('Failed to fetch milestones', err.message), authResponse)
   }
 }

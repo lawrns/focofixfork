@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { CreateProjectData } from '@/lib/repositories/project-repository'
@@ -10,10 +10,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { searchParams } = new URL(req.url)
@@ -39,13 +39,13 @@ export async function GET(req: NextRequest) {
       }
       
       if (!result.data) {
-        return NextResponse.json(
+        return mergeAuthResponse(NextResponse.json(
           { success: false, error: 'Project not found' },
           { status: 404 }
-        )
+        ), authResponse)
       }
       
-      return successResponse(result.data)
+      return mergeAuthResponse(successResponse(result.data), authResponse)
     }
 
     // If workspace_id provided, use workspace-scoped query
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       }
 
       const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
-      return successResponse(result.data, meta)
+      return mergeAuthResponse(successResponse(result.data, meta), authResponse)
     }
 
     // Otherwise, use generic findMany with filters
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     }
 
     const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
-    return successResponse(result.data, meta)
+    return mergeAuthResponse(successResponse(result.data, meta), authResponse)
   } catch (err: any) {
     console.error('Projects API error:', err)
     return databaseErrorResponse('Failed to fetch projects', err)
@@ -85,10 +85,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body = await req.json()
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return successResponse(result.data, undefined, 201)
+    return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
   } catch (err: any) {
     console.error('Projects POST error:', err)
     return databaseErrorResponse('Failed to create project', err)

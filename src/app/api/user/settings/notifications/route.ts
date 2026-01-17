@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/api/auth-helper';
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
 
 import { supabaseAdmin } from '@/lib/supabase-server';
 
@@ -36,11 +36,13 @@ const DEFAULT_SETTINGS: Omit<NotificationSettings, 'user_id'> = {
 };
 
 export async function GET(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, error: authError } = await getAuthUser(request);
+    const { user, error: authError, response } = await getAuthUser(request);
+    authResponse = response;
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse);
     }
 
     // Try to get existing settings
@@ -60,22 +62,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Return settings or defaults
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       success: true,
       data: settings || { user_id: user.id, ...DEFAULT_SETTINGS }
-    });
+    }), authResponse);
   } catch (error) {
     console.error('Error in GET /api/user/settings/notifications:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return mergeAuthResponse(NextResponse.json({ error: 'Internal server error' }, { status: 500 }), authResponse);
   }
 }
 
 export async function PUT(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, error: authError } = await getAuthUser(request);
+    const { user, error: authError, response } = await getAuthUser(request);
+    authResponse = response;
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse);
     }
 
     const body = await request.json();
@@ -118,13 +122,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       success: true,
       data,
       message: 'Notification settings updated successfully' 
-    });
+    }), authResponse);
   } catch (error) {
     console.error('Error in PUT /api/user/settings/notifications:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return mergeAuthResponse(NextResponse.json({ error: 'Internal server error' }, { status: 500 }), authResponse);
   }
 }

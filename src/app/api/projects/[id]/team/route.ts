@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {
@@ -24,10 +24,10 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = params
-    const { user, error: authError } = await getAuthUser(request)
+    const { user, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     // Get project and verify access
@@ -77,10 +77,10 @@ export async function GET(
     if (membersError) {
       // Table might not exist, return empty array
       console.error('Error fetching project members:', membersError)
-      return successResponse([])
+      return mergeAuthResponse(successResponse([]), authResponse)
     }
 
-    return successResponse(members || [])
+    return mergeAuthResponse(successResponse(members || []), authResponse)
   } catch (err) {
     console.error('Project team fetch error:', err)
     return databaseErrorResponse('Failed to fetch project team', err)
@@ -97,10 +97,10 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = params
-    const { user, error: authError } = await getAuthUser(request)
+    const { user, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body = await request.json()
@@ -175,10 +175,11 @@ export async function POST(
       .single()
 
     if (insertError) {
-      return databaseErrorResponse('Failed to add project member', insertError)
+      const errorRes = databaseErrorResponse('Failed to add project member', insertError)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(newMember)
+    return mergeAuthResponse(successResponse(newMember), authResponse)
   } catch (err) {
     console.error('Project team add error:', err)
     return databaseErrorResponse('Failed to add project member', err)

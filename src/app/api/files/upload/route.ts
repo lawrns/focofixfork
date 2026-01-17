@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { FileAttachmentModel } from '@/lib/models/file-uploads'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error: authError } = await getAuthUser(req)
+    const { user, supabase, error: authError, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (authError || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      )
+      ), authResponse)
     }
 
     // Parse FormData
@@ -85,10 +87,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!workspaceId) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Workspace not found' },
         { status: 404 }
-      )
+      ), authResponse)
     }
 
     // Generate storage path
@@ -137,7 +139,7 @@ export async function POST(req: NextRequest) {
       attachmentResponse = null
     }
 
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       {
         success: true,
         attachment: attachmentResponse || {
@@ -149,15 +151,15 @@ export async function POST(req: NextRequest) {
         message: 'File uploaded successfully',
       },
       { status: 200 }
-    )
+    ), authResponse)
   } catch (error) {
     console.error('File upload error:', error)
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'File upload failed',
       },
       { status: 500 }
-    )
+    ), authResponse)
   }
 }

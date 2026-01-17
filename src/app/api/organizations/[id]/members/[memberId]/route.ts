@@ -26,7 +26,7 @@ export async function PATCH(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: workspaceId, memberId } = params
@@ -102,7 +102,7 @@ export async function DELETE(
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: workspaceId, memberId } = params

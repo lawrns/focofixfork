@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,14 +11,16 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      )
+      ), authResponse)
     }
 
     const { id: fieldId } = params
@@ -45,10 +47,10 @@ export async function DELETE(
       .single()
 
     if (projectError || !project) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Project not found' },
         { status: 404 }
-      )
+      ), authResponse)
     }
 
     // Delete the custom field (cascade will delete all associated values)
@@ -65,15 +67,15 @@ export async function DELETE(
       )
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       message: 'Custom field deleted successfully',
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Custom field DELETE error:', err)
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { success: false, error: err.message },
       { status: 500 }
-    )
+    ), authResponse)
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { OpenAIProjectManager } from '@/lib/services/openai-project-manager'
 import { AICreateProjectSchema } from '@/lib/validation/schemas/ai-api.schema'
@@ -13,6 +13,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
     // Check if OpenAI is configured
     if (!process.env.OPENAI_API_KEY) {
@@ -22,10 +23,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body = await req.json()
@@ -49,10 +51,10 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (!membership) {
-        return NextResponse.json(
+        return mergeAuthResponse(NextResponse.json(
           { success: false, error: 'No workspace found. Please create or join a workspace first.' },
           { status: 400 }
-        )
+        ), authResponse)
       }
       workspaceId = membership.workspace_id
     }
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest) {
     // Create the project in the database
     const result = await OpenAIProjectManager.createProject(parsedProject, user.id, workspaceId)
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       project: result.project,
       milestones: result.milestones,
       tasks: result.tasks,
@@ -72,13 +74,13 @@ export async function POST(req: NextRequest) {
         total_milestones: result.milestones.length,
         total_tasks: result.tasks.length,
       }
-    }, undefined, 201)
+    }, undefined, 201), authResponse)
 
   } catch (err: any) {
     console.error('AI Create Project error:', err)
-    return internalErrorResponse(
+    return mergeAuthResponse(internalErrorResponse(
       err.message || 'Failed to create project with AI',
       err.stack
-    )
+    ), authResponse)
   }
 }

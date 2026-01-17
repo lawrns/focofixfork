@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { WorkspaceInvitationRepository } from '@/lib/repositories/workspace-invitation-repository'
@@ -25,7 +25,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -61,7 +61,7 @@ export async function GET(
       return databaseErrorResponse(invitationsResult.error.message, invitationsResult.error.details)
     }
 
-    return successResponse(invitationsResult.data)
+    return mergeAuthResponse(successResponse(invitationsResult.data), authResponse)
   } catch (err) {
     console.error('Invitations fetch error:', err)
     return databaseErrorResponse('Failed to fetch invitations', err)
@@ -77,7 +77,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
       return authRequiredResponse()
@@ -143,7 +143,7 @@ export async function POST(
         return databaseErrorResponse(addResult.error.message, addResult.error.details)
       }
 
-      return successResponse({ message: 'Member added successfully' })
+      return mergeAuthResponse(successResponse({ message: 'Member added successfully' }, undefined, 201), authResponse)
     }
 
     // User doesn't exist - create invitation
@@ -162,10 +162,10 @@ export async function POST(
       return databaseErrorResponse(inviteResult.error.message, inviteResult.error.details)
     }
 
-    return successResponse({
+    return mergeAuthResponse(successResponse({
       message: 'Invitation sent successfully',
       invitation: inviteResult.data
-    })
+    }), authResponse)
   } catch (err) {
     console.error('Invitation creation error:', err)
     return databaseErrorResponse('Failed to create invitation', err)

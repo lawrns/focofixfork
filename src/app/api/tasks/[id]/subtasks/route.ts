@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { generateFractionalIndex } from '@/lib/utils/fractional-indexing'
 import { SubtaskRepository } from '@/lib/repositories/subtask-repository'
@@ -13,10 +13,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId } = params
@@ -25,10 +25,11 @@ export async function GET(
     const result = await repo.findByTaskId(taskId)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('Get subtasks error:', err)
     return databaseErrorResponse('Failed to fetch subtasks', err)
@@ -40,10 +41,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id: taskId } = params
@@ -84,10 +85,11 @@ export async function POST(
     })
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data, undefined, 201)
+    return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
   } catch (err: any) {
     console.error('Create subtask error:', err)
     return databaseErrorResponse('Failed to create subtask', err)

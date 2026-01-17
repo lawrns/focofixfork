@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { TaskRepository } from '@/lib/repositories/task-repository'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
     console.log('=== Test Task Repo Start ===')
     
     // Get authenticated user
-    const { user, supabase, error: authError } = await getAuthUser(request)
+    const { user, supabase, error: authError, response } = await getAuthUser(request)
+    authResponse = response;
     
     if (authError || !user) {
-      return NextResponse.json({ error: 'Auth required', details: authError }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ error: 'Auth required', details: authError }, { status: 401 }), authResponse)
     }
     
     console.log('User authenticated:', user.id)
@@ -28,10 +30,10 @@ export async function POST(request: NextRequest) {
     console.log('Task result:', taskResult)
     
     if (!taskResult.ok) {
-      return NextResponse.json({ error: 'Task not found', details: (taskResult as any).error || 'Unknown error' }, { status: 404 })
+      return mergeAuthResponse(NextResponse.json({ error: 'Task not found', details: (taskResult as any).error || 'Unknown error' }, { status: 404 }), authResponse)
     }
     
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       success: true,
       task: {
         id: taskResult.data.id,
@@ -39,13 +41,13 @@ export async function POST(request: NextRequest) {
         status: taskResult.data.status,
         workspace_id: taskResult.data.workspace_id
       }
-    })
+    }), authResponse)
     
   } catch (error) {
     console.error('Test Task Repo Error:', error)
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 })
+    }, { status: 500 }), authResponse)
   }
 }

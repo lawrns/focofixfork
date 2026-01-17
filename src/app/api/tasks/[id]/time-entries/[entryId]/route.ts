@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { TimeEntryRepository } from '@/lib/repositories/time-entry-repository'
 import type { UpdateTimeEntryData } from '@/lib/repositories/time-entry-repository'
@@ -19,10 +19,10 @@ export async function PUT(
 ) {
   try {
     const { id: taskId, entryId } = params
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const body = await request.json()
@@ -43,12 +43,14 @@ export async function PUT(
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return notFoundResponse('Time entry', entryId)
+        const errorRes = notFoundResponse('Time entry', entryId)
+        return mergeAuthResponse(errorRes, authResponse)
       }
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(result.data)
+    return mergeAuthResponse(successResponse(result.data), authResponse)
   } catch (err: any) {
     console.error('Time entry PUT error:', err)
     return databaseErrorResponse('Failed to update time entry', err)
@@ -61,10 +63,10 @@ export async function DELETE(
 ) {
   try {
     const { id: taskId, entryId } = params
-    const { user, supabase, error } = await getAuthUser(request)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
-      return authRequiredResponse()
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const repo = new TimeEntryRepository(supabase)
@@ -72,10 +74,11 @@ export async function DELETE(
     const result = await repo.deleteTimeEntry(entryId, taskId, user.id)
 
     if (isError(result)) {
-      return databaseErrorResponse(result.error.message, result.error.details)
+      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      return mergeAuthResponse(errorRes, authResponse)
     }
 
-    return successResponse(null)
+    return mergeAuthResponse(successResponse(null), authResponse)
   } catch (err: any) {
     console.error('Time entry DELETE error:', err)
     return databaseErrorResponse('Failed to delete time entry', err)

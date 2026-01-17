@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,13 +12,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      )
+      ), authResponse)
     }
 
     const { id: taskId } = params
@@ -93,10 +93,10 @@ export async function GET(
       options: val.custom_fields?.options,
     })) || []
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: flattenedValues,
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Custom values GET error:', err)
     return NextResponse.json(
@@ -115,13 +115,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      )
+      ), authResponse)
     }
 
     const { id: taskId } = params
@@ -240,13 +240,13 @@ export async function POST(
       )
     }
 
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       {
         success: true,
         data: customValue,
       },
       { status: 201 }
-    )
+    ), authResponse)
   } catch (err: any) {
     console.error('Custom values POST error:', err)
     return NextResponse.json(

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import {
   canCreateDependency,
@@ -28,11 +28,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { id } = params
@@ -45,22 +47,22 @@ export async function GET(
 
     if (queryError) {
       console.error('Dependencies fetch error:', queryError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to fetch dependencies' },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: dependencies || [],
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Dependencies GET error:', err)
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { success: false, error: err.message },
       { status: 500 }
-    )
+    ), authResponse)
   }
 }
 
@@ -72,11 +74,13 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { id: workItemId } = params
@@ -116,10 +120,10 @@ export async function POST(
 
     if (fetchError) {
       console.error('Error fetching existing dependencies:', fetchError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to validate dependencies' },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
     // Perform client-side validation
@@ -148,10 +152,10 @@ export async function POST(
       .single()
 
     if (workItemError || !workItem) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Work item not found' },
         { status: 404 }
-      )
+      ), authResponse)
     }
 
     const { data: dependsOnItem, error: depError } = await supabase
@@ -161,18 +165,18 @@ export async function POST(
       .single()
 
     if (depError || !dependsOnItem) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Dependency target not found' },
         { status: 404 }
-      )
+      ), authResponse)
     }
 
     // Ensure both items are in the same workspace
     if (workItem.workspace_id !== dependsOnItem.workspace_id) {
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Cannot create cross-workspace dependencies' },
         { status: 400 }
-      )
+      ), authResponse)
     }
 
     // Create the dependency
@@ -191,32 +195,32 @@ export async function POST(
 
       // Check if it's a unique constraint violation
       if (insertError.code === '23505') {
-        return NextResponse.json(
+        return mergeAuthResponse(NextResponse.json(
           {
             success: false,
             error: 'This dependency already exists',
             code: 'DUPLICATE_DEPENDENCY',
           },
           { status: 400 }
-        )
+        ), authResponse)
       }
 
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: insertError.message },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { success: true, data: newDependency },
       { status: 201 }
-    )
+    ), authResponse)
   } catch (err: any) {
     console.error('Dependencies POST error:', err)
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { success: false, error: err.message },
       { status: 500 }
-    )
+    ), authResponse)
   }
 }
 
@@ -228,11 +232,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, supabase, error } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const { id: workItemId } = params
@@ -273,22 +279,22 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Dependency deletion error:', deleteError)
-      return NextResponse.json(
+      return mergeAuthResponse(NextResponse.json(
         { success: false, error: deleteError.message },
         { status: 500 }
-      )
+      ), authResponse)
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: { deleted: true },
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Dependencies DELETE error:', err)
-    return NextResponse.json(
+    return mergeAuthResponse(NextResponse.json(
       { success: false, error: err.message },
       { status: 500 }
-    )
+    ), authResponse)
   }
 }
 

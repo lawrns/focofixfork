@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { TaskActionService } from '@/lib/services/task-action-service'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
     console.log('=== Test Authenticated AI Start ===')
     
     // Get authenticated user
-    const { user, supabase, error: authError } = await getAuthUser(request)
+    const { user, supabase, error: authError, response } = await getAuthUser(request)
+    authResponse = response;
     
     if (authError || !user) {
       console.log('Auth failed:', authError)
-      return NextResponse.json({ error: 'Auth required', details: authError }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ error: 'Auth required', details: authError }, { status: 401 }), authResponse)
     }
     
     console.log('User authenticated:', user.id)
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
     console.log('Task query result:', { task: task?.title, error: taskError })
     
     if (taskError) {
-      return NextResponse.json({ error: 'Task query failed', details: taskError }, { status: 500 })
+      return mergeAuthResponse(NextResponse.json({ error: 'Task query failed', details: taskError }, { status: 500 }), authResponse)
     }
     
     // Test TaskActionService
@@ -49,17 +51,17 @@ export async function POST(request: NextRequest) {
     
     console.log('Success! Execution ID:', preview.execution_id)
     
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       success: true,
       execution_id: preview.execution_id,
       task_title: task.title
-    })
+    }), authResponse)
     
   } catch (error) {
     console.error('Test Authenticated Error:', error)
-    return NextResponse.json({ 
+    return mergeAuthResponse(NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 })
+    }, { status: 500 }), authResponse)
   }
 }

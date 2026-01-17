@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth-helper'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { getCacheStats } from '@/lib/cache/redis'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  let authResponse: NextResponse | undefined;
   try {
-    const { user, error } = await getAuthUser(req)
+    const { user, error, response } = await getAuthUser(req)
+    authResponse = response;
 
     if (error || !user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
     const cacheStats = await getCacheStats()
@@ -40,12 +42,12 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    return mergeAuthResponse(NextResponse.json({
       success: true,
       data: metrics
-    })
+    }), authResponse)
   } catch (err: any) {
     console.error('Performance metrics error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
   }
 }

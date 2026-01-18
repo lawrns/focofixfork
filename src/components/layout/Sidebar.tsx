@@ -15,6 +15,7 @@ import {
   Folder,
   Users,
   Settings,
+  GitBranch,
 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
@@ -33,6 +34,7 @@ interface Project {
 const getNavigation = (t: any) => [
   { name: t('navigation.home'), href: '/dashboard/personalized', icon: Home },
   { name: t('navigation.inbox'), href: '/inbox', icon: Inbox },
+  { name: 'Propuestas', href: '/proposals', icon: GitBranch },
   { name: t('navigation.myTasks'), href: '/tasks', icon: CheckSquare },
   { name: t('navigation.favorites'), href: '/favorites', icon: Star },
   { name: t('navigation.reports'), href: '/reports', icon: BarChart3 },

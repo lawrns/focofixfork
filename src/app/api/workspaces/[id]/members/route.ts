@@ -56,7 +56,6 @@ export async function GET(
           .order('created_at', { ascending: true })
 
         if (membersError) {
-          console.error('Error fetching workspace members:', membersError)
           throw new Error('Failed to fetch members')
         }
 
@@ -95,8 +94,7 @@ export async function GET(
       data: membersWithDetails,
     })
     return mergeAuthResponse(successRes, authResponse)
-  } catch (error) {
-    console.error('Workspace members fetch error:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error', success: false },
       { status: 500 }

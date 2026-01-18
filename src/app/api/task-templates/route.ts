@@ -32,7 +32,6 @@ export async function GET(req: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (queryError) {
-      console.error('Task templates fetch error:', queryError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: queryError.message }, { status: 500 }), authResponse)
     }
 
@@ -47,9 +46,9 @@ export async function GET(req: NextRequest) {
         }
       }
     }), authResponse)
-  } catch (err: any) {
-    console.error('Task templates GET error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }
 
@@ -115,13 +114,12 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (insertError) {
-      console.error('Task template create error:', insertError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: insertError.message }, { status: 500 }), authResponse)
     }
 
     return mergeAuthResponse(NextResponse.json({ success: true, data }, { status: 201 }), authResponse)
-  } catch (err: any) {
-    console.error('Task templates POST error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

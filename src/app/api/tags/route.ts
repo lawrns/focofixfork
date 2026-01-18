@@ -58,7 +58,6 @@ export async function GET(req: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (queryError) {
-      console.error('Tags fetch error:', queryError);
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: queryError.message },
         { status: 500 }
@@ -72,10 +71,10 @@ export async function GET(req: NextRequest) {
         pagination: { limit, offset, total: data?.length || 0 },
       },
     }), authResponse);
-  } catch (err: any) {
-    console.error('Tags GET error:', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -146,7 +145,6 @@ export async function POST(req: NextRequest) {
           { status: 409 }
         ), authResponse);
       }
-      console.error('Tag create error:', insertError);
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: insertError.message },
         { status: 500 }
@@ -154,10 +152,10 @@ export async function POST(req: NextRequest) {
     }
 
     return mergeAuthResponse(NextResponse.json({ success: true, data }, { status: 201 }), authResponse);
-  } catch (err: any) {
-    console.error('Tags POST error:', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

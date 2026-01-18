@@ -153,7 +153,6 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     ), authResponse)
   } catch (error) {
-    console.error('File upload error:', error)
     return mergeAuthResponse(NextResponse.json(
       {
         success: false,

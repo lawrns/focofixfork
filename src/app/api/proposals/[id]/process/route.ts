@@ -45,7 +45,6 @@ export async function POST(
       .maybeSingle()
 
     if (proposalError) {
-      console.error('Proposal fetch error:', proposalError)
       return databaseErrorResponse('Failed to fetch proposal', proposalError)
     }
 
@@ -172,9 +171,8 @@ export async function POST(
           risks: parsedProposal.risks,
           assumptions: parsedProposal.assumptions,
         }
-      } catch (aiError) {
-        console.error('AI parsing failed, falling back to basic parsing:', aiError)
-        // Fall through to basic parsing
+      } catch {
+        // AI parsing failed, fall through to basic parsing
       }
     }
 
@@ -240,7 +238,6 @@ export async function POST(
         .insert(itemsToInsert)
 
       if (insertError) {
-        console.error('Items insert error:', insertError)
         return databaseErrorResponse(
           'Failed to create proposal items',
           insertError
@@ -269,7 +266,6 @@ export async function POST(
       .single()
 
     if (updateError) {
-      console.error('Proposal update error:', updateError)
       return databaseErrorResponse('Failed to update proposal', updateError)
     }
 
@@ -284,8 +280,8 @@ export async function POST(
       }),
       authResponse
     )
-  } catch (err: any) {
-    console.error('Proposal process error:', err)
-    return databaseErrorResponse('Failed to process proposal', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to process proposal', message)
   }
 }

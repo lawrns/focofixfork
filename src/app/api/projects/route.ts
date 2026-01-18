@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     // If workspace_id provided, use workspace-scoped query
     if (workspaceId) {
       const result = await repo.findByWorkspace(workspaceId, {
-        status: status as any,
+        status: status as 'active' | 'on_hold' | 'completed' | 'cancelled' | undefined,
         archived: archived === 'true' ? true : archived === 'false' ? false : undefined,
         limit,
         offset,
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Otherwise, use generic findMany with filters
-    const filters: Record<string, any> = {}
+    const filters: Record<string, string> = {}
     if (status) filters.status = status
 
     const result = await repo.findMany(filters, { limit, offset })
@@ -77,9 +77,9 @@ export async function GET(req: NextRequest) {
 
     const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
     return mergeAuthResponse(successResponse(result.data, meta), authResponse)
-  } catch (err: any) {
-    console.error('Projects API error:', err)
-    return databaseErrorResponse('Failed to fetch projects', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch projects', message)
   }
 }
 
@@ -135,8 +135,8 @@ export async function POST(req: NextRequest) {
     }
 
     return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
-  } catch (err: any) {
-    console.error('Projects POST error:', err)
-    return databaseErrorResponse('Failed to create project', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to create project', message)
   }
 }

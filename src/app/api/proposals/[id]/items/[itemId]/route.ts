@@ -43,7 +43,6 @@ export async function PATCH(
       .maybeSingle()
 
     if (proposalError) {
-      console.error('Proposal fetch error:', proposalError)
       return databaseErrorResponse('Failed to fetch proposal', proposalError)
     }
 
@@ -72,7 +71,6 @@ export async function PATCH(
       .maybeSingle()
 
     if (itemError) {
-      console.error('Item fetch error:', itemError)
       return databaseErrorResponse('Failed to fetch proposal item', itemError)
     }
 
@@ -145,13 +143,12 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('Item update error:', updateError)
       return databaseErrorResponse('Failed to update proposal item', updateError)
     }
 
     return mergeAuthResponse(successResponse(updated), authResponse)
-  } catch (err: any) {
-    console.error('Proposal item PATCH error:', err)
-    return databaseErrorResponse('Failed to update proposal item', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update proposal item', message)
   }
 }

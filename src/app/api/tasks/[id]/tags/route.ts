@@ -66,9 +66,9 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(tagsResult.data), authResponse);
-  } catch (err: any) {
-    console.error('Task tags GET error:', err);
-    return databaseErrorResponse('Failed to fetch task tags', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch task tags', message);
   }
 }
 
@@ -175,8 +175,8 @@ export async function POST(
       undefined,
       201
     ), authResponse);
-  } catch (err: any) {
-    console.error('Task tags POST error:', err);
-    return databaseErrorResponse('Failed to assign tags', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to assign tags', message);
   }
 }

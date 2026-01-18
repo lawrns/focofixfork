@@ -19,7 +19,7 @@ type BatchOperation = 'complete' | 'move' | 'priority' | 'assign' | 'tag' | 'del
 interface BatchOperationRequest {
   taskIds: string[]
   operation: BatchOperation
-  value?: any
+  value?: string | string[] | null
 }
 
 export async function POST(req: NextRequest) {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare update data based on operation
-    let updateData: any = {}
+    let updateData: Record<string, string | string[] | null> = {}
     let isDelete = false
 
     switch (body.operation) {
@@ -118,8 +118,8 @@ export async function POST(req: NextRequest) {
         tasks: updateResult.data,
       }), authResponse)
     }
-  } catch (err: any) {
-    console.error('Batch operations error:', err)
-    return internalErrorResponse('Failed to perform batch operation', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to perform batch operation', message)
   }
 }

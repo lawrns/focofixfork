@@ -60,9 +60,7 @@ export async function GET(req: NextRequest) {
       .in('workspace_id', workspaceIds)
       .neq('status', 'archived')
 
-    if (projectsError) {
-      console.error('Failed to fetch projects for reports:', projectsError)
-    }
+    // Silently handle project fetch errors - continue with empty array
 
     // Fetch work items for metrics
     const { data: workItems, error: workItemsError } = await supabase
@@ -71,9 +69,7 @@ export async function GET(req: NextRequest) {
       .in('workspace_id', workspaceIds)
       .gte('created_at', startDate.toISOString())
 
-    if (workItemsError) {
-      console.error('Failed to fetch work items for reports:', workItemsError)
-    }
+    // Silently handle work items fetch errors - continue with empty array
 
     // Calculate metrics
     const completedTasks = (workItems || []).filter(w => w.status === 'done').length
@@ -140,8 +136,8 @@ export async function GET(req: NextRequest) {
         aiGenerated: false
       }))
     }), authResponse)
-  } catch (err: any) {
-    console.error('Reports API error:', err)
-    return mergeAuthResponse(databaseErrorResponse('Failed to fetch reports', err.message), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to fetch reports', message), authResponse)
   }
 }

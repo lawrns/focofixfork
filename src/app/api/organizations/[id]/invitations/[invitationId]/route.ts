@@ -60,8 +60,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ message: 'Invitation cancelled' }), authResponse)
-  } catch (err) {
-    console.error('Invitation deletion error:', err)
-    return databaseErrorResponse('Failed to cancel invitation', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to cancel invitation', message)
   }
 }

@@ -46,7 +46,6 @@ export async function GET(
       .eq('work_item_id', id)
 
     if (queryError) {
-      console.error('Dependencies fetch error:', queryError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to fetch dependencies' },
         { status: 500 }
@@ -57,10 +56,10 @@ export async function GET(
       success: true,
       data: dependencies || [],
     }), authResponse)
-  } catch (err: any) {
-    console.error('Dependencies GET error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     ), authResponse)
   }
@@ -119,7 +118,6 @@ export async function POST(
       .select('work_item_id, depends_on_id')
 
     if (fetchError) {
-      console.error('Error fetching existing dependencies:', fetchError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to validate dependencies' },
         { status: 500 }
@@ -191,7 +189,6 @@ export async function POST(
       .single()
 
     if (insertError) {
-      console.error('Dependency creation error:', insertError)
 
       // Check if it's a unique constraint violation
       if (insertError.code === '23505') {
@@ -215,10 +212,10 @@ export async function POST(
       { success: true, data: newDependency },
       { status: 201 }
     ), authResponse)
-  } catch (err: any) {
-    console.error('Dependencies POST error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     ), authResponse)
   }
@@ -278,7 +275,6 @@ export async function DELETE(
       .eq('depends_on_id', depends_on_id)
 
     if (deleteError) {
-      console.error('Dependency deletion error:', deleteError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: deleteError.message },
         { status: 500 }
@@ -289,10 +285,10 @@ export async function DELETE(
       success: true,
       data: { deleted: true },
     }), authResponse)
-  } catch (err: any) {
-    console.error('Dependencies DELETE error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     ), authResponse)
   }

@@ -106,8 +106,7 @@ export async function POST(
       },
       { status: 200 }
     )
-  } catch (error) {
-    console.error('Error pinning project:', error)
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to pin project' },
       { status: 500 }
@@ -202,8 +201,7 @@ export async function DELETE(
       },
       { status: 200 }
     )
-  } catch (error) {
-    console.error('Error unpinning project:', error)
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to unpin project' },
       { status: 500 }

@@ -53,9 +53,8 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching notification settings:', error);
       // Return defaults if table doesn't exist yet
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
         data: { user_id: user.id, ...DEFAULT_SETTINGS }
       });
@@ -66,8 +65,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: settings || { user_id: user.id, ...DEFAULT_SETTINGS }
     }), authResponse);
-  } catch (error) {
-    console.error('Error in GET /api/user/settings/notifications:', error);
+  } catch {
     return mergeAuthResponse(NextResponse.json({ error: 'Internal server error' }, { status: 500 }), authResponse);
   }
 }
@@ -100,7 +98,7 @@ export async function PUT(request: NextRequest) {
       'show_badges'
     ];
 
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, boolean | string> = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updateData[field] = body[field];
@@ -118,7 +116,6 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating notification settings:', error);
       return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
     }
 
@@ -127,8 +124,7 @@ export async function PUT(request: NextRequest) {
       data,
       message: 'Notification settings updated successfully' 
     }), authResponse);
-  } catch (error) {
-    console.error('Error in PUT /api/user/settings/notifications:', error);
+  } catch {
     return mergeAuthResponse(NextResponse.json({ error: 'Internal server error' }, { status: 500 }), authResponse);
   }
 }

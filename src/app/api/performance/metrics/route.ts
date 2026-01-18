@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
       success: true,
       data: metrics
     }), authResponse)
-  } catch (err: any) {
-    console.error('Performance metrics error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

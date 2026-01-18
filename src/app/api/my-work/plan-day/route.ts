@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
       .order('due_date', { ascending: true });
 
     if (tasksError) {
-      console.error('Error fetching tasks:', tasksError);
       return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
     }
 
@@ -116,8 +115,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error) {
-    console.error('Plan day error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -63,9 +63,9 @@ export async function POST(
     }
 
     return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
-  } catch (err: any) {
-    console.error('Reminder API error:', err)
-    return databaseErrorResponse('Failed to set reminder', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to set reminder', message)
   }
 }
 
@@ -94,9 +94,9 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ message: 'Reminder removed' }), authResponse)
-  } catch (err: any) {
-    console.error('Remove reminder API error:', err)
-    return databaseErrorResponse('Failed to remove reminder', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to remove reminder', message)
   }
 }
 
@@ -125,8 +125,8 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('Get reminders API error:', err)
-    return databaseErrorResponse('Failed to get reminders', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to get reminders', message)
   }
 }

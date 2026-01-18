@@ -62,7 +62,6 @@ export async function GET(
       .order('created_at', { ascending: true })
 
     if (valuesError) {
-      console.error('Custom values fetch error:', valuesError)
       return NextResponse.json(
         { success: false, error: valuesError.message },
         { status: 500 }
@@ -88,10 +87,10 @@ export async function GET(
       success: true,
       data: flattenedValues,
     }), authResponse)
-  } catch (err: any) {
-    console.error('Custom values GET error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     )
   }
@@ -214,7 +213,6 @@ export async function POST(
       .single()
 
     if (upsertError) {
-      console.error('Custom value upsert error:', upsertError)
       return NextResponse.json(
         { success: false, error: upsertError.message },
         { status: 500 }
@@ -228,10 +226,10 @@ export async function POST(
       },
       { status: 201 }
     ), authResponse)
-  } catch (err: any) {
-    console.error('Custom values POST error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     )
   }

@@ -29,9 +29,9 @@ export async function GET(request: NextRequest) {
       failed: result.failed,
       errors: result.errors,
     })
-  } catch (err: any) {
-    console.error('Reminder check error:', err)
-    return databaseErrorResponse('Failed to check reminders', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to check reminders', message)
   }
 }
 

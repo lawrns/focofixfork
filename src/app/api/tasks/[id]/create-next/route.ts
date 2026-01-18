@@ -97,7 +97,6 @@ export async function POST(
       .single();
 
     if (createError) {
-      console.error('Error creating next recurring task:', createError);
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: createError.message },
         { status: 500 }
@@ -109,10 +108,10 @@ export async function POST(
       data: createdTask,
       message: 'Next recurring task created successfully',
     }), authResponse);
-  } catch (err: any) {
-    console.error('POST /api/tasks/[id]/create-next error:', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

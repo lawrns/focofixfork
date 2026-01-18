@@ -79,7 +79,6 @@ export async function PATCH(request: NextRequest) {
       .limit(1);
 
     if (fetchError) {
-      console.error('Error fetching workspace members:', fetchError);
       return NextResponse.json(
         { error: 'Failed to fetch user workspace membership' },
         { status: 500 }
@@ -118,7 +117,6 @@ export async function PATCH(request: NextRequest) {
       .eq('id', workspaceMember.id);
 
     if (updateError) {
-      console.error('Error updating digest preferences:', updateError);
       return NextResponse.json(
         { error: 'Failed to save digest preferences' },
         { status: 500 }
@@ -129,8 +127,7 @@ export async function PATCH(request: NextRequest) {
       success: true,
       message: 'Email digest preferences saved successfully',
     }), authResponse);
-  } catch (error) {
-    console.error('Error in digest preferences API:', error);
+  } catch {
     return mergeAuthResponse(NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -159,7 +156,6 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (fetchError) {
-      console.error('Error fetching workspace members:', fetchError);
       return NextResponse.json(
         { error: 'Failed to fetch digest preferences' },
         { status: 500 }
@@ -187,8 +183,7 @@ export async function GET(request: NextRequest) {
     };
 
     return mergeAuthResponse(NextResponse.json({ digestPreferences }), authResponse);
-  } catch (error) {
-    console.error('Error in digest preferences GET API:', error);
+  } catch {
     return mergeAuthResponse(NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

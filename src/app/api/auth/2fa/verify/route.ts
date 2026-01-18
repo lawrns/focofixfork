@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
       .eq('id', userId);
 
     if (updateError) {
-      console.error('Failed to save 2FA settings:', updateError);
       return NextResponse.json(
         { error: 'Failed to save 2FA settings' },
         { status: 500 }
@@ -49,8 +48,7 @@ export async function POST(request: NextRequest) {
       message: '2FA enabled successfully',
       twoFactorEnabled: true,
     });
-  } catch (error) {
-    console.error('2FA verify error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to verify 2FA' },
       { status: 500 }

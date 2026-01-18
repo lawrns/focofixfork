@@ -44,7 +44,6 @@ export async function GET(
       .maybeSingle()
 
     if (proposalError) {
-      console.error('Proposal fetch error:', proposalError)
       return databaseErrorResponse('Failed to fetch proposal', proposalError)
     }
 
@@ -65,9 +64,9 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(proposal), authResponse)
-  } catch (err: any) {
-    console.error('Proposal GET error:', err)
-    return databaseErrorResponse('Failed to fetch proposal', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch proposal', message)
   }
 }
 
@@ -102,7 +101,6 @@ export async function PATCH(
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Proposal fetch error:', fetchError)
       return databaseErrorResponse('Failed to fetch proposal', fetchError)
     }
 
@@ -139,7 +137,7 @@ export async function PATCH(
     }
 
     // Build update object
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, string | object> = {
       updated_at: new Date().toISOString(),
     }
 
@@ -165,14 +163,13 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('Proposal update error:', updateError)
       return databaseErrorResponse('Failed to update proposal', updateError)
     }
 
     return mergeAuthResponse(successResponse(updated), authResponse)
-  } catch (err: any) {
-    console.error('Proposal PATCH error:', err)
-    return databaseErrorResponse('Failed to update proposal', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update proposal', message)
   }
 }
 
@@ -200,7 +197,6 @@ export async function DELETE(
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Proposal fetch error:', fetchError)
       return databaseErrorResponse('Failed to fetch proposal', fetchError)
     }
 
@@ -240,13 +236,12 @@ export async function DELETE(
       .eq('id', id)
 
     if (deleteError) {
-      console.error('Proposal delete error:', deleteError)
       return databaseErrorResponse('Failed to delete proposal', deleteError)
     }
 
     return mergeAuthResponse(successResponse({ deleted: true }), authResponse)
-  } catch (err: any) {
-    console.error('Proposal DELETE error:', err)
-    return databaseErrorResponse('Failed to delete proposal', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to delete proposal', message)
   }
 }

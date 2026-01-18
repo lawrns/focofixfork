@@ -75,13 +75,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .single()
 
     if (taskError) {
-      console.error('Task create from template error:', taskError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: taskError.message }, { status: 500 }), authResponse)
     }
 
     return mergeAuthResponse(NextResponse.json({ success: true, data: task }, { status: 201 }), authResponse)
-  } catch (err: any) {
-    console.error('Task templates apply error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

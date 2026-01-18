@@ -3,8 +3,12 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 export const dynamic = 'force-dynamic'
 
+interface TaskExportRow {
+  [key: string]: string | number | boolean | string[] | null | undefined
+}
+
 // Helper to generate CSV from tasks
-function generateCSV(tasks: any[]): string {
+function generateCSV(tasks: TaskExportRow[]): string {
   const headers = ['id', 'title', 'description', 'status', 'priority', 'due_date', 'assignee_id', 'tags', 'created_at']
   const headerRow = headers.join(',')
 
@@ -35,7 +39,7 @@ function generateCSV(tasks: any[]): string {
 }
 
 // Helper to generate JSON from tasks
-function generateJSON(tasks: any[]): string {
+function generateJSON(tasks: TaskExportRow[]): string {
   return JSON.stringify(tasks, null, 2)
 }
 
@@ -125,7 +129,6 @@ export async function GET(req: NextRequest) {
     const { data: tasks, error: queryError } = await query
 
     if (queryError) {
-      console.error('Tasks export fetch error:', queryError)
       return NextResponse.json(
         { success: false, error: queryError.message },
         { status: 500 }
@@ -146,10 +149,10 @@ export async function GET(req: NextRequest) {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     }), authResponse)
-  } catch (err: any) {
-    console.error('Tasks export API error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     )
   }

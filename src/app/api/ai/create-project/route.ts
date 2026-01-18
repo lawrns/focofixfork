@@ -76,11 +76,8 @@ export async function POST(req: NextRequest) {
       }
     }, undefined, 201), authResponse)
 
-  } catch (err: any) {
-    console.error('AI Create Project error:', err)
-    return mergeAuthResponse(internalErrorResponse(
-      err.message || 'Failed to create project with AI',
-      err.stack
-    ), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to create project with AI'
+    return mergeAuthResponse(internalErrorResponse(message), authResponse)
   }
 }

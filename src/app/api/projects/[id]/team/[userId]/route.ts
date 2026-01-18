@@ -77,9 +77,9 @@ export async function PATCH(
     }
 
     return mergeAuthResponse(successResponse(updatedMember), authResponse)
-  } catch (err) {
-    console.error('Project team update error:', err)
-    return databaseErrorResponse('Failed to update project member', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update project member', message)
   }
 }
 
@@ -139,8 +139,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ message: 'Member removed successfully' }), authResponse)
-  } catch (err) {
-    console.error('Project team delete error:', err)
-    return databaseErrorResponse('Failed to remove project member', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to remove project member', message)
   }
 }

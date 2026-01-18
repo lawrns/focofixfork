@@ -47,7 +47,6 @@ export async function GET(
       .order('created_at', { ascending: true })
 
     if (fieldsError) {
-      console.error('Custom fields fetch error:', fieldsError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: fieldsError.message },
         { status: 500 }
@@ -58,10 +57,10 @@ export async function GET(
       success: true,
       data: fields || [],
     }), authResponse)
-  } catch (err: any) {
-    console.error('Custom fields GET error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     ), authResponse)
   } finally {
@@ -149,7 +148,6 @@ export async function POST(
       .single()
 
     if (createError) {
-      console.error('Custom field creation error:', createError)
       // Handle unique constraint violation
       if (createError.code === '23505') {
         return mergeAuthResponse(NextResponse.json(
@@ -170,10 +168,10 @@ export async function POST(
       },
       { status: 201 }
     ), authResponse)
-  } catch (err: any) {
-    console.error('Custom field POST error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     ), authResponse)
   } finally {

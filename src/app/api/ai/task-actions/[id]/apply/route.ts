@@ -47,8 +47,6 @@ export async function POST(
     )
 
   } catch (error) {
-    console.error('Apply task action error:', error)
-
     if (error instanceof Error) {
       if (error.message.includes('not found or expired')) {
         return NextResponse.json(

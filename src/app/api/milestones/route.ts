@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
     }))
 
     return mergeAuthResponse(successResponse(enrichedMilestones), authResponse)
-  } catch (err: any) {
-    console.error('Milestones API error:', err)
-    return mergeAuthResponse(databaseErrorResponse('Failed to fetch milestones', err.message), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to fetch milestones', message), authResponse)
   }
 }

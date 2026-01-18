@@ -35,7 +35,6 @@ export async function GET(
     const membershipResult = await repo.isMember(workspaceId, user.id)
 
     if (isError(membershipResult)) {
-      console.error('Error checking workspace membership:', membershipResult.error)
       const errorRes = databaseErrorResponse(membershipResult.error.message, membershipResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -48,7 +47,6 @@ export async function GET(
     const membersResult = await repo.getMembers(workspaceId)
 
     if (isError(membersResult)) {
-      console.error('Error fetching workspace members:', membersResult.error)
       const errorRes = databaseErrorResponse(membersResult.error.message, membersResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -87,7 +85,6 @@ export async function GET(
     const successRes = successResponse(membersWithDetails)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
-    console.error('Workspace members fetch error:', error)
     return internalErrorResponse('Failed to fetch workspace members', error)
   }
 }

@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId);
 
     if (deleteError) {
-      console.error('Failed to disable 2FA:', deleteError);
       return NextResponse.json(
         { error: 'Failed to disable 2FA' },
         { status: 500 }
@@ -39,8 +38,7 @@ export async function POST(request: NextRequest) {
       message: '2FA disabled successfully',
       twoFactorEnabled: false,
     });
-  } catch (error) {
-    console.error('2FA disable error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to disable 2FA' },
       { status: 500 }

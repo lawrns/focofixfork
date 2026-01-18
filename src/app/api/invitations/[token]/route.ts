@@ -58,9 +58,9 @@ export async function GET(
       expires_at: invitation.expires_at,
       status: invitation.status
     }), authResponse)
-  } catch (err) {
-    console.error('Invitation fetch error:', err)
-    return databaseErrorResponse('Failed to fetch invitation', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch invitation', message)
   }
 }
 
@@ -117,8 +117,8 @@ export async function POST(
       message: 'Invitation accepted successfully',
       workspace_id: acceptResult.data.workspace_id
     }), authResponse)
-  } catch (err) {
-    console.error('Invitation accept error:', err)
-    return databaseErrorResponse('Failed to accept invitation', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to accept invitation', message)
   }
 }

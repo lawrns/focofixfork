@@ -28,22 +28,16 @@ export async function GET(request: NextRequest) {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      console.log('[Workspaces API] Auth failed:', authError)
       return authRequiredResponse()
     }
-
-    console.log('[Workspaces API] User authenticated:', user.id)
 
     const repo = new WorkspaceRepository(supabase)
     const result = await repo.findByUser(user.id)
 
     if (isError(result)) {
-      console.error('[Workspaces API] Database error:', result.error)
       const errorRes = databaseErrorResponse(result.error.message, result.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
-
-    console.log('[Workspaces API] Found workspaces:', result.data.length)
 
     // Map to workspace format with icon
     const workspaces = result.data.map(ws => ({
@@ -58,9 +52,8 @@ export async function GET(request: NextRequest) {
       total: workspaces.length,
     })
     return mergeAuthResponse(successRes, authResponse)
-  } catch (error) {
-    console.error('Workspace fetch error:', error)
-    return databaseErrorResponse('Failed to fetch workspaces', error)
+  } catch {
+    return databaseErrorResponse('Failed to fetch workspaces')
   }
 }
 
@@ -106,7 +99,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (createError) {
-      console.error('Error creating workspace:', createError)
       return mergeAuthResponse(databaseErrorResponse('Failed to create workspace', createError), authResponse)
     }
 
@@ -122,7 +114,6 @@ export async function POST(request: NextRequest) {
       ])
 
     if (memberError) {
-      console.error('Error adding workspace member:', memberError)
       // Clean up created workspace
       await supabase
         .from('workspaces')
@@ -141,8 +132,7 @@ export async function POST(request: NextRequest) {
       },
     }, undefined, 201)
     return mergeAuthResponse(successRes, authResponse)
-  } catch (error) {
-    console.error('Workspace creation error:', error)
-    return internalErrorResponse('Workspace creation error', error)
+  } catch {
+    return internalErrorResponse('Workspace creation error')
   }
 }

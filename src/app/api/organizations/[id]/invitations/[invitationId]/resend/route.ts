@@ -60,8 +60,8 @@ export async function POST(
     }
 
     return mergeAuthResponse(successResponse({ message: 'Invitation resent successfully' }), authResponse)
-  } catch (err) {
-    console.error('Invitation resend error:', err)
-    return databaseErrorResponse('Failed to resend invitation', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to resend invitation', message)
   }
 }

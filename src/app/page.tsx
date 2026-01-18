@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Mic, GitBranch, CheckCircle, MessageSquare, Clock, Sparkles, Users, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 // CSS-only fade-in animation to avoid loading framer-motion
 const fadeInClass = "animate-in fade-in duration-500";
+const fadeInDelayClass = "animate-in fade-in slide-in-from-bottom-4 duration-700";
 
 const metrics = [
   { value: '10x', label: 'Más rápido que hojas de cálculo' },
@@ -62,8 +65,8 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className={`${fadeInClass} mb-7`}>
             <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] bg-[#6366F1]/[0.08] dark:bg-[#8B8DFF]/10 border border-[#6366F1]/20 dark:border-[#8B8DFF]/20 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF] animate-pulse" />
-              Gestión moderna de proyectos
+              <Sparkles className="w-3.5 h-3.5" />
+              Propuestas con IA · Branching para proyectos
             </span>
           </div>
 
@@ -74,8 +77,8 @@ export default function LandingPage() {
           </h1>
 
           <p className={`${fadeInClass} text-xl lg:text-2xl text-zinc-600 dark:text-zinc-400 mb-12 max-w-2xl leading-relaxed font-light`}>
-            La herramienta que elimina fricción. Tu equipo planifica, ejecuta y entrega
-            sin perder tiempo en procesos que no importan.
+            Habla tus ideas, la IA las convierte en propuestas estructuradas.
+            Revisa, aprueba y merge — como Git, pero para proyectos.
           </p>
 
           <div className={`${fadeInClass} flex items-center gap-4 mb-20`}>
@@ -108,6 +111,117 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* NEW: AI Proposals Feature Highlight */}
+      <section className="py-24 px-8 bg-gradient-to-b from-[#6366F1]/[0.03] to-transparent dark:from-[#8B8DFF]/[0.03] border-t border-zinc-200/50 dark:border-white/[0.06]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-6 px-4 py-1.5 text-[13px] border-[#6366F1]/30 dark:border-[#8B8DFF]/30 text-[#6366F1] dark:text-[#8B8DFF] bg-[#6366F1]/5 dark:bg-[#8B8DFF]/5">
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              Nuevo: Sistema de Propuestas con IA
+            </Badge>
+            <h2 className="text-[44px] lg:text-[56px] font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-tight">
+              Ideas → Tareas
+              <br />
+              <span className="bg-gradient-to-r from-[#6366F1] to-[#8B8DFF] bg-clip-text text-transparent">en segundos</span>
+            </h2>
+            <p className="text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto font-light leading-relaxed">
+              Habla, escribe o sube archivos. La IA convierte tus ideas en tareas estructuradas
+              con asignaciones inteligentes y estimaciones de tiempo.
+            </p>
+          </div>
+
+          {/* Proposals Flow Illustration */}
+          <div className={`${fadeInDelayClass} grid md:grid-cols-3 gap-6 mb-16`}>
+            {/* Step 1: Input */}
+            <Card className="relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:border-[#6366F1]/30 dark:hover:border-[#8B8DFF]/30 transition-all group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/15 mb-5 group-hover:scale-105 transition-transform">
+                  <Mic className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
+                </div>
+                <div className="text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] mb-2">Paso 1</div>
+                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Describe tu idea</h3>
+                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
+                  Habla, escribe o sube documentos. La IA entiende contexto y extrae tareas automáticamente.
+                </p>
+                <div className="mt-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700/50">
+                  <p className="text-[13px] text-zinc-500 dark:text-zinc-400 italic">
+                    "Necesitamos rediseñar el checkout y migrar a Stripe antes del lanzamiento..."
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Step 2: AI Processing */}
+            <Card className="relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:border-[#6366F1]/30 dark:hover:border-[#8B8DFF]/30 transition-all group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/15 mb-5 group-hover:scale-105 transition-transform">
+                  <GitBranch className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
+                </div>
+                <div className="text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] mb-2">Paso 2</div>
+                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Propuesta estructurada</h3>
+                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
+                  La IA crea una propuesta tipo branch con tareas, asignaciones y timeline comparativo.
+                </p>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-[13px] text-emerald-700 dark:text-emerald-400">+3 tareas nuevas</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-[13px] text-amber-700 dark:text-amber-400">~12h estimadas</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Step 3: Approval */}
+            <Card className="relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:border-[#6366F1]/30 dark:hover:border-[#8B8DFF]/30 transition-all group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/15 mb-5 group-hover:scale-105 transition-transform">
+                  <CheckCircle className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
+                </div>
+                <div className="text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] mb-2">Paso 3</div>
+                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Aprueba y ejecuta</h3>
+                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
+                  Revisa, ajusta y aprueba línea por línea. Un click para merge al proyecto real.
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                    Aprobar todo
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs">
+                    <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                    Discutir
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Key Benefits */}
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+              <Clock className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
+              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Estimaciones automáticas</span>
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+              <Users className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
+              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Asignación inteligente</span>
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+              <GitBranch className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
+              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Timeline comparativo</span>
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+              <Zap className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
+              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Merge instantáneo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features - Linear linearity: simple list, no grid */}
       <section className="py-24 px-8 bg-zinc-50/50 dark:bg-[#0D0D0D] border-t border-zinc-200/50 dark:border-white/[0.06]">
         <div className="max-w-5xl mx-auto">
@@ -118,43 +232,45 @@ export default function LandingPage() {
           <div className="space-y-16">
             <div className="flex gap-8 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
-                <div className="w-6 h-6 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF]" />
+                <Mic className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
               </div>
               <div>
                 <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-3">
-                  Issues que se resuelven rápido
+                  Propuestas con voz
                 </h3>
                 <p className="text-[17px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light max-w-2xl">
-                  Crea, asigna y cierra tareas en segundos. Sin formularios complejos ni pasos innecesarios.
-                  Todo lo que necesitas, nada más.
+                  Habla tus ideas y la IA las convierte en propuestas estructuradas con tareas,
+                  estimaciones y asignaciones automáticas. Como tener un PM que nunca duerme.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-8 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
-                <div className="w-6 h-6 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF]" />
+                <GitBranch className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
               </div>
               <div>
                 <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-3">
-                  Proyectos con claridad total
+                  Branching para proyectos
                 </h3>
                 <p className="text-[17px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light max-w-2xl">
-                  Roadmaps, sprints y entregas visibles para todo el equipo. Saben qué hacer y por qué importa.
+                  Como Git pero para gestión de proyectos. Crea propuestas, revisa el impacto
+                  lado a lado, aprueba línea por línea y merge cuando estés listo.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-8 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
-                <div className="w-6 h-6 rounded-full bg-[#6366F1] dark:bg-[#8B8DFF]" />
+                <Zap className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
               </div>
               <div>
                 <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-3">
-                  Integraciones que funcionan
+                  Micro-animaciones premium
                 </h3>
                 <p className="text-[17px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light max-w-2xl">
-                  GitHub, Slack, Figma. Tu stack actual funciona mejor con Foco en el centro.
+                  Cada interacción se siente satisfactoria. Spring physics, transiciones fluidas
+                  y feedback visual al nivel de Intercom y Miro.
                 </p>
               </div>
             </div>

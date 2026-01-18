@@ -57,7 +57,17 @@ interface WorkspaceSettings {
 export function SettingsDashboard() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
-  const initialTab = searchParams.get('tab') || 'profile'
+
+  // Use state for tab to avoid hydration mismatch - searchParams is client-only
+  const [activeTab, setActiveTab] = useState('profile')
+
+  // Update tab from URL params after hydration
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   const [isSaving, setIsSaving] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
@@ -466,7 +476,7 @@ export function SettingsDashboard() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={initialTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />

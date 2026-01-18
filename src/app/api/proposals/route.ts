@@ -45,15 +45,13 @@ export async function GET(req: NextRequest) {
       return invalidUUIDResponse('created_by', createdBy)
     }
 
-    // Build query
+    // Build query - only join project, user info will be fetched separately
     let query = supabaseAdmin
       .from('proposals')
       .select(
         `
         *,
-        created_by_user:created_by(id, full_name, email),
-        approver:approver_id(id, full_name, email),
-        project:project_id(id, name, slug)
+        project:foco_projects!proposals_project_id_fkey(id, name, slug)
       `,
         { count: 'exact' }
       )
@@ -83,8 +81,34 @@ export async function GET(req: NextRequest) {
       return databaseErrorResponse('Failed to fetch proposals', dbError)
     }
 
+    // Fetch user profiles for created_by and approver_id
+    const userIds = new Set<string>()
+    proposals?.forEach((p: any) => {
+      if (p.created_by) userIds.add(p.created_by)
+      if (p.approver_id) userIds.add(p.approver_id)
+    })
+
+    let userMap: Record<string, any> = {}
+    if (userIds.size > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, email, avatar_url')
+        .in('id', Array.from(userIds))
+
+      profiles?.forEach((p: any) => {
+        userMap[p.id] = p
+      })
+    }
+
+    // Enrich proposals with user info
+    const enrichedProposals = proposals?.map((p: any) => ({
+      ...p,
+      created_by_user: userMap[p.created_by] || null,
+      approver: p.approver_id ? userMap[p.approver_id] || null : null,
+    }))
+
     const meta = createPaginationMeta(count || 0, limit, offset)
-    return mergeAuthResponse(successResponse(proposals || [], meta), authResponse)
+    return mergeAuthResponse(successResponse(enrichedProposals || [], meta), authResponse)
   } catch (err: any) {
     console.error('Proposals GET error:', err)
     return databaseErrorResponse('Failed to fetch proposals', err)
@@ -184,8 +208,7 @@ export async function POST(req: NextRequest) {
       .select(
         `
         *,
-        created_by_user:created_by(id, full_name, email),
-        project:project_id(id, name, slug)
+        project:foco_projects!proposals_project_id_fkey(id, name, slug)
       `
       )
       .single()
@@ -195,8 +218,21 @@ export async function POST(req: NextRequest) {
       return databaseErrorResponse('Failed to create proposal', createError)
     }
 
+    // Fetch user profile for created_by
+    const { data: userProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, full_name, email, avatar_url')
+      .eq('id', user.id)
+      .single()
+
+    const enrichedProposal = {
+      ...proposal,
+      created_by_user: userProfile || null,
+      approver: null,
+    }
+
     return mergeAuthResponse(
-      successResponse(proposal, undefined, 201),
+      successResponse(enrichedProposal, undefined, 201),
       authResponse
     )
   } catch (err: any) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   validateData,
-  organizationSchema,
+  workspaceSchema,
   projectSchema,
   milestoneSchema,
   taskSchema,
@@ -68,7 +68,7 @@ export function sanitizeRequestData(data: any): any {
 }
 
 // API endpoint validation helpers
-export const validateOrganization = (data: unknown) => validateRequest(organizationSchema, data);
+export const validateWorkspace = (data: unknown) => validateRequest(workspaceSchema, data);
 export const validateProject = (data: unknown) => validateRequest(projectSchema, data);
 export const validateMilestone = (data: unknown) => validateRequest(milestoneSchema, data);
 export const validateTask = (data: unknown) => validateRequest(taskSchema, data);
@@ -203,12 +203,12 @@ export async function validateDataIntegrity(data: any, entityType: string): Prom
 
   try {
     switch (entityType) {
-      case 'organization':
+      case 'workspace':
         if (!data.name || data.name.trim().length === 0) {
-          errors.push('Organization name is required');
+          errors.push('Workspace name is required');
         }
         if (data.slug && !validators.slug(data.slug)) {
-          errors.push('Organization slug must be lowercase alphanumeric with hyphens only');
+          errors.push('Workspace slug must be lowercase alphanumeric with hyphens only');
         }
         break;
 
@@ -216,8 +216,8 @@ export async function validateDataIntegrity(data: any, entityType: string): Prom
         if (!data.name || data.name.trim().length === 0) {
           errors.push('Project name is required');
         }
-        if (!data.organization_id || !validators.uuid(data.organization_id)) {
-          errors.push('Valid organization ID is required');
+        if (!data.workspace_id || !validators.uuid(data.workspace_id)) {
+          errors.push('Valid workspace ID is required');
         }
         if (data.start_date && data.end_date) {
           const start = new Date(data.start_date);

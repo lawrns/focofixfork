@@ -45,11 +45,11 @@ export class BackupService {
         }
       };
 
-      // Get user's organizations
+      // Get user's workspaces
       const { data: organizations } = await untypedSupabase
         .from('workspaces')
         .select('*')
-        .eq('created_by', user.id);
+        .eq('owner_id', user.id);
 
       if (organizations) {
         backupData.organizations = organizations;
@@ -70,7 +70,7 @@ export class BackupService {
           // Get milestones and tasks for these projects
           const projectIds = projects.map(p => p.id);
           const { data: milestones } = await untypedSupabase
-            .from('milestones')
+            .from('foco_milestones')
             .select('*')
             .in('project_id', projectIds);
 
@@ -174,7 +174,7 @@ export class BackupService {
             .from('workspaces')
             .insert({
               ...org,
-              created_by: user.id, // Ensure user owns restored org
+              owner_id: user.id, // Ensure user owns restored workspace
             });
 
           if (error) throw error;
@@ -202,7 +202,7 @@ export class BackupService {
       // Restore milestones and tasks
       for (const milestone of backupData.milestones || []) {
         const { data: existing } = await untypedSupabase
-          .from('milestones')
+          .from('foco_milestones')
           .select('id')
           .eq('title', milestone.title)
           .eq('project_id', milestone.project_id)
@@ -210,7 +210,7 @@ export class BackupService {
 
         if (!existing) {
           const { error } = await untypedSupabase
-            .from('milestones')
+            .from('foco_milestones')
             .insert(milestone);
 
           if (error) throw error;
@@ -238,7 +238,7 @@ export class BackupService {
       if (backupData.comments) {
         for (const comment of backupData.comments) {
           const { error } = await untypedSupabase
-            .from('milestone_comments')
+            .from('foco_comments')
             .insert(comment);
 
           if (error && !error.message.includes('duplicate key')) {

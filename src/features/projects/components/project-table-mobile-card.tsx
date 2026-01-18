@@ -62,7 +62,7 @@ export function ProjectMobileCard({
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{project.name}</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {project.organizations?.name || 'Personal'}
+              {project.workspaces?.name || 'Personal'}
             </p>
           </div>
         </div>

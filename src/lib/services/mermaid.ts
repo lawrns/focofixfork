@@ -24,7 +24,7 @@ const mapDatabaseToMermaidDiagramSimple = (row: any): MermaidDiagram => {
     title: row.title,
     description: row.description,
     mermaid_code: row.mermaid_code,
-    created_by: row.created_by,
+    owner_id: row.owner_id || row.created_by,
     workspace_id: row.workspace_id,
     is_public: row.is_public,
     share_token: row.share_token,
@@ -40,7 +40,7 @@ const mapDatabaseToMermaidDiagramVersionSimple = (row: any): MermaidDiagramVersi
     diagram_id: row.diagram_id,
     mermaid_code: row.mermaid_code,
     version_number: row.version_number,
-    created_by: row.created_by,
+    owner_id: row.owner_id || row.created_by,
     created_at: row.created_at,
     change_description: row.change_description,
   };
@@ -76,7 +76,7 @@ export class MermaidService {
         title: data.title,
         description: data.description || null,
         mermaid_code: data.mermaid_code,
-        created_by: user?.id || null,
+        owner_id: user?.id || null,
         workspace_id: data.workspace_id || null,
         is_public: data.is_public || false,
         share_token: data.is_public ? generateShareToken() : null,
@@ -225,10 +225,10 @@ export class MermaidService {
         created_at: baseDiagram.created_at,
         updated_at: baseDiagram.updated_at,
         version: baseDiagram.version,
-        created_by: baseDiagram.created_by,
+        owner_id: baseDiagram.owner_id,
         workspace_id: baseDiagram.workspace_id,
         owner_name: 'Loading...', // Would be fetched separately
-        organization_name: 'Loading...', // Would be fetched separately
+        workspace_name: 'Loading...', // Would be fetched separately
         can_edit: true, // This would be determined by actual permissions
         can_delete: true, // This would be determined by actual permissions
         can_share: true, // This would be determined by actual permissions
@@ -329,7 +329,7 @@ export class MermaidService {
         mermaid_code: data.mermaid_code,
         version_number: nextVersion,
         change_description: data.change_description,
-        created_by: (await this.supabase.auth.getUser()).data.user?.id,
+        owner_id: (await this.supabase.auth.getUser()).data.user?.id,
       })
       .select()
       .single();

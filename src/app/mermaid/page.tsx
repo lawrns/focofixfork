@@ -199,9 +199,9 @@ export default function MermaidPage() {
                   </div>
                 </div>
 
-                {diagram.organization_name && (
+                {diagram.workspace_name && (
                   <div className="mt-2 text-xs text-gray-500">
-                    Organization: {diagram.organization_name}
+                    Workspace: {diagram.workspace_name}
                   </div>
                 )}
               </div>

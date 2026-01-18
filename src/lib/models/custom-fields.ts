@@ -19,8 +19,8 @@ export interface CustomFieldDefinition {
   key: string // machine-readable identifier
   type: FieldType
   description?: string
-  entity_type: 'project' | 'milestone' | 'task' | 'organization'
-  organization_id: string
+  entity_type: 'project' | 'milestone' | 'task' | 'workspace'
+  workspace_id: string
   is_required: boolean
   is_system: boolean // system fields cannot be deleted
   default_value?: any
@@ -28,7 +28,7 @@ export interface CustomFieldDefinition {
   validation_rules?: FieldValidation[]
   display_order: number
   is_active: boolean
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
 }
@@ -37,7 +37,7 @@ export interface CustomFieldValue {
   id: string
   field_definition_id: string
   entity_id: string // project/milestone/task ID
-  entity_type: 'project' | 'milestone' | 'task' | 'organization'
+  entity_type: 'project' | 'milestone' | 'task' | 'workspace'
   value: any
   created_at: string
   updated_at: string
@@ -69,7 +69,7 @@ export class CustomFieldModel {
       errors.push('Field type is required')
     }
 
-    if (!data.entity_type || !['project', 'milestone', 'task', 'organization'].includes(data.entity_type)) {
+    if (!data.entity_type || !['project', 'milestone', 'task', 'workspace'].includes(data.entity_type)) {
       errors.push('Valid entity type is required')
     }
 
@@ -279,7 +279,7 @@ export class CustomFieldModel {
       type: data.type,
       description: data.description,
       entity_type: data.entity_type,
-      organization_id: data.organization_id,
+      workspace_id: data.workspace_id || data.organization_id,
       is_required: data.is_required,
       is_system: data.is_system,
       default_value: data.default_value,
@@ -287,7 +287,7 @@ export class CustomFieldModel {
       validation_rules: data.validation_rules,
       display_order: data.display_order,
       is_active: data.is_active,
-      created_by: data.created_by,
+      owner_id: data.owner_id || data.created_by,
       created_at: data.created_at,
       updated_at: data.updated_at
     }

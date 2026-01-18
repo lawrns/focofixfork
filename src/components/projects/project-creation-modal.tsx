@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 interface ProjectCreationModalProps {
   isOpen: boolean
   onClose: () => void
-  organizations: Array<{ id: string; name: string }>
+  workspaces: Array<{ id: string; name: string }>
   onProjectCreated?: (project: any) => void
   className?: string
 }
@@ -24,7 +24,7 @@ type CreationMode = 'choose' | 'template' | 'form'
 export function ProjectCreationModal({ 
   isOpen, 
   onClose, 
-  organizations, 
+  workspaces, 
   onProjectCreated,
   className 
 }: ProjectCreationModalProps) {
@@ -272,7 +272,7 @@ export function ProjectCreationModal({
                 {/* Project Form */}
                 <div className="max-h-96 overflow-y-auto">
                   <ProjectForm
-                    organizations={organizations}
+                    workspaces={workspaces}
                     onSuccess={handleFormSuccess}
                     onCancel={() => {
                       if (selectedTemplate) {

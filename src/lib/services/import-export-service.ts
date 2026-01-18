@@ -9,7 +9,7 @@ import {
 } from '@/lib/utils/import-export'
 import { Project } from '@/features/projects/types'
 import { Task } from '@/features/tasks/types'
-import { Organization } from '@/lib/models/organizations'
+import { Workspace } from '@/lib/models/organizations'
 import { Label } from '@/lib/models/labels'
 
 class ImportExportService {
@@ -19,7 +19,7 @@ class ImportExportService {
   async exportData(
     format: ExportFormat, 
     userId: string, 
-    organizationId?: string
+    workspaceId?: string
   ): Promise<{ success: boolean; data?: ExportData; error?: string }> {
     try {
       const response = await fetch(`${this.baseUrl}/export`, {
@@ -30,7 +30,7 @@ class ImportExportService {
         body: JSON.stringify({
           format,
           userId,
-          organizationId
+          workspaceId
         })
       })
 
@@ -77,7 +77,7 @@ class ImportExportService {
     } catch (error) {
       return {
         success: false,
-        imported: { organizations: 0, projects: 0, tasks: 0, labels: 0 },
+        imported: { workspaces: 0, projects: 0, tasks: 0, labels: 0 },
         errors: [`Import failed: ${error}`],
         warnings: []
       }
@@ -242,7 +242,7 @@ class ImportExportService {
   // Check if data is empty
   isDataEmpty(data: ExportData): boolean {
     const { data: exportData } = data
-    return !exportData.organizations?.length && 
+    return !exportData.workspaces?.length && 
            !exportData.projects?.length && 
            !exportData.tasks?.length && 
            !exportData.labels?.length
@@ -250,7 +250,7 @@ class ImportExportService {
 
   // Get data summary
   getDataSummary(data: ExportData): {
-    organizations: number
+    workspaces: number
     projects: number
     tasks: number
     labels: number
@@ -258,11 +258,11 @@ class ImportExportService {
   } {
     const { data: exportData } = data
     return {
-      organizations: exportData.organizations?.length || 0,
+      workspaces: exportData.workspaces?.length || 0,
       projects: exportData.projects?.length || 0,
       tasks: exportData.tasks?.length || 0,
       labels: exportData.labels?.length || 0,
-      total: (exportData.organizations?.length || 0) + 
+      total: (exportData.workspaces?.length || 0) + 
              (exportData.projects?.length || 0) + 
              (exportData.tasks?.length || 0) + 
              (exportData.labels?.length || 0)

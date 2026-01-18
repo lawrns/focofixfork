@@ -1,19 +1,19 @@
 /**
- * Organization Members Entity Model
- * Defines the structure and operations for organization membership data
+ * Workspace Members Entity Model
+ * Defines the structure and operations for workspace membership data
  */
 
 export type MemberRole = 'owner' | 'admin' | 'member'
 
-export interface OrganizationMember {
+export interface WorkspaceMember {
   id: string
-  organization_id: string
+  workspace_id: string
   user_id: string
   role: MemberRole
   created_at: string
 }
 
-export interface OrganizationMemberWithDetails extends OrganizationMember {
+export interface WorkspaceMemberWithDetails extends WorkspaceMember {
   email?: string
   user_name?: string
 }
@@ -27,7 +27,7 @@ export interface UpdateMemberRoleData {
   role: MemberRole
 }
 
-export class OrganizationMemberModel {
+export class WorkspaceMemberModel {
   /**
    * Validate member invitation data
    */
@@ -90,7 +90,7 @@ export class OrganizationMemberModel {
   }
 
   /**
-   * Check if organization can remove a member (cannot remove last admin)
+   * Check if workspace can remove a member (cannot remove last admin)
    */
   static canRemoveMember(memberRole: MemberRole, totalAdmins: number): boolean {
     if (memberRole === 'admin' && totalAdmins <= 1) {
@@ -100,12 +100,12 @@ export class OrganizationMemberModel {
   }
 
   /**
-   * Transform raw database response to OrganizationMember interface
+   * Transform raw database response to WorkspaceMember interface
    */
-  static fromDatabase(data: any): OrganizationMember {
+  static fromDatabase(data: any): WorkspaceMember {
     return {
       id: data.id,
-      organization_id: data.organization_id,
+      workspace_id: data.workspace_id,
       user_id: data.user_id,
       role: data.role,
       created_at: data.created_at
@@ -113,12 +113,12 @@ export class OrganizationMemberModel {
   }
 
   /**
-   * Transform OrganizationMember interface to database format
+   * Transform WorkspaceMember interface to database format
    */
-  static toDatabase(member: Partial<OrganizationMember>): any {
+  static toDatabase(member: Partial<WorkspaceMember>): any {
     return {
       id: member.id,
-      organization_id: member.organization_id,
+      workspace_id: member.workspace_id,
       user_id: member.user_id,
       role: member.role,
       created_at: member.created_at
@@ -128,10 +128,10 @@ export class OrganizationMemberModel {
   /**
    * Transform with user details
    */
-  static fromDatabaseWithDetails(data: any): OrganizationMemberWithDetails {
+  static fromDatabaseWithDetails(data: any): WorkspaceMemberWithDetails {
     return {
       id: data.id,
-      organization_id: data.organization_id,
+      workspace_id: data.workspace_id,
       user_id: data.user_id,
       role: data.role,
       created_at: data.created_at,

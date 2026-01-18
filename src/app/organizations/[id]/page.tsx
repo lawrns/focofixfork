@@ -32,7 +32,7 @@ import {
   Clock,
   Zap
 } from 'lucide-react'
-import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
+import { WorkspaceMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import PermissionsManager from '@/components/permissions/permissions-manager'
 import InvitationsManager from '@/components/invitations/invitations-manager'
 import AISettingsTab from '@/components/organizations/ai-settings-tab'
@@ -44,7 +44,7 @@ interface Workspace {
   logo_url?: string
   website?: string
   is_active: boolean
-  created_by: string
+  owner_id: string
   created_at: string
 }
 
@@ -54,7 +54,7 @@ export default function WorkspaceDetailPage() {
   const workspaceId = params.id as string
   const { user } = useAuth()
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
-  const [members, setMembers] = useState<OrganizationMemberWithDetails[]>([])
+  const [members, setMembers] = useState<WorkspaceMemberWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [isLoading, setIsLoading] = useState(true)
   const [showInviteModal, setShowInviteModal] = useState(false)

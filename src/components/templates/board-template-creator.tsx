@@ -96,7 +96,7 @@ export function BoardTemplateCreator({
           }
         },
         is_public: templateData.is_public,
-        created_by: 'current-user', // This would be the actual user ID
+        owner_id: 'current-user', // This would be the actual user ID
         usage_count: 0,
         rating: 0,
         tags: templateData.tags

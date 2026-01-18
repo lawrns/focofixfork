@@ -39,7 +39,7 @@ import {
 } from '@/lib/utils/import-export'
 import { Project } from '@/features/projects/types'
 import { Task } from '@/features/tasks/types'
-import { Organization } from '@/lib/models/organizations'
+import { Workspace } from '@/lib/models/organizations'
 import { Label as LabelType } from '@/lib/models/labels'
 import { useToast } from '@/components/toast/toast'
 import { audioService } from '@/lib/audio/audio-service'
@@ -48,7 +48,7 @@ import { hapticService } from '@/lib/audio/haptic-service'
 interface ImportExportModalProps {
   projects?: Project[]
   tasks?: Task[]
-  organizations?: Organization[]
+  workspaces?: Workspace[]
   labels?: LabelType[]
   onImportComplete?: (result: ImportResult) => void
   onExportComplete?: () => void
@@ -60,7 +60,7 @@ interface ImportExportModalProps {
 export function ImportExportModal({
   projects = [],
   tasks = [],
-  organizations = [],
+  workspaces = [],
   labels = [],
   onImportComplete,
   onExportComplete,
@@ -100,7 +100,7 @@ export function ImportExportModal({
           source: 'foco'
         },
         data: {
-          organizations: organizations.length > 0 ? organizations : undefined,
+          workspaces: workspaces.length > 0 ? workspaces : undefined,
           projects: projects.length > 0 ? projects : undefined,
           tasks: tasks.length > 0 ? tasks : undefined,
           labels: labels.length > 0 ? labels : undefined
@@ -133,7 +133,7 @@ export function ImportExportModal({
       setIsProcessing(false)
       setProgress(0)
     }
-  }, [exportFormat, projects, tasks, organizations, labels, toastNotification, onExportComplete])
+  }, [exportFormat, projects, tasks, workspaces, labels, toastNotification, onExportComplete])
 
   // Import handlers
   const handleImport = useCallback(async () => {
@@ -287,9 +287,9 @@ export function ImportExportModal({
                 <div className="space-y-2">
                   <Label>Data Summary</Label>
                   <div className="flex flex-wrap gap-2">
-                    {organizations.length > 0 && (
+                    {workspaces.length > 0 && (
                       <Badge variant="secondary">
-                        {organizations.length} Organizations
+                        {workspaces.length} Workspaces
                       </Badge>
                     )}
                     {projects.length > 0 && (
@@ -460,9 +460,9 @@ export function ImportExportModal({
                         <AlertDescription>
                           Import completed successfully!
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {importResult.imported.organizations > 0 && (
+                            {importResult.imported.workspaces > 0 && (
                               <Badge variant="secondary">
-                                {importResult.imported.organizations} Organizations
+                                {importResult.imported.workspaces} Workspaces
                               </Badge>
                             )}
                             {importResult.imported.projects > 0 && (

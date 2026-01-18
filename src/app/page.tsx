@@ -145,7 +145,7 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700/50">
                   <p className="text-[13px] text-zinc-500 dark:text-zinc-400 italic">
-                    "Necesitamos rediseñar el checkout y migrar a Stripe antes del lanzamiento..."
+                    &quot;Necesitamos rediseñar el checkout y migrar a Stripe antes del lanzamiento...&quot;
                   </p>
                 </div>
               </CardContent>

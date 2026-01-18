@@ -11,13 +11,12 @@ export interface Project {
   priority: 'low' | 'medium' | 'high' | 'urgent'
   progress_percentage?: number
   created_at: string
-  organization_id?: string
   workspace_id?: string
   archived_at?: string | null
 }
 
 export interface ProjectWithOrg extends Project {
-  organizations?: {
+  workspaces?: {
     name: string
   }
 }
@@ -137,7 +136,7 @@ export const PROJECT_FILTER_FIELDS = [
   { key: 'progress_percentage', label: 'Progress', type: 'number' as const },
   { key: 'due_date', label: 'Due Date', type: 'date' as const },
   { key: 'created_at', label: 'Created', type: 'date' as const },
-  { key: 'organizations.name', label: 'Organization', type: 'string' as const }
+  { key: 'workspaces.name', label: 'Workspace', type: 'string' as const }
 ]
 
 // Sort utilities

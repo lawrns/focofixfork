@@ -435,7 +435,7 @@ export class FileUploadService {
     // For now, return default unlimited quota
     return {
       user_id: userId,
-      organization_id: undefined,
+      workspace_id: undefined,
       total_quota: 1024 * 1024 * 1024 * 10, // 10GB default
       used_quota: 0,
       file_count: 0,

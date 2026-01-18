@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase-client';
 import {
   validateData,
-  organizationSchema,
+  workspaceSchema,
   projectSchema,
   milestoneSchema,
   taskSchema,
@@ -43,20 +43,20 @@ export interface DataIntegrityReport {
 
 export class DataIntegrityService {
   // Main integrity check function
-  static async performIntegrityCheck(organizationId?: string): Promise<DataIntegrityReport> {
+  static async performIntegrityCheck(workspaceId?: string): Promise<DataIntegrityReport> {
     const startTime = Date.now();
 
     const results: IntegrityCheckResult[] = await Promise.all([
-      this.checkOrganizations(organizationId),
-      this.checkProjects(organizationId),
-      this.checkMilestones(organizationId),
-      this.checkTasks(organizationId),
-      this.checkGoals(organizationId),
-      this.checkTimeEntries(organizationId),
-      this.checkComments(organizationId),
-      this.checkFileAttachments(organizationId),
-      this.checkUserProfiles(organizationId),
-      this.checkReferentialIntegrity(organizationId),
+      this.checkWorkspaces(workspaceId),
+      this.checkProjects(workspaceId),
+      this.checkMilestones(workspaceId),
+      this.checkTasks(workspaceId),
+      this.checkGoals(workspaceId),
+      this.checkTimeEntries(workspaceId),
+      this.checkComments(workspaceId),
+      this.checkFileAttachments(workspaceId),
+      this.checkUserProfiles(workspaceId),
+      this.checkReferentialIntegrity(workspaceId),
     ]);
 
     const endTime = Date.now();
@@ -79,9 +79,9 @@ export class DataIntegrityService {
   }
 
   // Individual entity checks
-  private static async checkOrganizations(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkWorkspaces(workspaceId?: string): Promise<IntegrityCheckResult> {
     const result: IntegrityCheckResult = {
-      entity: 'organizations',
+      entity: 'workspaces',
       totalRecords: 0,
       validRecords: 0,
       invalidRecords: 0,
@@ -92,67 +92,67 @@ export class DataIntegrityService {
 
     try {
       let query = untypedSupabase.from('workspaces').select('*');
-      if (organizationId) {
-        query = query.eq('id', organizationId);
+      if (workspaceId) {
+        query = query.eq('id', workspaceId);
       }
 
-      const { data: organizations, error } = await query;
+      const { data: workspaces, error } = await query;
       if (error) throw error;
 
-      result.totalRecords = organizations?.length || 0;
+      result.totalRecords = workspaces?.length || 0;
 
-      if (!organizations) return result;
+      if (!workspaces) return result;
 
-      for (const org of organizations) {
+      for (const workspace of workspaces) {
         // Validate schema
-        const validation = validateData(organizationSchema, org);
+        const validation = validateData(workspaceSchema, workspace);
         if (!validation.success) {
           result.invalidRecords++;
           result.issues.push({
-            id: org.id,
+            id: workspace.id,
             issue: 'Schema validation failed',
             severity: 'medium',
-            description: `Organization "${org.name}" has invalid data structure`,
+            description: `Workspace "${workspace.name}" has invalid data structure`,
           });
         } else {
           result.validRecords++;
         }
 
         // Check for required fields
-        if (!org.name || org.name.trim().length === 0) {
+        if (!workspace.name || workspace.name.trim().length === 0) {
           result.issues.push({
-            id: org.id,
+            id: workspace.id,
             issue: 'Missing required field',
             severity: 'high',
-            description: 'Organization name is missing or empty',
+            description: 'Workspace name is missing or empty',
           });
         }
 
         // Check slug format
-        if (org.slug && !/^[a-z0-9-]+$/.test(org.slug)) {
+        if (workspace.slug && !/^[a-z0-9-]+$/.test(workspace.slug)) {
           result.issues.push({
-            id: org.id,
+            id: workspace.id,
             issue: 'Invalid slug format',
             severity: 'medium',
-            description: `Workspace slug "${org.slug}" contains invalid characters`,
+            description: `Workspace slug "${workspace.slug}" contains invalid characters`,
           });
         }
 
-        // Check for creator existence
-        if (org.owner_id) {
+        // Check for owner existence
+        if (workspace.owner_id) {
           const { data: user } = await untypedSupabase
             .from('user_profiles')
             .select('id')
-            .eq('id', org.owner_id)
+            .eq('id', workspace.owner_id)
             .single();
 
           if (!user) {
             result.missingReferences++;
             result.issues.push({
-              id: org.id,
-              issue: 'Missing creator reference',
+              id: workspace.id,
+              issue: 'Missing owner reference',
               severity: 'high',
-              description: `Workspace owner ${org.owner_id} does not exist`,
+              description: `Workspace owner ${workspace.owner_id} does not exist`,
             });
           }
         }
@@ -162,14 +162,14 @@ export class DataIntegrityService {
         id: 'system-error',
         issue: 'Check failed',
         severity: 'critical',
-        description: `Error checking organizations: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Error checking workspaces: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
 
     return result;
   }
 
-  private static async checkProjects(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkProjects(workspaceId?: string): Promise<IntegrityCheckResult> {
     const result: IntegrityCheckResult = {
       entity: 'projects',
       totalRecords: 0,
@@ -182,8 +182,8 @@ export class DataIntegrityService {
 
     try {
       let query = untypedSupabase.from('foco_projects').select('*');
-      if (organizationId) {
-        query = query.eq('workspace_id', organizationId);
+      if (workspaceId) {
+        query = query.eq('workspace_id', workspaceId);
       }
 
       const { data: projects, error } = await query;
@@ -208,33 +208,33 @@ export class DataIntegrityService {
           result.validRecords++;
         }
 
-        // Check organization reference
+        // Check workspace reference
         if (project.workspace_id) {
-          const { data: org } = await untypedSupabase
+          const { data: ws } = await untypedSupabase
             .from('workspaces')
             .select('id')
             .eq('id', project.workspace_id)
             .single();
 
-          if (!org) {
+          if (!ws) {
             result.missingReferences++;
             result.issues.push({
               id: project.id,
-              issue: 'Missing organization reference',
+              issue: 'Missing workspace reference',
               severity: 'critical',
-              description: `Project belongs to non-existent organization ${project.workspace_id}`,
+              description: `Project belongs to non-existent workspace ${project.workspace_id}`,
             });
           }
         } else {
           result.issues.push({
             id: project.id,
-            issue: 'Missing organization ID',
+            issue: 'Missing workspace ID',
             severity: 'critical',
             description: `Project "${project.name}" has no workspace_id`,
           });
         }
 
-        // Check creator reference
+        // Check owner reference
         if (project.owner_id) {
           const { data: user } = await untypedSupabase
             .from('user_profiles')
@@ -246,7 +246,7 @@ export class DataIntegrityService {
             result.missingReferences++;
             result.issues.push({
               id: project.id,
-              issue: 'Missing creator reference',
+              issue: 'Missing owner reference',
               severity: 'high',
               description: `Project owner ${project.owner_id} does not exist`,
             });
@@ -280,7 +280,7 @@ export class DataIntegrityService {
     return result;
   }
 
-  private static async checkMilestones(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkMilestones(workspaceId?: string): Promise<IntegrityCheckResult> {
     const result: IntegrityCheckResult = {
       entity: 'milestones',
       totalRecords: 0,
@@ -293,8 +293,8 @@ export class DataIntegrityService {
 
     try {
       let query = untypedSupabase.from('milestones').select('*, foco_projects!inner(workspace_id)');
-      if (organizationId) {
-        query = query.eq('foco_projects.workspace_id', organizationId);
+      if (workspaceId) {
+        query = query.eq('foco_projects.workspace_id', workspaceId);
       }
 
       const { data: milestones, error } = await query;
@@ -351,7 +351,7 @@ export class DataIntegrityService {
     return result;
   }
 
-  private static async checkTasks(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkTasks(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Stub implementation - tasks table exists but schema validation is complex
     return {
       entity: 'tasks',
@@ -369,7 +369,7 @@ export class DataIntegrityService {
     };
   }
 
-  private static async checkGoals(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkGoals(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Stub implementation - goals table does not exist in current schema
     return {
       entity: 'goals',
@@ -387,7 +387,7 @@ export class DataIntegrityService {
     };
   }
 
-  private static async checkTimeEntries(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkTimeEntries(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Stub implementation - time_entries table does not exist in current schema
     return {
       entity: 'time_entries',
@@ -405,7 +405,7 @@ export class DataIntegrityService {
     };
   }
 
-  private static async checkComments(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkComments(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Stub implementation - comments table exists but schema validation is complex
     return {
       entity: 'comments',
@@ -423,7 +423,7 @@ export class DataIntegrityService {
     };
   }
 
-  private static async checkFileAttachments(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkFileAttachments(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Check files table (renamed from file_attachments)
     return {
       entity: 'files',
@@ -443,7 +443,7 @@ export class DataIntegrityService {
 
 
 
-  private static async checkInvitations(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkInvitations(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Stub implementation - invitations table does not exist in current schema
     return {
       entity: 'invitations',
@@ -461,7 +461,7 @@ export class DataIntegrityService {
     };
   }
 
-  private static async checkUserProfiles(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkUserProfiles(workspaceId?: string): Promise<IntegrityCheckResult> {
     // Stub implementation - user profiles check is complex and not critical
     return {
       entity: 'user_profiles',
@@ -479,7 +479,7 @@ export class DataIntegrityService {
     };
   }
 
-  private static async checkReferentialIntegrity(organizationId?: string): Promise<IntegrityCheckResult> {
+  private static async checkReferentialIntegrity(workspaceId?: string): Promise<IntegrityCheckResult> {
     const result: IntegrityCheckResult = {
       entity: 'referential_integrity',
       totalRecords: 0,
@@ -525,7 +525,7 @@ export class DataIntegrityService {
 
       // Check for milestones without projects
       const { data: orphanedMilestones } = await untypedSupabase
-        .from('milestones')
+        .from('foco_milestones')
         .select('id, title, project_id')
         .not('project_id', 'in', `(${untypedSupabase.from('foco_projects').select('id')})`);
 

@@ -9,6 +9,7 @@ export interface AutomationRule {
   updated_at: string
   
   // Rule configuration
+  workspace_id?: string
   trigger: AutomationTrigger
   conditions: AutomationCondition[]
   actions: AutomationAction[]
@@ -192,6 +193,7 @@ export interface AutomationTemplate {
   // Template settings
   is_official: boolean
   is_featured: boolean
+  workspace_id?: string
   created_by: string
   created_at: string
   updated_at: string

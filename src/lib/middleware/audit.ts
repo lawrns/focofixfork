@@ -117,26 +117,26 @@ export const auditMiddleware = {
     riskLevel: 'low',
   }),
 
-  // Organization operations
-  createOrganization: (handler: any) => withAuditLogging(handler, {
-    action: 'organization_create',
-    entityType: 'organization',
+  // Workspace operations
+  createWorkspace: (handler: any) => withAuditLogging(handler, {
+    action: 'workspace_create',
+    entityType: 'workspace',
     getEntityId: (req, result) => result?.id || 'system',
     // getMetadata: (req) => ({ name: req.body?.name }),
     riskLevel: 'medium',
   }),
 
-  updateOrganization: (handler: any) => withAuditLogging(handler, {
-    action: 'organization_update',
-    entityType: 'organization',
+  updateWorkspace: (handler: any) => withAuditLogging(handler, {
+    action: 'workspace_update',
+    entityType: 'workspace',
     // getEntityId: (req) => req.params?.id || 'system',
     // getMetadata: (req) => ({ changes: Object.keys(req.body || {}) }),
     riskLevel: 'medium',
   }),
 
-  deleteOrganization: (handler: any) => withAuditLogging(handler, {
-    action: 'organization_delete',
-    entityType: 'organization',
+  deleteWorkspace: (handler: any) => withAuditLogging(handler, {
+    action: 'workspace_delete',
+    entityType: 'workspace',
     // getEntityId: (req) => req.params?.id || 'system',
     riskLevel: 'high',
   }),

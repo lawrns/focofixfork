@@ -56,7 +56,7 @@ export default function OrganizationSetupPage() {
         body: JSON.stringify({
           name: workspaceName.trim(),
           description: description.trim(),
-          created_by: user.id
+          owner_id: user.id
         }),
       })
 

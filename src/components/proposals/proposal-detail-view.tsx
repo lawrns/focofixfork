@@ -752,7 +752,7 @@ function ProposalDetailViewComponent({
         description: 'AI-suggested optimizations for the upcoming sprint based on team velocity and resource availability.',
         status: 'pending_review',
         source_type: 'text',
-        created_by: 'user-1',
+        owner_id: 'user-1',
         submitted_at: new Date().toISOString(),
         approved_by: null,
         approved_at: null,
@@ -1066,7 +1066,7 @@ function ProposalDetailViewComponent({
               <ProposalStatusBadge status={proposal.status} />
               <div className="flex items-center gap-1.5 text-sm text-zinc-500">
                 <User className="h-4 w-4" />
-                <span>Created by {proposal.created_by}</span>
+                <span>Created by {proposal.owner_id}</span>
               </div>
               <div className="flex items-center gap-1.5 text-sm text-zinc-500">
                 <Clock className="h-4 w-4" />

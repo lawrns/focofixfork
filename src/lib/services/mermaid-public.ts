@@ -24,7 +24,7 @@ const mapDatabaseToMermaidDiagramSimple = (row: any): MermaidDiagram => {
     title: row.title,
     description: row.description,
     mermaid_code: row.mermaid_code,
-    created_by: row.created_by,
+    owner_id: row.owner_id || row.created_by,
     workspace_id: row.workspace_id,
     is_public: row.is_public,
     share_token: row.share_token,
@@ -102,10 +102,10 @@ export class MermaidPublicService {
         created_at: baseDiagram.created_at,
         updated_at: baseDiagram.updated_at,
         version: baseDiagram.version,
-        created_by: baseDiagram.created_by,
+        owner_id: baseDiagram.owner_id,
         workspace_id: baseDiagram.workspace_id,
         owner_name: 'Public',
-        organization_name: 'Public',
+        workspace_name: 'Public',
         can_edit: false,
         can_delete: false,
         can_share: false,
@@ -137,7 +137,7 @@ export class MermaidPublicService {
       title: data.title,
       description: data.description || null,
       mermaid_code: data.mermaid_code,
-      created_by: null, // Anonymous creation
+      owner_id: null, // Anonymous creation
       workspace_id: data.workspace_id || null,
       is_public: data.is_public || false,
     };

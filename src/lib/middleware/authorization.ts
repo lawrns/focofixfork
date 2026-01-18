@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-server'
  * Authorization middleware for role-based access control
  */
 
-export type OrganizationRole = 'owner' | 'admin' | 'member' | 'guest'
+export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'guest'
 export type ProjectRole = 'owner' | 'admin' | 'member' | 'guest'
 export type Permission =
   | 'view'
@@ -23,18 +23,18 @@ export type Permission =
   | 'manage_tasks'
 
 /**
- * Check if a user has a specific role in an organization
+ * Check if a user has a specific role in a workspace
  */
-export async function checkOrganizationRole(
+export async function checkWorkspaceRole(
   userId: string,
-  organizationId: string,
-  requiredRoles: OrganizationRole[]
+  workspaceId: string,
+  requiredRoles: WorkspaceRole[]
 ): Promise<boolean> {
   try {
     const { data: member, error } = await supabaseAdmin
       .from('workspace_members')
       .select('role')
-      .eq('workspace_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
       .single()
 
@@ -42,31 +42,31 @@ export async function checkOrganizationRole(
       return false
     }
 
-    return requiredRoles.includes(member.role as OrganizationRole)
+    return requiredRoles.includes(member.role as WorkspaceRole)
   } catch (error) {
-    console.error('Check organization role error:', error)
+    console.error('Check workspace role error:', error)
     return false
   }
 }
 
 /**
- * Check if a user is a member of an organization
+ * Check if a user is a member of a workspace
  */
-export async function checkOrganizationMembership(
+export async function checkWorkspaceMembership(
   userId: string,
-  organizationId: string
+  workspaceId: string
 ): Promise<boolean> {
   try {
     const { data: member, error } = await supabaseAdmin
       .from('workspace_members')
       .select('id')
-      .eq('workspace_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
       .single()
 
     return !error && !!member
   } catch (error) {
-    console.error('Check organization membership error:', error)
+    console.error('Check workspace membership error:', error)
     return false
   }
 }
@@ -96,16 +96,16 @@ export async function checkProjectPermission(
       return true
     }
 
-    // Check organization membership and role
-    const { data: orgMember } = await supabaseAdmin
+    // Check workspace membership and role
+    const { data: workspaceMember } = await supabaseAdmin
       .from('workspace_members')
       .select('role')
       .eq('workspace_id', project.workspace_id)
       .eq('user_id', userId)
       .single()
 
-    // Organization owners and admins have all project permissions
-    if (orgMember && ['owner', 'admin'].includes(orgMember.role)) {
+    // Workspace owners and admins have all project permissions
+    if (workspaceMember && ['owner', 'admin'].includes(workspaceMember.role)) {
       return true
     }
 
@@ -140,47 +140,47 @@ export async function checkProjectPermission(
 }
 
 /**
- * Check if a user can manage organization members (invite, remove, change roles)
+ * Check if a user can manage workspace members (invite, remove, change roles)
  */
-export async function canManageOrganizationMembers(
+export async function canManageWorkspaceMembers(
   userId: string,
-  organizationId: string
+  workspaceId: string
 ): Promise<boolean> {
-  return checkOrganizationRole(userId, organizationId, ['owner', 'admin'])
+  return checkWorkspaceRole(userId, workspaceId, ['owner', 'admin'])
 }
 
 /**
- * Check if a user can manage organization settings
+ * Check if a user can manage workspace settings
  */
-export async function canManageOrganizationSettings(
+export async function canManageWorkspaceSettings(
   userId: string,
-  organizationId: string
+  workspaceId: string
 ): Promise<boolean> {
-  return checkOrganizationRole(userId, organizationId, ['owner'])
+  return checkWorkspaceRole(userId, workspaceId, ['owner'])
 }
 
 /**
- * Check if a user can delete an organization
+ * Check if a user can delete a workspace
  */
-export async function canDeleteOrganization(
+export async function canDeleteWorkspace(
   userId: string,
-  organizationId: string
+  workspaceId: string
 ): Promise<boolean> {
-  return checkOrganizationRole(userId, organizationId, ['owner'])
+  return checkWorkspaceRole(userId, workspaceId, ['owner'])
 }
 
 /**
- * Get user's role in an organization
+ * Get user's role in a workspace
  */
-export async function getUserOrganizationRole(
+export async function getUserWorkspaceRole(
   userId: string,
-  organizationId: string
-): Promise<OrganizationRole | null> {
+  workspaceId: string
+): Promise<WorkspaceRole | null> {
   try {
     const { data: member, error } = await supabaseAdmin
       .from('workspace_members')
       .select('role')
-      .eq('workspace_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
       .single()
 
@@ -188,9 +188,9 @@ export async function getUserOrganizationRole(
       return null
     }
 
-    return member.role as OrganizationRole
+    return member.role as WorkspaceRole
   } catch (error) {
-    console.error('Get user organization role error:', error)
+    console.error('Get user workspace role error:', error)
     return null
   }
 }

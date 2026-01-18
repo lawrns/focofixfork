@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Building, Users, Settings, Mail } from 'lucide-react'
-import { Organization } from '../hooks/useOrganizations'
+import { Workspace } from '../hooks/useOrganizations'
 
 interface OrganizationCardProps {
-  organization: Organization & { members_count?: number; projects_count?: number; role?: string }
+  organization: Workspace & { members_count?: number; projects_count?: number; role?: string }
   onCardClick: () => void
   onInviteClick: () => void
 }

@@ -22,7 +22,7 @@ export class CalendarService {
       .from('calendar_events' as any)
       .insert({
         ...eventData,
-        created_by: userId,
+        owner_id: userId,
         source: 'foco',
         sync_enabled: eventData.syncEnabled ?? true,
         sync_direction: eventData.syncDirection ?? 'bidirectional'
@@ -45,7 +45,7 @@ export class CalendarService {
       .select('*')
       .gte('start', startDate.toISOString())
       .lte('end', endDate.toISOString())
-      .or(`created_by.eq.${userId},attendees.cs.[{"email":"${userId}"}]`)
+      .or(`owner_id.eq.${userId},attendees.cs.[{"email":"${userId}"}]`)
 
     if (filter) {
       if (filter.projects?.length) {

@@ -176,8 +176,8 @@ export function useRealtime(
           {
             event: '*',
             schema: 'public',
-            table: 'projects',
-            filter: `organization_id=eq.${options.organizationId}`
+            table: 'foco_projects',
+            filter: `workspace_id=eq.${options.organizationId}`
           },
           (payload: RealtimePostgresChangesPayload<any>) => {
             // World-class sensory feedback for remote updates
@@ -188,7 +188,7 @@ export function useRealtime(
               eventType: payload.eventType,
               new: payload.new,
               old: payload.old,
-              table: 'projects',
+              table: 'foco_projects',
               schema: 'public'
             })
           }
@@ -198,8 +198,8 @@ export function useRealtime(
           {
             event: '*',
             schema: 'public',
-            table: 'organization_members',
-            filter: `organization_id=eq.${options.organizationId}`
+            table: 'workspace_members',
+            filter: `workspace_id=eq.${options.organizationId}`
           },
           (payload: RealtimePostgresChangesPayload<any>) => {
             // World-class sensory feedback for remote updates
@@ -398,7 +398,7 @@ function getEventTypeFromPayload(payload: RealtimeEventPayload): RealTimeEvent['
       return eventType === 'INSERT' ? 'milestone_created' :
              eventType === 'UPDATE' ? 'milestone_updated' :
              'milestone_deleted'
-    case 'projects':
+    case 'foco_projects':
       return 'project_updated'
     case 'milestone_comments':
       return eventType === 'INSERT' ? 'comment_added' : 'comment_deleted'

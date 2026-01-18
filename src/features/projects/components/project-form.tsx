@@ -25,7 +25,8 @@ const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
   slug: z.string().min(1, 'Slug is required').max(100, 'Slug must be less than 100 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
-  organization_id: z.string().min(1, 'Organization is required'),
+  organization_id: z.string().optional(),
+  workspace_id: z.string().min(1, 'Workspace is required'),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   start_date: z.string().optional(),
@@ -38,7 +39,7 @@ type ProjectFormData = z.infer<typeof projectSchema>
 
 interface ProjectFormProps {
   project?: ProjectFormData & { id?: string; progress_percentage?: number }
-  organizations: Array<{ id: string; name: string }>
+  workspaces: Array<{ id: string; name: string }>
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -48,7 +49,7 @@ interface Organization {
   name: string
 }
 
-export function ProjectForm({ project, organizations, onSuccess, onCancel }: ProjectFormProps) {
+export function ProjectForm({ project, workspaces, onSuccess, onCancel }: ProjectFormProps) {
   const { user } = useAuth()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -70,7 +71,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
       name: project?.name || '',
       slug: '',
       description: project?.description || '',
-      organization_id: project?.organization_id || organizations[0]?.id || '',
+      workspace_id: (project as any)?.workspace_id || (project as any)?.organization_id || workspaces[0]?.id || '',
       status: project?.status || 'planning',
       priority: project?.priority || 'medium',
       start_date: project?.start_date || '',
@@ -84,7 +85,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
   const watchedSlug = watch('slug')
   const watchedStatus = watch('status')
   const watchedPriority = watch('priority')
-  const watchedOrganizationId = watch('organization_id')
+  const watchedWorkspaceId = watch('workspace_id')
   const watchedColor = watch('color')
 
   const isEditing = !!project?.id
@@ -125,7 +126,7 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
           },
           body: JSON.stringify({
             slug: watchedSlug,
-            workspace_id: watchedOrganizationId,
+            workspace_id: watchedWorkspaceId,
             project_id: project?.id,
           }),
           signal: abortController.signal,
@@ -169,16 +170,9 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
     try {
       const url = isEditing ? `/api/projects/${project.id}` : '/api/projects'
       
-      // Map organization_id to workspace_id for API
-      const payload = {
-        ...data,
-        workspace_id: data.organization_id,
-      }
-      delete payload.organization_id
-
       const response = await (isEditing 
-        ? apiClient.put(url, payload)
-        : apiClient.post(url, payload))
+        ? apiClient.put(url, data)
+        : apiClient.post(url, data))
 
       if (!response.success) {
         const errorData = response
@@ -285,28 +279,28 @@ export function ProjectForm({ project, organizations, onSuccess, onCancel }: Pro
             )}
           </div>
 
-          {/* Organization */}
+          {/* Workspace */}
           <div className="space-y-2">
-            <Label htmlFor="organization" className="text-sm font-semibold">Organization *</Label>
+            <Label htmlFor="workspace" className="text-sm font-semibold">Workspace *</Label>
             <Select
-              value={watchedOrganizationId}
-              onValueChange={(value) => setValue('organization_id', value)}
+              value={watchedWorkspaceId}
+              onValueChange={(value) => setValue('workspace_id', value)}
               disabled={isSubmitting}
             >
               <SelectTrigger className="min-h-[44px]">
-                <SelectValue placeholder="Select organization" />
+                <SelectValue placeholder="Select workspace" />
               </SelectTrigger>
               <SelectContent>
-                {filterValidSelectOptions(organizations).map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
+                {filterValidSelectOptions(workspaces).map((ws) => (
+                  <SelectItem key={ws.id} value={ws.id}>
+                    {ws.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.organization_id && (
+            {errors.workspace_id && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.organization_id.message}
+                {errors.workspace_id.message}
               </p>
             )}
           </div>

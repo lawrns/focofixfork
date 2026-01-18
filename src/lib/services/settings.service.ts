@@ -151,14 +151,14 @@ export class SettingsService {
   }
 
   // ===============================
-  // ORGANIZATION SETTINGS
+  // WORKSPACE SETTINGS
   // ===============================
 
   /**
-   * Get organization settings
+   * Get workspace settings
    */
-  static async getOrganizationSettings(organizationId: string): Promise<OrganizationSettings> {
-    // Since organization_settings table doesn't exist, return defaults
+  static async getWorkspaceSettings(workspaceId: string): Promise<OrganizationSettings> {
+    // Since workspace_settings table doesn't exist, return defaults
     return {
       security: {
         enforceTwoFactor: false,
@@ -179,14 +179,14 @@ export class SettingsService {
   }
 
   /**
-   * Update organization settings (admin only)
+   * Update workspace settings (admin only)
    */
-  static async updateOrganizationSettings(
-    organizationId: string,
+  static async updateWorkspaceSettings(
+    workspaceId: string,
     updates: OrganizationSettingsUpdate
   ): Promise<OrganizationSettings> {
-    // Since organization_settings table doesn't exist, return updated defaults
-    const current = await this.getOrganizationSettings(organizationId)
+    // Since workspace_settings table doesn't exist, return updated defaults
+    const current = await this.getWorkspaceSettings(workspaceId)
     return { ...current, ...updates }
   }
 
@@ -272,10 +272,10 @@ export class SettingsService {
   }
 
   /**
-   * Get organization audit log (admin only)
+   * Get workspace audit log (admin only)
    */
-  static async getOrganizationAuditLog(
-    organizationId: string,
+  static async getWorkspaceAuditLog(
+    workspaceId: string,
     limit: number = 50,
     userId?: string
   ): Promise<AuditLogEntry[]> {
@@ -288,16 +288,16 @@ export class SettingsService {
   // ===============================
 
   /**
-   * Check if user has access to organization
+   * Check if user has access to workspace
    */
-  private static async checkOrganizationAccess(organizationId: string): Promise<boolean> {
+  private static async checkWorkspaceAccess(workspaceId: string): Promise<boolean> {
     const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) return false
 
     const { data, error } = await untypedSupabase
-      .from('organization_members')
+      .from('workspace_members')
       .select('user_id')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)
       .single()
 
@@ -305,16 +305,16 @@ export class SettingsService {
   }
 
   /**
-   * Check if user has admin access to organization
+   * Check if user has admin access to workspace
    */
-  private static async checkOrganizationAdminAccess(organizationId: string): Promise<boolean> {
+  private static async checkWorkspaceAdminAccess(workspaceId: string): Promise<boolean> {
     const { data: { user } } = await untypedSupabase.auth.getUser()
     if (!user) return false
 
     const { data, error } = await untypedSupabase
-      .from('organization_members')
+      .from('workspace_members')
       .select('role')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)
       .single()
 
@@ -329,7 +329,7 @@ export class SettingsService {
     if (!user) return false
 
     const { data, error } = await untypedSupabase
-      .from('project_team_assignments')
+      .from('foco_project_members')
       .select('user_id')
       .eq('project_id', projectId)
       .eq('user_id', user.id)
@@ -346,7 +346,7 @@ export class SettingsService {
     if (!user) return false
 
     const { data, error } = await untypedSupabase
-      .from('project_team_assignments')
+      .from('foco_project_members')
       .select('role')
       .eq('project_id', projectId)
       .eq('user_id', user.id)

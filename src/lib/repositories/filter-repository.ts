@@ -9,18 +9,22 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export interface SavedFilter {
   id: string
   workspace_id: string
+  project_id?: string
+  user_id: string
   name: string
+  view_type?: string
   filters: Record<string, any>
-  created_by: string
   created_at: string
   updated_at: string
 }
 
 export interface CreateFilterData {
   workspace_id: string
+  project_id?: string
+  user_id: string
   name: string
+  view_type?: string
   filters?: Record<string, any>
-  created_by: string
 }
 
 export interface UpdateFilterData {
@@ -29,7 +33,7 @@ export interface UpdateFilterData {
 }
 
 export class FilterRepository extends BaseRepository<SavedFilter> {
-  protected table = 'foco_saved_filters'
+  protected table = 'saved_views'
 
   constructor(supabase: SupabaseClient) {
     super(supabase)
@@ -50,7 +54,7 @@ export class FilterRepository extends BaseRepository<SavedFilter> {
       .from(this.table)
       .select('*', { count: 'exact' })
       .eq('workspace_id', workspaceId)
-      .eq('created_by', userId)
+      .eq('user_id', userId)
 
     // Apply pagination
     if (options?.limit !== undefined) {
@@ -106,7 +110,7 @@ export class FilterRepository extends BaseRepository<SavedFilter> {
   async checkOwnership(filterId: string, userId: string): Promise<Result<boolean>> {
     const { data, error } = await this.supabase
       .from(this.table)
-      .select('created_by')
+      .select('user_id')
       .eq('id', filterId)
       .maybeSingle()
 
@@ -126,6 +130,6 @@ export class FilterRepository extends BaseRepository<SavedFilter> {
       })
     }
 
-    return Ok(data.created_by === userId)
+    return Ok(data.user_id === userId)
   }
 }

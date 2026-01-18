@@ -37,7 +37,7 @@ import PermissionsManager from '@/components/permissions/permissions-manager'
 import InvitationsManager from '@/components/invitations/invitations-manager'
 import AISettingsTab from '@/components/organizations/ai-settings-tab'
 
-interface Organization {
+interface Workspace {
   id: string
   name: string
   description?: string
@@ -48,12 +48,12 @@ interface Organization {
   created_at: string
 }
 
-export default function OrganizationDetailPage() {
+export default function WorkspaceDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const organizationId = params.id as string
+  const workspaceId = params.id as string
   const { user } = useAuth()
-  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [members, setMembers] = useState<OrganizationMemberWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [isLoading, setIsLoading] = useState(true)
@@ -66,23 +66,23 @@ export default function OrganizationDetailPage() {
   const [editRole, setEditRole] = useState<MemberRole>('member')
   const [activeTab, setActiveTab] = useState('team')
 
-  const loadOrganization = useCallback(async () => {
+  const loadWorkspace = useCallback(async () => {
     try {
-      const response = await fetch(`/api/organizations/${organizationId}`)
+      const response = await fetch(`/api/workspaces/${workspaceId}`)
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setOrganization(data.data)
+          setWorkspace(data.data)
         }
       }
     } catch (error) {
-      console.error('Failed to load organization:', error)
+      console.error('Failed to load workspace:', error)
     }
-  }, [organizationId])
+  }, [workspaceId])
 
   const loadMembers = useCallback(async () => {
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/members`)
+      const response = await fetch(`/api/workspaces/${workspaceId}/members`)
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
@@ -103,12 +103,12 @@ export default function OrganizationDetailPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [organizationId, user])
+  }, [workspaceId, user])
 
   useEffect(() => {
-    loadOrganization()
+    loadWorkspace()
     loadMembers()
-  }, [organizationId, user, loadOrganization, loadMembers])
+  }, [workspaceId, user, loadWorkspace, loadMembers])
 
   const handleInviteMember = async () => {
     if (!inviteEmail.trim()) return
@@ -117,7 +117,7 @@ export default function OrganizationDetailPage() {
     setInviteResult(null)
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/members`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/members`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +148,7 @@ export default function OrganizationDetailPage() {
 
   const handleUpdateRole = async (memberId: string, newRole: MemberRole) => {
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/members/${memberId}`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/members/${memberId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export default function OrganizationDetailPage() {
     if (!confirm('Are you sure you want to remove this member?')) return
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/members/${memberId}`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/members/${memberId}`, {
         method: 'DELETE',
       })
 
@@ -216,19 +216,19 @@ export default function OrganizationDetailPage() {
     )
   }
 
-  if (!organization) {
+  if (!workspace) {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Organization Not Found</h3>
+            <h3 className="text-lg font-semibold mb-2">Workspace Not Found</h3>
             <p className="text-muted-foreground text-center mb-4">
-              The organization you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+              The workspace you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
             </p>
             <Button onClick={() => router.push('/organizations')}>
               <ArrowLeft className="w-4 h-4" />
-              Back to Organizations
+              Back to Workspaces
             </Button>
           </CardContent>
         </Card>
@@ -255,7 +255,7 @@ export default function OrganizationDetailPage() {
                 <Building className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">{organization.name}</h1>
+                <h1 className="text-2xl font-bold">{workspace.name}</h1>
                 <p className="text-muted-foreground">
                   {members.length} member{members.length !== 1 ? 's' : ''}
                 </p>
@@ -353,26 +353,26 @@ export default function OrganizationDetailPage() {
           </div>
         </div>
 
-        {/* Organization Info */}
+        {/* Workspace Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Organization Details</CardTitle>
+            <CardTitle>Workspace Details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-medium mb-2">Description</h3>
                 <p className="text-muted-foreground">
-                  {organization.description || 'No description provided'}
+                  {workspace.description || 'No description provided'}
                 </p>
               </div>
               <div>
                 <h3 className="font-medium mb-2">Website</h3>
                 <p className="text-muted-foreground">
-                  {organization.website ? (
-                    <a href={organization.website} target="_blank" rel="noopener noreferrer"
+                  {workspace.website ? (
+                    <a href={workspace.website} target="_blank" rel="noopener noreferrer"
                        className="text-primary hover:underline">
-                      {organization.website}
+                      {workspace.website}
                     </a>
                   ) : (
                     'No website provided'
@@ -538,14 +538,14 @@ export default function OrganizationDetailPage() {
 
           <TabsContent value="permissions">
             <PermissionsManager
-              organizationId={organizationId}
+              workspaceId={workspaceId}
               currentUserRole={currentUserRole}
             />
           </TabsContent>
 
           <TabsContent value="invitations">
             <InvitationsManager
-              organizationId={organizationId}
+              workspaceId={workspaceId}
               currentUserRole={currentUserRole}
             />
           </TabsContent>
@@ -553,7 +553,7 @@ export default function OrganizationDetailPage() {
           {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
             <TabsContent value="ai-settings">
               <AISettingsTab
-                organizationId={organizationId}
+                workspaceId={workspaceId}
                 currentUserRole={currentUserRole}
               />
             </TabsContent>

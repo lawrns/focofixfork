@@ -72,9 +72,8 @@ export async function POST(
         name: body.project_name,
         description: body.description || template.description || null,
         workspace_id: body.workspace_id,
-        created_by: user.id,
-        status: 'planning',
-        progress: 0,
+        owner_id: user.id,
+        status: 'active',
       })
       .select()
 
@@ -104,12 +103,12 @@ export async function POST(
         project_id: newProject.id,
         priority: task.priority,
         status: 'todo',
-        created_by: user.id,
-        position: index,
+        reporter_id: user.id,
+        position: index.toString(),
       }))
 
       const { data: insertedTasks, error: tasksError } = await supabase
-        .from('foco_tasks')
+        .from('work_items')
         .insert(tasksToInsert)
         .select()
 

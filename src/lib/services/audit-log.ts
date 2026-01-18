@@ -8,7 +8,7 @@ export interface AuditLogEntry {
   action: AuditAction;
   entity_type: EntityType;
   entity_id: string;
-  organization_id?: string;
+  workspace_id?: string;
   project_id?: string;
   old_values?: Record<string, any>;
   new_values?: Record<string, any>;
@@ -33,12 +33,12 @@ export type AuditAction =
   | 'permission_revoke'
 
   // Organization Management
-  | 'organization_create'
-  | 'organization_update'
-  | 'organization_delete'
-  | 'organization_member_add'
-  | 'organization_member_remove'
-  | 'organization_member_role_change'
+  | 'workspace_create'
+  | 'workspace_update'
+  | 'workspace_delete'
+  | 'workspace_member_add'
+  | 'workspace_member_remove'
+  | 'workspace_member_role_change'
 
   // Project Management
   | 'project_create'
@@ -95,7 +95,7 @@ export type AuditAction =
 
 export type EntityType =
   | 'user'
-  | 'organization'
+  | 'workspace'
   | 'project'
   | 'milestone'
   | 'task'
@@ -111,7 +111,7 @@ export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export interface AuditLogQuery {
   user_id?: string;
-  organization_id?: string;
+  workspace_id?: string;
   project_id?: string;
   action?: AuditAction;
   entity_type?: EntityType;
@@ -192,8 +192,8 @@ export class AuditService {
         logs = logs.filter(log => log.user_id === query.user_id);
       }
 
-      if (query.organization_id) {
-        logs = logs.filter(log => log.organization_id === query.organization_id);
+      if (query.workspace_id) {
+        logs = logs.filter(log => log.workspace_id === query.workspace_id);
       }
 
       if (query.project_id) {
@@ -443,7 +443,7 @@ export class AuditService {
         action,
         entity_type: entityType,
         entity_id: entityId,
-        organization_id: metadata?.organization_id,
+        workspace_id: metadata?.workspace_id,
         project_id: metadata?.project_id,
         risk_level: this.getRiskLevel(action),
         status: 'success',
@@ -472,7 +472,7 @@ export class AuditService {
         action,
         entity_type: entityType,
         entity_id: entityId,
-        organization_id: metadata?.organization_id,
+        workspace_id: metadata?.workspace_id,
         project_id: metadata?.project_id,
         old_values: oldValues,
         new_values: newValues,
@@ -514,7 +514,7 @@ export class AuditService {
     const highRiskActions: AuditAction[] = [
       'user_suspension',
       'user_activation',
-      'organization_delete',
+      'workspace_delete',
       'project_delete',
       'bulk_operation',
       'data_import',
@@ -528,7 +528,7 @@ export class AuditService {
       'permission_grant',
       'permission_revoke',
       'password_change',
-      'organization_member_remove',
+      'workspace_member_remove',
       'backup_restore',
       'data_export',
       'suspicious_activity',

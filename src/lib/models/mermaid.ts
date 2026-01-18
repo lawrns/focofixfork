@@ -7,7 +7,7 @@ export const MermaidDiagramSchema = z.object({
   description: z.string().optional(),
   mermaid_code: z.string().min(1, 'Mermaid code is required'),
   created_by: z.string().uuid().nullable(),
-  organization_id: z.string().uuid().nullable(),
+  workspace_id: z.string().uuid().nullable(),
   is_public: z.boolean().default(false),
   share_token: z.string().optional(),
   created_at: z.string().datetime(),
@@ -86,7 +86,7 @@ export interface MermaidDiagramListItem {
   updated_at: string;
   version: number;
   created_by?: string;
-  organization_id?: string;
+  workspace_id?: string;
   owner_name?: string;
   organization_name?: string;
   can_edit: boolean;
@@ -115,7 +115,7 @@ export const mapDatabaseToMermaidDiagram = (row: any): MermaidDiagram => {
     description: row.description,
     mermaid_code: row.mermaid_code,
     created_by: row.created_by,
-    organization_id: row.organization_id,
+    workspace_id: row.workspace_id,
     is_public: row.is_public,
     share_token: row.share_token,
     created_at: row.created_at,

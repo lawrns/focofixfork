@@ -6,7 +6,7 @@ import { z } from 'zod'
 export const GetActivitiesSchema = z.object({
   query: z.object({
     project_id: z.string().uuid().optional(),
-    organization_id: z.string().uuid().optional(),
+    workspace_id: z.string().uuid().optional(),
     limit: z.string().transform(val => parseInt(val, 10)).pipe(z.number().min(1).max(100)).optional(),
     offset: z.string().transform(val => parseInt(val, 10)).pipe(z.number().min(0)).optional()
   }).optional(),

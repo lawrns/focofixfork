@@ -31,13 +31,13 @@ import { InvitationWithDetails, InvitationStatus, CreateInvitationData, Invitati
 import { MemberRole } from '@/lib/models/organization-members'
 
 interface InvitationsManagerProps {
-  organizationId: string
+  workspaceId: string
   currentUserRole?: MemberRole
   className?: string
 }
 
 export default function InvitationsManager({
-  organizationId,
+  workspaceId,
   currentUserRole = 'member',
   className
 }: InvitationsManagerProps) {
@@ -55,7 +55,7 @@ export default function InvitationsManager({
 
   useEffect(() => {
     loadInvitations()
-  }, [organizationId])
+  }, [workspaceId])
 
   const loadInvitations = async () => {
     try {
@@ -88,7 +88,7 @@ export default function InvitationsManager({
     setInviteResult(null)
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/invitations`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/invitations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ export default function InvitationsManager({
 
   const handleResendInvitation = async (invitationId: string) => {
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/invitations/${invitationId}/resend`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/invitations/${invitationId}/resend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ export default function InvitationsManager({
     if (!confirm('Are you sure you want to cancel this invitation?')) return
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/invitations/${invitationId}`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/invitations/${invitationId}`, {
         method: 'DELETE',
       })
 

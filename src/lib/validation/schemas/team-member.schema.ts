@@ -6,7 +6,7 @@ export const TeamMemberRoleSchema = z.enum(['owner', 'admin', 'member', 'guest']
 // Base team member schema for reading/display
 export const TeamMemberSchema = z.object({
   user_id: z.string().uuid(),
-  organization_id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
   project_id: z.string().uuid().nullable(),
   role: TeamMemberRoleSchema,
   added_by: z.string().uuid(),

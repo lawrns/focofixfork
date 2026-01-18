@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { projectStore } from '@/lib/stores/project-store'
 
 interface UseProjectsOptions {
-  organizationId?: string
+  workspaceId?: string
   status?: string
   priority?: string
   limit?: number
@@ -15,8 +15,8 @@ interface Project {
   description: string | null
   status: string
   priority: string
-  organization_id: string | null
-  created_by: string
+  workspace_id: string | null
+  owner_id: string
   created_at: string
   updated_at: string
   color?: string
@@ -24,7 +24,7 @@ interface Project {
   start_date?: string | null
   due_date?: string | null
   progress_percentage?: number
-  organizations?: {
+  workspaces?: {
     name: string
   }
 }
@@ -42,7 +42,7 @@ export function useProjects(options?: UseProjectsOptions) {
     try {
       // Build query parameters
       const params = new URLSearchParams()
-      if (options?.organizationId) params.append('organization_id', options.organizationId)
+      if (options?.workspaceId) params.append('workspace_id', options.workspaceId)
       if (options?.status) params.append('status', options.status)
       if (options?.priority) params.append('priority', options.priority)
       if (options?.limit) params.append('limit', options.limit?.toString() || '50')

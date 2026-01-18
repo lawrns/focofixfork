@@ -33,7 +33,7 @@ export interface BaseAdapter<T> {
  */
 export interface VoiceSession {
   id: string
-  organization_id: string
+  workspace_id: string
   user_id: string
   title?: string
   description?: string
@@ -75,7 +75,7 @@ export interface EnhancedProject {
   id: string
   name: string
   description?: string
-  organization_id: string
+  workspace_id: string
   status: string
   priority: string
   start_date?: Date
@@ -218,7 +218,7 @@ export class VoiceSessionsAdapter implements BaseAdapter<VoiceSession> {
     const query = `
       SELECT * FROM voice_sessions 
       WHERE id = $1 AND 
-      (organization_id = ANY(SELECT organization_id FROM user_organizations WHERE user_id = $2) OR user_id = $2)
+      (workspace_id = ANY(SELECT workspace_id FROM workspace_members WHERE user_id = $2) OR user_id = $2)
     `
     
     const result = await pool.query(query, [id, this.config.context.userId])
@@ -231,9 +231,9 @@ export class VoiceSessionsAdapter implements BaseAdapter<VoiceSession> {
     let paramIndex = 1
 
     // Apply filters
-    if (filters.organization_id) {
-      query += ` AND organization_id = $${paramIndex++}`
-      params.push(filters.organization_id)
+    if (filters.workspace_id) {
+      query += ` AND workspace_id = $${paramIndex++}`
+      params.push(filters.workspace_id)
     }
     
     if (filters.user_id) {
@@ -252,7 +252,7 @@ export class VoiceSessionsAdapter implements BaseAdapter<VoiceSession> {
     }
 
     // Add user access control
-    query += ` AND (organization_id = ANY(SELECT organization_id FROM user_organizations WHERE user_id = $${paramIndex++}) OR user_id = $${paramIndex++})`
+    query += ` AND (workspace_id = ANY(SELECT workspace_id FROM workspace_members WHERE user_id = $${paramIndex++}) OR user_id = $${paramIndex++})`
     params.push(this.config.context.userId, this.config.context.userId)
 
     // Add ordering
@@ -307,7 +307,7 @@ export class VoiceSessionsAdapter implements BaseAdapter<VoiceSession> {
       UPDATE voice_sessions 
       SET ${setClause}, updated_at = NOW()
       WHERE id = $1 AND 
-      (organization_id = ANY(SELECT organization_id FROM user_organizations WHERE user_id = $${fields.length + 2}) OR user_id = $${fields.length + 2})
+      (workspace_id = ANY(SELECT workspace_id FROM workspace_members WHERE user_id = $${fields.length + 2}) OR user_id = $${fields.length + 2})
       RETURNING *
     `
 
@@ -323,7 +323,7 @@ export class VoiceSessionsAdapter implements BaseAdapter<VoiceSession> {
     const query = `
       DELETE FROM voice_sessions 
       WHERE id = $1 AND 
-      (organization_id = ANY(SELECT organization_id FROM user_organizations WHERE user_id = $2) OR user_id = $2)
+      (workspace_id = ANY(SELECT workspace_id FROM workspace_members WHERE user_id = $2) OR user_id = $2)
     `
 
     const result = await pool.query(query, [id, this.config.context.userId])
@@ -389,8 +389,8 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     const tableName = this.getTableName()
     const query = `
       SELECT * FROM ${tableName} 
-      WHERE id = $1 AND organization_id = ANY(
-        SELECT organization_id FROM user_organizations WHERE user_id = $2
+      WHERE id = $1 AND workspace_id = ANY(
+        SELECT workspace_id FROM workspace_members WHERE user_id = $2
       )
     `
     
@@ -405,9 +405,9 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     let paramIndex = 1
 
     // Apply filters
-    if (filters.organization_id) {
-      query += ` AND organization_id = $${paramIndex++}`
-      params.push(filters.organization_id)
+    if (filters.workspace_id) {
+      query += ` AND workspace_id = $${paramIndex++}`
+      params.push(filters.workspace_id)
     }
     
     if (filters.status) {
@@ -426,7 +426,7 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     }
 
     // Add organization access control
-    query += ` AND organization_id = ANY(SELECT organization_id FROM user_organizations WHERE user_id = $${paramIndex++})`
+    query += ` AND workspace_id = ANY(SELECT workspace_id FROM workspace_members WHERE user_id = $${paramIndex++})`
     params.push(this.config.context.userId)
 
     // Add ordering
@@ -499,8 +499,8 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     const query = `
       UPDATE ${tableName} 
       SET ${setClause}, updated_at = NOW()
-      WHERE id = $1 AND organization_id = ANY(
-        SELECT organization_id FROM user_organizations WHERE user_id = $${fields.length + 2}
+      WHERE id = $1 AND workspace_id = ANY(
+        SELECT workspace_id FROM workspace_members WHERE user_id = $${fields.length + 2}
       )
       RETURNING *
     `
@@ -513,8 +513,8 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     const tableName = this.getTableName()
     const query = `
       DELETE FROM ${tableName} 
-      WHERE id = $1 AND organization_id = ANY(
-        SELECT organization_id FROM user_organizations WHERE user_id = $2
+      WHERE id = $1 AND workspace_id = ANY(
+        SELECT workspace_id FROM workspace_members WHERE user_id = $2
       )
     `
 
@@ -527,8 +527,8 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     const tableName = this.getTableName()
     const query = `
       SELECT * FROM ${tableName} 
-      WHERE voice_session_id = $1 AND organization_id = ANY(
-        SELECT organization_id FROM user_organizations WHERE user_id = $2
+      WHERE voice_session_id = $1 AND workspace_id = ANY(
+        SELECT workspace_id FROM workspace_members WHERE user_id = $2
       )
       ORDER BY created_at DESC
     `

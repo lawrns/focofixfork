@@ -31,19 +31,10 @@ export async function GET(
       .single()
 
     if (taskError || !task) {
-      // Try legacy tasks table
-      const { data: legacyTask, error: legacyError } = await supabase
-        .from('tasks')
-        .select('id, project_id')
-        .eq('id', taskId)
-        .single()
-
-      if (legacyError || !legacyTask) {
-        return NextResponse.json(
-          { success: false, error: 'Task not found' },
-          { status: 404 }
-        )
-      }
+      return NextResponse.json(
+        { success: false, error: 'Task not found' },
+        { status: 404 }
+      )
     }
 
     // Fetch custom values with field metadata
@@ -145,20 +136,10 @@ export async function POST(
     let projectId = task?.project_id
 
     if (taskError || !task) {
-      // Try legacy tasks table
-      const { data: legacyTask, error: legacyError } = await supabase
-        .from('tasks')
-        .select('id, project_id')
-        .eq('id', taskId)
-        .single()
-
-      if (legacyError || !legacyTask) {
-        return NextResponse.json(
-          { success: false, error: 'Task not found' },
-          { status: 404 }
-        )
-      }
-      projectId = legacyTask.project_id
+      return NextResponse.json(
+        { success: false, error: 'Task not found' },
+        { status: 404 }
+      )
     }
 
     // Verify field exists and belongs to the task's project

@@ -9,10 +9,10 @@ export interface Project {
   id: string
   name: string
   description: string | null
-  organization_id: string
+  workspace_id: string
   status: ProjectStatus
   progress: number
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
   color?: string
@@ -21,7 +21,7 @@ export interface Project {
 export interface CreateProjectData {
   name: string
   description?: string
-  organization_id: string
+  workspace_id: string
 }
 
 export interface UpdateProjectData {
@@ -50,8 +50,8 @@ export class ProjectModel {
       errors.push('Project name must be less than 200 characters')
     }
 
-    if (!data.organization_id || data.organization_id.trim().length === 0) {
-      errors.push('Organization ID is required')
+    if (!data.workspace_id || data.workspace_id.trim().length === 0) {
+      errors.push('Workspace ID is required')
     }
 
     if (data.description && data.description.length > 2000) {
@@ -185,10 +185,10 @@ export class ProjectModel {
       id: data.id,
       name: data.name,
       description: data.description,
-      organization_id: data.organization_id,
+      workspace_id: data.workspace_id,
       status: data.status,
       progress: data.progress || 0,
-      created_by: data.created_by,
+      owner_id: data.owner_id,
       created_at: data.created_at,
       updated_at: data.updated_at
     }
@@ -202,10 +202,10 @@ export class ProjectModel {
       id: project.id,
       name: project.name,
       description: project.description,
-      organization_id: project.organization_id,
+      workspace_id: project.workspace_id,
       status: project.status,
       progress: project.progress,
-      created_by: project.created_by,
+      owner_id: project.owner_id,
       created_at: project.created_at,
       updated_at: project.updated_at
     }

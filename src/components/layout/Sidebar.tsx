@@ -27,7 +27,7 @@ interface Project {
   name: string
   slug?: string
   status: string
-  organization_id: string | null
+  workspace_id: string | null
 }
 
 const getNavigation = (t: any) => [
@@ -140,7 +140,7 @@ export default function Sidebar() {
     // Track that we received a real-time update
     lastRealtimeUpdate.current = Date.now()
 
-    if (payload.table === 'projects') {
+    if (payload.table === 'foco_projects') {
       if (payload.eventType === 'INSERT') {
         if (payload.new?.id && payload.new?.name) {
           projectStore.addProject(payload.new)

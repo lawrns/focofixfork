@@ -88,7 +88,7 @@ export class ImportService {
             progress_percentage: this.parseNumber(row.progress_percentage) || 0,
             start_date: this.parseDate(row.start_date),
             due_date: this.parseDate(row.due_date),
-            organization_id: row.organization_id?.trim() || null
+            workspace_id: row.workspace_id?.trim() || null
           }
 
           validProjects.push(projectData)
@@ -114,14 +114,14 @@ export class ImportService {
 
       for (const project of validProjects) {
         try {
-          // Check if project already exists (by name and organization)
+          // Check if project already exists (by name and workspace)
           let query = untypedSupabase
             .from('foco_projects')
             .select('id')
             .eq('name', project.name)
 
-          if (project.organization_id) {
-            query = query.eq('organization_id', project.organization_id)
+          if (project.workspace_id) {
+            query = query.eq('workspace_id', project.workspace_id)
           }
 
           const response = await query.single()
@@ -398,7 +398,7 @@ export class ImportService {
       for (const task of validTasks) {
         try {
           const { error } = await untypedSupabase
-            .from('tasks')
+            .from('work_items')
             .insert(task)
 
           if (error) {

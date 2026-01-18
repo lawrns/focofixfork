@@ -7,7 +7,7 @@ const untypedSupabase = supabase as any
 
 interface UseRealtimeTeamOptions {
   projectId?: string
-  organizationId?: string
+  workspaceId?: string
   enabled?: boolean
 }
 
@@ -18,13 +18,13 @@ interface TeamMemberEvent {
 }
 
 export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
-  const { projectId, organizationId, enabled = true } = options
+  const { projectId, workspaceId, enabled = true } = options
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!enabled || (!projectId && !organizationId)) return
+    if (!enabled || (!projectId && !workspaceId)) return
 
     let channel: RealtimeChannel
 
@@ -36,12 +36,12 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
         // Build the channel name and filter
         const channelName = projectId
           ? `project_team_${projectId}`
-          : `organization_team_${organizationId}`
+          : `workspace_team_${workspaceId}`
 
-        const table = projectId ? 'project_team_assignments' : 'organization_members'
+        const table = projectId ? 'foco_project_members' : 'workspace_members'
         const filter = projectId
           ? `project_id=eq.${projectId}`
-          : `organization_id=eq.${organizationId}`
+          : `workspace_id=eq.${workspaceId}`
 
         channel = supabase
           .channel(channelName)
@@ -90,7 +90,7 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
 
     const fetchTeamMembers = async () => {
       try {
-        const table = projectId ? 'project_team_assignments' : 'organization_members'
+        const table = projectId ? 'foco_project_members' : 'workspace_members'
 
         let data: any[] | null = null
         let error: any = null
@@ -102,11 +102,11 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
             .eq('project_id', projectId)
           data = result.data
           error = result.error
-        } else if (organizationId) {
+        } else if (workspaceId) {
           const result = await untypedSupabase
             .from(table)
             .select('*')
-            .eq('organization_id', organizationId)
+            .eq('workspace_id', workspaceId)
           data = result.data
           error = result.error
         } else {
@@ -122,20 +122,20 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
         // Transform data to match TeamMember type
         const transformedData = (data || []).map((item: any) => {
           if (projectId) {
-            // Transform project_team_assignments data
+            // Transform foco_project_members data
             return {
               user_id: item.user_id,
-              organization_id: organizationId || '', // Will need to get this from project
+              workspace_id: workspaceId || '', // Will need to get this from project
               project_id: item.project_id,
               role: item.role,
               added_by: item.assigned_by || '',
               added_at: item.assigned_at || new Date().toISOString(),
             }
           } else {
-            // Transform organization_members data
+            // Transform workspace_members data
             return {
               user_id: item.user_id,
-              organization_id: item.organization_id,
+              workspace_id: item.workspace_id,
               project_id: null,
               role: item.role,
               added_by: item.invited_by || '',
@@ -159,7 +159,7 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
               // Check if member already exists (avoid duplicates)
               const exists = currentMembers.some(
                 m => m.user_id === event.new!.user_id &&
-                m.organization_id === event.new!.organization_id &&
+                m.workspace_id === event.new!.workspace_id &&
                 m.project_id === event.new!.project_id
               )
               if (!exists) {
@@ -172,7 +172,7 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
             if (event.new) {
               return currentMembers.map(member =>
                 member.user_id === event.new!.user_id &&
-                member.organization_id === event.new!.organization_id &&
+                member.workspace_id === event.new!.workspace_id &&
                 member.project_id === event.new!.project_id
                   ? { ...member, ...event.new }
                   : member
@@ -184,7 +184,7 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
             if (event.old) {
               return currentMembers.filter(member =>
                 !(member.user_id === event.old!.user_id &&
-                  member.organization_id === event.old!.organization_id &&
+                  member.workspace_id === event.old!.workspace_id &&
                   member.project_id === event.old!.project_id)
               )
             }
@@ -204,14 +204,14 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
         supabase.removeChannel(channel)
       }
     }
-  }, [projectId, organizationId, enabled])
+  }, [projectId, workspaceId, enabled])
 
   const refetch = async () => {
     // Re-fetch team members manually
-    if (!projectId && !organizationId) return
+    if (!projectId && !workspaceId) return
 
     try {
-      const table = projectId ? 'project_team_assignments' : 'organization_members'
+      const table = projectId ? 'foco_project_members' : 'workspace_members'
 
       let data: any[] | null = null
       let error: any = null
@@ -223,11 +223,11 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
           .eq('project_id', projectId)
         data = result.data
         error = result.error
-      } else if (organizationId) {
+      } else if (workspaceId) {
         const result = await untypedSupabase
           .from(table)
           .select('*')
-          .eq('organization_id', organizationId)
+          .eq('workspace_id', workspaceId)
         data = result.data
         error = result.error
       } else {
@@ -240,30 +240,30 @@ export function useRealtimeTeam(options: UseRealtimeTeamOptions = {}) {
         return
       }
 
-      // Transform data to match TeamMember type
-      const transformedData = (data || []).map((item: any) => {
-        if (projectId) {
-          // Transform project_team_assignments data
-          return {
-            user_id: item.user_id,
-            organization_id: organizationId || '', // Will need to get this from project
-            project_id: item.project_id,
-            role: item.role,
-            added_by: item.assigned_by || '',
-            added_at: item.assigned_at || new Date().toISOString(),
+        // Transform data to match TeamMember type
+        const transformedData = (data || []).map((item: any) => {
+          if (projectId) {
+            // Transform foco_project_members data
+            return {
+              user_id: item.user_id,
+              workspace_id: workspaceId || '', // Will need to get this from project
+              project_id: item.project_id,
+              role: item.role,
+              added_by: item.assigned_by || '',
+              added_at: item.assigned_at || new Date().toISOString(),
+            }
+          } else {
+            // Transform workspace_members data
+            return {
+              user_id: item.user_id,
+              workspace_id: item.workspace_id,
+              project_id: null,
+              role: item.role,
+              added_by: item.invited_by || '',
+              added_at: item.invited_at || item.joined_at || new Date().toISOString(),
+            }
           }
-        } else {
-          // Transform organization_members data
-          return {
-            user_id: item.user_id,
-            organization_id: item.organization_id,
-            project_id: null,
-            role: item.role,
-            added_by: item.invited_by || '',
-            added_at: item.invited_at || item.joined_at || new Date().toISOString(),
-          }
-        }
-      })
+        })
 
       setTeamMembers(transformedData)
     } catch (err) {

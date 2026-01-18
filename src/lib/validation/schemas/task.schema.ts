@@ -29,15 +29,26 @@ export const RecurrencePatternSchema = z.object({
 // Base task schema for reading/display
 export const TaskSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().min(2).max(200),
+  workspace_id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  parent_id: z.string().uuid().nullable().optional(),
+  type: z.enum(['task', 'bug', 'feature', 'milestone']).default('task'),
+  title: z.string().min(2).max(200),
   description: z.string().max(2000).nullable(),
   status: TaskStatusSchema,
   priority: TaskPrioritySchema,
-  project_id: z.string().uuid(),
   assignee_id: z.string().uuid().nullable(),
-  created_by: z.string().uuid(),
+  reporter_id: z.string().uuid(),
   due_date: z.string().datetime().nullable(),
-  reminder_at: z.string().datetime().nullable().optional(),
+  start_date: z.string().datetime().nullable().optional(),
+  completed_at: z.string().datetime().nullable().optional(),
+  estimate_hours: z.number().nullable().optional(),
+  actual_hours: z.number().nullable().optional(),
+  position: z.string().nullable().optional(),
+  section: z.string().nullable().optional(),
+  blocked_reason: z.string().nullable().optional(),
+  blocked_by_id: z.string().uuid().nullable().optional(),
+  closure_note: z.string().nullable().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   is_recurring: z.boolean().optional(),
@@ -49,16 +60,17 @@ export const TaskSchema = z.object({
 
 // Schema for creating new tasks
 export const CreateTaskSchema = z.object({
-  name: z.string()
-    .min(2, 'Task name must be at least 2 characters')
-    .max(200, 'Task name must be less than 200 characters')
+  title: z.string()
+    .min(2, 'Task title must be at least 2 characters')
+    .max(200, 'Task title must be less than 200 characters')
     .trim(),
   description: z.string()
     .max(2000, 'Description must be less than 2000 characters')
     .optional()
     .nullable(),
-  priority: TaskPrioritySchema.default('medium'),
+  workspace_id: z.string().uuid(),
   project_id: z.string().uuid(),
+  priority: TaskPrioritySchema.default('medium'),
   assignee_id: z.string().uuid().optional().nullable(),
   due_date: z.string().datetime()
     .refine((date) => {
@@ -67,22 +79,16 @@ export const CreateTaskSchema = z.object({
     }, 'Due date must be in the future')
     .optional()
     .nullable(),
-  reminder_at: z.string().datetime()
-    .refine((date) => {
-      if (!date) return true // Optional field
-      return new Date(date) > new Date()
-    }, 'Reminder date must be in the future')
-    .optional()
-    .nullable(),
+  type: z.enum(['task', 'bug', 'feature', 'milestone']).default('task').optional(),
   is_recurring: z.boolean().optional().default(false),
   recurrence_pattern: RecurrencePatternSchema.optional().nullable(),
 })
 
 // Schema for updating existing tasks
 export const UpdateTaskSchema = z.object({
-  name: z.string()
-    .min(2, 'Task name must be at least 2 characters')
-    .max(200, 'Task name must be less than 200 characters')
+  title: z.string()
+    .min(2, 'Task title must be at least 2 characters')
+    .max(200, 'Task title must be less than 200 characters')
     .trim()
     .optional(),
   description: z.string()
@@ -97,13 +103,6 @@ export const UpdateTaskSchema = z.object({
       if (!date) return true // Optional field
       return new Date(date) > new Date()
     }, 'Due date must be in the future')
-    .optional()
-    .nullable(),
-  reminder_at: z.string().datetime()
-    .refine((date) => {
-      if (!date) return true // Optional field
-      return new Date(date) > new Date()
-    }, 'Reminder date must be in the future')
     .optional()
     .nullable(),
   is_recurring: z.boolean().optional(),

@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         description: templateData.description,
         structure: templateData.structure,
         is_public: templateData.is_public,
-        created_by: user.id,
+        owner_id: user.id,
       })
       .select()
 

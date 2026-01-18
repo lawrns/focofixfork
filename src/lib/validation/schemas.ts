@@ -13,14 +13,14 @@ export const milestoneStatusSchema = z.enum(['planning', 'active', 'completed', 
 export const taskStatusSchema = z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']);
 export const taskPrioritySchema = z.enum(['urgent', 'high', 'medium', 'low', 'none']);
 export const userRoleSchema = z.enum(['director', 'lead', 'member', 'viewer']);
-export const organizationRoleSchema = z.enum(['owner', 'admin', 'member', 'viewer']);
+export const workspaceRoleSchema = z.enum(['owner', 'admin', 'member', 'viewer']);
 export const goalStatusSchema = z.enum(['draft', 'active', 'completed', 'cancelled', 'on_hold']);
-export const goalTypeSchema = z.enum(['project', 'milestone', 'task', 'organization', 'personal']);
+export const goalTypeSchema = z.enum(['project', 'milestone', 'task', 'workspace', 'personal']);
 export const goalPrioritySchema = z.enum(['low', 'medium', 'high', 'critical']);
 export const timeEntryStatusSchema = z.enum(['active', 'paused', 'completed']);
 
-// Organization validation
-export const organizationSchema = z.object({
+// Workspace validation
+export const workspaceSchema = z.object({
   id: uuidSchema.optional(),
   name: z.string().min(1).max(100),
   slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/),
@@ -36,11 +36,11 @@ export const organizationSchema = z.object({
   }).optional(),
 }).strict();
 
-export const organizationMemberSchema = z.object({
+export const workspaceMemberSchema = z.object({
   id: uuidSchema.optional(),
-  organization_id: uuidSchema,
+  workspace_id: uuidSchema,
   user_id: uuidSchema,
-  role: organizationRoleSchema,
+  role: workspaceRoleSchema,
   status: z.enum(['active', 'inactive', 'pending']).default('active'),
   invited_by: uuidSchema.optional(),
   invited_at: z.string().datetime().optional(),
@@ -54,8 +54,8 @@ export const projectSchema = z.object({
   description: z.string().max(2000).optional(),
   status: projectStatusSchema,
   priority: taskPrioritySchema.optional(),
-  organization_id: uuidSchema,
-  created_by: uuidSchema,
+  workspace_id: uuidSchema,
+  owner_id: uuidSchema,
   start_date: z.string().datetime().optional(),
   end_date: z.string().datetime().optional(),
   budget: nonNegativeNumberSchema.optional(),
@@ -77,7 +77,7 @@ export const milestoneSchema = z.object({
   status: milestoneStatusSchema,
   priority: taskPrioritySchema.optional(),
   project_id: uuidSchema,
-  organization_id: uuidSchema,
+  workspace_id: uuidSchema,
   created_by: uuidSchema,
   assigned_to: uuidSchema.optional(),
   start_date: z.string().datetime().optional(),
@@ -96,9 +96,9 @@ export const taskSchema = z.object({
   priority: taskPrioritySchema,
   milestone_id: uuidSchema.optional(),
   project_id: uuidSchema,
-  organization_id: uuidSchema,
-  created_by: uuidSchema,
-  assigned_to: uuidSchema.optional(),
+  workspace_id: uuidSchema,
+  reporter_id: uuidSchema,
+  assignee_id: uuidSchema.optional(),
   start_date: z.string().datetime().optional(),
   due_date: z.string().datetime().optional(),
   estimated_hours: nonNegativeNumberSchema.optional(),
@@ -144,7 +144,7 @@ export const goalSchema = z.object({
   end_date: z.string().datetime().optional(),
   progress_percentage: z.number().min(0).max(100).default(0),
   owner_id: uuidSchema,
-  organization_id: uuidSchema.optional(),
+  workspace_id: uuidSchema.optional(),
   project_id: uuidSchema.optional(),
   milestone_id: uuidSchema.optional(),
   task_id: uuidSchema.optional(),
@@ -156,7 +156,7 @@ export const goalSchema = z.object({
 export const timeEntrySchema = z.object({
   id: uuidSchema.optional(),
   user_id: uuidSchema,
-  organization_id: uuidSchema,
+  workspace_id: uuidSchema,
   project_id: uuidSchema.optional(),
   milestone_id: uuidSchema.optional(),
   task_id: uuidSchema.optional(),
@@ -175,7 +175,7 @@ export const commentSchema = z.object({
   id: uuidSchema.optional(),
   content: z.string().min(1).max(2000),
   author_id: uuidSchema,
-  organization_id: uuidSchema,
+  workspace_id: uuidSchema,
   project_id: uuidSchema.optional(),
   milestone_id: uuidSchema.optional(),
   task_id: uuidSchema.optional(),
@@ -199,7 +199,7 @@ export const fileAttachmentSchema = z.object({
   size: positiveNumberSchema,
   type: z.string().max(100),
   uploaded_by: uuidSchema,
-  organization_id: uuidSchema,
+  workspace_id: uuidSchema,
   project_id: uuidSchema.optional(),
   milestone_id: uuidSchema.optional(),
   task_id: uuidSchema.optional(),
@@ -213,8 +213,8 @@ export const fileAttachmentSchema = z.object({
 export const invitationSchema = z.object({
   id: uuidSchema.optional(),
   email: emailSchema,
-  role: organizationRoleSchema,
-  organization_id: uuidSchema,
+  role: workspaceRoleSchema,
+  workspace_id: uuidSchema,
   invited_by: uuidSchema,
   token: z.string().min(32).max(128),
   expires_at: z.string().datetime(),
@@ -245,7 +245,7 @@ export const searchFiltersSchema = z.object({
     end: z.string().datetime(),
   }).optional(),
   project_id: uuidSchema.optional(),
-  organization_id: uuidSchema.optional(),
+  workspace_id: uuidSchema.optional(),
 }).strict();
 
 // Export validation
@@ -259,7 +259,7 @@ export const exportOptionsSchema = z.object({
     end: z.string().datetime(),
   }).optional(),
   project_ids: z.array(uuidSchema).max(50).optional(),
-  organization_id: uuidSchema.optional(),
+  workspace_id: uuidSchema.optional(),
 }).strict();
 
 // Settings validation
@@ -277,8 +277,8 @@ export const userSettingsSchema = z.object({
 }).strict();
 
 // Type exports
-export type Organization = z.infer<typeof organizationSchema>;
-export type OrganizationMember = z.infer<typeof organizationMemberSchema>;
+export type Workspace = z.infer<typeof workspaceSchema>;
+export type WorkspaceMember = z.infer<typeof workspaceMemberSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type Milestone = z.infer<typeof milestoneSchema>;
 export type Task = z.infer<typeof taskSchema>;

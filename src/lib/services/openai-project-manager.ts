@@ -165,7 +165,7 @@ Return ONLY valid JSON, no explanations.`
   static async createProject(
     parsedProject: ParsedProject,
     userId: string,
-    organizationId: string
+    workspaceId: string
   ): Promise<{
     project: any
     milestones: any[]
@@ -182,8 +182,8 @@ Return ONLY valid JSON, no explanations.`
           priority: parsedProject.project.priority,
           start_date: parsedProject.project.start_date,
           due_date: parsedProject.project.due_date,
-          organization_id: organizationId,
-          created_by: userId,
+          workspace_id: workspaceId,
+          owner_id: userId,
           progress_percentage: 0
         })
         .select()
@@ -454,7 +454,7 @@ Return ONLY valid JSON.`
    */
   static async deleteProject(projectId: string): Promise<{ success: boolean }> {
     const { error } = await supabaseAdmin
-      .from('projects')
+      .from('foco_projects')
       .delete()
       .eq('id', projectId)
 
@@ -474,7 +474,7 @@ Return ONLY valid JSON.`
     tasks: any[]
   }> {
     const { data: project } = await supabaseAdmin
-      .from('projects')
+      .from('foco_projects')
       .select('*')
       .eq('id', projectId)
       .single()
@@ -486,7 +486,7 @@ Return ONLY valid JSON.`
       .order('deadline', { ascending: true })
 
     const { data: tasks } = await supabaseAdmin
-      .from('tasks')
+      .from('work_items')
       .select('*')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true })

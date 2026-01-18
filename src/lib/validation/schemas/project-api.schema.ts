@@ -5,7 +5,7 @@ import { z } from 'zod'
  */
 export const GetProjectsSchema = z.object({
   query: z.object({
-    organization_id: z.string().uuid().optional(),
+    workspace_id: z.string().uuid().optional(),
     status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     limit: z.string().transform(val => parseInt(val, 10)).pipe(z.number().min(1).max(100)).optional(),
@@ -21,7 +21,7 @@ export const CreateProjectApiSchema = z.object({
   body: z.object({
     name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
     description: z.string().max(2000, 'Description must be less than 2000 characters').nullable().optional(),
-    organization_id: z.string().nullable().optional(),
+    workspace_id: z.string().nullable().optional(),
     status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     start_date: z.string().nullable().optional(),
@@ -65,7 +65,7 @@ export const UpdateProjectApiSchema = z.object({
     start_date: z.string().datetime().nullable().optional(),
     due_date: z.string().datetime().nullable().optional(),
     progress_percentage: z.number().min(0).max(100).optional(),
-    organization_id: z.string().uuid().nullable().optional()
+    workspace_id: z.string().uuid().nullable().optional()
   }).strict().refine(
     (data) => {
       // If both dates are provided, ensure due_date >= start_date

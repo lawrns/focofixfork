@@ -123,13 +123,13 @@ const DEFAULT_AI_POLICY: WorkspaceAIPolicy = {
 }
 
 interface AISettingsTabProps {
-  organizationId: string
+  workspaceId: string
   currentUserRole?: string
   className?: string
 }
 
 export default function AISettingsTab({
-  organizationId,
+  workspaceId,
   currentUserRole = 'member',
   className
 }: AISettingsTabProps) {
@@ -148,7 +148,7 @@ export default function AISettingsTab({
   const loadPolicy = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/workspaces/${organizationId}/ai-policy`)
+      const response = await fetch(`/api/workspaces/${workspaceId}/ai-policy`)
 
       if (response.ok) {
         const data = await response.json()
@@ -163,7 +163,7 @@ export default function AISettingsTab({
     } finally {
       setIsLoading(false)
     }
-  }, [organizationId])
+  }, [workspaceId])
 
   useEffect(() => {
     loadPolicy()
@@ -174,7 +174,7 @@ export default function AISettingsTab({
 
     setIsSaving(true)
     try {
-      const response = await fetch(`/api/workspaces/${organizationId}/ai-policy`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/ai-policy`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

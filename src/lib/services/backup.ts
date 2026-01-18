@@ -22,7 +22,7 @@ export interface BackupData {
     createdAt: string;
     version: string;
     userId: string;
-    organizationId?: string;
+    workspaceId?: string;
   };
 }
 
@@ -53,7 +53,7 @@ export class BackupService {
 
       if (organizations) {
         backupData.organizations = organizations;
-        backupData.metadata.organizationId = organizations[0]?.id;
+        backupData.metadata.workspaceId = organizations[0]?.id;
       }
 
       // Get projects for user's organizations
@@ -62,7 +62,7 @@ export class BackupService {
         const { data: projects } = await untypedSupabase
           .from('foco_projects')
           .select('*')
-          .in('organization_id', orgIds);
+          .in('workspace_id', orgIds);
 
         if (projects) {
           backupData.projects = projects;
@@ -88,11 +88,11 @@ export class BackupService {
           }
         }
 
-        // Get organization members
+        // Get workspace members
         const { data: members } = await untypedSupabase
-          .from('organization_members')
+          .from('workspace_members')
           .select('*')
-          .in('organization_id', orgIds);
+          .in('workspace_id', orgIds);
 
         if (members) {
           backupData.members = members;
@@ -103,9 +103,9 @@ export class BackupService {
       if (options.includeComments) {
         const orgIds = organizations?.map(o => o.id) || [];
         const { data: comments } = await untypedSupabase
-          .from('milestone_comments')
+          .from('foco_comments')
           .select('*')
-          .in('organization_id', orgIds);
+          .in('workspace_id', orgIds);
 
         if (comments) {
           backupData.comments = comments;
@@ -187,7 +187,7 @@ export class BackupService {
           .from('foco_projects')
           .select('id')
           .eq('name', project.name)
-          .eq('organization_id', project.organization_id)
+          .eq('workspace_id', project.workspace_id)
           .single();
 
         if (!existing) {

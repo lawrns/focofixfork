@@ -10,6 +10,7 @@ export const MilestoneSchema = z.object({
   description: z.string().max(2000).nullable(),
   status: MilestoneStatusSchema,
   project_id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
   start_date: z.string().datetime().nullable(),
   due_date: z.string().datetime().nullable(),
   progress_percentage: z.number().min(0).max(100),
@@ -29,6 +30,7 @@ export const CreateMilestoneSchema = z.object({
     .optional()
     .nullable(),
   project_id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
   start_date: z.string().datetime().optional().nullable(),
   due_date: z.string().datetime().optional().nullable(),
   progress_percentage: z.number().min(0).max(100).default(0),

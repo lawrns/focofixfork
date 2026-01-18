@@ -25,7 +25,7 @@ const mapDatabaseToMermaidDiagramSimple = (row: any): MermaidDiagram => {
     description: row.description,
     mermaid_code: row.mermaid_code,
     created_by: row.created_by,
-    organization_id: row.organization_id,
+    workspace_id: row.workspace_id,
     is_public: row.is_public,
     share_token: row.share_token,
     created_at: row.created_at,
@@ -49,7 +49,7 @@ export class MermaidPublicService {
 
   // Diagram CRUD operations (public access)
   async listDiagrams(options: {
-    organizationId?: string;
+    workspaceId?: string;
     isPublic?: boolean;
     sharedWithMe?: boolean;
     search?: string;
@@ -61,8 +61,8 @@ export class MermaidPublicService {
       .select('*', { count: 'exact' });
 
     // Apply filters
-    if (options.organizationId) {
-      query = query.eq('organization_id', options.organizationId);
+    if (options.workspaceId) {
+      query = query.eq('workspace_id', options.workspaceId);
     }
 
     if (options.isPublic !== undefined) {
@@ -103,7 +103,7 @@ export class MermaidPublicService {
         updated_at: baseDiagram.updated_at,
         version: baseDiagram.version,
         created_by: baseDiagram.created_by,
-        organization_id: baseDiagram.organization_id,
+        workspace_id: baseDiagram.workspace_id,
         owner_name: 'Public',
         organization_name: 'Public',
         can_edit: false,
@@ -138,7 +138,7 @@ export class MermaidPublicService {
       description: data.description || null,
       mermaid_code: data.mermaid_code,
       created_by: null, // Anonymous creation
-      organization_id: data.organization_id || null,
+      workspace_id: data.workspace_id || null,
       is_public: data.is_public || false,
     };
 

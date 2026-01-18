@@ -32,22 +32,22 @@ import { PageLoadingSkeleton, InlineLoadingSkeleton } from '@/components/skeleto
 import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import { InvitationWithDetails } from '@/lib/models/invitations'
 import { InvitationModel } from '@/lib/models/invitations'
-import { OrganizationsEmpty } from '@/components/empty-states/organizations-empty'
+import { WorkspacesEmpty } from '@/components/empty-states/workspaces-empty'
 
-export default function OrganizationsPage() {
+export default function WorkspacesPage() {
   // Set page title
   useEffect(() => {
-    document.title = 'Organizaciones | Foco'
+    document.title = 'Workspaces | Foco'
   }, [])
 
   return (
     <ProtectedRoute>
-      <OrganizationsContent />
+      <WorkspacesContent />
     </ProtectedRoute>
   )
 }
 
-interface Organization {
+interface Workspace {
   id: string
   name: string
   description?: string
@@ -58,21 +58,21 @@ interface Organization {
   created_at: string
 }
 
-function OrganizationsContent() {
-  const [organizations, setOrganizations] = useState<any[]>([])
+function WorkspacesContent() {
+  const [workspaces, setWorkspaces] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [orgName, setOrgName] = useState('')
+  const [workspaceName, setWorkspaceName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [createResult, setCreateResult] = useState<{ success: boolean; message: string } | null>(null)
   const router = useRouter()
   const { user } = useAuth()
 
-  // Organization modal state
-  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null)
-  const [showOrgModal, setShowOrgModal] = useState(false)
-  const [orgMembers, setOrgMembers] = useState<OrganizationMemberWithDetails[]>([])
-  const [orgInvitations, setOrgInvitations] = useState<InvitationWithDetails[]>([])
+  // Workspace modal state
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
+  const [workspaceMembers, setWorkspaceMembers] = useState<OrganizationMemberWithDetails[]>([])
+  const [workspaceInvitations, setWorkspaceInvitations] = useState<InvitationWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -84,64 +84,63 @@ function OrganizationsContent() {
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
   const [invitationToCancel, setInvitationToCancel] = useState<string | null>(null)
 
-  const loadOrganizations = useCallback(async () => {
+  const loadWorkspaces = useCallback(async () => {
     // Don't load if user is not authenticated yet
     if (!user) {
-      console.log('[Organizations] Waiting for authentication...')
+      console.log('[Workspaces] Waiting for authentication...')
       return
     }
     
     try {
-      const response = await fetch('/api/organizations', {
-              })
+      const response = await fetch('/api/workspaces')
       if (response.ok) {
         const data = await response.json()
-        setOrganizations(data.data || [])
+        setWorkspaces(data.data || [])
       } else {
-        console.error('Failed to load organizations:', response.status, response.statusText)
+        console.error('Failed to load workspaces:', response.status, response.statusText)
         const errorData = await response.json().catch(() => ({}))
         console.error('Error details:', errorData)
       }
     } catch (error) {
-      console.error('Failed to load organizations:', error)
+      console.error('Failed to load workspaces:', error)
     } finally {
       setIsLoading(false)
     }
   }, [user])
 
   useEffect(() => {
-    loadOrganizations()
-  }, [loadOrganizations])
+    loadWorkspaces()
+  }, [loadWorkspaces])
 
-  const openOrganizationModal = async (organization: any) => {
-    setSelectedOrganization(organization)
-    setShowOrgModal(true)
+  const openWorkspaceModal = async (workspace: any) => {
+    setSelectedWorkspace(workspace)
+    setShowWorkspaceModal(true)
 
-    // Load organization details, members, and invitations in parallel
+    // Load workspace details, members, and invitations in parallel
     try {
       const results = await Promise.allSettled([
-        fetch(`/api/organizations/${organization.id}`),
-        fetch(`/api/organizations/${organization.id}/members`),
-        fetch(`/api/organizations/${organization.id}/invitations`)
+        fetch(`/api/workspaces/${workspace.id}`),
+        fetch(`/api/workspaces/${workspace.id}/members`),
+        fetch(`/api/workspaces/${workspace.id}/invitations`)
       ])
 
-      // Handle organization details response
+      // Handle workspace details response
       if (results[0].status === 'fulfilled') {
-        const orgResponse = results[0].value
-        if (orgResponse.ok) {
+        const workspaceResponse = results[0].value
+        if (workspaceResponse.ok) {
           try {
-            const orgData = await orgResponse.json()
-            if (orgData.success) {
-              setSelectedOrganization(orgData.data)
+            const workspaceData = await workspaceResponse.json()
+            if (workspaceData.success) {
+              setSelectedWorkspace(workspaceData.data)
             }
           } catch (error) {
-            console.error('Failed to parse organization details:', error)
+            console.error('Failed to parse workspace details:', error)
           }
         } else {
-          console.error('Failed to load organization details:', orgResponse.status)
+          console.error('Failed to load workspace details:', workspaceResponse.status)
         }
       } else {
-        console.error('Failed to fetch organization details:', results[0].reason)
+        console.error('Failed to fetch workspace details:', results[0].reason)
       }
 
       // Handle members response
@@ -151,7 +150,7 @@ function OrganizationsContent() {
           try {
             const membersData = await membersResponse.json()
             if (membersData.success) {
-              setOrgMembers(membersData.data || [])
+              setWorkspaceMembers(membersData.data || [])
               // Find current user's role
               if (user) {
                 const currentUser = membersData.data?.find((member: any) =>
@@ -179,7 +178,7 @@ function OrganizationsContent() {
           try {
             const invitationsData = await invitationsResponse.json()
             if (invitationsData.success) {
-              setOrgInvitations(invitationsData.data || [])
+              setWorkspaceInvitations(invitationsData.data || [])
             }
           } catch (error) {
             console.error('Failed to parse invitations data:', error)
@@ -191,30 +190,30 @@ function OrganizationsContent() {
         console.error('Failed to fetch invitations:', results[2].reason)
       }
     } catch (error) {
-      console.error('Failed to load organization details:', error)
+      console.error('Failed to load workspace details:', error)
     }
   }
 
-  const openInviteModalForOrg = async (organization: any) => {
-    await openOrganizationModal(organization)
+  const openInviteModalForWs = async (workspace: any) => {
+    await openWorkspaceModal(workspace)
     setShowInviteModal(true)
   }
 
   const handleInviteMember = async () => {
-    if (!inviteEmail.trim() || !selectedOrganization) return
+    if (!inviteEmail.trim() || !selectedWorkspace) return
 
     setIsInviting(true)
     setInviteResult(null)
 
     try {
       console.log('[DEBUG] Sending invitation request:', {
-        organizationId: selectedOrganization.id,
+        workspaceId: selectedWorkspace.id,
         email: inviteEmail,
         role: inviteRole,
         userId: user?.id,
       })
 
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members`, {
+      const response = await fetch(`/api/workspaces/${selectedWorkspace.id}/members`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,16 +244,15 @@ function OrganizationsContent() {
         setInviteRole('member')
         setShowInviteModal(false)
         // Refresh members list
-        const membersResponse = await fetch(`/api/organizations/${selectedOrganization.id}/members`)
+        const membersResponse = await fetch(`/api/workspaces/${selectedWorkspace.id}/members`)
         if (membersResponse.ok) {
           const membersData = await membersResponse.json()
           if (membersData.success) {
-            setOrgMembers(membersData.data || [])
+            setWorkspaceMembers(membersData.data || [])
           }
         }
         // Refresh invitations list
-        const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`, {
-                  })
+        const invitationsResponse = await fetch(`/api/workspaces/${selectedWorkspace.id}/invitations`)
         console.log('[DEBUG] Invitations fetch response:', {
           status: invitationsResponse.status,
           ok: invitationsResponse.ok,
@@ -262,7 +260,7 @@ function OrganizationsContent() {
         if (invitationsResponse.ok) {
           const invitationsData = await invitationsResponse.json()
           if (invitationsData.success) {
-            setOrgInvitations(invitationsData.data || [])
+            setWorkspaceInvitations(invitationsData.data || [])
           }
         } else {
           console.error('[DEBUG] Failed to refresh invitations:', invitationsResponse.status)
@@ -280,10 +278,10 @@ function OrganizationsContent() {
   }
 
   const handleUpdateRole = async (memberId: string, newRole: MemberRole) => {
-    if (!selectedOrganization) return
+    if (!selectedWorkspace) return
 
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
+      const response = await fetch(`/api/workspaces/${selectedWorkspace.id}/members/${memberId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -293,11 +291,11 @@ function OrganizationsContent() {
 
       if (response.ok) {
         // Refresh members list
-        const membersResponse = await fetch(`/api/organizations/${selectedOrganization.id}/members`)
+        const membersResponse = await fetch(`/api/workspaces/${selectedWorkspace.id}/members`)
         if (membersResponse.ok) {
           const membersData = await membersResponse.json()
           if (membersData.success) {
-            setOrgMembers(membersData.data || [])
+            setWorkspaceMembers(membersData.data || [])
           }
         }
         setEditingMember(null)
@@ -312,10 +310,10 @@ function OrganizationsContent() {
   }
 
   const confirmRemoveMember = async () => {
-    if (!selectedOrganization || !memberToRemove) return
+    if (!selectedWorkspace || !memberToRemove) return
 
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/members/${memberToRemove}`, {
+      const response = await fetch(`/api/workspaces/${selectedWorkspace.id}/members/${memberToRemove}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -325,11 +323,11 @@ function OrganizationsContent() {
 
       if (response.ok) {
         // Refresh members list
-        const membersResponse = await fetch(`/api/organizations/${selectedOrganization.id}/members`)
+        const membersResponse = await fetch(`/api/workspaces/${selectedWorkspace.id}/members`)
         if (membersResponse.ok) {
           const membersData = await membersResponse.json()
           if (membersData.success) {
-            setOrgMembers(membersData.data || [])
+            setWorkspaceMembers(membersData.data || [])
           }
         }
       }
@@ -341,20 +339,20 @@ function OrganizationsContent() {
   }
 
   const handleResendInvitation = async (invitationId: string) => {
-    if (!selectedOrganization) return
+    if (!selectedWorkspace) return
 
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, {
+      const response = await fetch(`/api/workspaces/${selectedWorkspace.id}/invitations/${invitationId}/resend`, {
         method: 'POST',
       })
 
       if (response.ok) {
         // Refresh invitations list
-        const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`)
+        const invitationsResponse = await fetch(`/api/workspaces/${selectedWorkspace.id}/invitations`)
         if (invitationsResponse.ok) {
           const invitationsData = await invitationsResponse.json()
           if (invitationsData.success) {
-            setOrgInvitations(invitationsData.data || [])
+            setWorkspaceInvitations(invitationsData.data || [])
           }
         }
       }
@@ -368,20 +366,20 @@ function OrganizationsContent() {
   }
 
   const confirmCancelInvitation = async () => {
-    if (!selectedOrganization || !invitationToCancel) return
+    if (!selectedWorkspace || !invitationToCancel) return
 
     try {
-      const response = await fetch(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`, {
+      const response = await fetch(`/api/workspaces/${selectedWorkspace.id}/invitations/${invitationToCancel}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
         // Refresh invitations list
-        const invitationsResponse = await fetch(`/api/organizations/${selectedOrganization.id}/invitations`)
+        const invitationsResponse = await fetch(`/api/workspaces/${selectedWorkspace.id}/invitations`)
         if (invitationsResponse.ok) {
           const invitationsData = await invitationsResponse.json()
           if (invitationsData.success) {
-            setOrgInvitations(invitationsData.data || [])
+            setWorkspaceInvitations(invitationsData.data || [])
           }
         }
       }
@@ -413,15 +411,15 @@ function OrganizationsContent() {
   const canManageMembers = currentUserRole === 'admin'
   const canRemoveMembers = currentUserRole === 'admin'
 
-  const handleCreateOrganization = async (e?: React.MouseEvent) => {
+  const handleCreateWorkspace = async (e?: React.MouseEvent) => {
     // Prevent any default behavior
     if (e) {
       e.preventDefault()
       e.stopPropagation()
     }
 
-    if (!orgName.trim() || !user?.id) {
-      console.error('Validation failed:', { orgName: orgName.trim(), userId: user?.id })
+    if (!workspaceName.trim() || !user?.id) {
+      console.error('Validation failed:', { workspaceName: workspaceName.trim(), userId: user?.id })
       setCreateResult({ success: false, message: 'Please enter a name and ensure you are logged in' })
       return
     }
@@ -431,13 +429,13 @@ function OrganizationsContent() {
 
     try {
       console.log('Making API call...')
-      const response = await fetch('/api/organizations', {
+      const response = await fetch('/api/workspaces', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: orgName.trim()
+          name: workspaceName.trim()
         })
       })
 
@@ -446,24 +444,24 @@ function OrganizationsContent() {
       console.log('API response data:', data)
 
       if (response.ok && data.success) {
-        console.log('Organization created successfully')
-        setCreateResult({ success: true, message: 'Organization created successfully!' })
-        setOrgName('')
+        console.log('Workspace created successfully')
+        setCreateResult({ success: true, message: 'Workspace created successfully!' })
+        setWorkspaceName('')
         console.log('Setting showCreateDialog to false')
         setShowCreateDialog(false)
-        console.log('Calling loadOrganizations')
-        await loadOrganizations() // Refresh the list
-        console.log('Dialog closed and organizations reloaded')
+        console.log('Calling loadWorkspaces')
+        await loadWorkspaces() // Refresh the list
+        console.log('Dialog closed and workspaces reloaded')
       } else {
-        console.error('Organization creation failed:', data)
-        setCreateResult({ success: false, message: data.error || 'Failed to create organization' })
+        console.error('Workspace creation failed:', data)
+        setCreateResult({ success: false, message: data.error || 'Failed to create workspace' })
       }
     } catch (error) {
       console.error('Network error:', error)
       setCreateResult({ success: false, message: 'Network error occurred' })
     } finally {
       setIsCreating(false)
-      console.log('handleCreateOrganization completed')
+      console.log('handleCreateWorkspace completed')
     }
   }
 
@@ -509,26 +507,26 @@ function OrganizationsContent() {
       <div className="space-y-6 px-4 py-6 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Organizations</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Workspaces</h1>
             <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-              Manage your organizations and team members
+              Manage your workspaces and team members
             </p>
           </div>
         </div>
 
-        {organizations.length === 0 ? (
-          <OrganizationsEmpty
-            onCreateOrganization={() => setShowCreateDialog(true)}
-            onJoinOrganization={() => {
-              // TODO: Implement join organization flow
-              console.log('Join organization clicked')
+        {workspaces.length === 0 ? (
+          <WorkspacesEmpty
+            onCreateWorkspace={() => setShowCreateDialog(true)}
+            onJoinWorkspace={() => {
+              // TODO: Implement join workspace flow
+              console.log('Join workspace clicked')
             }}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {organizations.map((org) => (
-              <Card key={org.id} className="hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => openOrganizationModal(org)}>
+            {workspaces.map((ws) => (
+              <Card key={ws.id} className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => openWorkspaceModal(ws)}>
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -536,9 +534,9 @@ function OrganizationsContent() {
                         <Building className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base sm:text-lg truncate">{org.name}</CardTitle>
+                        <CardTitle className="text-base sm:text-lg truncate">{ws.name}</CardTitle>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          Created {new Date(org.created_at).toLocaleDateString()}
+                          Created {new Date(ws.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -548,7 +546,7 @@ function OrganizationsContent() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
-                          openInviteModalForOrg(org)
+                          openInviteModalForWs(ws)
                         }}
                         title="Invite member"
                         className="h-9 w-9 p-0"
@@ -563,19 +561,19 @@ function OrganizationsContent() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4 text-sm line-clamp-2">
-                    {org.description || 'No description provided'}
+                    {ws.description || 'No description provided'}
                   </p>
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">
-                        {org.members_count || 0} members
+                        {ws.members_count || 0} members
                       </span>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge variant="secondary" className="text-xs sm:text-sm">
-                        {org.role || 'Member'}
+                        {ws.role || 'Member'}
                       </Badge>
                     </div>
                   </div>
@@ -583,7 +581,7 @@ function OrganizationsContent() {
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Projects</span>
-                      <span className="font-medium">{org.projects_count || 0}</span>
+                      <span className="font-medium">{ws.projects_count || 0}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -592,30 +590,30 @@ function OrganizationsContent() {
           </div>
         )}
 
-        {organizations.length > 0 && (
+        {workspaces.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <Button variant="outline" className="justify-start h-10 text-sm">
+                <Button variant="outline" className="justify-start h-10 text-sm" onClick={() => setShowInviteModal(true)}>
                   <Plus className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   <span className="truncate">Invite Team Members</span>
                 </Button>
                 <Button variant="outline" className="justify-start h-10 text-sm">
                   <Settings className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span className="truncate">Organization Settings</span>
+                  <span className="truncate">Workspace Settings</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Organization Detail Modal */}
-        <Dialog open={showOrgModal} onOpenChange={setShowOrgModal}>
+        {/* Workspace Detail Modal */}
+        <Dialog open={showWorkspaceModal} onOpenChange={setShowWorkspaceModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-full sm:w-[calc(100%-2rem)] px-4 sm:px-6">
-            {selectedOrganization && (
+            {selectedWorkspace && (
               <>
                 <DialogHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
@@ -624,9 +622,9 @@ function OrganizationsContent() {
                         <Building className="w-6 h-6 text-primary-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <DialogTitle className="text-lg sm:text-xl truncate">{selectedOrganization.name}</DialogTitle>
+                        <DialogTitle className="text-lg sm:text-xl truncate">{selectedWorkspace.name}</DialogTitle>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          {orgMembers.length} member{orgMembers.length !== 1 ? 's' : ''}
+                          {workspaceMembers.length} member{workspaceMembers.length !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
@@ -641,26 +639,26 @@ function OrganizationsContent() {
                 </DialogHeader>
 
                 <div className="space-y-6">
-                  {/* Organization Info */}
+                  {/* Workspace Info */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Organization Details</CardTitle>
+                      <CardTitle className="text-lg">Workspace Details</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div>
                           <h3 className="font-medium mb-2">Description</h3>
                           <p className="text-muted-foreground">
-                            {selectedOrganization.description || 'No description provided'}
+                            {selectedWorkspace.description || 'No description provided'}
                           </p>
                         </div>
                         <div>
                           <h3 className="font-medium mb-2">Website</h3>
                           <p className="text-muted-foreground">
-                            {selectedOrganization.website ? (
-                              <a href={selectedOrganization.website} target="_blank" rel="noopener noreferrer"
+                            {selectedWorkspace.website ? (
+                              <a href={selectedWorkspace.website} target="_blank" rel="noopener noreferrer"
                                  className="text-primary hover:underline">
-                                {selectedOrganization.website}
+                                {selectedWorkspace.website}
                               </a>
                             ) : (
                               'No website provided'
@@ -672,7 +670,7 @@ function OrganizationsContent() {
                   </Card>
 
                   {/* Tabs for Team, Invite, Permissions, and Invitations */}
-                  <Tabs defaultValue="invite" className="space-y-6">
+                  <Tabs defaultValue="team" className="space-y-6">
                     <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto overflow-hidden">
 
                       <TabsTrigger value="team" className="flex items-center gap-2">
@@ -704,7 +702,7 @@ function OrganizationsContent() {
                             </CardTitle>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                               <Badge variant="secondary" className="text-xs sm:text-sm">
-                                {orgMembers.length} member{orgMembers.length !== 1 ? 's' : ''}
+                                {workspaceMembers.length} member{workspaceMembers.length !== 1 ? 's' : ''}
                               </Badge>
                               {canManageMembers && (
                                 <Button onClick={() => setShowInviteModal(true)} size="sm" className="text-xs sm:text-sm h-8 sm:h-9">
@@ -718,7 +716,7 @@ function OrganizationsContent() {
                         <CardContent>
                           <div className="space-y-4">
                             <AnimatePresence>
-                              {orgMembers.map((member) => (
+                              {workspaceMembers.map((member) => (
                                 <motion.div
                                   key={member.id}
                                   initial={{ opacity: 0, x: -20 }}
@@ -813,11 +811,11 @@ function OrganizationsContent() {
                               ))}
                             </AnimatePresence>
 
-                            {orgMembers.length === 0 && (
+                            {workspaceMembers.length === 0 && (
                               <div className="text-center py-12">
                                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
-                                <p className="text-muted-foreground mb-4">
+                                <p className="text-muted-foreground">
                                   Invite your first team member to start collaborating.
                                 </p>
                                 {canManageMembers && (
@@ -930,7 +928,7 @@ function OrganizationsContent() {
                               Invitations
                             </CardTitle>
                             <Badge variant="secondary" className="text-xs sm:text-sm w-fit">
-                              {orgInvitations.length} invitation{orgInvitations.length !== 1 ? 's' : ''}
+                              {workspaceInvitations.length} invitation{workspaceInvitations.length !== 1 ? 's' : ''}
                             </Badge>
                           </div>
                         </CardHeader>
@@ -941,7 +939,7 @@ function OrganizationsContent() {
                               <h3 className="text-lg font-semibold">Invitation History</h3>
 
                               <AnimatePresence>
-                                {orgInvitations.map((invitation) => (
+                                {workspaceInvitations.map((invitation) => (
                                   <motion.div
                                     key={invitation.id}
                                     initial={{ opacity: 0, x: -20 }}
@@ -997,12 +995,12 @@ function OrganizationsContent() {
                                 ))}
                               </AnimatePresence>
 
-                              {orgInvitations.length === 0 && (
+                              {workspaceInvitations.length === 0 && (
                                 <div className="text-center py-12">
                                   <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                   <h3 className="text-lg font-semibold mb-2">No invitations yet</h3>
                                   <p className="text-muted-foreground">
-                                    Send your first invitation to bring new members to your organization.
+                                    Send your first invitation to bring new members to your workspace.
                                   </p>
                                 </div>
                               )}
@@ -1102,7 +1100,7 @@ function OrganizationsContent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to remove this member from the organization? This action cannot be undone.
+                Are you sure you want to remove this member from the workspace? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1138,20 +1136,20 @@ function OrganizationsContent() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Create Organization Dialog */}
+        {/* Create Workspace Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogContent className="w-full sm:w-[calc(100%-2rem)] px-4 sm:px-6">
             <DialogHeader>
-              <DialogTitle className="text-lg">Create New Organization</DialogTitle>
+              <DialogTitle className="text-lg">Create New Workspace</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="org-name" className="text-sm">Organization Name</Label>
+                <Label htmlFor="ws-name" className="text-sm">Workspace Name</Label>
                 <Input
-                  id="org-name"
-                  placeholder="Enter organization name"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
+                  id="ws-name"
+                  placeholder="Enter workspace name"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
                   className="h-10"
                 />
               </div>
@@ -1170,8 +1168,8 @@ function OrganizationsContent() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleCreateOrganization}
-                  disabled={!orgName.trim() || isCreating}
+                  onClick={handleCreateWorkspace}
+                  disabled={!workspaceName.trim() || isCreating}
                   className="h-10 text-sm"
                 >
                   {isCreating ? (
@@ -1182,7 +1180,7 @@ function OrganizationsContent() {
                   ) : (
                     <>
                       <Plus className="w-4 h-4 flex-shrink-0" />
-                      <span className="hidden sm:inline">Create Organization</span>
+                      <span className="hidden sm:inline">Create Workspace</span>
                     </>
                   )}
                 </Button>

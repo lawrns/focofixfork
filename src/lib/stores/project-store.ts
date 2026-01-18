@@ -6,9 +6,8 @@ interface Project {
   description: string | null
   status: string
   priority: string
-  organization_id: string | null
   workspace_id: string | null
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
   color?: string
@@ -16,7 +15,7 @@ interface Project {
   start_date?: string | null
   due_date?: string | null
   progress_percentage?: number
-  organizations?: {
+  workspaces?: {
     name: string
   }
 }

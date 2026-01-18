@@ -120,7 +120,7 @@ export class ProjectClientService {
     projectData: {
       name: string
       description?: string
-      organization_id?: string
+      workspace_id?: string
       status?: string
       priority?: string
       start_date?: string
@@ -159,7 +159,7 @@ export class ProjectClientService {
     updates: Partial<{
       name: string
       description: string
-      organization_id: string
+      workspace_id: string
       status: string
       priority: string
       start_date: string

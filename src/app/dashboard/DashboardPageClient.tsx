@@ -53,7 +53,8 @@ function DashboardSkeletonWrapper() {
 interface Organization {
   id: string
   name: string
-  created_by: string
+  slug: string
+  role: string
   created_at: string
   updated_at: string
 }
@@ -324,29 +325,32 @@ export default function DashboardPageClient() {
 
     setIsLoading(true)
     try {
-      const projectData = {
+      const payload = {
         name: formData.get('name'),
         description: formData.get('description'),
-        organization_id: formData.get('organization_id') || null,
+        workspace_id: formData.get('workspace_id') || null,
+        due_date: formData.get('due_date') || null,
       }
 
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(projectData),
-      })
+      const response = await apiClient.post('/api/projects', payload)
 
-      if (response.ok) {
-        const result = await response.json()
-        projectStore.addProject(result.data)
+      if (response.success) {
+        audioService.play('complete')
+        hapticService.success()
+        projectStore.addProject(response.data)
         setShowNewProjectModal(false)
+        toast.success('Project created successfully')
       } else {
-        console.error('Failed to create project')
+        audioService.play('error')
+        hapticService.error()
+        console.error('Failed to create project:', response.error)
+        toast.error('Failed to create project', response.error)
       }
     } catch (error) {
+      audioService.play('error')
+      hapticService.error()
       console.error('Error creating project:', error)
+      toast.error('An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -445,10 +449,10 @@ export default function DashboardPageClient() {
 
             {organizations.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="organization_id">Organization</Label>
-                <Select name="organization_id" disabled={isLoadingOrganizations}>
+                <Label htmlFor="workspace_id">Workspace</Label>
+                <Select name="workspace_id" disabled={isLoadingOrganizations}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select organization" />
+                    <SelectValue placeholder="Select workspace" />
                   </SelectTrigger>
                   <SelectContent>
                     {filterValidSelectOptions(organizations).map((org) => (

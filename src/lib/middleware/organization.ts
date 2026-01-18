@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase-client'
 
 export interface OrganizationContext {
   organizationId: string
-  userRole: 'director' | 'lead' | 'member'
+  userRole: 'owner' | 'admin' | 'member' | 'guest'
   isMember: boolean
   canEdit: boolean
   canDelete: boolean
@@ -51,26 +51,26 @@ export async function organizationMiddleware(
 
     // Check if user is a member of the organization
     const { data: membership, error } = await supabaseClient
-      .from('organization_members')
+      .from('workspace_members')
       .select('role')
-      .eq('organization_id', organizationId)
+      .eq('workspace_id', organizationId)
       .eq('user_id', session.user.id)
       .single()
 
     if (error || !membership) {
       return {
         error: NextResponse.json(
-          { error: 'Access denied: Not a member of this organization' },
+          { error: 'Access denied: Not a member of this workspace' },
           { status: 403 }
         )
       }
     }
 
     // Determine permissions based on role
-    const userRole = membership.role as 'director' | 'lead' | 'member'
-    const canEdit = userRole === 'director' || userRole === 'lead'
-    const canDelete = userRole === 'director'
-    const canInvite = userRole === 'director' || userRole === 'lead'
+    const userRole = membership.role as 'owner' | 'admin' | 'member' | 'guest'
+    const canEdit = userRole === 'owner' || userRole === 'admin'
+    const canDelete = userRole === 'owner' || userRole === 'admin'
+    const canInvite = userRole === 'owner' || userRole === 'admin'
 
     const context: OrganizationContext = {
       organizationId,
@@ -141,8 +141,8 @@ export async function projectMiddleware(
 
     // First validate organization access
     const { data: project, error: projectError } = await supabaseClient
-      .from('projects')
-      .select('organization_id, status')
+      .from('foco_projects')
+      .select('workspace_id, status')
       .eq('id', projectId)
       .single()
 
@@ -155,7 +155,7 @@ export async function projectMiddleware(
       }
     }
 
-    const orgResult = await organizationMiddleware(req, project.organization_id)
+    const orgResult = await organizationMiddleware(req, project.workspace_id)
     if (orgResult.error) {
       return { error: orgResult.error }
     }
@@ -164,7 +164,7 @@ export async function projectMiddleware(
 
     // Additional project-specific permissions
     const canEditProject = orgContext.canEdit
-    const canDeleteProject = orgContext.userRole === 'director'
+    const canDeleteProject = orgContext.userRole === 'owner' || orgContext.userRole === 'admin'
     const canCreateMilestones = orgContext.isMember
 
     const context: ProjectContext = {
@@ -263,7 +263,7 @@ export async function milestoneMiddleware(
     const canEditMilestone = projectContext.canEditProject ||
                             milestone.assigned_to === session?.user.id
     const canDeleteMilestone = projectContext.canDeleteProject ||
-                              (projectContext.userRole === 'lead' && milestone.assigned_to === session?.user.id)
+                              (projectContext.userRole === 'admin' && milestone.assigned_to === session?.user.id)
     const canAssignMilestone = projectContext.canEditProject
     const canComment = projectContext.isMember
 

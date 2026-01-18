@@ -23,8 +23,8 @@ import { toast } from 'sonner'
 import { ProposalList } from '@/components/proposals/proposal-list'
 import { ProposalDetailView } from '@/components/proposals/proposal-detail-view'
 import { CreateProposalModal } from '@/components/proposals/create-proposal-modal'
-import { ImpactDashboard } from '@/components/proposals/impact-dashboard'
-import type { Proposal, ProposalStatus, ProposalWithItems, ProposalImpactSummary } from '@/types/proposals'
+import { ImpactDashboard, type ImpactDashboardData } from '@/components/proposals/impact-dashboard'
+import type { Proposal, ProposalStatus, ProposalWithItems } from '@/types/proposals'
 
 type FilterStatus = 'all' | ProposalStatus
 
@@ -206,18 +206,32 @@ export default function ProposalsPage() {
   })
 
   // Impact summary for dashboard
-  const impactSummary: ProposalImpactSummary = {
+  const impactSummary: ImpactDashboardData = {
     total_items: proposals.reduce((acc, p) => acc + ((p as any).items?.length || 0), 0),
-    by_action: {
-      add: filteredProposals.filter(p => p.status === 'draft').length,
-      modify: filteredProposals.filter(p => p.status === 'pending_review').length,
-      remove: 0,
+    items_by_type: {
+      create: filteredProposals.filter(p => p.status === 'draft').length,
+      update: filteredProposals.filter(p => p.status === 'pending_review').length,
+      delete: 0,
     },
     items_by_status: {
       pending: stats.pending,
       approved: stats.approved,
       rejected: proposals.filter(p => p.status === 'rejected').length,
     },
+    entities_affected: {
+      tasks: proposals.reduce((acc, p) => acc + ((p as any).items?.length || 0), 0),
+      projects: proposals.length > 0 ? 1 : 0,
+      milestones: 0,
+    },
+    hours: {
+      added: 0,
+      removed: 0,
+      net: 0,
+    },
+    workloadShifts: [],
+    deadlineImpacts: [],
+    resourceConflicts: [],
+    riskScore: 0,
   }
 
   if (isLoading) {
@@ -250,9 +264,8 @@ export default function ProposalsPage() {
         </div>
 
         <ProposalDetailView
-          proposal={selectedProposal}
-          onApprove={() => handleApprove(selectedProposal.id)}
-          onReject={(reason) => handleReject(selectedProposal.id, reason)}
+          proposalId={selectedProposal.id}
+          onClose={() => setSelectedProposal(null)}
           onMerge={() => handleMerge(selectedProposal.id)}
         />
       </PageShell>
@@ -265,28 +278,27 @@ export default function ProposalsPage() {
       <PageHeader
         title="Propuestas"
         subtitle={`${stats.pending} pendientes de revisión`}
-        icon={<GitBranch className="h-6 w-6 text-violet-500" />}
         primaryAction={
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nueva Propuesta
-          </Button>
-        }
-        secondaryAction={
-          <Button
-            variant="outline"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="gap-2"
-          >
-            <Mic className="h-4 w-4" />
-            Grabar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="gap-2"
+            >
+              <Mic className="h-4 w-4" />
+              Grabar
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nueva Propuesta
+            </Button>
+          </div>
         }
       />
 
       {/* Impact Dashboard */}
       <div className="mb-6">
-        <ImpactDashboard summary={impactSummary} className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20" />
+        <ImpactDashboard impact={impactSummary} className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20" />
       </div>
 
       {/* Filters */}

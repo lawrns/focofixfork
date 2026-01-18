@@ -9,32 +9,32 @@
 // Note: Service class keeps 'OrganizationsService' name for API consistency while using correct DB tables
 
 import { supabaseAdmin } from '../supabase-server'
-import type { Organization } from '../models/organizations'
-import { OrganizationModel } from '../models/organizations'
-import type { OrganizationMember, OrganizationMemberWithDetails, MemberRole } from '../models/organization-members'
-import { OrganizationMemberModel } from '../models/organization-members'
+import type { Workspace } from '../models/organizations'
+import { WorkspaceModel } from '../models/organizations'
+import type { WorkspaceMember, WorkspaceMemberWithDetails, MemberRole } from '../models/organization-members'
+import { WorkspaceMemberModel } from '../models/organization-members'
 import type { InviteMemberData, UpdateMemberRoleData } from '../models/organization-members'
-import type { OrganizationInvitation, InvitationWithDetails } from '../models/invitations'
+import type { WorkspaceInvitation, InvitationWithDetails } from '../models/invitations'
 import { InvitationModel } from '../models/invitations'
 
-export interface CreateOrganizationData {
+export interface CreateWorkspaceData {
   name: string
   description?: string | null
   website?: string | null
-  created_by: string
+  owner_id: string
 }
 
-export interface OrganizationsResponse<T> {
+export interface WorkspacesResponse<T> {
   success: boolean
   data?: T
   error?: string
 }
 
-export class OrganizationsService {
+export class WorkspacesService {
   /**
-   * Get all organizations for the current user
+   * Get all workspaces for the current user
    */
-  static async getUserOrganizations(userId: string, supabaseClient?: any): Promise<OrganizationsResponse<Organization[]>> {
+  static async getUserWorkspaces(userId: string, supabaseClient?: any): Promise<WorkspacesResponse<Workspace[]>> {
     try {
       if (!userId) {
         return {
@@ -46,34 +46,34 @@ export class OrganizationsService {
       // Use provided client or admin client for RLS-enforced queries
       const client = supabaseClient || supabaseAdmin
       
-      // Get organizations created by user
-      const { data: ownedOrgs, error: ownedError } = await client
+      // Get workspaces owned by user
+      const { data: ownedWorkspaces, error: ownedError } = await client
         .from('workspaces')
         .select(`
           id,
           name,
-          created_by,
+          owner_id,
           created_at,
           updated_at
         `)
-        .eq('created_by', userId)
+        .eq('owner_id', userId)
 
       if (ownedError) {
-        console.error('Get owned organizations error:', ownedError)
+        console.error('Get owned workspaces error:', ownedError)
         return {
           success: false,
           error: ownedError.message
         }
       }
 
-      // Get organizations where user is a member
-      const { data: memberOrgs, error: memberError } = await client
+      // Get workspaces where user is a member
+      const { data: memberWorkspaces, error: memberError } = await client
         .from('workspace_members')
         .select(`
           workspaces (
             id,
             name,
-            created_by,
+            owner_id,
             created_at,
             updated_at
           )
@@ -81,53 +81,53 @@ export class OrganizationsService {
         .eq('user_id', userId)
 
       if (memberError) {
-        console.error('Get member organizations error:', memberError)
+        console.error('Get member workspaces error:', memberError)
         return {
           success: false,
           error: memberError.message
         }
       }
 
-      // Combine and deduplicate organizations
-      const ownedOrganizations = ownedOrgs?.map(org => OrganizationModel.fromDatabase(org)) || []
-      const memberOrganizations = memberOrgs
+      // Combine and deduplicate workspaces
+      const ownedWorkspacesList = ownedWorkspaces?.map(ws => WorkspaceModel.fromDatabase(ws)) || []
+      const memberWorkspacesList = memberWorkspaces
         ?.map(item => item.workspaces)
         .filter(Boolean)
-        .map(org => OrganizationModel.fromDatabase(org)) || []
+        .map(ws => WorkspaceModel.fromDatabase(ws)) || []
 
-      // Remove duplicates (organizations owned by user also appear in memberships)
-      const allOrganizations = [...ownedOrganizations]
-      const seenIds = new Set(ownedOrganizations.map(org => org.id))
+      // Remove duplicates (workspaces owned by user also appear in memberships)
+      const allWorkspaces = [...ownedWorkspacesList]
+      const seenIds = new Set(ownedWorkspacesList.map(ws => ws.id))
       
-      for (const org of memberOrganizations) {
-        if (!seenIds.has(org.id)) {
-          allOrganizations.push(org)
-          seenIds.add(org.id)
+      for (const ws of memberWorkspacesList) {
+        if (!seenIds.has(ws.id)) {
+          allWorkspaces.push(ws)
+          seenIds.add(ws.id)
         }
       }
 
       return {
         success: true,
-        data: allOrganizations
+        data: allWorkspaces
       }
     } catch (error) {
-      console.error('Get organizations error:', error)
+      console.error('Get workspaces error:', error)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch organizations'
+        error: error instanceof Error ? error.message : 'Failed to fetch workspaces'
       }
     }
   }
 
   /**
-   * Create a new organization
+   * Create a new workspace
    */
-  static async createOrganization(data: CreateOrganizationData, supabaseClient?: any): Promise<OrganizationsResponse<Organization>> {
+  static async createWorkspace(data: CreateWorkspaceData, supabaseClient?: any): Promise<WorkspacesResponse<Workspace>> {
     try {
-      console.log('OrganizationsService.createOrganization called with:', data)
+      console.log('WorkspacesService.createWorkspace called with:', data)
 
-      if (!data.created_by) {
-        console.error('No created_by user ID provided')
+      if (!data.owner_id) {
+        console.error('No owner_id user ID provided')
         return {
           success: false,
           error: 'User not authenticated'
@@ -135,7 +135,7 @@ export class OrganizationsService {
       }
 
       // Validate input
-      const validation = OrganizationModel.validateCreate(data)
+      const validation = WorkspaceModel.validateCreate(data)
       if (!validation.isValid) {
         console.error('Validation failed:', validation.errors)
         return {
@@ -147,20 +147,20 @@ export class OrganizationsService {
       // Use provided client or admin client
       const client = supabaseClient || supabaseAdmin
 
-      // Create organization with unique slug
+      // Create workspace with unique slug
       let baseSlug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       let slug = baseSlug;
       let counter = 1;
 
       // Check if slug exists and generate unique slug
       while (true) {
-        const { data: existingOrg } = await client
+        const { data: existingWs } = await client
           .from('workspaces')
           .select('id')
           .eq('slug', slug)
           .single();
 
-        if (!existingOrg) {
+        if (!existingWs) {
           break; // Slug is unique
         }
 
@@ -174,69 +174,67 @@ export class OrganizationsService {
         }
       }
 
-      console.log('Inserting organization:', { name: data.name, slug, created_by: data.created_by })
+      console.log('Inserting workspace:', { name: data.name, slug, owner_id: data.owner_id })
 
-      const { data: organization, error: orgError } = await client
+      const { data: workspace, error: wsError } = await client
         .from('workspaces')
         .insert({
           name: data.name,
           slug: slug,
           description: data.description,
           website: data.website,
-          created_by: data.created_by
+          owner_id: data.owner_id
         })
         .select()
         .single()
 
-      if (orgError) {
-        console.error('Create organization database error:', orgError)
+      if (wsError) {
+        console.error('Create workspace database error:', wsError)
 
         // Handle specific database constraint errors with user-friendly messages
-        if (orgError.code === '23505') { // unique_violation
-          if (orgError.message.includes('workspaces_name_key') || orgError.message.includes('organizations_name_key')) {
+        if (wsError.code === '23505') { // unique_violation
+          if (wsError.message.includes('workspaces_name_key')) {
             return {
               success: false,
-              error: 'An organization with this name already exists. Please choose a different name.'
+              error: 'A workspace with this name already exists. Please choose a different name.'
             }
           }
         }
 
         return {
           success: false,
-          error: `Failed to create organization: ${orgError.message}`
+          error: `Failed to create workspace: ${wsError.message}`
         }
       }
 
-      console.log('Organization created:', organization)
+      console.log('Workspace created:', workspace)
 
-      // Add creator as member of the organization
-      console.log('Adding creator as member:', { workspace_id: organization.id, user_id: data.created_by })
+      // Add creator as owner of the workspace
+      console.log('Adding owner as member:', { workspace_id: workspace.id, user_id: data.owner_id })
 
       const { error: memberError } = await client
         .from('workspace_members')
         .insert({
-          workspace_id: organization.id,
-          user_id: data.created_by,
-          role: 'member'
+          workspace_id: workspace.id,
+          user_id: data.owner_id,
+          role: 'owner'
         })
 
       if (memberError) {
-        console.error('Add creator to organization error:', memberError)
-        // Don't fail the whole operation, but log the error
-        // The organization is created, just the membership failed
+        console.error('Add owner to workspace error:', memberError)
       } else {
-        console.log('Creator added as organization member successfully')
+        console.log('Owner added as workspace member successfully')
       }
 
-      const result = OrganizationModel.fromDatabase(organization)
-      console.log('Returning organization data:', result)
+      const result = WorkspaceModel.fromDatabase(workspace)
+      console.log('Returning workspace data:', result)
 
       return {
         success: true,
         data: result
       }
     } catch (error) {
-      console.error('Create organization service error:', error)
+      console.error('Create workspace service error:', error)
       return {
         success: false,
         error: 'An unexpected error occurred'
@@ -245,9 +243,9 @@ export class OrganizationsService {
   }
 
   /**
-   * Get organization members
+   * Get workspace members
    */
-  static async getOrganizationMembers(organizationId: string): Promise<OrganizationsResponse<OrganizationMemberWithDetails[]>> {
+  static async getWorkspaceMembers(workspaceId: string): Promise<WorkspacesResponse<WorkspaceMemberWithDetails[]>> {
     try {
       const { data, error } = await supabaseAdmin
         .from('workspace_members')
@@ -258,18 +256,18 @@ export class OrganizationsService {
           role,
           created_at
         `)
-        .eq('workspace_id', organizationId)
+        .eq('workspace_id', workspaceId)
 
       if (error) {
         console.error('Get members error:', error)
         return {
           success: false,
-          error: 'Failed to fetch organization members'
+          error: 'Failed to fetch workspace members'
         }
       }
 
       const members = data.map(member =>
-        OrganizationMemberModel.fromDatabaseWithDetails({
+        WorkspaceMemberModel.fromDatabaseWithDetails({
           ...member,
           email: null // Email will need to be fetched separately if needed
         })
@@ -289,15 +287,15 @@ export class OrganizationsService {
   }
 
   /**
-   * Get organization invitations
+   * Get workspace invitations
    */
-  static async getOrganizationInvitations(organizationId: string): Promise<OrganizationsResponse<InvitationWithDetails[]>> {
+  static async getWorkspaceInvitations(workspaceId: string): Promise<WorkspacesResponse<InvitationWithDetails[]>> {
     try {
       const { data, error } = await supabaseAdmin
-        .from('organization_invitations')
+        .from('workspace_invitations')
         .select(`
           id,
-          organization_id,
+          workspace_id,
           email,
           role,
           invited_by,
@@ -306,19 +304,19 @@ export class OrganizationsService {
           expires_at,
           accepted_at,
           token,
-          profiles!organization_invitations_invited_by_fkey (
+          profiles!workspace_invitations_invited_by_fkey (
             full_name,
             email
           )
         `)
-        .eq('organization_id', organizationId)
+        .eq('workspace_id', workspaceId)
         .order('invited_at', { ascending: false })
 
       if (error) {
         console.error('Get invitations error:', error)
         return {
           success: false,
-          error: 'Failed to fetch organization invitations'
+          error: 'Failed to fetch workspace invitations'
         }
       }
 
@@ -327,7 +325,7 @@ export class OrganizationsService {
         return InvitationModel.fromDatabaseWithDetails({
           ...invitation,
           invited_by_name: profile?.full_name || profile?.email || 'Unknown',
-          organization_name: '' // Will be set by caller if needed
+          workspace_name: '' // Will be set by caller if needed
         })
       })
 
@@ -345,9 +343,9 @@ export class OrganizationsService {
   }
 
   /**
-    * Invite member to organization
+    * Invite member to workspace
     */
-   static async inviteMember(organizationId: string, userId: string, data: InviteMemberData): Promise<OrganizationsResponse<{ invitation_sent: boolean; message: string }>> {
+   static async inviteMember(workspaceId: string, userId: string, data: InviteMemberData): Promise<WorkspacesResponse<{ invitation_sent: boolean; message: string }>> {
      try {
        if (!userId) {
          return {
@@ -357,7 +355,7 @@ export class OrganizationsService {
        }
 
       // Validate input
-      const validation = OrganizationMemberModel.validateInvite(data)
+      const validation = WorkspaceMemberModel.validateInvite(data)
       if (!validation.isValid) {
         return {
           success: false,
@@ -365,17 +363,17 @@ export class OrganizationsService {
         }
       }
 
-      // Get organization details
-      const { data: orgData, error: orgError } = await supabaseAdmin
+      // Get workspace details
+      const { data: wsData, error: wsError } = await supabaseAdmin
         .from('workspaces')
         .select('name')
-        .eq('id', organizationId)
+        .eq('id', workspaceId)
         .single()
 
-      if (orgError || !orgData) {
+      if (wsError || !wsData) {
         return {
           success: false,
-          error: 'Organization not found'
+          error: 'Workspace not found'
         }
       }
 
@@ -388,7 +386,7 @@ export class OrganizationsService {
 
       const inviterName = inviterData?.full_name || inviterData?.email || 'Someone'
 
-      // Check if user already exists in profiles (simplified check)
+      // Check if user already exists in profiles
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
         .select('id')
@@ -400,14 +398,14 @@ export class OrganizationsService {
         const { data: existingMember } = await supabaseAdmin
           .from('workspace_members')
           .select('id')
-          .eq('workspace_id', organizationId)
+          .eq('workspace_id', workspaceId)
           .eq('user_id', existingProfile.id)
-          .single()
+          .maybeSingle()
 
         if (existingMember) {
           return {
             success: false,
-            error: 'User is already a member of this organization'
+            error: 'User is already a member of this workspace'
           }
         }
 
@@ -415,7 +413,7 @@ export class OrganizationsService {
         const { error: memberError } = await supabaseAdmin
           .from('workspace_members')
           .insert({
-            workspace_id: organizationId,
+            workspace_id: workspaceId,
             user_id: existingProfile.id,
             role: data.role || 'member'
           })
@@ -431,7 +429,7 @@ export class OrganizationsService {
           success: true,
           data: {
             invitation_sent: false,
-            message: 'User added to organization successfully'
+            message: 'User added to workspace successfully'
           }
         }
       }
@@ -442,9 +440,9 @@ export class OrganizationsService {
       expiresAt.setDate(expiresAt.getDate() + 7)
 
       const { error: inviteError } = await supabaseAdmin
-        .from('organization_invitations')
+        .from('workspace_invitations')
         .insert({
-          organization_id: organizationId,
+          workspace_id: workspaceId,
           email: data.email,
           role: data.role,
           invited_by: userId,
@@ -466,7 +464,7 @@ export class OrganizationsService {
       const { EmailService } = await import('./email')
       const emailResult = await EmailService.sendInvitationEmail(
         data.email,
-        orgData.name,
+        wsData.name,
         inviterName,
         token,
         data.role || 'member'
@@ -474,7 +472,6 @@ export class OrganizationsService {
 
       if (!emailResult.success) {
         console.error('Email sending failed:', emailResult.error)
-        // Don't fail the whole operation, just log the error
       }
 
       return {
@@ -498,7 +495,7 @@ export class OrganizationsService {
   /**
     * Update member role
     */
-   static async updateMemberRole(organizationId: string, memberId: string, userId: string, data: UpdateMemberRoleData): Promise<OrganizationsResponse<OrganizationMember>> {
+   static async updateMemberRole(workspaceId: string, memberId: string, userId: string, data: UpdateMemberRoleData): Promise<WorkspacesResponse<WorkspaceMember>> {
      try {
        if (!userId) {
          return {
@@ -508,7 +505,7 @@ export class OrganizationsService {
        }
 
       // Validate input
-      const validation = OrganizationMemberModel.validateRoleUpdate(data)
+      const validation = WorkspaceMemberModel.validateRoleUpdate(data)
       if (!validation.isValid) {
         return {
           success: false,
@@ -521,7 +518,7 @@ export class OrganizationsService {
         .from('workspace_members')
         .select('*')
         .eq('id', memberId)
-        .eq('workspace_id', organizationId)
+        .eq('workspace_id', workspaceId)
         .single()
 
       if (fetchError || !currentMember) {
@@ -532,8 +529,8 @@ export class OrganizationsService {
       }
 
       // Check permissions
-      const currentUserRole = await this.getUserRoleInOrganization(userId, organizationId)
-      const canUpdate = OrganizationMemberModel.canUpdateRole(
+      const currentUserRole = await this.getUserRoleInWorkspace(userId, workspaceId)
+      const canUpdate = WorkspaceMemberModel.canUpdateRole(
         currentUserRole,
         currentMember.role as 'admin' | 'member',
         currentMember.user_id === userId
@@ -551,7 +548,7 @@ export class OrganizationsService {
         .from('workspace_members')
         .update({ role: data.role })
         .eq('id', memberId)
-        .eq('workspace_id', organizationId)
+        .eq('workspace_id', workspaceId)
         .select()
         .single()
 
@@ -565,7 +562,7 @@ export class OrganizationsService {
 
       return {
         success: true,
-        data: OrganizationMemberModel.fromDatabase(updatedMember)
+        data: WorkspaceMemberModel.fromDatabase(updatedMember)
       }
     } catch (error) {
       console.error('Update member role error:', error)
@@ -577,9 +574,9 @@ export class OrganizationsService {
   }
 
   /**
-    * Remove member from organization
+    * Remove member from workspace
     */
-   static async removeMember(organizationId: string, memberId: string, userId: string): Promise<OrganizationsResponse<{ message: string }>> {
+   static async removeMember(workspaceId: string, memberId: string, userId: string): Promise<WorkspacesResponse<{ message: string }>> {
      try {
        if (!userId) {
          return {
@@ -593,7 +590,7 @@ export class OrganizationsService {
         .from('workspace_members')
         .select('*')
         .eq('id', memberId)
-        .eq('workspace_id', organizationId)
+        .eq('workspace_id', workspaceId)
         .single()
 
       if (fetchError || !member) {
@@ -603,20 +600,20 @@ export class OrganizationsService {
         }
       }
 
-      // Get total directors count
-      const { data: directors } = await supabaseAdmin
+      // Get total owners/admins count
+      const { data: admins } = await supabaseAdmin
         .from('workspace_members')
         .select('id')
-        .eq('workspace_id', organizationId)
-        .eq('role', 'director')
+        .eq('workspace_id', workspaceId)
+        .in('role', ['owner', 'admin'])
 
-      const totalDirectors = directors?.length || 0
-      const canRemove = OrganizationMemberModel.canRemoveMember(member.role as MemberRole, totalDirectors)
+      const totalAdmins = admins?.length || 0
+      const canRemove = WorkspaceMemberModel.canRemoveMember(member.role as MemberRole, totalAdmins)
 
       if (!canRemove) {
         return {
           success: false,
-          error: 'Cannot remove the last director from organization'
+          error: 'Cannot remove the last owner/admin from workspace'
         }
       }
 
@@ -625,7 +622,7 @@ export class OrganizationsService {
         .from('workspace_members')
         .delete()
         .eq('id', memberId)
-        .eq('workspace_id', organizationId)
+        .eq('workspace_id', workspaceId)
 
       if (deleteError) {
         console.error('Remove member error:', deleteError)
@@ -649,22 +646,22 @@ export class OrganizationsService {
   }
 
   /**
-   * Get user's role in organization
+   * Get user's role in workspace
    */
-  private static async getUserRoleInOrganization(userId: string, organizationId: string): Promise<'admin' | 'member'> {
+  private static async getUserRoleInWorkspace(userId: string, workspaceId: string): Promise<MemberRole> {
     try {
       const { data, error } = await supabaseAdmin
         .from('workspace_members')
         .select('role')
         .eq('user_id', userId)
-        .eq('workspace_id', organizationId)
-        .single()
+        .eq('workspace_id', workspaceId)
+        .maybeSingle()
 
       if (error || !data) {
         return 'member'
       }
 
-      return data.role as 'admin' | 'member'
+      return data.role as MemberRole
     } catch (error) {
       console.error('Get user role error:', error)
       return 'member'

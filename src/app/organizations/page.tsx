@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageLoadingSkeleton, InlineLoadingSkeleton } from '@/components/skeleton-screens'
-import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
+import { WorkspaceMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import { InvitationWithDetails } from '@/lib/models/invitations'
 import { InvitationModel } from '@/lib/models/invitations'
 import { WorkspacesEmpty } from '@/components/empty-states/workspaces-empty'
@@ -54,7 +54,7 @@ interface Workspace {
   logo_url?: string
   website?: string
   is_active: boolean
-  created_by: string
+  owner_id: string
   created_at: string
 }
 
@@ -71,7 +71,7 @@ function WorkspacesContent() {
   // Workspace modal state
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
-  const [workspaceMembers, setWorkspaceMembers] = useState<OrganizationMemberWithDetails[]>([])
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMemberWithDetails[]>([])
   const [workspaceInvitations, setWorkspaceInvitations] = useState<InvitationWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [showInviteModal, setShowInviteModal] = useState(false)

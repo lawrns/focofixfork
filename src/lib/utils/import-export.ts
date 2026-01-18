@@ -2,7 +2,7 @@
 
 import { Project } from '@/features/projects/types'
 import { Task } from '@/features/tasks/types'
-import { Organization } from '@/lib/models/organizations'
+import { Workspace } from '@/lib/models/organizations'
 import { Label } from '@/lib/models/labels'
 
 // ChecklistItem type (assuming it's part of Task)
@@ -29,7 +29,7 @@ export interface ExportData {
     source: 'foco'
   }
   data: {
-    organizations?: Organization[]
+    workspaces?: Workspace[]
     projects?: Project[]
     tasks?: Task[]
     labels?: Label[]
@@ -45,7 +45,7 @@ export interface CSVMapping {
 export interface ImportResult {
   success: boolean
   imported: {
-    organizations: number
+    workspaces: number
     projects: number
     tasks: number
     labels: number
@@ -119,14 +119,14 @@ class ImportExportManager {
     mdRows.push(`**Format:** ${data.metadata.format}`)
     mdRows.push('')
     
-    // Export organizations
-    if (data.data.organizations && data.data.organizations.length > 0) {
-      mdRows.push('## Organizations')
+    // Export workspaces
+    if (data.data.workspaces && data.data.workspaces.length > 0) {
+      mdRows.push('## Workspaces')
       mdRows.push('')
-      data.data.organizations.forEach(org => {
-        mdRows.push(`### ${org.name}`)
-        mdRows.push(`- **Description:** ${org.description || 'No description'}`)
-        mdRows.push(`- **Created:** ${new Date(org.created_at).toLocaleString()}`)
+      data.data.workspaces.forEach(ws => {
+        mdRows.push(`### ${ws.name}`)
+        mdRows.push(`- **Description:** ${ws.description || 'No description'}`)
+        mdRows.push(`- **Created:** ${new Date(ws.created_at).toLocaleString()}`)
         mdRows.push('')
       })
     }
@@ -223,7 +223,7 @@ class ImportExportManager {
   async importFromTrello(trelloData: string): Promise<ImportResult> {
     const result: ImportResult = {
       success: true,
-      imported: { organizations: 0, projects: 0, tasks: 0, labels: 0 },
+      imported: { workspaces: 0, projects: 0, tasks: 0, labels: 0 },
       errors: [],
       warnings: []
     }
@@ -305,7 +305,7 @@ class ImportExportManager {
   async importFromCSV(csvData: string, mapping: CSVMapping): Promise<ImportResult> {
     const result: ImportResult = {
       success: true,
-      imported: { organizations: 0, projects: 0, tasks: 0, labels: 0 },
+      imported: { workspaces: 0, projects: 0, tasks: 0, labels: 0 },
       errors: [],
       warnings: []
     }

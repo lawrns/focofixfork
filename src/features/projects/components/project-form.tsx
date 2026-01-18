@@ -25,7 +25,6 @@ const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(500, 'Name must be less than 500 characters'),
   slug: z.string().min(1, 'Slug is required').max(100, 'Slug must be less than 100 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
-  organization_id: z.string().optional(),
   workspace_id: z.string().min(1, 'Workspace is required'),
   status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
@@ -71,7 +70,7 @@ export function ProjectForm({ project, workspaces, onSuccess, onCancel }: Projec
       name: project?.name || '',
       slug: '',
       description: project?.description || '',
-      workspace_id: (project as any)?.workspace_id || (project as any)?.organization_id || workspaces[0]?.id || '',
+      workspace_id: (project as any)?.workspace_id || workspaces[0]?.id || '',
       status: project?.status || 'planning',
       priority: project?.priority || 'medium',
       start_date: project?.start_date || '',
@@ -159,7 +158,7 @@ export function ProjectForm({ project, workspaces, onSuccess, onCancel }: Projec
       clearTimeout(timeoutId)
       abortController.abort()
     }
-  }, [watchedSlug, watchedOrganizationId, isEditing, project?.id])
+  }, [watchedSlug, watchedWorkspaceId, isEditing, project?.id])
 
   const onSubmit = async (data: any) => {
     if (!user) return
@@ -253,7 +252,7 @@ export function ProjectForm({ project, workspaces, onSuccess, onCancel }: Projec
             )}
             {errors.slug && !slugError && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.slug.message}
+                {errors.slug.message?.toString()}
               </p>
             )}
             <p className="text-xs text-gray-500">
@@ -274,7 +273,7 @@ export function ProjectForm({ project, workspaces, onSuccess, onCancel }: Projec
             />
             {errors.description && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.description.message}
+                {errors.description.message?.toString()}
               </p>
             )}
           </div>
@@ -300,7 +299,7 @@ export function ProjectForm({ project, workspaces, onSuccess, onCancel }: Projec
             </Select>
             {errors.workspace_id && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {errors.workspace_id.message}
+                {errors.workspace_id.message?.toString()}
               </p>
             )}
           </div>

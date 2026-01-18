@@ -308,7 +308,7 @@ export const ProposalSchema = z.object({
     .optional(),
   status: ProposalStatusSchema,
   source_type: ProposalSourceTypeSchema,
-  created_by: z.string().uuid(),
+  owner_id: z.string().uuid(),
   submitted_at: z.string().datetime().nullable().optional(),
   approved_by: z.string().uuid().nullable().optional(),
   approved_at: z.string().datetime().nullable().optional(),
@@ -448,7 +448,7 @@ export const ProposalFiltersSchema = z.object({
     ProposalSourceTypeSchema,
     z.array(ProposalSourceTypeSchema)
   ]).optional(),
-  created_by: z.string().uuid().optional(),
+  owner_id: z.string().uuid().optional(),
   approved_by: z.string().uuid().optional(),
   created_after: z.string().datetime().optional(),
   created_before: z.string().datetime().optional(),

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 /**
- * Middleware to check if user has completed organization setup
- * Redirects to organization setup page if not completed
+ * Middleware to check if user has completed workspace setup
+ * Redirects to workspace setup page if not completed
  */
 export async function userSetupMiddleware(
   req: NextRequest
@@ -75,13 +75,14 @@ export async function userSetupMiddleware(
 }
 
 /**
- * Redirect to organization setup if user hasn't completed setup
+ * Redirect to workspace setup if user hasn't completed setup
  */
 export function redirectToSetupIfNeeded(req: NextRequest, hasCompletedSetup: boolean): NextResponse | null {
   const pathname = req.nextUrl.pathname
 
   // Don't redirect if already on setup page or auth pages
-  if (pathname === '/organization-setup' ||
+  if (pathname === '/workspace-setup' ||
+      pathname === '/organization-setup' ||
       pathname === '/login' ||
       pathname === '/register' ||
       pathname.startsWith('/api/')) {
@@ -89,7 +90,7 @@ export function redirectToSetupIfNeeded(req: NextRequest, hasCompletedSetup: boo
   }
 
   if (!hasCompletedSetup) {
-    const setupUrl = new URL('/organization-setup', req.url)
+    const setupUrl = new URL('/workspace-setup', req.url)
     return NextResponse.redirect(setupUrl)
   }
 

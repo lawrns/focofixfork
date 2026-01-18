@@ -1,13 +1,13 @@
 /**
  * Invitation Entity Model
- * Defines the structure and operations for organization invitations
+ * Defines the structure and operations for workspace invitations
  */
 
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'cancelled'
 
-export interface OrganizationInvitation {
+export interface WorkspaceInvitation {
   id: string
-  organization_id: string
+  workspace_id: string
   email: string
   role: 'director' | 'lead' | 'member'
   invited_by: string
@@ -23,9 +23,9 @@ export interface CreateInvitationData {
   role: 'owner' | 'admin' | 'member'
 }
 
-export interface InvitationWithDetails extends OrganizationInvitation {
+export interface InvitationWithDetails extends WorkspaceInvitation {
   invited_by_name?: string
-  organization_name?: string
+  workspace_name?: string
 }
 
 export class InvitationModel {
@@ -56,14 +56,14 @@ export class InvitationModel {
   /**
    * Check if invitation is expired
    */
-  static isExpired(invitation: OrganizationInvitation): boolean {
+  static isExpired(invitation: WorkspaceInvitation): boolean {
     return new Date(invitation.expires_at) < new Date()
   }
 
   /**
    * Check if invitation can be accepted
    */
-  static canAccept(invitation: OrganizationInvitation): boolean {
+  static canAccept(invitation: WorkspaceInvitation): boolean {
     return invitation.status === 'pending' && !this.isExpired(invitation)
   }
 
@@ -84,12 +84,12 @@ export class InvitationModel {
   }
 
   /**
-   * Transform raw database response to OrganizationInvitation interface
+   * Transform raw database response to WorkspaceInvitation interface
    */
-  static fromDatabase(data: any): OrganizationInvitation {
+  static fromDatabase(data: any): WorkspaceInvitation {
     return {
       id: data.id,
-      organization_id: data.organization_id,
+      workspace_id: data.workspace_id || data.organization_id,
       email: data.email,
       role: data.role,
       invited_by: data.invited_by,
@@ -108,7 +108,7 @@ export class InvitationModel {
     return {
       ...this.fromDatabase(data),
       invited_by_name: data.invited_by_name,
-      organization_name: data.organization_name
+      workspace_name: data.workspace_name || data.organization_name
     }
   }
 

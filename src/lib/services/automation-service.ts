@@ -26,11 +26,15 @@ export class AutomationService {
     return data as any as unknown as AutomationRule
   }
 
-  static async getRules(projectId?: string, userId?: string): Promise<AutomationRule[]> {
+  static async getRules(projectId?: string, userId?: string, workspaceId?: string): Promise<AutomationRule[]> {
     let query = untypedSupabase.from('automation_rules' as any).select('*')
 
     if (projectId) {
       query = query.eq('project_id', projectId)
+    }
+
+    if (workspaceId) {
+      query = query.eq('workspace_id', workspaceId)
     }
 
     if (userId) {
@@ -375,7 +379,7 @@ export class AutomationService {
       .insert({
         ...action.task_updates,
         project_id: triggerData.project_id,
-        created_by: triggerData.user_id
+        reporter_id: triggerData.user_id
       } as any)
 
     if (error) throw error

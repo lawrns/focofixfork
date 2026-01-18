@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
+import { WorkspaceMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 import { InvitationWithDetails } from '@/lib/models/invitations'
 import { apiClient } from '@/lib/api-client'
 import { audioService } from '@/lib/audio/audio-service'
@@ -15,7 +15,7 @@ export interface Workspace {
   logo_url?: string
   website?: string
   is_active: boolean
-  created_by: string
+  owner_id: string
   created_at: string
 }
 
@@ -23,7 +23,7 @@ export interface UseWorkspacesReturn {
   workspaces: Workspace[]
   isLoading: boolean
   selectedWorkspace: Workspace | null
-  workspaceMembers: OrganizationMemberWithDetails[]
+  workspaceMembers: WorkspaceMemberWithDetails[]
   workspaceInvitations: InvitationWithDetails[]
   currentUserRole: MemberRole
   showWorkspaceModal: boolean
@@ -73,7 +73,7 @@ export function useWorkspaces(): UseWorkspacesReturn {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
-  const [workspaceMembers, setWorkspaceMembers] = useState<OrganizationMemberWithDetails[]>([])
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMemberWithDetails[]>([])
   const [workspaceInvitations, setWorkspaceInvitations] = useState<InvitationWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -122,7 +122,7 @@ export function useWorkspaces(): UseWorkspacesReturn {
         if (membersData.success) {
           setWorkspaceMembers(membersData.data || [])
           if (user) {
-            const currentUser = membersData.data?.find((m: OrganizationMemberWithDetails) => m.user_id === user.id)
+            const currentUser = membersData.data?.find((m: WorkspaceMemberWithDetails) => m.user_id === user.id)
             if (currentUser) setCurrentUserRole(currentUser.role)
           }
         }

@@ -39,7 +39,7 @@ export class ProposalRepository extends BaseRepository<Proposal> {
       title: data.title,
       description: data.description || null,
       status: 'draft' as const,
-      created_by: data.created_by,
+      owner_id: data.owner_id,
       submitted_at: null,
       reviewed_by: null,
       reviewed_at: null,
@@ -124,8 +124,8 @@ export class ProposalRepository extends BaseRepository<Proposal> {
     if (filters?.status) {
       query = query.eq('status', filters.status)
     }
-    if (filters?.created_by) {
-      query = query.eq('created_by', filters.created_by)
+    if (filters?.owner_id) {
+      query = query.eq('owner_id', filters.owner_id)
     }
 
     // Apply pagination

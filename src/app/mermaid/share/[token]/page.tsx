@@ -143,10 +143,10 @@ export default function MermaidSharePage() {
                   <p className="text-sm text-gray-600">v{diagram.version}</p>
                 </div>
 
-                {diagram.organization_id && (
+                {diagram.workspace_id && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Organization</h3>
-                    <p className="text-sm text-gray-600">Organization Diagram</p>
+                    <h3 className="text-sm font-medium text-gray-700">Workspace</h3>
+                    <p className="text-sm text-gray-600">Workspace Diagram</p>
                   </div>
                 )}
               </div>

@@ -1,46 +1,46 @@
 /**
- * Organizations Entity Model
- * Defines the structure and operations for organization data
+ * Workspaces Entity Model
+ * Defines the structure and operations for workspace data
  */
 
-export interface Organization {
+export interface Workspace {
   id: string
   name: string
   description?: string | null
   website?: string | null
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
 }
 
-export interface CreateOrganizationData {
+export interface CreateWorkspaceData {
   name: string
   description?: string | null
   website?: string | null
-  created_by: string
+  owner_id: string
 }
 
-export interface UpdateOrganizationData {
+export interface UpdateWorkspaceData {
   name?: string
 }
 
-export class OrganizationModel {
+export class WorkspaceModel {
   /**
-   * Validate organization data before creation
+   * Validate workspace data before creation
    */
-  static validateCreate(data: CreateOrganizationData): { isValid: boolean; errors: string[] } {
+  static validateCreate(data: CreateWorkspaceData): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
 
     if (!data.name || data.name.trim().length === 0) {
-      errors.push('Organization name is required')
+      errors.push('Workspace name is required')
     }
 
     if (data.name && data.name.trim().length < 2) {
-      errors.push('Organization name must be at least 2 characters long')
+      errors.push('Workspace name must be at least 2 characters long')
     }
 
     if (data.name && data.name.length > 100) {
-      errors.push('Organization name must be less than 100 characters')
+      errors.push('Workspace name must be less than 100 characters')
     }
 
     return {
@@ -50,22 +50,22 @@ export class OrganizationModel {
   }
 
   /**
-   * Validate organization data before update
+   * Validate workspace data before update
    */
-  static validateUpdate(data: UpdateOrganizationData): { isValid: boolean; errors: string[] } {
+  static validateUpdate(data: UpdateWorkspaceData): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
 
     if (data.name !== undefined) {
       if (data.name.trim().length === 0) {
-        errors.push('Organization name cannot be empty')
+        errors.push('Workspace name cannot be empty')
       }
 
       if (data.name.trim().length < 2) {
-        errors.push('Organization name must be at least 2 characters long')
+        errors.push('Workspace name must be at least 2 characters long')
       }
 
       if (data.name.length > 100) {
-        errors.push('Organization name must be less than 100 characters')
+        errors.push('Workspace name must be less than 100 characters')
       }
     }
 
@@ -76,32 +76,32 @@ export class OrganizationModel {
   }
 
   /**
-   * Transform raw database response to Organization interface
+   * Transform raw database response to Workspace interface
    */
-  static fromDatabase(data: any): Organization {
+  static fromDatabase(data: any): Workspace {
     return {
       id: data.id,
       name: data.name,
       description: data.description,
       website: data.website,
-      created_by: data.created_by,
+      owner_id: data.owner_id || data.created_by,
       created_at: data.created_at,
       updated_at: data.updated_at
     }
   }
 
   /**
-   * Transform Organization interface to database format
+   * Transform Workspace interface to database format
    */
-  static toDatabase(organization: Partial<Organization>): any {
+  static toDatabase(workspace: Partial<Workspace>): any {
     return {
-      id: organization.id,
-      name: organization.name,
-      description: organization.description,
-      website: organization.website,
-      created_by: organization.created_by,
-      created_at: organization.created_at,
-      updated_at: organization.updated_at
+      id: workspace.id,
+      name: workspace.name,
+      description: workspace.description,
+      website: workspace.website,
+      owner_id: workspace.owner_id,
+      created_at: workspace.created_at,
+      updated_at: workspace.updated_at
     }
   }
 }

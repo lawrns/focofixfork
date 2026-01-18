@@ -55,7 +55,7 @@ export interface ProjectTemplate {
     }
   }
   is_public: boolean
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
   usage_count?: number
@@ -71,7 +71,7 @@ export interface TemplateMetadata {
   category: TemplateCategory
   type: TemplateType
   is_public: boolean
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
   usage_count: number
@@ -151,7 +151,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       }
     },
     is_public: true,
-    created_by: 'system',
+    owner_id: 'system',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     usage_count: 0,
@@ -216,7 +216,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       }
     },
     is_public: true,
-    created_by: 'system',
+    owner_id: 'system',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     usage_count: 0,
@@ -280,7 +280,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       }
     },
     is_public: true,
-    created_by: 'system',
+    owner_id: 'system',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     usage_count: 0,
@@ -338,7 +338,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       }
     },
     is_public: true,
-    created_by: 'system',
+    owner_id: 'system',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     usage_count: 0,
@@ -401,7 +401,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       }
     },
     is_public: true,
-    created_by: 'system',
+    owner_id: 'system',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     usage_count: 0,
@@ -464,7 +464,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       }
     },
     is_public: true,
-    created_by: 'system',
+    owner_id: 'system',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     usage_count: 0,

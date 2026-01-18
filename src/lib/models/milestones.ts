@@ -15,7 +15,7 @@ export interface Milestone {
   priority: MilestonePriority
   deadline: string | null
   assigned_to: string | null
-  created_by: string
+  owner_id: string
   created_at: string
   updated_at: string
 }
@@ -289,7 +289,7 @@ export class MilestoneModel {
       priority: data.priority,
       deadline: data.deadline,
       assigned_to: data.assigned_to,
-      created_by: data.created_by,
+      owner_id: data.owner_id || data.created_by,
       created_at: data.created_at,
       updated_at: data.updated_at
     }
@@ -308,7 +308,7 @@ export class MilestoneModel {
       priority: milestone.priority,
       deadline: milestone.deadline,
       assigned_to: milestone.assigned_to,
-      created_by: milestone.created_by,
+      owner_id: milestone.owner_id,
       created_at: milestone.created_at,
       updated_at: milestone.updated_at
     }

@@ -664,7 +664,7 @@ export function CreateProposalModal({
           description: content,
           status: 'draft',
           source_type: activeTab === 'voice' ? 'voice' : 'text',
-          created_by: '',
+          owner_id: '',
           submitted_at: null,
           approved_by: null,
           approved_at: null,

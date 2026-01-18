@@ -173,7 +173,7 @@ export interface Proposal {
   source_type: ProposalSourceType;
 
   /** User who created the proposal */
-  created_by: string;
+  owner_id: string;
 
   /** When proposal was submitted for review */
   submitted_at?: string | null;
@@ -446,7 +446,7 @@ export interface CreateProposalRequest {
 
 // Legacy alias
 export interface CreateProposalData extends Omit<CreateProposalRequest, 'source_type'> {
-  created_by: string;
+  owner_id: string;
   source_type?: ProposalSourceType;
 }
 
@@ -562,7 +562,7 @@ export interface ProposalFilters {
   project_id?: string;
   status?: ProposalStatus | ProposalStatus[];
   source_type?: ProposalSourceType | ProposalSourceType[];
-  created_by?: string;
+  owner_id?: string;
   approved_by?: string;
   created_after?: string;
   created_before?: string;

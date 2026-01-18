@@ -102,7 +102,7 @@ export class InsightsService {
     const { data: recentTasks } = await this.supabase
       .from('work_items')
       .select('id, title, status, priority, created_at, updated_at, due_date, assignee_id')
-      .or(`assignee_id.eq.${userId},created_by.eq.${userId}`)
+      .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
       .gte('created_at', twoWeeksAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(100)

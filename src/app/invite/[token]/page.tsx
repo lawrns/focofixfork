@@ -11,7 +11,7 @@ import { Loader2, CheckCircle, XCircle, Clock } from 'lucide-react'
 interface InvitationData {
   email: string
   role: string
-  organization_name: string
+  workspace_name: string
   invited_by_name: string
   expires_at: string
 }
@@ -72,7 +72,7 @@ export default function InviteAcceptPage() {
       if (result.success) {
         setSuccess(true)
         setTimeout(() => {
-          router.push(`/organizations/${result.data.organization_id}`)
+          router.push(`/organizations/${result.data.workspace_id}`)
         }, 2000)
       } else {
         setError(result.error)
@@ -100,7 +100,7 @@ export default function InviteAcceptPage() {
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <CardTitle>Welcome to the team!</CardTitle>
             <CardDescription>
-              You&apos;ve successfully joined {invitation?.organization_name}
+              You&apos;ve successfully joined {invitation?.workspace_name}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -138,13 +138,13 @@ export default function InviteAcceptPage() {
         <CardHeader className="text-center">
           <CardTitle>You&apos;re Invited!</CardTitle>
           <CardDescription>
-            Join {invitation?.organization_name} on Foco
+            Join {invitation?.workspace_name} on Foco
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm">
-              <strong>{invitation?.invited_by_name}</strong> has invited you to collaborate as a <strong>{invitation?.role}</strong> in <strong>{invitation?.organization_name}</strong>.
+              <strong>{invitation?.invited_by_name}</strong> has invited you to collaborate as a <strong>{invitation?.role}</strong> in <strong>{invitation?.workspace_name}</strong>.
             </p>
           </div>
 

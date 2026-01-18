@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/data-display/avatar'
 import { Users, Plus, Edit, Trash2, Crown, User, Mail } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { OrganizationMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
+import { WorkspaceMemberWithDetails, MemberRole } from '@/lib/models/organization-members'
 
 interface TeamMembersListProps {
-  members: OrganizationMemberWithDetails[]
+  members: WorkspaceMemberWithDetails[]
   canManageMembers: boolean
   canRemoveMembers: boolean
   editingMember: string | null

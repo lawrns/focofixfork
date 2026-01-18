@@ -17,22 +17,22 @@ export default function NewMermaidDiagramPage() {
     B -->|No| D[Debug]
     D --> B`);
   const [isPublic, setIsPublic] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
 
   useEffect(() => {
-    // Load user's organizations
-    loadOrganizations();
+    // Load user's workspaces
+    loadWorkspaces();
   }, []);
 
-  const loadOrganizations = async () => {
+  const loadWorkspaces = async () => {
     try {
-      // This would be implemented to fetch user's organizations
+      // This would be implemented to fetch user's workspaces
       // For now, we'll use a placeholder
-      setOrganizations([]);
+      setWorkspaces([]);
     } catch (error) {
-      console.error('Failed to load organizations:', error);
+      console.error('Failed to load workspaces:', error);
     }
   };
 
@@ -49,7 +49,7 @@ export default function NewMermaidDiagramPage() {
         description: description.trim(),
         mermaid_code: mermaidCode.trim(),
         is_public: isPublic,
-        organization_id: organizationId,
+        workspace_id: workspaceId,
       };
 
       const diagram = await mermaidService.createDiagram(diagramData);
@@ -152,21 +152,21 @@ export default function NewMermaidDiagramPage() {
                 </p>
               </div>
 
-              {organizations.length > 0 && (
+              {workspaces.length > 0 && (
                 <div>
-                  <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-1">
-                    Organization (optional)
+                  <label htmlFor="workspace" className="block text-sm font-medium text-gray-700 mb-1">
+                    Workspace (optional)
                   </label>
                   <select
-                    id="organization"
-                    value={organizationId || ''}
-                    onChange={(e) => setOrganizationId(e.target.value || null)}
+                    id="workspace"
+                    value={workspaceId || ''}
+                    onChange={(e) => setWorkspaceId(e.target.value || null)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Personal</option>
-                    {organizations.map((org) => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
+                    {workspaces.map((ws) => (
+                      <option key={ws.id} value={ws.id}>
+                        {ws.name}
                       </option>
                     ))}
                   </select>

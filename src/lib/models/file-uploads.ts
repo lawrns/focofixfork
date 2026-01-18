@@ -16,7 +16,7 @@ export type FileType =
 
 export type UploadStatus = 'uploading' | 'completed' | 'failed' | 'cancelled'
 
-export type AccessLevel = 'private' | 'organization' | 'project' | 'public'
+export type AccessLevel = 'private' | 'workspace' | 'project' | 'public'
 
 export interface FileAttachment {
   id: string
@@ -28,7 +28,7 @@ export interface FileAttachment {
   storage_path: string
   public_url?: string
   thumbnail_url?: string
-  entity_type: 'project' | 'milestone' | 'task' | 'comment' | 'time_entry' | 'organization'
+  entity_type: 'project' | 'milestone' | 'task' | 'comment' | 'time_entry' | 'workspace'
   entity_id: string
   uploaded_by: string
   uploaded_by_name: string
@@ -95,7 +95,7 @@ export interface FilePermissions {
 
 export interface FileStorageQuota {
   user_id?: string
-  organization_id?: string
+  workspace_id?: string
   total_quota: number // In bytes
   used_quota: number // In bytes
   file_count: number

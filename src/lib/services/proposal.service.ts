@@ -144,7 +144,7 @@ export class ProposalService {
         title: input.title,
         description: input.description || null,
         status: 'draft' as const,
-        created_by: userId,
+        owner_id: userId,
         source_type: input.source_type,
         source_content: input.source_content || {},
         base_snapshot_at: new Date().toISOString(),
@@ -278,7 +278,7 @@ export class ProposalService {
       }
 
       // Validate user is the creator
-      if (proposal.created_by !== userId) {
+      if (proposal.owner_id !== userId) {
         throw new Error('Only the proposal creator can submit for review')
       }
 
@@ -944,7 +944,7 @@ Return JSON:
       status: 'backlog',
       priority: proposedData.priority || 'medium',
       assignee_id: aiAssignment.assignee_id || null,
-      reporter_id: proposal.created_by,
+      reporter_id: proposal.owner_id,
       estimate_hours: aiEstimate.hours || null,
       metadata: {
         from_proposal: proposal.id,

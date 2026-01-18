@@ -27,7 +27,7 @@ export const workspaceSchema = z.object({
   description: z.string().max(500).optional(),
   avatar_url: urlSchema,
   website_url: urlSchema,
-  created_by: uuidSchema,
+  owner_id: uuidSchema,
   settings: z.object({
     timezone: z.string().default('UTC'),
     working_hours_start: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).default('09:00'),
@@ -78,7 +78,7 @@ export const milestoneSchema = z.object({
   priority: taskPrioritySchema.optional(),
   project_id: uuidSchema,
   workspace_id: uuidSchema,
-  created_by: uuidSchema,
+  owner_id: uuidSchema,
   assigned_to: uuidSchema.optional(),
   start_date: z.string().datetime().optional(),
   due_date: z.string().datetime().optional(),

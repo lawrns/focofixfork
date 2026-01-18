@@ -28,6 +28,9 @@ import { showProjectCreated, showError } from '@/lib/toast-helpers'
 import ErrorBoundary from '@/components/error/error-boundary'
 import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 import { Plus, Sparkles, Upload, Download, Loader2 } from 'lucide-react'
+import { apiClient } from '@/lib/api-client'
+import { audioService } from '@/lib/audio/audio-service'
+import { hapticService } from '@/lib/audio/haptic-service'
 
 // Lazy load heavy components
 const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
@@ -55,6 +58,7 @@ interface Organization {
   name: string
   slug: string
   role: string
+  owner_id: string
   created_at: string
   updated_at: string
 }
@@ -136,8 +140,7 @@ export default function DashboardPageClient() {
     hasLoadedOrganizations.current = true
     
     try {
-      const { apiClient } = await import('@/lib/api-client')
-      const data = await apiClient.get('/api/organizations')
+      const data = await apiClient.get('/api/workspaces')
 
       if (data.success) {
         // Handle both direct array and nested data structure
@@ -167,7 +170,6 @@ export default function DashboardPageClient() {
     hasLoadedProjects.current = true
     
     try {
-      const { apiClient } = await import('@/lib/api-client')
       const data = await apiClient.get('/api/projects')
       
       if (data.success) {
@@ -551,7 +553,7 @@ export default function DashboardPageClient() {
       <ImportExportModal
         projects={projects}
         tasks={[]}
-        organizations={organizations}
+        workspaces={organizations}
         labels={[]}
         open={showImportExportModal}
         onOpenChange={setShowImportExportModal}

@@ -27,7 +27,7 @@ export interface Workspace {
   description?: string;
   logo_url?: string;
   website?: string;
-  created_by?: string;
+  owner_id?: string;
   is_active?: boolean;
   settings?: WorkspaceSettings;
   ai_policy?: AIPolicy;
@@ -207,7 +207,7 @@ export interface Doc {
   content?: string;
   content_type: string;
   template?: string;
-  created_by?: string;
+  owner_id?: string;
   last_edited_by?: string;
   is_locked: boolean;
   locked_by?: string;
@@ -267,7 +267,7 @@ export interface Automation {
   action_config: Record<string, unknown>;
   run_count: number;
   last_run_at?: string;
-  created_by?: string;
+  owner_id?: string;
   created_at: string;
   updated_at: string;
 }

@@ -82,7 +82,7 @@ export function ProjectTableRow({
         />
       </TableCell>
       <TableCell style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
-        <span className="block truncate">{project.organizations?.name || 'Personal'}</span>
+        <span className="block truncate">{project.workspaces?.name || 'Personal'}</span>
       </TableCell>
       <TableCell style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-3">
         <span style={getPriorityBadgeStyles(project.priority)}>

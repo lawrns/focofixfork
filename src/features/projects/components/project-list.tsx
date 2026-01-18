@@ -126,7 +126,7 @@ export function ProjectList({
     } finally {
       setLoading(false)
     }
-  }, [user, organizationId, statusFilter, priorityFilter])
+  }, [user, workspaceId, statusFilter, priorityFilter])
 
   useEffect(() => {
     fetchProjects()

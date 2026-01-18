@@ -44,7 +44,7 @@ export class MilestonesService {
       }
 
       let query = supabase
-        .from('milestones')
+        .from('foco_milestones')
         .select('*', { count: 'exact' })
         .order('due_date', { ascending: true, nullsFirst: false })
 
@@ -107,7 +107,7 @@ export class MilestonesService {
       }
 
       const { data, error } = await supabase
-        .from('milestones')
+        .from('foco_milestones')
         .select('*')
         .eq('id', milestoneId)
         .single()
@@ -157,11 +157,11 @@ export class MilestonesService {
       // Ensure the user is creating the milestone
       const dataToInsert = {
         ...milestoneData,
-        created_by: userId,
+        owner_id: userId,
       }
 
       const { data, error } = await supabase
-        .from('milestones')
+        .from('foco_milestones')
         .insert(dataToInsert)
         .select()
         .single()
@@ -204,7 +204,7 @@ export class MilestonesService {
       }
 
       const { data, error } = await supabase
-        .from('milestones')
+        .from('foco_milestones')
         .update(updates)
         .eq('id', milestoneId)
         .select()
@@ -253,7 +253,7 @@ export class MilestonesService {
       }
 
       const { error } = await supabase
-        .from('milestones')
+        .from('foco_milestones')
         .delete()
         .eq('id', milestoneId)
 
@@ -306,7 +306,7 @@ export class MilestonesService {
       }
 
       let query = supabase
-        .from('milestones')
+        .from('foco_milestones')
         .select('status, due_date')
 
       if (projectId) {
@@ -374,7 +374,7 @@ export class MilestonesService {
       }
 
       const { data, error } = await supabase
-        .from('milestones')
+        .from('foco_milestones')
         .update(updates)
         .eq('id', milestoneId)
         .select()

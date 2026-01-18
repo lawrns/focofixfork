@@ -203,11 +203,11 @@ Return ONLY valid JSON, no explanations.`
         priority: m.priority,
         status: m.status,
         progress_percentage: 0,
-        created_by: userId
+        owner_id: userId
       }))
 
       const { data: milestones, error: milestonesError } = await supabaseAdmin
-        .from('milestones')
+        .from('foco_milestones')
         .insert(milestonesData)
         .select()
 
@@ -363,7 +363,7 @@ Return ONLY valid JSON.`
     const milestoneData = JSON.parse(jsonText)
 
     const { data: milestone, error } = await supabaseAdmin
-      .from('milestones')
+      .from('foco_milestones')
       .insert({
         project_id: projectId,
         name: milestoneData.name,
@@ -373,7 +373,7 @@ Return ONLY valid JSON.`
         priority: milestoneData.priority,
         status: milestoneData.status,
         progress_percentage: 0,
-        created_by: userId
+        owner_id: userId
       })
       .select()
       .single()
@@ -480,7 +480,7 @@ Return ONLY valid JSON.`
       .single()
 
     const { data: milestones } = await supabaseAdmin
-      .from('milestones')
+      .from('foco_milestones')
       .select('*')
       .eq('project_id', projectId)
       .order('deadline', { ascending: true })

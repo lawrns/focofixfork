@@ -35,7 +35,6 @@ export async function GET(
       .maybeSingle()
 
     if (proposalError) {
-      console.error('Proposal fetch error:', proposalError)
       return databaseErrorResponse('Failed to fetch proposal', proposalError)
     }
 
@@ -62,7 +61,6 @@ export async function GET(
       .eq('proposal_id', id)
 
     if (itemsError) {
-      console.error('Items fetch error:', itemsError)
       return databaseErrorResponse('Failed to fetch proposal items', itemsError)
     }
 
@@ -209,14 +207,13 @@ export async function GET(
           },
           { onConflict: 'proposal_id' }
         )
-    } catch (saveError) {
-      // Non-critical error, just log it
-      console.warn('Failed to save impact summary:', saveError)
+    } catch {
+      // Non-critical error, continue
     }
 
     return mergeAuthResponse(successResponse(impactSummary), authResponse)
-  } catch (err: any) {
-    console.error('Proposal impact GET error:', err)
-    return databaseErrorResponse('Failed to calculate impact summary', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to calculate impact summary', message)
   }
 }

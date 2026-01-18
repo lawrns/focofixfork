@@ -29,7 +29,6 @@ export async function GET(
       .single()
 
     if (queryError) {
-      console.error('Template fetch error:', queryError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 }), authResponse)
     }
 
@@ -53,9 +52,9 @@ export async function GET(
       success: true,
       data: template,
     }), authResponse)
-  } catch (err: any) {
-    console.error('Template fetch API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }
 
@@ -127,7 +126,6 @@ export async function PUT(
       .select()
 
     if (updateError) {
-      console.error('Template update error:', updateError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to update template', details: updateError.message },
         { status: 500 }
@@ -141,9 +139,9 @@ export async function PUT(
       data: updatedTemplate,
       message: 'Template updated successfully',
     }), authResponse)
-  } catch (err: any) {
-    console.error('Template update API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }
 
@@ -189,7 +187,6 @@ export async function DELETE(
       .eq('id', params.id)
 
     if (deleteError) {
-      console.error('Template deletion error:', deleteError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to delete template', details: deleteError.message },
         { status: 500 }
@@ -200,8 +197,8 @@ export async function DELETE(
       success: true,
       message: 'Template deleted successfully',
     }), authResponse)
-  } catch (err: any) {
-    console.error('Template deletion API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

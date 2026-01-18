@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error in digest cron job:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

@@ -123,8 +123,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: `Unknown operation: ${operation}` }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Actions API error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -154,14 +153,12 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to get actions:', error);
       return NextResponse.json({ error: 'Failed to retrieve actions' }, { status: 500 });
     }
 
     const actions = (data || []).map(mapDbAction);
     return NextResponse.json({ success: true, data: { actions } });
-  } catch (error) {
-    console.error('Actions API error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

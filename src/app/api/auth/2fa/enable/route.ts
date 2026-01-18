@@ -32,8 +32,7 @@ export async function POST(request: NextRequest) {
       qrCode,
       backupCodes,
     });
-  } catch (error) {
-    console.error('2FA enable error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to enable 2FA' },
       { status: 500 }

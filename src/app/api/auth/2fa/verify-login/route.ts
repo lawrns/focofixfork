@@ -73,8 +73,7 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid token or backup code' },
       { status: 400 }
     );
-  } catch (error) {
-    console.error('2FA verify-login error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to verify 2FA' },
       { status: 500 }

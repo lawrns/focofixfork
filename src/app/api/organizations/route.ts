@@ -19,25 +19,20 @@ export async function GET(req: NextRequest) {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      console.log('[Organizations API] Auth failed:', error)
       return authRequiredResponse()
     }
-
-    console.log('[Organizations API] User authenticated:', user.id)
 
     const orgRepo = new OrganizationRepository(supabase)
     const result = await orgRepo.findByUser(user.id)
 
     if (isError(result)) {
-      console.error('[Organizations API] Database error:', result.error)
       return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    console.log('[Organizations API] Found organizations:', result.data.length)
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('[Organizations API] Unexpected error:', err?.message || err, err?.stack)
-    return internalErrorResponse('Failed to fetch organizations', err?.message || 'Unknown error')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to fetch organizations', message)
   }
 }
 
@@ -77,8 +72,8 @@ export async function POST(req: NextRequest) {
     }
 
     return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
-  } catch (err: any) {
-    console.error('Organizations POST error:', err)
-    return internalErrorResponse('Failed to create organization', err.message)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to create organization', message)
   }
 }

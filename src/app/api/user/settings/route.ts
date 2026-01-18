@@ -27,13 +27,11 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching user settings:', error);
       return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
     }
 
     return NextResponse.json({ data: profile || {} });
-  } catch (error) {
-    console.error('Error in GET /api/user/settings:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -57,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { full_name, timezone, language, avatar_url } = body;
 
-    const updateData: any = {};
+    const updateData: Record<string, string> = {};
     if (full_name !== undefined) updateData.full_name = full_name;
     if (timezone !== undefined) updateData.timezone = timezone;
     if (language !== undefined) updateData.language = language;
@@ -72,13 +70,11 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating user settings:', error);
       return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
     }
 
     return NextResponse.json({ data, message: 'Settings updated successfully' });
-  } catch (error) {
-    console.error('Error in PATCH /api/user/settings:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

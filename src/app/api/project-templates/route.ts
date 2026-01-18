@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
     ])
 
     if (userResult.error) {
-      console.error('Templates fetch error:', userResult.error)
       return mergeAuthResponse(NextResponse.json({ success: false, error: userResult.error.message }, { status: 500 }), authResponse)
     }
 
@@ -75,9 +74,9 @@ export async function GET(req: NextRequest) {
         pagination: { limit, offset, total: allTemplates.length },
       },
     }), authResponse)
-  } catch (err: any) {
-    console.error('Project templates API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }
 
@@ -129,7 +128,6 @@ export async function POST(req: NextRequest) {
       .select()
 
     if (insertError) {
-      console.error('Template creation error:', insertError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to create template', details: insertError.message },
         { status: 500 }
@@ -146,8 +144,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     ), authResponse)
-  } catch (err: any) {
-    console.error('Template creation API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

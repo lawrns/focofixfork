@@ -38,7 +38,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const { error: deleteError } = (await supabase.from('task_templates').delete().eq('id', id)) as { error: any }
 
     if (deleteError) {
-      console.error('Task template delete error:', deleteError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: deleteError.message }, { status: 500 }), authResponse)
     }
 
@@ -48,8 +47,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         message: 'Template deleted successfully'
       }
     }), authResponse)
-  } catch (err: any) {
-    console.error('Task templates DELETE error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

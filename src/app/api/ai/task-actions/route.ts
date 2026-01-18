@@ -113,17 +113,9 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('Task action error:', error)
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
-    })
-
     // Return detailed error in response for debugging
     const errorDetails = {
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
       name: error instanceof Error ? error.name : undefined
     }
 

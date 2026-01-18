@@ -36,7 +36,6 @@ export async function PATCH(
     const adminAccessResult = await repo.hasAdminAccess(workspaceId, user.id)
 
     if (isError(adminAccessResult)) {
-      console.error('Error checking admin access:', adminAccessResult.error)
       const errorRes = databaseErrorResponse(adminAccessResult.error.message, adminAccessResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -60,7 +59,6 @@ export async function PATCH(
       .maybeSingle()
 
     if (memberError) {
-      console.error('Error fetching member:', memberError)
       const errorRes = databaseErrorResponse('Failed to fetch member', memberError)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -74,7 +72,6 @@ export async function PATCH(
     const updateResult = await repo.updateMemberRole(workspaceId, memberData.user_id, body.role)
 
     if (isError(updateResult)) {
-      console.error('Error updating member role:', updateResult.error)
       const errorRes = databaseErrorResponse(updateResult.error.message, updateResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -85,7 +82,6 @@ export async function PATCH(
     })
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
-    console.error('Member update error:', error)
     return internalErrorResponse('Failed to update member', error)
   }
 }
@@ -112,7 +108,6 @@ export async function DELETE(
     const adminAccessResult = await repo.hasAdminAccess(workspaceId, user.id)
 
     if (isError(adminAccessResult)) {
-      console.error('Error checking admin access:', adminAccessResult.error)
       const errorRes = databaseErrorResponse(adminAccessResult.error.message, adminAccessResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -130,7 +125,6 @@ export async function DELETE(
       .maybeSingle()
 
     if (memberError) {
-      console.error('Error fetching member:', memberError)
       const errorRes = databaseErrorResponse('Failed to fetch member', memberError)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -151,7 +145,6 @@ export async function DELETE(
     const removeResult = await repo.removeMember(workspaceId, memberToRemove.user_id)
 
     if (isError(removeResult)) {
-      console.error('Error removing member:', removeResult.error)
       const errorRes = databaseErrorResponse(removeResult.error.message, removeResult.error.details)
       return mergeAuthResponse(errorRes, authResponse)
     }
@@ -161,7 +154,6 @@ export async function DELETE(
     })
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
-    console.error('Member deletion error:', error)
     return internalErrorResponse('Failed to remove member', error)
   }
 }

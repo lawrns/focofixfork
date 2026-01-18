@@ -46,9 +46,9 @@ export async function GET(request: NextRequest) {
 
     const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
     return mergeAuthResponse(successResponse(result.data, meta), authResponse)
-  } catch (err: any) {
-    console.error('Error fetching saved filters:', err)
-    return mergeAuthResponse(databaseErrorResponse('Failed to fetch saved filters', err), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to fetch saved filters', message), authResponse)
   }
 }
 
@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
     }
 
     return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
-  } catch (err: any) {
-    console.error('Error creating saved filter:', err)
-    return mergeAuthResponse(databaseErrorResponse('Failed to create saved filter', err), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to create saved filter', message), authResponse)
   }
 }

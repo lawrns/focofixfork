@@ -46,7 +46,6 @@ export async function POST(
       .single()
 
     if (templateError || !templateData) {
-      console.error('Template fetch error:', templateError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Template not found' },
         { status: 404 }
@@ -78,7 +77,6 @@ export async function POST(
       .select()
 
     if (projectError) {
-      console.error('Project creation error:', projectError)
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Failed to create project', details: projectError.message },
         { status: 500 }
@@ -113,7 +111,6 @@ export async function POST(
         .select()
 
       if (tasksError) {
-        console.warn('Failed to create default tasks:', tasksError)
         // Don't fail the entire operation if tasks creation fails
       } else if (insertedTasks) {
         createdTasks.push(...insertedTasks)
@@ -127,7 +124,7 @@ export async function POST(
       .eq('id', params.templateId)
 
     if (usageError) {
-      console.warn('Failed to update usage count:', usageError)
+      // Non-critical error, continue
     }
 
     return mergeAuthResponse(NextResponse.json(
@@ -142,8 +139,8 @@ export async function POST(
       },
       { status: 201 }
     ), authResponse)
-  } catch (err: any) {
-    console.error('Create from template API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }

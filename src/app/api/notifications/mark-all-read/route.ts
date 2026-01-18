@@ -33,7 +33,6 @@ export async function PATCH(request: NextRequest) {
       .select('id');
 
     if (error) {
-      console.error('Error marking all notifications as read:', error);
       return mergeAuthResponse(NextResponse.json(
         { error: 'Failed to mark notifications as read' },
         { status: 500 }
@@ -47,8 +46,7 @@ export async function PATCH(request: NextRequest) {
       count,
       message: `${count} notification${count !== 1 ? 's' : ''} marked as read`,
     }), authResponse);
-  } catch (error) {
-    console.error('Error in mark-all-read endpoint:', error);
+  } catch {
     return mergeAuthResponse(NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

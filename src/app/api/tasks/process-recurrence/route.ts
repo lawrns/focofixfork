@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
       .limit(100);
 
     if (fetchError) {
-      console.error('Error fetching recurring tasks:', fetchError);
       return NextResponse.json(
         { success: false, error: fetchError.message },
         { status: 500 }
@@ -114,10 +113,11 @@ export async function POST(req: NextRequest) {
         } else {
           createdCount++;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
         errors.push({
           taskId: task.id,
-          error: err.message,
+          error: message,
         });
       }
     }
@@ -128,10 +128,10 @@ export async function POST(req: NextRequest) {
       createdCount,
       errors: errors.length > 0 ? errors : undefined,
     });
-  } catch (err: any) {
-    console.error('POST /api/tasks/process-recurrence error:', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -173,10 +173,10 @@ export async function GET(req: NextRequest) {
         overdueRecurrences: overdue?.[0]?.count || 0,
       },
     });
-  } catch (err: any) {
-    console.error('GET /api/tasks/process-recurrence error:', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

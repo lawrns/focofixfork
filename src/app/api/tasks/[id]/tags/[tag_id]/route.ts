@@ -81,8 +81,8 @@ export async function DELETE(
       undefined,
       200
     ), authResponse);
-  } catch (err: any) {
-    console.error('Tag removal error:', err);
-    return databaseErrorResponse('Failed to remove tag from task', err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to remove tag from task', message);
   }
 }

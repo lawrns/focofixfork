@@ -62,9 +62,9 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(invitationsResult.data), authResponse)
-  } catch (err) {
-    console.error('Invitations fetch error:', err)
-    return databaseErrorResponse('Failed to fetch invitations', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch invitations', message)
   }
 }
 
@@ -166,8 +166,8 @@ export async function POST(
       message: 'Invitation sent successfully',
       invitation: inviteResult.data
     }), authResponse)
-  } catch (err) {
-    console.error('Invitation creation error:', err)
-    return databaseErrorResponse('Failed to create invitation', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to create invitation', message)
   }
 }

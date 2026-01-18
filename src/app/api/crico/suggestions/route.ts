@@ -71,8 +71,7 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json({ error: `Unknown view: ${view}` }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Suggestions API error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -134,8 +133,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Suggestions API error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

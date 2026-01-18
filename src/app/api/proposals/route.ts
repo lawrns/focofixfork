@@ -77,41 +77,52 @@ export async function GET(req: NextRequest) {
     const { data: proposals, error: dbError, count } = await query
 
     if (dbError) {
-      console.error('Proposals fetch error:', dbError)
       return databaseErrorResponse('Failed to fetch proposals', dbError)
     }
 
     // Fetch user profiles for created_by and approver_id
+    interface ProposalRow {
+      created_by?: string
+      approver_id?: string
+      [key: string]: unknown
+    }
+    interface UserProfile {
+      id: string
+      full_name: string
+      email: string
+      avatar_url?: string
+    }
+
     const userIds = new Set<string>()
-    proposals?.forEach((p: any) => {
+    proposals?.forEach((p: ProposalRow) => {
       if (p.created_by) userIds.add(p.created_by)
       if (p.approver_id) userIds.add(p.approver_id)
     })
 
-    let userMap: Record<string, any> = {}
+    let userMap: Record<string, UserProfile> = {}
     if (userIds.size > 0) {
       const { data: profiles } = await supabaseAdmin
         .from('user_profiles')
         .select('id, full_name, email, avatar_url')
         .in('id', Array.from(userIds))
 
-      profiles?.forEach((p: any) => {
+      profiles?.forEach((p: UserProfile) => {
         userMap[p.id] = p
       })
     }
 
     // Enrich proposals with user info
-    const enrichedProposals = proposals?.map((p: any) => ({
+    const enrichedProposals = proposals?.map((p: ProposalRow) => ({
       ...p,
-      created_by_user: userMap[p.created_by] || null,
+      created_by_user: p.created_by ? userMap[p.created_by] || null : null,
       approver: p.approver_id ? userMap[p.approver_id] || null : null,
     }))
 
     const meta = createPaginationMeta(count || 0, limit, offset)
     return mergeAuthResponse(successResponse(enrichedProposals || [], meta), authResponse)
-  } catch (err: any) {
-    console.error('Proposals GET error:', err)
-    return databaseErrorResponse('Failed to fetch proposals', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch proposals', message)
   }
 }
 
@@ -214,7 +225,6 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (createError) {
-      console.error('Proposal creation error:', createError)
       return databaseErrorResponse('Failed to create proposal', createError)
     }
 
@@ -235,8 +245,8 @@ export async function POST(req: NextRequest) {
       successResponse(enrichedProposal, undefined, 201),
       authResponse
     )
-  } catch (err: any) {
-    console.error('Proposals POST error:', err)
-    return databaseErrorResponse('Failed to create proposal', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to create proposal', message)
   }
 }

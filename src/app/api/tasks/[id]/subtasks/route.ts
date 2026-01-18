@@ -30,9 +30,9 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('Get subtasks error:', err)
-    return databaseErrorResponse('Failed to fetch subtasks', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch subtasks', message)
   }
 }
 
@@ -90,8 +90,8 @@ export async function POST(
     }
 
     return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
-  } catch (err: any) {
-    console.error('Create subtask error:', err)
-    return databaseErrorResponse('Failed to create subtask', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to create subtask', message)
   }
 }

@@ -41,7 +41,6 @@ export async function GET(
       .maybeSingle()
 
     if (proposalError) {
-      console.error('Proposal fetch error:', proposalError)
       return databaseErrorResponse('Failed to fetch proposal', proposalError)
     }
 
@@ -82,7 +81,6 @@ export async function GET(
     const { data: items, error: itemsError } = await query
 
     if (itemsError) {
-      console.error('Items fetch error:', itemsError)
       return databaseErrorResponse('Failed to fetch proposal items', itemsError)
     }
 
@@ -90,9 +88,9 @@ export async function GET(
       successResponse(items || []),
       authResponse
     )
-  } catch (err: any) {
-    console.error('Proposal items GET error:', err)
-    return databaseErrorResponse('Failed to fetch proposal items', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch proposal items', message)
   }
 }
 
@@ -138,7 +136,6 @@ export async function POST(
       .maybeSingle()
 
     if (proposalError) {
-      console.error('Proposal fetch error:', proposalError)
       return databaseErrorResponse('Failed to fetch proposal', proposalError)
     }
 
@@ -193,7 +190,6 @@ export async function POST(
       .single()
 
     if (createError) {
-      console.error('Item creation error:', createError)
       return databaseErrorResponse('Failed to create proposal item', createError)
     }
 
@@ -201,8 +197,8 @@ export async function POST(
       successResponse(item, undefined, 201),
       authResponse
     )
-  } catch (err: any) {
-    console.error('Proposal items POST error:', err)
-    return databaseErrorResponse('Failed to create proposal item', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to create proposal item', message)
   }
 }

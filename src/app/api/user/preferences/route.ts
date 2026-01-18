@@ -48,8 +48,7 @@ export async function GET(request: NextRequest) {
       accent_color: prefs.accent_color || 'blue',
       font_size: prefs.font_size || 'medium',
     })
-  } catch (error) {
-    console.error('Error fetching preferences:', error)
+  } catch {
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -119,7 +118,6 @@ export async function PATCH(request: NextRequest) {
       .eq('user_id', user.id)) as { error: any }
 
     if (updateError) {
-      console.error('Database update error:', updateError)
       return NextResponse.json(
         { message: 'Failed to update preferences' },
         { status: 500 }
@@ -132,8 +130,7 @@ export async function PATCH(request: NextRequest) {
       font_size: mergedPreferences.font_size,
       message: 'Preferences updated successfully',
     })
-  } catch (error) {
-    console.error('Error updating preferences:', error)
+  } catch {
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

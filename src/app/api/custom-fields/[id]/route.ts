@@ -60,7 +60,6 @@ export async function DELETE(
       .eq('id', fieldId)
 
     if (deleteError) {
-      console.error('Custom field deletion error:', deleteError)
       return NextResponse.json(
         { success: false, error: deleteError.message },
         { status: 500 }
@@ -71,10 +70,10 @@ export async function DELETE(
       success: true,
       message: 'Custom field deleted successfully',
     }), authResponse)
-  } catch (err: any) {
-    console.error('Custom field DELETE error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: message },
       { status: 500 }
     ), authResponse)
   }

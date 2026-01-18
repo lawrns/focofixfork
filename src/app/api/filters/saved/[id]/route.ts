@@ -65,9 +65,9 @@ export async function PATCH(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('Error updating saved filter:', err)
-    return mergeAuthResponse(databaseErrorResponse('Failed to update saved filter', err), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to update saved filter', message), authResponse)
   }
 }
 
@@ -108,8 +108,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ id: filterId }), authResponse)
-  } catch (err: any) {
-    console.error('Error deleting saved filter:', err)
-    return mergeAuthResponse(databaseErrorResponse('Failed to delete saved filter', err), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to delete saved filter', message), authResponse)
   }
 }

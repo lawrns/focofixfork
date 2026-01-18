@@ -38,7 +38,6 @@ export async function POST(req: NextRequest) {
     const { data, error: queryError } = await query
 
     if (queryError) {
-      console.error('Slug check error:', queryError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: queryError.message }, { status: 500 }), authResponse)
     }
 
@@ -50,8 +49,8 @@ export async function POST(req: NextRequest) {
       available,
       slug: body.slug
     }), authResponse)
-  } catch (err: any) {
-    console.error('Check slug API error:', err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }

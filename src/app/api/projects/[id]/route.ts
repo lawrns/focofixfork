@@ -44,9 +44,9 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('Project GET error:', err)
-    return databaseErrorResponse('Failed to fetch project', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch project', message)
   }
 }
 
@@ -97,9 +97,9 @@ export async function PATCH(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('Project PATCH error:', err)
-    return databaseErrorResponse('Failed to update project', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update project', message)
   }
 }
 
@@ -130,8 +130,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ deleted: true }), authResponse)
-  } catch (err: any) {
-    console.error('Project DELETE error:', err)
-    return databaseErrorResponse('Failed to delete project', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to delete project', message)
   }
 }

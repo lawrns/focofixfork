@@ -69,9 +69,9 @@ export async function PATCH(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('PATCH subtask error:', err)
-    return databaseErrorResponse('Failed to update subtask', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update subtask', message)
   }
 }
 
@@ -97,8 +97,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ message: 'Subtask deleted' }), authResponse)
-  } catch (err: any) {
-    console.error('DELETE subtask error:', err)
-    return databaseErrorResponse('Failed to delete subtask', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to delete subtask', message)
   }
 }

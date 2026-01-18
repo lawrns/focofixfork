@@ -75,7 +75,8 @@ export async function GET(
 
     // Fetch user profiles for comments
     const userIds = [...new Set(comments.map(c => c.user_id).filter(Boolean))]
-    let userProfiles: Record<string, any> = {}
+    interface UserProfile { id: string; full_name: string; email: string }
+    let userProfiles: Record<string, UserProfile> = {}
 
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
@@ -95,9 +96,9 @@ export async function GET(
     }))
 
     return mergeAuthResponse(successResponse(commentsWithUsers), authResponse)
-  } catch (err: any) {
-    console.error('Comments GET error:', err)
-    return internalErrorResponse('Failed to fetch comments', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to fetch comments', message)
   }
 }
 
@@ -180,8 +181,8 @@ export async function POST(
       ...comment,
       user: userProfile
     }), authResponse)
-  } catch (err: any) {
-    console.error('Comment POST error:', err)
-    return internalErrorResponse('Failed to create comment', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to create comment', message)
   }
 }

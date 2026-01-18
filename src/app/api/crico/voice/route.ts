@@ -58,7 +58,6 @@ async function transcribeWithWhisper(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-    console.error('[Voice API] Whisper error:', error);
     throw new Error(`Whisper API error: ${error.error?.message || response.statusText}`);
   }
 
@@ -123,13 +122,10 @@ export async function POST(request: NextRequest) {
         // If audio is provided without transcript, use Whisper for transcription
         if (audio && !transcript) {
           try {
-            console.log('[Voice API] Transcribing audio with Whisper...');
             const transcription = await transcribeWithWhisper(audio, mimeType);
             processedTranscript = transcription.text;
             processedConfidence = transcription.confidence;
-            console.log('[Voice API] Transcription result:', { text: processedTranscript, confidence: processedConfidence });
           } catch (whisperError) {
-            console.error('[Voice API] Whisper transcription failed:', whisperError);
             return NextResponse.json(
               { error: whisperError instanceof Error ? whisperError.message : 'Failed to transcribe audio' },
               { status: 500 }
@@ -212,8 +208,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
-    console.error('Voice API error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

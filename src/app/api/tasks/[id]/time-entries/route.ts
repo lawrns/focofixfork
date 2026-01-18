@@ -39,9 +39,9 @@ export async function GET(
       data: result.data.entries,
       totalSeconds: result.data.totalSeconds,
     }), authResponse)
-  } catch (err: any) {
-    console.error('Time entries GET error:', err)
-    return databaseErrorResponse('Failed to fetch time entries', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch time entries', message)
   }
 }
 
@@ -97,8 +97,8 @@ export async function POST(
     }
 
     return mergeAuthResponse(successResponse(result.data, undefined, 201), authResponse)
-  } catch (err: any) {
-    console.error('Time entries POST error:', err)
-    return databaseErrorResponse('Failed to create time entry', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to create time entry', message)
   }
 }

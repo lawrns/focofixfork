@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
       workspace_id: primaryWorkspace.id,
       workspace: primaryWorkspace
     }), authResponse)
-  } catch (err: any) {
-    console.error('User workspace API error:', err)
-    return databaseErrorResponse('Failed to fetch user workspace', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch user workspace', message)
   }
 }

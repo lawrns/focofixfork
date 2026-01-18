@@ -51,9 +51,9 @@ export async function PUT(
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
-  } catch (err: any) {
-    console.error('Time entry PUT error:', err)
-    return databaseErrorResponse('Failed to update time entry', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update time entry', message)
   }
 }
 
@@ -79,8 +79,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse(null), authResponse)
-  } catch (err: any) {
-    console.error('Time entry DELETE error:', err)
-    return databaseErrorResponse('Failed to delete time entry', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to delete time entry', message)
   }
 }

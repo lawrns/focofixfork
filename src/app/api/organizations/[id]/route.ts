@@ -57,7 +57,6 @@ export async function GET(
     const successRes = successResponse(result.data)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
-    console.error('Organization fetch error:', error)
     return internalErrorResponse('Failed to fetch organization', error instanceof Error ? error.message : 'Unknown error')
   }
 }
@@ -111,7 +110,6 @@ export async function PATCH(
     const successRes = successResponse(result.data)
     return mergeAuthResponse(successRes, authResponse)
   } catch (error) {
-    console.error('Organization update error:', error)
     return internalErrorResponse('Failed to update organization', error instanceof Error ? error.message : 'Unknown error')
   }
 }

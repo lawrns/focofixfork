@@ -31,7 +31,6 @@ export async function GET(req: NextRequest) {
     const { data, error: queryError } = await query
 
     if (queryError) {
-      console.error('Activity fetch error:', queryError)
       return mergeAuthResponse(NextResponse.json({ success: false, error: queryError.message }, { status: 500 }), authResponse)
     }
 
@@ -42,8 +41,8 @@ export async function GET(req: NextRequest) {
         pagination: { limit, offset, total: data?.length || 0 }
       }
     }), authResponse)
-  } catch (err: any) {
-    console.error('Activity API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

@@ -47,9 +47,7 @@ export async function GET(req: NextRequest) {
         .order('updated_at', { ascending: false })
         .limit(20)
 
-      if (projectsError) {
-        console.error('Projects search error:', projectsError)
-      } else {
+      if (!projectsError) {
         projectsData = data || []
       }
     }
@@ -91,9 +89,7 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      if (tasksError) {
-        console.error('Tasks search error:', tasksError)
-      } else {
+      if (!tasksError) {
         tasksData = data || []
       }
     }
@@ -105,8 +101,8 @@ export async function GET(req: NextRequest) {
         tasks: tasksData
       }
     }), authResponse)
-  } catch (err: any) {
-    console.error('Search API error:', err)
-    return mergeAuthResponse(NextResponse.json({ success: false, error: err.message }, { status: 500 }), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(NextResponse.json({ success: false, error: message }, { status: 500 }), authResponse)
   }
 }

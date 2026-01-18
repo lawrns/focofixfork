@@ -37,7 +37,6 @@ export async function GET(
       .maybeSingle()
 
     if (taskError) {
-      console.error('Task fetch error:', taskError)
       return databaseErrorResponse('Failed to fetch task', taskError)
     }
 
@@ -93,9 +92,9 @@ export async function GET(
       reporter,
     })
     return mergeAuthResponse(successRes, authResponse)
-  } catch (err: any) {
-    console.error('Task GET error:', err)
-    return internalErrorResponse('Failed to fetch task', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to fetch task', message)
   }
 }
 
@@ -137,7 +136,7 @@ export async function PATCH(
     }
 
     // Build update object with only provided fields
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, string | number | null> = {
       updated_at: new Date().toISOString(),
     }
 
@@ -164,9 +163,9 @@ export async function PATCH(
     }
 
     return mergeAuthResponse(successResponse(updated), authResponse)
-  } catch (err: any) {
-    console.error('Task PATCH error:', err)
-    return internalErrorResponse('Failed to update task', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to update task', message)
   }
 }
 
@@ -222,8 +221,8 @@ export async function DELETE(
     }
 
     return mergeAuthResponse(successResponse({ deleted: true }), authResponse)
-  } catch (err: any) {
-    console.error('Task DELETE error:', err)
-    return internalErrorResponse('Failed to delete task', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return internalErrorResponse('Failed to delete task', message)
   }
 }

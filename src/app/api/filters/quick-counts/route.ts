@@ -68,8 +68,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: counts,
     })
-  } catch (error) {
-    console.error('Error fetching quick filter counts:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

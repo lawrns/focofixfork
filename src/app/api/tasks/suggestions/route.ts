@@ -169,10 +169,10 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     ), authResponse)
-  } catch (err: any) {
-    console.error('Suggestions API error:', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to generate suggestions'
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to generate suggestions' },
+      { success: false, error: message },
       { status: 500 }
     )
   }

@@ -25,8 +25,7 @@ export async function GET(request: NextRequest) {
       data: [],
       total: 0,
     }), authResponse);
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
+  } catch {
     return mergeAuthResponse(NextResponse.json(
       { success: true, data: [], total: 0 },
       { status: 200 }

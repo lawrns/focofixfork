@@ -44,7 +44,6 @@ export async function POST(
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Proposal fetch error:', fetchError)
       return databaseErrorResponse('Failed to fetch proposal', fetchError)
     }
 
@@ -84,7 +83,6 @@ export async function POST(
       .limit(1)
 
     if (itemsError) {
-      console.error('Items fetch error:', itemsError)
       return databaseErrorResponse('Failed to check proposal items', itemsError)
     }
 
@@ -141,13 +139,12 @@ export async function POST(
       .single()
 
     if (updateError) {
-      console.error('Proposal submit error:', updateError)
       return databaseErrorResponse('Failed to submit proposal', updateError)
     }
 
     return mergeAuthResponse(successResponse(updated), authResponse)
-  } catch (err: any) {
-    console.error('Proposal submit error:', err)
-    return databaseErrorResponse('Failed to submit proposal', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to submit proposal', message)
   }
 }

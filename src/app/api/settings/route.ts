@@ -49,8 +49,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     return mergeAuthResponse(successResponse({ success: true, settings: result.data }), authResponse)
-  } catch (error) {
-    console.error('Error in settings API:', error)
-    return mergeAuthResponse(databaseErrorResponse('Failed to update settings', error), authResponse)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to update settings', message), authResponse)
   }
 }

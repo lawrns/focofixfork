@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
       email: email,
       twoFactorEnabled: twoFactorEnabled,
     });
-  } catch (error) {
-    console.error('Auth status error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

@@ -76,14 +76,13 @@ export async function GET(
 
     if (membersError) {
       // Table might not exist, return empty array
-      console.error('Error fetching project members:', membersError)
       return mergeAuthResponse(successResponse([]), authResponse)
     }
 
     return mergeAuthResponse(successResponse(members || []), authResponse)
-  } catch (err) {
-    console.error('Project team fetch error:', err)
-    return databaseErrorResponse('Failed to fetch project team', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch project team', message)
   }
 }
 
@@ -180,8 +179,8 @@ export async function POST(
     }
 
     return mergeAuthResponse(successResponse(newMember), authResponse)
-  } catch (err) {
-    console.error('Project team add error:', err)
-    return databaseErrorResponse('Failed to add project member', err)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to add project member', message)
   }
 }

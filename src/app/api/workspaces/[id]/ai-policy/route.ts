@@ -134,9 +134,9 @@ export async function GET(
     }
 
     return mergeAuthResponse(successResponse(aiPolicy), authResponse)
-  } catch (error) {
-    console.error('Failed to fetch AI policy:', error)
-    return databaseErrorResponse('Failed to fetch AI policy', error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch AI policy', message)
   }
 }
 
@@ -218,8 +218,8 @@ export async function PUT(
     }
 
     return mergeAuthResponse(successResponse(updatedPolicy), authResponse)
-  } catch (error) {
-    console.error('Failed to update AI policy:', error)
-    return databaseErrorResponse('Failed to update AI policy', error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update AI policy', message)
   }
 }

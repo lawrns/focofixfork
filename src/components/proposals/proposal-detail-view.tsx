@@ -739,111 +739,34 @@ function ProposalDetailViewComponent({
     setError(null)
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/proposals/${proposalId}`)
-      // const data = await response.json()
+      const response = await fetch(`/api/proposals/${proposalId}`, {
+        credentials: 'include',
+      })
 
-      // Mock data for development
-      const mockProposal: ProposalDetails = {
-        id: proposalId,
-        workspace_id: 'workspace-1',
-        project_id: 'project-1',
-        title: 'Q1 Sprint Planning Adjustments',
-        description: 'AI-suggested optimizations for the upcoming sprint based on team velocity and resource availability.',
-        status: 'pending_review',
-        source_type: 'text',
-        owner_id: 'user-1',
-        submitted_at: new Date().toISOString(),
-        approved_by: null,
-        approved_at: null,
-        rejected_by: null,
-        rejected_at: null,
-        rejection_reason: null,
-        applied_by: null,
-        applied_at: null,
-        merged_at: null,
-        metadata: {},
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        updated_at: new Date().toISOString(),
-        items: [
-          {
-            id: 'item-1',
-            proposal_id: proposalId,
-            action: 'modify',
-            entity_type: 'task',
-            entity_id: 'task-123',
-            title: 'Update task priority and due date',
-            description: 'Adjust timeline based on team velocity',
-            changes: { due_date: '2024-02-15', priority: 'high' },
-            previous_values: { due_date: '2024-02-10', priority: 'medium' },
-            status: 'pending',
-            review_notes: null,
-            reviewed_by: null,
-            reviewed_at: null,
-            sequence: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: 'item-2',
-            proposal_id: proposalId,
-            action: 'add',
-            entity_type: 'task',
-            entity_id: null,
-            title: 'Add buffer task for sprint planning',
-            description: 'New task to account for unexpected work',
-            changes: { title: 'New task for buffer', estimate: '2d' },
-            previous_values: null,
-            status: 'approved',
-            review_notes: 'Good addition',
-            reviewed_by: 'user-2',
-            reviewed_at: new Date().toISOString(),
-            sequence: 1,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: 'item-3',
-            proposal_id: proposalId,
-            action: 'remove',
-            entity_type: 'task',
-            entity_id: 'task-456',
-            title: 'Remove obsolete task',
-            description: 'This task is no longer relevant',
-            changes: {},
-            previous_values: { title: 'Obsolete task' },
-            status: 'pending',
-            review_notes: null,
-            reviewed_by: null,
-            reviewed_at: null,
-            sequence: 2,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ],
-        discussions: [
-          {
-            id: 'disc-1',
-            proposal_id: proposalId,
-            proposal_item_id: null,
-            user_id: 'user-2',
-            content: 'These changes look good overall. I have a few questions about the priority adjustments.',
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            updated_at: new Date(Date.now() - 3600000).toISOString(),
-          },
-        ],
-        impact: {
-          total_items: 3,
-          items_by_type: { add: 1, modify: 1, remove: 1 },
-          items_by_status: { pending: 2, approved: 1, rejected: 0 },
-          entities_affected: { tasks: 3, projects: 0, milestones: 0 },
-        },
-        discussion_count: 1,
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to load proposal: ${response.status}`)
       }
 
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setProposal(mockProposal)
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        // Transform API response to ProposalDetails format
+        const proposalData = data.data
+        const proposalDetails: ProposalDetails = {
+          ...proposalData,
+          items: proposalData.items || [],
+          discussions: proposalData.discussions || [],
+          impact: proposalData.impact || {
+            total_items: proposalData.items?.length || 0,
+            items_by_status: { pending: 0, approved: 0, rejected: 0 },
+          },
+          discussion_count: proposalData.discussions?.length || 0,
+        }
+        setProposal(proposalDetails)
+      } else {
+        throw new Error(data.error || 'Failed to load proposal')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load proposal')
     } finally {
@@ -860,49 +783,93 @@ function ProposalDetailViewComponent({
     if (!proposal) return
     setIsSubmitting(true)
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setProposal({ ...proposal, status: 'pending_review' })
-      toast.success('Proposal submitted for review')
+      const response = await fetch(`/api/proposals/${proposalId}/submit`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to submit proposal')
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setProposal({ ...proposal, status: 'pending_review', submitted_at: new Date().toISOString() })
+        toast.success('Proposal submitted for review')
+      } else {
+        throw new Error(data.error || 'Failed to submit proposal')
+      }
     } catch (err) {
-      toast.error('Failed to submit proposal')
+      toast.error(err instanceof Error ? err.message : 'Failed to submit proposal')
     } finally {
       setIsSubmitting(false)
     }
-  }, [proposal])
+  }, [proposal, proposalId])
 
   const handleDiscard = useCallback(async () => {
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const response = await fetch(`/api/proposals/${proposalId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to discard proposal')
+      }
+
       toast.success('Proposal discarded')
       onClose?.()
     } catch (err) {
-      toast.error('Failed to discard proposal')
+      toast.error(err instanceof Error ? err.message : 'Failed to discard proposal')
     }
-  }, [onClose])
+  }, [onClose, proposalId])
 
   const handleMerge = useCallback(async () => {
     if (!proposal) return
     setIsMerging(true)
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setProposal({ ...proposal, status: 'archived' }) // Status becomes 'archived' after merge
-      toast.success('Changes merged successfully')
-      onMerge?.()
+      const response = await fetch(`/api/proposals/${proposalId}/merge`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to merge proposal')
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setProposal({ ...proposal, status: 'archived', merged_at: new Date().toISOString() })
+        toast.success('Changes merged successfully')
+        onMerge?.()
+      } else {
+        throw new Error(data.error || 'Failed to merge proposal')
+      }
     } catch (err) {
-      toast.error('Failed to merge changes')
+      toast.error(err instanceof Error ? err.message : 'Failed to merge changes')
     } finally {
       setIsMerging(false)
     }
-  }, [proposal, onMerge])
+  }, [proposal, proposalId, onMerge])
 
   const handleApproveItem = useCallback(async (itemId: string) => {
     if (!proposal) return
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      const response = await fetch(`/api/proposals/${proposalId}/items/${itemId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approval_status: 'approved' }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to approve item')
+      }
+
       const currentStatus = proposal.impact.items_by_status ?? { pending: 0, approved: 0, rejected: 0 }
       setProposal({
         ...proposal,
@@ -913,22 +880,32 @@ function ProposalDetailViewComponent({
           ...proposal.impact,
           items_by_status: {
             ...currentStatus,
-            pending: currentStatus.pending - 1,
+            pending: Math.max(0, currentStatus.pending - 1),
             approved: currentStatus.approved + 1,
           },
         },
       })
       toast.success('Item approved')
     } catch (err) {
-      toast.error('Failed to approve item')
+      toast.error(err instanceof Error ? err.message : 'Failed to approve item')
     }
-  }, [proposal])
+  }, [proposal, proposalId])
 
   const handleRejectItem = useCallback(async (itemId: string) => {
     if (!proposal) return
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      const response = await fetch(`/api/proposals/${proposalId}/items/${itemId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approval_status: 'rejected' }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to reject item')
+      }
+
       const currentStatus = proposal.impact.items_by_status ?? { pending: 0, approved: 0, rejected: 0 }
       setProposal({
         ...proposal,
@@ -939,37 +916,45 @@ function ProposalDetailViewComponent({
           ...proposal.impact,
           items_by_status: {
             ...currentStatus,
-            pending: currentStatus.pending - 1,
+            pending: Math.max(0, currentStatus.pending - 1),
             rejected: currentStatus.rejected + 1,
           },
         },
       })
       toast.success('Item rejected')
     } catch (err) {
-      toast.error('Failed to reject item')
+      toast.error(err instanceof Error ? err.message : 'Failed to reject item')
     }
-  }, [proposal])
+  }, [proposal, proposalId])
 
   const handleAddComment = useCallback(async (content: string) => {
     if (!proposal) return
     try {
-      // TODO: Replace with actual API call
-      const newDiscussion: ProposalDiscussion = {
-        id: `disc-${Date.now()}`,
-        proposal_id: proposalId,
-        proposal_item_id: null,
-        user_id: 'current-user',
-        content,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      setProposal({
-        ...proposal,
-        discussions: [...proposal.discussions, newDiscussion],
+      const response = await fetch(`/api/proposals/${proposalId}/discussions`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
       })
-      toast.success('Comment added')
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to add comment')
+      }
+
+      const data = await response.json()
+      if (data.success && data.data) {
+        setProposal({
+          ...proposal,
+          discussions: [...proposal.discussions, data.data],
+          discussion_count: proposal.discussion_count + 1,
+        })
+        toast.success('Comment added')
+      } else {
+        throw new Error(data.error || 'Failed to add comment')
+      }
     } catch (err) {
-      toast.error('Failed to add comment')
+      toast.error(err instanceof Error ? err.message : 'Failed to add comment')
     }
   }, [proposal, proposalId])
 

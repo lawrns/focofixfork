@@ -66,7 +66,7 @@ export function AuditDashboard({ organizationId }: AuditDashboardProps) {
 
       // Load logs with filters
       const query = {
-        organization_id: organizationId,
+        workspace_id: organizationId,
         start_date: startDate,
         limit: 100,
       };
@@ -107,7 +107,7 @@ export function AuditDashboard({ organizationId }: AuditDashboardProps) {
   const handleExportLogs = async () => {
     try {
       await AuditService.exportLogs({
-        organization_id: organizationId,
+        workspace_id: organizationId,
         start_date: dateRange !== 'all' ? new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString() : undefined,
       });
       toast.success('Audit logs exported successfully');

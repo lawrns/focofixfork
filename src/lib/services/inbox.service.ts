@@ -90,8 +90,8 @@ export class InboxService {
       .from('work_items')
       .select(`
         *,
-        project:projects(title),
-        assignee:users(full_name)
+        project:foco_projects(name),
+        assignee:user_profiles(full_name)
       `)
       .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
       .in('status', ['todo', 'in_progress', 'blocked'])
@@ -99,11 +99,11 @@ export class InboxService {
       .limit(50)
 
     const { data: comments } = await this.supabase
-      .from('comments')
+      .from('foco_comments')
       .select(`
         *,
         work_item:work_items(title, project_id),
-        author:profiles(full_name)
+        author:user_profiles(full_name)
       `)
       .or(`mentions.cs.{${userId}},user_id.eq.${userId}`)
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())

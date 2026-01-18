@@ -241,13 +241,13 @@ const ROLE_TEMPLATES: PermissionTemplate[] = [
 ]
 
 interface PermissionsManagerProps {
-  organizationId: string
+  workspaceId: string
   currentUserRole?: string
   className?: string
 }
 
 export default function PermissionsManager({
-  organizationId,
+  workspaceId,
   currentUserRole = 'member',
   className
 }: PermissionsManagerProps) {
@@ -266,7 +266,7 @@ export default function PermissionsManager({
 
   useEffect(() => {
     loadRoles()
-  }, [organizationId])
+  }, [workspaceId])
 
   const loadRoles = async () => {
     try {

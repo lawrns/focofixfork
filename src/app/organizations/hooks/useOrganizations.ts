@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api-client'
 import { audioService } from '@/lib/audio/audio-service'
 import { hapticService } from '@/lib/audio/haptic-service'
 
-export interface Organization {
+export interface Workspace {
   id: string
   name: string
   description?: string
@@ -19,17 +19,17 @@ export interface Organization {
   created_at: string
 }
 
-export interface UseOrganizationsReturn {
-  organizations: Organization[]
+export interface UseWorkspacesReturn {
+  workspaces: Workspace[]
   isLoading: boolean
-  selectedOrganization: Organization | null
-  orgMembers: OrganizationMemberWithDetails[]
-  orgInvitations: InvitationWithDetails[]
+  selectedWorkspace: Workspace | null
+  workspaceMembers: OrganizationMemberWithDetails[]
+  workspaceInvitations: InvitationWithDetails[]
   currentUserRole: MemberRole
-  showOrgModal: boolean
+  showWorkspaceModal: boolean
   showInviteModal: boolean
   showCreateDialog: boolean
-  orgName: string
+  workspaceName: string
   inviteEmail: string
   inviteRole: MemberRole
   editingMember: string | null
@@ -40,10 +40,10 @@ export interface UseOrganizationsReturn {
   isInviting: boolean
   createResult: { success: boolean; message: string } | null
   inviteResult: { success: boolean; message: string } | null
-  loadOrganizations: () => Promise<void>
-  openOrganizationModal: (organization: Organization) => Promise<void>
-  openInviteModalForOrg: (organization: Organization) => Promise<void>
-  handleCreateOrganization: (e?: React.MouseEvent) => Promise<void>
+  loadWorkspaces: () => Promise<void>
+  openWorkspaceModal: (workspace: Workspace) => Promise<void>
+  openInviteModalForWs: (workspace: Workspace) => Promise<void>
+  handleCreateWorkspace: (e?: React.MouseEvent) => Promise<void>
   handleInviteMember: () => Promise<void>
   handleUpdateRole: (memberId: string, newRole: MemberRole) => Promise<void>
   handleRemoveMember: (memberId: string) => void
@@ -51,10 +51,10 @@ export interface UseOrganizationsReturn {
   handleResendInvitation: (invitationId: string) => Promise<void>
   handleCancelInvitation: (invitationId: string) => void
   confirmCancelInvitation: () => Promise<void>
-  setShowOrgModal: (show: boolean) => void
+  setShowWorkspaceModal: (show: boolean) => void
   setShowInviteModal: (show: boolean) => void
   setShowCreateDialog: (show: boolean) => void
-  setOrgName: (name: string) => void
+  setWorkspaceName: (name: string) => void
   setInviteEmail: (email: string) => void
   setInviteRole: (role: MemberRole) => void
   setEditingMember: (memberId: string | null) => void
@@ -67,17 +67,17 @@ export interface UseOrganizationsReturn {
   canRemoveMembers: boolean
 }
 
-export function useOrganizations(): UseOrganizationsReturn {
+export function useWorkspaces(): UseWorkspacesReturn {
   const { user } = useAuth()
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null)
-  const [showOrgModal, setShowOrgModal] = useState(false)
-  const [orgMembers, setOrgMembers] = useState<OrganizationMemberWithDetails[]>([])
-  const [orgInvitations, setOrgInvitations] = useState<InvitationWithDetails[]>([])
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
+  const [workspaceMembers, setWorkspaceMembers] = useState<OrganizationMemberWithDetails[]>([])
+  const [workspaceInvitations, setWorkspaceInvitations] = useState<InvitationWithDetails[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('member')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [orgName, setOrgName] = useState('')
+  const [workspaceName, setWorkspaceName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [createResult, setCreateResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -90,37 +90,37 @@ export function useOrganizations(): UseOrganizationsReturn {
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
   const [invitationToCancel, setInvitationToCancel] = useState<string | null>(null)
 
-  const loadOrganizations = useCallback(async () => {
+  const loadWorkspaces = useCallback(async () => {
     try {
-      const response = await fetch('/api/organizations', { credentials: 'include' })
+      const response = await fetch('/api/workspaces', { credentials: 'include' })
       if (response.ok) {
         const data = await response.json()
-        setOrganizations(data.data || [])
+        setWorkspaces(data.data || [])
       }
     } catch (error) {
-      console.error('Failed to load organizations:', error)
+      console.error('Failed to load workspaces:', error)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  const openOrganizationModal = useCallback(async (organization: Organization) => {
-    setSelectedOrganization(organization)
-    setShowOrgModal(true)
+  const openWorkspaceModal = useCallback(async (workspace: Workspace) => {
+    setSelectedWorkspace(workspace)
+    setShowWorkspaceModal(true)
     try {
       const results = await Promise.allSettled([
-        fetch(`/api/organizations/${organization.id}`, { credentials: 'include' }),
-        fetch(`/api/organizations/${organization.id}/members`, { credentials: 'include' }),
-        fetch(`/api/organizations/${organization.id}/invitations`, { credentials: 'include' })
+        fetch(`/api/workspaces/${workspace.id}`, { credentials: 'include' }),
+        fetch(`/api/workspaces/${workspace.id}/members`, { credentials: 'include' }),
+        fetch(`/api/workspaces/${workspace.id}/invitations`, { credentials: 'include' })
       ])
       if (results[0].status === 'fulfilled' && results[0].value.ok) {
-        const orgData = await results[0].value.json()
-        if (orgData.success) setSelectedOrganization(orgData.data)
+        const workspaceData = await results[0].value.json()
+        if (workspaceData.success) setSelectedWorkspace(workspaceData.data)
       }
       if (results[1].status === 'fulfilled' && results[1].value.ok) {
         const membersData = await results[1].value.json()
         if (membersData.success) {
-          setOrgMembers(membersData.data || [])
+          setWorkspaceMembers(membersData.data || [])
           if (user) {
             const currentUser = membersData.data?.find((m: OrganizationMemberWithDetails) => m.user_id === user.id)
             if (currentUser) setCurrentUserRole(currentUser.role)
@@ -129,40 +129,40 @@ export function useOrganizations(): UseOrganizationsReturn {
       }
       if (results[2].status === 'fulfilled' && results[2].value.ok) {
         const invitationsData = await results[2].value.json()
-        if (invitationsData.success) setOrgInvitations(invitationsData.data || [])
+        if (invitationsData.success) setWorkspaceInvitations(invitationsData.data || [])
       }
     } catch (error) {
-      console.error('Failed to load organization details:', error)
+      console.error('Failed to load workspace details:', error)
     }
   }, [user])
 
-  const openInviteModalForOrg = useCallback(async (organization: Organization) => {
-    await openOrganizationModal(organization)
+  const openInviteModalForWs = useCallback(async (workspace: Workspace) => {
+    await openWorkspaceModal(workspace)
     setShowInviteModal(true)
-  }, [openOrganizationModal])
+  }, [openWorkspaceModal])
 
-  const refreshMembers = useCallback(async (organizationId: string) => {
-    const response = await fetch(`/api/organizations/${organizationId}/members`, { credentials: 'include' })
+  const refreshMembers = useCallback(async (workspaceId: string) => {
+    const response = await fetch(`/api/workspaces/${workspaceId}/members`, { credentials: 'include' })
     if (response.ok) {
       const data = await response.json()
-      if (data.success) setOrgMembers(data.data || [])
+      if (data.success) setWorkspaceMembers(data.data || [])
     }
   }, [])
 
-  const refreshInvitations = useCallback(async (organizationId: string) => {
-    const response = await fetch(`/api/organizations/${organizationId}/invitations`, { credentials: 'include' })
+  const refreshInvitations = useCallback(async (workspaceId: string) => {
+    const response = await fetch(`/api/workspaces/${workspaceId}/invitations`, { credentials: 'include' })
     if (response.ok) {
       const data = await response.json()
-      if (data.success) setOrgInvitations(data.data || [])
+      if (data.success) setWorkspaceInvitations(data.data || [])
     }
   }, [])
 
   const handleInviteMember = useCallback(async () => {
-    if (!inviteEmail.trim() || !selectedOrganization) return
+    if (!inviteEmail.trim() || !selectedWorkspace) return
     setIsInviting(true)
     setInviteResult(null)
     try {
-      const response = await apiClient.post(`/api/organizations/${selectedOrganization.id}/members`, {
+      const response = await apiClient.post(`/api/workspaces/${selectedWorkspace.id}/members`, {
         email: inviteEmail,
         role: inviteRole,
         userId: user?.id
@@ -179,8 +179,8 @@ export function useOrganizations(): UseOrganizationsReturn {
         setInviteEmail('')
         setInviteRole('member')
         setShowInviteModal(false)
-        await refreshMembers(selectedOrganization.id)
-        await refreshInvitations(selectedOrganization.id)
+        await refreshMembers(selectedWorkspace.id)
+        await refreshInvitations(selectedWorkspace.id)
       } else {
         audioService.play('error')
         hapticService.error()
@@ -193,12 +193,12 @@ export function useOrganizations(): UseOrganizationsReturn {
     } finally {
       setIsInviting(false)
     }
-  }, [inviteEmail, inviteRole, selectedOrganization, user?.id, refreshMembers, refreshInvitations])
+  }, [inviteEmail, inviteRole, selectedWorkspace, user?.id, refreshMembers, refreshInvitations])
 
   const handleUpdateRole = useCallback(async (memberId: string, newRole: MemberRole) => {
-    if (!selectedOrganization) return
+    if (!selectedWorkspace) return
     try {
-      const response = await apiClient.patch(`/api/organizations/${selectedOrganization.id}/members/${memberId}`, {
+      const response = await apiClient.patch(`/api/workspaces/${selectedWorkspace.id}/members/${memberId}`, {
         role: newRole,
         userId: user?.id
       })
@@ -206,7 +206,7 @@ export function useOrganizations(): UseOrganizationsReturn {
       if (response.success) {
         audioService.play('sync')
         hapticService.light()
-        await refreshMembers(selectedOrganization.id)
+        await refreshMembers(selectedWorkspace.id)
         setEditingMember(null)
       } else {
         audioService.play('error')
@@ -217,21 +217,21 @@ export function useOrganizations(): UseOrganizationsReturn {
       hapticService.error()
       console.error('Failed to update member role:', error)
     }
-  }, [selectedOrganization, user?.id, refreshMembers])
+  }, [selectedWorkspace, user?.id, refreshMembers])
 
   const handleRemoveMember = useCallback((memberId: string) => setMemberToRemove(memberId), [])
 
   const confirmRemoveMember = useCallback(async () => {
-    if (!selectedOrganization || !memberToRemove) return
+    if (!selectedWorkspace || !memberToRemove) return
     try {
-      const response = await apiClient.delete(`/api/organizations/${selectedOrganization.id}/members/${memberToRemove}`, {
+      const response = await apiClient.delete(`/api/workspaces/${selectedWorkspace.id}/members/${memberToRemove}`, {
         body: { userId: user?.id }
       })
       
       if (response.success) {
         audioService.play('error') // Use error sound for removal
         hapticService.medium()
-        await refreshMembers(selectedOrganization.id)
+        await refreshMembers(selectedWorkspace.id)
       } else {
         audioService.play('error')
         hapticService.error()
@@ -243,17 +243,17 @@ export function useOrganizations(): UseOrganizationsReturn {
     } finally {
       setMemberToRemove(null)
     }
-  }, [selectedOrganization, memberToRemove, user?.id, refreshMembers])
+  }, [selectedWorkspace, memberToRemove, user?.id, refreshMembers])
 
   const handleResendInvitation = useCallback(async (invitationId: string) => {
-    if (!selectedOrganization) return
+    if (!selectedWorkspace) return
     try {
-      const response = await apiClient.post(`/api/organizations/${selectedOrganization.id}/invitations/${invitationId}/resend`, {})
+      const response = await apiClient.post(`/api/workspaces/${selectedWorkspace.id}/invitations/${invitationId}/resend`, {})
       
       if (response.success) {
         audioService.play('complete')
         hapticService.light()
-        await refreshInvitations(selectedOrganization.id)
+        await refreshInvitations(selectedWorkspace.id)
       } else {
         audioService.play('error')
         hapticService.error()
@@ -263,19 +263,19 @@ export function useOrganizations(): UseOrganizationsReturn {
       hapticService.error()
       console.error('Failed to resend invitation:', error)
     }
-  }, [selectedOrganization, refreshInvitations])
+  }, [selectedWorkspace, refreshInvitations])
 
   const handleCancelInvitation = useCallback((invitationId: string) => setInvitationToCancel(invitationId), [])
 
   const confirmCancelInvitation = useCallback(async () => {
-    if (!selectedOrganization || !invitationToCancel) return
+    if (!selectedWorkspace || !invitationToCancel) return
     try {
-      const response = await apiClient.delete(`/api/organizations/${selectedOrganization.id}/invitations/${invitationToCancel}`)
+      const response = await apiClient.delete(`/api/workspaces/${selectedWorkspace.id}/invitations/${invitationToCancel}`)
       
       if (response.success) {
         audioService.play('error')
         hapticService.light()
-        await refreshInvitations(selectedOrganization.id)
+        await refreshInvitations(selectedWorkspace.id)
       } else {
         audioService.play('error')
         hapticService.error()
@@ -287,32 +287,32 @@ export function useOrganizations(): UseOrganizationsReturn {
     } finally {
       setInvitationToCancel(null)
     }
-  }, [selectedOrganization, invitationToCancel, refreshInvitations])
+  }, [selectedWorkspace, invitationToCancel, refreshInvitations])
 
-  const handleCreateOrganization = useCallback(async (e?: React.MouseEvent) => {
+  const handleCreateWorkspace = useCallback(async (e?: React.MouseEvent) => {
     if (e) { e.preventDefault(); e.stopPropagation() }
-    if (!orgName.trim() || !user?.id) {
+    if (!workspaceName.trim() || !user?.id) {
       setCreateResult({ success: false, message: 'Please enter a name and ensure you are logged in' })
       return
     }
     setIsCreating(true)
     setCreateResult(null)
     try {
-      const response = await apiClient.post('/api/organizations', {
-        name: orgName.trim()
+      const response = await apiClient.post('/api/workspaces', {
+        name: workspaceName.trim()
       })
       
       if (response.success && response.data) {
         audioService.play('complete')
         hapticService.success()
-        setCreateResult({ success: true, message: 'Organization created successfully!' })
-        setOrgName('')
+        setCreateResult({ success: true, message: 'Workspace created successfully!' })
+        setWorkspaceName('')
         setShowCreateDialog(false)
-        await loadOrganizations()
+        await loadWorkspaces()
       } else {
         audioService.play('error')
         hapticService.error()
-        setCreateResult({ success: false, message: response.error || 'Failed to create organization' })
+        setCreateResult({ success: false, message: response.error || 'Failed to create workspace' })
       }
     } catch {
       audioService.play('error')
@@ -321,16 +321,16 @@ export function useOrganizations(): UseOrganizationsReturn {
     } finally {
       setIsCreating(false)
     }
-  }, [orgName, user?.id, loadOrganizations])
+  }, [workspaceName, user?.id, loadWorkspaces])
 
   return {
-    organizations, isLoading, selectedOrganization, orgMembers, orgInvitations, currentUserRole,
-    showOrgModal, showInviteModal, showCreateDialog, orgName, inviteEmail, inviteRole,
+    workspaces, isLoading, selectedWorkspace, workspaceMembers, workspaceInvitations, currentUserRole,
+    showWorkspaceModal, showInviteModal, showCreateDialog, workspaceName, inviteEmail, inviteRole,
     editingMember, editRole, memberToRemove, invitationToCancel, isCreating, isInviting,
-    createResult, inviteResult, loadOrganizations, openOrganizationModal, openInviteModalForOrg,
-    handleCreateOrganization, handleInviteMember, handleUpdateRole, handleRemoveMember,
+    createResult, inviteResult, loadWorkspaces, openWorkspaceModal, openInviteModalForWs,
+    handleCreateWorkspace, handleInviteMember, handleUpdateRole, handleRemoveMember,
     confirmRemoveMember, handleResendInvitation, handleCancelInvitation, confirmCancelInvitation,
-    setShowOrgModal, setShowInviteModal, setShowCreateDialog, setOrgName, setInviteEmail,
+    setShowWorkspaceModal, setShowInviteModal, setShowCreateDialog, setWorkspaceName, setInviteEmail,
     setInviteRole, setEditingMember, setEditRole, setMemberToRemove, setInvitationToCancel,
     setCreateResult, setInviteResult, canManageMembers: currentUserRole === 'admin', canRemoveMembers: currentUserRole === 'admin',
   }

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Users, UserPlus, Shield, Crown, Trash2, Calendar } from 'lucide-react'
 import { useToast } from '@/components/toast/toast'
 
-interface OrganizationMember {
+interface WorkspaceMember {
   id: string
   user_id: string
   email: string
@@ -32,7 +32,7 @@ interface InviteFormData {
 }
 
 export function RoleManagement() {
-  const [members, setMembers] = useState<OrganizationMember[]>([])
+  const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [loading, setLoading] = useState(true)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [inviteForm, setInviteForm] = useState<InviteFormData>({
@@ -46,15 +46,13 @@ export function RoleManagement() {
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true)
-      // TODO: Need to get organizationId from user context
-      // For now, this will need to be updated once we have org context
-      const response = await fetch('/api/user/organization')
+      const response = await fetch('/api/user/workspace')
       if (!response.ok) throw new Error('Failed to load members')
 
       const data = await response.json()
-      const orgId = data.organization_id
+      const workspaceId = data.workspace_id
 
-      const membersResponse = await fetch(`/api/organizations/${orgId}/members`)
+      const membersResponse = await fetch(`/api/workspaces/${workspaceId}/members`)
       if (!membersResponse.ok) throw new Error('Failed to load members')
 
       const membersData = await membersResponse.json()
@@ -63,7 +61,7 @@ export function RoleManagement() {
       console.error('Error loading members:', error)
       toast({
         title: 'Error',
-        description: 'Failed to load organization members',
+        description: 'Failed to load workspace members',
         variant: 'destructive'
       })
     } finally {
@@ -77,13 +75,13 @@ export function RoleManagement() {
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'member') => {
     try {
-      // Get organization ID first
-      const orgResponse = await fetch('/api/user/organization')
-      if (!orgResponse.ok) throw new Error('Failed to get organization')
-      const orgData = await orgResponse.json()
-      const orgId = orgData.organization_id
+      // Get workspace ID first
+      const workspaceResponse = await fetch('/api/user/workspace')
+      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
+      const workspaceData = await workspaceResponse.json()
+      const workspaceId = workspaceData.workspace_id
 
-      const response = await fetch(`/api/organizations/${orgId}/members/${userId}`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole })
@@ -122,13 +120,13 @@ export function RoleManagement() {
     try {
       setInviting(true)
 
-      // Get organization ID first
-      const orgResponse = await fetch('/api/user/organization')
-      if (!orgResponse.ok) throw new Error('Failed to get organization')
-      const orgData = await orgResponse.json()
-      const orgId = orgData.organization_id
+      // Get workspace ID first
+      const workspaceResponse = await fetch('/api/user/workspace')
+      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
+      const workspaceData = await workspaceResponse.json()
+      const workspaceId = workspaceData.workspace_id
 
-      const response = await fetch(`/api/organizations/${orgId}/invitations`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(inviteForm)
@@ -158,13 +156,13 @@ export function RoleManagement() {
 
   const handleRemoveMember = async (userId: string, memberName: string) => {
     try {
-      // Get organization ID first
-      const orgResponse = await fetch('/api/user/organization')
-      if (!orgResponse.ok) throw new Error('Failed to get organization')
-      const orgData = await orgResponse.json()
-      const orgId = orgData.organization_id
+      // Get workspace ID first
+      const workspaceResponse = await fetch('/api/user/workspace')
+      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
+      const workspaceData = await workspaceResponse.json()
+      const workspaceId = workspaceData.workspace_id
 
-      const response = await fetch(`/api/organizations/${orgId}/members/${userId}`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
         method: 'DELETE'
       })
 
@@ -224,7 +222,7 @@ export function RoleManagement() {
               Team Members
             </CardTitle>
             <CardDescription>
-              Manage your organization members and their roles
+              Manage your workspace members and their roles
             </CardDescription>
           </div>
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
@@ -238,7 +236,7 @@ export function RoleManagement() {
               <DialogHeader>
                 <DialogTitle>Invite New Member</DialogTitle>
                 <DialogDescription>
-                  Send an invitation to join your organization
+                  Send an invitation to join your workspace
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -364,7 +362,7 @@ export function RoleManagement() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Remove Member</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to remove {member.full_name || member.email} from the organization? 
+                          Are you sure you want to remove {member.full_name || member.email} from the workspace? 
                           This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

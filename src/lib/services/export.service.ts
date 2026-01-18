@@ -270,12 +270,12 @@ export class ExportService {
    * Export custom fields data before removal
    * @deprecated Custom fields feature removed in Phase 3
    */
-  static async exportCustomFields(organizationId: string, options: ExportOptions = {}): Promise<void> {
+  static async exportCustomFields(workspaceId: string, options: ExportOptions = {}): Promise<void> {
     // Custom fields table no longer exists after Phase 3 migration
     console.warn('Custom fields feature removed in Phase 3 migration')
     
     const exportData = {
-      organization_id: organizationId,
+      workspace_id: workspaceId,
       export_type: 'custom_fields',
       exported_at: new Date().toISOString(),
       custom_fields: [],
@@ -340,12 +340,12 @@ export class ExportService {
    * Export goals before migration to milestones
    * @deprecated Goals migrated to milestones in Phase 3
    */
-  static async exportGoals(organizationId: string, options: ExportOptions = {}): Promise<void> {
+  static async exportGoals(workspaceId: string, options: ExportOptions = {}): Promise<void> {
     // Goals table no longer exists after Phase 3 migration
     console.warn('Goals migrated to milestones in Phase 3 migration')
     
     const exportData = {
-      organization_id: organizationId,
+      workspace_id: workspaceId,
       export_type: 'goals_backup',
       exported_at: new Date().toISOString(),
       goals: [],
@@ -361,14 +361,14 @@ export class ExportService {
    */
   static async exportAllDeprecatedData(
     userId: string,
-    organizationId?: string
+    workspaceId?: string
   ): Promise<{ success: boolean; exports: string[] }> {
     const exports: string[] = []
 
     try {
       // Export custom fields
-      if (organizationId) {
-        await this.exportCustomFields(organizationId, { format: 'json' })
+      if (workspaceId) {
+        await this.exportCustomFields(workspaceId, { format: 'json' })
         exports.push('custom_fields.json')
       }
 
@@ -377,8 +377,8 @@ export class ExportService {
       exports.push('time_tracking.csv')
 
       // Export goals
-      if (organizationId) {
-        await this.exportGoals(organizationId, { format: 'json' })
+      if (workspaceId) {
+        await this.exportGoals(workspaceId, { format: 'json' })
         exports.push('goals.json')
       }
 

@@ -47,7 +47,7 @@ interface ProjectCardProps {
     start_date: string | null
     due_date: string | null
     created_at: string
-    organization_id: string
+    workspace_id: string
     color?: string
     is_pinned?: boolean
   }
@@ -98,7 +98,7 @@ export function ProjectCard({
   useRealtime(
     { projectId: project.id },
     (payload) => {
-      if (payload.table === 'projects' && payload.new?.id === project.id) {
+      if (payload.table === 'foco_projects' && payload.new?.id === project.id) {
         if (payload.eventType === 'UPDATE') {
           setCurrentProject(payload.new)
           setIsUpdated(true)

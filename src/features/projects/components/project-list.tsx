@@ -29,7 +29,7 @@ interface Project {
   start_date: string | null
   due_date: string | null
   created_at: string
-  organization_id: string
+  workspace_id: string
 }
 
 interface Organization {
@@ -38,7 +38,7 @@ interface Organization {
 }
 
 interface ProjectListProps {
-  organizationId?: string
+  workspaceId?: string
   showCreateButton?: boolean
   onCreateProject?: () => void
   onEditProject?: (projectId: string) => void
@@ -48,7 +48,7 @@ interface ProjectListProps {
 }
 
 export function ProjectList({
-  organizationId,
+  workspaceId,
   showCreateButton = true,
   onCreateProject,
   onEditProject,
@@ -96,7 +96,7 @@ export function ProjectList({
 
       // Build query parameters
       const params = new URLSearchParams()
-      if (organizationId) params.append('organization_id', organizationId)
+      if (workspaceId) params.append('workspace_id', workspaceId)
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (priorityFilter !== 'all') params.append('priority', priorityFilter)
 
@@ -145,9 +145,9 @@ export function ProjectList({
 
   // Real-time updates for projects
   useRealtime(
-    organizationId ? { organizationId } : { enabled: false },
+    workspaceId ? { organizationId: workspaceId } : { enabled: false },
     (payload) => {
-      if (payload.table === 'projects') {
+      if (payload.table === 'foco_projects') {
         if (payload.eventType === 'INSERT') {
           projectStore.addProject(payload.new)
         } else if (payload.eventType === 'UPDATE') {

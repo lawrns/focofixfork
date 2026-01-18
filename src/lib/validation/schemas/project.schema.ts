@@ -13,11 +13,11 @@ export const ProjectSchema = z.object({
   description: z.string().max(2000).nullable(),
   status: ProjectStatusSchema,
   priority: ProjectPrioritySchema,
-  organization_id: z.string().uuid().nullable(),
+  workspace_id: z.string().uuid().nullable(),
   start_date: z.string().nullable(),
   due_date: z.string().nullable(),
   progress_percentage: z.number().min(0).max(100),
-  created_by: z.string().uuid(),
+  owner_id: z.string().uuid(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 })
@@ -32,7 +32,7 @@ export const CreateProjectSchema = z.object({
     .max(2000, 'Description must be less than 2000 characters')
     .optional()
     .nullable(),
-  organization_id: z.string().uuid().optional().nullable(),
+  workspace_id: z.string().uuid().optional().nullable(),
 })
 
 // Schema for updating existing projects

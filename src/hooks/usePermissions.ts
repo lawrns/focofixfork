@@ -17,11 +17,11 @@ interface PermissionCheck {
 }
 
 interface UsePermissionsOptions {
-  organizationId?: string
+  workspaceId?: string
   projectId?: string
   teamMembers?: Array<{
     user_id: string
-    organization_id: string
+    workspace_id: string
     project_id: string | null
     role: TeamMemberRole
   }>
@@ -29,12 +29,12 @@ interface UsePermissionsOptions {
 }
 
 /**
- * Hook for checking user permissions in organizations and projects
+ * Hook for checking user permissions in workspaces and projects
  * Permission hierarchy: owner > admin > member > guest
  */
 export function usePermissions(options: UsePermissionsOptions = {}): PermissionCheck {
   const { user } = useAuth()
-  const { organizationId, projectId, teamMembers = [], requireSpecificRole = false } = options
+  const { workspaceId, projectId, teamMembers = [], requireSpecificRole = false } = options
 
   const permissions = useMemo(() => {
     const defaultPermissions: PermissionCheck = {
@@ -55,8 +55,8 @@ export function usePermissions(options: UsePermissionsOptions = {}): PermissionC
       return defaultPermissions
     }
 
-    // If no organization/project specified, assume basic permissions
-    if (!organizationId && !projectId) {
+    // If no workspace/project specified, assume basic permissions
+    if (!workspaceId && !projectId) {
       return {
         ...defaultPermissions,
         canView: true,
@@ -78,15 +78,15 @@ export function usePermissions(options: UsePermissionsOptions = {}): PermissionC
       }
     }
 
-    if (!userRole && organizationId) {
-      // Fall back to organization-level permissions
-      const orgRole = teamMembers.find(
+    if (!userRole && workspaceId) {
+      // Fall back to workspace-level permissions
+      const wsRole = teamMembers.find(
         member => member.user_id === user.id &&
-                 member.organization_id === organizationId &&
-                 member.project_id === null // Organization-level role
+                 member.workspace_id === workspaceId &&
+                 member.project_id === null // Workspace-level role
       )
-      if (orgRole) {
-        userRole = orgRole.role
+      if (wsRole) {
+        userRole = wsRole.role
       }
     }
 
@@ -118,7 +118,7 @@ export function usePermissions(options: UsePermissionsOptions = {}): PermissionC
       isGuest: userRole === 'guest',
       role: userRole,
     }
-  }, [user, organizationId, projectId, teamMembers, requireSpecificRole])
+  }, [user, workspaceId, projectId, teamMembers, requireSpecificRole])
 
   return permissions
 }
@@ -127,10 +127,10 @@ export function usePermissions(options: UsePermissionsOptions = {}): PermissionC
  * Hook for checking bulk operation permissions
  */
 export function useBulkPermissions(
-  selectedProjects: Array<{ organization_id: string }>,
+  selectedProjects: Array<{ workspace_id: string }>,
   teamMembers: Array<{
     user_id: string
-    organization_id: string
+    workspace_id: string
     project_id: string | null
     role: TeamMemberRole
   }>
@@ -142,27 +142,27 @@ export function useBulkPermissions(
       return { canArchive: false, canDelete: false }
     }
 
-    // Check if user has admin/owner permissions for all selected projects' organizations
+    // Check if user has admin/owner permissions for all selected projects' workspaces
     const canArchive = selectedProjects.every(project => {
-      const orgMembers = teamMembers.filter(
-        member => member.organization_id === project.organization_id &&
+      const wsMembers = teamMembers.filter(
+        member => member.workspace_id === project.workspace_id &&
                  member.user_id === user.id
       )
 
-      // User must be admin or owner at organization level
-      return orgMembers.some(member =>
+      // User must be admin or owner at workspace level
+      return wsMembers.some(member =>
         member.role === 'admin' || member.role === 'owner'
       )
     })
 
     // Delete requires owner permissions
     const canDelete = selectedProjects.every(project => {
-      const orgMembers = teamMembers.filter(
-        member => member.organization_id === project.organization_id &&
+      const wsMembers = teamMembers.filter(
+        member => member.workspace_id === project.workspace_id &&
                  member.user_id === user.id
       )
 
-      return orgMembers.some(member => member.role === 'owner')
+      return wsMembers.some(member => member.role === 'owner')
     })
 
     return { canArchive, canDelete }
@@ -172,7 +172,7 @@ export function useBulkPermissions(
 /**
  * Hook for checking if user can manage a specific project
  */
-export function useProjectPermissions(projectId: string, organizationId: string) {
+export function useProjectPermissions(projectId: string, workspaceId: string) {
   const { user } = useAuth()
 
   // In a real app, this would fetch team members from Supabase

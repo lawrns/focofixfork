@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       workspace_id: body.workspace_id,
       name: body.name,
       filters: body.filters || {},
-      created_by: user.id,
+      user_id: user.id,
     }
 
     const result = await repo.createFilter(filterData)

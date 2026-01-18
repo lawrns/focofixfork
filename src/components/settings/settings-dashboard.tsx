@@ -45,7 +45,7 @@ interface UserSettings {
   fullName: string
 }
 
-interface OrganizationSettings {
+interface WorkspaceSettings {
   name: string
   description: string
   allowPublicProjects: boolean
@@ -76,8 +76,8 @@ export function SettingsDashboard() {
     fullName: ''
   })
 
-  const [orgSettings, setOrgSettings] = useState<OrganizationSettings>({
-    name: 'My Organization',
+  const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>({
+    name: 'My Workspace',
     description: '',
     allowPublicProjects: false,
     requireApproval: true,
@@ -107,7 +107,7 @@ export function SettingsDashboard() {
       fullName: user?.user_metadata?.full_name || ''
     })
 
-    setOrgSettings({
+    setWorkspaceSettings({
       name: 'Fyves',
       description: 'Leading technology solutions and project management',
       allowPublicProjects: true,
@@ -273,25 +273,25 @@ export function SettingsDashboard() {
     }
   }
 
-  const saveOrgSettings = async () => {
+  const saveWorkspaceSettings = async () => {
     orgSyncStatus.startSync()
     setSaving(true)
     try {
-      // Get organization ID first
-      const orgResponse = await fetch('/api/user/organization')
-      if (!orgResponse.ok) throw new Error('Failed to get organization')
-      const orgData = await orgResponse.json()
-      const orgId = orgData.organization_id
+      // Get workspace ID first
+      const workspaceResponse = await fetch('/api/user/workspace')
+      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
+      const workspaceData = await workspaceResponse.json()
+      const workspaceId = workspaceData.workspace_id
 
-      const response = await fetch(`/api/organizations/${orgId}/settings`, {
+      const response = await fetch(`/api/workspaces/${workspaceId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: orgSettings.name,
-          description: orgSettings.description,
-          allowPublicProjects: orgSettings.allowPublicProjects,
-          requireApproval: orgSettings.requireApproval,
-          defaultVisibility: orgSettings.defaultVisibility
+          name: workspaceSettings.name,
+          description: workspaceSettings.description,
+          allowPublicProjects: workspaceSettings.allowPublicProjects,
+          requireApproval: workspaceSettings.requireApproval,
+          defaultVisibility: workspaceSettings.defaultVisibility
         })
       })
 
@@ -304,9 +304,9 @@ export function SettingsDashboard() {
       orgSyncStatus.completeSync()
       audioService.play('complete')
       hapticService.success()
-      toast.success('Organization settings saved')
+      toast.success('Workspace settings saved')
     } catch (error) {
-      console.error('Error saving organization settings:', error)
+      console.error('Error saving workspace settings:', error)
       audioService.play('error')
       hapticService.error()
       const errorMessage = error instanceof Error ? error.message : 'Failed to save settings'
@@ -314,7 +314,7 @@ export function SettingsDashboard() {
       toast.error(errorMessage, {
         action: {
           label: 'Retry',
-          onClick: () => saveOrgSettings()
+          onClick: () => saveWorkspaceSettings()
         }
       })
     } finally {
@@ -450,7 +450,7 @@ export function SettingsDashboard() {
           </TabsTrigger>
           <TabsTrigger value="organization" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Organization
+            Workspace
           </TabsTrigger>
           <TabsTrigger value="members" className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -702,9 +702,9 @@ export function SettingsDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Organization Settings</CardTitle>
+                  <CardTitle>Workspace Settings</CardTitle>
                   <CardDescription>
-                    Manage your organization&apos;s settings and preferences.
+                    Manage your workspace&apos;s settings and preferences.
                   </CardDescription>
                 </div>
                 <SyncIndicator
@@ -718,20 +718,20 @@ export function SettingsDashboard() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="org-name">Organization Name</Label>
+                  <Label htmlFor="org-name">Workspace Name</Label>
                   <Input
                     id="org-name"
-                    value={orgSettings.name}
-                    onChange={(e) => setOrgSettings({...orgSettings, name: e.target.value})}
+                    value={workspaceSettings.name}
+                    onChange={(e) => setWorkspaceSettings({...workspaceSettings, name: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="org-description">Description</Label>
                   <Input
                     id="org-description"
-                    value={orgSettings.description}
-                    onChange={(e) => setOrgSettings({...orgSettings, description: e.target.value})}
-                    placeholder="Brief description of your organization"
+                    value={workspaceSettings.description}
+                    onChange={(e) => setWorkspaceSettings({...workspaceSettings, description: e.target.value})}
+                    placeholder="Brief description of your workspace"
                   />
                 </div>
               </div>
@@ -745,9 +745,9 @@ export function SettingsDashboard() {
                     </p>
                   </div>
                   <Switch
-                    checked={orgSettings.allowPublicProjects}
+                    checked={workspaceSettings.allowPublicProjects}
                     onCheckedChange={(checked) =>
-                      setOrgSettings({...orgSettings, allowPublicProjects: checked})
+                      setWorkspaceSettings({...workspaceSettings, allowPublicProjects: checked})
                     }
                   />
                 </div>
@@ -762,9 +762,9 @@ export function SettingsDashboard() {
                     </p>
                   </div>
                   <Switch
-                    checked={orgSettings.requireApproval}
+                    checked={workspaceSettings.requireApproval}
                     onCheckedChange={(checked) =>
-                      setOrgSettings({...orgSettings, requireApproval: checked})
+                      setWorkspaceSettings({...workspaceSettings, requireApproval: checked})
                     }
                   />
                 </div>
@@ -773,8 +773,8 @@ export function SettingsDashboard() {
 
                 <div className="space-y-2">
                   <Label>Default Project Visibility</Label>
-                  <Select value={orgSettings.defaultVisibility} onValueChange={(value: any) =>
-                    setOrgSettings({...orgSettings, defaultVisibility: value})
+                  <Select value={workspaceSettings.defaultVisibility} onValueChange={(value: any) =>
+                    setWorkspaceSettings({...workspaceSettings, defaultVisibility: value})
                   }>
                     <SelectTrigger>
                       <SelectValue />
@@ -788,9 +788,9 @@ export function SettingsDashboard() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={saveOrgSettings} disabled={saving}>
+                <Button onClick={saveWorkspaceSettings} disabled={saving}>
                   <Save className="h-4 w-4" />
-                  {saving ? 'Saving...' : 'Save Organization Settings'}
+                  {saving ? 'Saving...' : 'Save Workspace Settings'}
                 </Button>
               </div>
             </CardContent>

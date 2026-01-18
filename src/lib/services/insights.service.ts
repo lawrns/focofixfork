@@ -65,10 +65,10 @@ export class InsightsService {
   /**
    * Generate contextual AI insights for user
    */
-  async getInsights(userId: string, organizationId?: string): Promise<InsightsResponse> {
+  async getInsights(userId: string, workspaceId?: string): Promise<InsightsResponse> {
     try {
       // 1. Gather context data
-      const context = await this.gatherContext(userId, organizationId)
+      const context = await this.gatherContext(userId, workspaceId)
 
       // 2. Generate AI insights
       const insights = await this.generateAIInsights(context)
@@ -93,7 +93,7 @@ export class InsightsService {
   /**
    * Gather context data for insight generation
    */
-  private async gatherContext(userId: string, organizationId?: string) {
+  private async gatherContext(userId: string, workspaceId?: string) {
     const now = new Date()
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
@@ -135,7 +135,7 @@ export class InsightsService {
 
     return {
       userId,
-      organizationId,
+      workspaceId,
       timeContext: {
         hour: now.getHours(),
         dayOfWeek: now.getDay(),

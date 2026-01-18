@@ -10,8 +10,8 @@ export const projectSchema = z.object({
   start_date: z.string().optional(),
   due_date: z.string().optional(),
   progress_percentage: z.number().min(0).max(100),
-  created_by: z.string(),
-  organization_id: z.string().optional(),
+  owner_id: z.string(),
+  workspace_id: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string()
 })
@@ -24,12 +24,12 @@ export const projectFormSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
   start_date: z.string().optional(),
   due_date: z.string().optional(),
-  organization_id: z.string().optional()
+  workspace_id: z.string().optional()
 })
 
 // Project filters schema
 export const projectFiltersSchema = z.object({
-  organization_id: z.string().optional(),
+  workspace_id: z.string().optional(),
   status: projectSchema.shape.status.optional(),
   priority: projectSchema.shape.priority.optional(),
   limit: z.number().min(1).max(100).default(10),

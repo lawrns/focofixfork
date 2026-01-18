@@ -10,7 +10,7 @@ export interface Project {
   start_date?: string;
   due_date?: string;
   progress_percentage: number;
-  created_by: string;
+  owner_id: string;
   workspace_id: string | null;
   created_at: string;
   updated_at: string;
@@ -25,7 +25,7 @@ export interface CreateProjectData {
   start_date: string | null;
   due_date: string | null;
   workspace_id: string | null;
-  created_by: string;
+  owner_id: string;
   progress_percentage: number;
 }
 

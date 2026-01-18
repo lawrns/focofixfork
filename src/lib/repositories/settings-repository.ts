@@ -8,15 +8,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface UserProfileWithSettings {
   id: string
-  user_id: string
-  organization_id: string | null
-  display_name: string | null
-  bio: string | null
+  user_id?: string
+  full_name: string | null
+  bio?: string | null
   avatar_url: string | null
   timezone: string | null
-  theme_preference: string | null
+  language?: string | null
   email_notifications: boolean
-  settings: Record<string, unknown>
+  settings?: Record<string, unknown>
   created_at: string
   updated_at: string
 }

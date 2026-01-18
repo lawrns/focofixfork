@@ -64,27 +64,27 @@ export function useCurrentWorkspace() {
 
     async function fetchDefaultWorkspace() {
       try {
-        // Try to get demo workspace first
-        const { data } = await untypedSupabase
+        const response = await fetch('/api/user/workspace');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data.workspace) {
+            setCurrentWorkspace(result.data.workspace);
+            return;
+          }
+        }
+
+        // Fallback to direct DB query if API fails
+        const { data: workspaces } = await untypedSupabase
           .from('workspaces')
           .select('*')
-          .eq('id', DEMO_WORKSPACE_ID)
-          .single();
+          .order('created_at', { ascending: true })
+          .limit(1);
 
-        if (data) {
-          setCurrentWorkspace(data);
+        if (workspaces && workspaces.length > 0) {
+          setCurrentWorkspace(workspaces[0]);
         }
       } catch (err) {
-        // Fallback to first workspace
-        const { data } = await untypedSupabase
-          .from('workspaces')
-          .select('*')
-          .limit(1)
-          .single();
-
-        if (data) {
-          setCurrentWorkspace(data);
-        }
+        console.error('Error fetching default workspace:', err);
       } finally {
         setLoading(false);
       }
@@ -117,7 +117,7 @@ export function useProjects(workspaceId?: string) {
         .from('foco_projects')
         .select('*')
         .eq('workspace_id', wsId)
-        .order('position', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setProjects(data || []);
@@ -260,7 +260,7 @@ export function useWorkItems(options?: {
         {
           event: '*',
           schema: 'public',
-          table: 'tasks',
+          table: 'work_items',
           filter: `workspace_id=eq.${wsId}`,
         },
         () => {
@@ -287,10 +287,10 @@ export function useWorkItem(workItemId: string) {
 
     try {
       const { data, error } = await untypedSupabase
-        .from('tasks')
+        .from('work_items')
         .select(`
           *,
-          project:projects(id, name, slug, color)
+          project:foco_projects(id, name, slug, color)
         `)
         .eq('id', workItemId)
         .single();
@@ -319,7 +319,7 @@ export function useWorkItem(workItemId: string) {
         {
           event: '*',
           schema: 'public',
-          table: 'tasks',
+          table: 'work_items',
           filter: `id=eq.${workItemId}`,
         },
         () => {
@@ -350,11 +350,11 @@ export function useInbox(userId: string) {
 
     try {
       const { data, error } = await untypedSupabase
-        .from('notifications')
+        .from('inbox_items')
         .select(`
           *,
-          work_item:tasks(id, title, status, priority),
-          project:projects(id, name, color)
+          work_item:work_items(id, title, status, priority),
+          project:foco_projects(id, name, color)
         `)
         .eq('user_id', userId)
         .eq('is_resolved', false)

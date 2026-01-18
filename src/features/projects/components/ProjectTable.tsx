@@ -40,7 +40,6 @@ interface Project {
   priority: 'low' | 'medium' | 'high' | 'urgent'
   progress_percentage?: number
   created_at: string
-  organization_id?: string
   workspace_id?: string
   archived_at?: string | null
 }
@@ -974,7 +973,7 @@ export default function ProjectTable({
       oldData: payload.old
     })
 
-    if (payload.table === 'projects') {
+    if (payload.table === 'foco_projects') {
       const projectId = payload.new?.id || payload.old?.id
 
       // Skip real-time events if a local operation is in progress for this project

@@ -90,7 +90,7 @@ export interface Project {
   color: string;
   icon: string;
   status: string;
-  owner_id?: string;
+  owner_id: string;
   default_status: WorkItemStatus;
   settings: ProjectSettings;
   is_pinned: boolean;

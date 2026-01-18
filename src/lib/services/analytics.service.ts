@@ -365,42 +365,42 @@ export class AnalyticsService {
     try {
       // Get projects where user is a member
       let membersQuery = untypedSupabaseAdmin
-        .from('project_members')
+        .from('foco_project_members')
         .select(`
           project_id,
           foco_projects!inner(
             id,
-            organization_id
+            workspace_id
           )
         `)
         .eq('user_id', userId)
 
       if (organizationId) {
-        membersQuery = membersQuery.eq('foco_projects.organization_id', organizationId)
+        membersQuery = membersQuery.eq('foco_projects.workspace_id', organizationId)
       }
 
       const { data: memberData, error: memberError } = await membersQuery
       if (memberError) {
         console.error('Error fetching project memberships:', memberError)
       } else {
-        memberData?.forEach(pm => projectIds.add(pm.project_id))
+        memberData?.forEach((pm: any) => projectIds.add(pm.project_id))
       }
 
       // Get projects created by the user
       let createdQuery = untypedSupabaseAdmin
         .from('foco_projects')
-        .select('id, organization_id')
-        .eq('created_by', userId)
+        .select('id, workspace_id')
+        .eq('owner_id', userId)
 
       if (organizationId) {
-        createdQuery = createdQuery.eq('organization_id', organizationId)
+        createdQuery = createdQuery.eq('workspace_id', organizationId)
       }
 
       const { data: createdData, error: createdError } = await createdQuery
       if (createdError) {
         console.error('Error fetching created projects:', createdError)
       } else {
-        createdData?.forEach(p => projectIds.add(p.id))
+        createdData?.forEach((p: any) => projectIds.add(p.id))
       }
 
       return Array.from(projectIds)
@@ -574,7 +574,7 @@ export class AnalyticsService {
       dayEnd.setHours(23, 59, 59, 999)
 
       const { data: tasks } = await untypedSupabase
-        .from('tasks')
+        .from('work_items')
         .select('id')
         .in('project_id', projectIds)
         .eq('status', 'done')
@@ -611,7 +611,7 @@ export class AnalyticsService {
       weekEnd.setDate(date.getDate() + 3)
 
       const { data: tasks } = await untypedSupabase
-        .from('tasks')
+        .from('work_items')
         .select('created_at, updated_at')
         .in('project_id', projectIds)
         .eq('status', 'done')
@@ -653,7 +653,7 @@ export class AnalyticsService {
       date.setDate(date.getDate() - (days - 1 - i))
 
       const { data: tasks } = await untypedSupabase
-        .from('tasks')
+        .from('work_items')
         .select('id')
         .in('project_id', projectIds)
         .not('status', 'eq', 'done')

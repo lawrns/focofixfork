@@ -3,15 +3,15 @@
 import { BaseEmptyState } from './base-empty-state'
 import { Building2, Users, Shield, CreditCard, Plus, UserPlus } from 'lucide-react'
 
-interface OrganizationsEmptyProps {
-  onCreateOrganization: () => void
-  onJoinOrganization: () => void
+interface WorkspacesEmptyProps {
+  onCreateWorkspace: () => void
+  onJoinWorkspace: () => void
 }
 
-export function OrganizationsEmpty({ 
-  onCreateOrganization, 
-  onJoinOrganization 
-}: OrganizationsEmptyProps) {
+export function WorkspacesEmpty({ 
+  onCreateWorkspace, 
+  onJoinWorkspace 
+}: WorkspacesEmptyProps) {
   const illustration = (
     <div className="relative w-full h-full">
       {/* Background */}
@@ -47,22 +47,22 @@ export function OrganizationsEmpty({
 
   return (
     <BaseEmptyState
-      title="Create or join an organization"
-      description="Organizations help you collaborate with your team, manage permissions, and centralize billing. Create your own or join an existing one."
+      title="Create or join a workspace"
+      description="Workspaces help you collaborate with your team, manage permissions, and centralize projects. Create your own or join an existing one."
       illustration={illustration}
       primaryAction={{
-        label: 'Create Organization',
-        onClick: onCreateOrganization,
+        label: 'Create Workspace',
+        onClick: onCreateWorkspace,
         variant: 'default'
       }}
       secondaryAction={{
-        label: 'Join Organization',
-        onClick: onJoinOrganization
+        label: 'Join Workspace',
+        onClick: onJoinWorkspace
       }}
     >
-      {/* Organization benefits */}
+      {/* Workspace benefits */}
       <div className="mt-8 max-w-2xl mx-auto">
-        <h4 className="text-sm font-medium text-gray-900 mb-4">Organization benefits</h4>
+        <h4 className="text-sm font-medium text-gray-900 mb-4">Workspace benefits</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { 
@@ -97,15 +97,15 @@ export function OrganizationsEmpty({
       {/* Quick actions */}
       <div className="mt-8 flex flex-wrap justify-center gap-4">
         <button
-          onClick={onCreateOrganization}
+          onClick={onCreateWorkspace}
           className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Start your own organization
+          Start your own workspace
         </button>
         
         <button
-          onClick={onJoinOrganization}
+          onClick={onJoinWorkspace}
           className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <UserPlus className="w-4 h-4" />
@@ -115,7 +115,7 @@ export function OrganizationsEmpty({
 
       {/* Help text */}
       <div className="mt-6 text-xs text-gray-500 text-center max-w-md mx-auto">
-        You can always create or join organizations later. Organizations are optional but recommended for team collaboration.
+        You can always create or join workspaces later. Workspaces are optional but recommended for team collaboration.
       </div>
     </BaseEmptyState>
   )

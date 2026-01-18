@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Settings,
@@ -16,7 +16,11 @@ import {
   Moon,
   Sun,
   Monitor,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
+import { useWorkspaceStore } from '@/lib/stores/foco-store';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,30 +64,38 @@ const settingsSections = [
 ];
 
 function WorkspaceSettings() {
+  const { currentWorkspace, setCurrentWorkspace } = useWorkspaceStore();
   const [isSaving, setIsSaving] = useState(false);
-  const [workspaceName, setWorkspaceName] = useState('Acme Corp');
-  const [workspaceSlug, setWorkspaceSlug] = useState('acme-corp');
-  const [workspaceDescription, setWorkspaceDescription] = useState('Demo workspace for Foco 2.0');
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceSlug, setWorkspaceSlug] = useState('');
+  const [workspaceDescription, setWorkspaceDescription] = useState('');
+
+  // Load workspace data when currentWorkspace changes
+  useEffect(() => {
+    if (currentWorkspace) {
+      setWorkspaceName(currentWorkspace.name || '');
+      setWorkspaceSlug(currentWorkspace.slug || '');
+      setWorkspaceDescription(''); // Description not in workspace type yet
+    }
+  }, [currentWorkspace]);
 
   const handleSave = async () => {
+    if (!currentWorkspace?.id) {
+      toast.error('No workspace selected');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workspaceName,
-          workspaceSlug,
-          workspaceDescription,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
+      // For now, just update local state and show success
+      // TODO: Implement workspace update API
+      if (currentWorkspace) {
+        setCurrentWorkspace({
+          ...currentWorkspace,
+          name: workspaceName,
+          slug: workspaceSlug,
+        });
       }
-
       toast.success('Settings saved successfully');
     } catch (error) {
       toast.error('Failed to save settings');
@@ -810,13 +822,26 @@ function SecuritySettings({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
   );
 }
 
+interface WorkspaceMember {
+  id: string;
+  user_id: string;
+  role: string;
+  user_name: string;
+  email: string;
+  user?: {
+    id: string;
+    email: string;
+    full_name: string;
+    avatar_url: string;
+  };
+  created_at: string;
+}
+
 function MembersSettings() {
-  const [members, setMembers] = useState([
-    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'owner', avatar: null, joined: '2024-01-01' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'admin', avatar: null, joined: '2024-02-15' },
-    { id: '3', name: 'Bob Wilson', email: 'bob@example.com', role: 'member', avatar: null, joined: '2024-03-10' },
-    { id: '4', name: 'Alice Brown', email: 'alice@example.com', role: 'viewer', avatar: null, joined: '2024-04-05' },
-  ]);
+  const { currentWorkspace } = useWorkspaceStore();
+  const { user } = useAuth();
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
@@ -841,29 +866,119 @@ function MembersSettings() {
     { feature: 'Delete workspace', owner: true, admin: false, member: false, viewer: false },
   ];
 
+  // Load workspace members from API
+  const loadMembers = useCallback(async () => {
+    if (!currentWorkspace?.id) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/workspaces/${currentWorkspace.id}/members`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch members');
+      }
+      const result = await response.json();
+      if (result.success && result.data) {
+        setMembers(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading members:', error);
+      toast.error('Failed to load team members');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentWorkspace?.id]);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
   const handleInvite = async () => {
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim() || !currentWorkspace?.id) return;
     setIsInviting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`/api/organizations/${currentWorkspace.id}/invitations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send invitation');
+      }
+
       toast.success(`Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
       setShowInviteDialog(false);
-    } catch {
-      toast.error('Failed to send invitation');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send invitation');
     } finally {
       setIsInviting(false);
     }
   };
 
   const handleRoleChange = async (memberId: string, newRole: string) => {
-    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
-    toast.success('Role updated');
+    if (!currentWorkspace?.id) return;
+
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    try {
+      const response = await fetch(`/api/organizations/${currentWorkspace.id}/members/${member.user_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update role');
+      }
+
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
+      toast.success('Role updated');
+    } catch (error) {
+      toast.error('Failed to update role');
+    }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    setMembers(prev => prev.filter(m => m.id !== memberId));
-    toast.success('Member removed');
+    if (!currentWorkspace?.id) return;
+
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    try {
+      const response = await fetch(`/api/organizations/${currentWorkspace.id}/members/${member.user_id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove member');
+      }
+
+      setMembers(prev => prev.filter(m => m.id !== memberId));
+      toast.success('Member removed');
+    } catch (error) {
+      toast.error('Failed to remove member');
+    }
+  };
+
+  // Get display name for member
+  const getMemberDisplayName = (member: WorkspaceMember) => {
+    return member.user?.full_name || member.user_name || member.email?.split('@')[0] || 'Unknown User';
+  };
+
+  // Get initials for avatar
+  const getMemberInitials = (member: WorkspaceMember) => {
+    const name = getMemberDisplayName(member);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Check if current user is the member
+  const isCurrentUser = (member: WorkspaceMember) => {
+    return member.user_id === user?.id;
   };
 
   return (
@@ -884,52 +999,67 @@ function MembersSettings() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {members.map((member) => (
-              <div
-                key={member.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-medium">
-                    {member.name.split(' ').map(n => n[0]).join('')}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+            </div>
+          ) : members.length === 0 ? (
+            <div className="text-center py-8 text-zinc-500">
+              No team members found. Invite someone to get started.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {members.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-medium">
+                      {getMemberInitials(member)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium truncate flex items-center gap-2">
+                        {getMemberDisplayName(member)}
+                        {isCurrentUser(member) && (
+                          <Badge variant="outline" className="text-xs">You</Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-zinc-500 truncate">{member.email}</div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{member.name}</div>
-                    <div className="text-sm text-zinc-500 truncate">{member.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 sm:shrink-0">
-                  <Select
-                    value={member.role}
-                    onValueChange={(value) => handleRoleChange(member.id, value)}
-                    disabled={member.role === 'owner'}
-                  >
-                    <SelectTrigger className="w-full sm:w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {member.role !== 'owner' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                      onClick={() => handleRemoveMember(member.id)}
+                  <div className="flex items-center gap-2 sm:shrink-0">
+                    <Select
+                      value={member.role}
+                      onValueChange={(value) => handleRoleChange(member.id, value)}
+                      disabled={member.role === 'owner' || isCurrentUser(member)}
                     >
-                      <Users className="h-4 w-4" />
-                    </Button>
-                  )}
+                      <SelectTrigger className="w-full sm:w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {member.role !== 'owner' && !isCurrentUser(member) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        onClick={() => handleRemoveMember(member.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

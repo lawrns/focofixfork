@@ -28,6 +28,7 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSyncStatus } from '@/lib/hooks/useSyncStatus'
+import { useWorkspaceStore } from '@/lib/stores/foco-store'
 import { SyncIndicator } from '@/components/ui/sync-indicator'
 import { RoleManagement } from './role-management'
 import { ExportDialog } from '@/components/deprecation/ExportDialog'
@@ -92,31 +93,62 @@ export function SettingsDashboard() {
   const orgSyncStatus = useSyncStatus({ syncedResetMs: 2000, errorResetMs: 4000 })
   const autoSaveDebounceRef = useRef<NodeJS.Timeout | null>(null)
 
+  const { currentWorkspace } = useWorkspaceStore()
+
   const loadSettings = useCallback(async () => {
     if (!user) return
 
-    // For demo purposes, just show sample data
-    setUserSettings({
-      theme: 'dark',
-      language: 'en',
-      timezone: 'America/New_York',
-      emailNotifications: true,
-      pushNotifications: true,
-      weeklyReports: true,
-      marketingEmails: false,
-      fullName: user?.user_metadata?.full_name || ''
-    })
+    try {
+      // Load user settings from API
+      const response = await fetch('/api/user/settings')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.data) {
+          setUserSettings(prev => ({
+            ...prev,
+            fullName: data.data.full_name || user?.user_metadata?.full_name || '',
+            timezone: data.data.timezone || 'America/New_York',
+            language: data.data.language || 'en',
+          }))
+        }
+      }
 
-    setWorkspaceSettings({
-      name: 'Fyves',
-      description: 'Leading technology solutions and project management',
-      allowPublicProjects: true,
-      requireApproval: false,
-      defaultVisibility: 'private'
-    })
+      // Load notification preferences
+      const notifResponse = await fetch('/api/user/settings/notifications')
+      if (notifResponse.ok) {
+        const notifData = await notifResponse.json()
+        if (notifData.data) {
+          setUserSettings(prev => ({
+            ...prev,
+            emailNotifications: notifData.data.email_notifications ?? true,
+            pushNotifications: notifData.data.push_notifications ?? true,
+            weeklyReports: notifData.data.weekly_reports ?? false,
+            marketingEmails: notifData.data.marketing_emails ?? false,
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('[Settings] Error loading settings:', error)
+      // Fall back to defaults on error
+      setUserSettings(prev => ({
+        ...prev,
+        fullName: user?.user_metadata?.full_name || '',
+      }))
+    }
+
+    // Load workspace settings from store
+    if (currentWorkspace) {
+      setWorkspaceSettings({
+        name: currentWorkspace.name || '',
+        description: '',
+        allowPublicProjects: false,
+        requireApproval: true,
+        defaultVisibility: 'private'
+      })
+    }
 
     setIsLoading(false);
-  }, [user])
+  }, [user, currentWorkspace])
 
   useEffect(() => {
     loadSettings()

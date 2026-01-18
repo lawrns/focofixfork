@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Plus,
   Star,
+  GitBranch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,6 +41,7 @@ const mainNavItems: NavItem[] = [
 
 const workspaceNavItems: NavItem[] = [
   { label: 'Projects', href: '/projects', icon: FolderKanban, shortcut: 'G P' },
+  { label: 'Proposals', href: '/proposals', icon: GitBranch, shortcut: 'G O' },
   { label: 'Timeline', href: '/timeline', icon: Calendar, shortcut: 'G T' },
   { label: 'People', href: '/people', icon: Users, shortcut: 'G E' },
   { label: 'Reports', href: '/reports', icon: BarChart3, shortcut: 'G R' },

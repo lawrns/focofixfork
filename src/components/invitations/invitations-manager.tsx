@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,22 +53,26 @@ export default function InvitationsManager({
   const [inviteMessage, setInviteMessage] = useState('')
   const [inviteResult, setInviteResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  useEffect(() => {
-    loadInvitations()
-  }, [workspaceId])
-
-  const loadInvitations = async () => {
+  const loadInvitations = useCallback(async () => {
     try {
       setIsLoading(true)
-      // TODO: Load invitations from API
-      // For now, show empty state
-      setInvitations([])
+      const response = await fetch(`/api/organizations/${workspaceId}/invitations`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data) {
+          setInvitations(data.data)
+        }
+      }
     } catch (error) {
       console.error('Failed to load invitations:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [workspaceId])
+
+  useEffect(() => {
+    loadInvitations()
+  }, [loadInvitations])
 
   const handleCreateInvitation = async () => {
     if (!inviteEmail.trim()) return
@@ -88,7 +92,7 @@ export default function InvitationsManager({
     setInviteResult(null)
 
     try {
-      const response = await fetch(`/api/workspaces/${workspaceId}/invitations`, {
+      const response = await fetch(`/api/organizations/${workspaceId}/invitations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +125,7 @@ export default function InvitationsManager({
 
   const handleResendInvitation = async (invitationId: string) => {
     try {
-      const response = await fetch(`/api/workspaces/${workspaceId}/invitations/${invitationId}/resend`, {
+      const response = await fetch(`/api/organizations/${workspaceId}/invitations/${invitationId}/resend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +147,7 @@ export default function InvitationsManager({
     if (!confirm('Are you sure you want to cancel this invitation?')) return
 
     try {
-      const response = await fetch(`/api/workspaces/${workspaceId}/invitations/${invitationId}`, {
+      const response = await fetch(`/api/organizations/${workspaceId}/invitations/${invitationId}`, {
         method: 'DELETE',
       })
 

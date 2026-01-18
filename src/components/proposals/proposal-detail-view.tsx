@@ -60,8 +60,10 @@ import {
   List,
   Calendar,
   Keyboard,
+  Layers,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ProposalFlowDiagram } from './proposal-flow-diagram'
 
 // =============================================================================
 // Sub-component Interfaces (to be imported from their respective files)
@@ -731,6 +733,7 @@ function ProposalDetailViewComponent({
   const [isMerging, setIsMerging] = useState(false)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [timelineViewMode, setTimelineViewMode] = useState<'side-by-side' | 'unified'>('unified')
+  const [visualizationMode, setVisualizationMode] = useState<'timeline' | 'flow'>('flow')
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
 
   // Fetch proposal data
@@ -1104,25 +1107,91 @@ function ProposalDetailViewComponent({
           </div>
         </div>
 
-        {/* Impact Dashboard and Timeline Comparison */}
-        <div
-          className={cn(
-            'grid gap-4',
-            isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'
-          )}
-        >
-          <div className="lg:col-span-1">
-            <ImpactDashboard summary={proposal.impact} />
-          </div>
-          <div className="lg:col-span-2">
-            <TimelineComparison
-              proposalId={proposalId}
-              items={proposal.items}
-              viewMode={timelineViewMode}
-              onViewModeChange={setTimelineViewMode}
-            />
+        {/* Visualization Mode Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-0.5">
+            <button
+              onClick={() => setVisualizationMode('flow')}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5',
+                visualizationMode === 'flow'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              )}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              Flow View
+            </button>
+            <button
+              onClick={() => setVisualizationMode('timeline')}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5',
+                visualizationMode === 'timeline'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              )}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Timeline
+            </button>
           </div>
         </div>
+
+        {/* Flow Diagram (new) */}
+        <AnimatePresence mode="wait">
+          {visualizationMode === 'flow' && (
+            <motion.div
+              key="flow"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card>
+                <CardContent className="p-6">
+                  <ProposalFlowDiagram
+                    proposalId={proposalId}
+                    items={proposal.items}
+                    onItemClick={(item) => {
+                      toggleItemExpanded(item.id)
+                    }}
+                    onMerge={handleMerge}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {visualizationMode === 'timeline' && (
+            <motion.div
+              key="timeline"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Impact Dashboard and Timeline Comparison */}
+              <div
+                className={cn(
+                  'grid gap-4',
+                  isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'
+                )}
+              >
+                <div className="lg:col-span-1">
+                  <ImpactDashboard summary={proposal.impact} />
+                </div>
+                <div className="lg:col-span-2">
+                  <TimelineComparison
+                    proposalId={proposalId}
+                    items={proposal.items}
+                    viewMode={timelineViewMode}
+                    onViewModeChange={setTimelineViewMode}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Proposed Changes */}
         <Card>

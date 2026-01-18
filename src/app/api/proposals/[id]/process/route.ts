@@ -9,6 +9,7 @@ import {
   forbiddenResponse,
   badRequestResponse,
 } from '@/lib/api/response-helpers'
+import { AIProposalParser } from '@/lib/services/ai-proposal-parser'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ export async function POST(
     // Verify proposal exists and user has access
     const { data: proposal, error: proposalError } = await supabaseAdmin
       .from('proposals')
-      .select('id, workspace_id, project_id, created_by, status, source_content')
+      .select('id, workspace_id, project_id, created_by, status, source_content, title, description')
       .eq('id', id)
       .maybeSingle()
 
@@ -88,65 +89,137 @@ export async function POST(
       )
     }
 
-    // TODO: Integrate with OpenAI or other AI service to parse source content
-    // For now, this is a placeholder implementation
     const processingStartTime = Date.now()
-
-    // Simulate AI processing (replace with actual AI integration)
-    const aiAnalysis = {
+    let parsedItems: any[] = []
+    let aiAnalysis: any = {
       detected_tasks: 0,
       confidence: 'medium' as const,
-      processing_time_ms: Date.now() - processingStartTime,
+      processing_time_ms: 0,
       source_type: sourceContent.type || 'text',
-      parsed_successfully: true,
+      parsed_successfully: false,
     }
 
-    // Parse source content (placeholder - implement actual AI parsing)
-    const parsedItems: any[] = []
+    // Get project context if available
+    let projectContext = undefined
+    if (proposal.project_id) {
+      const { data: project } = await supabaseAdmin
+        .from('foco_projects')
+        .select('id, name, description')
+        .eq('id', proposal.project_id)
+        .maybeSingle()
 
-    // Example: If source content has text, parse it
-    if (sourceContent.text) {
-      // This is a very basic placeholder
-      // In production, this would call OpenAI API to parse the text
+      if (project) {
+        projectContext = {
+          id: project.id,
+          name: project.name,
+          description: project.description,
+        }
+      }
+    }
+
+    // Try to use AI parser, fall back to basic parsing if no API key
+    const hasOpenAIKey = !!process.env.OPENAI_API_KEY
+
+    if (hasOpenAIKey && sourceContent.text) {
+      try {
+        // Use AI-powered parsing
+        const parsedProposal = await AIProposalParser.parseProposalInput(
+          sourceContent.text,
+          projectContext
+        )
+
+        // Convert parsed items to database format
+        parsedItems = parsedProposal.items.map((item, index) => ({
+          action: 'add' as const,
+          entity_type: item.type === 'milestone' ? 'milestone' : 'task',
+          entity_id: null,
+          original_state: null,
+          proposed_state: {
+            title: item.title,
+            description: item.description || null,
+            status: item.status || 'backlog',
+            priority: item.priority || 'medium',
+            type: item.itemType || 'task',
+          },
+          ai_estimate: options.enable_time_estimation && item.estimatedHours
+            ? {
+                hours: item.estimatedHours,
+                confidence: parsedProposal.confidence,
+                reasoning: `AI-estimated based on task complexity and requirements`,
+                basis: 'ai_inference',
+              }
+            : {},
+          ai_assignment: options.enable_auto_assignment && item.assigneeId
+            ? {
+                assignee_id: item.assigneeId,
+                confidence: parsedProposal.confidence,
+                reasoning: 'AI-suggested based on task requirements',
+                alternatives: [],
+              }
+            : {},
+          approval_status: 'pending',
+          position: index,
+        }))
+
+        aiAnalysis = {
+          detected_tasks: parsedItems.length,
+          confidence: parsedProposal.confidence >= 0.8 ? 'high' : parsedProposal.confidence >= 0.5 ? 'medium' : 'low',
+          processing_time_ms: Date.now() - processingStartTime,
+          source_type: sourceContent.type || 'text',
+          parsed_successfully: true,
+          summary: parsedProposal.summary,
+          total_estimated_hours: parsedProposal.totalEstimatedHours,
+          risks: parsedProposal.risks,
+          assumptions: parsedProposal.assumptions,
+        }
+      } catch (aiError) {
+        console.error('AI parsing failed, falling back to basic parsing:', aiError)
+        // Fall through to basic parsing
+      }
+    }
+
+    // Basic fallback parsing (when AI is unavailable or fails)
+    if (parsedItems.length === 0 && sourceContent.text) {
       const lines = sourceContent.text.split('\n').filter((l: string) => l.trim())
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim()
-        if (line) {
+        if (line && line.length > 3) { // Skip very short lines
           parsedItems.push({
             action: 'add' as const,
             entity_type: 'task' as const,
             entity_id: null,
             original_state: null,
             proposed_state: {
-              title: line,
+              title: line.slice(0, 200), // Limit title length
               description: null,
-              status: 'todo',
+              status: 'backlog',
               priority: 'medium',
             },
             ai_estimate: options.enable_time_estimation
               ? {
                   hours: 4,
-                  confidence: 'low',
-                  reasoning: 'Default estimate - no historical data available',
-                  basis: 'ai_inference',
+                  confidence: 0.3,
+                  reasoning: 'Default estimate - AI parsing unavailable',
+                  basis: 'default',
                 }
               : {},
-            ai_assignment: options.enable_auto_assignment
-              ? {
-                  assignee_id: null,
-                  confidence: 0,
-                  reasoning: 'No assignment data available',
-                  alternatives: [],
-                }
-              : {},
+            ai_assignment: {},
             approval_status: 'pending',
             position: i,
           })
         }
       }
 
-      aiAnalysis.detected_tasks = parsedItems.length
+      aiAnalysis = {
+        detected_tasks: parsedItems.length,
+        confidence: 'low' as const,
+        processing_time_ms: Date.now() - processingStartTime,
+        source_type: sourceContent.type || 'text',
+        parsed_successfully: true,
+        fallback_used: true,
+        note: hasOpenAIKey ? 'AI parsing failed, used basic fallback' : 'OPENAI_API_KEY not configured, used basic parsing',
+      }
     }
 
     // Delete existing items before creating new ones
@@ -175,11 +248,12 @@ export async function POST(
       }
     }
 
-    // Update proposal with AI analysis
+    // Update proposal with AI analysis and source content
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('proposals')
       .update({
         ai_analysis: aiAnalysis,
+        source_content: sourceContent,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

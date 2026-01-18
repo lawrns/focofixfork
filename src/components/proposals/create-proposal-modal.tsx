@@ -532,9 +532,9 @@ export function CreateProposalModal({
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         stream.getTracks().forEach(track => track.stop())
 
-        // Simulate transcription
+        // Transcribe audio
         setProcessingState('transcribing')
-        await simulateTranscription(audioBlob)
+        await transcribeAudio(audioBlob)
       }
 
       mediaRecorder.start()
@@ -561,12 +561,43 @@ export function CreateProposalModal({
     }
   }, [isRecording, startRecording, stopRecording])
 
-  // Simulated transcription (replace with actual API call)
-  const simulateTranscription = async (_audioBlob: Blob) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setTranscription('This is a simulated transcription of your voice recording. In production, this would be the actual transcribed text from the audio.')
-    setProcessingState('idle')
+  // Transcribe audio using Web Speech API or fallback to server
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      // Try using the browser's Web Speech API first for real-time transcription
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        // For recorded audio, we need to use a server-side solution
+        // The Web Speech API only works with live microphone input
+      }
+
+      // Upload to server for transcription via OpenAI Whisper
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.text) {
+          setTranscription(data.text)
+          setProcessingState('idle')
+          return
+        }
+      }
+
+      // Fallback: Use browser's SpeechRecognition for future recordings
+      // For now, show a message that transcription requires the API
+      setError('Voice transcription requires OpenAI API key. Please use text input instead, or configure OPENAI_API_KEY.')
+      setProcessingState('idle')
+    } catch (err) {
+      console.error('Transcription error:', err)
+      setError('Failed to transcribe audio. Please try again or use text input.')
+      setProcessingState('idle')
+    }
   }
 
   // File Upload Handlers
@@ -615,6 +646,7 @@ export function CreateProposalModal({
     } else if (activeTab === 'voice') {
       content = transcription
     } else if (activeTab === 'file') {
+      // For file uploads, we'd extract text content
       content = uploadedFiles.map(f => f.file.name).join(', ')
     }
 
@@ -627,7 +659,7 @@ export function CreateProposalModal({
     setProcessingState('processing')
     setProgress(0)
 
-    // Simulate AI processing
+    // Progress animation
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 90) {
@@ -639,48 +671,75 @@ export function CreateProposalModal({
     }, 300)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Step 1: Create the proposal
+      const sourceType = activeTab === 'voice' ? 'voice' : activeTab === 'file' ? 'file' : 'text'
+
+      const createResponse = await fetch('/api/proposals', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: content.slice(0, 100) + (content.length > 100 ? '...' : ''),
+          description: content,
+          source_type: sourceType,
+          project_id: projectId || undefined,
+        }),
+      })
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create proposal')
+      }
+
+      const createData = await createResponse.json()
+      if (!createData.success || !createData.data) {
+        throw new Error(createData.error || 'Failed to create proposal')
+      }
+
+      const newProposal = createData.data
+
+      // Step 2: Process the proposal with AI to extract items
+      setProgress(50)
+
+      const processResponse = await fetch(`/api/proposals/${newProposal.id}/process`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_content: { text: content, type: sourceType },
+          options: {
+            enable_time_estimation: true,
+            enable_auto_assignment: true,
+          },
+        }),
+      })
 
       clearInterval(progressInterval)
       setProgress(100)
 
-      // Simulate extracted items
-      const simulatedItems: ExtractedItem[] = [
-        { type: 'task', title: 'Review proposal requirements', confidence: 0.95 },
-        { type: 'task', title: 'Create implementation plan', confidence: 0.88 },
-        { type: 'milestone', title: 'Initial Review Complete', confidence: 0.82 }
-      ]
-      setExtractedItems(simulatedItems)
+      if (processResponse.ok) {
+        const processData = await processResponse.json()
+        if (processData.success && processData.data?.items) {
+          const items: ExtractedItem[] = processData.data.items.map((item: any) => ({
+            type: item.entity_type || 'task',
+            title: item.proposed_state?.title || item.title || 'Untitled',
+            description: item.proposed_state?.description,
+            confidence: item.ai_estimate?.confidence || 0.8,
+          }))
+          setExtractedItems(items)
+        }
+      }
+
       setProcessingState('success')
 
-      // Create proposal after short delay
+      // Return the created proposal after a short delay for animation
       setTimeout(() => {
-        const mockProposal: Proposal = {
-          id: crypto.randomUUID(),
-          workspace_id: '',
-          project_id: projectId,
-          title: 'New Proposal',
-          description: content,
-          status: 'draft',
-          source_type: activeTab === 'voice' ? 'voice' : 'text',
-          owner_id: '',
-          submitted_at: null,
-          approved_by: null,
-          approved_at: null,
-          rejected_by: null,
-          rejected_at: null,
-          applied_by: null,
-          applied_at: null,
-          metadata: { extracted_items: simulatedItems },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        onCreated(mockProposal)
+        onCreated(newProposal)
       }, 1500)
     } catch (err) {
       clearInterval(progressInterval)
-      setError('Failed to process content. Please try again.')
+      console.error('Failed to process content:', err)
+      setError(err instanceof Error ? err.message : 'Failed to process content. Please try again.')
       setProcessingState('error')
     }
   }, [activeTab, textContent, transcription, uploadedFiles, projectId, onCreated])

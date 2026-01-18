@@ -9,7 +9,7 @@ import {
   forbiddenResponse,
   badRequestResponse,
 } from '@/lib/api/response-helpers'
-import { AIProposalParser } from '@/lib/services/ai-proposal-parser'
+import { aiProposalParser } from '@/lib/services/ai-proposal-parser'
 
 export const dynamic = 'force-dynamic'
 
@@ -123,7 +123,7 @@ export async function POST(
     if (hasOpenAIKey && sourceContent.text) {
       try {
         // Use AI-powered parsing
-        const parsedProposal = await AIProposalParser.parseProposalInput(
+        const parsedProposal = await aiProposalParser.parseProposalInput(
           sourceContent.text,
           projectContext
         )

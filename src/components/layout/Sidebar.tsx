@@ -49,12 +49,17 @@ export default function Sidebar() {
   const [loading, setLoading] = useState(true)
   const [primaryOrgId, setPrimaryOrgId] = useState<string | null>(null)
   const hasMounted = useRef(false)
-  const lastRealtimeUpdate = useRef<number>(Date.now())
+  const lastRealtimeUpdate = useRef<number>(0)
 
   const navigation = getNavigation(t)
 
   // Initialize projects from store on mount
   useEffect(() => {
+    // Initialize lastRealtimeUpdate on client-side to avoid hydration mismatch
+    if (lastRealtimeUpdate.current === 0) {
+      lastRealtimeUpdate.current = Date.now()
+    }
+
     if (!user || hasMounted.current) return
 
     hasMounted.current = true

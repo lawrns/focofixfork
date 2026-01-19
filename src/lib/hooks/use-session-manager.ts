@@ -10,7 +10,7 @@ const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000 // Refresh token when < 5 minutes 
 
 export function useSessionManager() {
   const router = useRouter()
-  const lastActivityRef = useRef<number>(Date.now())
+  const lastActivityRef = useRef<number>(0)
   const sessionCheckTimerRef = useRef<NodeJS.Timeout | null>(null)
   const tokenRefreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -69,6 +69,13 @@ export function useSessionManager() {
       console.error('Error checking token expiry:', error)
     }
   }, [router])
+
+  // Initialize lastActivityRef on client-side to avoid hydration mismatch
+  useEffect(() => {
+    if (lastActivityRef.current === 0) {
+      lastActivityRef.current = Date.now()
+    }
+  }, [])
 
   // Set up activity listeners
   useEffect(() => {

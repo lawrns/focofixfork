@@ -5,6 +5,7 @@ import { User, Clock, MessageSquare, CheckCircle, Plus, Edit, Trash2, FileText }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { ActivityFeedEnhanced } from '@/components/empty-states/activity-feed-enhanced'
 
 export interface ActivityItem {
   id: string
@@ -205,12 +206,8 @@ export function ActivityFeed({
 
   if (activities.length === 0) {
     return (
-      <div className={cn('text-center py-8', className)}>
-        <MessageSquare className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          Activity will appear here as team members work on tasks
-        </p>
+      <div className={cn(className)}>
+        <ActivityFeedEnhanced />
       </div>
     )
   }

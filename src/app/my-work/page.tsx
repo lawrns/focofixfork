@@ -48,6 +48,7 @@ import { toast } from 'sonner';
 import { useCreateTaskModal } from '@/features/tasks';
 import { Card } from '@/components/ui/card';
 import { TaskFilterPopover, TaskFilters, defaultFilters } from '@/components/filters/task-filter-popover';
+import { MyWorkEmpty } from '@/components/empty-states/my-work-empty';
 
 const priorityColors: Record<PriorityLevel, string> = {
   urgent: 'bg-red-500',
@@ -304,9 +305,10 @@ function Section({
         ))}
         
         {items.length === 0 && !showInlineInput && (
-          <div className="py-4 text-center text-sm text-zinc-400">
-            No items in {config.label.toLowerCase()}
-          </div>
+          <MyWorkEmpty
+            section={section as 'now' | 'next' | 'later' | 'waiting'}
+            onAddTask={() => setShowInlineInput(true)}
+          />
         )}
         
         {showInlineInput ? (

@@ -24,6 +24,7 @@ import {
 import { GripVertical, Plus, Trash2, MoreVertical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { SubtasksEmpty } from '@/components/empty-states/subtasks-empty'
 
 interface Subtask {
   id: string
@@ -232,10 +233,8 @@ export function SubtaskList({
       </div>
 
       {/* Empty State */}
-      {subtasks.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-4">
-          No subtasks yet. Add one to break down this task into smaller steps.
-        </p>
+      {subtasks.length === 0 && !showAddInput && (
+        <SubtasksEmpty onAddSubtask={() => setShowAddInput(true)} />
       )}
 
       {/* Delete Confirmation Dialog */}

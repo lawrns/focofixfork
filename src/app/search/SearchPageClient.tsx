@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { cn } from '@/lib/utils';
+import { SearchEmpty } from '@/components/empty-states/search-empty';
 
 interface SearchResult {
   tasks: Array<{
@@ -480,17 +481,24 @@ export default function SearchPageClient() {
         </div>
       )}
 
-      {/* No Results */}
+      {/* No Query or No Results */}
+      {!query && !isLoading && (
+        <SearchEmpty
+          variant="no-query"
+          onNewSearch={() => {
+            // Focus on search input
+            const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+            searchInput?.focus();
+          }}
+        />
+      )}
       {query && !isLoading && totalResults === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Search className="h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-4" />
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-            No results found
-          </h3>
-          <p className="text-sm text-zinc-500 max-w-md">
-            Try adjusting your search query
-          </p>
-        </div>
+        <SearchEmpty
+          variant="no-results"
+          query={query}
+          onClearFilters={hasActiveFilters ? clearFilters : undefined}
+          onNewSearch={() => setQuery('')}
+        />
       )}
 
       {/* Projects Results */}

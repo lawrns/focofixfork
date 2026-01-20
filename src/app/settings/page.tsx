@@ -48,8 +48,11 @@ import { useTheme } from 'next-themes';
 import type { DensitySetting } from '@/types/foco';
 import { PageShell } from '@/components/layout/page-shell';
 import { buttons } from '@/lib/copy';
+import { SettingsMembersEmpty } from '@/components/empty-states/settings-members-empty';
+import { IntegrationsEmpty } from '@/components/empty-states/integrations-empty';
 import { toast } from 'sonner';
 import { TwoFactorSettings } from '@/components/settings/two-factor-settings';
+import { WhatsAppSettings } from '@/components/settings/whatsapp-settings';
 import { useMobile } from '@/lib/hooks/use-mobile';
 
 const settingsSections = [
@@ -693,6 +696,10 @@ function IntegrationsSettings() {
 
   return (
     <div className="space-y-6">
+      {/* WhatsApp Integration */}
+      <WhatsAppSettings />
+
+      {/* Other Integrations */}
       <Card>
         <CardHeader>
           <CardTitle>Connected Apps</CardTitle>
@@ -701,36 +708,44 @@ function IntegrationsSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {integrations.map((integration) => (
-            <div key={integration.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <div>
-                <div className="font-medium">{integration.name}</div>
-                <div className="text-sm text-zinc-500">{integration.description}</div>
-              </div>
-              {integration.connected ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                    Connected
-                  </Badge>
+          {integrations.filter(i => i.connected).length === 0 ? (
+            <IntegrationsEmpty onBrowseIntegrations={() => {
+              // Show first unconnected integration
+              const firstUnconnected = integrations.find(i => !i.connected);
+              if (firstUnconnected) handleConnect(firstUnconnected);
+            }} />
+          ) : (
+            integrations.map((integration) => (
+              <div key={integration.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <div>
+                  <div className="font-medium">{integration.name}</div>
+                  <div className="text-sm text-zinc-500">{integration.description}</div>
+                </div>
+                {integration.connected ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      Connected
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleConfigure(integration)}
+                    >
+                      Configure
+                    </Button>
+                  </div>
+                ) : (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleConfigure(integration)}
+                    onClick={() => handleConnect(integration)}
                   >
-                    Configure
+                    Connect
                   </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleConnect(integration)}
-                >
-                  Connect
-                </Button>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -1004,9 +1019,7 @@ function MembersSettings() {
               <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
             </div>
           ) : members.length === 0 ? (
-            <div className="text-center py-8 text-zinc-500">
-              No team members found. Invite someone to get started.
-            </div>
+            <SettingsMembersEmpty onInviteMember={() => setShowInviteDialog(true)} />
           ) : (
             <div className="space-y-3">
               {members.map((member) => (

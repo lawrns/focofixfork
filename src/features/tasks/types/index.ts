@@ -4,6 +4,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  workspace_id?: string;
   project_id: string;
   milestone_id?: string;
   status: 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

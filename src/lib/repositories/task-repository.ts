@@ -397,4 +397,62 @@ export class TaskRepository extends BaseRepository<Task> {
 
     return Ok(hasAccessToAll)
   }
+
+  /**
+   * Verify user has required role for batch operations on tasks
+   * Returns the user's highest role across all workspaces containing the tasks
+   */
+  async verifyUserRoleForBatch(
+    taskIds: string[],
+    userId: string
+  ): Promise<Result<{ hasAccess: boolean; role: string | null; workspaceIds: string[] }>> {
+    // Fetch tasks to get workspace_ids
+    const tasksResult = await this.findByIds(taskIds)
+    if (isError(tasksResult)) {
+      return tasksResult
+    }
+
+    const tasks = tasksResult.data
+    if (tasks.length === 0) {
+      return Err({
+        code: 'NOT_FOUND',
+        message: 'No tasks found',
+      })
+    }
+
+    // Get unique workspace IDs from tasks
+    const taskWorkspaceIds = [...new Set(tasks.map((t) => t.workspace_id))]
+
+    // Get user's roles in these workspaces
+    const { data: memberships, error: memberError } = await this.supabase
+      .from('workspace_members')
+      .select('workspace_id, role')
+      .eq('user_id', userId)
+      .in('workspace_id', taskWorkspaceIds)
+
+    if (memberError) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch user workspace roles',
+        details: memberError,
+      })
+    }
+
+    // Check if user has membership in ALL workspaces
+    const memberWorkspaceIds = (memberships || []).map((m: any) => m.workspace_id)
+    const hasAccessToAll = taskWorkspaceIds.every((wsId) =>
+      memberWorkspaceIds.includes(wsId)
+    )
+
+    if (!hasAccessToAll) {
+      return Ok({ hasAccess: false, role: null, workspaceIds: taskWorkspaceIds })
+    }
+
+    // Get highest role (owner > admin > member > guest)
+    const roleOrder = ['owner', 'admin', 'member', 'guest']
+    const roles = (memberships || []).map((m: any) => m.role)
+    const highestRole = roleOrder.find((r) => roles.includes(r)) || null
+
+    return Ok({ hasAccess: true, role: highestRole, workspaceIds: taskWorkspaceIds })
+  }
 }

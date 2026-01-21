@@ -11,6 +11,9 @@ import {
   NotificationChannel,
   NotificationPriority
 } from '@/lib/models/notifications'
+import { getWhatsAppService } from './whatsapp'
+import { WhatsAppUserLinkRepository } from '@/lib/repositories/whatsapp-user-link-repository'
+import { createClient } from '@supabase/supabase-js'
 
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any
@@ -350,6 +353,7 @@ export class NotificationsService {
       push_enabled: false,
       sms_enabled: false,
       in_app_enabled: true,
+      whatsapp_enabled: false,
       mention_notifications: true,
       comment_notifications: true,
       assignment_notifications: true,
@@ -438,6 +442,11 @@ export class NotificationsService {
       promises.push(this.sendSMSNotification(notification))
     }
 
+    // WhatsApp notifications (check if user has WhatsApp linked)
+    if (preferences.whatsapp_enabled !== false) {
+      promises.push(this.sendWhatsAppNotification(notification))
+    }
+
     // In-app notifications are handled by the UI components
 
     await Promise.allSettled(promises)
@@ -465,6 +474,124 @@ export class NotificationsService {
   private static async sendSMSNotification(notification: Notification): Promise<void> {
     // TODO: Implement SMS service integration
     console.log('Sending SMS notification:', notification.title)
+  }
+
+  /**
+   * Send WhatsApp notification via Meta Cloud API
+   */
+  private static async sendWhatsAppNotification(notification: Notification): Promise<void> {
+    try {
+      // Get WhatsApp link for user
+      const supabaseServiceClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      const linkRepo = new WhatsAppUserLinkRepository(supabaseServiceClient)
+      const linkResult = await linkRepo.findByUserId(notification.user_id)
+
+      if (!linkResult.ok || !linkResult.data || !linkResult.data.verified) {
+        // User doesn't have WhatsApp linked or not verified
+        return
+      }
+
+      const link = linkResult.data
+      const whatsAppService = getWhatsAppService()
+
+      // Get template name and variables based on notification type
+      const { templateName, languageCode, components } = this.getWhatsAppTemplateForNotification(notification)
+
+      if (!templateName) {
+        console.warn('No WhatsApp template for notification type:', notification.type)
+        return
+      }
+
+      // Send template message
+      await whatsAppService.sendTemplate({
+        to: link.phone,
+        templateName,
+        languageCode,
+        components,
+      })
+
+      console.log('✅ WhatsApp notification sent:', notification.title)
+    } catch (error) {
+      console.error('Failed to send WhatsApp notification:', error)
+      // Don't throw - notification delivery should be best-effort
+    }
+  }
+
+  /**
+   * Map notification to WhatsApp template
+   */
+  private static getWhatsAppTemplateForNotification(notification: Notification): {
+    templateName: string | null
+    languageCode: 'en' | 'es'
+    components: any[]
+  } {
+    // Default to English (could be enhanced to detect user language preference)
+    const languageCode: 'en' | 'es' = 'en'
+    const data = notification.data || {}
+
+    let templateName: string | null = null
+    let components: any[] = []
+
+    switch (notification.type) {
+      case 'assignment':
+        templateName = `task_assigned_${languageCode}`
+        components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: data.assignee_name || 'You' },
+              { type: 'text', text: data.task_title || notification.title },
+              { type: 'text', text: data.project_name || 'Project' },
+              { type: 'text', text: data.task_url || process.env.NEXT_PUBLIC_BASE_URL || '' },
+            ],
+          },
+        ]
+        break
+
+      case 'mention':
+        templateName = `mention_notification_${languageCode}`
+        components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: data.mentioner_name || 'Someone' },
+              { type: 'text', text: data.entity_type || 'a comment' },
+              { type: 'text', text: notification.message?.substring(0, 100) || '' },
+              { type: 'text', text: data.url || process.env.NEXT_PUBLIC_BASE_URL || '' },
+            ],
+          },
+        ]
+        break
+
+      case 'comment':
+        templateName = `comment_notification_${languageCode}`
+        components = [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: data.commenter_name || 'Someone' },
+              { type: 'text', text: data.entity_name || 'an item' },
+              { type: 'text', text: notification.message?.substring(0, 100) || '' },
+              { type: 'text', text: data.url || process.env.NEXT_PUBLIC_BASE_URL || '' },
+            ],
+          },
+        ]
+        break
+
+      case 'due_date':
+        // Not implemented yet - could add template later
+        templateName = null
+        break
+
+      default:
+        templateName = null
+        break
+    }
+
+    return { templateName, languageCode, components }
   }
 
   /**

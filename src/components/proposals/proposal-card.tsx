@@ -17,6 +17,7 @@ import {
   Zap,
   FileCode,
   PenTool,
+  Phone,
 } from 'lucide-react'
 
 interface ProposalCardProps {
@@ -50,6 +51,11 @@ const sourceTypeConfig: Record<ProposalSourceType, {
     icon: Zap,
     label: 'API',
     color: 'text-amber-500 dark:text-amber-400',
+  },
+  whatsapp: {
+    icon: Phone,
+    label: 'WhatsApp',
+    color: 'text-green-500 dark:text-green-400',
   },
 }
 

@@ -79,10 +79,11 @@ export type ProposalApprovalStatus =
  * MUST match database CHECK constraint in proposals table
  */
 export type ProposalSourceType =
-  | 'voice'   // From voice input / transcription
-  | 'text'    // From text/chat input
-  | 'file'    // From uploaded file
-  | 'api';    // From external API
+  | 'voice'    // From voice input / transcription
+  | 'text'     // From text/chat input
+  | 'file'     // From uploaded file
+  | 'api'      // From external API
+  | 'whatsapp'; // From WhatsApp integration
 
 // Legacy source type aliases for backwards compatibility
 export type LegacyProposalSourceType =

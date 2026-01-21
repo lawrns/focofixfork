@@ -54,6 +54,7 @@ export function SubtaskList({
 }: SubtaskListProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [isAdding, setIsAdding] = useState(false)
+  const [showAddInput, setShowAddInput] = useState(false)
   const [deleteSubtaskId, setDeleteSubtaskId] = useState<string | null>(null)
   const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null)
   const [loadingSubtaskId, setLoadingSubtaskId] = useState<string | null>(null)

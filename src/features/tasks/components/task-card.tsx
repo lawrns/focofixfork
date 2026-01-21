@@ -63,6 +63,7 @@ interface TaskCardProps {
   onDelete?: (taskId: string) => void
   showActions?: boolean
   showAssignee?: boolean
+  assignees?: Array<{ id: string; name: string; email: string }>
 }
 
 const statusConfig = {
@@ -114,6 +115,7 @@ function TaskCardComponent({
   onDelete,
   showActions = true,
   showAssignee = true,
+  assignees = [],
 }: TaskCardProps) {
   const { t } = useTranslation()
   const [currentTask, setCurrentTask] = useState(task)
@@ -261,11 +263,11 @@ function TaskCardComponent({
 
   return (
     <>
-    <motion.div
-      initial={false}
-      animate={isUpdated ? { scale: [1, 1.02, 1] } : { scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+      <motion.div
+        initial={false}
+        animate={isUpdated ? { scale: [1, 1.02, 1] } : { scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
       <Card className={`glass-card hover-lift border-l-4 ${statusConfig[currentTask.status].borderColor} ${isOverdue ? 'ring-2 ring-red-500/20' : ''} ${isUpdated ? 'ring-2 ring-primary/20' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
@@ -338,60 +340,69 @@ function TaskCardComponent({
 
           {/* Actions Menu - Right Side */}
           {showActions && (
-            <TooltipProvider delayDuration={500}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0 hover:bg-muted" aria-label={`Actions for ${currentTask.title}`}>
-                        <MoreVertical className="h-5 w-5" aria-hidden="true" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
-                        <Circle className="h-4 w-4" aria-hidden="true" />
-                        Mark as To Do
+            <div className="flex items-center gap-1">
+              <TaskQuickActions
+                task={currentTask}
+                assignees={assignees}
+                showAssigneeActions={showAssignee}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+              <DropdownMenu>
+                <TooltipProvider delayDuration={500}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 flex-shrink-0 hover:bg-muted" aria-label={`Actions for ${currentTask.title}`}>
+                          <MoreVertical className="h-5 w-5" aria-hidden="true" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">More actions</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
+                    <Circle className="h-4 w-4" aria-hidden="true" />
+                    Mark as To Do
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
+                    <PlayCircle className="h-4 w-4" aria-hidden="true" />
+                    Start Progress
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('review')}>
+                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                    Move to Review
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('done')}>
+                    <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                    Mark as Done
+                  </DropdownMenuItem>
+                  {onEdit && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onEdit(currentTask.id)}>
+                        <Edit className="h-4 w-4" aria-hidden="true" />
+                        Edit Task
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
-                        <PlayCircle className="h-4 w-4" aria-hidden="true" />
-                        Start Progress
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange('review')}>
+                    </>
+                  )}
+                  {onDelete && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleDelete}
+                        className="text-red-600 dark:text-red-400"
+                      >
                         <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                        Move to Review
+                        Delete Task
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange('done')}>
-                        <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                        Mark as Done
-                      </DropdownMenuItem>
-                      {onEdit && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => onEdit(currentTask.id)}>
-                            <Edit className="h-4 w-4" aria-hidden="true" />
-                            Edit Task
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                      {onDelete && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={handleDelete}
-                            className="text-red-600 dark:text-red-400"
-                          >
-                            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                            Delete Task
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TooltipTrigger>
-                  <TooltipContent side="bottom">More actions</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </CardHeader>

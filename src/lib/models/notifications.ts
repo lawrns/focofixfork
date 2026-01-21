@@ -41,6 +41,17 @@ export interface NotificationData {
   actor_avatar?: string
   action_url?: string
   metadata?: Record<string, any>
+  // WhatsApp template fields
+  assignee_name?: string
+  task_title?: string
+  project_name?: string
+  task_url?: string
+  due_date?: string
+  commenter_name?: string
+  comment_preview?: string
+  mentioner_name?: string
+  url?: string
+  entity_name?: string
 }
 
 export interface NotificationPreferences {
@@ -49,6 +60,7 @@ export interface NotificationPreferences {
   push_enabled: boolean
   sms_enabled: boolean
   in_app_enabled: boolean
+  whatsapp_enabled: boolean
 
   // Notification type preferences
   mention_notifications: boolean

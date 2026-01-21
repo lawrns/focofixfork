@@ -47,6 +47,15 @@ interface BatchToolbarProps {
   onClearSelection?: () => void
   onTasksUpdated?: (tasks: any[]) => void
   filteredTaskCount?: number
+  userRole?: 'owner' | 'admin' | 'member' | 'guest' | null
+}
+
+// Role hierarchy for permission checks
+const ROLE_LEVELS: Record<string, number> = {
+  owner: 4,
+  admin: 3,
+  member: 2,
+  guest: 1,
 }
 
 export function BatchToolbar({
@@ -58,7 +67,12 @@ export function BatchToolbar({
   onClearSelection,
   onTasksUpdated,
   filteredTaskCount = 0,
+  userRole = 'member',
 }: BatchToolbarProps) {
+  const userRoleLevel = userRole ? ROLE_LEVELS[userRole] || 0 : 0
+  const canDelete = userRoleLevel >= ROLE_LEVELS.admin
+  const canMove = userRoleLevel >= ROLE_LEVELS.admin
+  const canPerformMemberOperations = userRoleLevel >= ROLE_LEVELS.member
   const { performBatchOperation, isLoading } = useBatchOperations()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
@@ -219,8 +233,8 @@ export function BatchToolbar({
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
 
-                {/* Move to Project Submenu */}
-                {projects.length > 0 && (
+                {/* Move to Project Submenu - Admin/Owner only */}
+                {canMove && projects.length > 0 && (
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger className="gap-2">
                       <FolderOpen className="h-4 w-4" />
@@ -272,16 +286,19 @@ export function BatchToolbar({
                   <span>Add Tags</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
-
-                {/* Delete */}
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="text-destructive focus:text-destructive gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span>Delete</span>
-                </DropdownMenuItem>
+                {/* Delete - Admin/Owner only */}
+                {canDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="text-destructive focus:text-destructive gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 

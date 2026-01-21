@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
 import { TaskRepository } from '@/lib/repositories/task-repository'
+import { AuditRepository } from '@/lib/repositories/audit-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import {
   authRequiredResponse,
@@ -20,6 +21,18 @@ interface BatchOperationRequest {
   taskIds: string[]
   operation: BatchOperation
   value?: string | string[] | null
+}
+
+// Define which operations require admin/owner role
+const ADMIN_REQUIRED_OPERATIONS: BatchOperation[] = ['delete', 'move']
+const MEMBER_ALLOWED_OPERATIONS: BatchOperation[] = ['complete', 'priority', 'assign', 'tag']
+
+// Role hierarchy for permission checks
+const ROLE_LEVELS: Record<string, number> = {
+  owner: 4,
+  admin: 3,
+  member: 2,
+  guest: 1,
 }
 
 export async function POST(req: NextRequest) {
@@ -43,18 +56,70 @@ export async function POST(req: NextRequest) {
 
     const repo = new TaskRepository(supabase)
 
-    // Verify user has access to all tasks
-    const accessResult = await repo.verifyUserAccess(body.taskIds, user.id)
-    if (isError(accessResult)) {
-      if (accessResult.error.code === 'NOT_FOUND') {
+    // Verify user has access AND get their role
+    const roleResult = await repo.verifyUserRoleForBatch(body.taskIds, user.id)
+    if (isError(roleResult)) {
+      if (roleResult.error.code === 'NOT_FOUND') {
         return validationFailedResponse('No tasks found', { taskIds: body.taskIds })
       }
-      return databaseErrorResponse(accessResult.error.message, accessResult.error.details)
+      return databaseErrorResponse(roleResult.error.message, roleResult.error.details)
     }
 
-    if (!accessResult.data) {
+    if (!roleResult.data.hasAccess) {
       return forbiddenResponse('You do not have access to all selected tasks')
     }
+
+    const userRole = roleResult.data.role
+    const userRoleLevel = userRole ? ROLE_LEVELS[userRole] || 0 : 0
+
+    // Check role-based permissions for the operation
+    if (ADMIN_REQUIRED_OPERATIONS.includes(body.operation)) {
+      // Admin or owner required for destructive/move operations
+      if (userRoleLevel < ROLE_LEVELS.admin) {
+        return forbiddenResponse(
+          `Operation '${body.operation}' requires admin or owner role. Your role: ${userRole || 'none'}`
+        )
+      }
+    } else if (MEMBER_ALLOWED_OPERATIONS.includes(body.operation)) {
+      // Member or above required for standard operations
+      if (userRoleLevel < ROLE_LEVELS.member) {
+        return forbiddenResponse(
+          `Operation '${body.operation}' requires member role or above. Your role: ${userRole || 'none'}`
+        )
+      }
+    }
+
+    // Get request metadata for audit log
+    const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null
+    const userAgent = req.headers.get('user-agent') || null
+
+    // Log the batch operation for audit purposes
+    console.log('[BatchOperation]', {
+      userId: user.id,
+      userRole,
+      operation: body.operation,
+      taskCount: body.taskIds.length,
+      workspaceIds: roleResult.data.workspaceIds,
+      timestamp: new Date().toISOString(),
+    })
+
+    // Create audit log entry
+    const auditRepo = new AuditRepository(supabase)
+    await auditRepo.logAction({
+      user_id: user.id,
+      workspace_id: roleResult.data.workspaceIds[0] || null,
+      action: `batch_${body.operation}`,
+      entity_type: 'task',
+      entity_ids: body.taskIds,
+      details: {
+        operation: body.operation,
+        value: body.value,
+        taskCount: body.taskIds.length,
+        userRole,
+      },
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    })
 
     // Prepare update data based on operation
     let updateData: Record<string, string | string[] | null> = {}

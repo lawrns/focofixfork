@@ -65,6 +65,9 @@ export function TaskList({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [projectName, setProjectName] = useState<string>('')
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; email: string }>>([])
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'member' | 'guest' | null>('member')
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
@@ -127,6 +130,49 @@ export function TaskList({
       }
 
       setTasks(tasksData)
+
+      // Fetch workspace members, projects, and user role for batch operations
+      if (tasksData.length > 0 && tasksData[0]?.workspace_id) {
+        const workspaceId = tasksData[0].workspace_id
+        
+        try {
+          // Fetch members
+          const membersResponse = await fetch(`/api/workspaces/${workspaceId}/members`)
+          const membersData = await membersResponse.json()
+          if (membersData.success || membersData.ok) {
+            const members = (membersData.data || membersData.members || []).map((m: any) => ({
+              id: m.user_id || m.id,
+              name: m.user?.full_name || m.full_name || m.email || 'Unknown',
+              email: m.user?.email || m.email || '',
+              role: m.role
+            }))
+            setTeamMembers(members)
+            
+            // Find current user's role
+            const currentUserMember = members.find((m: any) => m.id === user?.id)
+            if (currentUserMember?.role) {
+              setUserRole(currentUserMember.role as 'owner' | 'admin' | 'member' | 'guest')
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch workspace members:', err)
+        }
+
+        try {
+          // Fetch projects for move operation
+          const projectsResponse = await fetch(`/api/workspaces/${workspaceId}/projects`)
+          const projectsData = await projectsResponse.json()
+          if (projectsData.success || projectsData.ok) {
+            const projectsList = (projectsData.data || projectsData.projects || []).map((p: any) => ({
+              id: p.id,
+              name: p.name || p.title || 'Unnamed Project'
+            }))
+            setProjects(projectsList)
+          }
+        } catch (err) {
+          console.error('Failed to fetch workspace projects:', err)
+        }
+      }
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError('Failed to load tasks. Please try again.')
@@ -445,12 +491,13 @@ export function TaskList({
       <BatchToolbar
         selectedCount={selectedTasks.size}
         tasks={filteredTasks.map(t => ({ ...t, isSelected: selectedTasks.has(t.id) }))}
-        projects={[]}
-        users={[]}
+        projects={projects}
+        users={teamMembers}
         onSelectAll={handleSelectAll}
         onClearSelection={() => setSelectedTasks(new Set())}
         onTasksUpdated={setTasks}
         filteredTaskCount={filteredTasks.length}
+        userRole={userRole}
       />
 
       {/* Header */}
@@ -645,6 +692,7 @@ export function TaskList({
                                   ...task,
                                   created_by: task.created_by || ''
                                 }}
+                                assignees={teamMembers}
                                 onEdit={onEditTask}
                                 onStatusChange={handleStatusChange}
                                 onDelete={handleDeleteTask}
@@ -700,6 +748,7 @@ export function TaskList({
                                   ...task,
                                   created_by: task.created_by || ''
                                 }}
+                                assignees={teamMembers}
                                 onEdit={onEditTask}
                                 onStatusChange={handleStatusChange}
                                 onDelete={handleDeleteTask}
@@ -755,6 +804,7 @@ export function TaskList({
                                   ...task,
                                   created_by: task.created_by || ''
                                 }}
+                                assignees={teamMembers}
                                 onEdit={onEditTask}
                                 onStatusChange={handleStatusChange}
                                 onDelete={handleDeleteTask}
@@ -810,6 +860,7 @@ export function TaskList({
                                   ...task,
                                   created_by: task.created_by || ''
                                 }}
+                                assignees={teamMembers}
                                 onEdit={onEditTask}
                                 onStatusChange={handleStatusChange}
                                 onDelete={handleDeleteTask}

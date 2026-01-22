@@ -30,7 +30,7 @@ const taskSchema = z.object({
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   project_id: z.string().min(1, 'Project is required'),
   milestone_id: z.string().nullable().optional(),
-  status: z.enum(['todo', 'in_progress', 'review', 'done', 'blocked']).default('todo'),
+  status: z.enum(['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']).default('backlog'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   assignee_id: z.string().nullable().optional(),
   estimated_hours: z.preprocess(
@@ -104,7 +104,7 @@ export function TaskForm({
       description: task?.description || '',
       project_id: task?.project_id || defaultProjectId || '',
       milestone_id: task?.milestone_id || '',
-      status: task?.status || 'todo',
+      status: task?.status || 'backlog',
       priority: task?.priority || 'medium',
       assignee_id: task?.assignee_id || '',
       estimated_hours: task?.estimated_hours || undefined,
@@ -420,11 +420,12 @@ export function TaskForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todo">To Do</SelectItem>
+              <SelectItem value="backlog">Backlog</SelectItem>
+              <SelectItem value="next">Next</SelectItem>
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="review">Review</SelectItem>
-              <SelectItem value="done">Done</SelectItem>
               <SelectItem value="blocked">Blocked</SelectItem>
+              <SelectItem value="done">Done</SelectItem>
             </SelectContent>
           </Select>
         </div>

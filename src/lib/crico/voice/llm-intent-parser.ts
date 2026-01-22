@@ -78,7 +78,7 @@ The JSON must have this exact structure:
     "taskTitle": string or null,
     "projectName": string or null,
     "personName": string or null,
-    "status": string or null (todo, in_progress, review, done, blocked),
+    "status": string or null (backlog, next, in_progress, review, blocked, done),
     "priority": string or null (low, medium, high, urgent),
     "dueDate": string or null (ISO date or relative like "tomorrow"),
     "description": string or null,
@@ -93,7 +93,7 @@ The JSON must have this exact structure:
 
 Rules:
 1. If user says "it" or "that", check context for last mentioned entity
-2. Status values: todo, in_progress, review, done, blocked
+2. Status values: backlog, next, in_progress, review, blocked, done
 3. Priority values: low, medium, high, urgent
 4. Always require confirmation for delete/archive/remove actions
 5. If intent is unclear, set domain to "unknown" and suggest clarification`;

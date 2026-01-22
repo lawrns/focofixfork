@@ -7,7 +7,7 @@ export interface Task {
   workspace_id?: string;
   project_id: string;
   milestone_id?: string;
-  status: 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignee_id?: string;
   estimated_hours?: number;

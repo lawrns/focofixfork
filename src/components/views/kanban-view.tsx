@@ -51,7 +51,7 @@ interface ProjectKanbanItem extends BaseKanbanItem {
 interface TaskKanbanItem extends BaseKanbanItem {
   title: string
   description: string | null
-  status: 'todo' | 'in_progress' | 'review' | 'done'
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   assignee_id: string | null
   assignee_name?: string
@@ -97,9 +97,11 @@ const statusColumns = {
     { key: 'cancelled', label: 'Cancelled', color: 'bg-red-600' }
   ],
   tasks: [
-    { key: 'todo', label: 'To Do', color: 'bg-slate-600' },
+    { key: 'backlog', label: 'Backlog', color: 'bg-slate-600' },
+    { key: 'next', label: 'Next', color: 'bg-purple-600' },
     { key: 'in_progress', label: 'In Progress', color: 'bg-blue-600' },
     { key: 'review', label: 'Review', color: 'bg-amber-600' },
+    { key: 'blocked', label: 'Blocked', color: 'bg-red-600' },
     { key: 'done', label: 'Done', color: 'bg-emerald-600' }
   ],
   milestones: [

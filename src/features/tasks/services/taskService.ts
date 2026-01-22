@@ -324,7 +324,8 @@ export class TasksService {
     success: boolean
     data?: {
       total: number
-      todo: number
+      backlog: number
+      next: number
       in_progress: number
       review: number
       done: number
@@ -360,7 +361,8 @@ export class TasksService {
 
       const stats = {
         total: tasks?.length || 0,
-        todo: tasks?.filter(t => t.status === 'todo').length || 0,
+        backlog: tasks?.filter(t => t.status === 'backlog').length || 0,
+        next: tasks?.filter(t => t.status === 'next').length || 0,
         in_progress: tasks?.filter(t => t.status === 'in_progress').length || 0,
         review: tasks?.filter(t => t.status === 'review').length || 0,
         done: tasks?.filter(t => t.status === 'done').length || 0,
@@ -389,7 +391,7 @@ export class TasksService {
   static async updateTaskStatus(
     userId: string,
     taskId: string,
-    newStatus: 'todo' | 'in_progress' | 'review' | 'done' | 'blocked' | 'completed' | 'cancelled'
+    newStatus: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done' | 'completed' | 'cancelled'
   ): Promise<TasksResponse<Task>> {
     try {
       if (!userId) {
@@ -401,7 +403,8 @@ export class TasksService {
 
       // Validate status transition (optional business logic)
       const validTransitions = {
-        todo: ['in_progress'],
+        backlog: ['next', 'in_progress'],
+        next: ['in_progress'],
         in_progress: ['review', 'done'],
         review: ['in_progress', 'done'],
         done: [], // Done is final state

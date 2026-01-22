@@ -17,6 +17,19 @@ export function useInlineEdit(task: Task, options: UseInlineEditOptions = {}) {
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null)
 
+  // Use refs to avoid dependency cycles
+  const editingFieldRef = useRef<string | null>(null)
+  const editValueRef = useRef<any>(null)
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    editingFieldRef.current = editingField
+  }, [editingField])
+
+  useEffect(() => {
+    editValueRef.current = editValue
+  }, [editValue])
+
   const startEditing = useCallback((fieldName: string, currentValue: any) => {
     setEditingField(fieldName)
     setEditValue(currentValue)
@@ -70,7 +83,10 @@ export function useInlineEdit(task: Task, options: UseInlineEditOptions = {}) {
 
     // Skip if value hasn't changed
     if (value === originalValue) {
-      cancelEditing()
+      setEditingField(null)
+      setEditValue(null)
+      setOriginalValue(null)
+      setError(null)
       return true
     }
 
@@ -96,7 +112,7 @@ export function useInlineEdit(task: Task, options: UseInlineEditOptions = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [originalValue, validateField, onSave, onError, cancelEditing])
+  }, [originalValue, validateField, onSave, onError])
 
   const handleKeyDown = useCallback(
     async (e: React.KeyboardEvent) => {
@@ -114,10 +130,14 @@ export function useInlineEdit(task: Task, options: UseInlineEditOptions = {}) {
   )
 
   const handleBlur = useCallback(async () => {
-    if (editingField) {
-      await saveChanges(editingField, editValue)
+    // Use refs to get current values, avoiding stale closure
+    const currentField = editingFieldRef.current
+    const currentValue = editValueRef.current
+
+    if (currentField) {
+      await saveChanges(currentField, currentValue)
     }
-  }, [editingField, editValue, saveChanges])
+  }, [saveChanges])
 
   // Auto-focus input when entering edit mode
   useEffect(() => {

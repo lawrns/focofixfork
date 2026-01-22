@@ -169,6 +169,14 @@ export async function PATCH(
   }
 }
 
+// PUT is an alias for PATCH for compatibility with clients
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return PATCH(req, { params })
+}
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }

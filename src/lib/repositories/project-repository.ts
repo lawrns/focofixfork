@@ -305,4 +305,160 @@ export class ProjectRepository extends BaseRepository<Project> {
 
     return Ok(undefined)
   }
+
+  /**
+   * Verify user has access to a specific project
+   */
+  async hasAccess(projectId: string, userId: string): Promise<Result<boolean>> {
+    // Fetch project to get workspace_id
+    const projectResult = await this.findById(projectId)
+    if (isError(projectResult)) {
+      return projectResult
+    }
+
+    const project = projectResult.data
+
+    // Check if user is member of the workspace
+    const { data, error } = await this.supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', project.workspace_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to verify project access',
+        details: error,
+      })
+    }
+
+    return Ok(!!data)
+  }
+
+  /**
+   * Verify user has admin access to a project's workspace
+   */
+  async hasAdminAccess(projectId: string, userId: string): Promise<Result<boolean>> {
+    // Fetch project to get workspace_id
+    const projectResult = await this.findById(projectId)
+    if (isError(projectResult)) {
+      return projectResult
+    }
+
+    const project = projectResult.data
+
+    // Check if user has admin or owner role in the workspace
+    const { data, error } = await this.supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', project.workspace_id)
+      .eq('user_id', userId)
+      .in('role', ['admin', 'owner'])
+      .maybeSingle()
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to verify admin access',
+        details: error,
+      })
+    }
+
+    return Ok(!!data)
+  }
+
+  /**
+   * Verify user has access to all projects and get their highest role
+   * Similar to TaskRepository.verifyUserRoleForBatch
+   */
+  async verifyUserRoleForBatch(
+    projectIds: string[],
+    userId: string
+  ): Promise<Result<{ hasAccess: boolean; role: string | null; workspaceIds: string[] }>> {
+    // Fetch projects to get workspace_ids
+    const projectsResult = await this.findByIds(projectIds)
+    if (isError(projectsResult)) {
+      return projectsResult
+    }
+
+    const projects = projectsResult.data
+
+    // Get unique workspace IDs
+    const workspaceIds = [...new Set(projects.map(p => p.workspace_id))]
+
+    // Check user's role in these workspaces
+    const { data, error } = await this.supabase
+      .from('workspace_members')
+      .select('workspace_id', 'role')
+      .eq('user_id', userId)
+      .in('workspace_id', workspaceIds)
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to verify user role',
+        details: error,
+      })
+    }
+
+    if (!data || data.length === 0) {
+      return Ok({
+        hasAccess: false,
+        role: null,
+        workspaceIds: [],
+      })
+    }
+
+    // Determine user's highest role across all workspaces
+    const roleHierarchy: Record<string, number> = {
+      owner: 4,
+      admin: 3,
+      member: 2,
+      guest: 1,
+    }
+
+    let highestRole = data[0].role
+    let highestLevel = roleHierarchy[highestRole] || 0
+
+    for (const member of data) {
+      const level = roleHierarchy[member.role] || 0
+      if (level > highestLevel) {
+        highestRole = member.role
+        highestLevel = level
+      }
+    }
+
+    // Check if user has access to ALL projects
+    // User has access if they're a member of all workspaces that the projects belong to
+    const uniqueWorkspaceIds = [...new Set(data.map(m => m.workspace_id))]
+    const hasAccessToAll = uniqueWorkspaceIds.length === workspaceIds.length
+
+    return Ok({
+      hasAccess: hasAccessToAll,
+      role: highestRole,
+      workspaceIds: uniqueWorkspaceIds,
+    })
+  }
+
+  /**
+   * Find projects by their IDs
+   */
+  async findByIds(projectIds: string[]): Promise<Result<Project[]>> {
+    const { data, error } = await this.supabase
+      .from(this.table)
+      .select('*')
+      .in('id', projectIds)
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch projects',
+        details: error,
+      })
+    }
+
+    return Ok((data || []) as Project[])
+  }
 }

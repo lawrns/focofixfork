@@ -107,6 +107,38 @@ export async function POST(req: NextRequest) {
       return workspaceNotFoundResponse(body.workspace_id)
     }
 
+    // CRITICAL: Verify user has admin or owner role in the workspace before creating projects
+    // Check workspace_members for user's role
+    const { data: memberData, error: memberError } = await supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', body.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (memberError) {
+      return databaseErrorResponse('Failed to verify workspace membership', memberError)
+    }
+
+    if (!memberData) {
+      return forbiddenResponse('You must be a member of this workspace to create projects')
+    }
+
+    // Check if user has admin or owner role
+    const userRole = memberData.role
+    const ROLE_LEVELS: Record<string, number> = {
+      owner: 4,
+      admin: 3,
+      member: 2,
+      guest: 1,
+    }
+
+    if ((ROLE_LEVELS[userRole] || 0) < ROLE_LEVELS.admin) {
+      return forbiddenResponse(
+        `Project creation requires admin or owner role. Your role: ${userRole}`
+      )
+    }
+
     // Generate slug from name if not provided
     const slug = body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 

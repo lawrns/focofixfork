@@ -67,11 +67,17 @@ interface TaskCardProps {
 }
 
 const statusConfig = {
-  todo: {
-    label: 'To Do',
+  backlog: {
+    label: 'Backlog',
     color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600',
     icon: Circle,
     borderColor: 'border-l-slate-600',
+  },
+  next: {
+    label: 'Next',
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 border border-purple-300 dark:border-purple-600',
+    icon: PlayCircle,
+    borderColor: 'border-l-purple-600',
   },
   in_progress: {
     label: 'In Progress',
@@ -363,9 +369,13 @@ function TaskCardComponent({
                   </Tooltip>
                 </TooltipProvider>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
+                  <DropdownMenuItem onClick={() => handleStatusChange('backlog')}>
                     <Circle className="h-4 w-4" aria-hidden="true" />
-                    Mark as To Do
+                    Move to Backlog
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('next')}>
+                    <PlayCircle className="h-4 w-4" aria-hidden="true" />
+                    Move to Next
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
                     <PlayCircle className="h-4 w-4" aria-hidden="true" />

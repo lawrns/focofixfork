@@ -6,7 +6,7 @@ const untypedSupabase = supabase as any
 export interface TaskUpdateData {
   title?: string
   description?: string | null
-  status?: 'todo' | 'in_progress' | 'review' | 'done' | 'blocked' | 'completed' | 'cancelled'
+  status?: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done' | 'completed' | 'cancelled'
   priority?: 'low' | 'medium' | 'high' | 'urgent'
   assignee_id?: string | null
   estimated_hours?: number | null
@@ -160,7 +160,7 @@ export class TaskUpdateService {
     }
 
     if (updates.status !== undefined) {
-      const validStatuses = ['todo', 'in_progress', 'review', 'done']
+      const validStatuses = ['backlog', 'next', 'in_progress', 'review', 'done', 'blocked']
       if (!validStatuses.includes(updates.status)) {
         errors.push('Invalid status')
       }

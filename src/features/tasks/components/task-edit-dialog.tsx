@@ -41,7 +41,7 @@ export function TaskEditDialog({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    status: 'todo' as Task['status'],
+    status: 'backlog' as Task['status'],
     priority: 'medium' as Task['priority'],
     assignee_id: null as string | null,
     due_date: null as string | null,
@@ -58,7 +58,7 @@ export function TaskEditDialog({
       setFormData({
         title: task.title || '',
         description: task.description || '',
-        status: task.status || 'todo',
+        status: task.status || 'backlog',
         priority: task.priority || 'medium',
         assignee_id: task.assignee_id || null,
         due_date: task.due_date || null,
@@ -88,7 +88,7 @@ export function TaskEditDialog({
       setFormData({
         title: task.title || '',
         description: task.description || '',
-        status: task.status || 'todo',
+        status: task.status || 'backlog',
         priority: task.priority || 'medium',
         assignee_id: task.assignee_id || null,
         due_date: task.due_date || null,
@@ -158,7 +158,8 @@ export function TaskEditDialog({
                   <SelectValue placeholder={t('task.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">{t('status.todo')}</SelectItem>
+                  <SelectItem value="backlog">{t('status.backlog')}</SelectItem>
+                  <SelectItem value="next">{t('status.next')}</SelectItem>
                   <SelectItem value="in_progress">{t('status.in_progress')}</SelectItem>
                   <SelectItem value="review">{t('status.review')}</SelectItem>
                   <SelectItem value="done">{t('status.done')}</SelectItem>

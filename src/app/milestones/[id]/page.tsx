@@ -23,6 +23,13 @@ import { MilestonesService } from '@/lib/services/milestones'
 import type { MilestoneStatus } from '@/lib/models/milestones'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { toast } from 'sonner'
+import { MilestoneForm } from '@/components/milestones/milestone-form'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface Milestone {
   id: string
@@ -67,6 +74,8 @@ function MilestonePageContent() {
   const [error, setError] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
   const [isEditing, setIsEditing] = useState(false)
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
+  const [showEditModal, setShowEditModal] = useState(false)
 
   const loadMilestoneData = useCallback(async () => {
     try {
@@ -90,6 +99,13 @@ function MilestonePageContent() {
         if (projectData.success && projectData.data?.slug) {
           setProject({ slug: projectData.data.slug })
         }
+      }
+
+      // Load projects list for edit form
+      const projectsRes = await fetch('/api/projects?limit=100')
+      const projectsData = await projectsRes.json()
+      if (projectsData.success && projectsData.data) {
+        setProjects(projectsData.data)
       }
 
       // Load comments (placeholder - implement when service is ready)
@@ -189,9 +205,13 @@ function MilestonePageContent() {
   }
 
   const handleEditMilestone = () => {
-    toast.info('Milestone editing mode enabled')
-    setIsEditing(true)
-    // In a full implementation, this would enable inline editing or open a modal
+    setShowEditModal(true)
+  }
+
+  const handleMilestoneUpdated = () => {
+    setShowEditModal(false)
+    loadMilestoneData()
+    toast.success('Milestone updated successfully')
   }
 
   const handleDeleteMilestone = async () => {
@@ -473,6 +493,28 @@ function MilestonePageContent() {
             )}
           </div>
         </motion.div>
+
+        {/* Edit Milestone Dialog */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Milestone</DialogTitle>
+            </DialogHeader>
+            {milestone && (
+              <MilestoneForm
+                milestone={{
+                  ...milestone,
+                  title: milestone.name,
+                  due_date: milestone.deadline || undefined,
+                  project_id: milestone.project_id,
+                }}
+                projects={projects}
+                onSuccess={handleMilestoneUpdated}
+                onCancel={() => setShowEditModal(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

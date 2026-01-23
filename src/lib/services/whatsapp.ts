@@ -148,7 +148,9 @@ class WhatsAppService {
     const formData = new URLSearchParams();
     formData.append('To', this.formatWhatsAppNumber(params.to));
     formData.append('From', this.formatWhatsAppNumber(this.config.fromNumber));
-    formData.append('ContentSid', params.templateSid);
+    if (params.templateSid) {
+      formData.append('ContentSid', params.templateSid);
+    }
 
     if (params.variables) {
       formData.append('ContentVariables', JSON.stringify(params.variables));

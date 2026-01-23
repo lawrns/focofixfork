@@ -36,7 +36,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_OLLAMA_CHAT_MODEL: z.string().optional(),
   NEXT_PUBLIC_OLLAMA_CODE_MODEL: z.string().optional(),
   OLLAMA_ENABLED: z.string().optional(),
-  NEXT_PUBLIC_AI_PROVIDER: z.enum(['openai', 'ollama']).optional(),
+  NEXT_PUBLIC_AI_PROVIDER: z.enum(['openai', 'ollama', 'deepseek', 'glm']).optional(),
 
   // Email
   RESEND_API_KEY: z.string().optional(),

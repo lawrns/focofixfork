@@ -1,12 +1,12 @@
 /**
  * AI Service - Multi-provider AI Service
- * 
- * Supports OpenAI and DeepSeek for various AI operations
+ *
+ * Supports OpenAI, DeepSeek, and GLM (Z.AI) for various AI operations
  */
 
 import OpenAI from 'openai';
 
-export type AIProvider = 'openai' | 'deepseek';
+export type AIProvider = 'openai' | 'deepseek' | 'glm';
 
 interface AIConfig {
   provider: AIProvider;
@@ -21,33 +21,39 @@ export class AIService {
 
   constructor(provider?: AIProvider) {
     // Determine provider and configuration
-    const aiProvider = provider || (process.env.AI_PROVIDER as AIProvider) || 'deepseek';
-    
+    const aiProvider = provider || (process.env.AI_PROVIDER as AIProvider) || 'glm';
+
     console.log('[AIService] Constructor called with provider:', aiProvider)
     console.log('[AIService] Environment variables:', {
       AI_PROVIDER: process.env.AI_PROVIDER,
+      GLM_API_KEY: process.env.GLM_API_KEY ? '***' + process.env.GLM_API_KEY.slice(-4) : 'undefined',
       DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ? '***' + process.env.DEEPSEEK_API_KEY.slice(-4) : 'undefined',
-      DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
-      DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***' + process.env.OPENAI_API_KEY.slice(-4) : 'undefined',
     })
-    
-    if (aiProvider === 'deepseek') {
+
+    if (aiProvider === 'glm') {
+      this.config = {
+        provider: 'glm',
+        apiKey: process.env.GLM_API_KEY || '',
+        baseURL: 'https://api.z.ai/api/paas/v4/',
+        model: process.env.GLM_MODEL || 'glm-4.7'
+      };
+      console.log('[AIService] Using GLM provider with model:', this.config.model)
+    } else if (aiProvider === 'deepseek') {
       this.config = {
         provider: 'deepseek',
         apiKey: process.env.DEEPSEEK_API_KEY || '',
         baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-        model: 'deepseek-chat' // Always use deepseek-chat as it's the correct model name
+        model: 'deepseek-chat'
       };
-      
-      // Log what was configured vs what we're using
-      console.log('[AIService] Environment DEEPSEEK_MODEL:', process.env.DEEPSEEK_MODEL)
-      console.log('[AIService] Using model:', this.config.model)
+      console.log('[AIService] Using DeepSeek provider with model:', this.config.model)
     } else {
       this.config = {
         provider: 'openai',
         apiKey: process.env.OPENAI_API_KEY || '',
         model: process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
       };
+      console.log('[AIService] Using OpenAI provider with model:', this.config.model)
     }
 
     console.log('[AIService] Config:', {
@@ -55,20 +61,19 @@ export class AIService {
       hasApiKey: !!this.config.apiKey,
       model: this.config.model,
       baseURL: this.config.baseURL,
-      originalModel: process.env.DEEPSEEK_MODEL
     })
 
     if (!this.config.apiKey) {
       console.warn(`⚠️  ${this.config.provider} API key not configured - AI features will use mock responses`);
     }
 
-    // Initialize OpenAI client (works with OpenAI-compatible APIs like DeepSeek)
+    // Initialize OpenAI client (works with OpenAI-compatible APIs like DeepSeek, GLM)
     this.client = new OpenAI({
       apiKey: this.config.apiKey,
       baseURL: this.config.baseURL,
       // Add additional options for debugging
       fetch: async (url, options) => {
-        console.log('[AIService] Fetch URL:', url)
+        console.log(`[AIService] Fetch ${this.config.provider}:`, url)
         console.log('[AIService] Fetch model being sent:', JSON.parse(options?.body as string || '{}')?.model)
         return fetch(url, options)
       }
@@ -80,14 +85,8 @@ export class AIService {
    */
   async chatCompletion(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>) {
     console.log('[AIService] chatCompletion called with', messages.length, 'messages')
-    console.log('[AIService] Current model:', this.config.model)
-    
-    // Force the correct model for DeepSeek
-    if (this.config.provider === 'deepseek' && this.config.model !== 'deepseek-chat') {
-      console.log('[AIService] WARNING: Wrong model detected, forcing deepseek-chat')
-      this.config.model = 'deepseek-chat'
-    }
-    
+    console.log('[AIService] Current provider:', this.config.provider, 'model:', this.config.model)
+
     if (!this.config.apiKey) {
       console.error('[AIService] No API key configured for', this.config.provider)
       throw new Error(`${this.config.provider} API key not configured`);
@@ -95,17 +94,17 @@ export class AIService {
 
     try {
       console.log('[AIService] Making API call to', this.config.baseURL, 'with model', this.config.model)
-      
+
       const response = await this.client.chat.completions.create({
         model: this.config.model,
         messages,
         temperature: 0.7,
         max_tokens: 2000
       });
-      
+
       console.log('[AIService] API response received')
       return response.choices[0]?.message?.content || '';
-      
+
     } catch (error) {
       console.error('[AIService] API call failed:', error)
       console.error('[AIService] Error details:', {
@@ -119,10 +118,11 @@ export class AIService {
 
   /**
    * Transcribe audio to text (only works with OpenAI Whisper)
+   * Note: GLM and DeepSeek do not support audio transcription
    */
   async transcribe(audioFile: File) {
     if (this.config.provider !== 'openai') {
-      throw new Error('Audio transcription is only supported with OpenAI provider');
+      throw new Error(`Audio transcription is only supported with OpenAI provider. Current provider: ${this.config.provider}`);
     }
 
     if (!this.config.apiKey) {

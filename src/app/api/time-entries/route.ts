@@ -147,10 +147,10 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    const { data, error } = await query
+    const { data, error: dbError } = await query
 
-    if (error) {
-      return databaseErrorResponse('Failed to fetch time entries', error)
+    if (dbError) {
+      return databaseErrorResponse('Failed to fetch time entries', dbError)
     }
 
     return mergeAuthResponse(successResponse(data || []), authResponse)

@@ -9,13 +9,15 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Capture authResponse for use in catch block
+  const authResult = await getAuthUser(req)
+  const { user, error, response: authResponse } = authResult
+
+  if (error || !user) {
+    return mergeAuthResponse(authRequiredResponse(), authResponse)
+  }
+
   try {
-    const { user, error, response: authResponse } = await getAuthUser(req)
-
-    if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
     const { id: notificationId } = await params
 
     if (!notificationId) {
@@ -34,9 +36,9 @@ export async function PATCH(
 
     // Handle PGRST116 error (not found)
     if (err.code === 'PGRST116') {
-      return mergeAuthResponse(notFoundResponse('Notification not found'), await getAuthUser(req).then(r => r.response))
+      return mergeAuthResponse(notFoundResponse('Notification not found'), authResponse)
     }
 
-    return databaseErrorResponse('Failed to mark notification as read', err)
+    return mergeAuthResponse(databaseErrorResponse('Failed to mark notification as read', err), authResponse)
   }
 }

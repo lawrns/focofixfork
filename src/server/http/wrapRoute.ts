@@ -68,7 +68,7 @@ export function wrapRoute<I extends z.ZodTypeAny>(
       let code: string
       let status: number
       let message: string
-      let details: unknown
+      let details: Record<string, unknown> | undefined
 
       if (err instanceof AuthError) {
         code = err.code
@@ -161,7 +161,7 @@ export function wrapPublicRoute<I extends z.ZodTypeAny>(
       let code: string
       let status: number
       let message: string
-      let details: unknown
+      let details: Record<string, unknown> | undefined
 
       if (err?.name === 'ZodError') {
         code = 'VALIDATION_ERROR'

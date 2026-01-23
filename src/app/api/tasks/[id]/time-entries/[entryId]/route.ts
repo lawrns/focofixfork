@@ -15,10 +15,10 @@ export const dynamic = 'force-dynamic'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params }: { params: Promise<{ id: string; entryId: string }> }
 ) {
   try {
-    const { id: taskId, entryId } = params
+    const { id: taskId, entryId } = await params
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {
@@ -59,10 +59,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params }: { params: Promise<{ id: string; entryId: string }> }
 ) {
   try {
-    const { id: taskId, entryId } = params
+    const { id: taskId, entryId } = await params
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
 
     if (error || !user) {

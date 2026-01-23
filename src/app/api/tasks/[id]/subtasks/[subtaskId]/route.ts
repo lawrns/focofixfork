@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; subtaskId: string } }
+  { params }: { params: Promise<{ id: string; subtaskId: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
@@ -19,7 +19,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: taskId, subtaskId } = params
+    const { id: taskId, subtaskId } = await params
     const body = await req.json()
 
     // Build update object with only provided fields
@@ -77,7 +77,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; subtaskId: string } }
+  { params }: { params: Promise<{ id: string; subtaskId: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
@@ -86,7 +86,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: taskId, subtaskId } = params
+    const { id: taskId, subtaskId } = await params
 
     const repo = new SubtaskRepository(supabase)
     const result = await repo.deleteSubtask(subtaskId, taskId)

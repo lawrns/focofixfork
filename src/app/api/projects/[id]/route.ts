@@ -10,16 +10,16 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-    
+
     if (error || !user) {
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     const repo = new ProjectRepository(supabase)
 
     // Try to find by ID first
@@ -52,16 +52,16 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-    
+
     if (error || !user) {
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     
     // Validate UUID format
     const uuidError = validateUUID('id', id)
@@ -105,16 +105,16 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-    
+
     if (error || !user) {
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     
     // Validate UUID format
     const uuidError = validateUUID('id', id)

@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -25,7 +25,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Verify proposal exists and user has access
     const { data: proposal, error: proposalError } = await supabaseAdmin

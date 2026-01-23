@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
@@ -31,7 +31,7 @@ export async function GET(
       return authRequiredResponse()
     }
 
-    const { id: workspaceId } = params
+    const { id: workspaceId } = await params
     const workspaceRepo = new WorkspaceRepository(supabase)
 
     // Verify workspace exists
@@ -74,7 +74,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
@@ -83,7 +83,7 @@ export async function POST(
       return authRequiredResponse()
     }
 
-    const { id: workspaceId } = params
+    const { id: workspaceId } = await params
     const workspaceRepo = new WorkspaceRepository(supabase)
 
     // Verify workspace exists

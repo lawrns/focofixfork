@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
@@ -29,7 +29,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: workspaceId, memberId } = params
+    const { id: workspaceId, memberId } = await params
     const repo = new WorkspaceRepository(supabase)
 
     // Verify user has admin access
@@ -92,7 +92,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
@@ -101,7 +101,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: workspaceId, memberId } = params
+    const { id: workspaceId, memberId } = await params
     const repo = new WorkspaceRepository(supabase)
 
     // Verify user has admin access

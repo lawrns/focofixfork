@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -26,7 +26,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Use admin client to bypass RLS, then verify access manually
     // This is more reliable than depending on RLS with server-side auth
@@ -100,7 +100,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -109,7 +109,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await req.json()
 
     // Verify task exists and user has access
@@ -172,14 +172,14 @@ export async function PATCH(
 // PUT is an alias for PATCH for compatibility with clients
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return PATCH(req, { params })
 }
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -188,7 +188,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Verify task exists and user has access
     const { data: task } = await supabaseAdmin

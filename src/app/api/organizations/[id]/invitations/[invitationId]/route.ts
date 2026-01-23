@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; invitationId: string } }
+  { params }: { params: Promise<{ id: string; invitationId: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
@@ -29,7 +29,7 @@ export async function DELETE(
       return authRequiredResponse()
     }
 
-    const { id: workspaceId, invitationId } = params
+    const { id: workspaceId, invitationId } = await params
     const workspaceRepo = new WorkspaceRepository(supabase)
 
     // Verify workspace exists

@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -26,7 +26,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id, itemId } = params
+    const { id, itemId } = await params
     const body = await req.json()
 
     // Validate using Zod schema

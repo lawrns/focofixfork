@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { templateId: string } }
+  { params }: { params: Promise<{ templateId: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
@@ -39,10 +39,11 @@ export async function POST(
     }
 
     // Fetch the template
+    const { templateId } = await params
     const { data: templateData, error: templateError } = await supabase
       .from('project_templates')
       .select('*')
-      .eq('id', params.templateId)
+      .eq('id', templateId)
       .single()
 
     if (templateError || !templateData) {
@@ -121,7 +122,7 @@ export async function POST(
     const { error: usageError } = await supabase
       .from('project_templates')
       .update({ usage_count: (template.usage_count || 0) + 1 })
-      .eq('id', params.templateId)
+      .eq('id', templateId)
 
     if (usageError) {
       // Non-critical error, continue

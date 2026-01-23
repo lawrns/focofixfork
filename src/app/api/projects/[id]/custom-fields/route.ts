@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -23,7 +23,7 @@ export async function GET(
       ), authResponse)
     }
 
-    const { id: projectId } = params
+    const { id: projectId } = await params
 
     // Verify user has access to project
     const { data: project, error: projectError } = await supabase
@@ -74,7 +74,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -88,7 +88,7 @@ export async function POST(
       ), authResponse)
     }
 
-    const { id: projectId } = params
+    const { id: projectId } = await params
     const body = await req.json()
 
     // Validate required fields

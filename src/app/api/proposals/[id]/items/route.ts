@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -27,7 +27,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     const { searchParams } = new URL(req.url)
     const action = searchParams.get('action')
     const entityType = searchParams.get('entity_type')
@@ -99,7 +99,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -108,7 +108,7 @@ export async function POST(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await req.json()
 
     // Validate required fields

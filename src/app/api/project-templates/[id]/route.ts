@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -22,10 +22,11 @@ export async function GET(
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
+    const { id } = await params
     const { data, error: queryError } = await supabase
       .from('project_templates')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (queryError) {
@@ -64,7 +65,7 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -78,10 +79,11 @@ export async function PUT(
     const body = await req.json()
 
     // Verify ownership
+    const { id } = await params
     const { data: template, error: fetchError } = await supabase
       .from('project_templates')
       .select('user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !template) {
@@ -122,7 +124,7 @@ export async function PUT(
         is_public: updateData.is_public,
         tags: updateData.tags,
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
 
     if (updateError) {
@@ -151,7 +153,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -163,10 +165,11 @@ export async function DELETE(
     }
 
     // Verify ownership
+    const { id } = await params
     const { data: template, error: fetchError } = await supabase
       .from('project_templates')
       .select('user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !template) {
@@ -184,7 +187,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('project_templates')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (deleteError) {
       return mergeAuthResponse(NextResponse.json(

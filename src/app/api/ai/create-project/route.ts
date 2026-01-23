@@ -62,6 +62,14 @@ export async function POST(req: NextRequest) {
     // Parse the project specification using AI
     const parsedProject = await OpenAIProjectManager.parseProjectSpecification(prompt, user.id)
 
+    // Ensure workspaceId is defined before creating project
+    if (!workspaceId) {
+      return mergeAuthResponse(NextResponse.json(
+        { success: false, error: 'Workspace ID is required to create a project' },
+        { status: 400 }
+      ), authResponse)
+    }
+
     // Create the project in the database
     const result = await OpenAIProjectManager.createProject(parsedProject, user.id, workspaceId)
 

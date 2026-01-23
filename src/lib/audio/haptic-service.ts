@@ -13,14 +13,14 @@ class HapticService {
   private constructor() {
     if (typeof window !== 'undefined') {
       // Check user preferences (could be tied to accessibility settings)
-      const stored = localStorage.getItem('foco_accessibility');
-      if (stored) {
-        try {
+      try {
+        const stored = localStorage.getItem('foco_accessibility');
+        if (stored) {
           const settings = JSON.parse(stored);
           this.enabled = settings.enableHapticFeedback ?? true;
-        } catch (e) {
-          console.error('Failed to parse accessibility settings for haptics:', e);
         }
+      } catch (e) {
+        // Silently fail - don't log during SSR
       }
     }
   }
@@ -87,4 +87,20 @@ class HapticService {
   }
 }
 
-export const hapticService = HapticService.getInstance();
+// Lazy initialization to avoid SSR/hydration issues
+export const getHapticService = () => HapticService.getInstance();
+
+// Backwards compatible export (lazy)
+let _cachedHapticInstance: HapticService | null = null;
+export const hapticService = new Proxy({} as HapticService, {
+  get(target, prop) {
+    if (typeof window === 'undefined') {
+      // During SSR, return no-op functions
+      return () => {};
+    }
+    if (!_cachedHapticInstance) {
+      _cachedHapticInstance = HapticService.getInstance();
+    }
+    return _cachedHapticInstance[prop as keyof HapticService];
+  }
+});

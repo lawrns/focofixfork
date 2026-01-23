@@ -13,18 +13,19 @@ class AudioService {
   private audioContext: AudioContext | null = null;
   private buffers: Map<AudioEvent, AudioBuffer> = new Map();
   private enabled: boolean = true;
+  private useSyntheticOnly: boolean = true; // Use only synthetic sounds to avoid 404s
 
   private constructor() {
     if (typeof window !== 'undefined') {
       // Check user preferences
-      const stored = localStorage.getItem('foco_accessibility');
-      if (stored) {
-        try {
+      try {
+        const stored = localStorage.getItem('foco_accessibility');
+        if (stored) {
           const settings = JSON.parse(stored);
           this.enabled = settings.enableSoundNotifications ?? true;
-        } catch (e) {
-          console.error('Failed to parse accessibility settings for audio:', e);
         }
+      } catch (e) {
+        // Silently fail - don't log during SSR
       }
     }
   }
@@ -57,21 +58,8 @@ class AudioService {
       await ctx.resume();
     }
 
-    // If buffer not loaded, try to load it
-    if (!this.buffers.has(event)) {
-      await this.loadSound(event);
-    }
-
-    const buffer = this.buffers.get(event);
-    if (buffer) {
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(ctx.destination);
-      source.start(0);
-    } else {
-      // Fallback to synthetic beep if asset missing
-      this.playSynthetic(event);
-    }
+    // Use synthetic sounds only - no file loading to avoid 404s
+    this.playSynthetic(event);
   }
 
   /**
@@ -150,4 +138,21 @@ class AudioService {
   }
 }
 
-export const audioService = AudioService.getInstance();
+// Lazy initialization to avoid SSR/hydration issues
+// Export as function to get instance only on client side
+export const getAudioService = () => AudioService.getInstance();
+
+// Backwards compatible export (lazy)
+let _cachedInstance: AudioService | null = null;
+export const audioService = new Proxy({} as AudioService, {
+  get(target, prop) {
+    if (typeof window === 'undefined') {
+      // During SSR, return no-op functions
+      return () => {};
+    }
+    if (!_cachedInstance) {
+      _cachedInstance = AudioService.getInstance();
+    }
+    return _cachedInstance[prop as keyof AudioService];
+  }
+});

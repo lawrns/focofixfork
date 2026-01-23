@@ -11,9 +11,17 @@ import { VoiceHistory } from './VoiceHistory';
 
 export function VoiceProvider() {
   const [showHistory, setShowHistory] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Keyboard shortcut: Cmd/Ctrl + Shift + V
+  // Prevent SSR hydration mismatch
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Keyboard shortcut: Cmd/Ctrl + Shift + V - only after mount
+  useEffect(() => {
+    if (!isMounted) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'V') {
         event.preventDefault();
@@ -27,7 +35,12 @@ export function VoiceProvider() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isMounted]);
+
+  // Don't render until mounted to prevent hydration issues
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>

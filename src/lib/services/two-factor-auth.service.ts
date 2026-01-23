@@ -72,7 +72,7 @@ export class TwoFactorAuthService {
         throw new Error('Token must be 6 digits');
       }
 
-      const verified = speakeasy.totp.verify({
+      const verified = (speakeasy as any).totp.verify({
         secret,
         encoding: 'base32',
         token,

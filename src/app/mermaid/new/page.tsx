@@ -50,6 +50,7 @@ export default function NewMermaidDiagramPage() {
         mermaid_code: mermaidCode.trim(),
         is_public: isPublic,
         workspace_id: workspaceId,
+        owner_id: null, // Will be set by the service from auth
       };
 
       const diagram = await mermaidService.createDiagram(diagramData);

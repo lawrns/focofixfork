@@ -288,19 +288,19 @@ async function example4_whatIfScenario() {
 
     if (recalculated.reassignments && recalculated.reassignments.length > 0) {
       console.log('\nReassignments:')
-      recalculated.reassignments.forEach(reassignment => {
+      recalculated.reassignments?.forEach(reassignment => {
         console.log(`  - ${reassignment.itemTitle}`)
         console.log(`    ${reassignment.previousAssignee} → ${reassignment.newAssignee}`)
         console.log(`    Reason: ${reassignment.reason}`)
       })
     }
 
-    if (recalculated.warnings.length > 0) {
+    if (recalculated.warnings && recalculated.warnings.length > 0) {
       console.log('\nWarnings:')
       recalculated.warnings.forEach(warning => console.log(`  ⚠ ${warning}`))
     }
 
-    if (recalculated.recommendations.length > 0) {
+    if (recalculated.recommendations && recalculated.recommendations.length > 0) {
       console.log('\nRecommendations:')
       recalculated.recommendations.forEach(rec => console.log(`  ✓ ${rec}`))
     }

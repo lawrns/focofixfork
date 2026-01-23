@@ -13,6 +13,13 @@ import {
 
 const untypedSupabase = supabase as any
 
+// Database row type for file attachments
+interface FileAttachmentDbRow {
+  id: string
+  name: string
+  [key: string]: any
+}
+
 export class FileUploadService {
   private static uploadQueue: Map<string, UploadQueueItem> = new Map()
   private static listeners: Map<string, (queue: UploadQueueItem[]) => void> = new Map()
@@ -277,7 +284,7 @@ export class FileUploadService {
     if (error) throw error
 
     return {
-      attachments: data?.map(item => FileAttachmentModel.fromDatabase(item)) || [],
+      attachments: (data || []).map((item: FileAttachmentDbRow) => FileAttachmentModel.fromDatabase(item)),
       total: count || 0
     }
   }

@@ -185,7 +185,7 @@ export function ExtensionLoader({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Extension {manifest.name} failed to render: {err}
+            Extension {manifest.name} failed to render: {err instanceof Error ? err.message : String(err)}
           </AlertDescription>
         </Alert>
       )

@@ -186,7 +186,7 @@ export class MermaidService {
         .select('diagram_id')
         .eq('shared_with_user_id', (await this.supabase.auth.getUser()).data.user?.id);
       
-      const diagramIds = sharedDiagrams?.map(d => d.diagram_id) || [];
+      const diagramIds = sharedDiagrams?.map((d: { diagram_id: string }) => d.diagram_id) || [];
       if (diagramIds.length > 0) {
         query = query.in('id', diagramIds);
       }

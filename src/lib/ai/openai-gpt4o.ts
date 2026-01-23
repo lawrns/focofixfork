@@ -597,9 +597,9 @@ Follow the same JSON schema as the original plan. Respond ONLY with valid JSON.`
   ): Promise<void> {
     try {
       const event = EventBuilder.planDraftReady(
-        context.organizationId,
+        context.organizationId || '',
         'gpt4o-plan-generation',
-        context.userId,
+        context.userId || '',
         { eventType, ...data }
       )
 

@@ -16,7 +16,10 @@ interface VoiceFeedbackProps {
 }
 
 export function VoiceFeedback({ feedback, className }: VoiceFeedbackProps) {
-  const { type, message, visualData, awaitingResponse } = feedback;
+  const type = feedback.type;
+  const message: string = feedback.message;
+  const visualData = feedback.visualData;
+  const awaitingResponse = feedback.awaitingResponse;
 
   const getIcon = () => {
     switch (type) {
@@ -62,10 +65,10 @@ export function VoiceFeedback({ feedback, className }: VoiceFeedbackProps) {
             <p className="text-sm font-medium">{message}</p>
 
             {/* Show visual data if available */}
-            {visualData && type === 'confirmation' && (
+            {!!visualData && type === 'confirmation' && (
               <div className="mt-2 p-2 bg-white/50 rounded text-xs font-mono">
                 <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(visualData, null, 2)}
+                  {JSON.stringify(visualData as Record<string, unknown>, null, 2)}
                 </pre>
               </div>
             )}

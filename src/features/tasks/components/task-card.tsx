@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   PlayCircle,
   Loader2,
-  GripVertical
+  GripVertical,
+  Ban
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -96,6 +97,12 @@ const statusConfig = {
     color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-600',
     icon: CheckCircle,
     borderColor: 'border-l-emerald-600',
+  },
+  blocked: {
+    label: 'Blocked',
+    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600',
+    icon: Ban,
+    borderColor: 'border-l-red-600',
   },
 }
 

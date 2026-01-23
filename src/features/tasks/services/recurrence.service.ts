@@ -75,13 +75,13 @@ export function calculateNextRecurrenceDate(
 
   switch (pattern.type) {
     case 'daily':
-      return calculateNextDailyDate(nextDate, pattern.interval);
+      return calculateNextDailyDate(nextDate, pattern.interval || 1);
 
     case 'weekly':
-      return calculateNextWeeklyDate(nextDate, pattern.interval, pattern.daysOfWeek || []);
+      return calculateNextWeeklyDate(nextDate, pattern.interval || 1, pattern.daysOfWeek || []);
 
     case 'monthly':
-      return calculateNextMonthlyDate(nextDate, pattern.interval);
+      return calculateNextMonthlyDate(nextDate, pattern.interval || 1);
 
     default:
       throw new Error(`Unknown recurrence type: ${pattern.type}`);

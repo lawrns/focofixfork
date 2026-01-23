@@ -503,10 +503,12 @@ function MilestonePageContent() {
             {milestone && (
               <MilestoneForm
                 milestone={{
-                  ...milestone,
                   title: milestone.name,
+                  description: milestone.description || undefined,
                   due_date: milestone.deadline || undefined,
                   project_id: milestone.project_id,
+                  progress_percentage: 0, // Default value for edit form
+                  status: (milestone.status as 'completed' | 'cancelled' | 'active' | 'planned') || 'planned',
                 }}
                 projects={projects}
                 onSuccess={handleMilestoneUpdated}

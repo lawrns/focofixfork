@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
     }
 
     const searchQuery = `%${query.trim()}%`
-    let projectsData = []
-    let tasksData = []
+    let projectsData: Array<{ id: string; name: string; slug: string; description: string | null; status: string }> = []
+    let tasksData: Array<{ id: string; title: string; description: string | null; status: string; priority: string; project: Array<{ name: string; slug: string }>; created_at: string }> = []
 
     // Search projects (if type is 'all' or 'project')
     if (!type || type === 'project') {

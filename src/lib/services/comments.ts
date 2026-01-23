@@ -12,6 +12,19 @@ import {
 
 const untypedSupabase = supabase as any
 
+// Database row type for comments
+interface CommentDbRow {
+  id: string
+  content: string
+  author_id: string
+  parent_id: string | null
+  milestone_id: string | null
+  project_id: string | null
+  created_at: string | null
+  updated_at: string | null
+  [key: string]: any
+}
+
 export class CommentsService {
   /**
    * Create a new comment
@@ -225,13 +238,13 @@ export class CommentsService {
     }
 
     // Convert database records to Comment objects with additional metadata
-    const comments = data?.map(comment => CommentModel.fromDatabase({
+    const comments = (data || []).map((comment: CommentDbRow) => CommentModel.fromDatabase({
       ...comment,
       entity_type: filters.entity_type || (comment.milestone_id ? 'milestone' : comment.project_id ? 'project' : 'unknown'),
       entity_id: filters.entity_id || comment.milestone_id || comment.project_id || '',
       type: 'comment',
       status: 'active'
-    })) || []
+    }))
 
     const threads = CommentModel.buildThread(comments)
 

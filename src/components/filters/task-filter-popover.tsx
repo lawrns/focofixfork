@@ -123,7 +123,7 @@ export function TaskFilterPopover({
       } else {
         onFiltersChange({
           ...filters,
-          dueDate: { preset: preset as TaskFilters['dueDate']['preset'] },
+          dueDate: { preset: preset as 'today' | 'week' | 'month' | 'overdue' | 'none' },
         });
       }
     },

@@ -365,7 +365,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analytics.timeTracking.topContributors.slice(0, 5).map((contributor, index) => (
+                {analytics.timeTracking.topContributors.slice(0, 5).map((contributor: { userId: string; name: string; hours: number }, index: number) => (
                   <div key={`contributor-${index}-${contributor.userId}`} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -532,7 +532,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analytics.team.memberContributions.map((member, index) => (
+                {analytics.team.memberContributions.map((member: { userId: string; name: string; tasksCompleted: number; hoursTracked: number }, index: number) => (
                   <div key={`member-${index}-${member.userId}`} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-semibold">
@@ -600,7 +600,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analytics.timeTracking.topContributors.map((contributor, index) => (
+                  {analytics.timeTracking.topContributors.map((contributor: { userId: string; name: string; hours: number }, index: number) => (
                     <div key={`time-contributor-${index}-${contributor.userId}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -622,7 +622,7 @@ export const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organ
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analytics.timeTracking.projectHours.map((project, index) => (
+                  {analytics.timeTracking.projectHours.map((project: { projectId: string; name: string; hours: number }, index: number) => (
                     <div key={`project-hours-${index}-${project.projectId}`} className="flex items-center justify-between">
                       <span className="font-medium">{project.name}</span>
                       <Badge variant="outline">{project.hours}h</Badge>

@@ -53,6 +53,8 @@ export default function MermaidPage() {
     B -->|No| D[Debug]
     D --> B`,
         is_public: false,
+        workspace_id: null,
+        owner_id: null, // Will be set by the service from auth
       });
       router.push(`/mermaid/${diagram.id}`);
     } catch (error) {

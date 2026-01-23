@@ -272,7 +272,16 @@ export class VoiceSessionsAdapter implements BaseAdapter<VoiceSession> {
     const countResult = await pool.query(countQuery, params.slice(0, -2)) // Remove limit/offset params
     const totalItems = parseInt(countResult.rows[0].count)
 
-    return createPaginatedResponse(result.rows, totalItems, pagination || { page: 1, limit: 20 })
+    const defaultPagination: PaginationQuery = {
+      page: 1,
+      limit: 20,
+      sort_by: 'created_at',
+      sort_direction: 'desc',
+      include_metadata: true,
+      include_filters: true,
+      include_sort: true
+    }
+    return createPaginatedResponse(result.rows, totalItems, pagination || defaultPagination)
   }
 
   async create(data: Partial<VoiceSession>): Promise<VoiceSession> {
@@ -446,7 +455,16 @@ export class ProjectsAdapter implements BaseAdapter<EnhancedProject> {
     const countResult = await pool.query(countQuery, params.slice(0, -2))
     const totalItems = parseInt(countResult.rows[0].count)
 
-    return createPaginatedResponse(result.rows, totalItems, pagination || { page: 1, limit: 20 })
+    const defaultPagination: PaginationQuery = {
+      page: 1,
+      limit: 20,
+      sort_by: 'created_at',
+      sort_direction: 'desc',
+      include_metadata: true,
+      include_filters: true,
+      include_sort: true
+    }
+    return createPaginatedResponse(result.rows, totalItems, pagination || defaultPagination)
   }
 
   async create(data: Partial<EnhancedProject>): Promise<EnhancedProject> {

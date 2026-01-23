@@ -363,7 +363,7 @@ export function AutomationRulesList({ projectId, userId, className }: Automation
           setShowRuleBuilder(false)
           setEditingRule(null)
         }}
-        rule={editingRule}
+        rule={editingRule ?? undefined}
         projectId={projectId}
         userId={userId}
         onRuleSaved={handleRuleSaved}

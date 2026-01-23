@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
         updateData = { project_id: body.value }
         break
       case 'priority':
-        if (!body.value || !['low', 'medium', 'high', 'urgent', 'none'].includes(body.value)) {
+        if (!body.value || typeof body.value !== 'string' || !['low', 'medium', 'high', 'urgent', 'none'].includes(body.value)) {
           return validationFailedResponse('value must be a valid priority level')
         }
         updateData = { priority: body.value }

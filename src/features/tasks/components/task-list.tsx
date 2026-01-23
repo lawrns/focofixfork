@@ -390,8 +390,8 @@ export function TaskList({
 
     // Get the task being dragged
     const taskId = draggableId
-    const sourceStatus = source.droppableId as 'todo' | 'in_progress' | 'review' | 'done'
-    const destStatus = destination.droppableId as 'todo' | 'in_progress' | 'review' | 'done'
+    const sourceStatus = source.droppableId as Task['status']
+    const destStatus = destination.droppableId as Task['status']
 
     // Find the task
     const task = tasks.find(t => t.id === taskId)
@@ -456,7 +456,7 @@ export function TaskList({
 
   // Group tasks by status for Kanban-style display
   const groupedTasks = {
-    todo: filteredTasks.filter(task => task.status === 'todo'),
+    backlog: filteredTasks.filter(task => task.status === 'backlog'),
     in_progress: filteredTasks.filter(task => task.status === 'in_progress'),
     review: filteredTasks.filter(task => task.status === 'review'),
     done: filteredTasks.filter(task => task.status === 'done'),
@@ -656,11 +656,11 @@ export function TaskList({
                 <div className="flex items-center gap-2 pb-2 border-b">
                   <div className="w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"></div>
                   <h3 id="todo-heading" className="font-semibold text-foreground">To Do</h3>
-                  <span className="text-sm text-gray-200 dark:text-gray-200 bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded" aria-label={`${groupedTasks.todo.length} tasks in To Do`}>
-                    {groupedTasks.todo.length}
+                  <span className="text-sm text-gray-200 dark:text-gray-200 bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded" aria-label={`${groupedTasks.backlog.length} tasks in To Do`}>
+                    {groupedTasks.backlog.length}
                   </span>
                 </div>
-                <Droppable droppableId="todo">
+                <Droppable droppableId="backlog">
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
@@ -669,7 +669,7 @@ export function TaskList({
                         snapshot.isDraggingOver ? 'bg-gray-100 dark:bg-gray-800' : ''
                       }`}
                     >
-                      {groupedTasks.todo.map((task, index) => (
+                      {groupedTasks.backlog.map((task, index) => (
                         <Draggable key={task.id} draggableId={task.id} index={index}>
                           {(provided, snapshot) => (
                             <div

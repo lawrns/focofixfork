@@ -391,7 +391,7 @@ export class ProjectRepository extends BaseRepository<Project> {
     // Check user's role in these workspaces
     const { data, error } = await this.supabase
       .from('workspace_members')
-      .select('workspace_id', 'role')
+      .select('workspace_id, role')
       .eq('user_id', userId)
       .in('workspace_id', workspaceIds)
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore, useFocusModeStore } from '@/lib/stores/foco-store';
@@ -15,7 +15,6 @@ import { UndoToast } from '../ui/undo-toast';
 import { Plus } from 'lucide-react';
 import { CreateTaskModal } from '@/features/tasks/components/create-task-modal';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
-import { useState } from 'react';
 import { hapticService } from '@/lib/audio/haptic-service';
 
 interface AppShellProps {
@@ -27,6 +26,12 @@ export function AppShell({ children }: AppShellProps) {
   const { sidebarCollapsed, density } = useUIPreferencesStore();
   const { isActive: focusModeActive } = useFocusModeStore();
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering conditional UI after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Density-based spacing
   const densityClasses = {

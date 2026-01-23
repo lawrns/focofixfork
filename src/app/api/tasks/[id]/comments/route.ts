@@ -73,9 +73,24 @@ export async function GET(
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    // Fetch user profiles for comments
-    const userIds = [...new Set(comments.map(c => c.user_id).filter(Boolean))]
+    // Define types
     interface UserProfile { id: string; full_name: string; email: string }
+    interface Comment {
+      id: string
+      work_item_id: string
+      user_id: string
+      content: string
+      mentions: string[] | null
+      attachments: unknown[] | null
+      is_ai_generated: boolean
+      ai_sources: unknown[] | null
+      created_at: string
+      updated_at: string
+    }
+
+    // Fetch user profiles for comments
+    const typedComments = (comments || []) as Comment[]
+    const userIds = [...new Set(typedComments.map(c => c.user_id).filter(Boolean))]
     let userProfiles: Record<string, UserProfile> = {}
 
     if (userIds.length > 0) {
@@ -85,12 +100,12 @@ export async function GET(
         .in('id', userIds)
 
       if (profiles) {
-        userProfiles = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {})
+        userProfiles = profiles.reduce((acc: Record<string, UserProfile>, p: UserProfile) => ({ ...acc, [p.id]: p }), {})
       }
     }
 
     // Attach user info to comments
-    const commentsWithUsers = comments.map(comment => ({
+    const commentsWithUsers = typedComments.map(comment => ({
       ...comment,
       user: userProfiles[comment.user_id] || null
     }))

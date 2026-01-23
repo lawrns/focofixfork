@@ -19,6 +19,18 @@ import { supabase as supabaseClient } from '@/lib/supabase-client'
 
 const untypedSupabase = supabaseClient as any
 
+// Database row types for insights queries
+interface InsightsTaskRow {
+  id: string
+  title: string
+  status: string | null
+  priority: string | null
+  created_at: string | null
+  updated_at: string | null
+  due_date: string | null
+  assignee_id: string | null
+}
+
 export type InsightType =
   | 'velocity'          // Team velocity trends
   | 'forecast'          // Project completion predictions
@@ -116,22 +128,24 @@ export class InsightsService {
       .limit(20)
 
     // Calculate completion metrics
-    const completedThisWeek = recentTasks?.filter(
-      t => t.status === 'done' && new Date(t.updated_at) >= oneWeekAgo
-    ).length || 0
+    const taskList = (recentTasks || []) as InsightsTaskRow[]
+    const completedThisWeek = taskList.filter(
+      (t: InsightsTaskRow) => t.status === 'done' && t.updated_at && new Date(t.updated_at) >= oneWeekAgo
+    ).length
 
-    const completedLastWeek = recentTasks?.filter(
-      t => t.status === 'done' &&
+    const completedLastWeek = taskList.filter(
+      (t: InsightsTaskRow) => t.status === 'done' &&
+      t.updated_at &&
       new Date(t.updated_at) >= twoWeeksAgo &&
       new Date(t.updated_at) < oneWeekAgo
-    ).length || 0
+    ).length
 
-    const blockedTasks = recentTasks?.filter(t => t.status === 'blocked') || []
-    const overdueTasks = recentTasks?.filter(
-      t => t.due_date && new Date(t.due_date) < now && t.status !== 'done'
-    ) || []
+    const blockedTasks = taskList.filter((t: InsightsTaskRow) => t.status === 'blocked')
+    const overdueTasks = taskList.filter(
+      (t: InsightsTaskRow) => t.due_date && new Date(t.due_date) < now && t.status !== 'done'
+    )
 
-    const inProgressTasks = recentTasks?.filter(t => t.status === 'in_progress') || []
+    const inProgressTasks = taskList.filter((t: InsightsTaskRow) => t.status === 'in_progress')
 
     return {
       userId,

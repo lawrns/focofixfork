@@ -103,7 +103,7 @@ class WhatsAppSessionService {
         return null
       }
 
-      const dataStr = typeof data === 'string' ? data : data.toString()
+      const dataStr = typeof data === 'string' ? data : String(data)
       return JSON.parse(dataStr) as WhatsAppSession
     } catch (error) {
       console.error('Failed to get WhatsApp session:', error)
@@ -287,7 +287,7 @@ class WhatsAppSessionService {
       for (const key of keys) {
         const data = await client.get(key)
         if (data) {
-          const dataStr = typeof data === 'string' ? data : data.toString()
+          const dataStr = typeof data === 'string' ? data : String(data)
           sessions.push(JSON.parse(dataStr))
         }
       }

@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
@@ -28,7 +28,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const workspaceId = params.id
+    const { id: workspaceId } = await params
     const repo = new WorkspaceRepository(supabase)
 
     // Verify user has access to this workspace

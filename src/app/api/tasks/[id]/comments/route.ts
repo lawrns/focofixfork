@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -25,7 +25,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: taskId } = params
+    const { id: taskId } = await params
 
     // Verify task exists and user has access
     const { data: task } = await supabaseAdmin
@@ -104,7 +104,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -113,7 +113,7 @@ export async function POST(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: taskId } = params
+    const { id: taskId } = await params
     const body = await req.json()
 
     if (!body.content || typeof body.content !== 'string' || !body.content.trim()) {

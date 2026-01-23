@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; tag_id: string } }
+  { params }: { params: Promise<{ id: string; tag_id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req);
@@ -26,7 +26,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
 
-    const { id: taskId, tag_id: tagId } = params;
+    const { id: taskId, tag_id: tagId } = await params;
 
     const taskUuidError = validateUUID('id', taskId);
     if (taskUuidError) {

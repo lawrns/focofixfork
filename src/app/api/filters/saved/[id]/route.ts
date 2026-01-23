@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -27,7 +27,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const filterId = params.id
+    const filterId = (await params).id
     const repo = new FilterRepository(supabase)
 
     // Check ownership
@@ -73,7 +73,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -84,7 +84,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const filterId = params.id
+    const filterId = (await params).id
     const repo = new FilterRepository(supabase)
 
     // Check ownership

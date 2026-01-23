@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -26,7 +26,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Fetch proposal with related data
     const { data: proposal, error: proposalError } = await supabaseAdmin
@@ -75,7 +75,7 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -84,7 +84,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await req.json()
 
     // Validate using Zod schema
@@ -178,7 +178,7 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -187,7 +187,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Fetch existing proposal
     const { data: existingProposal, error: fetchError } = await supabaseAdmin

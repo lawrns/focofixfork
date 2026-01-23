@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
  *   - title_override: string (optional) - override template title
  *   - description_override: string (optional) - override template description
  */
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let authResponse: NextResponse | undefined;
   try {
     const { user, supabase, error, response } = await getAuthUser(req)
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const body = await req.json()
-    const { id } = params
+    const { id } = await params
 
     // Validate project_id
     if (!body.project_id) {

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -16,7 +16,7 @@ export async function PATCH(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const notificationId = params.id
+    const { id: notificationId } = await params
 
     if (!notificationId) {
       return mergeAuthResponse(NextResponse.json(

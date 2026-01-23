@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -37,7 +37,7 @@ export async function GET(
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Get all dependencies where this work item depends on others
     const { data: dependencies, error: queryError } = await supabase
@@ -71,7 +71,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -82,7 +82,7 @@ export async function POST(
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
-    const { id: workItemId } = params
+    const { id: workItemId } = await params
     const body = await req.json()
 
     // If depends_on_id is provided in request, use it; otherwise use from body
@@ -227,7 +227,7 @@ export async function POST(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let authResponse: NextResponse | undefined;
   try {
@@ -238,7 +238,7 @@ export async function DELETE(
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
-    const { id: workItemId } = params
+    const { id: workItemId } = await params
     const body = await req.json()
 
     const { depends_on_id } = body

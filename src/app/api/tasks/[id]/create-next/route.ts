@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req);
@@ -17,7 +17,7 @@ export async function POST(
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse);
     }
 
-    const { id: taskId } = params;
+    const { id: taskId } = await params;
 
     const { data: task, error: taskError } = await supabase
       .from('work_items')

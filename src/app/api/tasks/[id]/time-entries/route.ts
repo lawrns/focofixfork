@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
@@ -25,7 +25,7 @@ export async function GET(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: taskId } = params
+    const { id: taskId } = await params
     const repo = new TimeEntryRepository(supabase)
 
     const result = await repo.findByTaskAndUser(taskId, user.id)
@@ -47,7 +47,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(request)
@@ -56,7 +56,7 @@ export async function POST(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { id: taskId } = params
+    const { id: taskId } = await params
     const body = await request.json()
 
     const { startTime, endTime, durationSeconds, notes } = body

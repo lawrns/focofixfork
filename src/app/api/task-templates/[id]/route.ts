@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
  * DELETE /api/task-templates/:id
  * Deletes a task template by ID
  */
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let authResponse: NextResponse | undefined;
   try {
     const { user, supabase, error, response } = await getAuthUser(req)
@@ -17,7 +17,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return mergeAuthResponse(NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }), authResponse)
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Verify the template belongs to the user
     const { data: template, error: fetchError } = (await supabase

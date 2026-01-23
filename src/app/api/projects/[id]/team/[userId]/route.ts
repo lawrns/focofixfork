@@ -18,10 +18,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
-    const { id: projectId, userId: targetUserId } = params
+    const { id: projectId, userId: targetUserId } = await params
     const { user, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
@@ -89,10 +89,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
-    const { id: projectId, userId: targetUserId } = params
+    const { id: projectId, userId: targetUserId } = await params
     const { user, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {

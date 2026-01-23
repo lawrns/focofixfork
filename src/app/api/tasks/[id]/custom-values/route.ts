@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
@@ -21,7 +21,7 @@ export async function GET(
       ), authResponse)
     }
 
-    const { id: taskId } = params
+    const { id: taskId } = await params
 
     // Verify task exists
     const { data: task, error: taskError } = await supabase
@@ -102,7 +102,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
@@ -114,7 +114,7 @@ export async function POST(
       ), authResponse)
     }
 
-    const { id: taskId } = params
+    const { id: taskId } = await params
     const body = await req.json()
 
     // Validate required fields

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies()
@@ -37,7 +37,7 @@ export async function POST(
       )
     }
 
-    const projectId = params.id
+    const projectId = (await params).id
 
     // Verify user has access to this project
     const { data: project, error: projectError } = await supabase
@@ -116,7 +116,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies()
@@ -149,7 +149,7 @@ export async function DELETE(
       )
     }
 
-    const projectId = params.id
+    const projectId = (await params).id
 
     // Verify user has access to this project
     const { data: project, error: projectError } = await supabase

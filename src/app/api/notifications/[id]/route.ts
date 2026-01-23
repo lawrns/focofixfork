@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 // DELETE /api/notifications/[id] - Delete a notification
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error, response: authResponse } = await getAuthUser(req)
@@ -17,7 +17,7 @@ export async function DELETE(
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const notificationId = params.id
+    const { id: notificationId } = await params
 
     if (!notificationId) {
       return mergeAuthResponse(NextResponse.json(

@@ -20,6 +20,17 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   NEXT_PUBLIC_OPENAI_MODEL: z.string().optional(),
   NEXT_PUBLIC_OPENAI_CHAT_MODEL: z.string().optional(),
+
+  // GLM (Z.AI) Provider
+  GLM_API_KEY: z.string().optional(),
+  GLM_MODEL: z.string().optional(),
+
+  // DeepSeek Provider
+  DEEPSEEK_API_KEY: z.string().optional(),
+  DEEPSEEK_MODEL: z.string().optional(),
+  DEEPSEEK_BASE_URL: z.string().optional(),
+  AI_PROVIDER: z.enum(['openai', 'deepseek', 'glm']).optional(),
+
   NEXT_PUBLIC_OLLAMA_URL: z.string().url().optional(),
   NEXT_PUBLIC_OLLAMA_DEFAULT_MODEL: z.string().optional(),
   NEXT_PUBLIC_OLLAMA_CHAT_MODEL: z.string().optional(),

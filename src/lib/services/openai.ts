@@ -1,11 +1,15 @@
 import OpenAI from 'openai'
 
+export type AIProviderType = 'openai' | 'glm' | 'deepseek'
+
 export interface AIConfig {
+  provider: AIProviderType
   apiKey: string
   model: string
   chatModel: string
   timeout: number
   maxRetries: number
+  baseURL?: string
 }
 
 export interface AIRequest {
@@ -45,21 +49,47 @@ export class OpenAIService {
     this.isProduction = process.env.NODE_ENV === 'production' ||
                        process.env.NEXT_PUBLIC_VERCEL_ENV === 'production'
 
-    const apiKey = process.env.OPENAI_API_KEY || ''
+    // Determine AI provider
+    const provider = (process.env.AI_PROVIDER as AIProviderType) || 'glm'
+    let apiKey = ''
+    let baseURL: string | undefined
+    let model = 'gpt-4o-mini'
+    let chatModel = 'gpt-4o-mini'
+
+    if (provider === 'glm') {
+      apiKey = process.env.GLM_API_KEY || ''
+      baseURL = 'https://api.z.ai/api/paas/v4/'
+      model = process.env.GLM_MODEL || 'glm-4.7'
+      chatModel = model
+      console.log('[OpenAIService] Using GLM (Z.AI) provider with model:', model)
+    } else if (provider === 'deepseek') {
+      apiKey = process.env.DEEPSEEK_API_KEY || ''
+      baseURL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
+      model = 'deepseek-chat'
+      chatModel = 'deepseek-chat'
+      console.log('[OpenAIService] Using DeepSeek provider')
+    } else {
+      apiKey = process.env.OPENAI_API_KEY || ''
+      model = process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
+      chatModel = process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || 'gpt-4o-mini'
+      console.log('[OpenAIService] Using OpenAI provider')
+    }
 
     // In production without API key, we'll use mock responses
     if (!apiKey && this.isProduction) {
-      console.warn('OpenAI API key not configured in production - using mock responses')
+      console.warn('AI API key not configured in production - using mock responses')
     } else if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is required')
+      throw new Error(`AI API key not configured for provider: ${provider}`)
     }
 
     this.config = {
+      provider,
       apiKey,
-      model: process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini',
-      chatModel: process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+      model,
+      chatModel,
       timeout: 30000,
       maxRetries: 3,
+      baseURL,
       ...config
     }
 
@@ -67,7 +97,9 @@ export class OpenAIService {
     if (this.config.apiKey) {
       this.client = new OpenAI({
         apiKey: this.config.apiKey,
+        baseURL: this.config.baseURL,
       })
+      console.log('[OpenAIService] AI client initialized with provider:', this.config.provider, 'model:', this.config.model)
     }
   }
 

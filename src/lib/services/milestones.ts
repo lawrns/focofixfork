@@ -5,6 +5,12 @@ type Milestone = Database['public']['Tables']['milestones']['Row']
 type MilestoneInsert = Database['public']['Tables']['milestones']['Insert']
 type MilestoneUpdate = Database['public']['Tables']['milestones']['Update']
 
+// Partial type for milestone stats queries
+interface MilestoneStatRow {
+  status: string | null
+  due_date: string | null
+}
+
 export interface MilestonesListResponse {
   success: boolean
   data?: Milestone[]
@@ -324,20 +330,21 @@ export class MilestonesService {
       }
 
       const now = new Date()
+      const milestoneList = (milestones || []) as MilestoneStatRow[]
       const stats = {
-        total: milestones?.length || 0,
-        planned: milestones?.filter(m => m.status === 'planned').length || 0,
-        active: milestones?.filter(m => m.status === 'active').length || 0,
-        completed: milestones?.filter(m => m.status === 'completed').length || 0,
-        cancelled: milestones?.filter(m => m.status === 'cancelled').length || 0,
-        overdue: milestones?.filter(m => {
+        total: milestoneList.length,
+        planned: milestoneList.filter((m: MilestoneStatRow) => m.status === 'planned').length,
+        active: milestoneList.filter((m: MilestoneStatRow) => m.status === 'active').length,
+        completed: milestoneList.filter((m: MilestoneStatRow) => m.status === 'completed').length,
+        cancelled: milestoneList.filter((m: MilestoneStatRow) => m.status === 'cancelled').length,
+        overdue: milestoneList.filter((m: MilestoneStatRow) => {
           if (m.status === 'completed' || m.status === 'cancelled' || !m.due_date) return false
           return new Date(m.due_date) < now
-        }).length || 0,
-        on_track: milestones?.filter(m => {
+        }).length,
+        on_track: milestoneList.filter((m: MilestoneStatRow) => {
           if (m.status === 'completed' || m.status === 'cancelled' || !m.due_date) return false
           return new Date(m.due_date) >= now
-        }).length || 0,
+        }).length,
       }
 
       return {
@@ -453,8 +460,9 @@ export class MilestonesService {
             }
           }
 
-          const taskCount = tasks?.length || 0
-          const completedTasks = tasks?.filter(task => task.status === 'done').length || 0
+          const taskList = (tasks || []) as { status: string | null }[]
+          const taskCount = taskList.length
+          const completedTasks = taskList.filter((task: { status: string | null }) => task.status === 'done').length
 
           return {
             ...milestone,

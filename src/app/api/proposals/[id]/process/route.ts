@@ -99,7 +99,11 @@ export async function POST(
     }
 
     // Get project context if available
-    let projectContext = undefined
+    let projectContext: { id: string; name: string; description?: string } = {
+      id: proposal.project_id || 'unknown',
+      name: 'Untitled Project',
+      description: undefined,
+    }
     if (proposal.project_id) {
       const { data: project } = await supabaseAdmin
         .from('foco_projects')

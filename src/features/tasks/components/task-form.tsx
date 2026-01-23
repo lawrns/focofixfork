@@ -390,7 +390,7 @@ export function TaskForm({
         <Label htmlFor="milestone">Milestone (Optional)</Label>
         <Select
           value={toSelectValueWithNone(watch('milestone_id'), 'none')}
-          onValueChange={(value) => setValue('milestone_id', fromSelectValue(value, 'none'), { shouldDirty: true })}
+          onValueChange={(value) => setValue('milestone_id', fromSelectValue(value, 'none') || '', { shouldDirty: true })}
           disabled={isSubmitting || !watchedProjectId}
         >
           <SelectTrigger>
@@ -455,7 +455,7 @@ export function TaskForm({
         <Label htmlFor="assignee">Assignee (Optional)</Label>
         <Select
           value={toSelectValueWithNone(watchedAssigneeId, 'unassigned')}
-          onValueChange={(value) => setValue('assignee_id', fromSelectValue(value, 'unassigned'), { shouldDirty: true })}
+          onValueChange={(value) => setValue('assignee_id', fromSelectValue(value, 'unassigned') || '', { shouldDirty: true })}
           disabled={isSubmitting}
         >
           <SelectTrigger>

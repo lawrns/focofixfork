@@ -200,13 +200,7 @@ export async function GET(
     try {
       await supabaseAdmin
         .from('proposal_impact_summary')
-        .upsert(
-          {
-            proposal_id: id,
-            ...impactSummary,
-          },
-          { onConflict: 'proposal_id' }
-        )
+        .upsert(impactSummary, { onConflict: 'proposal_id' })
     } catch {
       // Non-critical error, continue
     }

@@ -450,7 +450,7 @@ async function updateTrustFromAction(
     
     // Lower confidence for this category
     if (category) {
-      const adjustments = trust?.categoryAdjustments ?? {};
+      const adjustments: Record<string, number> = trust?.categoryAdjustments ?? {};
       adjustments[category] = (adjustments[category] ?? 0) - 0.05;
       updates.category_adjustments = adjustments;
     }
@@ -481,8 +481,8 @@ async function suppressCategoryForUser(
   category: SuggestionCategory
 ): Promise<void> {
   const trust = await getUserTrust(userId);
-  const adjustments = trust?.categoryAdjustments ?? {};
-  
+  const adjustments: Record<string, number> = trust?.categoryAdjustments ?? {};
+
   // Significantly reduce confidence for this category
   adjustments[category] = (adjustments[category] ?? 0) - 0.3;
 

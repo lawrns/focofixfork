@@ -96,8 +96,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Create the time entry
-    const { data: timeEntry, error: insertError } = await supabase
-      .from('task_time_entries')
+    // Note: time_entries table exists in DB but not in generated types
+    const { data: timeEntry, error: insertError } = await (supabase as any)
+      .from('time_entries')
       .insert({
         task_id: body.task_id,
         user_id: user.id,
@@ -134,8 +135,9 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000)
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = supabase
-      .from('task_time_entries')
+    // Note: time_entries table exists in DB but not in generated types
+    let query = (supabase as any)
+      .from('time_entries')
       .select('*')
       .eq('user_id', user.id)
 

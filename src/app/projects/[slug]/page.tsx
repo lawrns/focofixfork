@@ -617,11 +617,12 @@ export default function ProjectPage() {
 
   // Settings handlers
   const handleSaveSettings = async (updates: Partial<Project>) => {
+    if (!project?.id) throw new Error('Project not loaded');
     try {
       const { error } = await supabase
         .from('foco_projects')
         .update(updates)
-        .eq('id', project?.id);
+        .eq('id', project.id);
       if (error) throw error;
       setProject(prev => prev ? { ...prev, ...updates } : prev);
     } catch (error) {
@@ -630,11 +631,12 @@ export default function ProjectPage() {
   };
 
   const handleArchiveProject = async () => {
+    if (!project?.id) throw new Error('Project not loaded');
     try {
       const { error } = await supabase
         .from('foco_projects')
         .update({ archived_at: new Date().toISOString() })
-        .eq('id', project?.id);
+        .eq('id', project.id);
       if (error) throw error;
       window.location.href = '/projects';
     } catch (error) {
@@ -643,11 +645,12 @@ export default function ProjectPage() {
   };
 
   const handleDeleteProject = async () => {
+    if (!project?.id) throw new Error('Project not loaded');
     try {
       const { error } = await supabase
         .from('foco_projects')
         .delete()
-        .eq('id', project?.id);
+        .eq('id', project.id);
       if (error) throw error;
       window.location.href = '/projects';
     } catch (error) {

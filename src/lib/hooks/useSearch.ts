@@ -36,6 +36,60 @@ export interface SearchState {
 const SEARCH_DEBOUNCE_MS = 300
 const DEFAULT_LIMIT = 20
 
+// Database row types for search queries
+interface ProjectSearchRow {
+  id: string
+  name: string
+  slug: string | null
+  description: string | null
+  organization_id: string | null
+  workspaces: { name: string } | null
+}
+
+interface MilestoneSearchRow {
+  id: string
+  name: string
+  description: string | null
+  project_id: string | null
+  status: string | null
+  priority: string | null
+  foco_projects: {
+    name: string
+    organization_id: string | null
+    workspaces: { name: string } | null
+  } | null
+}
+
+interface UserSearchRow {
+  id: string
+  email: string | null
+  display_name: string | null
+  full_name: string | null
+  avatar_url: string | null
+}
+
+interface OrganizationSearchRow {
+  id: string
+  name: string
+  slug: string | null
+  description: string | null
+}
+
+interface OrganizationMemberSearchRow {
+  user_id: string
+  role: string | null
+  workspaces: {
+    id: string
+    name: string
+  } | null
+}
+
+interface WorkspaceSearchRow {
+  id: string
+  name: string
+  created_at: string | null
+}
+
 export function useSearch(options: SearchOptions) {
   const [state, setState] = useState<SearchState>({
     results: [],
@@ -65,11 +119,11 @@ export function useSearch(options: SearchOptions) {
 
     if (error) throw error
 
-    return (data || []).map(project => ({
+    return (data || []).map((project: ProjectSearchRow) => ({
       id: project.id,
       type: 'project' as const,
       title: project.name,
-      subtitle: (project.workspaces as any)?.name,
+      subtitle: project.workspaces?.name,
       description: project.description || undefined,
       url: `/projects/${project.slug || project.id}`,
       metadata: {
@@ -108,18 +162,18 @@ export function useSearch(options: SearchOptions) {
 
     if (error) throw error
 
-    return (data || []).map(milestone => ({
+    return (data || []).map((milestone: MilestoneSearchRow) => ({
       id: milestone.id,
       type: 'milestone' as const,
       title: milestone.name,
-      subtitle: (milestone.foco_projects as any)?.name,
+      subtitle: milestone.foco_projects?.name,
       description: milestone.description || undefined,
       url: `/milestones/${milestone.id}`,
       metadata: {
         status: milestone.status,
         priority: milestone.priority,
         projectId: milestone.project_id,
-        organizationName: (milestone.foco_projects as any)?.workspaces?.name
+        organizationName: milestone.foco_projects?.workspaces?.name
       },
       score: calculateRelevanceScore(query, milestone.name, milestone.description || undefined)
     }))
@@ -140,20 +194,20 @@ export function useSearch(options: SearchOptions) {
 
     if (error) throw error
 
-    const userResults = [] as SearchResult[]
+    const userResults: SearchResult[] = []
 
-    (data || []).forEach(member => {
+    ;(data || []).forEach((member: OrganizationMemberSearchRow) => {
       if (member.user_id.includes(query) || query.length < 3) {
         userResults.push({
           id: member.user_id,
           type: 'user' as const,
           title: `User ${member.user_id.slice(-8)}`,
-          subtitle: (member.workspaces as any)?.name,
+          subtitle: member.workspaces?.name,
           description: `Role: ${member.role}`,
           url: `/users/${member.user_id}`,
           metadata: {
             role: member.role,
-            organizationId: (member.workspaces as any)?.id
+            organizationId: member.workspaces?.id
           },
           score: 0.5
         })
@@ -172,7 +226,7 @@ export function useSearch(options: SearchOptions) {
 
     if (error) throw error
 
-    return (data || []).map(org => ({
+    return (data || []).map((org: WorkspaceSearchRow) => ({
       id: org.id,
       type: 'organization' as const,
       title: org.name,

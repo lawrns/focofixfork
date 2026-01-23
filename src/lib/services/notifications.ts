@@ -18,6 +18,13 @@ import { createClient } from '@supabase/supabase-js'
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any
 
+// Database row types for notification queries
+interface NotificationSummaryRow {
+  is_read: boolean | null
+  type: string | null
+  created_at: string | null
+}
+
 export class NotificationsService {
   /**
    * Create a notification
@@ -296,7 +303,7 @@ export class NotificationsService {
 
     let oldestUnread: string | undefined
 
-    data?.forEach(notification => {
+    ;(data || []).forEach((notification: NotificationSummaryRow) => {
       if (notification.is_read) {
         summary.total_read++
       } else {

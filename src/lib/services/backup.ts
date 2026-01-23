@@ -2,6 +2,22 @@ import { supabase } from '@/lib/supabase-client';
 
 const untypedSupabase = supabase as any;
 
+// Database row types for backup queries
+interface WorkspaceRow {
+  id: string;
+  [key: string]: any;
+}
+
+interface ProjectRow {
+  id: string;
+  [key: string]: any;
+}
+
+interface CommentRow {
+  id: string;
+  [key: string]: any;
+}
+
 export interface BackupOptions {
   includeFiles?: boolean;
   includeComments?: boolean;
@@ -58,7 +74,7 @@ export class BackupService {
 
       // Get projects for user's organizations
       if (organizations?.length) {
-        const orgIds = organizations.map(org => org.id);
+        const orgIds = (organizations as WorkspaceRow[]).map((org: WorkspaceRow) => org.id);
         const { data: projects } = await untypedSupabase
           .from('foco_projects')
           .select('*')
@@ -68,7 +84,7 @@ export class BackupService {
           backupData.projects = projects;
 
           // Get milestones and tasks for these projects
-          const projectIds = projects.map(p => p.id);
+          const projectIds = (projects as ProjectRow[]).map((p: ProjectRow) => p.id);
           const { data: milestones } = await untypedSupabase
             .from('foco_milestones')
             .select('*')
@@ -101,7 +117,7 @@ export class BackupService {
 
       // Optional data based on options
       if (options.includeComments) {
-        const orgIds = organizations?.map(o => o.id) || [];
+        const orgIds = (organizations as WorkspaceRow[] | undefined)?.map((o: WorkspaceRow) => o.id) || [];
         const { data: comments } = await untypedSupabase
           .from('foco_comments')
           .select('*')

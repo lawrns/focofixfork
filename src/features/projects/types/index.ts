@@ -19,12 +19,12 @@ export interface Project {
 
 export interface CreateProjectData {
   name: string;
-  description: string | null;
+  description?: string;
   status: Project['status'];
   priority: Project['priority'];
-  start_date: string | null;
-  due_date: string | null;
-  workspace_id: string | null;
+  start_date?: string;
+  due_date?: string;
+  workspace_id?: string;
   owner_id: string;
   progress_percentage: number;
 }
@@ -40,7 +40,7 @@ export interface UpdateProjectData {
 }
 
 export interface ProjectFilters {
-  workspace_id?: string | null;
+  workspace_id?: string;
   status?: Project['status'];
   priority?: Project['priority'];
   limit?: number;

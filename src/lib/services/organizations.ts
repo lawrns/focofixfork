@@ -30,6 +30,18 @@ export interface WorkspacesResponse<T> {
   error?: string
 }
 
+// Database row types for workspace queries
+interface WorkspaceDbRow {
+  id: string
+  name: string
+  [key: string]: any
+}
+
+interface WorkspaceMemberDbRow {
+  workspaces: WorkspaceDbRow | null
+  [key: string]: any
+}
+
 export class WorkspacesService {
   /**
    * Get all workspaces for the current user
@@ -89,16 +101,16 @@ export class WorkspacesService {
       }
 
       // Combine and deduplicate workspaces
-      const ownedWorkspacesList = ownedWorkspaces?.map(ws => WorkspaceModel.fromDatabase(ws)) || []
-      const memberWorkspacesList = memberWorkspaces
-        ?.map(item => item.workspaces)
+      const ownedWorkspacesList = (ownedWorkspaces || []).map((ws: WorkspaceDbRow) => WorkspaceModel.fromDatabase(ws))
+      const memberWorkspacesList = (memberWorkspaces || [])
+        .map((item: WorkspaceMemberDbRow) => item.workspaces)
         .filter(Boolean)
-        .map(ws => WorkspaceModel.fromDatabase(ws)) || []
+        .map((ws: any) => WorkspaceModel.fromDatabase(ws))
 
       // Remove duplicates (workspaces owned by user also appear in memberships)
-      const allWorkspaces = [...ownedWorkspacesList]
-      const seenIds = new Set(ownedWorkspacesList.map(ws => ws.id))
-      
+      const allWorkspaces: Workspace[] = [...ownedWorkspacesList]
+      const seenIds = new Set<string>(ownedWorkspacesList.map((ws: Workspace) => ws.id))
+
       for (const ws of memberWorkspacesList) {
         if (!seenIds.has(ws.id)) {
           allWorkspaces.push(ws)
@@ -266,7 +278,7 @@ export class WorkspacesService {
         }
       }
 
-      const members = data.map(member =>
+      const members = data.map((member: any) =>
         WorkspaceMemberModel.fromDatabaseWithDetails({
           ...member,
           email: null // Email will need to be fetched separately if needed
@@ -320,7 +332,7 @@ export class WorkspacesService {
         }
       }
 
-      const invitations = data.map(invitation => {
+      const invitations = data.map((invitation: any) => {
         const profile = Array.isArray(invitation.profiles) ? invitation.profiles[0] : invitation.profiles
         return InvitationModel.fromDatabaseWithDetails({
           ...invitation,

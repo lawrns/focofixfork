@@ -31,6 +31,15 @@ import type {
 
 const untypedSupabase = supabaseAdmin as any
 
+// Workload tracking type for auto-allocation
+interface MemberWorkload {
+  user_id: string
+  name: string
+  current_hours: number
+  capacity_hours: number
+  utilization_percent: number
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -810,7 +819,7 @@ Return JSON:
     }
 
     // Calculate current workload for each member
-    const workloads = teamMembers.map((member: any) => {
+    const workloads: MemberWorkload[] = teamMembers.map((member: any) => {
       const assignedTasks = context.tasks.filter(
         (t: any) => t.assignee_id === member.user_id && t.status !== 'done'
       )
@@ -831,7 +840,7 @@ Return JSON:
     })
 
     // Find least loaded member
-    const sorted = workloads.sort((a, b) => a.utilization_percent - b.utilization_percent)
+    const sorted = workloads.sort((a: MemberWorkload, b: MemberWorkload) => a.utilization_percent - b.utilization_percent)
     const bestMatch = sorted[0]
 
     return {

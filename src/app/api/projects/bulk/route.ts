@@ -123,45 +123,45 @@ export async function POST(req: NextRequest) {
     })
 
     // Perform bulk operation
-    if (operation === 'archive') {
+    if (body.operation === 'archive') {
       // Archive projects by setting archived_at to current timestamp
       const { error: updateError } = await supabase
         .from('foco_projects')
         .update({ archived_at: new Date().toISOString() })
-        .in('id', project_ids)
+        .in('id', body.project_ids)
 
       if (updateError) {
         return databaseErrorResponse('Failed to archive projects', updateError)
       }
 
       // All projects were successfully archived
-      successful.push(...project_ids)
-    } else if (operation === 'unarchive') {
+      successful.push(...body.project_ids)
+    } else if (body.operation === 'unarchive') {
       // Unarchive projects by setting archived_at to null
       const { error: updateError } = await supabase
         .from('foco_projects')
         .update({ archived_at: null })
-        .in('id', project_ids)
+        .in('id', body.project_ids)
 
       if (updateError) {
         return databaseErrorResponse('Failed to unarchive projects', updateError)
       }
 
       // All projects were successfully unarchived
-      successful.push(...project_ids)
-    } else if (operation === 'delete') {
+      successful.push(...body.project_ids)
+    } else if (body.operation === 'delete') {
       // Delete projects
       const { error: deleteError } = await supabase
         .from('foco_projects')
         .delete()
-        .in('id', project_ids)
+        .in('id', body.project_ids)
 
       if (deleteError) {
         return databaseErrorResponse('Failed to delete projects', deleteError)
       }
 
       // All projects were successfully deleted
-      successful.push(...project_ids)
+      successful.push(...body.project_ids)
     }
 
     return mergeAuthResponse(successResponse({

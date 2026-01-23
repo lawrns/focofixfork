@@ -226,7 +226,7 @@ class ApiClient {
           // Handle rate limiting (429) with exponential backoff
           if (attempt < retries && this.shouldRetry(response.status)) {
             const retryAfterHeader = response.headers.get('retry-after')
-            const backoffTime = this.calculateBackoffTime(attempt, retryAfterHeader)
+            const backoffTime = this.calculateBackoffTime(attempt, retryAfterHeader ?? undefined)
 
             // Notify caller about retry
             if (onRetry) {

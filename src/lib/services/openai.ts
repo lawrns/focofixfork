@@ -42,7 +42,7 @@ export interface AISuggestion {
 
 export class OpenAIService {
   public config: AIConfig
-  private client: OpenAI
+  private client!: OpenAI
   private isProduction: boolean
 
   constructor(config?: Partial<AIConfig>) {

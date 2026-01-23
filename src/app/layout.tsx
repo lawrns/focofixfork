@@ -72,7 +72,7 @@ export default function AppLayout({
           `}
         </Script>
       </head>
-      <body className={GeistSans.className}>
+      <body className={GeistSans.className} suppressHydrationWarning>
         <Providers>
           <TooltipProvider>
             <AppShell>{children}</AppShell>

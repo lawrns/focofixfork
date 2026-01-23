@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         status: cacheStats.hitRate > 80 ? '✅ Excellent' : cacheStats.hitRate > 60 ? '⚠️ Good' : '🔴 Needs Improvement',
       },
       timestamp: new Date().toISOString(),
-      recommendations: []
+      recommendations: [] as { severity: string; message: string }[]
     }
 
     if (cacheStats.hitRate < 60) {

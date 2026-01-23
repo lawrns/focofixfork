@@ -149,5 +149,5 @@ export function applyMicroInteraction(element: HTMLElement, interaction: keyof t
 
 // Hook for micro-interactions in React components
 export function useMicroInteraction(interaction: keyof typeof microInteractions) {
-  return microInteractionClasses[interaction] || microInteractions.smoothTransition
+  return (microInteractionClasses as Record<string, string>)[interaction] || microInteractions.smoothTransition
 }

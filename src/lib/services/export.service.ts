@@ -8,6 +8,17 @@ import { supabase as supabaseClient } from '@/lib/supabase-client'
 
 const untypedSupabase = supabaseClient as any
 
+// Database row types for export queries
+interface MilestoneRow {
+  id: string
+  name?: string
+  title?: string
+  due_date?: string | null
+  start_date?: string | null
+  status?: string
+  [key: string]: any
+}
+
 export interface ExportOptions {
   format?: 'csv' | 'json' | 'excel' | 'pdf'
   includeHeaders?: boolean
@@ -221,10 +232,11 @@ export class ExportService {
         .order('start_date', { ascending: true })
 
       // Fetch tasks
+      const milestoneList = (milestones || []) as MilestoneRow[]
       const { data: tasks } = await untypedSupabase
         .from('work_items')
         .select('id, title, parent_id, start_date, due_date, status, assignee_id')
-        .in('parent_id', milestones?.map(m => m.id) || [])
+        .in('parent_id', milestoneList.map((m: MilestoneRow) => m.id))
 
       const exportData = {
         project_id: projectId,
@@ -306,7 +318,7 @@ export class ExportService {
 
       const { data: timeEntries } = await query
 
-      const totalHours = (timeEntries || []).reduce((sum, entry: any) => {
+      const totalHours = (timeEntries || []).reduce((sum: number, entry: any) => {
         return sum + ((entry.duration_minutes || 0) / 60)
       }, 0)
 

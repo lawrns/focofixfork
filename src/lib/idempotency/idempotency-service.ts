@@ -318,6 +318,12 @@ export function idempotencyMiddleware(options?: IdempotencyOptions) {
   }
 }
 
+// Context type for decorator instances
+interface IdempotentDecoratorContext {
+  user?: { id: string }
+  organization?: { id: string }
+}
+
 /**
  * Decorator for making functions idempotent
  */
@@ -326,7 +332,7 @@ export function Idempotent(options?: IdempotencyOptions) {
     const method = descriptor.value
     const idempotencyService = IdempotencyService.getInstance(options)
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: IdempotentDecoratorContext, ...args: any[]) {
       // Extract idempotency key from arguments (assuming it's the first argument or in options)
       const idempotencyKey = args[0]?.idempotencyKey || args[1]?.idempotencyKey
 

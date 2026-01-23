@@ -17,9 +17,9 @@ export async function PATCH(
     return mergeAuthResponse(authRequiredResponse(), authResponse)
   }
 
-  try {
-    const { id: notificationId } = await params
+  const { id: notificationId } = await params
 
+  try {
     if (!notificationId) {
       return mergeAuthResponse(NextResponse.json(
         { success: false, error: 'Notification ID is required' },
@@ -36,7 +36,7 @@ export async function PATCH(
 
     // Handle PGRST116 error (not found)
     if (err.code === 'PGRST116') {
-      return mergeAuthResponse(notFoundResponse('Notification not found'), authResponse)
+      return mergeAuthResponse(notFoundResponse('Notification', notificationId), authResponse)
     }
 
     return mergeAuthResponse(databaseErrorResponse('Failed to mark notification as read', err), authResponse)

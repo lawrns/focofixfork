@@ -75,12 +75,29 @@ export const FeatureFlagValueSchema = z.object({
     owner: z.string(),
     created_at: z.string().datetime(),
     updated_at: z.string().datetime(),
-    version: z.string().default('1.0.0'),
+    version: z.string().optional(),
     tags: z.array(z.string()).default([])
   }).optional()
 })
 
 export type FeatureFlagValue = z.infer<typeof FeatureFlagValueSchema>
+
+// Partial type for defining default flags inline without requiring all fields
+export type FeatureFlagValueInput = {
+  enabled: boolean
+  rollout_percentage?: number
+  user_ids?: string[]
+  organization_ids?: string[]
+  environments?: ('development' | 'staging' | 'production')[]
+  metadata?: {
+    description: string
+    owner: string
+    created_at: string
+    updated_at: string
+    version?: string
+    tags?: string[]
+  }
+}
 
 // Feature flag context for evaluation
 export interface FeatureFlagContext {
@@ -115,7 +132,7 @@ export class FeatureFlagsService {
    * Initialize default feature flags
    */
   private initializeDefaultFlags(): void {
-    const defaultFlags: Record<FeatureFlag, FeatureFlagValue> = {
+    const defaultFlags: Record<FeatureFlag, FeatureFlagValueInput> = {
       // Voice capture - disabled by default for safe rollout
       voice_capture_enabled: {
         enabled: false,
@@ -370,7 +387,19 @@ export class FeatureFlagsService {
     }
 
     for (const [flag, value] of Object.entries(defaultFlags)) {
-      this.flags.set(flag as FeatureFlag, value)
+      // Apply defaults to create full FeatureFlagValue
+      const fullValue: FeatureFlagValue = {
+        enabled: value.enabled,
+        rollout_percentage: value.rollout_percentage ?? 100,
+        user_ids: value.user_ids ?? [],
+        organization_ids: value.organization_ids ?? [],
+        environments: value.environments ?? ['production'],
+        metadata: value.metadata ? {
+          ...value.metadata,
+          tags: value.metadata.tags ?? []
+        } : undefined
+      }
+      this.flags.set(flag as FeatureFlag, fullValue)
     }
   }
 
@@ -431,12 +460,12 @@ export class FeatureFlagsService {
    * Set feature flag value
    */
   setFlag(flag: FeatureFlag, value: FeatureFlagValue): void {
-    const updatedValue = {
+    const updatedValue: FeatureFlagValue = {
       ...value,
-      metadata: {
+      metadata: value.metadata ? {
         ...value.metadata,
         updated_at: new Date().toISOString()
-      }
+      } : undefined
     }
     this.flags.set(flag, updatedValue)
   }

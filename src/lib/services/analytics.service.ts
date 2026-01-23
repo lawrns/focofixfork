@@ -13,6 +13,31 @@ import type {
 const untypedSupabase = supabase as any
 const untypedSupabaseAdmin = supabaseAdmin as any
 
+// Database row types for analytics queries
+interface AnalyticsTaskRow {
+  id: string
+  status: string | null
+  created_at: string | null
+  updated_at: string | null
+  due_date: string | null
+}
+
+interface AnalyticsProjectRow {
+  id: string
+  name: string
+  status: string | null
+}
+
+interface AnalyticsTeamMemberRow {
+  id: string
+  user_id: string
+  role: string | null
+}
+
+interface ProjectTeamMemberRow {
+  user_id: string | null
+}
+
 // AnalyticsService class for calculating and aggregating analytics data
 export class AnalyticsService {
   // ===============================
@@ -97,26 +122,27 @@ export class AnalyticsService {
     if (tasksError) throw tasksError
 
     // Calculate metrics
-    const totalTasks = tasks?.length || 0
-    const completedTasks = tasks?.filter(t => t.status === 'done').length || 0
+    const taskList = (tasks || []) as AnalyticsTaskRow[]
+    const totalTasks = taskList.length
+    const completedTasks = taskList.filter((t: AnalyticsTaskRow) => t.status === 'done').length
     const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
     // Calculate overdue tasks (simplified - tasks not completed by due date)
-    const overdueTasks = tasks?.filter(t =>
+    const overdueTasks = taskList.filter((t: AnalyticsTaskRow) =>
       t.status !== 'done' &&
       t.due_date &&
       new Date(t.due_date) < new Date()
-    ).length || 0
+    ).length
 
     // Calculate average cycle time (time from creation to completion)
-    const completedTasksWithTimes = tasks?.filter(t =>
+    const completedTasksWithTimes = taskList.filter((t: AnalyticsTaskRow) =>
       t.status === 'done' &&
       t.updated_at &&
       t.created_at &&
       new Date(t.updated_at) > new Date(t.created_at) // Ensure completion is after creation
-    ) || []
+    )
     const averageCycleTime = completedTasksWithTimes.length > 0
-      ? completedTasksWithTimes.reduce((sum, task) => {
+      ? completedTasksWithTimes.reduce((sum: number, task: AnalyticsTaskRow) => {
           const created = new Date(task.created_at!)
           const completed = new Date(task.updated_at!)
           const cycleTime = Math.max(0, (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) // days, ensure non-negative
@@ -157,7 +183,7 @@ export class AnalyticsService {
 
     // Deduplicate users
     const userMap = new Map<string, string>()
-    projectMembers?.forEach(member => {
+    ;(projectMembers || []).forEach((member: ProjectTeamMemberRow) => {
       if (member.user_id && !userMap.has(member.user_id)) {
         userMap.set(member.user_id, 'Team Member') // Simplified for now
       }
@@ -193,17 +219,18 @@ export class AnalyticsService {
 
     if (tasksError) throw tasksError
 
-    const tasksCompleted = tasks?.filter(t => t.status === 'done').length || 0
+    const taskList = (tasks || []) as AnalyticsTaskRow[]
+    const tasksCompleted = taskList.filter((t: AnalyticsTaskRow) => t.status === 'done').length
 
     // Calculate average cycle time
-    const completedTasks = tasks?.filter(t =>
+    const completedTasks = taskList.filter((t: AnalyticsTaskRow) =>
       t.status === 'done' &&
       t.updated_at &&
       t.created_at &&
       new Date(t.updated_at) > new Date(t.created_at) // Ensure completion is after creation
-    ) || []
+    )
     const averageCycleTime = completedTasks.length > 0
-      ? completedTasks.reduce((sum, task) => {
+      ? completedTasks.reduce((sum: number, task: AnalyticsTaskRow) => {
           const created = new Date(task.created_at!)
           const completed = new Date(task.updated_at!)
           const cycleTime = Math.max(0, (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) // Ensure non-negative
@@ -212,14 +239,14 @@ export class AnalyticsService {
       : 0
 
     // Calculate overdue tasks
-    const overdueTasks = tasks?.filter(t =>
+    const overdueTasks = taskList.filter((t: AnalyticsTaskRow) =>
       t.status !== 'done' &&
       t.due_date &&
       new Date(t.due_date) < new Date()
-    ).length || 0
+    ).length
 
     // Calculate workload score (simplified - based on active tasks)
-    const activeTasks = tasks?.filter(t => t.status !== 'done').length || 0
+    const activeTasks = taskList.filter((t: AnalyticsTaskRow) => t.status !== 'done').length
     const workloadScore = Math.min(activeTasks * 10, 100) // Max 100, 10 points per active task
 
     // Get active projects count for this user
@@ -459,8 +486,9 @@ export class AnalyticsService {
 
     if (error) throw error
 
-    const totalTasks = tasks?.length || 0
-    const completedTasks = tasks?.filter(t => t.status === 'done').length || 0
+    const taskList = (tasks || []) as { status: string | null }[]
+    const totalTasks = taskList.length
+    const completedTasks = taskList.filter((t: { status: string | null }) => t.status === 'done').length
 
     return totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
   }
@@ -618,13 +646,15 @@ export class AnalyticsService {
         .gte('updated_at', weekStart.toISOString())
         .lte('updated_at', weekEnd.toISOString())
 
-      const validTasks = tasks?.filter(task =>
+      type CycleTaskRow = { created_at: string | null; updated_at: string | null }
+      const taskList = (tasks || []) as CycleTaskRow[]
+      const validTasks = taskList.filter((task: CycleTaskRow) =>
         task.created_at &&
         task.updated_at &&
         new Date(task.updated_at) > new Date(task.created_at) // Ensure completion is after creation
-      ) || []
+      )
       const avgCycleTime = validTasks.length > 0
-        ? validTasks.reduce((sum, task) => {
+        ? validTasks.reduce((sum: number, task: CycleTaskRow) => {
             const cycleTime = Math.max(0, (new Date(task.updated_at!).getTime() - new Date(task.created_at!).getTime()) / (1000 * 60 * 60 * 24)) // Ensure non-negative
             return sum + cycleTime
           }, 0) / validTasks.length

@@ -12,6 +12,18 @@ import { supabase as supabaseClient } from '@/lib/supabase-client'
 
 const untypedSupabase = supabaseClient as any
 
+// Database row types for inbox queries
+interface InboxTaskRow {
+  id: string
+  [key: string]: any
+}
+
+interface InboxCommentRow {
+  id: string
+  work_item?: { title: string; project_id: string | null } | null
+  [key: string]: any
+}
+
 export interface InboxItem {
   id: string
   type: 'task' | 'project' | 'comment' | 'mention'
@@ -111,8 +123,8 @@ export class InboxService {
       .limit(20)
 
     return [
-      ...(tasks || []).map(t => ({ ...t, type: 'task' })),
-      ...(comments || []).map(c => ({ ...c, type: 'comment', work_item: c.work_item || { title: 'Unknown', project_id: null } })),
+      ...(tasks || []).map((t: InboxTaskRow) => ({ ...t, type: 'task' })),
+      ...(comments || []).map((c: InboxCommentRow) => ({ ...c, type: 'comment', work_item: c.work_item || { title: 'Unknown', project_id: null } })),
     ]
   }
 

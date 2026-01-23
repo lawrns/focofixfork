@@ -136,7 +136,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Generate export content
-    const content = format === 'csv' ? generateCSV(tasks || []) : generateJSON(tasks || [])
+    const exportTasks = (tasks || []) as unknown as TaskExportRow[]
+    const content = format === 'csv' ? generateCSV(exportTasks) : generateJSON(exportTasks)
     const contentType = format === 'csv' ? 'text/csv; charset=utf-8' : 'application/json; charset=utf-8'
     const filename = generateExportFilename(project.name, format)
 

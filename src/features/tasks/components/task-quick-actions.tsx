@@ -94,7 +94,7 @@ export function TaskQuickActions({
 
   const getStatusIcon = (status: Task['status']) => {
     switch (status) {
-      case 'todo': return <Circle className="h-4 w-4" />
+      case 'backlog': return <Circle className="h-4 w-4" />
       case 'in_progress': return <PlayCircle className="h-4 w-4" />
       case 'review': return <AlertTriangle className="h-4 w-4" />
       case 'done': return <CheckCircle className="h-4 w-4" />
@@ -120,8 +120,8 @@ export function TaskQuickActions({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleStatusChange('todo')}
-            disabled={isUpdating || task.status === 'todo'}
+            onClick={() => handleStatusChange('backlog')}
+            disabled={isUpdating || task.status === 'backlog'}
             className="h-8 px-2"
           >
             <Circle className="h-4 w-4" />

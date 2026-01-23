@@ -38,7 +38,7 @@ export async function DELETE(
     }
 
     if (!existingNotification) {
-      return mergeAuthResponse(notFoundResponse('Notification not found'), authResponse)
+      return mergeAuthResponse(notFoundResponse('Notification', notificationId), authResponse)
     }
 
     if (existingNotification.user_id !== user.id) {

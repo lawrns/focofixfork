@@ -26,6 +26,22 @@ interface Project {
   }
 }
 
+// Database row type for Supabase queries
+interface ProjectDbRow {
+  id: string
+  name: string
+  description: string | null
+  workspace_id: string | null
+  status: string
+  priority: string
+  owner_id: string | null
+  start_date: string | null
+  due_date: string | null
+  progress_percentage: number | null
+  created_at: string | null
+  updated_at: string | null
+}
+
 export interface ProjectsListResponse {
   success: boolean
   data?: Project[]
@@ -79,7 +95,7 @@ export class ProjectsService {
         }
       }
 
-      const userWorkspaceIds = userWorkspaces?.map(ws => ws.workspace_id) || []
+      const userWorkspaceIds = userWorkspaces?.map((ws: { workspace_id: string }) => ws.workspace_id) || []
 
       // Build query to get all projects user has access to
       let query = supabaseAdmin
@@ -132,7 +148,7 @@ export class ProjectsService {
 
       return {
         success: true,
-        data: data?.map(project => ({
+        data: data?.map((project: ProjectDbRow) => ({
           id: project.id,
           name: project.name,
           description: project.description,
@@ -496,9 +512,9 @@ export class ProjectsService {
 
       const stats = {
         total: projects?.length || 0,
-        active: projects?.filter(p => p.status === 'active').length || 0,
-        completed: projects?.filter(p => p.status === 'completed').length || 0,
-        overdue: projects?.filter(p => {
+        active: projects?.filter((p: ProjectDbRow) => p.status === 'active').length || 0,
+        completed: projects?.filter((p: ProjectDbRow) => p.status === 'completed').length || 0,
+        overdue: projects?.filter((p: ProjectDbRow) => {
           if (p.status === 'completed' || !p.due_date) return false
           return new Date(p.due_date) < new Date()
         }).length || 0,

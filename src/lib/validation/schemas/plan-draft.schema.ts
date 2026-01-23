@@ -352,6 +352,7 @@ export const EXAMPLE_PLAN_DRAFT: PlanDraft = {
           assignee_hint: 'design-team',
           estimate_hours: 40,
           depends_on: [],
+          tags: [],
           acceptance_criteria: [
             'All screens designed',
             'Design system established',
@@ -366,6 +367,7 @@ export const EXAMPLE_PLAN_DRAFT: PlanDraft = {
           assignee_hint: 'tech-lead',
           estimate_hours: 24,
           depends_on: ['Create wireframes and mockups'],
+          tags: ['architecture', 'planning'],
           acceptance_criteria: [
             'Architecture documented',
             'Technology stack selected',

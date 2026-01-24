@@ -41,7 +41,7 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   // Landing page and auth pages should not have AppShell chrome
-  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password';
+  const isPublicPage = isMounted && (pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password');
 
   if (isPublicPage) {
     return (
@@ -58,7 +58,7 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   // Focus mode: show minimal UI with exit button
-  if (focusModeActive) {
+  if (isMounted && focusModeActive) {
     const { deactivate } = useFocusModeStore.getState();
     return (
       <div className="min-h-screen bg-white dark:bg-zinc-950">
@@ -102,7 +102,7 @@ export function AppShell({ children }: AppShellProps) {
       </main>
 
       {/* Mobile Floating Action Button (FAB) - World Class UX */}
-      {!isPublicPage && !focusModeActive && (
+      {isMounted && !isPublicPage && !focusModeActive && (
         <div className="fixed bottom-6 right-6 z-40 md:hidden">
           <button
             onClick={() => {

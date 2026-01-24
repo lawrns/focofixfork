@@ -17,7 +17,7 @@
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91dnFueWZxaXBnbnJqbnVxc3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDE0MTgsImV4cCI6MjA4MzQ3NzQxOH0.IWsTnd87r9H0FCxzPGqayhrvqRZN9DZp15U4DM_IXgc"
   SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91dnFueWZxaXBnbnJqbnVxc3FxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzkwMTQxOCwiZXhwIjoyMDgzNDc3NDE4fQ.Gt0n6_y3j6b955ZmiYlKSlFlDJCyyPW7NyPKIink53o"
 
-  # AI environment variables - Using GLM (Z.AI) as primary provider
+  # AI environment variables - Using GLM (Z.ai) as primary provider
   AI_PROVIDER = "glm"
   GLM_API_KEY = "bab0035a8192430c9777be04f96fc2c6.YUo6eS7mPkNJh073"
   GLM_MODEL = "glm-4.7"

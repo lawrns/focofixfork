@@ -75,7 +75,7 @@ function NewTaskForm() {
           (w: any) => w.slug === currentWorkspaceSlug
         );
 
-        if (currentWorkspace) {
+        if (currentWorkspace && currentWorkspace.id) {
           const membersRes = await fetch(`/api/workspaces/${currentWorkspace.id}/members`);
           const membersData = await membersRes.json();
 

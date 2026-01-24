@@ -1,0 +1,83 @@
+{
+  "workspace_id": "",
+  "slug": "de-developer-a-vibe-coder",
+  "title": "De Developer a Vibe Coder",
+  "description": "Transforma tu manera de desarrollar software con IA. Domina los patrones de orquestacion, multi-agent systems y prompt engineering que definen el siguiente nivel de desarrollo.",
+  "duration_minutes": 240,
+  "is_published": true,
+  "sort_order": 1,
+  "sections": [
+    {
+      "title": "Modulo 0: Orientacion - Reseta tus expectativas",
+      "content_type": "markdown",
+      "content": "# Modulo 0: Orientacion\n\n## Que es Vibe Coding?\n\nVibe coding no es lo que crees.\n\n## Las 4 Reglas\n\n1. IA explora, humanos deciden\n2. Codigo antes de prompts\n3. Compuestos, no monolitos\n4. Determinismo > elegancia",
+      "content_url": null,
+      "sort_order": 0,
+      "duration_minutes": 10
+    },
+    {
+      "title": "Modulo 1: The Vibe Shift - Control vs Orquestacion",
+      "content_type": "markdown",
+      "content": "# Modulo 1: The Vibe Shift\n\n## El problema del control\n\nLa mayoria de desarrolladores queremos control total.\n\n## El cambio a orquestacion\n\nVibe coding cambia la pregunta.",
+      "content_url": null,
+      "sort_order": 1,
+      "duration_minutes": 30
+    },
+    {
+      "title": "Modulo 2: AI Stack Reality - Claude vs GLM",
+      "content_type": "markdown",
+      "content": "# Modulo 2: AI Stack Reality\n\n## La realidad de los modelos\n\nNo todos los modelos son iguales.",
+      "content_url": null,
+      "sort_order": 2,
+      "duration_minutes": 45
+    },
+    {
+      "title": "Modulo 3: Prompts as Architecture - CRITICO",
+      "content_type": "markdown",
+      "content": "# Modulo 3: Prompts as Architecture\n\n## Los prompts son especificaciones ejecutables",
+      "content_url": null,
+      "sort_order": 3,
+      "duration_minutes": 40
+    },
+    {
+      "title": "Modulo 4: Multi-Agent Command",
+      "content_type": "markdown",
+      "content": "# Modulo 4: Multi-Agent Command\n\n## Cuando dividir en agentes?",
+      "content_url": null,
+      "sort_order": 4,
+      "duration_minutes": 45
+    },
+    {
+      "title": "Modulo 5: Infrastructure Awareness",
+      "content_type": "markdown",
+      "content": "# Modulo 5: Infrastructure Awareness\n\n## Donde vibe coding encuentra la realidad",
+      "content_url": null,
+      "sort_order": 5,
+      "duration_minutes": 30
+    },
+    {
+      "title": "Modulo 6: IDEs and Execution",
+      "content_type": "markdown",
+      "content": "# Modulo 6: IDEs & Execution\n\n## Tus herramientas mienten",
+      "content_url": null,
+      "sort_order": 6,
+      "duration_minutes": 25
+    },
+    {
+      "title": "Modulo 7: Production Discipline",
+      "content_type": "markdown",
+      "content": "# Modulo 7: Production Discipline\n\n## Las reglas invisibles",
+      "content_url": null,
+      "sort_order": 7,
+      "duration_minutes": 25
+    },
+    {
+      "title": "Modulo 8: Certificacion - Badge Fyves Vibe Coder",
+      "content_type": "checkpoint",
+      "content": "# Modulo 8: Certificacion Final\n\n## Felicidades\n\nHas completado todos los modulos.",
+      "content_url": null,
+      "sort_order": 8,
+      "duration_minutes": 10
+    }
+  ]
+}

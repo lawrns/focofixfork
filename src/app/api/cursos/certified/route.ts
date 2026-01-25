@@ -42,11 +42,14 @@ export const GET = withRateLimit(
       return mergeAuthResponse(errorRes, authResponse)
     }
 
-    const successRes = successResponse({
-      members: result.data,
-      total: result.data?.length || 0,
-    })
-    return mergeAuthResponse(successRes, authResponse)
+    return mergeAuthResponse(
+      NextResponse.json({
+        success: true,
+        members: result.data,
+        total: result.data?.length || 0,
+      }),
+      authResponse
+    )
   } catch (error) {
     console.error('[Cursos Certified API] Error:', error)
     return databaseErrorResponse('Failed to fetch certified members')

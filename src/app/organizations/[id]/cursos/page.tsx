@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -139,36 +138,42 @@ function CursosContent() {
 
   if (isCheckingAccess) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         </div>
-      </MainLayout>
+      </div>
     )
   }
 
   if (accessError) {
     return (
-      <MainLayout>
-        <Alert variant="destructive" className="max-w-md mx-auto mt-8">
-          <Lock className="h-4 w-4" />
-          <AlertDescription>{accessError}</AlertDescription>
-        </Alert>
-      </MainLayout>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-6xl mx-auto">
+          <Alert variant="destructive" className="max-w-md mx-auto mt-8">
+            <Lock className="h-4 w-4" />
+            <AlertDescription>{accessError}</AlertDescription>
+          </Alert>
+        </div>
+      </div>
     )
   }
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <PageLoadingSkeleton />
-      </MainLayout>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-6xl mx-auto">
+          <PageLoadingSkeleton />
+        </div>
+      </div>
     )
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-8">
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -255,7 +260,7 @@ function CursosContent() {
           )}
         </AnimatePresence>
       </div>
-    </MainLayout>
+    </div>
   )
 }
 

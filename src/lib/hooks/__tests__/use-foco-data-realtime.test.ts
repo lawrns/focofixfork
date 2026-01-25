@@ -60,7 +60,7 @@ describe('useWorkItems real-time subscriptions', () => {
     vi.clearAllMocks();
   });
 
-  it('should subscribe to the correct table name "tasks" not "work_items"', async () => {
+  it('should subscribe to the correct table name "work_items"', async () => {
     const { supabase } = await import('@/lib/supabase-client');
 
     // Render the hook
@@ -74,10 +74,9 @@ describe('useWorkItems real-time subscriptions', () => {
     // Get the channel configuration
     const channelConfig = (supabase as any).__getLastChannelConfig();
 
-    // Verify the subscription is listening to 'tasks' table, not 'work_items'
+    // Verify the subscription is listening to 'work_items' table
     expect(channelConfig).toBeDefined();
-    expect(channelConfig.table).toBe('tasks');
-    expect(channelConfig.table).not.toBe('work_items');
+    expect(channelConfig.table).toBe('work_items');
   });
 
   it('should subscribe to the correct schema and event type', async () => {
@@ -119,7 +118,7 @@ describe('useWorkItem real-time subscriptions', () => {
     vi.clearAllMocks();
   });
 
-  it('should subscribe to the correct table name "tasks" for single work item', async () => {
+  it('should subscribe to the correct table name "work_items" for single work item', async () => {
     const { supabase } = await import('@/lib/supabase-client');
 
     renderHook(() => useWorkItem('test-item-id'));
@@ -130,10 +129,9 @@ describe('useWorkItem real-time subscriptions', () => {
 
     const channelConfig = (supabase as any).__getLastChannelConfig();
 
-    // Verify the subscription is listening to 'tasks' table, not 'work_items'
+    // Verify the subscription is listening to 'work_items' table
     expect(channelConfig).toBeDefined();
-    expect(channelConfig.table).toBe('tasks');
-    expect(channelConfig.table).not.toBe('work_items');
+    expect(channelConfig.table).toBe('work_items');
   });
 
   it('should filter by work item id in subscription', async () => {

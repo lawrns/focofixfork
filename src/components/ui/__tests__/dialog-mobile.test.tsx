@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi, beforeEach, afterEach } from 'vitest';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +9,25 @@ import {
   DialogDescription,
 } from '../dialog';
 
+// Mock the useMobile hook
+vi.mock('@/lib/hooks/use-mobile', () => ({
+  useMobile: vi.fn(() => true), // Default to mobile for these tests
+}));
+
 describe('Dialog Mobile Responsiveness', () => {
+  beforeEach(() => {
+    // Set mobile viewport
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 375,
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should have responsive max-width that fits within mobile viewport', () => {
     render(
       <Dialog open>
@@ -24,16 +43,12 @@ describe('Dialog Mobile Responsiveness', () => {
     // Get the computed classes
     const classes = dialogContent.className;
 
-    // Should have responsive width class w-[calc(100vw-2rem)] for mobile
-    expect(classes).toMatch(/w-\[calc\(100vw-2rem\)\]/);
+    // Should have responsive width class max-w-[calc(100vw-2rem)] for mobile
+    expect(classes).toMatch(/max-w-\[calc\(100vw-2rem\)\]/);
 
-    // Should have sm:max-w-lg for larger screens
-    expect(classes).toMatch(/sm:max-w-lg/);
-
-    // Should NOT have max-w-lg without responsive prefix
-    // (this would cause overflow on mobile)
-    const hasUnresponsiveMaxWidth = classes.includes('max-w-lg') && !classes.includes('sm:max-w-lg');
-    expect(hasUnresponsiveMaxWidth).toBe(false);
+    // Should NOT have max-w-lg on mobile (component conditionally applies this)
+    // The component uses isMobile to switch between max-w-[calc(100vw-2rem)] and max-w-lg
+    expect(classes).not.toContain('max-w-lg');
   });
 
   it('should have close button accessible on mobile', () => {

@@ -39,7 +39,11 @@ export const GET = withRateLimit(
 
     if (!workspace) {
       return mergeAuthResponse(
-        successResponse({ authorized: false, reason: 'workspace_not_found' }),
+        NextResponse.json({
+          success: true,
+          authorized: false,
+          reason: 'workspace_not_found'
+        }),
         authResponse
       )
     }
@@ -54,7 +58,8 @@ export const GET = withRateLimit(
     const authorized = isFyvesWorkspace || isFyvesUser
 
     return mergeAuthResponse(
-      successResponse({
+      NextResponse.json({
+        success: true,
         authorized,
         reason: authorized ? undefined : 'not_fyves_domain',
         workspace: {

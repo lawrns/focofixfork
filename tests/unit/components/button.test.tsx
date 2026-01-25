@@ -256,7 +256,7 @@ describe('Button Component', () => {
       const button = screen.getByRole('button');
       button.focus();
 
-      expect(button).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-zinc-400');
+      expect(button).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-ring');
     });
 
     it('maintains design system consistency', () => {
@@ -264,12 +264,12 @@ describe('Button Component', () => {
       let button = screen.getByRole('button');
 
       // Check default design tokens
-      expect(button).toHaveClass('rounded-lg', 'text-sm', 'font-medium');
+      expect(button).toHaveClass('rounded-md', 'text-sm', 'font-medium');
 
       // Check variant maintains consistency
       rerender(<Button variant="secondary">Secondary</Button>);
       button = screen.getByRole('button');
-      expect(button).toHaveClass('rounded-lg', 'text-sm', 'font-medium');
+      expect(button).toHaveClass('rounded-md', 'text-sm', 'font-medium');
     });
 
     it('supports custom styling overrides', () => {

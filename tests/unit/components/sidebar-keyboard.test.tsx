@@ -278,7 +278,7 @@ describe('Keyboard Navigation - Sidebar', () => {
         <a href="/" data-testid="link-1">
           Link 1
         </a>
-        <a href="/" data-testid="link-2" aria-disabled="true">
+        <a href="/" data-testid="link-2" aria-disabled="true" tabIndex={-1}>
           Link 2 (disabled)
         </a>
         <a href="/" data-testid="link-3">

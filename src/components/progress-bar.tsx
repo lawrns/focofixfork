@@ -4,17 +4,17 @@ import { useEffect } from 'react';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 
-// Configure NProgress
-NProgress.configure({
-  showSpinner: false,
-  minimum: 0.3,
-  easing: 'ease',
-  speed: 800,
-  trickleSpeed: 200,
-});
-
 export function ProgressBar() {
   useEffect(() => {
+    // Configure NProgress
+    NProgress.configure({
+      showSpinner: false,
+      minimum: 0.3,
+      easing: 'ease',
+      speed: 800,
+      trickleSpeed: 200,
+    });
+
     // Inject custom styles for the progress bar
     const style = document.createElement('style');
     style.textContent = `

@@ -28,10 +28,10 @@ describe('ProgressBar Component', () => {
     });
 
     it('injects custom styles on mount', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      // Check that a style element was added
-      const styles = container.querySelectorAll('style');
+      // Check that a style element was added to document.head
+      const styles = document.head.querySelectorAll('style');
       expect(styles.length).toBeGreaterThan(0);
     });
 
@@ -48,9 +48,10 @@ describe('ProgressBar Component', () => {
     });
 
     it('includes blue gradient color in custom styles', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('#3b82f6'));
       if (style && style.textContent) {
         expect(style.textContent).toContain('#3b82f6');
         expect(style.textContent).toContain('#2563eb');
@@ -59,9 +60,10 @@ describe('ProgressBar Component', () => {
     });
 
     it('sets progress bar height to 2px in styles', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('height: 2px'));
       if (style && style.textContent) {
         expect(style.textContent).toContain('height: 2px');
       }
@@ -70,9 +72,10 @@ describe('ProgressBar Component', () => {
 
   describe('Styling', () => {
     it('applies theme-matched blue color gradient', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('linear-gradient'));
       if (style && style.textContent) {
         // Verify gradient uses blue colors matching design system
         expect(style.textContent).toContain('linear-gradient(to right, #3b82f6, #2563eb)');
@@ -80,9 +83,10 @@ describe('ProgressBar Component', () => {
     });
 
     it('includes box-shadow glow effect', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('box-shadow'));
       if (style && style.textContent) {
         expect(style.textContent).toContain('box-shadow');
         expect(style.textContent).toContain('#3b82f6');
@@ -90,9 +94,10 @@ describe('ProgressBar Component', () => {
     });
 
     it('positions bar at top of page with high z-index', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('z-index: 1031'));
       if (style && style.textContent) {
         expect(style.textContent).toContain('position: fixed');
         expect(style.textContent).toContain('top: 0');
@@ -101,9 +106,10 @@ describe('ProgressBar Component', () => {
     });
 
     it('disables pointer events to prevent interaction blocking', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('pointer-events: none'));
       if (style && style.textContent) {
         expect(style.textContent).toContain('pointer-events: none');
       }
@@ -112,9 +118,10 @@ describe('ProgressBar Component', () => {
 
   describe('Animation Configuration', () => {
     it('sets smooth transition timing', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('transition'));
       if (style && style.textContent) {
         expect(style.textContent).toContain('transition');
         expect(style.textContent).toContain('0.3s ease');
@@ -144,14 +151,14 @@ describe('ProgressBar Component', () => {
 
   describe('Cleanup', () => {
     it('removes injected styles on unmount', () => {
-      const { container, unmount } = render(<ProgressBar />);
+      const { unmount } = render(<ProgressBar />);
 
-      const stylesBefore = container.querySelectorAll('style').length;
+      const stylesBefore = document.head.querySelectorAll('style').length;
       unmount();
-      const stylesAfter = document.querySelectorAll('style').length;
+      const stylesAfter = document.head.querySelectorAll('style').length;
 
       // The style added by the component should be removed
-      expect(stylesBefore).toBeGreaterThanOrEqual(1);
+      expect(stylesBefore).toBeGreaterThan(stylesAfter);
     });
   });
 
@@ -189,9 +196,10 @@ describe('ProgressBar Component', () => {
 
   describe('Accessibility', () => {
     it('does not affect keyboard navigation or focus', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('pointer-events: none'));
       if (style && style.textContent) {
         // pointer-events: none should be set
         expect(style.textContent).toContain('pointer-events: none');
@@ -214,9 +222,10 @@ describe('ProgressBar Component', () => {
 
   describe('Browser Compatibility', () => {
     it('includes webkit prefix for backdrop-filter support', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const style = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const style = Array.from(styles).find(s => s.textContent?.includes('#nprogress'));
       // Check for vendor prefixes if applicable
       if (style && style.textContent) {
         // Styles should be properly formatted for cross-browser support

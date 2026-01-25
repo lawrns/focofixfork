@@ -197,15 +197,36 @@ export class CursosRepository extends BaseRepository<Course> {
    * Get all certified members for a workspace
    */
   async getCertifiedMembers(workspaceId: string): Promise<Result<any[]>> {
+    // First get all course IDs for this workspace
+    const { data: courses, error: coursesError } = await this.supabase
+      .from('cursos_courses')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+
+    if (coursesError) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch courses',
+        details: coursesError,
+      })
+    }
+
+    const courseIds = courses?.map(c => c.id) || []
+
+    // If no courses, return empty array
+    if (courseIds.length === 0) {
+      return Ok([])
+    }
+
+    // Get certifications for those courses
     const { data, error } = await this.supabase
       .from('cursos_certifications')
       .select(`
         *,
-        user:auth.users(id, email, raw_user_meta_data)
-        ,
+        user:auth.users(id, email, raw_user_meta_data),
         course:cursos_courses(id, title, certification_level)
       `)
-      .eq('course.workspace_id', workspaceId)
+      .in('course_id', courseIds)
 
     if (error) {
       return Err({

@@ -21,8 +21,13 @@ interface ProvidersProps {
 
 function ConditionalMobileNav() {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
 
-  if (!pathname || ['/login', '/register', '/organization-setup'].includes(pathname)) {
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted || !pathname || ['/login', '/register', '/organization-setup'].includes(pathname)) {
     return null;
   }
 
@@ -90,7 +95,7 @@ export function Providers({ children }: ProvidersProps) {
                 <CreateTaskModalProvider />
                 <GlobalKeyboardShortcuts />
                 {children}
-                {typeof window !== 'undefined' && <ConditionalMobileNav />}
+                <ConditionalMobileNav />
               </AuthProvider>
             </ToastProvider>
           </I18nProvider>

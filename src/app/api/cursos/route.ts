@@ -63,11 +63,14 @@ export const GET = withRateLimit(
       })
     )
 
-    const successRes = successResponse({
-      courses: coursesWithProgress,
-      total: coursesWithProgress.length,
-    })
-    return mergeAuthResponse(successRes, authResponse)
+    return mergeAuthResponse(
+      NextResponse.json({
+        success: true,
+        courses: coursesWithProgress,
+        total: coursesWithProgress.length,
+      }),
+      authResponse
+    )
   } catch (error) {
     console.error('[Cursos API] Error fetching courses:', error)
     return databaseErrorResponse('Failed to fetch courses')

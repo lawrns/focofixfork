@@ -7,11 +7,11 @@ import { THEME_OPTIONS, ACCENT_COLORS, FONT_SIZE_OPTIONS } from '@/lib/theme/con
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any
 
-// Request body schema for updating preferences
+// Request body schema for updating preferences with preprocessing
 const UpdatePreferencesSchema = z.object({
-  theme: z.enum(['light', 'dark', 'auto', 'high-contrast', 'sepia']).optional(),
-  accent_color: z.enum(['blue', 'red', 'green', 'purple', 'pink', 'orange', 'yellow', 'teal', 'indigo', 'cyan', 'slate', 'amber']).optional(),
-  font_size: z.enum(['small', 'medium', 'large']).optional(),
+  theme: z.string().trim().toLowerCase().pipe(z.enum(['light', 'dark', 'auto', 'high-contrast', 'sepia'])).optional(),
+  accent_color: z.string().trim().toLowerCase().pipe(z.enum(['blue', 'red', 'green', 'purple', 'pink', 'orange', 'yellow', 'teal', 'indigo', 'cyan', 'slate', 'amber'])).optional(),
+  font_size: z.string().trim().toLowerCase().pipe(z.enum(['small', 'medium', 'large'])).optional(),
 }).strict()
 
 /**

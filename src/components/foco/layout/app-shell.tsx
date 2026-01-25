@@ -43,18 +43,24 @@ export function AppShell({ children }: AppShellProps) {
   // Landing page and auth pages should not have AppShell chrome
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password';
 
-  // Calculate display mode - use pathname during SSR for consistency
-  const displayMode = isPublicPage ? 'public' : focusModeActive ? 'focus' : 'full';
+  // Calculate display mode - ONLY use client state after mount to prevent hydration mismatch
+  // During SSR, always treat as 'full' mode for consistency
+  const focusModeActiveAfterMount = isMounted && focusModeActive;
+  const displayMode = isPublicPage ? 'public' : focusModeActiveAfterMount ? 'focus' : 'full';
 
   // Only show chrome after mount (prevents hydration issues with client-only state)
+  // Also check sidebarCollapsed to prevent hydration mismatch from persisted state
   const showChrome = isMounted && displayMode === 'full';
   const showFocusModeButton = isMounted && displayMode === 'focus';
+
+  // Use isMounted for client-only state to prevent hydration mismatch
+  const sidebarCollapsedAfterMount = isMounted && sidebarCollapsed;
 
   return (
     <div className={cn(
       'min-h-screen',
       displayMode === 'full' ? 'bg-zinc-50 dark:bg-zinc-950' : 'bg-white dark:bg-zinc-950',
-      displayMode === 'full' && densityClasses[density]
+      isMounted && displayMode === 'full' && densityClasses[density]
     )}>
       <CommandPalette />
       <KeyboardShortcutsModal />
@@ -80,11 +86,11 @@ export function AppShell({ children }: AppShellProps) {
       <main
         className={cn(
           'min-h-screen transition-all duration-200',
-          displayMode === 'full' && 'pt-12 md:pt-14 md:pl-64',
-          displayMode === 'full' && sidebarCollapsed && 'md:pl-16'
+          isMounted && displayMode === 'full' && 'pt-12 md:pt-14 md:pl-64',
+          sidebarCollapsedAfterMount && displayMode === 'full' && 'md:pl-16'
         )}
       >
-        <div className={displayMode === 'full' ? 'p-3 md:p-6' : ''}>
+        <div className={isMounted && displayMode === 'full' ? 'p-3 md:p-6' : ''}>
           {children}
         </div>
       </main>

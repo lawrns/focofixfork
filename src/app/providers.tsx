@@ -74,12 +74,17 @@ export function Providers({ children }: ProvidersProps) {
     },
   }));
 
-  // Initialize PWA
+  // Initialize PWA - delay to avoid hydration issues
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      import('@/lib/services/pwa').then(({ PWAService }) => {
-        PWAService.initialize();
-      });
+      // Delay PWA initialization until after hydration completes
+      const timer = setTimeout(() => {
+        import('@/lib/services/pwa').then(({ PWAService }) => {
+          PWAService.initialize();
+        });
+      }, 1000);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 

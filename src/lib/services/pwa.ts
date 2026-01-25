@@ -39,6 +39,16 @@ export class PWAService {
   static async initialize(): Promise<void> {
     if (typeof window === 'undefined') return;
 
+    // CRITICAL: Ensure React hydration is complete before any SW activity
+    // Wait for idle callback to ensure main thread is free
+    await new Promise<void>(resolve => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => resolve(), { timeout: 2000 });
+      } else {
+        setTimeout(resolve, 100);
+      }
+    });
+
     // Initialize IndexedDB
     try {
       this.db = await openDB(DB_NAME, 1, {

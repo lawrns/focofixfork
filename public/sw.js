@@ -442,4 +442,5 @@ self.addEventListener('notificationclick', (event) => {
   }
 })
 
-console.log('[SW] Service worker loaded successfully')
+// Suppress initial load message to avoid console noise during React hydration
+// console.log('[SW] Service worker loaded successfully')

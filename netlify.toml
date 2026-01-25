@@ -12,25 +12,15 @@
   # Next.js build configuration
   NEXT_TELEMETRY_DISABLED = "1"
 
-  # Supabase environment variables - SET IN NETLIFY DASHBOARD
-  # DO NOT commit actual credentials to version control
-  NEXT_PUBLIC_SUPABASE_URL = ""
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = ""
-  SUPABASE_SERVICE_ROLE_KEY = ""
+  # Supabase, AI, and other secret environment variables
+  # are configured in Netlify Dashboard → Environment variables
+  # Do NOT declare them here with empty values or they will override dashboard settings
 
-  # AI environment variables - SET IN NETLIFY DASHBOARD
-  # Using GLM (Zhipu AI) as primary provider
+  # Only non-secret configuration values are set here:
   AI_PROVIDER = "glm"
-  GLM_API_KEY = ""
   GLM_MODEL = "glm-4.7"
-
-  # DeepSeek fallback (optional)
-  DEEPSEEK_API_KEY = ""
   DEEPSEEK_MODEL = "deepseek-chat"
   DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-
-  # OpenAI environment variables (for transcription only)
-  OPENAI_API_KEY = ""
   NEXT_PUBLIC_OPENAI_MODEL = "gpt-4o-mini"
   NEXT_PUBLIC_OPENAI_CHAT_MODEL = "gpt-4o-mini"
 

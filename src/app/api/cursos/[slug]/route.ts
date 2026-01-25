@@ -4,17 +4,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CursosRepository } from '@/lib/repositories/cursos-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { cursosRateLimiter, withRateLimit } from '@/lib/middleware/enhanced-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/cursos/[slug]?workspaceId=xxx
  * Fetches a single course with sections by slug
+ *
+ * Rate Limited: 60 requests per minute per user/IP
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export const GET = withRateLimit(
+  cursosRateLimiter,
+  async function GET(
+    request: NextRequest,
+    { params }: { params: { slug: string } }
+  ) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
@@ -59,3 +64,4 @@ export async function GET(
     return databaseErrorResponse('Failed to fetch course')
   }
 }
+)

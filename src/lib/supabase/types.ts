@@ -490,25 +490,22 @@ export type Database = {
           id: string
           user_id: string
           course_id: string
-          issued_at: string
-          certificate_url: string | null
-          score: number | null
+          certification_level: string
+          certified_at: string | null
         }
         Insert: {
           id?: string
           user_id: string
           course_id: string
-          issued_at?: string
-          certificate_url?: string | null
-          score?: number | null
+          certification_level?: string
+          certified_at?: string | null
         }
         Update: {
           id?: string
           user_id?: string
           course_id?: string
-          issued_at?: string
-          certificate_url?: string | null
-          score?: number | null
+          certification_level?: string
+          certified_at?: string | null
         }
         Relationships: [
           {
@@ -516,6 +513,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "cursos_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cursos_certifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           }
         ]
@@ -525,31 +529,28 @@ export type Database = {
           id: string
           user_id: string
           section_id: string
-          attempt_number: number
-          score: number
-          passed: boolean
-          answers: Json | null
-          attempted_at: string
+          answer: Json | null
+          is_correct: boolean
+          attempts: number
+          created_at: string | null
         }
         Insert: {
           id?: string
           user_id: string
           section_id: string
-          attempt_number?: number
-          score: number
-          passed: boolean
-          answers?: Json | null
-          attempted_at?: string
+          answer?: Json | null
+          is_correct?: boolean
+          attempts?: number
+          created_at?: string | null
         }
         Update: {
           id?: string
           user_id?: string
           section_id?: string
-          attempt_number?: number
-          score?: number
-          passed?: boolean
-          answers?: Json | null
-          attempted_at?: string
+          answer?: Json | null
+          is_correct?: boolean
+          attempts?: number
+          created_at?: string | null
         }
         Relationships: [
           {
@@ -558,6 +559,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cursos_sections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cursos_checkpoint_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -565,39 +573,36 @@ export type Database = {
         Row: {
           id: string
           workspace_id: string
+          slug: string
           title: string
           description: string | null
-          thumbnail_url: string | null
-          difficulty_level: string | null
-          estimated_hours: number | null
-          is_published: boolean | null
-          created_by: string | null
+          duration_minutes: number
+          is_published: boolean
+          sort_order: number
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
           id?: string
           workspace_id: string
+          slug: string
           title: string
           description?: string | null
-          thumbnail_url?: string | null
-          difficulty_level?: string | null
-          estimated_hours?: number | null
-          is_published?: boolean | null
-          created_by?: string | null
+          duration_minutes?: number
+          is_published?: boolean
+          sort_order?: number
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
           id?: string
           workspace_id?: string
+          slug?: string
           title?: string
           description?: string | null
-          thumbnail_url?: string | null
-          difficulty_level?: string | null
-          estimated_hours?: number | null
-          is_published?: boolean | null
-          created_by?: string | null
+          duration_minutes?: number
+          is_published?: boolean
+          sort_order?: number
           created_at?: string | null
           updated_at?: string | null
         }
@@ -615,36 +620,49 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          section_id: string
-          status: string | null
-          started_at: string | null
+          course_id: string
+          completed_section_ids: string[]
+          last_position: number
+          is_completed: boolean
           completed_at: string | null
-          time_spent_seconds: number | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: string
           user_id: string
-          section_id: string
-          status?: string | null
-          started_at?: string | null
+          course_id: string
+          completed_section_ids?: string[]
+          last_position?: number
+          is_completed?: boolean
           completed_at?: string | null
-          time_spent_seconds?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: string
           user_id?: string
-          section_id?: string
-          status?: string | null
-          started_at?: string | null
+          course_id?: string
+          completed_section_ids?: string[]
+          last_position?: number
+          is_completed?: boolean
           completed_at?: string | null
-          time_spent_seconds?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "cursos_progress_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "cursos_progress_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "cursos_sections"
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cursos_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "cursos_courses"
             referencedColumns: ["id"]
           }
         ]
@@ -654,13 +672,11 @@ export type Database = {
           id: string
           course_id: string
           title: string
+          content_type: string
+          content_url: string | null
           content: string | null
-          content_type: string | null
-          video_url: string | null
-          position: number
-          is_checkpoint: boolean | null
-          checkpoint_questions: Json | null
-          passing_score: number | null
+          sort_order: number
+          duration_minutes: number
           created_at: string | null
           updated_at: string | null
         }
@@ -668,13 +684,11 @@ export type Database = {
           id?: string
           course_id: string
           title: string
+          content_type: string
+          content_url?: string | null
           content?: string | null
-          content_type?: string | null
-          video_url?: string | null
-          position?: number
-          is_checkpoint?: boolean | null
-          checkpoint_questions?: Json | null
-          passing_score?: number | null
+          sort_order?: number
+          duration_minutes?: number
           created_at?: string | null
           updated_at?: string | null
         }
@@ -682,13 +696,11 @@ export type Database = {
           id?: string
           course_id?: string
           title?: string
+          content_type?: string
+          content_url?: string | null
           content?: string | null
-          content_type?: string | null
-          video_url?: string | null
-          position?: number
-          is_checkpoint?: boolean | null
-          checkpoint_questions?: Json | null
-          passing_score?: number | null
+          sort_order?: number
+          duration_minutes?: number
           created_at?: string | null
           updated_at?: string | null
         }

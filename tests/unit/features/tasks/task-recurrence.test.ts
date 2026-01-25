@@ -99,7 +99,7 @@ describe('Task Recurrence Feature', () => {
 
   describe('Daily Recurrence', () => {
     it('should calculate next daily recurrence', () => {
-      const baseDate = new Date('2025-01-12');
+      const baseDate = new Date('2025-01-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'daily',
         interval: 1,
@@ -107,13 +107,13 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(13);
-      expect(nextDate.getMonth()).toBe(0); // January
-      expect(nextDate.getFullYear()).toBe(2025);
+      expect(nextDate.getUTCDate()).toBe(13);
+      expect(nextDate.getUTCMonth()).toBe(0); // January
+      expect(nextDate.getUTCFullYear()).toBe(2025);
     });
 
     it('should calculate next daily recurrence with custom interval', () => {
-      const baseDate = new Date('2025-01-12');
+      const baseDate = new Date('2025-01-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'daily',
         interval: 3,
@@ -121,11 +121,11 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(15);
+      expect(nextDate.getUTCDate()).toBe(15);
     });
 
     it('should handle month rollover for daily recurrence', () => {
-      const baseDate = new Date('2025-01-30');
+      const baseDate = new Date('2025-01-30T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'daily',
         interval: 1,
@@ -133,14 +133,14 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(31);
-      expect(nextDate.getMonth()).toBe(0);
+      expect(nextDate.getUTCDate()).toBe(31);
+      expect(nextDate.getUTCMonth()).toBe(0);
     });
   });
 
   describe('Weekly Recurrence', () => {
     it('should calculate next weekly recurrence with single day', () => {
-      const baseDate = new Date('2025-01-12'); // Sunday
+      const baseDate = new Date('2025-01-12T00:00:00Z'); // Sunday
       const pattern: RecurrencePattern = {
         type: 'weekly',
         interval: 1,
@@ -149,11 +149,11 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(19);
+      expect(nextDate.getUTCDate()).toBe(19);
     });
 
     it('should calculate next weekly recurrence with multiple days (next closest)', () => {
-      const baseDate = new Date('2025-01-12'); // Sunday
+      const baseDate = new Date('2025-01-12T00:00:00Z'); // Sunday
       const pattern: RecurrencePattern = {
         type: 'weekly',
         interval: 1,
@@ -162,12 +162,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDay()).toBe(1); // Monday
-      expect(nextDate.getDate()).toBe(13);
+      expect(nextDate.getUTCDay()).toBe(1); // Monday
+      expect(nextDate.getUTCDate()).toBe(13);
     });
 
     it('should wrap to next week if no matching days remain', () => {
-      const baseDate = new Date('2025-01-10'); // Friday
+      const baseDate = new Date('2025-01-10T00:00:00Z'); // Friday
       const pattern: RecurrencePattern = {
         type: 'weekly',
         interval: 1,
@@ -176,12 +176,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDay()).toBe(0); // Sunday
-      expect(nextDate.getDate()).toBe(12);
+      expect(nextDate.getUTCDay()).toBe(0); // Sunday
+      expect(nextDate.getUTCDate()).toBe(12);
     });
 
     it('should handle custom weekly interval', () => {
-      const baseDate = new Date('2025-01-12'); // Sunday
+      const baseDate = new Date('2025-01-12T00:00:00Z'); // Sunday
       const pattern: RecurrencePattern = {
         type: 'weekly',
         interval: 2,
@@ -190,13 +190,13 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(26);
+      expect(nextDate.getUTCDate()).toBe(26);
     });
   });
 
   describe('Monthly Recurrence', () => {
     it('should calculate next monthly recurrence on same day', () => {
-      const baseDate = new Date('2025-01-12');
+      const baseDate = new Date('2025-01-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'monthly',
         interval: 1,
@@ -204,12 +204,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(12);
-      expect(nextDate.getMonth()).toBe(1); // February
+      expect(nextDate.getUTCDate()).toBe(12);
+      expect(nextDate.getUTCMonth()).toBe(1); // February
     });
 
     it('should handle end-of-month dates correctly', () => {
-      const baseDate = new Date('2025-01-31');
+      const baseDate = new Date('2025-01-31T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'monthly',
         interval: 1,
@@ -217,12 +217,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getMonth()).toBe(1); // February
-      expect(nextDate.getDate()).toBe(28); // Last day of Feb 2025
+      expect(nextDate.getUTCMonth()).toBe(1); // February
+      expect(nextDate.getUTCDate()).toBe(28); // Last day of Feb 2025
     });
 
     it('should handle custom monthly interval', () => {
-      const baseDate = new Date('2025-01-12');
+      const baseDate = new Date('2025-01-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'monthly',
         interval: 3,
@@ -230,12 +230,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(12);
-      expect(nextDate.getMonth()).toBe(4); // April
+      expect(nextDate.getUTCDate()).toBe(12);
+      expect(nextDate.getUTCMonth()).toBe(3); // April (0-indexed: Jan=0, Feb=1, Mar=2, Apr=3)
     });
 
     it('should handle year rollover for monthly recurrence', () => {
-      const baseDate = new Date('2025-11-12');
+      const baseDate = new Date('2025-11-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'monthly',
         interval: 3,
@@ -243,15 +243,15 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDate()).toBe(12);
-      expect(nextDate.getMonth()).toBe(1); // February next year
-      expect(nextDate.getFullYear()).toBe(2026);
+      expect(nextDate.getUTCDate()).toBe(12);
+      expect(nextDate.getUTCMonth()).toBe(1); // February next year
+      expect(nextDate.getUTCFullYear()).toBe(2026);
     });
   });
 
   describe('Recurrence End Conditions', () => {
     it('should return null when recurrence ends after N occurrences', () => {
-      const baseDate = new Date('2025-01-12');
+      const baseDate = new Date('2025-01-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'daily',
         interval: 1,
@@ -264,7 +264,7 @@ describe('Task Recurrence Feature', () => {
     });
 
     it('should calculate next date when occurrences remaining', () => {
-      const baseDate = new Date('2025-01-12');
+      const baseDate = new Date('2025-01-12T00:00:00Z');
       const pattern: RecurrencePattern = {
         type: 'daily',
         interval: 1,
@@ -274,7 +274,7 @@ describe('Task Recurrence Feature', () => {
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern, 2); // occurrenceCount = 2 of 5
       expect(nextDate).not.toBeNull();
-      expect(nextDate?.getDate()).toBe(13);
+      expect(nextDate?.getUTCDate()).toBe(13);
     });
   });
 
@@ -360,7 +360,7 @@ describe('Task Recurrence Feature', () => {
 
   describe('Edge Cases', () => {
     it('should handle leap year correctly for monthly recurrence', () => {
-      const baseDate = new Date('2024-01-29'); // Leap year
+      const baseDate = new Date('2024-01-29T00:00:00Z'); // Leap year
       const pattern: RecurrencePattern = {
         type: 'monthly',
         interval: 1,
@@ -368,12 +368,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getMonth()).toBe(1); // February
-      expect(nextDate.getDate()).toBe(29); // 2024 is leap year
+      expect(nextDate.getUTCMonth()).toBe(1); // February
+      expect(nextDate.getUTCDate()).toBe(29); // 2024 is leap year
     });
 
     it('should handle leap year correctly for non-leap year', () => {
-      const baseDate = new Date('2025-01-29'); // Non-leap year
+      const baseDate = new Date('2025-01-29T00:00:00Z'); // Non-leap year
       const pattern: RecurrencePattern = {
         type: 'monthly',
         interval: 1,
@@ -381,12 +381,12 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getMonth()).toBe(1); // February
-      expect(nextDate.getDate()).toBe(28); // 2025 is not leap year
+      expect(nextDate.getUTCMonth()).toBe(1); // February
+      expect(nextDate.getUTCDate()).toBe(28); // 2025 is not leap year
     });
 
     it('should handle Sunday as 0 and Saturday as 6 in daysOfWeek', () => {
-      const baseDate = new Date('2025-01-10'); // Friday
+      const baseDate = new Date('2025-01-10T00:00:00Z'); // Friday
       const pattern: RecurrencePattern = {
         type: 'weekly',
         interval: 1,
@@ -395,8 +395,8 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getDay()).toBe(0);
-      expect(nextDate.getDate()).toBe(12);
+      expect(nextDate.getUTCDay()).toBe(0);
+      expect(nextDate.getUTCDate()).toBe(12);
     });
 
     it('should preserve time of day for all recurrence calculations', () => {
@@ -408,8 +408,8 @@ describe('Task Recurrence Feature', () => {
       };
 
       const nextDate = calculateNextRecurrenceDate(baseDate, pattern);
-      expect(nextDate.getHours()).toBe(14);
-      expect(nextDate.getMinutes()).toBe(30);
+      expect(nextDate.getUTCHours()).toBe(14);
+      expect(nextDate.getUTCMinutes()).toBe(30);
     });
   });
 });

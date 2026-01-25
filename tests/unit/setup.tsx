@@ -1,3 +1,6 @@
+// Set timezone to UTC for consistent date testing
+process.env.TZ = 'UTC';
+
 import React from 'react';
 import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';

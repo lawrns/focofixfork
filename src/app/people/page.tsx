@@ -377,8 +377,8 @@ export default function PeoplePage() {
       const workspaces = workspacesData.data?.workspaces || workspacesData.workspaces || [];
       const currentWorkspace = workspaces.find((w: any) => w.slug === currentWorkspaceSlug);
 
-      if (!currentWorkspace) {
-        throw new Error('No workspace found');
+      if (!currentWorkspace || !currentWorkspace.id) {
+        throw new Error('No valid workspace found');
       }
 
       const response = await fetch(`/api/organizations/${currentWorkspace.id}/invitations`, {
@@ -427,13 +427,23 @@ export default function PeoplePage() {
       );
 
       if (!currentWorkspace) {
-        console.error('No workspace found');
+        console.error('No workspace found for slug:', currentWorkspaceSlug);
         setMembers([]);
+        toast.error('Workspace not found. Please select a valid workspace.');
         return;
       }
 
       // Fetch workspace members using the correct endpoint
-      const membersRes = await fetch(`/api/workspaces/${currentWorkspace.id}/members`);
+      // Validate workspace ID exists before making API call
+      const workspaceId = currentWorkspace.id;
+      if (!workspaceId) {
+        console.error('Workspace ID is missing:', currentWorkspace);
+        setMembers([]);
+        toast.error('Invalid workspace configuration.');
+        return;
+      }
+
+      const membersRes = await fetch(`/api/workspaces/${workspaceId}/members`);
       const membersData = await membersRes.json();
 
       if (membersData.success && membersData.data) {

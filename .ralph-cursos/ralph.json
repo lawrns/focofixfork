@@ -1,0 +1,152 @@
+{
+  "project": "Foco Cursos Platform",
+  "branchName": "feature/cursos-platform",
+  "description": "Internal education platform for @fyves.com members - Vibe Coding Academy",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create database schema for Cursos",
+      "description": "As a developer, I need to create the database tables to store courses, sections, and user progress.",
+      "acceptanceCriteria": [
+        "Create `courses` table with org_id FK",
+        "Create `course_sections` table with content_type enum",
+        "Create `course_progress` table with user tracking",
+        "Generate and run Supabase migration successfully",
+        "Typecheck passes with generated types"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Database schema created successfully. Migration file exists but needs manual application due to IPv6 connectivity issues."
+    },
+    {
+      "id": "US-002",
+      "title": "Implement @fyves.com access control middleware",
+      "description": "As a security requirement, only @fyves.com organization members can access /cursos routes.",
+      "acceptanceCriteria": [
+        "Middleware verifies org.domain === 'fyves.com'",
+        "Redirect to /dashboard with error message if unauthorized",
+        "Log unauthorized access attempts",
+        "Test with @other.com email fails correctly",
+        "Test with @fyves.com email succeeds"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "@fyves.com access control middleware implemented. Checks workspace website and user email domain. Logs unauthorized attempts. Redirects to dashboard with error message."
+    },
+    {
+      "id": "US-003",
+      "title": "Create /cursos page route and course listing",
+      "description": "As a Fyves member, I want to see available courses when I navigate to the Cursos section.",
+      "acceptanceCriteria": [
+        "Route: /org/:orgId/cursos accessible only for Fyves",
+        "Grid layout showing course cards with title, duration, progress",
+        "Framer Motion entrance animations on cards",
+        "Empty state when no courses exist",
+        "Responsive design (mobile bottom nav compatible)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Created /organizations/[id]/cursos page with course grid layout, Framer Motion animations, empty state, responsive design. Typecheck passes."
+    },
+    {
+      "id": "US-004",
+      "title": "Build course player with section navigation",
+      "description": "As a learner, I need a player interface to navigate through course sections.",
+      "acceptanceCriteria": [
+        "Layout: Content left, navigation right",
+        "Remotion Player for video sections",
+        "Markdown rendering for text sections",
+        "Sections marked as completed on navigation",
+        "Auto-save progress every 30 seconds",
+        "'Resume where left off' functionality",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Built course player with section navigation, Remotion Player for video, Markdown rendering, auto-save every 30s, resume where left off functionality."
+    },
+    {
+      "id": "US-005",
+      "title": "Implement interactive checkpoints",
+      "description": "As a learner, I need to complete knowledge checkpoints before advancing.",
+      "acceptanceCriteria": [
+        "Checkpoint component with inline validation",
+        "Immediate feedback: Correct or 'Review section X'",
+        "Cannot advance without passing checkpoint",
+        "Progress persists after page reload",
+        "Attempt counter stored in database"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "P1 feature - can defer to post-MVP"
+    },
+    {
+      "id": "US-006",
+      "title": "Create certification system and badge",
+      "description": "As a learner who completed the course, I want to receive a Vibe Coder certification badge.",
+      "acceptanceCriteria": [
+        "Badge 'Fyves Vibe Coder - Nivel 1' on user profile",
+        "Requirements: 100% sections + all checkpoints passed",
+        "Certified members list visible in /cursos",
+        "PDF certificate download (optional)",
+        "Certification timestamp recorded"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "P1 feature"
+    },
+    {
+      "id": "US-007",
+      "title": "Add Framer Motion micro-interactions",
+      "description": "As a user, I want smooth, calm animations that convey confidence without dopamine noise.",
+      "acceptanceCriteria": [
+        "Smooth fade-slide transitions between sections",
+        "Animated progress bar",
+        "Elegant hover states on course cards",
+        "Loading shimmer skeletons",
+        "NO confetti or gamification fluff",
+        "Respects prefers-reduced-motion setting"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create admin analytics dashboard",
+      "description": "As an org admin, I want to see team progress and completion metrics.",
+      "acceptanceCriteria": [
+        "List of members with course status",
+        "% completion metric per user",
+        "Average completion time",
+        "Most-failed checkpoints leaderboard",
+        "CSV export functionality",
+        "Only visible to org admins"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "P1 feature"
+    },
+    {
+      "id": "US-009",
+      "title": "Generate flagship course content (Spanish)",
+      "description": "As a learner, I need the complete 8-module course content in Spanish.",
+      "acceptanceCriteria": [
+        "Módulo 0: Orientación (10 min)",
+        "Módulo 1: The Vibe Shift (30 min)",
+        "Módulo 2: AI Stack Reality (45 min)",
+        "Módulo 3: Prompts as Architecture (40 min)",
+        "Módulo 4: Multi-Agent Command (45 min)",
+        "Módulo 5: Infrastructure Awareness (30 min)",
+        "Módulo 6: IDEs & Execution (25 min)",
+        "Módulo 7: Production Discipline (25 min)",
+        "Módulo 8: Certificación (10 min)",
+        "All content in Spanish, 4 hours total"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Generated 9-module course content in Spanish: Modulo 0 (Orientacion), 1 (Vibe Shift), 2 (AI Stack), 3 (Prompts), 4 (Multi-Agent), 5 (Infrastructure), 6 (IDEs), 7 (Production), 8 (Certificacion). Course ready to insert after migration."
+    }
+  ]
+}

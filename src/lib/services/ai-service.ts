@@ -1,7 +1,12 @@
 /**
  * AI Service - Multi-provider AI Service
  *
- * Supports OpenAI, DeepSeek, and GLM (Z.AI) for various AI operations
+ * Supports OpenAI, DeepSeek, and GLM (Zhipu AI) for various AI operations
+ *
+ * GLM Note: GLM API keys contain a dot (id.secret) which can cause issues with
+ * the OpenAI SDK. We use a custom fetch implementation for GLM.
+ *
+ * See: https://docs.bigmodel.cn/cn/guide/develop/http/introduction
  */
 
 import OpenAI from 'openai';
@@ -15,9 +20,34 @@ interface AIConfig {
   model: string;
 }
 
+/**
+ * Custom fetch for GLM that properly handles the API key format
+ * GLM API keys are in format: id.secret
+ */
+function createGLMFetch(apiKey: string) {
+  return async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
+    console.log('[AIService] GLM Fetch:', url);
+
+    // Parse the original request
+    const fetchUrl = typeof url === 'string' ? url : url.toString();
+    const fetchOptions = options || {};
+
+    // Get headers
+    const headers = new Headers(fetchOptions.headers || {});
+    headers.set('Authorization', `Bearer ${apiKey}`);
+
+    // Make the request with GLM-specific auth
+    return fetch(fetchUrl, {
+      ...fetchOptions,
+      headers
+    });
+  };
+}
+
 export class AIService {
-  private client: OpenAI;
+  private client: OpenAI | null;
   private config: AIConfig;
+  private isGLM: boolean;
 
   constructor(provider?: AIProvider) {
     // Determine provider and configuration
@@ -31,14 +61,16 @@ export class AIService {
       OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***' + process.env.OPENAI_API_KEY.slice(-4) : 'undefined',
     })
 
+    this.isGLM = aiProvider === 'glm';
+
     if (aiProvider === 'glm') {
       this.config = {
         provider: 'glm',
         apiKey: process.env.GLM_API_KEY || '',
-        baseURL: 'https://api.z.ai/api/paas/v4/',
+        baseURL: 'https://api.z.ai/api/coding/paas/v4/',
         model: process.env.GLM_MODEL || 'glm-4.7'
       };
-      console.log('[AIService] Using GLM provider with model:', this.config.model)
+      console.log('[AIService] Using GLM (Z.ai) provider with coding endpoint and model:', this.config.model)
     } else if (aiProvider === 'deepseek') {
       this.config = {
         provider: 'deepseek',
@@ -67,17 +99,20 @@ export class AIService {
       console.warn(`⚠️  ${this.config.provider} API key not configured - AI features will use mock responses`);
     }
 
-    // Initialize OpenAI client (works with OpenAI-compatible APIs like DeepSeek, GLM)
-    this.client = new OpenAI({
-      apiKey: this.config.apiKey,
-      baseURL: this.config.baseURL,
-      // Add additional options for debugging
-      fetch: async (url, options) => {
-        console.log(`[AIService] Fetch ${this.config.provider}:`, url)
-        console.log('[AIService] Fetch model being sent:', JSON.parse(options?.body as string || '{}')?.model)
-        return fetch(url, options)
-      }
-    });
+    // Initialize OpenAI client
+    // For GLM, use custom fetch to handle API key format correctly
+    if (this.isGLM) {
+      this.client = new OpenAI({
+        apiKey: this.config.apiKey, // OpenAI SDK requires apiKey, but we override with custom fetch
+        baseURL: this.config.baseURL,
+        fetch: createGLMFetch(this.config.apiKey)
+      });
+    } else {
+      this.client = new OpenAI({
+        apiKey: this.config.apiKey,
+        baseURL: this.config.baseURL,
+      });
+    }
   }
 
   /**
@@ -90,6 +125,10 @@ export class AIService {
     if (!this.config.apiKey) {
       console.error('[AIService] No API key configured for', this.config.provider)
       throw new Error(`${this.config.provider} API key not configured`);
+    }
+
+    if (!this.client) {
+      throw new Error('Client not initialized');
     }
 
     try {
@@ -110,7 +149,8 @@ export class AIService {
       console.error('[AIService] Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         status: (error as any)?.status,
-        code: (error as any)?.code
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined
       })
       throw error;
     }
@@ -127,6 +167,10 @@ export class AIService {
 
     if (!this.config.apiKey) {
       throw new Error('OpenAI API key not configured');
+    }
+
+    if (!this.client) {
+      throw new Error('Client not initialized');
     }
 
     try {

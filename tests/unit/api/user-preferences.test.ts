@@ -1,28 +1,83 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 
-// Mock Supabase
+// Use vi.hoisted to define mocks before they're used
+const { mockSingle, mockEqForSelect, mockSelect, mockEqForUpdate, mockUpdate, mockFrom, mockGetUser } = vi.hoisted(() => {
+  const mockSingle = vi.fn()
+  const mockEqForSelect = vi.fn()
+  const mockSelect = vi.fn()
+  const mockEqForUpdate = vi.fn()
+  const mockUpdate = vi.fn()
+  const mockFrom = vi.fn()
+  const mockGetUser = vi.fn()
+
+  return {
+    mockSingle,
+    mockEqForSelect,
+    mockSelect,
+    mockEqForUpdate,
+    mockUpdate,
+    mockFrom,
+    mockGetUser
+  }
+})
+
 vi.mock('@/lib/supabase-client', () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(),
+      getUser: mockGetUser,
     },
-    from: vi.fn(),
+    from: mockFrom,
   },
 }))
+
+import { PATCH } from '@/app/api/user/preferences/route'
+
+// Helper function to create NextRequest with proper URL
+function createRequest(body: any): NextRequest {
+  return new NextRequest('http://localhost:3000/api/user/preferences', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
 
 describe('PATCH /api/user/preferences', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Setup default authenticated user
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'test-user-id' } },
+      error: null,
+    })
+
+    // Setup default mock chain for database operations
+    // For select query: from().select().eq().single()
+    mockSingle.mockResolvedValue({
+      data: { preferences: {} },
+      error: null
+    })
+    mockEqForSelect.mockReturnValue({ single: mockSingle })
+    mockSelect.mockReturnValue({ eq: mockEqForSelect })
+
+    // For update query: from().update().eq()
+    mockEqForUpdate.mockResolvedValue({ error: null })
+    mockUpdate.mockReturnValue({ eq: mockEqForUpdate })
+
+    // from() returns different objects based on what's chained
+    mockFrom.mockImplementation((table: string) => {
+      return {
+        select: mockSelect,
+        update: mockUpdate,
+      }
+    })
   })
 
   describe('Theme Preference Updates', () => {
     test('should update theme preference to light', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'light' }),
-      })
+      const request = createRequest({ theme: 'light' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -30,11 +85,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update theme preference to dark', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'dark' }),
-      })
+      const request = createRequest({ theme: 'dark' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -42,11 +94,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update theme preference to auto', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'auto' }),
-      })
+      const request = createRequest({ theme: 'auto' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -54,11 +103,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update theme to high-contrast', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'high-contrast' }),
-      })
+      const request = createRequest({ theme: 'high-contrast' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -66,11 +112,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update theme to sepia', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'sepia' }),
-      })
+      const request = createRequest({ theme: 'sepia' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -78,11 +121,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should reject invalid theme values', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'invalid-theme' }),
-      })
+      const request = createRequest({ theme: 'invalid-theme' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(400)
     })
@@ -90,11 +130,8 @@ describe('PATCH /api/user/preferences', () => {
 
   describe('Accent Color Updates', () => {
     test('should update accent color to blue', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accent_color: 'blue' }),
-      })
+      const request = createRequest({ accent_color: 'blue' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -105,11 +142,8 @@ describe('PATCH /api/user/preferences', () => {
       const colors = ['blue', 'red', 'green', 'purple', 'pink', 'orange', 'yellow', 'teal', 'indigo', 'cyan', 'slate', 'amber']
 
       for (const color of colors) {
-        const response = await fetch('/api/user/preferences', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accent_color: color }),
-        })
+        const request = createRequest({ accent_color: color })
+        const response = await PATCH(request)
 
         const data = await response.json()
         expect(response.status).toBe(200)
@@ -118,11 +152,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should reject invalid accent color', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accent_color: 'invalid-color' }),
-      })
+      const request = createRequest({ accent_color: 'invalid-color' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(400)
     })
@@ -130,11 +161,8 @@ describe('PATCH /api/user/preferences', () => {
 
   describe('Font Size Updates', () => {
     test('should update font size to small', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ font_size: 'small' }),
-      })
+      const request = createRequest({ font_size: 'small' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -142,11 +170,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update font size to medium', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ font_size: 'medium' }),
-      })
+      const request = createRequest({ font_size: 'medium' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -154,11 +179,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update font size to large', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ font_size: 'large' }),
-      })
+      const request = createRequest({ font_size: 'large' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -166,11 +188,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should reject invalid font size', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ font_size: 'extra-large' }),
-      })
+      const request = createRequest({ font_size: 'extra-large' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(400)
     })
@@ -178,15 +197,12 @@ describe('PATCH /api/user/preferences', () => {
 
   describe('Combined Updates', () => {
     test('should update multiple preferences at once', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          theme: 'dark',
-          accent_color: 'purple',
-          font_size: 'large',
-        }),
+      const request = createRequest({
+        theme: 'dark',
+        accent_color: 'purple',
+        font_size: 'large',
       })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -196,23 +212,21 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should update partial preferences without affecting others', async () => {
-      // First, set all preferences
-      await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          theme: 'dark',
-          accent_color: 'blue',
-          font_size: 'medium',
-        }),
+      // Setup mock to return existing preferences
+      mockSingle.mockResolvedValueOnce({
+        data: {
+          preferences: {
+            theme: 'dark',
+            accent_color: 'blue',
+            font_size: 'medium'
+          }
+        },
+        error: null
       })
 
       // Then update only theme
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'light' }),
-      })
+      const request = createRequest({ theme: 'light' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -224,21 +238,20 @@ describe('PATCH /api/user/preferences', () => {
 
   describe('Authentication & Authorization', () => {
     test('should return 401 if user is not authenticated', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'dark' }),
-      })
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: new Error('Not authenticated')
+      } as any)
+
+      const request = createRequest({ theme: 'dark' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(401)
     })
 
     test('should return 400 for missing required fields in request body', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
+      const request = createRequest({})
+      const response = await PATCH(request)
 
       expect(response.status).toBe(400)
     })
@@ -246,11 +259,8 @@ describe('PATCH /api/user/preferences', () => {
 
   describe('Data Validation', () => {
     test('should trim and validate string inputs', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: '  dark  ' }),
-      })
+      const request = createRequest({ theme: '  dark  ' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -258,11 +268,8 @@ describe('PATCH /api/user/preferences', () => {
     })
 
     test('should handle case-insensitive theme values', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'DARK' }),
-      })
+      const request = createRequest({ theme: 'DARK' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(200)
@@ -274,11 +281,8 @@ describe('PATCH /api/user/preferences', () => {
     test('should persist preferences to user_profiles table', async () => {
       const { supabase } = await import('@/lib/supabase-client')
 
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'dark' }),
-      })
+      const request = createRequest({ theme: 'dark' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(200)
       expect(supabase.from).toHaveBeenCalledWith('user_profiles')
@@ -287,11 +291,8 @@ describe('PATCH /api/user/preferences', () => {
     test('should include updated_at timestamp on database update', async () => {
       const { supabase } = await import('@/lib/supabase-client')
 
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'dark' }),
-      })
+      const request = createRequest({ theme: 'dark' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(200)
       // Verify that updated_at was included in the update
@@ -302,25 +303,19 @@ describe('PATCH /api/user/preferences', () => {
   describe('Error Handling', () => {
     test('should return 500 on database error', async () => {
       const { supabase } = await import('@/lib/supabase-client')
-      vi.mocked(supabase.from).mockImplementationOnce(() => ({
-        upsert: vi.fn().mockRejectedValueOnce(new Error('Database error')),
-      }))
 
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'dark' }),
-      })
+      // Mock the chain to return error on update
+      mockEqForUpdate.mockResolvedValueOnce({ error: { message: 'Database error' } })
+
+      const request = createRequest({ theme: 'dark' })
+      const response = await PATCH(request)
 
       expect(response.status).toBe(500)
     })
 
     test('should return descriptive error message on validation failure', async () => {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: 'invalid' }),
-      })
+      const request = createRequest({ theme: 'invalid' })
+      const response = await PATCH(request)
 
       const data = await response.json()
       expect(response.status).toBe(400)

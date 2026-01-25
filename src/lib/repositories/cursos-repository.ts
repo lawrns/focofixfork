@@ -219,11 +219,10 @@ export class CursosRepository extends BaseRepository<Course> {
     }
 
     // Get certifications for those courses
-    const { data, error } = await this.supabase
+    const { data: certifications, error } = await this.supabase
       .from('cursos_certifications')
       .select(`
         *,
-        user:users(id, email, raw_user_meta_data),
         course:cursos_courses(id, title, certification_level)
       `)
       .in('course_id', courseIds)
@@ -236,7 +235,35 @@ export class CursosRepository extends BaseRepository<Course> {
       })
     }
 
-    return Ok(data || [])
+    if (!certifications || certifications.length === 0) {
+      return Ok([])
+    }
+
+    // Get user IDs from certifications
+    const userIds = certifications.map((cert: any) => cert.user_id)
+
+    // Fetch user data from public users table
+    const { data: users, error: usersError } = await this.supabase
+      .from('users')
+      .select('id, email, raw_user_meta_data')
+      .in('id', userIds)
+
+    if (usersError) {
+      // If users fetch fails, return certifications without user data
+      console.warn('Failed to fetch user data for certifications:', usersError)
+      return Ok(certifications)
+    }
+
+    // Create a map for quick lookups
+    const usersMap = new Map(users?.map(u => [u.id, u]) || [])
+
+    // Enrich certifications with user data
+    const enrichedData = certifications.map((cert: any) => ({
+      ...cert,
+      user: usersMap.get(cert.user_id) || null
+    }))
+
+    return Ok(enrichedData)
   }
 
   /**

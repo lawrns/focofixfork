@@ -32,8 +32,8 @@ export const GET = withRateLimit(
 
     // Get workspace details
     const { data: workspace } = await supabase
-      .from('foco_workspaces')
-      .select('id, name, website')
+      .from('workspaces')
+      .select('id, name, slug')
       .eq('id', workspaceId)
       .single()
 
@@ -44,9 +44,8 @@ export const GET = withRateLimit(
       )
     }
 
-    // Check if workspace is @fyves.com
-    const isFyvesWorkspace = workspace.website === 'fyves.com' ||
-                             workspace.website?.includes('fyves.com')
+    // Check if workspace is Fyves (slug: fyves-team)
+    const isFyvesWorkspace = workspace.slug === 'fyves-team'
 
     // Check user's email domain
     const userEmailDomain = user.email?.split('@')[1]

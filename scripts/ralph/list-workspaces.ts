@@ -12,8 +12,8 @@ async function listWorkspaces() {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   const { data: workspaces, error } = await supabase
-    .from('foco_workspaces')
-    .select('id, name, website')
+    .from('workspaces')
+    .select('id, name, slug')
     .order('name')
 
   if (error) {
@@ -27,13 +27,13 @@ async function listWorkspaces() {
   workspaces?.forEach((ws) => {
     console.log(`  ID: ${ws.id}`)
     console.log(`  Name: ${ws.name}`)
-    console.log(`  Website: ${ws.website || '(not set)'}`)
+    console.log(`  Slug: ${ws.slug}`)
     console.log('')
   })
 
   // Find Fyves workspace
   const fyvesWorkspace = workspaces?.find(
-    (ws) => ws.website === 'fyves.com' || ws.name.toLowerCase().includes('fyves')
+    (ws) => ws.slug === 'fyves-team' || ws.name.toLowerCase().includes('fyves')
   )
 
   if (fyvesWorkspace) {
@@ -43,10 +43,9 @@ async function listWorkspaces() {
     console.log(`To insert the course, run:`)
     console.log(`   bun scripts/ralph/insert-cursos-course.ts ${fyvesWorkspace.id}`)
   } else {
-    console.log('⚠️  No Fyves workspace found with website="fyves.com"')
+    console.log('⚠️  No Fyves workspace found with slug="fyves-team"')
     console.log('')
-    console.log('To set a workspace as Fyves:')
-    console.log(`   UPDATE foco_workspaces SET website = 'fyves.com' WHERE id = '<workspace_id>';`)
+    console.log('Workspaces with "fyves" in the name might be the one you are looking for.')
   }
 }
 

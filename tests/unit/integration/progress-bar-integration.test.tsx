@@ -75,9 +75,10 @@ describe('ProgressBar Integration Tests', () => {
 
   describe('Styling Integration', () => {
     it('injects theme-matched styles into document head', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('#nprogress'));
       expect(styleElement).toBeTruthy();
 
       if (styleElement && styleElement.textContent) {
@@ -91,9 +92,10 @@ describe('ProgressBar Integration Tests', () => {
     });
 
     it('applies custom blue color matching brand', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('#3b82f6'));
       if (styleElement && styleElement.textContent) {
         // Brand blue colors from design system
         expect(styleElement.textContent).toContain('#3b82f6'); // blue-500
@@ -102,28 +104,30 @@ describe('ProgressBar Integration Tests', () => {
     });
 
     it('styles bar for top-of-page visibility', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('z-index: 1031'));
       if (styleElement && styleElement.textContent) {
-        const styles = styleElement.textContent;
+        const styleText = styleElement.textContent;
 
         // Position at top
-        expect(styles).toContain('top: 0');
-        expect(styles).toContain('left: 0');
+        expect(styleText).toContain('top: 0');
+        expect(styleText).toContain('left: 0');
 
         // Full width
-        expect(styles).toContain('width: 100%');
+        expect(styleText).toContain('width: 100%');
 
         // High z-index to appear above other content
-        expect(styles).toContain('z-index: 1031');
+        expect(styleText).toContain('z-index: 1031');
       }
     });
 
     it('includes shadow effects for visual depth', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('box-shadow'));
       if (styleElement && styleElement.textContent) {
         expect(styleElement.textContent).toContain('box-shadow');
         expect(styleElement.textContent).toContain('#3b82f6');
@@ -165,9 +169,10 @@ describe('ProgressBar Integration Tests', () => {
     });
 
     it('includes transition effects in CSS', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('transition'));
       if (styleElement && styleElement.textContent) {
         expect(styleElement.textContent).toContain('transition');
       }
@@ -176,9 +181,10 @@ describe('ProgressBar Integration Tests', () => {
 
   describe('Accessibility Compliance', () => {
     it('does not interfere with keyboard navigation', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('pointer-events: none'));
       if (styleElement && styleElement.textContent) {
         // pointer-events: none prevents interaction
         expect(styleElement.textContent).toContain('pointer-events: none');
@@ -211,16 +217,14 @@ describe('ProgressBar Integration Tests', () => {
     });
 
     it('cleans up styles on unmount', () => {
-      const { container, unmount } = render(<ProgressBar />);
+      const { unmount } = render(<ProgressBar />);
 
-      const initialStyles = container.querySelectorAll('style');
-      expect(initialStyles.length).toBeGreaterThan(0);
-
+      const stylesBefore = document.head.querySelectorAll('style').length;
       unmount();
 
       // After unmount, injected styles should be removed
-      const remainingStyles = document.querySelectorAll('style');
-      expect(remainingStyles.length).toBeGreaterThanOrEqual(0);
+      const stylesAfter = document.head.querySelectorAll('style').length;
+      expect(stylesBefore).toBeGreaterThan(stylesAfter);
     });
   });
 
@@ -247,9 +251,10 @@ describe('ProgressBar Integration Tests', () => {
 
   describe('Cross-Browser Compatibility', () => {
     it('uses standard CSS for broad compatibility', () => {
-      const { container } = render(<ProgressBar />);
+      render(<ProgressBar />);
 
-      const styleElement = container.querySelector('style');
+      const styles = document.head.querySelectorAll('style');
+      const styleElement = Array.from(styles).find(s => s.textContent?.includes('linear-gradient'));
       if (styleElement && styleElement.textContent) {
         // CSS should be standard, not vendor-prefixed for modern browsers
         expect(styleElement.textContent).toContain('linear-gradient');

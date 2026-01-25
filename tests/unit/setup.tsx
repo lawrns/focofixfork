@@ -42,6 +42,18 @@ Object.defineProperty(global, 'crypto', {
   },
 });
 
+// Mock hasPointerCapture and setPointerCapture for Radix UI components
+if (typeof Element !== 'undefined') {
+  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+}
+
+// Mock Blob.text() for export tests
+if (typeof Blob !== 'undefined') {
+  Blob.prototype.text = vi.fn().mockResolvedValue('');
+}
+
 // Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(),
@@ -92,6 +104,43 @@ Object.defineProperty(navigator, 'serviceWorker', {
     getRegistration: vi.fn().mockResolvedValue(null),
     getRegistrations: vi.fn().mockResolvedValue([]),
   },
+});
+
+// Mock AudioContext
+class MockAudioContext {
+  createOscillator = vi.fn().mockReturnValue({
+    connect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    frequency: { value: 0 },
+    type: 'sine',
+  });
+
+  createGain = vi.fn().mockReturnValue({
+    connect: vi.fn(),
+    gain: {
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
+  });
+
+  destination = {};
+  currentTime = 0;
+  state = 'running';
+
+  close = vi.fn();
+  resume = vi.fn().mockResolvedValue(undefined);
+  suspend = vi.fn().mockResolvedValue(undefined);
+}
+
+Object.defineProperty(window, 'AudioContext', {
+  writable: true,
+  value: MockAudioContext,
+});
+
+Object.defineProperty(window, 'webkitAudioContext', {
+  writable: true,
+  value: MockAudioContext,
 });
 
 // Mock NProgress
@@ -183,6 +232,32 @@ vi.mock('framer-motion', () => ({
   useTransform: vi.fn((value, input, output) => output[0]),
 }));
 
+// Mock next/navigation for route change detection
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    pathname: '/',
+    query: {},
+    asPath: '/',
+    route: '/',
+    events: {
+      on: vi.fn(),
+      off: vi.fn(),
+      emit: vi.fn(),
+    },
+  })),
+  usePathname: vi.fn(() => '/'),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
+  useParams: vi.fn(() => ({})),
+  redirect: vi.fn(),
+  notFound: vi.fn(),
+}));
+
 // Mock Lucide React icons
 vi.mock('lucide-react', () => ({
   CheckCircle: () => <svg data-testid="check-circle-icon" />,
@@ -239,9 +314,12 @@ vi.mock('lucide-react', () => ({
   Plug: () => <svg data-testid="plug-icon" />,
   CreditCard: () => <svg data-testid="credit-card-icon" />,
   ChevronRight: () => <svg data-testid="chevron-right-icon" />,
+  ChevronUp: () => <svg data-testid="chevron-up-icon" />,
+  ChevronLeft: () => <svg data-testid="chevron-left-icon" />,
   AtSign: () => <svg data-testid="at-sign-icon" />,
   CheckCircle2: () => <svg data-testid="check-circle-2-icon" />,
   MoreHorizontal: () => <svg data-testid="more-horizontal-icon" />,
+  MoreVertical: () => <svg data-testid="more-vertical-icon" />,
   MessageSquare: () => <svg data-testid="message-square-icon" />,
   Archive: () => <svg data-testid="archive-icon" />,
   Inbox: () => <svg data-testid="inbox-icon" />,
@@ -261,6 +339,25 @@ vi.mock('lucide-react', () => ({
   AlertCircle: () => <svg data-testid="alert-circle-icon" />,
   XCircle: () => <svg data-testid="x-circle-icon" />,
   FolderOpen: () => <svg data-testid="folder-open-icon" />,
+  ExternalLink: () => <svg data-testid="external-link-icon" />,
+  Link: () => <svg data-testid="link-icon" />,
+  BookOpen: () => <svg data-testid="book-open-icon" />,
+  Folder: () => <svg data-testid="folder-icon" />,
+  Star: () => <svg data-testid="star-icon" />,
+  Heart: () => <svg data-testid="heart-icon" />,
+  Share: () => <svg data-testid="share-icon" />,
+  Maximize: () => <svg data-testid="maximize-icon" />,
+  Minimize: () => <svg data-testid="minimize-icon" />,
+  LogOut: () => <svg data-testid="log-out-icon" />,
+  LogIn: () => <svg data-testid="log-in-icon" />,
+  Lock: () => <svg data-testid="lock-icon" />,
+  Unlock: () => <svg data-testid="unlock-icon" />,
+  Info: () => <svg data-testid="info-icon" />,
+  HelpCircle: () => <svg data-testid="help-circle-icon" />,
+  Sparkles: () => <svg data-testid="sparkles-icon" />,
+  Tag: () => <svg data-testid="tag-icon" />,
+  Bookmark: () => <svg data-testid="bookmark-icon" />,
+  Command: () => <svg data-testid="command-icon" />,
 }));
 
 // Custom test utilities

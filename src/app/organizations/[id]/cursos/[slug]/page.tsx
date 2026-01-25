@@ -25,6 +25,7 @@ import {
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
+import { CompletionCelebration, SectionCompletion, AnimatedProgress } from '@/components/cursos'
 
 interface Section {
   id: string
@@ -73,6 +74,11 @@ function CoursePlayerContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null)
+
+  // Animation states
+  const [showCompletionCelebration, setShowCompletionCelebration] = useState(false)
+  const [showSectionCompletion, setShowSectionCompletion] = useState(false)
+  const [completedSectionTitle, setCompletedSectionTitle] = useState('')
 
   // Load course data
   useEffect(() => {
@@ -142,6 +148,12 @@ function CoursePlayerContent() {
     // Mark current section as completed when moving forward
     if (newIndex > currentSectionIndex) {
       const currentSectionId = course.sections[currentSectionIndex].id
+      const currentSectionTitle = course.sections[currentSectionIndex].title
+
+      // Show section completion animation
+      setCompletedSectionTitle(currentSectionTitle)
+      setShowSectionCompletion(true)
+
       try {
         await fetch('/api/cursos/progress', {
           method: 'POST',
@@ -154,18 +166,29 @@ function CoursePlayerContent() {
         })
 
         // Update local progress
-        setProgress(prev => ({
-          completed_section_ids: [...(prev?.completed_section_ids || []), currentSectionId],
+        const newProgress = {
+          completed_section_ids: [...(progress?.completed_section_ids || []), currentSectionId],
           last_position: newIndex,
           is_completed: false,
-        }))
+        }
+
+        setProgress(newProgress)
+
+        // Check if course is 100% complete
+        const totalSections = course.sections.length
+        if (newProgress.completed_section_ids.length === totalSections) {
+          // Show full completion celebration
+          setTimeout(() => {
+            setShowCompletionCelebration(true)
+          }, 500)
+        }
       } catch (err) {
         console.error('Failed to update progress:', err)
       }
     }
 
     setCurrentSectionIndex(newIndex)
-  }, [course, currentSectionIndex, user])
+  }, [course, currentSectionIndex, progress, user])
 
   if (isLoading) {
     return (
@@ -222,15 +245,26 @@ function CoursePlayerContent() {
             )}
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar - Now with animation! */}
           <div className="px-6 pb-4">
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">Tu progreso</span>
-              <span className="font-medium">{progressPercentage}%</span>
-            </div>
-            <Progress value={progressPercentage} className="h-2" />
+            <AnimatedProgress value={progressPercentage} showLabel={true} size="md" />
           </div>
         </div>
+
+        {/* Completion Celebration Overlay */}
+        <CompletionCelebration
+          courseName={course.title}
+          userName={user?.email?.split('@')[0]}
+          isVisible={showCompletionCelebration}
+          onComplete={() => setShowCompletionCelebration(false)}
+        />
+
+        {/* Section Completion Toast */}
+        <SectionCompletion
+          sectionTitle={completedSectionTitle}
+          isVisible={showSectionCompletion}
+          onComplete={() => setShowSectionCompletion(false)}
+        />
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">

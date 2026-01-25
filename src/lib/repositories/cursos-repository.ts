@@ -223,7 +223,7 @@ export class CursosRepository extends BaseRepository<Course> {
       .from('cursos_certifications')
       .select(`
         *,
-        user:auth.users(id, email, raw_user_meta_data),
+        user:users(id, email, raw_user_meta_data),
         course:cursos_courses(id, title, certification_level)
       `)
       .in('course_id', courseIds)

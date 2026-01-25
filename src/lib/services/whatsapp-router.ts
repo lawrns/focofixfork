@@ -342,7 +342,7 @@ I'll parse it into tasks and create a proposal for you.`
 
     if (session.workspace_id) {
       const { data: workspace } = await this.supabase
-        .from('foco_workspaces')
+        .from('workspaces')
         .select('name')
         .eq('id', session.workspace_id)
         .single()
@@ -439,7 +439,7 @@ I'll parse it into tasks and create a proposal for you.`
     }
 
     const { data: workspaces } = await this.supabase
-      .from('foco_workspaces')
+      .from('workspaces')
       .select('id, name')
       .ilike('name', `%${workspaceName}%`)
       .limit(5)

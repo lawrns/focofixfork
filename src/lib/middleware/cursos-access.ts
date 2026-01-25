@@ -62,8 +62,8 @@ export async function cursosAccessMiddleware(
 
     // Get workspace details
     const { data: workspace, error: workspaceError } = await supabaseClient
-      .from('foco_workspaces')
-      .select('id, name, website')
+      .from('workspaces')
+      .select('id, name, slug')
       .eq('id', workspaceId)
       .single()
 
@@ -76,9 +76,8 @@ export async function cursosAccessMiddleware(
       }
     }
 
-    // Check if workspace is @fyves.com (via website field)
-    const isFyvesWorkspace = workspace.website === 'fyves.com' ||
-                             workspace.website?.includes('fyves.com')
+    // Check if workspace is Fyves (slug: fyves-team)
+    const isFyvesWorkspace = workspace.slug === 'fyves-team'
 
     // Also check user's email domain
     const userEmailDomain = session.user.email?.split('@')[1]
@@ -105,7 +104,7 @@ export async function cursosAccessMiddleware(
 
     // Get user's role in workspace
     const { data: membership } = await supabaseClient
-      .from('foco_workspace_members')
+      .from('workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', session.user.id)

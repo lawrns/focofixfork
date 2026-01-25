@@ -27,7 +27,7 @@ async function checkProjects() {
     for (const project of projects) {
       if (project.workspace_id) {
         const { data: workspace } = await supabase
-          .from('foco_workspaces')
+          .from('workspaces')
           .select('name')
           .eq('id', project.workspace_id)
           .single()
@@ -84,7 +84,7 @@ async function checkProjects() {
 
   // Check all workspaces
   const { data: workspaces, error: workspacesError } = await supabase
-    .from('foco_workspaces')
+    .from('workspaces')
     .select('*')
 
   if (workspacesError) {

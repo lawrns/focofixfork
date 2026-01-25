@@ -4,14 +4,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CursosRepository } from '@/lib/repositories/cursos-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { cursosCertificationRateLimiter, withRateLimit } from '@/lib/middleware/enhanced-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/cursos/certified?workspaceId=xxx
  * Fetches all certified members for a workspace
+ *
+ * Rate Limited: 5 requests per hour per user/IP
  */
-export async function GET(request: NextRequest) {
+export const GET = withRateLimit(
+  cursosCertificationRateLimiter,
+  async function GET(request: NextRequest) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
@@ -47,3 +52,4 @@ export async function GET(request: NextRequest) {
     return databaseErrorResponse('Failed to fetch certified members')
   }
 }
+)

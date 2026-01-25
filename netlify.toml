@@ -12,14 +12,16 @@
   # Next.js build configuration
   NEXT_TELEMETRY_DISABLED = "1"
 
-  # Supabase environment variables
-  NEXT_PUBLIC_SUPABASE_URL = "https://ouvqnyfqipgnrjnuqsqq.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91dnFueWZxaXBnbnJqbnVxc3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDE0MTgsImV4cCI6MjA4MzQ3NzQxOH0.IWsTnd87r9H0FCxzPGqayhrvqRZN9DZp15U4DM_IXgc"
-  SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91dnFueWZxaXBnbnJqbnVxc3FxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzkwMTQxOCwiZXhwIjoyMDgzNDc3NDE4fQ.Gt0n6_y3j6b955ZmiYlKSlFlDJCyyPW7NyPKIink53o"
+  # Supabase environment variables - SET IN NETLIFY DASHBOARD
+  # DO NOT commit actual credentials to version control
+  NEXT_PUBLIC_SUPABASE_URL = ""
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = ""
+  SUPABASE_SERVICE_ROLE_KEY = ""
 
-  # AI environment variables - Using GLM (Z.ai) as primary provider
+  # AI environment variables - SET IN NETLIFY DASHBOARD
+  # Using GLM (Zhipu AI) as primary provider
   AI_PROVIDER = "glm"
-  GLM_API_KEY = "bab0035a8192430c9777be04f96fc2c6.YUo6eS7mPkNJh073"
+  GLM_API_KEY = ""
   GLM_MODEL = "glm-4.7"
 
   # DeepSeek fallback (optional)
@@ -53,6 +55,24 @@
   for = "/api/*"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Security headers - CRITICAL for production
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# Rate limiting hints for API routes
+[[headers]]
+  for = "/api/cursos/*"
+  [headers.values]
+    X-RateLimit-Limit = "100"
+    X-RateLimit-Window = "3600"
 
 # Build processing and headers are handled automatically by @netlify/plugin-nextjs
 # HTTPS redirects are handled automatically by Netlify

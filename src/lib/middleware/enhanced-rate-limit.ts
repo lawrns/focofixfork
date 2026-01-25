@@ -230,6 +230,44 @@ export const searchRateLimiter = new EnhancedRateLimiter({
 })
 
 /**
+ * Cursos Learning Platform Rate Limiters
+ *
+ * Protects Cursos endpoints from abuse while ensuring legitimate learning access
+ */
+
+// Cursos general API endpoints - moderate limits
+export const cursosRateLimiter = new EnhancedRateLimiter({
+  windowMs: 60 * 1000,       // 1 minute
+  maxRequests: 60,            // 60 requests per minute
+  keyPrefix: 'cursos',
+  message: 'Cursos API rate limit exceeded. Please slow down your requests.'
+})
+
+// Cursos progress endpoints - stricter limits to prevent database spam
+export const cursosProgressRateLimiter = new EnhancedRateLimiter({
+  windowMs: 30 * 1000,       // 30 seconds
+  maxRequests: 10,            // 10 progress updates per 30 seconds
+  keyPrefix: 'cursos-progress',
+  message: 'Progress update rate limit exceeded. Please wait before saving again.'
+})
+
+// Cursos checkpoint attempts - prevent brute force answers
+export const cursosCheckpointRateLimiter = new EnhancedRateLimiter({
+  windowMs: 60 * 1000,       // 1 minute
+  maxRequests: 10,            // 10 checkpoint attempts per minute
+  keyPrefix: 'cursos-checkpoint',
+  message: 'Checkpoint attempt limit exceeded. Please review the material before trying again.'
+})
+
+// Cursos certification - very strict, prevent abuse
+export const cursosCertificationRateLimiter = new EnhancedRateLimiter({
+  windowMs: 60 * 60 * 1000,  // 1 hour
+  maxRequests: 5,             // 5 certification requests per hour
+  keyPrefix: 'cursos-certification',
+  message: 'Certification request limit exceeded. Please wait before requesting again.'
+})
+
+/**
  * Middleware wrapper to apply rate limiting to routes
  *
  * Usage:

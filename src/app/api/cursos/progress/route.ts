@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CursosRepository } from '@/lib/repositories/cursos-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { cursosProgressRateLimiter, withRateLimit } from '@/lib/middleware/enhanced-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,8 +17,12 @@ export const dynamic = 'force-dynamic'
  *   sectionId?: string  // If provided, marks section as completed
  *   lastPosition: number
  * }
+ *
+ * Rate Limited: 10 updates per 30 seconds per user/IP
  */
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(
+  cursosProgressRateLimiter,
+  async function POST(request: NextRequest) {
   try {
     const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
@@ -66,3 +71,4 @@ export async function POST(request: NextRequest) {
     return databaseErrorResponse('Failed to save progress')
   }
 }
+)

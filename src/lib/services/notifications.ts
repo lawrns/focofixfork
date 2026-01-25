@@ -257,7 +257,7 @@ export class NotificationsService {
     }
 
     if (filters.type?.length) {
-      query = query.in('type', filters.type)
+      query = query.in('type', filters.type as any)
     }
 
     if (filters.search) {

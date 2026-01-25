@@ -96,7 +96,7 @@ class DatabaseConnection {
 
       // Test database connectivity by checking if we can query a table
       const { error: dbError } = await this.client
-        .from('organizations')
+        .from('workspaces')
         .select('count')
         .limit(1)
 

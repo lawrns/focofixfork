@@ -25,9 +25,9 @@ export async function testSupabaseConnection(): Promise<{
     }
 
     // Test database connectivity by checking if we can query a simple table
-    // We'll try to select from a table that should exist (organizations)
+    // We'll try to select from a table that should exist (workspaces)
     const { data: testData, error: dbError } = await supabase
-      .from('organizations')
+      .from('workspaces')
       .select('count')
       .limit(1)
 

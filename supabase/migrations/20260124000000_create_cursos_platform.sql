@@ -6,7 +6,7 @@
 -- ====================
 CREATE TABLE IF NOT EXISTS cursos_courses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  workspace_id uuid NOT NULL REFERENCES foco_workspaces(id) ON DELETE CASCADE,
+  workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   slug text NOT NULL,
   title text NOT NULL,
   description text,
@@ -117,7 +117,7 @@ CREATE POLICY "Workspace members can view published courses"
   USING (
     workspace_id IN (
       SELECT workspace_id
-      FROM foco_workspace_members
+      FROM workspace_members
       WHERE user_id = auth.uid()
     )
     AND is_published = true
@@ -130,7 +130,7 @@ CREATE POLICY "Workspace admins can manage courses"
   USING (
     workspace_id IN (
       SELECT workspace_id
-      FROM foco_workspace_members
+      FROM workspace_members
       WHERE user_id = auth.uid()
         AND role IN ('admin', 'owner')
     )
@@ -146,7 +146,7 @@ CREATE POLICY "Users can view sections of accessible courses"
       SELECT id FROM cursos_courses
       WHERE workspace_id IN (
         SELECT workspace_id
-        FROM foco_workspace_members
+        FROM workspace_members
         WHERE user_id = auth.uid()
       )
       AND is_published = true
@@ -162,7 +162,7 @@ CREATE POLICY "Workspace admins can manage sections"
       SELECT id FROM cursos_courses
       WHERE workspace_id IN (
         SELECT workspace_id
-        FROM foco_workspace_members
+        FROM workspace_members
         WHERE user_id = auth.uid()
           AND role IN ('admin', 'owner')
       )
@@ -183,10 +183,10 @@ CREATE POLICY "Users can view progress of workspace members"
   USING (
     user_id IN (
       SELECT user_id
-      FROM foco_workspace_members
+      FROM workspace_members
       WHERE workspace_id IN (
         SELECT workspace_id
-        FROM foco_workspace_members
+        FROM workspace_members
         WHERE user_id = auth.uid()
           AND role IN ('admin', 'owner')
       )
@@ -214,10 +214,18 @@ CREATE POLICY "Users can view their own certifications"
   USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "System can create certifications" ON cursos_certifications;
-CREATE POLICY "System can create certifications"
+CREATE POLICY "Users can earn their own certifications"
   ON cursos_certifications
   FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM cursos_progress
+      WHERE user_id = auth.uid()
+        AND course_id = cursos_certifications.course_id
+        AND is_completed = true
+    )
+  );
 
 -- ====================
 -- PART 9: Helper functions

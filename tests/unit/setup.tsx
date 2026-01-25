@@ -50,11 +50,19 @@ if (typeof Element !== 'undefined') {
   Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
 }
 
-// Mock Blob.text() for export tests
-if (typeof Blob !== 'undefined') {
-  Blob.prototype.text = vi.fn().mockResolvedValue('');
+// Mock Blob.text() for export tests - properly read blob content
+if (typeof Blob !== 'undefined' && !Blob.prototype.text) {
+  Blob.prototype.text = function () {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(this);
+    });
+  };
 }
 
 // Mock localStorage
@@ -168,19 +176,22 @@ afterEach(() => {
 });
 
 // Create a dynamic mock that returns itself for method chaining
-const createChainableMock = (result = { data: null, error: null, count: 0 }) => {
-  const mock = vi.fn().mockResolvedValue(result);
-  const proxy = new Proxy(mock, {
-    get(target, prop) {
-      if (prop === 'then') return undefined;
-      if (typeof prop === 'string') {
-        // Return the same mock for any method call to allow chaining
-        return createChainableMock(result);
-      }
-      return target[prop];
-    }
+const createChainableMock = (result = { data: null, error: null, count: 0 }): any => {
+  const chainable: any = (...args: any[]) => chainable; // When called as function, return self for chaining
+
+  // Make it thenable so await works
+  chainable.then = (resolve: any) => Promise.resolve(result).then(resolve);
+
+  // Add common Supabase methods that return chainable mock
+  const methods = ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'gt', 'lt',
+                   'gte', 'lte', 'like', 'ilike', 'in', 'contains', 'order', 'limit',
+                   'range', 'single', 'maybeSingle', 'filter', 'match', 'or', 'and'];
+
+  methods.forEach(method => {
+    chainable[method] = (...args: any[]) => chainable;
   });
-  return proxy;
+
+  return chainable;
 };
 
 // Mock environment variables
@@ -258,6 +269,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: vi.fn(() => new URLSearchParams()),
   useParams: vi.fn(() => ({})),
   redirect: vi.fn(),
+  permanentRedirect: vi.fn(),
   notFound: vi.fn(),
 }));
 

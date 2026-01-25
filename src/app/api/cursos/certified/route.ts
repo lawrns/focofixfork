@@ -38,8 +38,23 @@ export const GET = withRateLimit(
     const result = await repo.getCertifiedMembers(workspaceId)
 
     if (!result.ok) {
-      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
-      return mergeAuthResponse(errorRes, authResponse)
+      console.error('[Cursos Certified API] Repository error:', {
+        message: result.error.message,
+        code: result.error.code,
+        details: result.error.details
+      })
+
+      // TEMPORARY: Return empty array instead of error to prevent 500
+      // This allows the page to load while we debug the user data query issue
+      return mergeAuthResponse(
+        NextResponse.json({
+          success: true,
+          members: [],
+          total: 0,
+          _debug: 'Certified members feature temporarily disabled due to auth.users access restriction'
+        }),
+        authResponse
+      )
     }
 
     return mergeAuthResponse(

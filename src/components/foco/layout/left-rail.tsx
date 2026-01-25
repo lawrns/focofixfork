@@ -1,11 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
 import { useCreateTaskModal } from '@/features/tasks';
+import { useAuth } from '@/lib/hooks/use-auth';
 import {
   Home,
   Inbox,
@@ -20,6 +22,7 @@ import {
   Plus,
   Star,
   GitBranch,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -39,7 +42,7 @@ const mainNavItems: NavItem[] = [
   { label: 'My Work', href: '/my-work', icon: CheckSquare, shortcut: 'G M' },
 ];
 
-const workspaceNavItems: NavItem[] = [
+const baseWorkspaceNavItems: NavItem[] = [
   { label: 'Projects', href: '/projects', icon: FolderKanban, shortcut: 'G P' },
   { label: 'Proposals', href: '/proposals', icon: GitBranch, shortcut: 'G O' },
   { label: 'Timeline', href: '/timeline', icon: Calendar, shortcut: 'G T' },
@@ -54,6 +57,46 @@ export function LeftRail() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIPreferencesStore();
   const { openTaskModal } = useCreateTaskModal();
+  const { user } = useAuth();
+  const [workspaceNavItems, setWorkspaceNavItems] = useState<NavItem[]>(baseWorkspaceNavItems);
+
+  // Add Cursos link for Fyves members
+  useEffect(() => {
+    const addCursosLink = async () => {
+      if (!user?.email) return;
+
+      // Check if user is a Fyves member
+      const isFyvesMember = user.email.endsWith('@fyves.com');
+      if (!isFyvesMember) return;
+
+      try {
+        // Fetch workspaces to find Fyves workspace
+        const response = await fetch('/api/workspaces');
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const fyvesWorkspace = data.data?.find(
+          (ws: any) => ws.slug === 'fyves-team'
+        );
+
+        if (fyvesWorkspace) {
+          const cursosItem: NavItem = {
+            label: 'Cursos',
+            href: `/organizations/${fyvesWorkspace.id}/cursos`,
+            icon: BookOpen,
+            shortcut: 'G C',
+          };
+
+          // Add Cursos after Reports
+          setWorkspaceNavItems([...baseWorkspaceNavItems, cursosItem]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Fyves workspace:', error);
+      }
+    };
+
+    addCursosLink();
+  }, [user]);
 
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = pathname === item.href || 

@@ -5,7 +5,7 @@ export function useTaskMutations() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const updateStatus = async (taskId: string, status: 'todo' | 'in_progress' | 'review' | 'done') => {
+  const updateStatus = async (taskId: string, status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done') => {
     try {
       setLoading(true)
       setError(null)

@@ -391,7 +391,7 @@ export class TasksService {
   static async updateTaskStatus(
     userId: string,
     taskId: string,
-    newStatus: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done' | 'completed' | 'cancelled'
+    newStatus: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   ): Promise<TasksResponse<Task>> {
     try {
       if (!userId) {

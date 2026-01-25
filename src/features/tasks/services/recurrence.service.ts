@@ -93,7 +93,7 @@ export function calculateNextRecurrenceDate(
  */
 function calculateNextDailyDate(baseDate: Date, interval: number): Date {
   const nextDate = new Date(baseDate.getTime());
-  nextDate.setDate(nextDate.getDate() + interval);
+  nextDate.setUTCDate(nextDate.getUTCDate() + interval);
   return nextDate;
 }
 
@@ -102,7 +102,7 @@ function calculateNextDailyDate(baseDate: Date, interval: number): Date {
  */
 function calculateNextWeeklyDate(baseDate: Date, interval: number, daysOfWeek: number[]): Date {
   const nextDate = new Date(baseDate.getTime());
-  const currentDay = nextDate.getDay();
+  const currentDay = nextDate.getUTCDay();
 
   // Find the next occurrence of any of the selected days
   // First, check if any selected days remain this week
@@ -112,7 +112,7 @@ function calculateNextWeeklyDate(baseDate: Date, interval: number, daysOfWeek: n
     // Go to the next occurrence of the closest day in the same week
     const nextDay = Math.min(...remainingDaysThisWeek);
     const daysToAdd = nextDay - currentDay;
-    nextDate.setDate(nextDate.getDate() + daysToAdd);
+    nextDate.setUTCDate(nextDate.getUTCDate() + daysToAdd);
     return nextDate;
   }
 
@@ -120,7 +120,7 @@ function calculateNextWeeklyDate(baseDate: Date, interval: number, daysOfWeek: n
   const targetDay = Math.min(...daysOfWeek);
   const daysUntilNextWeek = (7 - currentDay + targetDay) % 7 || 7;
   const totalDaysToAdd = daysUntilNextWeek + (interval - 1) * 7;
-  nextDate.setDate(nextDate.getDate() + totalDaysToAdd);
+  nextDate.setUTCDate(nextDate.getUTCDate() + totalDaysToAdd);
   return nextDate;
 }
 
@@ -128,27 +128,27 @@ function calculateNextWeeklyDate(baseDate: Date, interval: number, daysOfWeek: n
  * Calculate next monthly recurrence
  */
 function calculateNextMonthlyDate(baseDate: Date, interval: number): Date {
-  const year = baseDate.getFullYear();
-  const month = baseDate.getMonth();
-  const dayOfMonth = baseDate.getDate();
-  const hours = baseDate.getHours();
-  const minutes = baseDate.getMinutes();
-  const seconds = baseDate.getSeconds();
-  const milliseconds = baseDate.getMilliseconds();
-  
+  const year = baseDate.getUTCFullYear();
+  const month = baseDate.getUTCMonth();
+  const dayOfMonth = baseDate.getUTCDate();
+  const hours = baseDate.getUTCHours();
+  const minutes = baseDate.getUTCMinutes();
+  const seconds = baseDate.getUTCSeconds();
+  const milliseconds = baseDate.getUTCMilliseconds();
+
   // Calculate target month and year
   const targetMonth = month + interval;
   const targetYear = year + Math.floor(targetMonth / 12);
   const normalizedMonth = targetMonth % 12;
-  
-  // Get the last day of the target month
-  const lastDayOfMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
-  
+
+  // Get the last day of the target month (using UTC)
+  const lastDayOfMonth = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+
   // Use the original day or the last day of the month, whichever is smaller
   const targetDay = Math.min(dayOfMonth, lastDayOfMonth);
-  
-  // Create the next date with all time components preserved
-  return new Date(targetYear, normalizedMonth, targetDay, hours, minutes, seconds, milliseconds);
+
+  // Create the next date with all time components preserved (in UTC)
+  return new Date(Date.UTC(targetYear, normalizedMonth, targetDay, hours, minutes, seconds, milliseconds));
 }
 
 /**

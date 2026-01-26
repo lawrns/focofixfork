@@ -25,6 +25,7 @@ export function SectionCompletion({
   onComplete
 }: SectionCompletionProps) {
   const [shouldShow, setShouldShow] = useState(false)
+  const [hasMounted, setHasMounted] = useState(false)
   const [confettiPositions] = useState(() =>
     [0, 1, 2, 3].map(() => ({
       x: (Math.random() - 0.5) * 60,
@@ -33,7 +34,11 @@ export function SectionCompletion({
   )
 
   useEffect(() => {
-    if (isVisible) {
+    setHasMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isVisible && hasMounted) {
       setShouldShow(true)
 
       const timer = setTimeout(() => {
@@ -43,13 +48,14 @@ export function SectionCompletion({
 
       return () => clearTimeout(timer)
     }
-  }, [isVisible, onComplete])
+  }, [isVisible, hasMounted, onComplete])
 
-  if (!shouldShow) return null
+  // Only render animations on client after mount to prevent hydration errors
+  if (!shouldShow || !hasMounted) return null
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.8 }}
+      initial={false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.8 }}
       transition={{
@@ -60,7 +66,7 @@ export function SectionCompletion({
     >
       {/* Checkmark Icon */}
       <motion.div
-        initial={{ scale: 0, rotate: -180 }}
+        initial={false}
         animate={{ scale: 1, rotate: 0 }}
         transition={{
           delay: 0.2,
@@ -83,7 +89,7 @@ export function SectionCompletion({
         {confettiPositions.map((pos, i) => (
           <motion.div
             key={i}
-            initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+            initial={false}
             animate={{
               scale: [0, 1, 0],
               x: pos.x,

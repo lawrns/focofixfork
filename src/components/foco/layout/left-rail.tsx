@@ -75,7 +75,7 @@ export function LeftRail() {
         if (!response.ok) return;
 
         const data = await response.json();
-        const fyvesWorkspace = data.data?.find(
+        const fyvesWorkspace = data.workspaces?.find(
           (ws: any) => ws.slug === 'fyves-team'
         );
 

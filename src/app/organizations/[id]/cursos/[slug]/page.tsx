@@ -73,6 +73,7 @@ function CoursePlayerContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasMounted, setHasMounted] = useState(false)
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null)
 
   // Animation states
@@ -107,6 +108,11 @@ function CoursePlayerContent() {
 
     loadCourse()
   }, [courseSlug, workspaceId])
+
+  // Mount tracking to prevent hydration errors
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   // Auto-save progress every 30 seconds
   useEffect(() => {
@@ -272,7 +278,7 @@ function CoursePlayerContent() {
             {/* Content Area */}
             <motion.div
               key={currentSectionIndex}
-              initial={{ opacity: 0, x: 20 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
@@ -296,7 +302,7 @@ function CoursePlayerContent() {
                         key={section.id}
                         onClick={() => !isLocked && handleSectionChange(index)}
                         disabled={isLocked}
-                        whileHover={!isLocked ? { x: 4 } : {}}
+                        whileHover={!isLocked && hasMounted ? { x: 4 } : {}}
                         className={`w-full text-left p-3 rounded-lg transition-colors ${
                           isCurrent
                             ? 'bg-primary text-primary-foreground'
@@ -462,7 +468,7 @@ function SectionContent({ section }: SectionContentProps) {
     <div className="h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto p-8">
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >

@@ -27,37 +27,35 @@ export function CompletionCelebration({
   onComplete,
   isVisible = true
 }: CompletionCelebrationProps) {
-  const [particles, setParticles] = useState<Array<{
-    id: number
-    x: number
-    y: number
-    color: string
-    delay: number
-  }>>([])
+  const [hasMounted, setHasMounted] = useState(false)
+
+  // Pre-generate particles on initial render to prevent hydration mismatch
+  const [particles] = useState(() => {
+    const colors = [
+      'bg-emerald-400',
+      'bg-green-500',
+      'bg-teal-400',
+      'bg-cyan-400',
+      'bg-lime-400',
+      'bg-yellow-400',
+      'bg-amber-400'
+    ]
+
+    return Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      x: (Math.random() - 0.5) * 400,
+      y: (Math.random() - 0.5) * 400,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      delay: Math.random() * 500
+    }))
+  })
 
   useEffect(() => {
-    if (isVisible) {
-      // Generate confetti particles
-      const colors = [
-        'bg-emerald-400',
-        'bg-green-500',
-        'bg-teal-400',
-        'bg-cyan-400',
-        'bg-lime-400',
-        'bg-yellow-400',
-        'bg-amber-400'
-      ]
+    setHasMounted(true)
+  }, [])
 
-      const newParticles = Array.from({ length: 50 }, (_, i) => ({
-        id: i,
-        x: (Math.random() - 0.5) * 400,
-        y: (Math.random() - 0.5) * 400,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        delay: Math.random() * 500
-      }))
-
-      setParticles(newParticles)
-
+  useEffect(() => {
+    if (isVisible && hasMounted) {
       // Call completion callback after animation
       const timer = setTimeout(() => {
         onComplete?.()
@@ -65,7 +63,7 @@ export function CompletionCelebration({
 
       return () => clearTimeout(timer)
     }
-  }, [isVisible, onComplete])
+  }, [isVisible, hasMounted, onComplete])
 
   return (
     <AnimatePresence>

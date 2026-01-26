@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Service Worker Cache - Foco</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 10px 10px 0;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .success {
+      color: #16a34a;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+    .info {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .step {
+      margin: 15px 0;
+      padding: 10px;
+      background: #f9fafb;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔧 Clear Service Worker Cache</h1>
+
+    <div class="info">
+      <strong>Why you might need this:</strong><br>
+      Recent React hydration error fixes were deployed, but your browser may be using cached JavaScript from before the fixes. This tool will force a complete refresh.
+    </div>
+
+    <div class="step">
+      <strong>Step 1:</strong> Unregister Service Worker
+      <br>
+      <button onclick="unregisterSW()">Unregister Service Worker</button>
+      <div id="sw-status"></div>
+    </div>
+
+    <div class="step">
+      <strong>Step 2:</strong> Clear All Caches
+      <br>
+      <button onclick="clearCaches()">Clear All Caches</button>
+      <div id="cache-status"></div>
+    </div>
+
+    <div class="step">
+      <strong>Step 3:</strong> Hard Refresh
+      <br>
+      <button onclick="hardRefresh()">Reload Page</button>
+      <br>
+      <small style="color: #666;">Or press Cmd+Shift+R (Mac) / Ctrl+Shift+R (Windows)</small>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function unregisterSW() {
+      const statusEl = document.getElementById('sw-status');
+
+      if (!navigator.serviceWorker) {
+        statusEl.innerHTML = '<span style="color: #eab308;">⚠️ No service worker support in this browser</span>';
+        return;
+      }
+
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+
+        if (registrations.length === 0) {
+          statusEl.innerHTML = '<span style="color: #3b82f6;">ℹ️ No service workers registered</span>';
+          return;
+        }
+
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+
+        statusEl.innerHTML = '<span class="success">✅ Service worker unregistered! (' + registrations.length + ' removed)</span>';
+      } catch (error) {
+        statusEl.innerHTML = '<span style="color: #dc2626;">❌ Error: ' + error.message + '</span>';
+      }
+    }
+
+    async function clearCaches() {
+      const statusEl = document.getElementById('cache-status');
+
+      if (!caches) {
+        statusEl.innerHTML = '<span style="color: #eab308;">⚠️ Cache API not supported in this browser</span>';
+        return;
+      }
+
+      try {
+        const cacheNames = await caches.keys();
+
+        if (cacheNames.length === 0) {
+          statusEl.innerHTML = '<span style="color: #3b82f6;">ℹ️ No caches found</span>';
+          return;
+        }
+
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+
+        statusEl.innerHTML = '<span class="success">✅ All caches cleared! (' + cacheNames.length + ' caches removed)</span>';
+      } catch (error) {
+        statusEl.innerHTML = '<span style="color: #dc2626;">❌ Error: ' + error.message + '</span>';
+      }
+    }
+
+    function hardRefresh() {
+      location.reload(true);
+    }
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useUndoStore } from '@/lib/stores/foco-store';
 import { cn } from '@/lib/utils';
 import { Undo2, X } from 'lucide-react';
@@ -8,7 +8,12 @@ import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export function UndoToast() {
+  const [hasMounted, setHasMounted] = useState(false);
   const { actions, undoAction, removeAction, clearExpired } = useUndoStore();
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Clear expired actions periodically
   useEffect(() => {
@@ -18,7 +23,8 @@ export function UndoToast() {
 
   const latestAction = actions[actions.length - 1];
 
-  if (!latestAction) return null;
+  // Only render after mount to prevent hydration errors
+  if (!hasMounted || !latestAction) return null;
 
   const timeRemaining = Math.max(0, Math.ceil((latestAction.expiresAt - Date.now()) / 1000));
 
@@ -26,7 +32,7 @@ export function UndoToast() {
     <AnimatePresence>
       {latestAction && (
         <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.95 }}
+          initial={false}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"

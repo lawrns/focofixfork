@@ -74,6 +74,7 @@ function CursosContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [isCheckingAccess, setIsCheckingAccess] = useState(true)
   const [accessError, setAccessError] = useState<string | null>(null)
+  const [hasMounted, setHasMounted] = useState(false)
 
   // Check access control first
   useEffect(() => {
@@ -136,6 +137,10 @@ function CursosContent() {
     }
   }, [isCheckingAccess, loadCourses, loadCertifiedMembers])
 
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
   if (isCheckingAccess) {
     return (
       <div className="min-h-screen bg-background p-6">
@@ -176,7 +181,7 @@ function CursosContent() {
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           className="flex items-center justify-between"
@@ -200,11 +205,11 @@ function CursosContent() {
         {/* Certified Members Section */}
         {certifiedMembers.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+            <Card variant="ghost" className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-amber-600" />
@@ -232,33 +237,35 @@ function CursosContent() {
         )}
 
         {/* Courses Grid */}
-        <AnimatePresence>
-          {courses.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-12"
-            >
-              <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No hay cursos disponibles</h3>
-              <p className="text-muted-foreground">
-                Los cursos aparecerán aquí cuando estén publicados.
-              </p>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course, index) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  workspaceId={workspaceId}
-                  index={index}
-                />
-              ))}
-            </div>
-          )}
-        </AnimatePresence>
+        {hasMounted && (
+          <AnimatePresence>
+            {courses.length === 0 ? (
+              <motion.div
+                initial={false}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-12"
+              >
+                <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay cursos disponibles</h3>
+                <p className="text-muted-foreground">
+                  Los cursos aparecerán aquí cuando estén publicados.
+                </p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {courses.map((course, index) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    workspaceId={workspaceId}
+                    index={index}
+                  />
+                ))}
+              </div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   )
@@ -307,7 +314,7 @@ function CourseCard({ course, workspaceId, index }: CourseCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{
@@ -317,7 +324,7 @@ function CourseCard({ course, workspaceId, index }: CourseCardProps) {
       }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
     >
-      <Card className="h-full hover:shadow-lg transition-shadow duration-200">
+      <Card variant="ghost" className="h-full hover:shadow-lg transition-shadow duration-200">
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 space-y-2">

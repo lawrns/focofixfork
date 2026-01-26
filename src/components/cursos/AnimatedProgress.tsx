@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface AnimatedProgressProps {
   value: number // 0-100
@@ -33,8 +33,13 @@ export function AnimatedProgress({
   className = '',
   celebrateComplete = true
 }: AnimatedProgressProps) {
+  const [hasMounted, setHasMounted] = useState(false)
   const previousValue = useRef(value)
   const isIncrease = value > previousValue.current
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   useEffect(() => {
     previousValue.current = value
@@ -68,7 +73,7 @@ export function AnimatedProgress({
         {/* Progress Bar Container */}
         <div className={`flex-1 ${sizeConfig.height} bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden`}>
           <motion.div
-            initial={{ scaleX: 0 }}
+            initial={false}
             animate={{ scaleX: percentage / 100 }}
             transition={{
               type: 'spring',
@@ -78,10 +83,10 @@ export function AnimatedProgress({
             }}
             className={`h-full origin-left ${getColor(value)} relative`}
           >
-            {/* Shine effect on progress bar */}
-            {isIncrease && (
+            {/* Shine effect on progress bar - only render after mount to prevent hydration errors */}
+            {isIncrease && hasMounted && (
               <motion.div
-                initial={{ x: '-100%' }}
+                initial={false}
                 animate={{ x: '100%' }}
                 transition={{ duration: 0.5 }}
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
@@ -98,10 +103,10 @@ export function AnimatedProgress({
         )}
       </div>
 
-      {/* Celebration at 100% */}
-      {value >= max && celebrateComplete && (
+      {/* Celebration at 100% - only render after mount to prevent hydration errors */}
+      {value >= max && celebrateComplete && hasMounted && (
         <motion.div
-          initial={{ scale: 0, rotate: -180 }}
+          initial={false}
           animate={{ scale: 1, rotate: 0 }}
           exit={{ scale: 0, opacity: 0 }}
           transition={{
@@ -116,7 +121,7 @@ export function AnimatedProgress({
             width="20"
             height="20"
             viewBox="0 0 20 20"
-            initial={{ pathLength: 0 }}
+            initial={false}
             animate={{ pathLength: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
           >

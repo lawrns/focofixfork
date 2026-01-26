@@ -62,41 +62,61 @@ export function LeftRail() {
 
   // Add Cursos link for Fyves members
   useEffect(() => {
+    let isMounted = true;
+
     const addCursosLink = async () => {
-      if (!user?.email) return;
+      if (!user?.email) {
+        if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
+        return;
+      }
 
       // Check if user is a Fyves member
       const isFyvesMember = user.email.endsWith('@fyves.com');
-      if (!isFyvesMember) return;
+      if (!isFyvesMember) {
+        if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
+        return;
+      }
 
       try {
         // Fetch workspaces to find Fyves workspace
         const response = await fetch('/api/workspaces');
-        if (!response.ok) return;
+        if (!response.ok) {
+          if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
+          return;
+        }
 
         const data = await response.json();
-        const fyvesWorkspace = data.workspaces?.find(
+        const fyvesWorkspace = data.data?.workspaces?.find(
           (ws: any) => ws.slug === 'fyves-team'
         );
 
-        if (fyvesWorkspace) {
-          const cursosItem: NavItem = {
-            label: 'Cursos',
-            href: `/organizations/${fyvesWorkspace.id}/cursos`,
-            icon: BookOpen,
-            shortcut: 'G C',
-          };
+        if (isMounted) {
+          if (fyvesWorkspace) {
+            const cursosItem: NavItem = {
+              label: 'Cursos',
+              href: `/organizations/${fyvesWorkspace.id}/cursos`,
+              icon: BookOpen,
+              shortcut: 'G C',
+            };
 
-          // Add Cursos after Reports
-          setWorkspaceNavItems([...baseWorkspaceNavItems, cursosItem]);
+            // Add Cursos after Reports
+            setWorkspaceNavItems([...baseWorkspaceNavItems, cursosItem]);
+          } else {
+            setWorkspaceNavItems(baseWorkspaceNavItems);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch Fyves workspace:', error);
+        if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
       }
     };
 
     addCursosLink();
-  }, [user]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.email]);
 
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = pathname === item.href || 

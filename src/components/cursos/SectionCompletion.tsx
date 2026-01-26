@@ -25,6 +25,12 @@ export function SectionCompletion({
   onComplete
 }: SectionCompletionProps) {
   const [shouldShow, setShouldShow] = useState(false)
+  const [confettiPositions] = useState(() =>
+    [0, 1, 2, 3].map(() => ({
+      x: (Math.random() - 0.5) * 60,
+      y: (Math.random() - 0.5) * 60 - 30
+    }))
+  )
 
   useEffect(() => {
     if (isVisible) {
@@ -74,14 +80,14 @@ export function SectionCompletion({
 
       {/* Confetti burst (minimal) */}
       <div className="absolute -top-1 -right-1">
-        {[0, 1, 2, 3].map((i) => (
+        {confettiPositions.map((pos, i) => (
           <motion.div
             key={i}
             initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
             animate={{
               scale: [0, 1, 0],
-              x: (Math.random() - 0.5) * 60,
-              y: (Math.random() - 0.5) * 60 - 30,
+              x: pos.x,
+              y: pos.y,
               opacity: [1, 1, 0]
             }}
             transition={{

@@ -93,16 +93,18 @@ export class CursosRepository extends BaseRepository<Course> {
       .from(this.table)
       .select(`
         *,
-        sections:cursos_sections(sort_order)
+        sections:cursos_sections(*)
       `)
       .eq('workspace_id', workspaceId)
       .eq('slug', slug)
+      .eq('is_published', true)
+      .order('sort_order', { referencedTable: 'cursos_sections' })
       .single()
 
     if (error) {
       return Err({
-        code: 'DATABASE_ERROR',
-        message: 'Failed to fetch course',
+        code: error.code === 'PGRST116' ? 'NOT_FOUND' : 'DATABASE_ERROR',
+        message: error.code === 'PGRST116' ? 'Course not found' : 'Failed to fetch course',
         details: error,
       })
     }

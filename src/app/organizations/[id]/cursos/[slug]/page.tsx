@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import MainLayout from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -198,22 +197,26 @@ function CoursePlayerContent() {
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         </div>
-      </MainLayout>
+      </div>
     )
   }
 
   if (error || !course) {
     return (
-      <MainLayout>
-        <Alert variant="destructive" className="max-w-md mx-auto mt-8">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error || 'Curso no encontrado'}</AlertDescription>
-        </Alert>
-      </MainLayout>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto">
+          <Alert variant="destructive" className="max-w-md mx-auto mt-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error || 'Curso no encontrado'}</AlertDescription>
+          </Alert>
+        </div>
+      </div>
     )
   }
 
@@ -224,8 +227,8 @@ function CoursePlayerContent() {
   const progressPercentage = Math.round((completedCount / totalSections) * 100)
 
   return (
-    <MainLayout>
-      <div className="h-full flex flex-col">
+    <div className="min-h-screen bg-background">
+      <div className="h-screen flex flex-col">
         {/* Header */}
         <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between px-6 py-4">
@@ -371,7 +374,7 @@ function CoursePlayerContent() {
           </Button>
         </div>
       </div>
-    </MainLayout>
+    </div>
   )
 }
 

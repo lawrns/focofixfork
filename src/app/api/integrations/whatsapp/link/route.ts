@@ -8,36 +8,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { WhatsAppUserLinkRepository } from '@/lib/repositories/whatsapp-user-link-repository'
 import { sanitizePhone } from '@/lib/utils/whatsapp-crypto'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
 export async function POST(request: NextRequest) {
   try {
-    // 1. Get user from session
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    })
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    // 1. Get user from session (using standard auth helper)
+    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     // 2. Parse request body
@@ -92,12 +74,14 @@ export async function POST(request: NextRequest) {
     const code = codeResult.data
 
     // 6. Return verification code
-    return NextResponse.json({
+    const jsonResponse = NextResponse.json({
       code,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER || '+1234567890',
       message: `Send this message to WhatsApp:\n\nVERIFY ${code}`,
     })
+
+    return mergeAuthResponse(jsonResponse, authResponse)
   } catch (error) {
     console.error('Error generating WhatsApp verification code:', error)
     return NextResponse.json(

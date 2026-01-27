@@ -7,35 +7,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { WhatsAppUserLinkRepository } from '@/lib/repositories/whatsapp-user-link-repository'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function DELETE(request: NextRequest) {
   try {
-    // 1. Get user from session
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    })
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    // 1. Get user from session (using standard auth helper)
+    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     // 2. Unlink WhatsApp
@@ -50,10 +32,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 3. Success
-    return NextResponse.json({
+    const jsonResponse = NextResponse.json({
       success: true,
       message: 'WhatsApp unlinked successfully',
     })
+
+    return mergeAuthResponse(jsonResponse, authResponse)
   } catch (error) {
     console.error('Error unlinking WhatsApp:', error)
     return NextResponse.json(
@@ -68,27 +52,11 @@ export async function DELETE(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Get user from session
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    })
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    // 1. Get user from session (using standard auth helper)
+    const { user, supabase, error: authError, response: authResponse } = await getAuthUser(request)
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     // 2. Check link status
@@ -103,19 +71,22 @@ export async function GET(request: NextRequest) {
     }
 
     if (!linkResult.data) {
-      return NextResponse.json({
+      const jsonResponse = NextResponse.json({
         linked: false,
         phone: null,
         verified: false,
       })
+      return mergeAuthResponse(jsonResponse, authResponse)
     }
 
-    return NextResponse.json({
+    const jsonResponse = NextResponse.json({
       linked: true,
       phone: linkResult.data.phone,
       verified: linkResult.data.verified,
       linkedAt: linkResult.data.linked_at,
     })
+
+    return mergeAuthResponse(jsonResponse, authResponse)
   } catch (error) {
     console.error('Error checking WhatsApp link:', error)
     return NextResponse.json(

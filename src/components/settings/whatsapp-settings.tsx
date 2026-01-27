@@ -51,6 +51,7 @@ export function WhatsAppSettings() {
     try {
       const response = await fetch('/api/integrations/whatsapp/unlink', {
         method: 'GET',
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -77,6 +78,7 @@ export function WhatsAppSettings() {
     try {
       const response = await fetch('/api/integrations/whatsapp/link', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -105,6 +107,7 @@ export function WhatsAppSettings() {
     try {
       const response = await fetch('/api/integrations/whatsapp/unlink', {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!response.ok) {

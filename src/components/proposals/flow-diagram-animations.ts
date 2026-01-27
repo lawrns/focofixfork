@@ -3,7 +3,7 @@
  * World-class animations with Linear-like snappy feel
  */
 
-import type { Transition, Variant } from 'framer-motion'
+import type { Transition, Variant, Variants } from 'framer-motion'
 
 // ============================================================================
 // SPRING PHYSICS CONFIGURATION
@@ -70,7 +70,7 @@ export const phaseTimings: Record<AnimationPhase, { start: number; end: number }
 // TASK CARD VARIANTS
 // ============================================================================
 
-export const taskCardVariants = {
+export const taskCardVariants: Variants = {
   // Initial state
   initial: {
     scale: 1,
@@ -158,7 +158,7 @@ export function createMovementVariant(
 // GLOW ANIMATIONS
 // ============================================================================
 
-export const glowVariants = {
+export const glowVariants: Variants = {
   add: {
     boxShadow: [
       '0 0 0 0 rgba(16, 185, 129, 0)',
@@ -198,7 +198,7 @@ export const glowVariants = {
 // STAGGER CONTAINER VARIANTS
 // ============================================================================
 
-export const staggerContainerVariants = {
+export const staggerContainerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -209,7 +209,7 @@ export const staggerContainerVariants = {
   },
 }
 
-export const staggerItemVariants = {
+export const staggerItemVariants: Variants = {
   hidden: { opacity: 0, y: 10, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -223,7 +223,7 @@ export const staggerItemVariants = {
 // SHIMMER EFFECT
 // ============================================================================
 
-export const shimmerVariants = {
+export const shimmerVariants: Variants = {
   initial: {
     backgroundPosition: '-200% 0',
   },
@@ -241,7 +241,7 @@ export const shimmerVariants = {
 // BUTTON ANIMATIONS
 // ============================================================================
 
-export const buttonVariants = {
+export const buttonVariants: Variants = {
   idle: {
     scale: 1,
   },
@@ -263,7 +263,7 @@ export const buttonVariants = {
 // SCRUBBER ANIMATIONS
 // ============================================================================
 
-export const scrubberHandleVariants = {
+export const scrubberHandleVariants: Variants = {
   idle: {
     scale: 1,
   },

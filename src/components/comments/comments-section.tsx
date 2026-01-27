@@ -81,7 +81,11 @@ export default function CommentsSection({
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const replyInputRef = useRef<HTMLTextAreaElement>(null)
 
-  const updateCommentInState = useCallback((updatedComment: any) => {
+  const updateCommentInState = useCallback((updatedComment: Comment) => {
+    if (!updatedComment || typeof updatedComment !== 'object') {
+      console.warn('Invalid comment object in updateCommentInState:', updatedComment)
+      return
+    }
     setThreads(prevThreads =>
       prevThreads.map(thread => {
         if (thread.root_comment.id === updatedComment.id) {
@@ -98,12 +102,18 @@ export default function CommentsSection({
   }, [])
 
   const removeCommentFromState = useCallback((commentId: string) => {
+    if (!commentId) {
+      console.warn('Invalid commentId in removeCommentFromState')
+      return
+    }
     setThreads(prevThreads =>
       prevThreads
-        .filter(thread => thread.root_comment.id !== commentId)
+        .filter(thread => thread.root_comment?.id !== commentId)
         .map(thread => ({
           ...thread,
-          replies: thread.replies.filter(reply => reply.id !== commentId)
+          replies: Array.isArray(thread.replies)
+            ? thread.replies.filter(reply => reply?.id !== commentId)
+            : []
         }))
     )
   }, [])
@@ -148,13 +158,18 @@ export default function CommentsSection({
 
   useEffect(() => {
     if (searchQuery.trim()) {
-      const filtered = threads.filter(thread =>
-        thread.root_comment.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        thread.replies.some(reply =>
-          reply.content.toLowerCase().includes(searchQuery.toLowerCase())
-        ) ||
-        thread.root_comment.author_name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      const filtered = threads.filter(thread => {
+        const rootContent = thread.root_comment?.content ?? ''
+        const rootAuthor = thread.root_comment?.author_name ?? ''
+        const replies = Array.isArray(thread.replies) ? thread.replies : []
+        return (
+          rootContent.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          replies.some(reply =>
+            reply?.content?.toLowerCase().includes(searchQuery.toLowerCase())
+          ) ||
+          rootAuthor.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      })
       setFilteredThreads(filtered)
     } else {
       setFilteredThreads(threads)
@@ -261,7 +276,8 @@ export default function CommentsSection({
     try {
       // Check if user already reacted with this emoji
       const comment = findCommentById(commentId)
-      const existingReaction = comment?.reactions.find(
+      const reactions = Array.isArray(comment?.reactions) ? comment.reactions : []
+      const existingReaction = reactions.find(
         r => r.emoji === emoji && r.user_id === currentUser.id
       )
 
@@ -283,9 +299,11 @@ export default function CommentsSection({
   }
 
   const findCommentById = (commentId: string): Comment | undefined => {
+    if (!commentId) return undefined
     for (const thread of threads) {
-      if (thread.root_comment.id === commentId) return thread.root_comment
-      const reply = thread.replies.find(r => r.id === commentId)
+      if (thread.root_comment?.id === commentId) return thread.root_comment
+      const replies = Array.isArray(thread.replies) ? thread.replies : []
+      const reply = replies.find(r => r?.id === commentId)
       if (reply) return reply
     }
     return undefined
@@ -539,8 +557,10 @@ function CommentThread({
   // Build a map of comments by parent to support recursive rendering
   const childrenByParent = new Map<string, Comment[]>()
   const rootComments: Comment[] = []
+  const safeComments = Array.isArray(comments) ? comments : []
 
-  comments.forEach(comment => {
+  safeComments.forEach(comment => {
+    if (!comment) return
     if (comment.parent_id === parentCommentId) {
       rootComments.push(comment)
     } else if (comment.parent_id) {
@@ -602,7 +622,7 @@ function CommentThread({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onReply(null as any)}
+                onClick={() => onReply({} as Comment)}
               >
                 Cancel
               </Button>
@@ -720,9 +740,10 @@ function CommentItem({
             />
 
             {/* Reactions */}
-            {comment.reactions.length > 0 && (
+            {Array.isArray(comment.reactions) && comment.reactions.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {comment.reactions.slice(0, 3).map((reaction, index) => {
+                  if (!reaction) return null
                   const reactionConfig = REACTION_EMOJIS.find(r => r.emoji === reaction.emoji)
                   const ReactionIcon = reactionConfig?.icon || Heart
                   return (

@@ -66,6 +66,7 @@ export function AnimatedCounter({
     const startValue = displayValueRef.current
     const endValue = value
     const startTime = performance.now()
+    let lastUpdateTime = startTime
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime
@@ -75,7 +76,12 @@ export function AnimatedCounter({
       const easeProgress = 1 - Math.pow(1 - progress, 3)
       const currentValue = Math.round(startValue + (endValue - startValue) * easeProgress)
 
-      setDisplayValue(currentValue)
+      // Only update state at throttled intervals or when complete
+      const timeSinceLastUpdate = currentTime - lastUpdateTime
+      if (timeSinceLastUpdate >= 16 || progress >= 1) {
+        setDisplayValue(currentValue)
+        lastUpdateTime = currentTime
+      }
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate)

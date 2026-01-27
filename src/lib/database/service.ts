@@ -82,7 +82,7 @@ export class DatabaseService {
   // Workspaces (formerly Organizations)
   async getWorkspaces(options: QueryOptions = {}): Promise<DatabaseResult<Workspace[]>> {
     return this.executeQuery(async (client) => {
-      let query = client.from('workspaces').select('*')
+      let query = client.from('organizations').select('*')
 
       if (options.limit) query = query.limit(options.limit)
       if (options.offset) query = query.range(options.offset, (options.offset + (options.limit || 10)) - 1)
@@ -97,17 +97,17 @@ export class DatabaseService {
   async getWorkspaceById(id: string): Promise<DatabaseResult<Workspace>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('workspaces')
+        .from('organizations')
         .select('*')
         .eq('id', id)
         .single()
-    })
+    }) as unknown as Promise<DatabaseResult<Workspace>>
   }
 
   async createWorkspace(data: WorkspaceInsert): Promise<DatabaseResult<Workspace>> {
     return this.executeQuery(async (client) => {
       return await client
-        .from('workspaces')
+        .from('organizations')
         .insert(data as any)
         .select()
         .single()
@@ -271,7 +271,7 @@ export class DatabaseService {
   async healthCheck(): Promise<DatabaseResult<{ status: string; timestamp: string }>> {
     return this.executeQuery(async (client) => {
       const { data, error } = await client
-        .from('workspaces')
+        .from('organizations')
         .select('count')
         .limit(1)
 

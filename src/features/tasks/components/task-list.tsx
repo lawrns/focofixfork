@@ -33,6 +33,7 @@ import { toast } from 'sonner'
 import { Task } from '../types'
 import { useTaskExport } from '../hooks/use-task-export'
 import { BatchToolbar } from './batch-toolbar'
+import type { WorkspaceMemberResponse, WorkspaceProjectResponse } from '@/types/api-responses'
 
 interface TaskListProps {
   projectId?: string
@@ -140,16 +141,16 @@ export function TaskList({
           const membersResponse = await fetch(`/api/workspaces/${workspaceId}/members`)
           const membersData = await membersResponse.json()
           if (membersData.success || membersData.ok) {
-            const members = (membersData.data || membersData.members || []).map((m: any) => ({
-              id: m.user_id || m.id,
+            const members = (membersData.data || membersData.members || []).map((m: WorkspaceMemberResponse) => ({
+              id: m.user_id || m.id || '',
               name: m.user?.full_name || m.full_name || m.email || 'Unknown',
               email: m.user?.email || m.email || '',
               role: m.role
             }))
             setTeamMembers(members)
-            
+
             // Find current user's role
-            const currentUserMember = members.find((m: any) => m.id === user?.id)
+            const currentUserMember = members.find((m: { id: string; role?: string }) => m.id === user?.id)
             if (currentUserMember?.role) {
               setUserRole(currentUserMember.role as 'owner' | 'admin' | 'member' | 'guest')
             }
@@ -163,7 +164,7 @@ export function TaskList({
           const projectsResponse = await fetch(`/api/workspaces/${workspaceId}/projects`)
           const projectsData = await projectsResponse.json()
           if (projectsData.success || projectsData.ok) {
-            const projectsList = (projectsData.data || projectsData.projects || []).map((p: any) => ({
+            const projectsList = (projectsData.data || projectsData.projects || []).map((p: WorkspaceProjectResponse) => ({
               id: p.id,
               name: p.name || p.title || 'Unnamed Project'
             }))

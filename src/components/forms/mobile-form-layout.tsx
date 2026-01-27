@@ -31,11 +31,14 @@ export function MobileFormLayout({
   loading = false,
   error
 }: MobileFormLayoutProps) {
+  const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
 
-  // Detect mobile screen size
+  // Detect mobile screen size with SSR guard
   useEffect(() => {
+    setMounted(true)
+
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
@@ -44,6 +47,20 @@ export function MobileFormLayout({
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Return consistent placeholder during SSR
+  if (!mounted) {
+    return (
+      <div className={cn('w-full max-w-2xl mx-auto', className)}>
+        <div className="bg-card border border-border rounded-lg shadow-sm">
+          <div className="p-6 space-y-6 animate-pulse">
+            <div className="h-10 bg-muted rounded" />
+            <div className="h-10 bg-muted rounded" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

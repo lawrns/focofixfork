@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase-client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import type { PresencePayload } from '@/types/api-responses'
 
 export interface PresenceUser {
   id: string
@@ -48,9 +49,9 @@ const UserPresence: React.FC<UserPresenceProps> = ({
 
   const avatarSizeClass = sizeClasses[size]
 
-  const updatePresence = useCallback((presences: any[]) => {
+  const updatePresence = useCallback((presences: PresencePayload[]) => {
     const users: PresenceUser[] = presences.map(presence => ({
-      id: presence.user_id || presence.id,
+      id: presence.user_id || presence.id || 'unknown',
       name: presence.user_metadata?.name || `User ${presence.user_id?.slice(-4) || 'Unknown'}`,
       email: presence.user_metadata?.email,
       avatar_url: presence.user_metadata?.avatar_url,
@@ -91,14 +92,15 @@ const UserPresence: React.FC<UserPresenceProps> = ({
       channel
         .on('presence', { event: 'sync' }, () => {
           const presences = channel.presenceState()
-          updatePresence(Object.values(presences).flat())
+          updatePresence(Object.values(presences).flat() as PresencePayload[])
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          updatePresence(newPresences)
+          updatePresence(newPresences as PresencePayload[])
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          const leftPayloads = leftPresences as unknown as PresencePayload[]
           setPresenceUsers(prev =>
-            prev.filter(user => !leftPresences.some(lp => lp.user_id === user.id))
+            prev.filter(user => !leftPayloads.some(lp => lp.user_id === user.id))
           )
         })
 

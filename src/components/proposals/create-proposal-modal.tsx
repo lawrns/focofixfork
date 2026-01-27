@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   Mic,
   MicOff,
@@ -56,7 +56,7 @@ type ProcessingState = 'idle' | 'recording' | 'transcribing' | 'uploading' | 'pr
 // Animation Variants
 // ============================================================================
 
-const modalVariants = {
+const modalVariants: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
@@ -70,7 +70,7 @@ const modalVariants = {
   }
 }
 
-const tabContentVariants = {
+const tabContentVariants: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,
@@ -84,7 +84,7 @@ const tabContentVariants = {
   }
 }
 
-const pulseVariants = {
+const pulseVariants: Variants = {
   pulse: {
     scale: [1, 1.05, 1],
     opacity: [1, 0.8, 1],
@@ -96,7 +96,7 @@ const pulseVariants = {
   }
 }
 
-const checkmarkVariants = {
+const checkmarkVariants: Variants = {
   hidden: { pathLength: 0, opacity: 0 },
   visible: {
     pathLength: 1,
@@ -105,7 +105,7 @@ const checkmarkVariants = {
   }
 }
 
-const shimmerVariants = {
+const shimmerVariants: Variants = {
   shimmer: {
     x: ['-100%', '100%'],
     transition: {
@@ -193,7 +193,7 @@ function RecordingButton({
           transition={{
             duration: 1.5,
             repeat: Infinity,
-            ease: 'easeOut'
+            ease: 'easeOut' as const
           }}
         />
       )}

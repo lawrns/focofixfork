@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect } from 'react';
+import React, { forwardRef, useState, useEffect, useId } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -89,7 +89,8 @@ interface AccessibleInputProps extends React.InputHTMLAttributes<HTMLInputElemen
 
 export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps>(
   ({ label, description, error, required, className, ...props }, ref) => {
-    const id = props.id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const id = props.id || generatedId;
 
     return (
       <AccessibleField
@@ -127,7 +128,8 @@ interface AccessibleTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
 
 export const AccessibleTextarea = forwardRef<HTMLTextAreaElement, AccessibleTextareaProps>(
   ({ label, description, error, required, className, ...props }, ref) => {
-    const id = props.id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const id = props.id || generatedId;
 
     return (
       <AccessibleField
@@ -180,7 +182,8 @@ export function AccessibleSelect({
   options,
   className
 }: AccessibleSelectProps) {
-  const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const selectId = id || generatedId;
 
   return (
     <AccessibleField
@@ -244,7 +247,8 @@ export function AccessibleRadioGroup({
   options,
   className
 }: AccessibleRadioGroupProps) {
-  const groupId = id || `radio-group-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const groupId = id || generatedId;
 
   return (
     <AccessibleField

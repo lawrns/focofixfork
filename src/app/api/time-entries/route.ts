@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const { data: workspaceMember, error: memberError } = await supabase
       .from('workspace_members')
       .select('user_id')
-      .eq('workspace_id', task.workspace_id)
+      .eq('workspace_id', task.workspace_id ?? '')
       .eq('user_id', user.id)
       .maybeSingle()
 

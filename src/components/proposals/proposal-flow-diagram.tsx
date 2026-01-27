@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { Play, RotateCcw, CheckCircle2, Layers, List } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -249,22 +249,38 @@ export const ProposalFlowDiagram = memo(function ProposalFlowDiagram({
     const startTime = performance.now()
     const startProgress = scrubberProgress
 
+    // Use refs to track animation state without triggering re-renders
+    const progressRef = { current: startProgress }
+    const phaseRef = { current: animationPhase }
+    let lastUpdateTime = startTime
+
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime
       const duration = timing.total * (1 - startProgress) // Remaining duration
 
       const newProgress = startProgress + (elapsed / timing.total)
 
-      if (newProgress >= 1) {
-        setScrubberProgress(1)
-        setAnimationPhase('complete')
-        setIsPlaying(false)
-        setViewMode('after')
-        return
-      }
+      // Update refs every frame
+      progressRef.current = newProgress
+      phaseRef.current = getPhaseFromProgress(newProgress)
 
-      setScrubberProgress(newProgress)
-      setAnimationPhase(getPhaseFromProgress(newProgress))
+      // Only trigger state updates at throttled intervals (every ~16ms) to batch updates
+      const timeSinceLastUpdate = currentTime - lastUpdateTime
+      if (timeSinceLastUpdate >= 16 || newProgress >= 1) {
+        if (newProgress >= 1) {
+          // Batch final state update
+          setScrubberProgress(1)
+          setAnimationPhase('complete')
+          setIsPlaying(false)
+          setViewMode('after')
+          return
+        }
+
+        // Batch intermediate state updates
+        setScrubberProgress(progressRef.current)
+        setAnimationPhase(phaseRef.current)
+        lastUpdateTime = currentTime
+      }
 
       animationFrameRef.current = requestAnimationFrame(animate)
     }
@@ -285,7 +301,7 @@ export const ProposalFlowDiagram = memo(function ProposalFlowDiagram({
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [isPlaying, scrubberProgress])
+  }, [isPlaying, scrubberProgress, animationPhase])
 
   // Handle play/pause
   const handlePlayPause = useCallback(() => {
@@ -445,7 +461,7 @@ export const ProposalFlowDiagram = memo(function ProposalFlowDiagram({
                 <motion.div
                   className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full"
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' as const }}
                 />
                 Merging...
               </>

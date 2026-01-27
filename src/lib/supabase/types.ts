@@ -3503,6 +3503,333 @@ export type Database = {
           }
         ]
       }
+      inbox_items: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          body: string | null
+          actor_id: string | null
+          project_id: string | null
+          work_item_id: string | null
+          is_read: boolean
+          priority: string | null
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type?: string
+          title: string
+          body?: string | null
+          actor_id?: string | null
+          project_id?: string | null
+          work_item_id?: string | null
+          is_read?: boolean
+          priority?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string | null
+          actor_id?: string | null
+          project_id?: string | null
+          work_item_id?: string | null
+          is_read?: boolean
+          priority?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      work_items: {
+        Row: {
+          id: string
+          workspace_id: string | null
+          project_id: string | null
+          parent_id: string | null
+          type: string
+          title: string
+          description: string | null
+          status: string
+          priority: string | null
+          assignee_id: string | null
+          reporter_id: string | null
+          due_date: string | null
+          start_date: string | null
+          completed_at: string | null
+          estimate_hours: number | null
+          actual_hours: number | null
+          section: string | null
+          blocked_reason: string | null
+          blocked_by_id: string | null
+          closure_note: string | null
+          ai_context_sources: string[] | null
+          embedding: string | null
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+          position: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id?: string | null
+          project_id?: string | null
+          parent_id?: string | null
+          type?: string
+          title: string
+          description?: string | null
+          status?: string
+          priority?: string | null
+          assignee_id?: string | null
+          reporter_id?: string | null
+          due_date?: string | null
+          start_date?: string | null
+          completed_at?: string | null
+          estimate_hours?: number | null
+          actual_hours?: number | null
+          section?: string | null
+          blocked_reason?: string | null
+          blocked_by_id?: string | null
+          closure_note?: string | null
+          ai_context_sources?: string[] | null
+          embedding?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+          position?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string | null
+          project_id?: string | null
+          parent_id?: string | null
+          type?: string
+          title?: string
+          description?: string | null
+          status?: string
+          priority?: string | null
+          assignee_id?: string | null
+          reporter_id?: string | null
+          due_date?: string | null
+          start_date?: string | null
+          completed_at?: string | null
+          estimate_hours?: number | null
+          actual_hours?: number | null
+          section?: string | null
+          blocked_reason?: string | null
+          blocked_by_id?: string | null
+          closure_note?: string | null
+          ai_context_sources?: string[] | null
+          embedding?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+          position?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      workspace_members: {
+        Row: {
+          id: string
+          workspace_id: string
+          user_id: string
+          role: string
+          permissions: Json | null
+          invited_by: string | null
+          joined_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          user_id: string
+          role?: string
+          permissions?: Json | null
+          invited_by?: string | null
+          joined_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          user_id?: string
+          role?: string
+          permissions?: Json | null
+          invited_by?: string | null
+          joined_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      foco_projects: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          owner_id: string
+          workspace_id: string | null
+          status: string
+          visibility: string
+          color: string | null
+          icon: string | null
+          settings: Json | null
+          archived_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          owner_id: string
+          workspace_id?: string | null
+          status?: string
+          visibility?: string
+          color?: string | null
+          icon?: string | null
+          settings?: Json | null
+          archived_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          owner_id?: string
+          workspace_id?: string | null
+          status?: string
+          visibility?: string
+          color?: string | null
+          icon?: string | null
+          settings?: Json | null
+          archived_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foco_projects_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foco_projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      foco_project_members: {
+        Row: {
+          id: string
+          project_id: string
+          user_id: string
+          role: string
+          permissions: Json | null
+          joined_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          user_id: string
+          role?: string
+          permissions?: Json | null
+          joined_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          user_id?: string
+          role?: string
+          permissions?: Json | null
+          joined_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foco_project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "foco_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foco_project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       session_analytics: {

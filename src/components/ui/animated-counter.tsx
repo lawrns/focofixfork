@@ -25,16 +25,22 @@ export function AnimatedCounter({
   useEffect(() => {
     let startTime: number
     let animationFrame: number
+    let lastUpdateTime = 0
 
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp
       const progress = Math.min((timestamp - startTime) / duration, 1)
-      
+
       // Easing function for smooth animation
       const easeOutQuart = 1 - Math.pow(1 - progress, 4)
       const currentValue = value * easeOutQuart
-      
-      setDisplayValue(currentValue)
+
+      // Only update state at throttled intervals or when complete
+      const timeSinceLastUpdate = timestamp - lastUpdateTime
+      if (timeSinceLastUpdate >= 16 || progress >= 1) {
+        setDisplayValue(currentValue)
+        lastUpdateTime = timestamp
+      }
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate)

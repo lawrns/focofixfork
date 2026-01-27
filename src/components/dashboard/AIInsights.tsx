@@ -170,7 +170,7 @@ export function AIInsights({ userId, organizationId, className }: AIInsightsProp
                     ) : insight.data.trend === 'down' ? (
                       <TrendingDown className="h-3 w-3" />
                     ) : null}
-                    {insight.data.change && `${insight.data.change > 0 ? '+' : ''}${insight.data.change}`}
+                    {typeof insight.data?.change === 'number' && `${insight.data.change > 0 ? '+' : ''}${insight.data.change}`}
                   </Badge>
                 )}
               </div>

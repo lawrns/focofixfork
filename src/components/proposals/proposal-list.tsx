@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { ProposalCard } from './proposal-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/loading/skeleton'
@@ -20,7 +20,7 @@ interface ProposalListProps {
 }
 
 // Staggered animation variants for list items
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -31,7 +31,7 @@ const containerVariants = {
   },
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: {
     opacity: 0,
     y: 20,
@@ -115,7 +115,7 @@ function ProposalEmptyState({ onAction }: { onAction?: () => void }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      transition={{ duration: 0.3, ease: 'easeOut' as const }}
     >
       <EmptyState
         icon={<Inbox className="h-full w-full" />}

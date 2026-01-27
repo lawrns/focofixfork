@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useId } from 'react';
 import mermaid from 'mermaid';
 
 interface MermaidPreviewProps {
@@ -19,6 +19,7 @@ export const MermaidPreview: React.FC<MermaidPreviewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const componentId = useId();
 
   useEffect(() => {
     // Initialize Mermaid configuration
@@ -52,8 +53,8 @@ export const MermaidPreview: React.FC<MermaidPreviewProps> = ({
         // Clear previous content
         containerRef.current.innerHTML = '';
 
-        // Generate unique ID for this render
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Use component ID with counter for uniqueness across renders
+        const id = `mermaid-${componentId.replace(/:/g, '-')}-${Date.now()}`;
 
         // Validate and render the diagram
         const isValid = await mermaid.parse(code);
@@ -87,7 +88,7 @@ export const MermaidPreview: React.FC<MermaidPreviewProps> = ({
     };
 
     renderDiagram();
-  }, [code, theme]);
+  }, [code, theme, componentId]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);

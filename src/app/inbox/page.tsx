@@ -35,6 +35,7 @@ import { EmptyState } from '@/components/ui/empty-state-standard';
 import { emptyStates } from '@/lib/copy';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { toast } from 'sonner';
+import type { NotificationResponse } from '@/types/api-responses';
 
 interface InboxItemData {
   id: string;
@@ -204,7 +205,7 @@ export default function InboxPage() {
 
       // Validate data structure and ensure it's an array
       if (data.success && data.data && Array.isArray(data.data)) {
-        setItems(data.data.map((n: any) => ({
+        setItems(data.data.map((n: NotificationResponse) => ({
           id: n.id,
           type: n.type,
           title: n.title,

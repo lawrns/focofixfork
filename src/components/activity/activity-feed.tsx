@@ -18,7 +18,7 @@ export interface ActivityItem {
   }
   description: string
   timestamp: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 interface ActivityFeedProps {
@@ -40,25 +40,28 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   const [groupedActivities, setGroupedActivities] = useState<ActivityItem[][]>([])
 
+  // Validate activities prop
+  const safeActivities = Array.isArray(activities) ? activities : []
+
   // Group similar activities
   useEffect(() => {
     if (!groupSimilar) {
-      setGroupedActivities(activities.map(activity => [activity]))
+      setGroupedActivities(safeActivities.map(activity => [activity]))
       return
     }
 
     const groups: ActivityItem[][] = []
     let currentGroup: ActivityItem[] = []
 
-    activities.forEach((activity, index) => {
+    safeActivities.forEach((activity, index) => {
       if (index === 0) {
         currentGroup = [activity]
         return
       }
 
-      const previousActivity = activities[index - 1]
+      const previousActivity = safeActivities[index - 1]
       const timeDiff = new Date(activity.timestamp).getTime() - new Date(previousActivity.timestamp).getTime()
-      const isSameUser = activity.user.id === previousActivity.user.id
+      const isSameUser = activity.user?.id === previousActivity.user?.id
       const isSameType = activity.type === previousActivity.type
       const isWithinTimeWindow = timeDiff < 5 * 60 * 1000 // 5 minutes
 
@@ -77,7 +80,7 @@ export function ActivityFeed({
     }
 
     setGroupedActivities(groups)
-  }, [activities, groupSimilar])
+  }, [safeActivities, groupSimilar])
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -151,7 +154,14 @@ export function ActivityFeed({
 
   const renderActivityGroup = (group: ActivityItem[], index: number) => {
     const firstActivity = group[0]
+    if (!firstActivity || !firstActivity.user) {
+      return null
+    }
     const isMultiple = group.length > 1
+    const userName = firstActivity.user?.name ?? 'Unknown'
+    const userAvatarUrl = firstActivity.user?.avatar_url
+    const description = firstActivity.description ?? 'performed an action'
+    const timestamp = firstActivity.timestamp ?? new Date().toISOString()
 
     return (
       <div
@@ -163,9 +173,9 @@ export function ActivityFeed({
         {showAvatars && (
           <div className="flex-shrink-0">
             <Avatar className="w-8 h-8">
-              <AvatarImage src={firstActivity.user.avatar_url} />
+              <AvatarImage src={userAvatarUrl} />
               <AvatarFallback className="text-xs">
-                {firstActivity.user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                {userName.split(' ').map(n => n[0]).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </div>
@@ -185,9 +195,9 @@ export function ActivityFeed({
             {/* Text */}
             <div className="flex-1 min-w-0">
               <p className="text-sm text-gray-900 dark:text-gray-100">
-                <span className="font-medium">{firstActivity.user.name}</span>
+                <span className="font-medium">{userName}</span>
                 {' '}
-                {firstActivity.description}
+                {description}
                 {isMultiple && (
                   <span className="text-gray-500 dark:text-gray-400">
                     {' '}and {group.length - 1} more similar action{group.length - 1 !== 1 ? 's' : ''}
@@ -195,7 +205,7 @@ export function ActivityFeed({
                 )}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formatTimestamp(firstActivity.timestamp)}
+                {formatTimestamp(timestamp)}
               </p>
             </div>
           </div>
@@ -204,7 +214,7 @@ export function ActivityFeed({
     )
   }
 
-  if (activities.length === 0) {
+  if (safeActivities.length === 0) {
     return (
       <div className={cn(className)}>
         <ActivityFeedEnhanced />

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
+import type { MilestoneResponse } from '@/types/api-responses'
 
 interface VirtualizedListProps<T> {
   items: T[]
@@ -90,9 +91,9 @@ function VirtualizedList<T>({
 
 // Specialized component for milestone lists
 interface VirtualizedMilestoneListProps {
-  milestones: any[]
+  milestones: MilestoneResponse[]
   containerHeight?: number // Made optional for mobile responsiveness
-  onMilestoneClick?: (milestone: any) => void
+  onMilestoneClick?: (milestone: MilestoneResponse) => void
   onEndReached?: () => void
   className?: string
   mobileOptimized?: boolean // New prop for mobile optimization
@@ -106,15 +107,18 @@ export const VirtualizedMilestoneList: React.FC<VirtualizedMilestoneListProps> =
   className,
   mobileOptimized = true
 }) => {
-  // Mobile-responsive container height calculation
+  // Mobile-responsive container height calculation with SSR guard
+  const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [dynamicHeight, setDynamicHeight] = useState(containerHeight || 400)
 
   useEffect(() => {
+    setMounted(true)
+
     const checkMobile = () => {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
-      
+
       if (mobileOptimized && mobile) {
         // On mobile, use viewport-based height instead of fixed height
         const viewportHeight = window.innerHeight
@@ -129,7 +133,9 @@ export const VirtualizedMilestoneList: React.FC<VirtualizedMilestoneListProps> =
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [containerHeight, mobileOptimized])
-  const renderMilestone = useCallback((milestone: any, index: number) => (
+
+  // Define renderMilestone before conditional return (hooks must be unconditional)
+  const renderMilestone = useCallback((milestone: MilestoneResponse, index: number) => (
     <div
       key={milestone.id}
       className={cn(
@@ -181,6 +187,16 @@ export const VirtualizedMilestoneList: React.FC<VirtualizedMilestoneListProps> =
 
   // Mobile-optimized item height
   const itemHeight = isMobile ? 100 : 80 // Taller items on mobile for better touch targets
+
+  // Return consistent placeholder during SSR
+  if (!mounted) {
+    return (
+      <div
+        className={cn('w-full rounded-lg border border-border', className)}
+        style={{ height: containerHeight || 400 }}
+      />
+    )
+  }
 
   return (
     <div className={cn(

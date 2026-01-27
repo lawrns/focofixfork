@@ -10,6 +10,7 @@ import { WhatsAppUserLinkRepository } from '@/lib/repositories/whatsapp-user-lin
 import { AIProposalParserService } from './ai-proposal-parser'
 import { createClient } from '@supabase/supabase-js'
 import type { WhatsAppSession } from './whatsapp-session'
+import { focoBotCommandProcessor } from '@/lib/focobot/command-processor'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -186,6 +187,21 @@ export class WhatsAppRouter {
         await this.handleClearCommand(message.from, context)
         break
 
+      // FocoBot Commands
+      case '/tasks':
+      case '/tareas':
+        await this.handleFocoBotTaskCommand(message, context)
+        break
+
+      case '/bot':
+        await this.handleFocoBotHelp(message.from)
+        break
+
+      case '/done':
+      case '/completar':
+        await this.handleFocoBotCompleteCommand(message, context, args)
+        break
+
       default:
         await this.whatsAppService.sendMessage({
           to: message.from,
@@ -195,9 +211,15 @@ export class WhatsAppRouter {
   }
 
   /**
-   * Handle regular message (proposal creation)
+   * Handle regular message (proposal creation or FocoBot)
    */
   private async handleMessage(message: InboundMessage, context: MessageContext): Promise<void> {
+    // Check if message should be handled by FocoBot
+    if (this.shouldRouteToFocoBot(message.text)) {
+      await this.routeToFocoBot(message, context)
+      return
+    }
+
     // Check if we have project context
     if (!context.session?.project_id) {
       await this.whatsAppService.sendMessage({
@@ -216,6 +238,69 @@ export class WhatsAppRouter {
 
     // Parse proposal with AI
     await this.createProposalFromMessage(message, context)
+  }
+
+  /**
+   * Check if message should be routed to FocoBot
+   */
+  private shouldRouteToFocoBot(text: string): boolean {
+    const lowerText = text.toLowerCase()
+    
+    // Task-related keywords in Spanish and English
+    const taskKeywords = [
+      'tarea', 'tareas', 'task', 'tasks',
+      'crear', 'crea', 'create', 'add', 'agregar', 'nueva',
+      'completar', 'completa', 'complete', 'done', 'terminar',
+      'ver', 'show', 'list', 'lista', 'mis tareas',
+      'pendiente', 'pending', 'hacer', 'todo',
+      'focobot', 'bot'
+    ]
+    
+    return taskKeywords.some(keyword => lowerText.includes(keyword))
+  }
+
+  /**
+   * Route message to FocoBot
+   */
+  private async routeToFocoBot(message: InboundMessage, context: MessageContext): Promise<void> {
+    try {
+      // Get user's org ID
+      const { data: user } = await this.supabase
+        .from('users')
+        .select('org_id')
+        .eq('id', context.user_id)
+        .single()
+
+      const orgId = user?.org_id
+      if (!orgId) {
+        await this.whatsAppService.sendMessage({
+          to: message.from,
+          text: '❌ No se encontró tu organización. Por favor contacta a soporte.',
+        })
+        return
+      }
+
+      // Process through FocoBot
+      const result = await focoBotCommandProcessor.processMessage({
+        phoneNumber: message.from,
+        userId: context.user_id,
+        orgId: orgId,
+        message: message.text,
+        messageId: message.messageId,
+      })
+
+      // Send response
+      await this.whatsAppService.sendMessage({
+        to: message.from,
+        text: result.message,
+      })
+    } catch (error) {
+      console.error('Error routing to FocoBot:', error)
+      await this.whatsAppService.sendMessage({
+        to: message.from,
+        text: 'Lo siento, hubo un error procesando tu mensaje. Por favor intenta de nuevo.',
+      })
+    }
   }
 
   /**
@@ -306,20 +391,27 @@ export class WhatsAppRouter {
   private async handleHelpCommand(phone: string): Promise<void> {
     const helpText = `📱 *Foco WhatsApp Commands*
 
-/help - Show this help message
-/status - Show current context (workspace, project)
+*Proposals:*
 /project [name] - Switch to project
 /workspace [name] - Switch to workspace
-/list projects - List your projects
-/list tasks - List tasks in current project
+/status - Show current context
 /clear - Clear project context
+
+*Tasks (FocoBot):*
+/tareas - List your tasks
+/completar [número] - Complete a task
+/bot - FocoBot help
 
 *Creating Proposals:*
 Just send a message describing what you need!
-
 Example: "Need to add login page and user dashboard by Friday"
 
-I'll parse it into tasks and create a proposal for you.`
+*Task Management:*
+Send natural language like:
+• "Crear tarea: Revisar propuesta"
+• "Ver mis tareas pendientes"
+
+Send /help to see this message again.`
 
     await this.whatsAppService.sendMessage({
       to: phone,
@@ -565,6 +657,51 @@ I'll parse it into tasks and create a proposal for you.`
     await this.whatsAppService.sendMessage({
       to: phone,
       text: '❌ Something went wrong. Please try again.',
+    })
+  }
+
+  /**
+   * FocoBot Command Handlers
+   */
+
+  private async handleFocoBotTaskCommand(
+    message: InboundMessage,
+    context: MessageContext
+  ): Promise<void> {
+    await this.routeToFocoBot(message, context)
+  }
+
+  private async handleFocoBotCompleteCommand(
+    message: InboundMessage,
+    context: MessageContext,
+    args: string
+  ): Promise<void> {
+    const completeMessage = {
+      ...message,
+      text: `completar ${args}`,
+    }
+    await this.routeToFocoBot(completeMessage, context)
+  }
+
+  private async handleFocoBotHelp(phone: string): Promise<void> {
+    const helpText = `🤖 *FocoBot - Tu asistente de tareas*
+
+*Comandos rápidos:*
+/tareas - Ver tus tareas pendientes
+/completar [número] - Marcar tarea como completada
+/bot - Ver ayuda de FocoBot
+
+*Ejemplos de mensajes naturales:*
+• "Crear tarea: Revisar propuesta"
+• "Ver mis tareas"
+• "Completar tarea 3"
+• "Qué tareas tengo para hoy"
+
+FocoBot entiende español e inglés. ¡Pregunta lo que necesites!`
+
+    await this.whatsAppService.sendMessage({
+      to: phone,
+      text: helpText,
     })
   }
 }

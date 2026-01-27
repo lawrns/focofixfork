@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       code,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      whatsappNumber: process.env.WHATSAPP_BUSINESS_NUMBER || '+1234567890',
+      whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER || '+1234567890',
       message: `Send this message to WhatsApp:\n\nVERIFY ${code}`,
     })
   } catch (error) {

@@ -31,7 +31,7 @@ All required credentials configured in Netlify:
 ✅ TWILIO_AUTH_TOKEN=******** (configured)
 ✅ TWILIO_API_KEY_SID=SK4ff9************971 (configured)
 ✅ TWILIO_API_KEY_SECRET=******** (configured)
-✅ TWILIO_WHATSAPP_NUMBER=+525597535037
+✅ TWILIO_WHATSAPP_NUMBER=+5216145547454
 ```
 
 #### Redis (Session Management)
@@ -83,7 +83,7 @@ $ curl https://foco.mx/api/integrations/whatsapp/webhook
    - Click **Messaging** → **Try it out** → **Send a WhatsApp message**
    - OR: **Messaging** → **Senders** (if using production WhatsApp number)
 
-3. **Configure Webhook for your number (+525597535037):**
+3. **Configure Webhook for your number (+5216145547454):**
 
    **When a message comes in:**
    ```
@@ -121,13 +121,13 @@ curl https://foco.mx/api/integrations/whatsapp/webhook
 - Find **WhatsApp Integration** section
 
 **2.3. Link Your Phone:**
-- Enter your phone number: `+525597535037` (or any user's number)
+- Enter your phone number: `+5216145547454` (or any user's number)
 - Click **Generate Verification Code**
 - You should receive a 6-digit code (e.g., `123456`)
 
 **2.4. Verify via WhatsApp:**
 - Open WhatsApp
-- Send message to Twilio number: `+525597535037`
+- Send message to Twilio number: `+5216145547454`
 - Message: `VERIFY 123456` (use the actual code you received)
 - Wait for confirmation message from FocoBot
 
@@ -140,7 +140,7 @@ You can now send proposals and receive notifications.
 #### Test 3: Create Proposal via WhatsApp
 
 **3.1. Set Project Context:**
-Send to `+525597535037`:
+Send to `+5216145547454`:
 ```
 /list projects
 ```
@@ -268,7 +268,7 @@ FocoBot will:
 - User must unlink from previous account first
 - Or admin can manually delete in Supabase:
   ```sql
-  DELETE FROM whatsapp_user_links WHERE phone = '+525597535037';
+  DELETE FROM whatsapp_user_links WHERE phone = '+5216145547454';
   ```
 
 ### Issue: "Redis connection failed"

@@ -53,21 +53,26 @@ export class WhatsAppRouter {
         return
       }
 
+      // 3. Check for VERIFY command FIRST (before verification check)
+      const text = message.text.trim()
+
+      if (text.toUpperCase().startsWith('VERIFY ')) {
+        await this.handleVerification(message)
+        return
+      }
+
+      // 4. Block unverified users from other actions
       if (!context.link_verified) {
         await this.whatsAppService.sendMessage({
           to: message.from,
-          text: '⚠️ Your phone number is not verified. Please complete verification first.',
+          text: '⚠️ Your phone number is not verified. Send VERIFY followed by your code.',
         })
         return
       }
 
-      // 3. Parse command or route to handler
-      const text = message.text.trim()
-
+      // 5. Parse command or route to handler
       if (text.startsWith('/')) {
         await this.handleCommand(message, context)
-      } else if (text.toUpperCase().startsWith('VERIFY ')) {
-        await this.handleVerification(message)
       } else {
         await this.handleMessage(message, context)
       }

@@ -47,7 +47,7 @@ TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Your Twilio WhatsApp-enabled Phone Number
-TWILIO_WHATSAPP_NUMBER=+14155238886  # Format: +[country code][number]
+TWILIO_WHATSAPP_NUMBER=+15557170836  # Format: +[country code][number]
 ```
 
 #### Redis Configuration (for session management)
@@ -164,7 +164,7 @@ curl https://foco.mx/api/integrations/whatsapp/webhook
 2. User enters their phone number (E.164 format: +1234567890)
 3. Click **Generate Verification Code**
 4. API generates 6-digit code and saves to database
-5. User receives instructions: "Send `VERIFY 123456` to +14155238886"
+5. User receives instructions: "Send `VERIFY 123456` to +15557170836"
 6. User opens WhatsApp and sends message
 7. FocoBot webhook receives message, verifies code, marks phone as verified
 8. User receives confirmation: "✅ WhatsApp linked to your Foco account!"
@@ -185,7 +185,7 @@ Content-Type: application/json
 {
   "code": "123456",
   "expiresAt": "2024-01-27T10:45:00Z",
-  "whatsappNumber": "+14155238886",
+  "whatsappNumber": "+15557170836",
   "message": "Send this message to WhatsApp:\n\nVERIFY 123456"
 }
 ```

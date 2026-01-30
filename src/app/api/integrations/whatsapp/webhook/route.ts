@@ -12,7 +12,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyTwilioSignature, extractPhoneFromTwilio } from '@/lib/utils/whatsapp-crypto'
 import { getWhatsAppRouter } from '@/lib/services/whatsapp-router'
 
-const API_KEY_SECRET = process.env.TWILIO_API_KEY_SECRET || ''
+// Twilio signs webhooks with Auth Token, not API Key Secret
+const AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || ''
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_BASE_URL
   ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/integrations/whatsapp/webhook`
   : ''
@@ -34,8 +35,8 @@ export async function POST(request: NextRequest) {
     // 2. Verify signature (optional in dev, required in production)
     const signature = request.headers.get('X-Twilio-Signature')
 
-    if (process.env.NODE_ENV === 'production' && WEBHOOK_URL && API_KEY_SECRET) {
-      if (!verifyTwilioSignature(WEBHOOK_URL, params, signature, API_KEY_SECRET)) {
+    if (process.env.NODE_ENV === 'production' && WEBHOOK_URL && AUTH_TOKEN) {
+      if (!verifyTwilioSignature(WEBHOOK_URL, params, signature, AUTH_TOKEN)) {
         console.error('Invalid Twilio webhook signature')
         return new NextResponse('Invalid signature', { status: 401 })
       }

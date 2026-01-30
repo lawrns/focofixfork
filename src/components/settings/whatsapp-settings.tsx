@@ -297,15 +297,15 @@ export function WhatsAppSettings() {
                 <Alert>
                   <MessageCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong className="block mb-2">Verification Code:</strong>
+                    <strong className="block mb-2">Send this message to WhatsApp:</strong>
                     <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <code className="flex-1 text-2xl font-mono font-bold tracking-wider">
-                        {verificationData.code}
+                      <code className="flex-1 text-xl font-mono font-bold tracking-wider">
+                        VERIFY {verificationData.code}
                       </code>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => copyToClipboard(verificationData.code)}
+                        onClick={() => copyToClipboard(`VERIFY ${verificationData.code}`)}
                       >
                         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       </Button>
@@ -317,10 +317,10 @@ export function WhatsAppSettings() {
                   <AlertDescription>
                     <strong>Next Steps:</strong>
                     <ol className="list-decimal list-inside mt-2 space-y-2 text-sm">
-                      <li>Copy the verification code above</li>
+                      <li>Copy the message above</li>
                       <li>Open WhatsApp and message <strong>{verificationData.whatsappNumber}</strong></li>
-                      <li>Send: <code className="bg-muted px-2 py-1 rounded">VERIFY {verificationData.code}</code></li>
-                      <li>You&apos;ll receive a confirmation message</li>
+                      <li>Paste and send the message</li>
+                      <li>You&apos;ll receive a confirmation</li>
                     </ol>
                   </AlertDescription>
                 </Alert>

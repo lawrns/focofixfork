@@ -23,7 +23,7 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "scripts", "tests", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.js", "mcp-task-server"],
+  "exclude": ["node_modules", "scripts", "tests", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.js", "mcp-task-server", "vitest.config.ts", "vitest.contract.config.ts"],
   "ts-node": {
     "compilerOptions": {
       "module": "commonjs"

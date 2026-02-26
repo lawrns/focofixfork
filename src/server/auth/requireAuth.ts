@@ -32,8 +32,8 @@ export class ForbiddenError extends AuthError {
  * Throws UnauthorizedError if not authenticated
  */
 export async function requireAuth() {
-  const cookieStore = cookies()
-  const headersList = headers()
+  const cookieStore = await cookies()
+  const headersList = await headers()
   
   // Check for Bearer token in Authorization header
   const authHeader = headersList.get('authorization')

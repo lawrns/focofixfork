@@ -47,7 +47,7 @@ export class EnhancedRateLimiter {
    * Uses user ID if authenticated, otherwise IP address
    */
   private getKey(req: NextRequest, userId?: string): string {
-    const identifier = userId || req.headers.get('x-forwarded-for') || req.ip || 'unknown'
+    const identifier = userId || req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     return `${this.config.keyPrefix}:${identifier}`
   }
 
@@ -91,7 +91,7 @@ export class EnhancedRateLimiter {
         event: 'rate_limit_exceeded',
         limiter: this.config.keyPrefix,
         userId: userId || 'anonymous',
-        ip: req.headers.get('x-forwarded-for') || req.ip,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
         endpoint: req.url,
         attempts: entry.count,
         windowMs: this.config.windowMs,

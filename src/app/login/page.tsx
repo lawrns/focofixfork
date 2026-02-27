@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { GitBranch, Mic, Zap } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Iniciar sesión — Foco',
-  description: 'Inicia sesión en tu cuenta de Foco.',
+  title: 'Sign in — Foco',
+  description: 'Sign in to your Foco account.',
 }
 
 export default function LoginPage() {
@@ -42,23 +42,23 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-8">
           <div>
             <p className="text-xs font-mono-display text-[color:var(--foco-teal)] tracking-widest uppercase mb-4">
-              Por qué Foco
+              Why Foco
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-foreground leading-snug mb-2">
-              De la idea al equipo
+              From idea to team
               <br />
-              en minutos
+              in minutes
             </h2>
             <p className="text-[14px] text-muted-foreground leading-relaxed">
-              Habla tu proyecto, la IA lo estructura. Revisa, aprueba y merge como en Git.
+              Speak your project, AI structures it. Review, approve and merge like Git.
             </p>
           </div>
 
           <div className="space-y-5">
             {[
-              { icon: Mic, text: 'Propuestas con voz — habla, la IA convierte' },
-              { icon: GitBranch, text: 'Branching de proyectos — revisa antes de ejecutar' },
-              { icon: Zap, text: 'WhatsApp nativo — opera desde donde estés' },
+              { icon: Mic, text: 'Voice proposals — speak, AI converts' },
+              { icon: GitBranch, text: 'Project branching — review before executing' },
+              { icon: Zap, text: 'Native WhatsApp — operate from anywhere' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
@@ -73,7 +73,7 @@ export default function LoginPage() {
         {/* Testimonial */}
         <div className="relative z-10">
           <p className="text-[13px] text-muted-foreground italic leading-relaxed mb-3">
-            &ldquo;Foco redujo nuestras reuniones semanales de seguimiento en un 80%. Ahora hablamos los proyectos y el equipo los ejecuta.&rdquo;
+            &ldquo;Foco cut our weekly status meetings by 80%. We now speak our projects and the team executes.&rdquo;
           </p>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
@@ -94,24 +94,15 @@ export default function LoginPage() {
             <span className="text-[15px] font-semibold text-foreground">Foco</span>
           </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1.5">
-              Bienvenido de vuelta
-            </h1>
-            <p className="text-[14px] text-muted-foreground">
-              Ingresa a tu cuenta para continuar
-            </p>
-          </div>
-
           <LoginForm />
 
           <p className="mt-6 text-center text-[13px] text-muted-foreground">
-            ¿No tienes cuenta?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/register"
               className="text-[color:var(--foco-teal)] hover:underline underline-offset-2 font-medium"
             >
-              Crear cuenta gratis
+              Create free account
             </Link>
           </p>
         </div>

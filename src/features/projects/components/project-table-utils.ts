@@ -124,7 +124,8 @@ export function getPriorityBadgeStyles(priority: Project['priority']): React.CSS
   }
 }
 
-export function getPriorityLabel(priority: Project['priority']): string {
+export function getPriorityLabel(priority: Project['priority'] | null | undefined): string {
+  if (!priority) return 'None'
   return PRIORITY_LABELS[priority] || priority
 }
 

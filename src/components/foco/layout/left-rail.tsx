@@ -23,6 +23,11 @@ import {
   Star,
   GitBranch,
   BookOpen,
+  Activity,
+  Clock,
+  Mail,
+  Archive,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -38,7 +43,7 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { label: 'Home',    href: '/dashboard', icon: Home,        shortcut: 'G H' },
-  { label: 'Inbox',   href: '/inbox',     icon: Inbox,       badge: 3, shortcut: 'G I' },
+  { label: 'Inbox',   href: '/inbox',     icon: Inbox,       shortcut: 'G I' },
   { label: 'My Work', href: '/my-work',   icon: CheckSquare, shortcut: 'G M' },
 ];
 
@@ -46,18 +51,47 @@ const baseWorkspaceNavItems: NavItem[] = [
   { label: 'Projects',  href: '/projects',  icon: FolderKanban, shortcut: 'G P' },
   { label: 'Proposals', href: '/proposals', icon: GitBranch,    shortcut: 'G O' },
   { label: 'Timeline',  href: '/timeline',  icon: Calendar,     shortcut: 'G T' },
-  { label: 'People',    href: '/people',    icon: Users,        shortcut: 'G E' },
-  { label: 'Reports',   href: '/reports',   icon: BarChart3,    shortcut: 'G R' },
+  { label: 'People',    href: '/people',    icon: Users,        shortcut: 'G W' },
+  { label: 'Reports',   href: '/reports',   icon: BarChart3,    shortcut: 'G B' },
+];
+
+const clawfusionNavItems: NavItem[] = [
+  { label: 'Runs',      href: '/runs',      icon: Activity,     shortcut: 'G R' },
+  { label: 'Crons',     href: '/crons',     icon: Clock,        shortcut: 'G K' },
+  { label: 'Emails',    href: '/emails',    icon: Mail,         shortcut: 'G E' },
+  { label: 'Artifacts', href: '/artifacts', icon: Archive,      shortcut: 'G A' },
+  { label: 'Ledger',    href: '/ledger',    icon: BookOpen,     shortcut: 'G L' },
+  { label: 'Policies',  href: '/policies',  icon: Shield,       shortcut: 'G Y' },
 ];
 
 const pinnedProjects: { id: string; name: string; slug: string; color: string }[] = [];
 
 export function LeftRail() {
   const pathname = usePathname();
-  const { sidebarCollapsed, toggleSidebar } = useUIPreferencesStore();
+  const { sidebarCollapsed: sidebarCollapsedRaw, toggleSidebar } = useUIPreferencesStore();
   const { openTaskModal } = useCreateTaskModal();
   const { user } = useAuth();
   const [workspaceNavItems, setWorkspaceNavItems] = useState<NavItem[]>(baseWorkspaceNavItems);
+  const [inboxBadge, setInboxBadge] = useState<number | undefined>(undefined);
+
+  // Gate sidebarCollapsed on isMounted — Zustand persist reads localStorage
+  // synchronously on the client, causing SSR mismatch if used directly.
+  // Always start collapsed=false to match SSR, then switch after mount.
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+  const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
+
+  /* Fetch unread inbox count */
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/notifications?unread=true', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const count = data?.count ?? data?.data?.length ?? 0;
+        setInboxBadge(count > 0 ? count : undefined);
+      })
+      .catch(() => {});
+  }, [user]);
 
   /* Add Cursos for Fyves members */
   useEffect(() => {
@@ -175,6 +209,7 @@ export function LeftRail() {
   /* ── Render ───────────────────────────────────────────────── */
   return (
     <aside
+      suppressHydrationWarning
       className={cn(
         'fixed left-0 top-0 z-10 h-screen flex flex-col transition-all duration-200',
         'hidden md:flex',
@@ -236,7 +271,12 @@ export function LeftRail() {
         )}
 
         {/* Main nav */}
-        {mainNavItems.map(item => <NavLink key={item.href} item={item} />)}
+        {mainNavItems.map(item => (
+          <NavLink
+            key={item.href}
+            item={item.href === '/inbox' ? { ...item, badge: inboxBadge } : item}
+          />
+        ))}
 
         {/* Divider */}
         <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
@@ -252,6 +292,21 @@ export function LeftRail() {
 
         {/* Workspace nav */}
         {workspaceNavItems.map(item => <NavLink key={item.href} item={item} />)}
+
+        {/* Critter divider */}
+        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+
+        {/* Critter section label */}
+        {!sidebarCollapsed && (
+          <div className="px-3 mb-1">
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
+              Critter
+            </span>
+          </div>
+        )}
+
+        {/* Critter nav */}
+        {clawfusionNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Pinned projects */}
         {!sidebarCollapsed && pinnedProjects.length > 0 && (

@@ -289,7 +289,7 @@ export default function TimelinePage() {
             No timeline items yet
           </h3>
           <p className="text-zinc-500 text-center max-w-md mb-4">
-            Create milestones in your projects to see them visualized here on the timeline.
+            Set milestone dates on your projects to see them here. Projects with start and due dates will appear as timeline bars.
           </p>
           <Button onClick={() => window.location.href = '/projects'}>
             <Plus className="h-4 w-4 mr-2" />

@@ -237,7 +237,7 @@ export default function ProposalsPage() {
   if (isLoading) {
     return (
       <PageShell maxWidth="6xl">
-        <PageHeader title="Propuestas" subtitle="Cargando..." />
+        <PageHeader title="Proposals" subtitle="Loading..." />
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-24 animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
@@ -259,7 +259,7 @@ export default function ProposalsPage() {
             className="gap-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver a propuestas
+            Back to proposals
           </Button>
         </div>
 
@@ -276,8 +276,8 @@ export default function ProposalsPage() {
   return (
     <PageShell maxWidth="6xl">
       <PageHeader
-        title="Propuestas"
-        subtitle={`${stats.pending} pendientes de revisión`}
+        title="Proposals"
+        subtitle={`${stats.pending} pending review`}
         primaryAction={
           <div className="flex gap-2">
             <Button
@@ -286,11 +286,11 @@ export default function ProposalsPage() {
               className="gap-2"
             >
               <Mic className="h-4 w-4" />
-              Grabar
+              Record
             </Button>
             <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              Nueva Propuesta
+              New Proposal
             </Button>
           </div>
         }
@@ -306,7 +306,7 @@ export default function ProposalsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input
-            placeholder="Buscar propuestas..."
+            placeholder="Search proposals..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -316,13 +316,13 @@ export default function ProposalsPage() {
         <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterStatus)}>
           <TabsList>
             <TabsTrigger value="all">
-              Todas
+              All
               <Badge variant="secondary" className="ml-1.5 h-5 px-1.5">
                 {proposals.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="pending_review">
-              Pendientes
+              Pending
               {stats.pending > 0 && (
                 <Badge variant="default" className="ml-1.5 h-5 px-1.5 bg-amber-500">
                   {stats.pending}
@@ -330,14 +330,14 @@ export default function ProposalsPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="approved">
-              Aprobadas
+              Approved
               {stats.approved > 0 && (
                 <Badge variant="secondary" className="ml-1.5 h-5 px-1.5">
                   {stats.approved}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="draft">Borradores</TabsTrigger>
+            <TabsTrigger value="draft">Drafts</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -353,10 +353,10 @@ export default function ProposalsPage() {
           >
             <EmptyState
               icon={GitBranch}
-              title="No hay propuestas"
-              description="Crea tu primera propuesta para sugerir cambios al proyecto. Puedes usar voz, texto o subir archivos."
+              title="No proposals"
+              description="Create your first proposal to suggest changes to the project. You can use voice, text or upload files."
               primaryAction={{
-                label: 'Crear Propuesta',
+                label: 'Create Proposal',
                 onClick: () => setIsCreateModalOpen(true),
               }}
               size="lg"

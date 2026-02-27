@@ -1,0 +1,135 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { Activity, Wifi, WifiOff, PauseCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
+interface LedgerEvent {
+  id: string
+  type: string
+  source: string
+  timestamp: string
+}
+
+interface BossBarProps {
+  className?: string
+}
+
+export function BossBar({ className }: BossBarProps) {
+  const [recentEvents, setRecentEvents] = useState<LedgerEvent[]>([])
+  const [paused, setPaused] = useState(false)
+  const [relayConnected, setRelayConnected] = useState(false)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+
+  const pollEvents = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ledger?limit=5')
+      if (res.ok) {
+        const json = await res.json()
+        setRecentEvents(json.data ?? [])
+        setRelayConnected(true)
+      } else {
+        setRelayConnected(false)
+      }
+      setLastRefreshed(new Date())
+    } catch {
+      setRelayConnected(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    pollEvents()
+    const interval = setInterval(pollEvents, 15_000)
+    return () => clearInterval(interval)
+  }, [pollEvents])
+
+  async function pauseFleet() {
+    try {
+      const res = await fetch('/api/policies/pause-fleet', { method: 'POST' })
+      if (res.ok || res.status === 404) {
+        setPaused(true)
+        toast.warning('Fleet paused — all agents stopped')
+      }
+    } catch {
+      toast.error('Failed to pause fleet')
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-30 h-9',
+        'flex items-center gap-3 px-4',
+        'border-t border-[var(--foco-rail-border)]',
+        'bg-background/95 backdrop-blur-sm',
+        'text-[11px] font-mono-display',
+        className
+      )}
+    >
+      {/* Fleet status indicator */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className={cn(
+          'h-1.5 w-1.5 rounded-full',
+          paused ? 'bg-red-500' : 'bg-[color:var(--foco-teal)] animate-pulse'
+        )} />
+        <span className={cn('text-muted-foreground', paused && 'text-red-500')}>
+          {paused ? 'PAUSED' : 'FLEET OK'}
+        </span>
+      </div>
+
+      <div className="h-3 w-px bg-border flex-shrink-0" />
+
+      {/* Critter relay */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {relayConnected
+          ? <Wifi className="h-3 w-3 text-[color:var(--foco-teal)]" />
+          : <WifiOff className="h-3 w-3 text-muted-foreground" />}
+        <span className="text-muted-foreground">
+          {relayConnected ? 'relay' : 'offline'}
+        </span>
+      </div>
+
+      <div className="h-3 w-px bg-border flex-shrink-0" />
+
+      {/* Recent ledger events rolling ticker */}
+      <div className="flex-1 overflow-hidden flex items-center gap-2 min-w-0">
+        <Activity className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+        {recentEvents.length === 0 ? (
+          <span className="text-muted-foreground">no recent events</span>
+        ) : (
+          <span className="text-muted-foreground/70">
+            {recentEvents.length} recent event{recentEvents.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
+      {/* Last refreshed */}
+      {lastRefreshed && (
+        <span className="text-muted-foreground/50 flex-shrink-0 hidden lg:block">
+          {lastRefreshed.toLocaleTimeString()}
+        </span>
+      )}
+
+      <div className="h-3 w-px bg-border flex-shrink-0" />
+
+      {/* Pause Fleet kill switch — icon only */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          'h-6 w-6 flex-shrink-0',
+          paused
+            ? 'text-red-500 hover:text-red-400'
+            : 'text-muted-foreground hover:text-destructive'
+        )}
+        onClick={pauseFleet}
+        disabled={paused}
+        title={paused ? 'Fleet paused — all agents stopped' : 'Pause Fleet — halt all autonomous agents'}
+      >
+        <PauseCircle className="h-3 w-3" />
+      </Button>
+    </div>
+  )
+}

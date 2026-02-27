@@ -20,14 +20,7 @@ export {
   type ExecutionResult,
 } from './actions/action-executor';
 
-// Voice Control
-export {
-  processVoiceCommand,
-  confirmVoiceCommand,
-  cancelVoiceCommand,
-  parseVoiceIntent,
-  type ProcessVoiceResult,
-} from './voice/voice-controller';
+// Voice Control (removed — voice feature deprecated)
 
 // Alignment Engine
 export {
@@ -279,9 +272,9 @@ export interface CricoInstance {
   
   // High-level operations
   executeVoiceCommand(transcript: string, sttConfidence: number): Promise<{
-    command: VoiceCommand;
-    feedback: { message: string; speakable: string };
-    action?: { id: string };
+    command: unknown;
+    feedback: { message: string; speakable: boolean | string };
+    action?: { id: string } | null;
   }>;
   
   getPendingSuggestions(): Promise<Suggestion[]>;
@@ -299,23 +292,9 @@ export function initCrico(config: CricoConfig): CricoInstance {
     config,
     registry,
 
-    async executeVoiceCommand(transcript: string, sttConfidence: number) {
-      const { processVoiceCommand } = await import('./voice/voice-controller');
-      const result = await processVoiceCommand(
-        transcript,
-        sttConfidence,
-        config.userId,
-        config.sessionId,
-        config.environment
-      );
-      return {
-        command: result.command,
-        feedback: {
-          message: result.feedback.message,
-          speakable: result.feedback.speakable,
-        },
-        action: result.action,
-      };
+    async executeVoiceCommand(_transcript: string, _sttConfidence: number) {
+      // Voice feature removed
+      return { command: null, feedback: { message: 'Voice feature removed', speakable: false }, action: null };
     },
 
     async getPendingSuggestions() {

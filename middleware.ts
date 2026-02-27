@@ -74,7 +74,21 @@ export async function middleware(req: NextRequest) {
     '/settings',
     '/profile',
     '/voice',
-    '/instructions'
+    '/instructions',
+    '/runs',
+    '/crons',
+    '/emails',
+    '/artifacts',
+    '/ledger',
+    '/policies',
+    '/inbox',
+    '/my-work',
+    '/people',
+    '/reports',
+    '/timeline',
+    '/proposals',
+    '/search',
+    '/favorites',
   ]
 
   // Public routes (accessible without authentication)

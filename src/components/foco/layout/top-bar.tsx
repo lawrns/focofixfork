@@ -48,12 +48,18 @@ export function TopBar({ className }: TopBarProps) {
   const { openTaskModal } = useCreateTaskModal();
   const { open: openKeyboardShortcuts } = useKeyboardShortcutsModalStore();
   const { unreadCount } = useInboxStore();
-  const { sidebarCollapsed, density, setDensity } = useUIPreferencesStore();
+  const { sidebarCollapsed: sidebarCollapsedRaw, density, setDensity } = useUIPreferencesStore();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
   const [workspace, setWorkspace] = useState<any>(null);
   const isMobile = useMobile();
+
+  // Gate on isMounted — Zustand persist reads localStorage synchronously, which
+  // differs from SSR default. Prevents className mismatch on left-position.
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+  const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
 
   useEffect(() => {
     if (user) {
@@ -201,7 +207,12 @@ export function TopBar({ className }: TopBarProps) {
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 min-h-[44px] min-w-[44px]">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 min-h-[44px] min-w-[44px]"
+              title={`Your profile — ${user?.user_metadata?.full_name || user?.email || 'User'}`}
+            >
               <Avatar className="h-7 w-7">
                 <AvatarImage src={user?.user_metadata?.avatar_url} />
                 <AvatarFallback className="text-xs">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
@@ -263,7 +274,9 @@ export function TopBar({ className }: TopBarProps) {
             </DropdownMenuSub>
 
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile settings</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/profile">Profile settings</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={openKeyboardShortcuts}>Keyboard shortcuts</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 

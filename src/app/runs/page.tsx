@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Activity, RefreshCw, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -87,9 +88,10 @@ export default function RunsPage() {
       ) : (
         <div className="space-y-2">
           {runs.map(run => (
-            <div
+            <Link
               key={run.id}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors"
+              href={`/runs/${run.id}`}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors cursor-pointer"
             >
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
                 <Activity className="h-4 w-4 text-[color:var(--foco-teal)]" />
@@ -107,7 +109,7 @@ export default function RunsPage() {
                 <Clock className="h-3 w-3" />
                 {new Date(run.created_at).toLocaleString()}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

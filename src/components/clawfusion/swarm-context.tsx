@@ -1,7 +1,16 @@
 'use client'
 
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react'
-import { CritterSwarmOverlay } from './critter-swarm-overlay'
+import dynamic from 'next/dynamic'
+
+// Dynamic import breaks framer-motion out of the initial layout bundle.
+// Without this, the Server Component boundary in layout.tsx tries to
+// statically resolve framer-motion's ESM conditional exports, which
+// produces an undefined webpack module factory and crashes all pages.
+const CritterSwarmOverlay = dynamic(
+  () => import('./critter-swarm-overlay').then(m => ({ default: m.CritterSwarmOverlay })),
+  { ssr: false }
+)
 
 export interface SwarmRecord {
   id: string
@@ -18,12 +27,18 @@ export interface SwarmContextValue {
 
 const SwarmContext = createContext<SwarmContextValue | null>(null)
 
+const NO_OP_REF = { current: null } as React.MutableRefObject<HTMLDivElement | null>
+
+const NO_OP_CONTEXT: SwarmContextValue = {
+  dispatchSwarm: () => undefined,
+  dockTargetRef: NO_OP_REF,
+}
+
 export function useSwarm(): SwarmContextValue {
   const ctx = useContext(SwarmContext)
-  if (!ctx) {
-    throw new Error('useSwarm must be used within a SwarmProvider')
-  }
-  return ctx
+  // Return a no-op implementation if called outside SwarmProvider
+  // (e.g. during SSR or before the provider has mounted)
+  return ctx ?? NO_OP_CONTEXT
 }
 
 export function SwarmProvider({ children }: { children: React.ReactNode }) {

@@ -59,7 +59,6 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <SwarmProvider>
     <div
-      suppressHydrationWarning
       className={cn(
         'min-h-screen bg-background text-foreground',
         isMounted && isAppPage && density && densityClasses[density],

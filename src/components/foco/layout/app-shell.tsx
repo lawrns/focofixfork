@@ -42,8 +42,10 @@ export function AppShell({ children }: AppShellProps) {
     spacious: 'text-base',
   };
 
-  // Stable across SSR + client (pathname comes from server)
-  const isPublicPage = PUBLIC_PATHS.has(pathname);
+  // ⚠️ HYDRATION FIX: pathname from usePathname() is undefined on server (SSR).
+  // Default to assuming app page (render LeftRail, etc.) to match server+initial client render.
+  // The actual visibility is hidden after hydration via useEffect if needed.
+  const isPublicPage = pathname ? PUBLIC_PATHS.has(pathname) : false;
 
   // Gate focus mode on isMounted to avoid reading Zustand persist before hydration
   const focusModeActiveAfterMount = isMounted && focusModeActive;

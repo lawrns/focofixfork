@@ -2,7 +2,6 @@ import './globals.css';
 import { Providers } from './providers';
 import { AppShell } from '@/components/foco/layout/app-shell';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { SwarmProvider } from '@/components/clawfusion/swarm-context';
 import { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -75,9 +74,7 @@ export default function AppLayout({
       <body className={GeistSans.className} suppressHydrationWarning>
         <Providers>
           <TooltipProvider>
-            <SwarmProvider>
-              <AppShell>{children}</AppShell>
-            </SwarmProvider>
+            <AppShell>{children}</AppShell>
           </TooltipProvider>
         </Providers>
       </body>

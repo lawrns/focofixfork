@@ -1,109 +1,231 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Mic, GitBranch, CheckCircle, MessageSquare, Clock, Sparkles, Users, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  Mic,
+  GitBranch,
+  CheckCircle,
+  MessageSquare,
+  Clock,
+  Sparkles,
+  Users,
+  Zap,
+  Terminal,
+  ChevronRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 
-// CSS-only fade-in animation to avoid loading framer-motion
-const fadeInClass = "animate-in fade-in duration-500";
-const fadeInDelayClass = "animate-in fade-in slide-in-from-bottom-4 duration-700";
-
-const metrics = [
-  { value: '10x', label: 'Más rápido que hojas de cálculo' },
-  { value: '94%', label: 'Menos reuniones de seguimiento' },
-  { value: '2 min', label: 'Para crear un proyecto completo' }
+/* ─── Terminal mockup data ─────────────────────────────────────── */
+const terminalLines = [
+  { delay: 0,    text: '$ foco create "Rediseñar checkout y migrar a Stripe"', type: 'cmd' },
+  { delay: 600,  text: '  ◆ Analizando intención...', type: 'info' },
+  { delay: 1100, text: '  ✓ 4 tareas estructuradas', type: 'ok' },
+  { delay: 1500, text: '  ✓ Asignación automática al equipo', type: 'ok' },
+  { delay: 1900, text: '  ✓ Timeline: ~12h estimadas', type: 'ok' },
+  { delay: 2400, text: '  → branch/checkout-stripe-migration', type: 'branch' },
+  { delay: 2900, text: '  ✓ Propuesta lista para revisión', type: 'ok' },
 ];
 
+const features = [
+  {
+    slash: '01',
+    title: 'Propuestas con voz',
+    desc: 'Habla tus ideas. La IA las convierte en propuestas estructuradas con tareas, asignaciones y estimaciones automáticas.',
+    icon: Mic,
+  },
+  {
+    slash: '02',
+    title: 'Branching de proyectos',
+    desc: 'Como Git pero para gestión. Crea branches, revisa el impacto lado a lado, aprueba y merge cuando estés listo.',
+    icon: GitBranch,
+  },
+  {
+    slash: '03',
+    title: 'WhatsApp nativo',
+    desc: 'Opera desde donde estés. Dicta propuestas, consulta estado y crea tareas directo desde WhatsApp.',
+    icon: MessageSquare,
+  },
+  {
+    slash: '04',
+    title: 'Multi-workspace',
+    desc: 'Un solo lugar para todos tus proyectos, equipos y clientes. Roles, permisos y visibilidad por workspace.',
+    icon: Users,
+  },
+];
+
+const stats = [
+  { value: '10×', label: 'Más rápido que hojas de cálculo' },
+  { value: '94%', label: 'Menos reuniones de seguimiento' },
+  { value: '2 min', label: 'Para crear un proyecto completo' },
+];
+
+/* ─── Terminal component ───────────────────────────────────────── */
+function TerminalMockup() {
+  const [visibleLines, setVisibleLines] = useState<number[]>([]);
+
+  useEffect(() => {
+    terminalLines.forEach((line, idx) => {
+      const t = setTimeout(() => {
+        setVisibleLines(prev => [...prev, idx]);
+      }, line.delay);
+      return () => clearTimeout(t);
+    });
+  }, []);
+
+  return (
+    <div className="relative rounded-xl border border-border bg-card overflow-hidden shadow-2xl shadow-black/40">
+      {/* Title bar */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-secondary/40">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-500/70" />
+          <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+          <div className="w-3 h-3 rounded-full bg-green-500/70" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-xs text-muted-foreground font-mono-display tracking-wide">
+            foco · terminal
+          </span>
+        </div>
+        <Terminal className="w-3.5 h-3.5 text-muted-foreground" />
+      </div>
+
+      {/* Terminal body */}
+      <div className="p-5 font-mono-display text-[13px] leading-6 min-h-[200px] space-y-1">
+        {terminalLines.map((line, idx) => (
+          <div
+            key={idx}
+            className={`transition-all duration-300 ${
+              visibleLines.includes(idx)
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-1'
+            }`}
+          >
+            <span
+              className={
+                line.type === 'cmd'    ? 'text-foreground' :
+                line.type === 'ok'    ? 'text-[color:var(--foco-teal)]' :
+                line.type === 'branch' ? 'text-amber-400' :
+                'text-muted-foreground'
+              }
+            >
+              {line.text}
+            </span>
+          </div>
+        ))}
+        {/* Blinking cursor */}
+        <div className="terminal-cursor text-[color:var(--foco-teal)] opacity-80" />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main page ────────────────────────────────────────────────── */
 export default function LandingPage() {
   const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      router.push('/dashboard');
-    }
+    if (user) router.push('/dashboard');
   }, [user, router]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0A0A0A]">
-      {/* Navigation - Linear style with transparency */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0A0A0A]/70 backdrop-blur-xl border-b border-zinc-200/50 dark:border-white/[0.08]">
-        <div className="max-w-6xl mx-auto px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2.5">
-              <Image
-                src="/focologo.png"
-                alt="Foco"
-                width={28}
-                height={28}
-                className="w-7 h-7"
-              />
-              <span className="text-[15px] font-medium tracking-tight text-zinc-900 dark:text-white">
-                Foco
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" asChild size="sm" className="text-[13px] h-9 px-3 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5">
-                <Link href="/login">Iniciar sesión</Link>
-              </Button>
-              <Button asChild size="sm" className="text-[13px] h-9 px-4 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 font-medium">
-                <Link href="/register">Comenzar</Link>
-              </Button>
-            </div>
+    <div className="min-h-screen bg-background text-foreground">
+
+      {/* ── Navigation ─────────────────────────────────────────── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/focologo.png" alt="Foco" width={26} height={26} className="w-6.5 h-6.5 rounded-md" />
+            <span className="text-[15px] font-semibold tracking-tight">Foco</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              asChild
+              size="sm"
+              className="text-[13px] h-8 px-3 text-muted-foreground hover:text-foreground"
+            >
+              <Link href="/login">Iniciar sesión</Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              className="text-[13px] h-8 px-4 font-medium bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+            >
+              <Link href="/register">Comenzar <ChevronRight className="w-3.5 h-3.5 ml-0.5" /></Link>
+            </Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero - Linear style: bold, direct, minimal */}
-      <section className="relative pt-40 pb-24 px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className={`${fadeInClass} mb-7`}>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] bg-[#6366F1]/[0.08] dark:bg-[#8B8DFF]/10 border border-[#6366F1]/20 dark:border-[#8B8DFF]/20 rounded-full">
-              <Sparkles className="w-3.5 h-3.5" />
-              Propuestas con IA · Branching para proyectos
-            </span>
+      {/* ── Hero ───────────────────────────────────────────────── */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+
+            {/* Left — copy */}
+            <div>
+              <div className="animate-slide-up mb-5">
+                <span className="inline-flex items-center gap-2 text-xs font-mono-display text-[color:var(--foco-teal)] tracking-wider uppercase">
+                  <span className="w-4 h-px bg-[color:var(--foco-teal)]" />
+                  IA · Proyectos · Equipo
+                </span>
+              </div>
+
+              <h1 className="animate-slide-up text-5xl lg:text-[62px] font-bold tracking-[-0.03em] leading-[1.02] mb-6 text-foreground">
+                La capa de{' '}
+                <span className="teal-underline">inteligencia</span>
+                {' '}para tus proyectos
+              </h1>
+
+              <p className="animate-slide-up-delay text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg">
+                Habla. La IA estructura. Tu equipo ejecuta.
+                Foco convierte ideas en proyectos accionables —
+                con branching, revisión y merge como en Git.
+              </p>
+
+              <div className="animate-slide-up-delay-2 flex items-center gap-4">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-11 px-6 text-[15px] font-semibold bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity teal-glow"
+                >
+                  <Link href="/register">
+                    Comenzar gratis
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+                <span className="text-[13px] text-muted-foreground font-light">
+                  Sin tarjeta · 100% gratis
+                </span>
+              </div>
+            </div>
+
+            {/* Right — terminal */}
+            <div className="animate-fade-in">
+              <TerminalMockup />
+            </div>
           </div>
+        </div>
+      </section>
 
-          <h1 className={`${fadeInClass} text-[64px] lg:text-[92px] font-bold tracking-[-0.04em] text-zinc-900 dark:text-white mb-8 leading-[0.95]`}>
-            Proyectos que
-            <br />
-            <span className="bg-gradient-to-br from-[#6366F1] via-[#7C7DFF] to-[#8B8DFF] bg-clip-text text-transparent">avanzan solos</span>
-          </h1>
-
-          <p className={`${fadeInClass} text-xl lg:text-2xl text-zinc-600 dark:text-zinc-400 mb-12 max-w-2xl leading-relaxed font-light`}>
-            Habla tus ideas, la IA las convierte en propuestas estructuradas.
-            Revisa, aprueba y merge — como Git, pero para proyectos.
-          </p>
-
-          <div className={`${fadeInClass} flex items-center gap-4 mb-20`}>
-            <Button
-              asChild
-              size="lg"
-              className="h-12 px-7 text-[15px] font-medium bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-white/10 transition-all"
-            >
-              <Link href="/register">
-                Comenzar ahora
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <span className="text-[15px] text-zinc-500 dark:text-zinc-500 font-light">Gratis · Sin tarjeta</span>
-          </div>
-
-          {/* Metrics - Social proof */}
-          <div className={`${fadeInClass} grid grid-cols-3 gap-12 pt-12 border-t border-zinc-200/80 dark:border-white/[0.08]`}>
-            {metrics.map((metric, i) => (
-              <div key={i}>
-                <div className="text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white mb-2">
-                  {metric.value}
+      {/* ── Stats strip ────────────────────────────────────────── */}
+      <section className="border-y border-border py-12 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-3 gap-8">
+            {stats.map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-4xl lg:text-5xl font-bold font-mono-display text-[color:var(--foco-teal)] mb-2 tracking-tight">
+                  {stat.value}
                 </div>
-                <div className="text-[15px] text-zinc-500 dark:text-zinc-500 font-light">
-                  {metric.label}
+                <div className="text-[13px] text-muted-foreground">
+                  {stat.label}
                 </div>
               </div>
             ))}
@@ -111,215 +233,199 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* NEW: AI Proposals Feature Highlight */}
-      <section className="py-24 px-8 bg-gradient-to-b from-[#6366F1]/[0.03] to-transparent dark:from-[#8B8DFF]/[0.03] border-t border-zinc-200/50 dark:border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-6 px-4 py-1.5 text-[13px] border-[#6366F1]/30 dark:border-[#8B8DFF]/30 text-[#6366F1] dark:text-[#8B8DFF] bg-[#6366F1]/5 dark:bg-[#8B8DFF]/5">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Nuevo: Sistema de Propuestas con IA
-            </Badge>
-            <h2 className="text-[44px] lg:text-[56px] font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-tight">
-              Ideas → Tareas
+      {/* ── Features ───────────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-16">
+            <span className="text-xs font-mono-display text-muted-foreground tracking-widest uppercase">
+              Funcionalidades
+            </span>
+            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mt-3 text-foreground">
+              Hecho para equipos
               <br />
-              <span className="bg-gradient-to-r from-[#6366F1] to-[#8B8DFF] bg-clip-text text-transparent">en segundos</span>
+              que construyen rápido
             </h2>
-            <p className="text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto font-light leading-relaxed">
-              Habla, escribe o sube archivos. La IA convierte tus ideas en tareas estructuradas
-              con asignaciones inteligentes y estimaciones de tiempo.
-            </p>
           </div>
 
-          {/* Proposals Flow Illustration */}
-          <div className={`${fadeInDelayClass} grid md:grid-cols-3 gap-6 mb-16`}>
-            {/* Step 1: Input */}
-            <Card className="relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:border-[#6366F1]/30 dark:hover:border-[#8B8DFF]/30 transition-all group">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/15 mb-5 group-hover:scale-105 transition-transform">
-                  <Mic className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
-                </div>
-                <div className="text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] mb-2">Paso 1</div>
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Describe tu idea</h3>
-                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
-                  Habla, escribe o sube documentos. La IA entiende contexto y extrae tareas automáticamente.
-                </p>
-                <div className="mt-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700/50">
-                  <p className="text-[13px] text-zinc-500 dark:text-zinc-400 italic">
-                    &quot;Necesitamos rediseñar el checkout y migrar a Stripe antes del lanzamiento...&quot;
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Step 2: AI Processing */}
-            <Card className="relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:border-[#6366F1]/30 dark:hover:border-[#8B8DFF]/30 transition-all group">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/15 mb-5 group-hover:scale-105 transition-transform">
-                  <GitBranch className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
-                </div>
-                <div className="text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] mb-2">Paso 2</div>
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Propuesta estructurada</h3>
-                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
-                  La IA crea una propuesta tipo branch con tareas, asignaciones y timeline comparativo.
-                </p>
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/30">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-[13px] text-emerald-700 dark:text-emerald-400">+3 tareas nuevas</span>
+          <div className="grid md:grid-cols-2 gap-px border border-border rounded-xl overflow-hidden bg-border">
+            {features.map((feat, i) => (
+              <div
+                key={i}
+                className="bg-background p-8 group hover:bg-secondary/40 transition-colors"
+              >
+                <div className="flex items-start gap-5">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center group-hover:teal-glow transition-all">
+                    <feat.icon className="w-5 h-5 text-[color:var(--foco-teal)]" />
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30">
-                    <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span className="text-[13px] text-amber-700 dark:text-amber-400">~12h estimadas</span>
+                  <div>
+                    <div className="text-[11px] font-mono-display text-muted-foreground mb-1 tracking-widest">
+                      /{feat.slash}
+                    </div>
+                    <h3 className="text-[17px] font-semibold text-foreground mb-2 tracking-tight">
+                      {feat.title}
+                    </h3>
+                    <p className="text-[14px] text-muted-foreground leading-relaxed">
+                      {feat.desc}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Step 3: Approval */}
-            <Card className="relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:border-[#6366F1]/30 dark:hover:border-[#8B8DFF]/30 transition-all group">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/15 mb-5 group-hover:scale-105 transition-transform">
-                  <CheckCircle className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
-                </div>
-                <div className="text-xs font-medium text-[#6366F1] dark:text-[#8B8DFF] mb-2">Paso 3</div>
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Aprueba y ejecuta</h3>
-                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
-                  Revisa, ajusta y aprueba línea por línea. Un click para merge al proyecto real.
-                </p>
-                <div className="mt-4 flex gap-2">
-                  <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
-                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                    Aprobar todo
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-8 text-xs">
-                    <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                    Discutir
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Key Benefits */}
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-              <Clock className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
-              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Estimaciones automáticas</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-              <Users className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
-              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Asignación inteligente</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-              <GitBranch className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
-              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Timeline comparativo</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-              <Zap className="w-5 h-5 text-[#6366F1] dark:text-[#8B8DFF]" />
-              <span className="text-[14px] text-zinc-700 dark:text-zinc-300">Merge instantáneo</span>
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features - Linear linearity: simple list, no grid */}
-      <section className="py-24 px-8 bg-zinc-50/50 dark:bg-[#0D0D0D] border-t border-zinc-200/50 dark:border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-[44px] font-bold tracking-tight text-zinc-900 dark:text-white mb-16">
-            Hecho para equipos que construyen
-          </h2>
+      {/* ── Proposal flow ──────────────────────────────────────── */}
+      <section className="py-24 px-6 border-t border-border">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-14 text-center">
+            <span className="text-xs font-mono-display text-muted-foreground tracking-widest uppercase">
+              Sistema de propuestas
+            </span>
+            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mt-3 text-foreground">
+              Ideas → Tareas{' '}
+              <span className="text-[color:var(--foco-teal)]">en segundos</span>
+            </h2>
+          </div>
 
-          <div className="space-y-16">
-            <div className="flex gap-8 group">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
-                <Mic className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-3">
-                  Propuestas con voz
-                </h3>
-                <p className="text-[17px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light max-w-2xl">
-                  Habla tus ideas y la IA las convierte en propuestas estructuradas con tareas,
-                  estimaciones y asignaciones automáticas. Como tener un PM que nunca duerme.
-                </p>
-              </div>
-            </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                step: '01',
+                icon: Mic,
+                title: 'Describe tu idea',
+                desc: 'Habla, escribe o sube documentos. La IA entiende contexto y extrae tareas automáticamente.',
+                preview: '"Necesitamos rediseñar el checkout y migrar a Stripe antes del lanzamiento..."',
+              },
+              {
+                step: '02',
+                icon: GitBranch,
+                title: 'Propuesta estructurada',
+                desc: 'La IA crea una propuesta tipo branch con tareas, asignaciones y timeline comparativo.',
+                preview: null,
+                chips: ['+ 4 tareas nuevas', '~ 12h estimadas', '2 asignados'],
+              },
+              {
+                step: '03',
+                icon: CheckCircle,
+                title: 'Aprueba y ejecuta',
+                desc: 'Revisa, ajusta y aprueba línea por línea. Un click para merge al proyecto real.',
+                preview: null,
+                actions: true,
+              },
+            ].map((card, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-border bg-card p-6 hover:border-[color:var(--foco-teal)] transition-colors group"
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-10 h-10 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center group-hover:teal-glow transition-all">
+                    <card.icon className="w-5 h-5 text-[color:var(--foco-teal)]" />
+                  </div>
+                  <span className="text-[11px] font-mono-display text-muted-foreground tracking-widest">
+                    /{card.step}
+                  </span>
+                </div>
 
-            <div className="flex gap-8 group">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
-                <GitBranch className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-3">
-                  Branching para proyectos
-                </h3>
-                <p className="text-[17px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light max-w-2xl">
-                  Como Git pero para gestión de proyectos. Crea propuestas, revisa el impacto
-                  lado a lado, aprueba línea por línea y merge cuando estés listo.
-                </p>
-              </div>
-            </div>
+                <h3 className="text-[16px] font-semibold text-foreground mb-2">{card.title}</h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">{card.desc}</p>
 
-            <div className="flex gap-8 group">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#6366F1]/10 dark:bg-[#8B8DFF]/10 flex items-center justify-center group-hover:bg-[#6366F1]/20 dark:group-hover:bg-[#8B8DFF]/20 transition-colors">
-                <Zap className="w-6 h-6 text-[#6366F1] dark:text-[#8B8DFF]" />
+                {card.preview && (
+                  <div className="p-3 rounded-lg bg-secondary/60 border border-border">
+                    <p className="text-[12px] text-muted-foreground italic font-light">{card.preview}</p>
+                  </div>
+                )}
+
+                {card.chips && (
+                  <div className="flex flex-wrap gap-2">
+                    {card.chips.map((chip, j) => (
+                      <span
+                        key={j}
+                        className="px-2.5 py-1 text-[11px] font-mono-display rounded-md bg-secondary/60 text-muted-foreground border border-border"
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {card.actions && (
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-7 text-[12px] bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 px-3">
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                      Aprobar
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-[12px] px-3">
+                      <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                      Revisar
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div>
-                <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-3">
-                  Micro-animaciones premium
-                </h3>
-                <p className="text-[17px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light max-w-2xl">
-                  Cada interacción se siente satisfactoria. Spring physics, transiciones fluidas
-                  y feedback visual al nivel de Intercom y Miro.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA - Simple and direct */}
-      <section className="py-32 px-8 border-t border-zinc-200/50 dark:border-white/[0.06]">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className={`${fadeInClass} text-[56px] font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-tight`}>
-            Empieza hoy mismo
+      {/* ── Benefits strip ─────────────────────────────────────── */}
+      <section className="py-12 px-6 border-t border-border bg-secondary/20">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: Clock, label: 'Estimaciones automáticas' },
+              { icon: Users, label: 'Asignación inteligente' },
+              { icon: GitBranch, label: 'Timeline comparativo' },
+              { icon: Zap, label: 'Merge instantáneo' },
+            ].map((b, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:border-[color:var(--foco-teal)] transition-colors"
+              >
+                <b.icon className="w-4 h-4 text-[color:var(--foco-teal)] flex-shrink-0" />
+                <span className="text-[13px] text-foreground">{b.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ────────────────────────────────────────────────── */}
+      <section className="py-32 px-6 border-t border-border">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="mb-3">
+            <span className="text-xs font-mono-display text-[color:var(--foco-teal)] tracking-widest uppercase">
+              Empezar ahora
+            </span>
+          </div>
+          <h2 className="text-5xl lg:text-6xl font-bold tracking-[-0.03em] text-foreground mb-5 leading-tight">
+            Tu equipo merece
+            <br />
+            herramientas mejores
           </h2>
-          <p className={`${fadeInClass} text-xl text-zinc-600 dark:text-zinc-400 mb-12 font-light`}>
-            Prueba Foco gratis. Sin tarjeta de crédito, sin trucos.
+          <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
+            Crea tu cuenta. Invita a tu equipo. Habla tu primer proyecto.
           </p>
-          <div className={fadeInClass}>
-            <Button
-              asChild
-              size="lg"
-              className="h-12 px-7 text-[15px] font-medium bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-white/10 transition-all"
-            >
-              <Link href="/register">
-                Crear cuenta gratis
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          <Button
+            asChild
+            size="lg"
+            className="h-12 px-8 text-[15px] font-semibold bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity teal-glow"
+          >
+            <Link href="/register">
+              Crear cuenta gratis
+              <ArrowRight className="h-4 w-4 ml-1.5" />
+            </Link>
+          </Button>
         </div>
       </section>
 
-      {/* Footer - Minimal */}
-      <footer className="border-t border-zinc-200/50 dark:border-white/[0.06] py-12 px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <Image
-                src="/focologo.png"
-                alt="Foco"
-                width={22}
-                height={22}
-                className="w-5.5 h-5.5 opacity-80"
-              />
-              <span className="text-[15px] font-medium text-zinc-900 dark:text-white">Foco</span>
-            </div>
-            <div className="text-[14px] text-zinc-500 dark:text-zinc-500 font-light">
-              © 2026 Foco
-            </div>
+      {/* ── Footer ─────────────────────────────────────────────── */}
+      <footer className="border-t border-border py-10 px-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image src="/focologo.png" alt="Foco" width={20} height={20} className="w-5 h-5 rounded opacity-80" />
+            <span className="text-[14px] font-medium text-foreground">Foco</span>
           </div>
+          <span className="text-[13px] text-muted-foreground font-mono-display">© 2026 Fyves</span>
         </div>
       </footer>
     </div>

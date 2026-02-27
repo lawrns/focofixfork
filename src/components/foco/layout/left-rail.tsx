@@ -28,6 +28,7 @@ import {
   Mail,
   Archive,
   Shield,
+  Cpu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -56,6 +57,7 @@ const baseWorkspaceNavItems: NavItem[] = [
 ];
 
 const clawfusionNavItems: NavItem[] = [
+  { label: 'Critter',   href: '/openclaw',  icon: Cpu,          shortcut: 'G C' },
   { label: 'Runs',      href: '/runs',      icon: Activity,     shortcut: 'G R' },
   { label: 'Crons',     href: '/crons',     icon: Clock,        shortcut: 'G K' },
   { label: 'Emails',    href: '/emails',    icon: Mail,         shortcut: 'G E' },

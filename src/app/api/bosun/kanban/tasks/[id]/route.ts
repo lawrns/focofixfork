@@ -37,3 +37,24 @@ export async function GET(
 
   return NextResponse.json({ data })
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  if (!authorizeBosun(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = supabaseAdmin()
+  const { error } = await supabase
+    .from('work_items')
+    .delete()
+    .eq('id', params.id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return new NextResponse(null, { status: 204 })
+}

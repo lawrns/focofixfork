@@ -154,7 +154,7 @@ export async function middleware(req: NextRequest) {
     if (
       pathname.startsWith('/api/auth/') ||
       pathname === '/api/health' ||
-      pathname === '/api/openclaw/status' ||
+      (pathname === '/api/openclaw/status' && process.env.FOCO_DB === 'sqlite') ||
       pathname.startsWith('/api/invitations/') && pathname.includes('/accept') ||
       pathname.startsWith('/api/mermaid/share/') ||
       (pathname.startsWith('/api/mermaid/diagrams') && req.method === 'POST')

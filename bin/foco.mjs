@@ -91,12 +91,13 @@ async function cmdStart(argv) {
     FOCO_OPENCLAW_RELAY: cfg.relayUrl ?? 'http://127.0.0.1:18792',
     FOCO_OPENCLAW_TOKEN: cfg.openclawToken ?? '',
     PORT: port,
+    HOSTNAME: '127.0.0.1',
   }
 
   const nextBin = resolve(PKG_ROOT, 'node_modules', '.bin', 'next')
   const bin = existsSync(nextBin) ? nextBin : 'next'
 
-  const child = spawn(bin, ['start', '--port', port], {
+  const child = spawn(bin, ['start', '--port', port, '--hostname', '127.0.0.1'], {
     cwd: PKG_ROOT,
     env,
     stdio: 'inherit',

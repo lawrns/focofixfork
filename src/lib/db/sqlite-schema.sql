@@ -96,12 +96,16 @@ CREATE TABLE IF NOT EXISTS ledger_events (
   context_id     TEXT,
   correlation_id TEXT,
   causation_id   TEXT,
+  workspace_id   TEXT,   -- optional: which workspace this event belongs to
+  user_id        TEXT,   -- optional: which user triggered this event
   payload        TEXT DEFAULT '{}',   -- JSON blob
   timestamp      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_ledger_timestamp ON ledger_events(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_ledger_type ON ledger_events(type);
+CREATE INDEX IF NOT EXISTS idx_ledger_workspace ON ledger_events(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_user ON ledger_events(user_id);
 
 -- ─── Notifications ───────────────────────────────────────────────────────────
 

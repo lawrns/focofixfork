@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { type, source, context_id, correlation_id, causation_id, payload, run_id, artifacts } = body
+  const { type, source, context_id, correlation_id, causation_id, payload, run_id, artifacts, workspace_id, user_id } = body
 
   if (!type || !source) {
     return NextResponse.json({ error: 'type and source required' }, { status: 400 })
@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
       context_id: context_id ?? null,
       correlation_id: correlation_id ?? null,
       causation_id: causation_id ?? null,
+      workspace_id: workspace_id ?? null,
+      user_id: user_id ?? null,
       payload: payload ?? {},
     })
     .select()

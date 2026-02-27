@@ -151,8 +151,8 @@ async function seedSession(filePath, projectSlug) {
       }
 
       dbRun(
-        `INSERT INTO ledger_events (id, type, source, context_id, payload, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ledger_events (id, type, source, context_id, payload, timestamp, workspace_id, user_id)
+         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)`,
         [uuid(), eventType, 'claude-code', sessionId, JSON.stringify(payload), ts]
       )
       ledgerCount++
@@ -167,8 +167,8 @@ async function seedSession(filePath, projectSlug) {
         const eventType = isFileEdit ? 'claude.file_edit' : 'claude.tool_use'
 
         dbRun(
-          `INSERT INTO ledger_events (id, type, source, context_id, payload, timestamp)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO ledger_events (id, type, source, context_id, payload, timestamp, workspace_id, user_id)
+           VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)`,
           [
             uuid(),
             eventType,

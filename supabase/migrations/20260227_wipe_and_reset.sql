@@ -20,8 +20,10 @@ BEGIN
       WHERE user_id = v_user_id AND role = 'owner'
     );
 
-  -- Clear ledger (all test events)
-  DELETE FROM ledger_events;
+  -- Clear only ledger events owned by this user's workspaces (workspace-scoped)
+  DELETE FROM ledger_events WHERE workspace_id = ANY(v_ws) OR user_id = v_user_id;
+  -- Also delete unscoped events for a full dev reset (remove this line in production)
+  DELETE FROM ledger_events WHERE workspace_id IS NULL AND user_id IS NULL;
 
   -- Clear artifacts linked to any run
   IF v_ws IS NOT NULL THEN

@@ -24,6 +24,11 @@ export async function GET(req: NextRequest) {
   if (source) query = query.eq('source', source)
   if (before) query = query.lt('timestamp', before)
 
+  const workspace_id = searchParams.get('workspace_id')
+  const user_id = searchParams.get('user_id')
+  if (workspace_id) query = query.eq('workspace_id', workspace_id)
+  if (user_id) query = query.eq('user_id', user_id)
+
   const { data, error: dbError } = await query
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
 

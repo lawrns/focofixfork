@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState, useCallback, lazy, useRef } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { DashboardSkeleton, Skeleton } from '@/components/skeleton-screens'
 import { useToastHelpers, useToast } from '@/components/ui/toast'
 import { SkipToMainContent } from '@/components/ui/accessibility'
@@ -66,7 +66,6 @@ interface Organization {
 export default function DashboardPageClient() {
   // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
-  const searchParams = useSearchParams()
   const pathname = usePathname()
   const { user, loading } = useAuth()
   const { openTaskModal } = useCreateTaskModal()
@@ -195,24 +194,24 @@ export default function DashboardPageClient() {
   }, [user, loading, router])
 
   // Handle query parameters from command palette
+  // Note: using window.location.search to avoid useSearchParams() SSR mismatch
   useEffect(() => {
-    const briefParam = searchParams.get('brief')
-    const suggestionsParam = searchParams.get('suggestions')
+    const params = new URLSearchParams(window.location.search)
+    const briefParam = params.get('brief')
+    const suggestionsParam = params.get('suggestions')
 
     if (briefParam === 'generate') {
       setShowBriefGeneration(true)
       toast.success('Generating daily brief...')
-      // Clear the parameter from URL
       router.replace(pathname || '/dashboard')
     }
 
     if (suggestionsParam === 'true') {
       setShowAISuggestions(true)
       toast.success('Loading AI suggestions...')
-      // Clear the parameter from URL
       router.replace(pathname || '/dashboard')
     }
-  }, [searchParams, router, pathname, toast])
+  }, [router, pathname, toast])
 
   useEffect(() => {
     // Check if we should show the new project modal
@@ -220,7 +219,7 @@ export default function DashboardPageClient() {
     if (urlParams.get('new') === 'true') {
       setShowNewProjectModal(true)
       // Clean up the URL
-      router.replace('/dashboard', undefined)
+      router.replace('/dashboard')
     }
   }, [router])
 

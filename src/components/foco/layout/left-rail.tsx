@@ -17,8 +17,8 @@ import {
   Users,
   BarChart3,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeft,
   Plus,
   Star,
   GitBranch,
@@ -37,20 +37,19 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Home', href: '/dashboard', icon: Home, shortcut: 'G H' },
-  { label: 'Inbox', href: '/inbox', icon: Inbox, badge: 3, shortcut: 'G I' },
-  { label: 'My Work', href: '/my-work', icon: CheckSquare, shortcut: 'G M' },
+  { label: 'Home',    href: '/dashboard', icon: Home,        shortcut: 'G H' },
+  { label: 'Inbox',   href: '/inbox',     icon: Inbox,       badge: 3, shortcut: 'G I' },
+  { label: 'My Work', href: '/my-work',   icon: CheckSquare, shortcut: 'G M' },
 ];
 
 const baseWorkspaceNavItems: NavItem[] = [
-  { label: 'Projects', href: '/projects', icon: FolderKanban, shortcut: 'G P' },
-  { label: 'Proposals', href: '/proposals', icon: GitBranch, shortcut: 'G O' },
-  { label: 'Timeline', href: '/timeline', icon: Calendar, shortcut: 'G T' },
-  { label: 'People', href: '/people', icon: Users, shortcut: 'G E' },
-  { label: 'Reports', href: '/reports', icon: BarChart3, shortcut: 'G R' },
+  { label: 'Projects',  href: '/projects',  icon: FolderKanban, shortcut: 'G P' },
+  { label: 'Proposals', href: '/proposals', icon: GitBranch,    shortcut: 'G O' },
+  { label: 'Timeline',  href: '/timeline',  icon: Calendar,     shortcut: 'G T' },
+  { label: 'People',    href: '/people',    icon: Users,        shortcut: 'G E' },
+  { label: 'Reports',   href: '/reports',   icon: BarChart3,    shortcut: 'G R' },
 ];
 
-// Pinned projects will be fetched from the API - empty by default
 const pinnedProjects: { id: string; name: string; slug: string; color: string }[] = [];
 
 export function LeftRail() {
@@ -60,7 +59,7 @@ export function LeftRail() {
   const { user } = useAuth();
   const [workspaceNavItems, setWorkspaceNavItems] = useState<NavItem[]>(baseWorkspaceNavItems);
 
-  // Add Cursos link for Fyves members
+  /* Add Cursos for Fyves members */
   useEffect(() => {
     let isMounted = true;
 
@@ -69,76 +68,80 @@ export function LeftRail() {
         if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
         return;
       }
-
-      // Check if user is a Fyves member
-      const isFyvesMember = user.email.endsWith('@fyves.com');
-      if (!isFyvesMember) {
+      if (!user.email.endsWith('@fyves.com')) {
         if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
         return;
       }
-
       try {
-        // Fetch workspaces to find Fyves workspace
-        const response = await fetch('/api/workspaces');
-        if (!response.ok) {
+        const res = await fetch('/api/workspaces');
+        if (!res.ok) {
           if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
           return;
         }
-
-        const data = await response.json();
+        const data = await res.json();
         const fyvesWorkspace = data.data?.workspaces?.find(
           (ws: any) => ws.slug === 'fyves-team'
         );
-
         if (isMounted) {
           if (fyvesWorkspace) {
-            const cursosItem: NavItem = {
-              label: 'Cursos',
-              href: `/organizations/${fyvesWorkspace.id}/cursos`,
-              icon: BookOpen,
-              shortcut: 'G C',
-            };
-
-            // Add Cursos after Reports
-            setWorkspaceNavItems([...baseWorkspaceNavItems, cursosItem]);
+            setWorkspaceNavItems([
+              ...baseWorkspaceNavItems,
+              {
+                label: 'Cursos',
+                href: `/organizations/${fyvesWorkspace.id}/cursos`,
+                icon: BookOpen,
+                shortcut: 'G C',
+              },
+            ]);
           } else {
             setWorkspaceNavItems(baseWorkspaceNavItems);
           }
         }
-      } catch (error) {
-        console.error('Failed to fetch Fyves workspace:', error);
+      } catch {
         if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
       }
     };
 
     addCursosLink();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [user?.email]);
 
+  /* ── NavLink ──────────────────────────────────────────────── */
   const NavLink = ({ item }: { item: NavItem }) => {
-    const isActive = pathname === item.href || 
+    const isActive =
+      pathname === item.href ||
       (item.href !== '/dashboard' && pathname.startsWith(item.href));
-    
-    const content = (
+
+    const inner = (
       <Link
         href={item.href}
         className={cn(
-          'nav-link flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-          'hover:bg-zinc-100 dark:hover:bg-zinc-800',
-          isActive 
-            ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50' 
-            : 'text-zinc-600 dark:text-zinc-400'
+          'relative flex items-center gap-3 rounded-md text-[13px] font-medium transition-all duration-150',
+          sidebarCollapsed ? 'px-3 py-2.5 justify-center' : 'px-3 py-2',
+          isActive
+            ? [
+                'text-[color:var(--foco-teal)]',
+                'bg-[color:var(--foco-teal-dim)]',
+                'before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2',
+                'before:h-4 before:w-0.5 before:rounded-full',
+                'before:bg-[color:var(--foco-teal)]',
+              ].join(' ')
+            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60',
         )}
       >
-        <item.icon className="h-4 w-4 flex-shrink-0" />
+        <item.icon className={cn(
+          'flex-shrink-0 transition-colors',
+          sidebarCollapsed ? 'h-4.5 w-4.5' : 'h-4 w-4',
+          isActive ? 'text-[color:var(--foco-teal)]' : '',
+        )} />
         {!sidebarCollapsed && (
           <>
-            <span className="flex-1">{item.label}</span>
+            <span className="flex-1 truncate">{item.label}</span>
             {item.badge && item.badge > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-[20px] px-1.5 text-xs">
+              <Badge
+                variant="secondary"
+                className="h-4.5 min-w-[18px] px-1 text-[10px] font-mono-display bg-secondary text-muted-foreground"
+              >
                 {item.badge}
               </Badge>
             )}
@@ -150,16 +153,14 @@ export function LeftRail() {
     if (sidebarCollapsed) {
       return (
         <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="flex items-center gap-2">
+          <TooltipTrigger asChild>{inner}</TooltipTrigger>
+          <TooltipContent side="right" className="flex items-center gap-2 text-[12px]">
             {item.label}
             {item.badge && item.badge > 0 && (
-              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                {item.badge}
-              </Badge>
+              <Badge variant="secondary" className="h-4 px-1 text-[10px]">{item.badge}</Badge>
             )}
             {item.shortcut && (
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 rounded">
+              <kbd className="px-1.5 py-0.5 text-[9px] font-mono-display bg-secondary rounded">
                 {item.shortcut}
               </kbd>
             )}
@@ -168,123 +169,136 @@ export function LeftRail() {
       );
     }
 
-    return content;
+    return inner;
   };
 
+  /* ── Render ───────────────────────────────────────────────── */
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-10 h-screen bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800',
-        'flex flex-col transition-all duration-200',
+        'fixed left-0 top-0 z-10 h-screen flex flex-col transition-all duration-200',
         'hidden md:flex',
-        sidebarCollapsed ? 'w-16' : 'w-64'
+        'border-r border-[var(--foco-rail-border)]',
+        'bg-[var(--foco-rail-bg)]',
+        sidebarCollapsed ? 'w-[52px]' : 'w-60',
       )}
     >
       {/* Logo */}
-      <div className={cn(
-        'h-14 flex items-center border-b border-zinc-200 dark:border-zinc-800',
-        sidebarCollapsed ? 'justify-center px-2' : 'px-4'
-      )}>
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Image 
-            src="/focologo.png" 
-            alt="Foco" 
-            width={32}
-            height={32}
-            className="h-8 w-8 rounded-lg"
+      <div
+        className={cn(
+          'h-13 flex items-center border-b border-[var(--foco-rail-border)]',
+          sidebarCollapsed ? 'justify-center px-0' : 'px-4',
+        )}
+      >
+        <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
+          <Image
+            src="/focologo.png"
+            alt="Foco"
+            width={28}
+            height={28}
+            className="h-7 w-7 rounded-lg flex-shrink-0"
           />
           {!sidebarCollapsed && (
-            <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Foco</span>
+            <span className="text-[15px] font-semibold tracking-tight text-foreground truncate">
+              Foco
+            </span>
           )}
         </Link>
       </div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-        {/* Create Button */}
-        <Button
-          variant="default"
-          className={cn(
-            'w-full mb-4',
-            sidebarCollapsed ? 'px-2' : ''
-          )}
-          size={sidebarCollapsed ? 'icon' : 'md'}
-          onClick={() => openTaskModal()}
-        >
-          <Plus className="h-4 w-4" />
-          {!sidebarCollapsed && <span className="ml-2">Create</span>}
-        </Button>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-hide">
 
-        {/* Main Nav */}
-        <div className="space-y-1">
-          {mainNavItems.map((item) => (
-            <NavLink key={item.href} item={item} />
-          ))}
-        </div>
+        {/* Create button */}
+        {sidebarCollapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-full h-9 mb-3 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
+                onClick={() => openTaskModal()}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Create task</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            className="w-full justify-start mb-3 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
+            onClick={() => openTaskModal()}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create
+          </Button>
+        )}
+
+        {/* Main nav */}
+        {mainNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Divider */}
-        <div className="my-4 h-px bg-zinc-200 dark:bg-zinc-800" />
+        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* Workspace Nav */}
-        <div className="space-y-1">
-          {workspaceNavItems.map((item) => (
-            <NavLink key={item.href} item={item} />
-          ))}
-        </div>
+        {/* Workspace label */}
+        {!sidebarCollapsed && (
+          <div className="px-3 mb-1">
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
+              Workspace
+            </span>
+          </div>
+        )}
 
-        {/* Pinned Projects */}
+        {/* Workspace nav */}
+        {workspaceNavItems.map(item => <NavLink key={item.href} item={item} />)}
+
+        {/* Pinned projects */}
         {!sidebarCollapsed && pinnedProjects.length > 0 && (
           <>
-            <div className="my-4 h-px bg-zinc-200 dark:bg-zinc-800" />
-            <div className="px-3 py-2">
-              <div className="flex items-center justify-between text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                <span>Pinned</span>
-                <Star className="h-3 w-3" />
-              </div>
+            <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+            <div className="px-3 mb-1 flex items-center justify-between">
+              <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
+                Pinned
+              </span>
+              <Star className="h-3 w-3 text-muted-foreground" />
             </div>
-            <div className="space-y-1">
-              {pinnedProjects.map((project) => (
-                <Link
-                  key={project.id}
-                  href={`/projects/${project.slug}`}
-                  title={project.name}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm',
-                    'hover:bg-zinc-100 dark:hover:bg-zinc-800',
-                    'text-zinc-600 dark:text-zinc-400'
-                  )}
-                >
-                  <div
-                    className="h-2 w-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: project.color }}
-                  />
-                  <span className="truncate">{project.name}</span>
-                </Link>
-              ))}
-            </div>
+            {pinnedProjects.map(project => (
+              <Link
+                key={project.id}
+                href={`/projects/${project.slug}`}
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <div
+                  className="h-2 w-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: project.color }}
+                />
+                <span className="truncate">{project.name}</span>
+              </Link>
+            ))}
           </>
         )}
       </nav>
 
-      {/* Settings & Collapse */}
-      <div className="border-t border-zinc-200 dark:border-zinc-800 p-2 space-y-1">
+      {/* Bottom: Settings + Collapse */}
+      <div className="border-t border-[var(--foco-rail-border)] p-2 space-y-0.5">
         <NavLink item={{ label: 'Settings', href: '/settings', icon: Settings }} />
-        
+
         <Button
           variant="ghost"
           size="sm"
           className={cn(
-            'w-full justify-start text-zinc-500 dark:text-zinc-400',
-            sidebarCollapsed && 'justify-center'
+            'w-full text-[12px] text-muted-foreground hover:text-foreground',
+            sidebarCollapsed ? 'justify-center px-0' : 'justify-start px-3',
           )}
           onClick={toggleSidebar}
         >
           {sidebarCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <PanelLeft className="h-4 w-4" />
           ) : (
             <>
-              <ChevronLeft className="h-4 w-4" />
-              <span className="ml-2">Collapse</span>
+              <PanelLeftClose className="h-4 w-4 mr-2" />
+              Collapse
             </>
           )}
         </Button>

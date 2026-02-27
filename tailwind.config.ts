@@ -94,11 +94,16 @@ const config: Config = {
         },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        // Cybernetic accent
+        foco: {
+          teal: "var(--foco-teal)",
+          dim: "var(--foco-teal-dim)",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "Inter", "sans-serif"],
-        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
-        display: ["Inter", "sans-serif"]
+        sans: ["DM Sans", "var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "var(--font-mono)", "Fira Code", "monospace"],
+        display: ["DM Sans", "system-ui", "sans-serif"],
       },
       fontSize: {
         xs: "var(--text-xs)",

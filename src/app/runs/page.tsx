@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Activity, RefreshCw, Clock } from 'lucide-react'
+import { Activity, RefreshCw, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -10,6 +10,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
+import { CritterLaunchPadButton } from '@/components/clawfusion/critter-launch-pad-button'
 
 // Status badge color map
 const statusColors: Record<string, string> = {
@@ -105,9 +106,24 @@ export default function RunsPage() {
                 </div>
                 {run.summary && <p className="text-[12px] text-muted-foreground truncate mt-0.5">{run.summary}</p>}
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-shrink-0">
-                <Clock className="h-3 w-3" />
-                {new Date(run.created_at).toLocaleString()}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {run.status === 'running' && (
+                  <CritterLaunchPadButton
+                    label={`Run ${run.id.slice(0, 6)}`}
+                    runId={run.id}
+                    runner={run.runner}
+                    size="sm"
+                    variant="ghost"
+                    onClick={e => e.preventDefault()}
+                    title="Dispatch critter swarm"
+                  >
+                    <Zap className="h-3 w-3" />
+                  </CritterLaunchPadButton>
+                )}
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {new Date(run.created_at).toLocaleString()}
+                </div>
               </div>
             </Link>
           ))}

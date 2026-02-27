@@ -5,6 +5,7 @@ import { Activity, Wifi, WifiOff, PauseCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { SwarmDockTarget } from './swarm-dock-target'
 
 interface LedgerEvent {
   id: string
@@ -117,20 +118,22 @@ export function BossBar({ className }: BossBarProps) {
       <div className="h-3 w-px bg-border flex-shrink-0" />
 
       {/* OpenClaw gateway health + tab count */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <span className={cn(
-          'h-1.5 w-1.5 rounded-full flex-shrink-0',
-          openclawStatus?.relay.reachable
-            ? 'bg-[color:var(--foco-teal)]'
-            : 'bg-muted-foreground/40'
-        )} />
-        <span className="text-muted-foreground">critter</span>
-        {openclawStatus && openclawStatus.relay.reachable && (
-          <span className="text-[color:var(--foco-teal)]">
-            {openclawStatus.tabs.filter(t => t.attached).length}t
-          </span>
-        )}
-      </div>
+      <SwarmDockTarget>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className={cn(
+            'h-1.5 w-1.5 rounded-full flex-shrink-0',
+            openclawStatus?.relay.reachable
+              ? 'bg-[color:var(--foco-teal)]'
+              : 'bg-muted-foreground/40'
+          )} />
+          <span className="text-muted-foreground">critter</span>
+          {openclawStatus && openclawStatus.relay.reachable && (
+            <span className="text-[color:var(--foco-teal)]">
+              {openclawStatus.tabs.filter(t => t.attached).length}t
+            </span>
+          )}
+        </div>
+      </SwarmDockTarget>
 
       <div className="h-3 w-px bg-border flex-shrink-0" />
 

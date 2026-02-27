@@ -13,6 +13,11 @@ interface LedgerEvent {
   timestamp: string
 }
 
+interface OpenClawStatus {
+  relay: { reachable: boolean }
+  tabs: Array<{ id: string; attached: boolean }>
+}
+
 interface BossBarProps {
   className?: string
 }
@@ -22,6 +27,7 @@ export function BossBar({ className }: BossBarProps) {
   const [paused, setPaused] = useState(false)
   const [relayConnected, setRelayConnected] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+  const [openclawStatus, setOpenclawStatus] = useState<OpenClawStatus | null>(null)
 
   const pollEvents = useCallback(async () => {
     try {
@@ -39,11 +45,28 @@ export function BossBar({ className }: BossBarProps) {
     }
   }, [])
 
+  const pollOpenClaw = useCallback(async () => {
+    try {
+      const res = await fetch('/api/openclaw/status')
+      if (res.ok) {
+        const json = await res.json()
+        setOpenclawStatus(json)
+      }
+    } catch {
+      // ignore — OpenClaw is optional
+    }
+  }, [])
+
   useEffect(() => {
     pollEvents()
-    const interval = setInterval(pollEvents, 15_000)
-    return () => clearInterval(interval)
-  }, [pollEvents])
+    pollOpenClaw()
+    const ledgerInterval = setInterval(pollEvents, 15_000)
+    const openclawInterval = setInterval(pollOpenClaw, 5_000)
+    return () => {
+      clearInterval(ledgerInterval)
+      clearInterval(openclawInterval)
+    }
+  }, [pollEvents, pollOpenClaw])
 
   async function pauseFleet() {
     try {
@@ -89,6 +112,24 @@ export function BossBar({ className }: BossBarProps) {
         <span className="text-muted-foreground">
           {relayConnected ? 'relay' : 'offline'}
         </span>
+      </div>
+
+      <div className="h-3 w-px bg-border flex-shrink-0" />
+
+      {/* OpenClaw gateway health + tab count */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <span className={cn(
+          'h-1.5 w-1.5 rounded-full flex-shrink-0',
+          openclawStatus?.relay.reachable
+            ? 'bg-[color:var(--foco-teal)]'
+            : 'bg-muted-foreground/40'
+        )} />
+        <span className="text-muted-foreground">critter</span>
+        {openclawStatus && openclawStatus.relay.reachable && (
+          <span className="text-[color:var(--foco-teal)]">
+            {openclawStatus.tabs.filter(t => t.attached).length}t
+          </span>
+        )}
       </div>
 
       <div className="h-3 w-px bg-border flex-shrink-0" />

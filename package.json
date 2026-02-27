@@ -1,7 +1,16 @@
 {
-  "name": "foco-frontend",
-  "version": "1.0.1",
-  "private": true,
+  "name": "foco.mx",
+  "version": "1.0.0",
+  "description": "Local-first cockpit for OpenClaw + Bosun — runs on your machine, zero SaaS required.",
+  "bin": {
+    "foco": "./bin/foco.mjs"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    ".next/",
+    "public/"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

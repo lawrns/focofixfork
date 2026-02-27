@@ -89,6 +89,7 @@ export async function middleware(req: NextRequest) {
     '/proposals',
     '/search',
     '/favorites',
+    '/openclaw',
   ]
 
   // Public routes (accessible without authentication)
@@ -153,6 +154,7 @@ export async function middleware(req: NextRequest) {
     if (
       pathname.startsWith('/api/auth/') ||
       pathname === '/api/health' ||
+      pathname === '/api/openclaw/status' ||
       pathname.startsWith('/api/invitations/') && pathname.includes('/accept') ||
       pathname.startsWith('/api/mermaid/share/') ||
       (pathname.startsWith('/api/mermaid/diagrams') && req.method === 'POST')

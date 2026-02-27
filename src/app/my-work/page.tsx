@@ -942,15 +942,17 @@ export default function MyWorkPage() {
               filters={filters}
               onFiltersChange={setFilters}
             />
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handlePlanMyDay}
-              disabled={isPlanning}
-            >
-              <Zap className="h-4 w-4" />
-              {isPlanning ? 'Planning...' : 'Plan my day'}
-            </Button>
+            {totalToday > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePlanMyDay}
+                disabled={isPlanning}
+              >
+                <Zap className="h-4 w-4" />
+                {isPlanning ? 'Planning...' : 'Plan my day'}
+              </Button>
+            )}
           </div>
         }
       />

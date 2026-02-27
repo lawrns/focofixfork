@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
 
@@ -22,12 +22,19 @@ const maxWidthClasses = {
   full: 'max-w-full',
 };
 
-export function PageShell({ 
-  children, 
+export function PageShell({
+  children,
   className,
   maxWidth = '7xl',
 }: PageShellProps) {
   const { density } = useUIPreferencesStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const effectiveDensity = isMounted ? density : 'comfortable';
 
   const densityPadding = {
     compact: 'space-y-4',
@@ -36,11 +43,11 @@ export function PageShell({
   };
 
   return (
-    <div 
+    <div
       className={cn(
         'mx-auto w-full',
         maxWidthClasses[maxWidth],
-        densityPadding[density],
+        densityPadding[effectiveDensity],
         className
       )}
     >

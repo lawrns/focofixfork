@@ -22,46 +22,46 @@ import { Button } from '@/components/ui/button';
 
 /* ─── Terminal mockup data ─────────────────────────────────────── */
 const terminalLines = [
-  { delay: 0,    text: '$ foco create "Rediseñar checkout y migrar a Stripe"', type: 'cmd' },
-  { delay: 600,  text: '  ◆ Analizando intención...', type: 'info' },
-  { delay: 1100, text: '  ✓ 4 tareas estructuradas', type: 'ok' },
-  { delay: 1500, text: '  ✓ Asignación automática al equipo', type: 'ok' },
-  { delay: 1900, text: '  ✓ Timeline: ~12h estimadas', type: 'ok' },
+  { delay: 0,    text: '$ foco create "Redesign checkout and migrate to Stripe"', type: 'cmd' },
+  { delay: 600,  text: '  ◆ Analyzing intent...', type: 'info' },
+  { delay: 1100, text: '  ✓ 4 tasks structured', type: 'ok' },
+  { delay: 1500, text: '  ✓ Auto-assigned to team', type: 'ok' },
+  { delay: 1900, text: '  ✓ Timeline: ~12h estimated', type: 'ok' },
   { delay: 2400, text: '  → branch/checkout-stripe-migration', type: 'branch' },
-  { delay: 2900, text: '  ✓ Propuesta lista para revisión', type: 'ok' },
+  { delay: 2900, text: '  ✓ Proposal ready for review', type: 'ok' },
 ];
 
 const features = [
   {
     slash: '01',
-    title: 'Propuestas con voz',
-    desc: 'Habla tus ideas. La IA las convierte en propuestas estructuradas con tareas, asignaciones y estimaciones automáticas.',
+    title: 'Voice proposals',
+    desc: 'Speak your ideas. AI converts them into structured proposals with tasks, assignments and automatic estimates.',
     icon: Mic,
   },
   {
     slash: '02',
-    title: 'Branching de proyectos',
-    desc: 'Como Git pero para gestión. Crea branches, revisa el impacto lado a lado, aprueba y merge cuando estés listo.',
+    title: 'Project branching',
+    desc: 'Like Git but for project management. Create branches, review impact side by side, approve and merge when ready.',
     icon: GitBranch,
   },
   {
     slash: '03',
-    title: 'WhatsApp nativo',
-    desc: 'Opera desde donde estés. Dicta propuestas, consulta estado y crea tareas directo desde WhatsApp.',
+    title: 'Native WhatsApp',
+    desc: 'Operate from anywhere. Dictate proposals, check status and create tasks directly from WhatsApp.',
     icon: MessageSquare,
   },
   {
     slash: '04',
     title: 'Multi-workspace',
-    desc: 'Un solo lugar para todos tus proyectos, equipos y clientes. Roles, permisos y visibilidad por workspace.',
+    desc: 'One place for all your projects, teams and clients. Roles, permissions and visibility per workspace.',
     icon: Users,
   },
 ];
 
 const stats = [
-  { value: '10×', label: 'Más rápido que hojas de cálculo' },
-  { value: '94%', label: 'Menos reuniones de seguimiento' },
-  { value: '2 min', label: 'Para crear un proyecto completo' },
+  { value: '10×', label: 'Faster than spreadsheets' },
+  { value: '94%', label: 'Fewer status meetings' },
+  { value: '2 min', label: 'To create a complete project' },
 ];
 
 /* ─── Terminal component ───────────────────────────────────────── */
@@ -151,14 +151,14 @@ export default function LandingPage() {
               size="sm"
               className="text-[13px] h-8 px-3 text-muted-foreground hover:text-foreground"
             >
-              <Link href="/login">Iniciar sesión</Link>
+              <Link href="/login">Sign in</Link>
             </Button>
             <Button
               asChild
               size="sm"
               className="text-[13px] h-8 px-4 font-medium bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
             >
-              <Link href="/register">Comenzar <ChevronRight className="w-3.5 h-3.5 ml-0.5" /></Link>
+              <Link href="/register">Get started <ChevronRight className="w-3.5 h-3.5 ml-0.5" /></Link>
             </Button>
           </div>
         </div>
@@ -174,20 +174,20 @@ export default function LandingPage() {
               <div className="animate-slide-up mb-5">
                 <span className="inline-flex items-center gap-2 text-xs font-mono-display text-[color:var(--foco-teal)] tracking-wider uppercase">
                   <span className="w-4 h-px bg-[color:var(--foco-teal)]" />
-                  IA · Proyectos · Equipo
+                  AI · Projects · Team
                 </span>
               </div>
 
               <h1 className="animate-slide-up text-5xl lg:text-[62px] font-bold tracking-[-0.03em] leading-[1.02] mb-6 text-foreground">
-                La capa de{' '}
-                <span className="teal-underline">inteligencia</span>
-                {' '}para tus proyectos
+                The{' '}
+                <span className="teal-underline">intelligence</span>
+                {' '}layer for your projects
               </h1>
 
               <p className="animate-slide-up-delay text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg">
-                Habla. La IA estructura. Tu equipo ejecuta.
-                Foco convierte ideas en proyectos accionables —
-                con branching, revisión y merge como en Git.
+                Speak. AI structures. Your team executes.
+                Foco turns ideas into actionable projects —
+                with branching, review and merge like Git.
               </p>
 
               <div className="animate-slide-up-delay-2 flex items-center gap-4">
@@ -197,12 +197,12 @@ export default function LandingPage() {
                   className="h-11 px-6 text-[15px] font-semibold bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity teal-glow"
                 >
                   <Link href="/register">
-                    Comenzar gratis
+                    Get started free
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </Link>
                 </Button>
                 <span className="text-[13px] text-muted-foreground font-light">
-                  Sin tarjeta · 100% gratis
+                  No card · 100% free
                 </span>
               </div>
             </div>
@@ -238,12 +238,12 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="mb-16">
             <span className="text-xs font-mono-display text-muted-foreground tracking-widest uppercase">
-              Funcionalidades
+              Features
             </span>
             <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mt-3 text-foreground">
-              Hecho para equipos
+              Built for teams
               <br />
-              que construyen rápido
+              that move fast
             </h2>
           </div>
 
@@ -280,11 +280,11 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="mb-14 text-center">
             <span className="text-xs font-mono-display text-muted-foreground tracking-widest uppercase">
-              Sistema de propuestas
+              Proposal system
             </span>
             <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mt-3 text-foreground">
-              Ideas → Tareas{' '}
-              <span className="text-[color:var(--foco-teal)]">en segundos</span>
+              Ideas → Tasks{' '}
+              <span className="text-[color:var(--foco-teal)]">in seconds</span>
             </h2>
           </div>
 
@@ -293,23 +293,23 @@ export default function LandingPage() {
               {
                 step: '01',
                 icon: Mic,
-                title: 'Describe tu idea',
-                desc: 'Habla, escribe o sube documentos. La IA entiende contexto y extrae tareas automáticamente.',
-                preview: '"Necesitamos rediseñar el checkout y migrar a Stripe antes del lanzamiento..."',
+                title: 'Describe your idea',
+                desc: 'Speak, write or upload documents. AI understands context and extracts tasks automatically.',
+                preview: '"We need to redesign the checkout and migrate to Stripe before launch..."',
               },
               {
                 step: '02',
                 icon: GitBranch,
-                title: 'Propuesta estructurada',
-                desc: 'La IA crea una propuesta tipo branch con tareas, asignaciones y timeline comparativo.',
+                title: 'Structured proposal',
+                desc: 'AI creates a branch-style proposal with tasks, assignments and a comparative timeline.',
                 preview: null,
-                chips: ['+ 4 tareas nuevas', '~ 12h estimadas', '2 asignados'],
+                chips: ['+ 4 new tasks', '~ 12h estimated', '2 assigned'],
               },
               {
                 step: '03',
                 icon: CheckCircle,
-                title: 'Aprueba y ejecuta',
-                desc: 'Revisa, ajusta y aprueba línea por línea. Un click para merge al proyecto real.',
+                title: 'Approve and execute',
+                desc: 'Review, adjust and approve line by line. One click to merge into the live project.',
                 preview: null,
                 actions: true,
               },
@@ -353,11 +353,11 @@ export default function LandingPage() {
                   <div className="flex gap-2">
                     <Button size="sm" className="h-7 text-[12px] bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 px-3">
                       <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                      Aprobar
+                      Approve
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-[12px] px-3">
                       <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                      Revisar
+                      Review
                     </Button>
                   </div>
                 )}
@@ -372,10 +372,10 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: Clock, label: 'Estimaciones automáticas' },
-              { icon: Users, label: 'Asignación inteligente' },
-              { icon: GitBranch, label: 'Timeline comparativo' },
-              { icon: Zap, label: 'Merge instantáneo' },
+              { icon: Clock, label: 'Automatic estimates' },
+              { icon: Users, label: 'Smart assignment' },
+              { icon: GitBranch, label: 'Comparative timeline' },
+              { icon: Zap, label: 'Instant merge' },
             ].map((b, i) => (
               <div
                 key={i}
@@ -394,16 +394,16 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="mb-3">
             <span className="text-xs font-mono-display text-[color:var(--foco-teal)] tracking-widest uppercase">
-              Empezar ahora
+              Start now
             </span>
           </div>
           <h2 className="text-5xl lg:text-6xl font-bold tracking-[-0.03em] text-foreground mb-5 leading-tight">
-            Tu equipo merece
+            Your team deserves
             <br />
-            herramientas mejores
+            better tools
           </h2>
           <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
-            Crea tu cuenta. Invita a tu equipo. Habla tu primer proyecto.
+            Create your account. Invite your team. Speak your first project.
           </p>
           <Button
             asChild
@@ -411,7 +411,7 @@ export default function LandingPage() {
             className="h-12 px-8 text-[15px] font-semibold bg-[color:var(--foco-teal)] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity teal-glow"
           >
             <Link href="/register">
-              Crear cuenta gratis
+              Create free account
               <ArrowRight className="h-4 w-4 ml-1.5" />
             </Link>
           </Button>

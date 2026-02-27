@@ -93,7 +93,7 @@ function MemberCard({ member, onViewProfile, onViewTasks, onReassignTasks }: {
           <div className="relative">
             <Avatar className="h-10 w-10">
               <AvatarFallback>
-                {member.name.split(' ').map(n => n[0]).join('')}
+                {member.name.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]?.toUpperCase() ?? '').join('')}
               </AvatarFallback>
             </Avatar>
             <div className={cn(
@@ -148,7 +148,7 @@ function MemberCard({ member, onViewProfile, onViewTasks, onReassignTasks }: {
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
         <div>
           <div className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             {member.tasks.assigned}
@@ -186,9 +186,11 @@ function MemberCard({ member, onViewProfile, onViewTasks, onReassignTasks }: {
           <Clock className="h-3 w-3" />
           {member.focusHours}h focus today
         </div>
-        <div className="text-xs text-zinc-400">
-          {member.timezone}
-        </div>
+        {member.timezone && member.timezone !== 'UTC' && (
+          <div className="text-xs text-zinc-400">
+            {member.timezone}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -202,7 +204,7 @@ function CapacityOverview({ members }: { members: TeamMember[] }) {
   const available = members.filter(m => m.capacity.current < 70).length;
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-2 text-zinc-500 mb-2">

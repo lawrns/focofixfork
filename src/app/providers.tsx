@@ -74,33 +74,6 @@ export function Providers({ children }: ProvidersProps) {
     },
   }));
 
-  // Initialize PWA - delay significantly to avoid hydration issues
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      // Wait for hydration to complete AND the page to be fully interactive
-      // This prevents service worker messages from interfering with React hydration
-      const timer = setTimeout(() => {
-        // Double-check that document is ready
-        if (document.readyState === 'complete') {
-          import('@/lib/services/pwa').then(({ PWAService }) => {
-            PWAService.initialize();
-          });
-        } else {
-          // If still loading, wait for load event
-          window.addEventListener('load', () => {
-            setTimeout(() => {
-              import('@/lib/services/pwa').then(({ PWAService }) => {
-                PWAService.initialize();
-              });
-            }, 500);
-          }, { once: true });
-        }
-      }, 3000); // Increased from 1s to 3s
-
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">

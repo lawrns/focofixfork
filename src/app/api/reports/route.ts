@@ -53,12 +53,12 @@ export async function GET(req: NextRequest) {
       startDate.setMonth(now.getMonth() - 3)
     }
 
-    // Fetch projects for status
+    // Fetch projects for status (include null-status projects; neq alone excludes NULLs in PG)
     const { data: projects, error: projectsError } = await supabase
       .from('foco_projects')
       .select('id, name, status, color')
       .in('workspace_id', workspaceIds)
-      .neq('status', 'archived')
+      .or('status.neq.archived,status.is.null')
 
     // Silently handle project fetch errors - continue with empty array
 

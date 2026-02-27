@@ -46,9 +46,9 @@ function DashboardSkeletonWrapper() {
   return (
     <div className="space-y-6">
       <SkipToMainContent />
-      <main id="main-content" className="space-y-6">
+      <div id="main-content" className="space-y-6">
         <DashboardSkeleton />
-      </main>
+      </div>
     </div>
   )
 }
@@ -100,16 +100,19 @@ export default function DashboardPageClient() {
     document.title = 'Dashboard | Foco'
   }, [])
 
-  // Auto-start tour for new users
+  // Auto-start tour only for brand-new users (created within last 48 hours)
   useEffect(() => {
-    if (shouldShowTour() && !isTourOpen) {
-      // Delay tour start to ensure page is fully loaded
-      const timer = setTimeout(() => {
-        startTour()
-      }, 1000)
-      return () => clearTimeout(timer)
+    if (!user || !shouldShowTour() || isTourOpen) return;
+    const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+    const isNewUser = Date.now() - createdAt < 48 * 60 * 60 * 1000;
+    if (!isNewUser) {
+      // Mark tour complete so it never re-triggers for returning users
+      markTourComplete();
+      return;
     }
-  }, [shouldShowTour, isTourOpen, startTour])
+    const timer = setTimeout(() => { startTour(); }, 1000);
+    return () => clearTimeout(timer);
+  }, [user, shouldShowTour, isTourOpen, startTour, markTourComplete])
 
   const handleTourComplete = () => {
     markTourComplete()

@@ -63,17 +63,39 @@ export function OnboardingChecklist() {
     // Load from localStorage
     const saved = localStorage.getItem('onboarding-checklist')
     const dismissed = localStorage.getItem('onboarding-dismissed')
-    
+
     if (dismissed === 'true') {
       setIsDismissed(true)
       return
     }
 
-    if (saved) {
-      setItems(JSON.parse(saved))
-    } else {
-      setItems(defaultChecklist)
-    }
+    const base: ChecklistItem[] = saved ? JSON.parse(saved) : defaultChecklist
+    setItems(base)
+
+    // Auto-check items based on real data
+    Promise.allSettled([
+      fetch('/api/projects', { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/tasks?limit=1', { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/organizations', { credentials: 'include' }).then(r => r.json()),
+    ]).then(([projectsRes, tasksRes, orgsRes]) => {
+      const hasProjects = projectsRes.status === 'fulfilled' &&
+        (projectsRes.value?.data?.length > 0 || projectsRes.value?.length > 0)
+      const hasTasks = tasksRes.status === 'fulfilled' &&
+        (tasksRes.value?.data?.length > 0 || tasksRes.value?.length > 0)
+      const hasMembers = orgsRes.status === 'fulfilled' &&
+        orgsRes.value?.data?.length > 0
+
+      setItems(prev => {
+        const updated = prev.map(item => {
+          if (item.id === 'create-project' && hasProjects) return { ...item, completed: true }
+          if (item.id === 'create-task' && hasTasks) return { ...item, completed: true }
+          if (item.id === 'invite-team' && hasMembers) return { ...item, completed: true }
+          return item
+        })
+        localStorage.setItem('onboarding-checklist', JSON.stringify(updated))
+        return updated
+      })
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {

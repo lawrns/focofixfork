@@ -14,12 +14,15 @@ import { UndoToast } from '../ui/undo-toast';
 
 import { Plus } from 'lucide-react';
 import { CreateTaskModal } from '@/features/tasks/components/create-task-modal';
-import { InstallPrompt } from '@/components/pwa/install-prompt';
 import { hapticService } from '@/lib/audio/haptic-service';
+import { BossBar } from '@/components/clawfusion/boss-bar';
 
 interface AppShellProps {
   children: ReactNode;
 }
+
+// Pages that should not show the app chrome (sidebar, topbar, etc.)
+const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password']);
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
@@ -28,52 +31,56 @@ export function AppShell({ children }: AppShellProps) {
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Prevent hydration mismatch by only rendering conditional UI after mount
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Density-based spacing
-  const densityClasses = {
+  const densityClasses: Record<string, string> = {
     compact: 'text-sm',
     comfortable: 'text-sm',
     spacious: 'text-base',
   };
 
-  // Landing page and auth pages should not have AppShell chrome
-  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password';
+  // Stable across SSR + client (pathname comes from server)
+  const isPublicPage = PUBLIC_PATHS.has(pathname);
 
-  // Calculate display mode - ONLY use client state after mount to prevent hydration mismatch
-  // During SSR, always treat as 'full' mode for consistency
+  // Gate focus mode on isMounted to avoid reading Zustand persist before hydration
   const focusModeActiveAfterMount = isMounted && focusModeActive;
-  const displayMode = isPublicPage ? 'public' : focusModeActiveAfterMount ? 'focus' : 'full';
+  const isAppPage = !isPublicPage;
+  const isFocusMode = isAppPage && focusModeActiveAfterMount;
 
-  // Only show chrome after mount (prevents hydration issues with client-only state)
-  // Also check sidebarCollapsed to prevent hydration mismatch from persisted state
-  const showChrome = isMounted && displayMode === 'full';
-  const showFocusModeButton = isMounted && displayMode === 'focus';
-
-  // Use isMounted for client-only state to prevent hydration mismatch
+  // Gate sidebar collapse on isMounted — Zustand persist reads localStorage
+  // synchronously on the client, which would differ from the SSR default (false)
   const sidebarCollapsedAfterMount = isMounted && sidebarCollapsed;
 
+  const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-60';
+
   return (
-    <div className={cn(
-      'min-h-screen',
-      displayMode === 'full' ? 'bg-zinc-50 dark:bg-zinc-950' : 'bg-white dark:bg-zinc-950',
-      isMounted && displayMode === 'full' && densityClasses[density]
-    )}>
+    <div
+      className={cn(
+        'min-h-screen bg-background text-foreground',
+        isMounted && isAppPage && density && densityClasses[density],
+      )}
+    >
+      {/* Command palette + shortcuts always available */}
       <CommandPalette />
       <KeyboardShortcutsModal />
 
-      {/* Full App Shell (sidebar, topbar, etc.) */}
-      <div className={displayMode !== 'full' ? 'hidden' : ''}>
-        <MobileMenu />
-        <LeftRail />
-        <TopBar />
-      </div>
+      {/*
+        IMPORTANT: Only render chrome components for app pages.
+        Do NOT use CSS hide (className="hidden") — that still renders the components
+        and causes hydration mismatches from Zustand persist reading localStorage.
+      */}
+      {isAppPage && (
+        <>
+          <MobileMenu />
+          <LeftRail />
+          <TopBar />
+        </>
+      )}
 
-      {/* Focus Mode Exit Button */}
-      {showFocusModeButton && (
+      {/* Focus mode exit button — only after mount to avoid SSR mismatch */}
+      {isFocusMode && (
         <button
           onClick={() => useFocusModeStore.getState().deactivate()}
           className="fixed top-4 right-4 z-50 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg shadow-lg hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors flex items-center gap-2 text-sm font-medium"
@@ -83,45 +90,49 @@ export function AppShell({ children }: AppShellProps) {
         </button>
       )}
 
+      {/* Main content area */}
       <main
+        suppressHydrationWarning
         className={cn(
           'min-h-screen transition-all duration-200',
-          isMounted && displayMode === 'full' && 'pt-12 md:pt-14 md:pl-64',
-          sidebarCollapsedAfterMount && displayMode === 'full' && 'md:pl-16'
+          isMounted && isAppPage && !isFocusMode && [
+            'pt-12 md:pt-14',
+            mainPaddingLeft,
+          ],
         )}
       >
-        <div className={isMounted && displayMode === 'full' ? 'p-3 md:p-6' : ''}>
+        <div className={isMounted && isAppPage && !isFocusMode ? 'p-3 md:p-6' : ''}>
           {children}
         </div>
       </main>
 
-      {/* Mobile Floating Action Button (FAB) - World Class UX */}
-      <div className={cn(
-        "fixed bottom-6 right-6 z-40 md:hidden",
-        !showChrome && "hidden"
-      )}>
-        <button
-          onClick={() => {
-            hapticService.light();
-            setIsCreateTaskModalOpen(true);
-          }}
-          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 active:shadow-inner"
-          aria-label="Create new task"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      </div>
+      {/* Mobile FAB — only for mounted app pages */}
+      {isMounted && isAppPage && !isFocusMode && (
+        <div className="fixed bottom-6 right-6 z-40 md:hidden">
+          <button
+            onClick={() => {
+              hapticService.light();
+              setIsCreateTaskModalOpen(true);
+            }}
+            className="w-14 h-14 bg-[color:var(--foco-teal)] text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 active:shadow-inner hover:opacity-90"
+            aria-label="Create new task"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
+      )}
 
-      {/* Global Modals */}
+      {/* Global modals */}
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => setIsCreateTaskModalOpen(false)}
       />
 
-      <InstallPrompt />
-
       <ToastContainer />
       <UndoToast />
+
+      {/* BossBar — fleet status strip for app pages only */}
+      {isMounted && isAppPage && <BossBar />}
     </div>
   );
 }

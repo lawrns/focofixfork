@@ -16,6 +16,7 @@ import { Plus } from 'lucide-react';
 import { CreateTaskModal } from '@/features/tasks/components/create-task-modal';
 import { hapticService } from '@/lib/audio/haptic-service';
 import { BossBar } from '@/components/clawfusion/boss-bar';
+import { SwarmProvider } from '@/components/clawfusion/swarm-context';
 
 interface AppShellProps {
   children: ReactNode;
@@ -56,6 +57,7 @@ export function AppShell({ children }: AppShellProps) {
   const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-60';
 
   return (
+    <SwarmProvider>
     <div
       className={cn(
         'min-h-screen bg-background text-foreground',
@@ -134,5 +136,6 @@ export function AppShell({ children }: AppShellProps) {
       {/* BossBar — fleet status strip for app pages only */}
       {isMounted && isAppPage && <BossBar />}
     </div>
+    </SwarmProvider>
   );
 }

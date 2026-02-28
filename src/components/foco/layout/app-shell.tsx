@@ -89,12 +89,12 @@ export function AppShell({ children }: AppShellProps) {
       <main
         suppressHydrationWarning
         className={cn(
-          'min-h-screen transition-all duration-200',
+          'min-h-screen w-full transition-all duration-200',
           'pt-12 md:pt-14',
-          mainPaddingLeft,
+          isAppPage && mainPaddingLeft,
         )}
       >
-        <div className="p-3 md:p-6">
+        <div className="p-3 md:p-6 w-full">
           {children}
         </div>
       </main>

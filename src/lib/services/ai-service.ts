@@ -66,11 +66,11 @@ export class AIService {
     if (aiProvider === 'glm') {
       this.config = {
         provider: 'glm',
-        apiKey: process.env.GLM_API_KEY || '',
+        apiKey: process.env.Z_AI_API_KEY || process.env.GLM_API_KEY || '',
         baseURL: 'https://api.z.ai/api/coding/paas/v4/',
-        model: process.env.GLM_MODEL || 'glm-4.7'
+        model: process.env.GLM_MODEL || 'glm-5'
       };
-      console.log('[AIService] Using GLM (Z.ai) provider with coding endpoint and model:', this.config.model)
+      console.log('[AIService] Using GLM (Z.ai) CODING endpoint with model:', this.config.model)
     } else if (aiProvider === 'deepseek') {
       this.config = {
         provider: 'deepseek',
@@ -154,6 +154,36 @@ export class AIService {
       })
       throw error;
     }
+  }
+
+  /**
+   * Generate text completion using unified interface (matches OpenAIService)
+   */
+  async generate(request: {
+    prompt: string;
+    context?: string;
+    systemPrompt?: string;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<{ content: string; model: string }> {
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+
+    if (request.systemPrompt) {
+      messages.push({ role: 'system', content: request.systemPrompt });
+    }
+
+    if (request.context) {
+      messages.push({ role: 'system', content: `Context: ${request.context}` });
+    }
+
+    messages.push({ role: 'user', content: request.prompt });
+
+    const content = await this.chatCompletion(messages);
+
+    return {
+      content,
+      model: this.config.model
+    };
   }
 
   /**

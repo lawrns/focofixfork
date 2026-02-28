@@ -11,8 +11,9 @@ import { Toaster } from 'sonner';
 import { ToastProvider } from '@/components/ui/toast';
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav';
 import { ProgressBar } from '@/components/progress-bar';
-import { CreateTaskModalProvider } from '@/features/tasks';
+
 import { GlobalKeyboardShortcuts } from '@/components/foco/layout/global-keyboard-shortcuts';
+import { CreateTaskModalProvider } from '@/features/tasks';
 import NProgress from 'nprogress';
 import { AccessibilityService } from '@/lib/accessibility/accessibility';
 
@@ -88,8 +89,9 @@ export function Providers({ children }: ProvidersProps) {
           <I18nProvider>
             <ToastProvider>
               <AuthProvider>
-                <CreateTaskModalProvider />
+
                 <GlobalKeyboardShortcuts />
+                <CreateTaskModalProvider />
                 {children}
                 <ConditionalMobileNav />
               </AuthProvider>

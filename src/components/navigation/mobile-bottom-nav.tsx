@@ -5,16 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   Home,
-  Folder,
-  Users,
-  BarChart3,
+  Send,
+  Activity,
   Settings,
-  Plus,
-  MessageSquare,
-  Bell
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/contexts/auth-context'
 import { hapticService } from '@/lib/audio/haptic-service'
@@ -24,24 +18,23 @@ interface NavItem {
   label: string
   icon: React.ComponentType<{ className?: string }>
   href: string
-  badge?: number
-  requiresAuth?: boolean
 }
 
 interface MobileBottomNavProps {
   className?: string
   showFab?: boolean
-  onFabClick?: () => void
-  fabIcon?: React.ComponentType<{ className?: string }>
-  fabLabel?: string
 }
+
+const navItems: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home,     href: '/dashboard' },
+  { id: 'dispatch',  label: 'Dispatch',  icon: Send,     href: '/openclaw' },
+  { id: 'runs',      label: 'Runs',      icon: Activity, href: '/runs' },
+  { id: 'settings',  label: 'Settings',  icon: Settings, href: '/settings' },
+]
 
 export function MobileBottomNav({
   className,
-  showFab = true,
-  onFabClick,
-  fabIcon: FabIcon = Plus,
-  fabLabel = 'Create'
+  showFab = false,
 }: MobileBottomNavProps) {
   const [isMobile, setIsMobile] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
@@ -50,18 +43,15 @@ export function MobileBottomNav({
   const pathname = usePathname()
   const { user, loading } = useAuth()
 
-  // Detect mobile screen size
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
-
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Hide/show navigation on scroll
   useEffect(() => {
     if (!isMobile) return
 
@@ -72,10 +62,8 @@ export function MobileBottomNav({
       if (Math.abs(currentScrollY - lastScrollY) < scrollThreshold) return
 
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down - hide nav
         setIsVisible(false)
       } else {
-        // Scrolling up or at top - show nav
         setIsVisible(true)
       }
 
@@ -86,58 +74,13 @@ export function MobileBottomNav({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [isMobile, lastScrollY])
 
-  // Navigation items
-  const navItems: NavItem[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: Home,
-      href: '/dashboard',
-      requiresAuth: true
-    },
-    {
-      id: 'projects',
-      label: 'Projects',
-      icon: Folder,
-      href: '/projects',
-      requiresAuth: true
-    },
-    {
-      id: 'team',
-      label: 'Team',
-      icon: Users,
-      href: '/organizations',
-      requiresAuth: true
-    },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      icon: BarChart3,
-      href: '/dashboard/analytics',
-      requiresAuth: true
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: Settings,
-      href: '/dashboard/settings',
-      requiresAuth: true
-    }
-  ]
-
-  // Filter navigation items based on authentication state
-  const filteredNavItems = navItems.filter(item => {
-    if (loading) return !item.requiresAuth
-    return user ? true : !item.requiresAuth
-  })
-
   const handleNavClick = (item: NavItem) => {
     hapticService.light()
     router.push(item.href)
   }
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/'
+    if (href === '/dashboard') return pathname === '/dashboard'
     return pathname?.startsWith(href)
   }
 
@@ -145,7 +88,6 @@ export function MobileBottomNav({
 
   return (
     <>
-      {/* Bottom Navigation */}
       <AnimatePresence>
         {isVisible && (
           <motion.nav
@@ -155,12 +97,12 @@ export function MobileBottomNav({
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className={cn(
               'fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border',
-              'safe-area-pb', // Account for iPhone home indicator
+              'safe-area-pb',
               className
             )}
           >
             <div className="flex items-center justify-around px-2 py-2">
-              {filteredNavItems.map((item) => {
+              {navItems.map((item) => {
                 const Icon = item.icon
                 const active = isActive(item.href)
 
@@ -170,7 +112,7 @@ export function MobileBottomNav({
                     onClick={() => handleNavClick(item)}
                     className={cn(
                       'relative flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-all duration-200',
-                      'min-h-[60px] min-w-[60px]', // Ensure touch targets meet accessibility standards
+                      'min-h-[60px] min-w-[60px]',
                       active
                         ? 'text-primary bg-primary/10'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -178,17 +120,7 @@ export function MobileBottomNav({
                     aria-label={item.label}
                     aria-current={active ? 'page' : undefined}
                   >
-                    <div className="relative">
-                      <Icon className="w-5 h-5 mb-1" />
-                      {item.badge && item.badge > 0 && (
-                        <Badge
-                          variant="destructive"
-                          className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                        >
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </Badge>
-                      )}
-                    </div>
+                    <Icon className="w-5 h-5 mb-1" />
                     <span className="text-xs font-medium leading-none">
                       {item.label}
                     </span>
@@ -199,44 +131,6 @@ export function MobileBottomNav({
           </motion.nav>
         )}
       </AnimatePresence>
-
-      {/* Floating Action Button */}
-      {showFab && (
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
-              className="fixed bottom-20 right-4 z-50"
-            >
-              <Button
-                onClick={onFabClick}
-                size="lg"
-                className={cn(
-                  'h-14 w-14 rounded-full shadow-lg',
-                  'hover:shadow-xl transition-all duration-200',
-                  'bg-primary hover:bg-primary/90'
-                )}
-                aria-label={fabLabel}
-              >
-                <FabIcon className="w-6 h-6" />
-              </Button>
-
-              {/* Optional label */}
-              {fabLabel && (
-                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-foreground text-background px-3 py-1 rounded-md text-sm font-medium shadow-lg">
-                    {fabLabel}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-foreground" />
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
 
       {/* Bottom safe area padding when nav is hidden */}
       <AnimatePresence>

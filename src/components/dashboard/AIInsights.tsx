@@ -34,7 +34,38 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { insightsService, type Insight, type InsightsResponse } from '@/lib/services/insights.service'
+
+// Types duplicated here to avoid importing insights.service (which pulls in OpenAI SDK)
+type InsightType = 'velocity' | 'forecast' | 'blocker' | 'workload' | 'recommendation'
+type InsightSeverity = 'info' | 'success' | 'warning' | 'critical'
+
+interface Insight {
+  id: string
+  type: InsightType
+  severity: InsightSeverity
+  title: string
+  description: string
+  confidence: number
+  data?: {
+    metric?: string
+    trend?: 'up' | 'down' | 'stable'
+    change?: number
+    prediction?: string
+  }
+  actions?: Array<{
+    label: string
+    action: string
+    href?: string
+  }>
+}
+
+interface InsightsResponse {
+  greeting: string
+  primary_insight: Insight | null
+  secondary_insights: Insight[]
+  total_insights: number
+  generated_at: string
+}
 
 interface RunData {
   id: string
@@ -65,7 +96,14 @@ export function AIInsights({ userId, organizationId, className, runs, recentEven
     try {
       setIsLoading(true)
       setError(null)
-      const data = await insightsService.getInsights(userId, organizationId)
+      const params = new URLSearchParams()
+      if (organizationId) params.set('organizationId', organizationId)
+      const res = await fetch(`/api/insights?${params}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `HTTP ${res.status}`)
+      }
+      const data: InsightsResponse = await res.json()
       setInsights(data)
     } catch (err: any) {
       console.error('Failed to load insights:', err)
@@ -73,7 +111,7 @@ export function AIInsights({ userId, organizationId, className, runs, recentEven
     } finally {
       setIsLoading(false)
     }
-  }, [userId, organizationId])
+  }, [organizationId])
 
   useEffect(() => {
     loadInsights()

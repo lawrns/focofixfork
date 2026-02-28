@@ -61,21 +61,23 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <SwarmProvider>
     <div
-      className={cn(
-        'min-h-screen bg-background text-foreground',
-        isMounted && isAppPage && density && densityClasses[density],
-      )}
+      suppressHydrationWarning
+      className="min-h-screen bg-background text-foreground"
     >
       {/* Command palette + shortcuts always available */}
       <CommandPalette />
       <KeyboardShortcutsModal />
 
       {/*
-        IMPORTANT: Only render chrome components for app pages.
-        Do NOT use CSS hide (className="hidden") — that still renders the components
-        and causes hydration mismatches from Zustand persist reading localStorage.
+        IMPORTANT: Gate chrome on isMounted *and* isAppPage.
+        Without isMounted, the server render and the first client render can
+        produce different DOM trees (e.g. when usePathname() resolves differently,
+        or when a persisted-store rehydrates before the isMounted guard fires).
+        Both SSR and the initial client render produce NO chrome; after mount the
+        chrome appears alongside the <main> padding — consistent with the pattern
+        already used below for mainPaddingLeft / pt-12.
       */}
-      {isAppPage && (
+      {isMounted && isAppPage && (
         <>
           <MobileMenu />
           <LeftRail />
@@ -94,18 +96,16 @@ export function AppShell({ children }: AppShellProps) {
         </button>
       )}
 
-      {/* Main content area */}
+      {/* Main content area - stable structure for hydration */}
       <main
         suppressHydrationWarning
         className={cn(
           'min-h-screen transition-all duration-200',
-          isMounted && isAppPage && !isFocusMode && [
-            'pt-12 md:pt-14',
-            mainPaddingLeft,
-          ],
+          'pt-12 md:pt-14',
+          mainPaddingLeft,
         )}
       >
-        <div className={isMounted && isAppPage && !isFocusMode ? 'p-3 md:p-6' : ''}>
+        <div className="p-3 md:p-6">
           {children}
         </div>
       </main>

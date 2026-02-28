@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Shield, PauseCircle, PlayCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { PauseCircle, PlayCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PageShell } from '@/components/layout/page-shell'
@@ -14,18 +14,32 @@ export default function PoliciesPage() {
   const [fleetPaused, setFleetPaused] = useState(false)
   const [pausing, setPausing] = useState(false)
 
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/policies/fleet-status')
+      .then(r => r.json())
+      .then(d => { if (typeof d.paused === 'boolean') setFleetPaused(d.paused) })
+      .catch(() => {})
+  }, [user])
+
   async function toggleFleet() {
     setPausing(true)
     try {
-      if (!fleetPaused) {
-        const res = await fetch('/api/policies/pause-fleet', { method: 'POST' })
-        if (res.ok || res.status === 404) {
-          setFleetPaused(true)
+      const action = fleetPaused ? 'resume' : 'pause'
+      const res = await fetch('/api/policies/pause-fleet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (res.ok) {
+        setFleetPaused(!fleetPaused)
+        if (action === 'pause') {
           toast.warning('Fleet paused — all autonomous agents stopped')
+        } else {
+          toast.success('Fleet resumed')
         }
       } else {
-        setFleetPaused(false)
-        toast.success('Fleet resumed')
+        toast.error('Failed to update fleet status')
       }
     } finally {
       setPausing(false)

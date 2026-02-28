@@ -33,8 +33,8 @@ import { audioService } from '@/lib/audio/audio-service'
 import { hapticService } from '@/lib/audio/haptic-service'
 
 // Lazy load heavy components
-const ViewTabs = lazy(() => import('@/features/projects').then(m => ({ default: m.ViewTabs })))
-const KanbanBoard = lazy(() => import('@/features/projects').then(m => ({ default: m.KanbanBoard })))
+const ViewTabs = lazy(() => import('@/features/projects/components/ViewTabs'))
+const KanbanBoard = lazy(() => import('@/features/projects/components/kanban-board').then(m => ({ default: m.KanbanBoard })))
 const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
 const ExportDialog = lazy(() => import('@/components/export/export-dialog'))
 const ImportDialog = lazy(() => import('@/components/import/import-dialog'))

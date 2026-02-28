@@ -5,7 +5,6 @@ import {
   authRateLimiter,
   twoFactorRateLimiter,
   aiRateLimiter,
-  aiVoiceRateLimiter,
   exportRateLimiter,
 } from '@/lib/middleware/enhanced-rate-limit'
 
@@ -212,24 +211,6 @@ describe('Rate Limiting Security Tests', () => {
 
       const allowedCount = results.filter(r => r.allowed).length
       expect(allowedCount).toBe(5)
-    })
-
-    it('should enforce stricter limits on voice processing', async () => {
-      const req = new NextRequest('http://localhost/api/crico/voice', {
-        method: 'POST'
-      })
-
-      // aiVoiceRateLimiter allows only 3 requests per minute (more expensive)
-      const results = []
-      for (let i = 0; i < 4; i++) {
-        results.push(await aiVoiceRateLimiter.check(req))
-      }
-
-      const allowedCount = results.filter(r => r.allowed).length
-      const blockedCount = results.filter(r => !r.allowed).length
-
-      expect(allowedCount).toBe(3)
-      expect(blockedCount).toBe(1)
     })
 
     it('should prevent AI API abuse from single user', async () => {

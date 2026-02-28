@@ -13,15 +13,17 @@ export function SwarmDockTarget({ children, className }: SwarmDockTargetProps) {
   const { dockTargetRef } = useSwarm()
 
   useEffect(() => {
-    // Register this element's ref into the context so SwarmProvider can read its rect
-    if (ref.current) {
-      // dockTargetRef is a MutableRefObject; assign current
-      ;(dockTargetRef as React.MutableRefObject<HTMLDivElement | null>).current = ref.current
+    // Capture ref.current in a local variable so the cleanup function references
+    // the same element that was registered (avoids the stale-ref-in-cleanup lint warning)
+    const el = ref.current
+    const mutableDockRef = dockTargetRef as React.MutableRefObject<HTMLDivElement | null>
+    if (el) {
+      mutableDockRef.current = el
     }
     return () => {
       // Clean up only if this element is still the registered one
-      if ((dockTargetRef as React.MutableRefObject<HTMLDivElement | null>).current === ref.current) {
-        ;(dockTargetRef as React.MutableRefObject<HTMLDivElement | null>).current = null
+      if (mutableDockRef.current === el) {
+        mutableDockRef.current = null
       }
     }
   }, [dockTargetRef])

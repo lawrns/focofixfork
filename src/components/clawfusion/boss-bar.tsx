@@ -30,6 +30,18 @@ export function BossBar({ className }: BossBarProps) {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
   const [openclawStatus, setOpenclawStatus] = useState<OpenClawStatus | null>(null)
 
+  const pollFleetStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/policies/fleet-status')
+      if (res.ok) {
+        const json = await res.json()
+        if (typeof json.paused === 'boolean') setPaused(json.paused)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const pollEvents = useCallback(async () => {
     try {
       const res = await fetch('/api/ledger?limit=5')
@@ -59,25 +71,37 @@ export function BossBar({ className }: BossBarProps) {
   }, [])
 
   useEffect(() => {
+    pollFleetStatus()
     pollEvents()
     pollOpenClaw()
+    const fleetInterval = setInterval(pollFleetStatus, 30_000)
     const ledgerInterval = setInterval(pollEvents, 15_000)
     const openclawInterval = setInterval(pollOpenClaw, 5_000)
     return () => {
+      clearInterval(fleetInterval)
       clearInterval(ledgerInterval)
       clearInterval(openclawInterval)
     }
-  }, [pollEvents, pollOpenClaw])
+  }, [pollFleetStatus, pollEvents, pollOpenClaw])
 
-  async function pauseFleet() {
+  async function toggleFleet() {
+    const action = paused ? 'resume' : 'pause'
     try {
-      const res = await fetch('/api/policies/pause-fleet', { method: 'POST' })
-      if (res.ok || res.status === 404) {
-        setPaused(true)
-        toast.warning('Fleet paused — all agents stopped')
+      const res = await fetch('/api/policies/pause-fleet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (res.ok) {
+        setPaused(!paused)
+        if (action === 'pause') {
+          toast.warning('Fleet paused — all agents stopped')
+        } else {
+          toast.success('Fleet resumed')
+        }
       }
     } catch {
-      toast.error('Failed to pause fleet')
+      toast.error('Failed to update fleet status')
     }
   }
 
@@ -168,9 +192,8 @@ export function BossBar({ className }: BossBarProps) {
             ? 'text-red-500 hover:text-red-400'
             : 'text-muted-foreground hover:text-destructive'
         )}
-        onClick={pauseFleet}
-        disabled={paused}
-        title={paused ? 'Fleet paused — all agents stopped' : 'Pause Fleet — halt all autonomous agents'}
+        onClick={toggleFleet}
+        title={paused ? 'Fleet paused — click to resume' : 'Pause Fleet — halt all autonomous agents'}
       >
         <PauseCircle className="h-3 w-3" />
       </Button>

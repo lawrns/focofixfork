@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useRef, useState, useCallback } from 'react'
+import React, { createContext, useContext, useRef, useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
 // Dynamic import breaks framer-motion out of the initial layout bundle.
@@ -43,10 +43,17 @@ export function useSwarm(): SwarmContextValue {
 
 export function SwarmProvider({ children }: { children: React.ReactNode }) {
   const [swarms, setSwarms] = useState<SwarmRecord[]>([])
+  const [mounted, setMounted] = useState(false)
   const dockTargetRef = useRef<HTMLDivElement | null>(null)
+  const idCounterRef = useRef(0)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const dispatchSwarm = useCallback((params: Omit<SwarmRecord, 'id'>) => {
-    const id = `swarm-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    idCounterRef.current += 1
+    const id = `swarm-${Date.now()}-${idCounterRef.current}`
     setSwarms(prev => [...prev, { ...params, id }])
   }, [])
 
@@ -78,7 +85,7 @@ export function SwarmProvider({ children }: { children: React.ReactNode }) {
   return (
     <SwarmContext.Provider value={{ dispatchSwarm, dockTargetRef }}>
       {children}
-      {swarms.map(swarm => {
+      {mounted && swarms.map(swarm => {
         const targetRect = dockTargetRef.current?.getBoundingClientRect() ?? null
         return (
           <CritterSwarmOverlay

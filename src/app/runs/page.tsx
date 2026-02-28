@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Activity, RefreshCw, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,7 @@ export default function RunsPage() {
   const [fetching, setFetching] = useState(false)
   const [filter, setFilter] = useState('all')
 
-  async function load() {
+  const load = useCallback(async () => {
     setFetching(true)
     try {
       const params = filter !== 'all' ? `?status=${filter}` : ''
@@ -48,9 +48,9 @@ export default function RunsPage() {
     } finally {
       setFetching(false)
     }
-  }
+  }, [filter])
 
-  useEffect(() => { if (user) load() }, [user, filter])
+  useEffect(() => { if (user) load() }, [user, load])
 
   if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" /></div>
   if (!user) return null

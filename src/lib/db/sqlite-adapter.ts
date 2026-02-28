@@ -37,7 +37,7 @@ export class SqliteAdapter implements DbAdapter {
   private get db(): BetterSqlite3Database {
     if (this._db) return this._db
     // Dynamic require — better-sqlite3 is optional and only needed in SQLite mode
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line
     const Database = require('better-sqlite3')
     this._db = new Database(this.dbPath) as BetterSqlite3Database
     this.ensureSchema()

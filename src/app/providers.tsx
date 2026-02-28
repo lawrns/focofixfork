@@ -14,6 +14,7 @@ import { ProgressBar } from '@/components/progress-bar';
 import { CreateTaskModalProvider } from '@/features/tasks';
 import { GlobalKeyboardShortcuts } from '@/components/foco/layout/global-keyboard-shortcuts';
 import NProgress from 'nprogress';
+import { AccessibilityService } from '@/lib/accessibility/accessibility';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -73,6 +74,10 @@ export function Providers({ children }: ProvidersProps) {
       },
     },
   }));
+
+  useEffect(() => {
+    AccessibilityService.initialize();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

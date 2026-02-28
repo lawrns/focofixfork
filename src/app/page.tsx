@@ -34,9 +34,9 @@ const terminalLines = [
 const features = [
   {
     slash: '01',
-    title: 'Voice proposals',
-    desc: 'Speak your ideas. AI converts them into structured proposals with tasks, assignments and automatic estimates.',
-    icon: Mic,
+    title: 'AI Proposals',
+    desc: 'Describe your idea in text or upload a document. AI converts it into a structured proposal with tasks, assignments and automatic estimates.',
+    icon: Sparkles,
   },
   {
     slash: '02',

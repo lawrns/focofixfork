@@ -256,27 +256,20 @@ export {
 // ============================================================================
 
 import { AgentRegistry } from './agents/base-agent';
-import type { Environment, CricoAction, VoiceCommand, Suggestion, AlignmentCheck } from './types';
+import type { Environment, CricoAction, Suggestion, AlignmentCheck } from './types';
 
 export interface CricoConfig {
   environment: Environment;
   userId?: string;
   sessionId?: string;
-  enableVoice?: boolean;
   enableAutoApply?: boolean;
 }
 
 export interface CricoInstance {
   config: CricoConfig;
   registry: AgentRegistry;
-  
+
   // High-level operations
-  executeVoiceCommand(transcript: string, sttConfidence: number): Promise<{
-    command: unknown;
-    feedback: { message: string; speakable: boolean | string };
-    action?: { id: string } | null;
-  }>;
-  
   getPendingSuggestions(): Promise<Suggestion[]>;
   getAlignmentScore(): Promise<{ score: number; breakdown: Record<string, number> }>;
   runAlignmentCheck(scope: string): Promise<AlignmentCheck | null>;
@@ -291,11 +284,6 @@ export function initCrico(config: CricoConfig): CricoInstance {
   return {
     config,
     registry,
-
-    async executeVoiceCommand(_transcript: string, _sttConfidence: number) {
-      // Voice feature removed
-      return { command: null, feedback: { message: 'Voice feature removed', speakable: false }, action: null };
-    },
 
     async getPendingSuggestions() {
       if (!config.userId) return [];

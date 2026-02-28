@@ -13,6 +13,8 @@ export interface AccessibilitySettings {
 }
 
 export class AccessibilityService {
+  private static initialized = false;
+
   private static settings: AccessibilitySettings = {
     reducedMotion: false,
     highContrast: false,
@@ -26,6 +28,11 @@ export class AccessibilityService {
 
   // Initialize accessibility features
   static initialize(): void {
+    if (typeof window === 'undefined' || this.initialized) {
+      return;
+    }
+    this.initialized = true;
+
     this.loadSettings();
     this.applySettings();
     this.setupKeyboardNavigation();
@@ -132,6 +139,10 @@ export class AccessibilityService {
 
   // Create skip links for keyboard navigation
   private static createSkipLinks(): void {
+    if (document.querySelector('.skip-links')) {
+      return;
+    }
+
     const skipLinks = document.createElement('div');
     skipLinks.className = 'skip-links';
     skipLinks.innerHTML = `
@@ -141,38 +152,42 @@ export class AccessibilityService {
     `;
 
     // Add styles for skip links
-    const style = document.createElement('style');
-    style.textContent = `
-      .skip-links {
-        position: absolute;
-        top: -40px;
-        left: 6px;
-        z-index: 1000;
-      }
-      .skip-link {
-        position: absolute;
-        top: -40px;
-        left: 6px;
-        background: #0052CC;
-        color: white;
-        padding: 8px;
-        text-decoration: none;
-        border-radius: 4px;
-        font-size: 14px;
-        font-weight: 500;
-        z-index: 1000;
-        transition: top 0.2s;
-      }
-      .skip-link:focus {
-        top: 6px;
-      }
-      .skip-link:not(:focus) {
-        clip: rect(1px, 1px, 1px, 1px);
-        position: absolute;
-      }
-    `;
+    const styleId = 'foco-accessibility-skip-links-style';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        .skip-links {
+          position: absolute;
+          top: -40px;
+          left: 6px;
+          z-index: 1000;
+        }
+        .skip-link {
+          position: absolute;
+          top: -40px;
+          left: 6px;
+          background: #0052CC;
+          color: white;
+          padding: 8px;
+          text-decoration: none;
+          border-radius: 4px;
+          font-size: 14px;
+          font-weight: 500;
+          z-index: 1000;
+          transition: top 0.2s;
+        }
+        .skip-link:focus {
+          top: 6px;
+        }
+        .skip-link:not(:focus) {
+          clip: rect(1px, 1px, 1px, 1px);
+          position: absolute;
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
-    document.head.appendChild(style);
     document.body.insertBefore(skipLinks, document.body.firstChild);
   }
 
@@ -215,6 +230,10 @@ export class AccessibilityService {
 
   // Setup live regions for screen readers
   private static setupLiveRegions(): void {
+    if (document.getElementById('accessibility-live-region')) {
+      return;
+    }
+
     // Create a live region for announcements
     const liveRegion = document.createElement('div');
     liveRegion.setAttribute('aria-live', 'polite');
@@ -519,14 +538,4 @@ export function useAccessibility() {
     createErrorMessage: AccessibilityService.createErrorMessage,
     updateFieldAccessibility: AccessibilityService.updateFieldAccessibility,
   };
-}
-
-// Initialize accessibility on module load
-if (typeof window !== 'undefined') {
-  // Initialize after DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => AccessibilityService.initialize());
-  } else {
-    AccessibilityService.initialize();
-  }
 }

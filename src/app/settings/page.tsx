@@ -67,11 +67,14 @@ const settingsSections = [
 ];
 
 function WorkspaceSettings() {
+  const [isMounted, setIsMounted] = useState(false);
   const { currentWorkspace, setCurrentWorkspace } = useWorkspaceStore();
   const [isSaving, setIsSaving] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
   const [workspaceSlug, setWorkspaceSlug] = useState('');
   const [workspaceDescription, setWorkspaceDescription] = useState('');
+
+  useEffect(() => setIsMounted(true), []);
 
   // Load workspace data when currentWorkspace changes
   useEffect(() => {
@@ -106,6 +109,14 @@ function WorkspaceSettings() {
       setIsSaving(false);
     }
   };
+
+  if (!isMounted) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -853,8 +864,10 @@ interface WorkspaceMember {
 }
 
 function MembersSettings() {
+  const [isMounted, setIsMounted] = useState(false);
   const { currentWorkspace } = useWorkspaceStore();
   const { user } = useAuth();
+  useEffect(() => setIsMounted(true), []);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);

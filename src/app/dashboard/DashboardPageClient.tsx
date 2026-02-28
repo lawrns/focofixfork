@@ -31,6 +31,7 @@ import {
   Loader2,
   Zap,
   BookOpen,
+  AlertTriangle,
 } from 'lucide-react'
 
 type Run = {
@@ -44,10 +45,10 @@ type Run = {
 
 type LedgerEvent = {
   id: string
-  event_type: string
-  runner: string | null
+  type: string
+  source: string | null
   payload: any
-  created_at: string
+  timestamp: string
 }
 
 function elapsed(start: string | null): string {
@@ -64,7 +65,9 @@ export default function DashboardPageClient() {
   const router = useRouter()
   const { user, loading } = useAuth()
 
-  const [gatewayStatus, setGatewayStatus] = useState<'online' | 'offline' | 'loading'>('loading')
+  const [relayReachable, setRelayReachable] = useState<boolean | null>(null) // null = loading
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null)
+  const [attachedTabs, setAttachedTabs] = useState(0)
   const [activeRuns, setActiveRuns] = useState<Run[]>([])
   const [allRuns, setAllRuns] = useState<Run[]>([])
   const [fleetPaused, setFleetPaused] = useState(false)
@@ -103,9 +106,13 @@ export default function DashboardPageClient() {
       // Gateway status
       if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
         const d = await statusRes.value.json()
-        setGatewayStatus(d.status === 'running' || d.online ? 'online' : 'offline')
+        setRelayReachable(d.relay?.reachable ?? false)
+        setTokenValid(d.token?.valid ?? false)
+        setAttachedTabs(d.tabs?.filter((t: any) => t.attached).length ?? 0)
       } else {
-        setGatewayStatus('offline')
+        setRelayReachable(false)
+        setTokenValid(false)
+        setAttachedTabs(0)
       }
 
       // Runs
@@ -201,23 +208,50 @@ export default function DashboardPageClient() {
         />
 
         {/* Fleet Status Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {/* Gateway */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          {/* Relay */}
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Gateway</span>
+              <span className="text-xs text-muted-foreground font-medium">Relay</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={cn(
                 'h-2 w-2 rounded-full',
-                gatewayStatus === 'online' ? 'bg-emerald-500' :
-                gatewayStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+                relayReachable === null ? 'bg-yellow-500 animate-pulse' :
+                relayReachable ? 'bg-emerald-500' : 'bg-red-500'
               )} />
-              <span className="text-sm font-semibold capitalize">
-                {gatewayStatus === 'loading' ? 'Checking...' : gatewayStatus}
+              <span className="text-sm font-semibold">
+                {relayReachable === null ? 'Checking...' : relayReachable ? 'Reachable' : 'Down'}
               </span>
             </div>
+          </div>
+
+          {/* Token */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium">Token</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                'h-2 w-2 rounded-full',
+                tokenValid === null ? 'bg-yellow-500 animate-pulse' :
+                tokenValid ? 'bg-emerald-500' : 'bg-red-500'
+              )} />
+              <span className="text-sm font-semibold">
+                {tokenValid === null ? 'Checking...' : tokenValid ? 'Valid' : 'Invalid'}
+              </span>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium">Tabs</span>
+            </div>
+            <span className="text-2xl font-bold font-mono">{attachedTabs}</span>
           </div>
 
           {/* Active runs */}
@@ -314,24 +348,28 @@ export default function DashboardPageClient() {
                   No events yet.
                 </div>
               ) : (
-                recentEvents.map((evt) => (
-                  <div key={evt.id} className="px-4 py-2.5 flex items-center gap-3">
-                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium">
-                        {evt.event_type}
-                      </span>
-                      {evt.runner && (
-                        <span className="text-xs text-muted-foreground ml-1.5">
-                          · {evt.runner}
+                recentEvents.map((evt) => {
+                  const d = new Date(evt.timestamp)
+                  const timeStr = isNaN(d.getTime()) ? 'Unknown' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  return (
+                    <div key={evt.id} className="px-4 py-2.5 flex items-center gap-3">
+                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium">
+                          {evt.type}
                         </span>
-                      )}
+                        {evt.source && (
+                          <span className="text-xs text-muted-foreground ml-1.5">
+                            · {evt.source}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                        {timeStr}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                      {new Date(evt.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           </div>
@@ -342,6 +380,8 @@ export default function DashboardPageClient() {
           <AIInsights
             userId={user.id}
             className="mb-6"
+            runs={allRuns}
+            recentEvents={recentEvents}
           />
         </ErrorBoundary>
 
@@ -351,6 +391,14 @@ export default function DashboardPageClient() {
             <Send className="h-4 w-4 text-[color:var(--foco-teal)]" />
             Quick Dispatch
           </h3>
+          {relayReachable === false || tokenValid === false ? (
+            <div className="flex items-start gap-2 mb-3 rounded-md border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                {relayReachable === false ? 'Relay unreachable' : 'Token invalid'} — dispatch unavailable.
+              </span>
+            </div>
+          ) : null}
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="Agent ID"
@@ -369,7 +417,7 @@ export default function DashboardPageClient() {
               label={dispatching ? 'Dispatching...' : 'Dispatch'}
               variant="default"
               size="sm"
-              disabled={dispatching || !dispatchAgent.trim() || !dispatchTask.trim()}
+              disabled={dispatching || !dispatchAgent.trim() || !dispatchTask.trim() || relayReachable === false || tokenValid === false}
               onClick={handleDispatch}
             />
           </div>

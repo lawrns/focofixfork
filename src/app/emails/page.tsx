@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mail, Send, FileText, Plus } from 'lucide-react'
+import { Mail, Send, FileText, Plus, XCircle, Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
@@ -124,11 +124,82 @@ function CreateEmailDialog({ open, onOpenChange, onCreated }: {
   )
 }
 
+function EmailDetailDialog({ email, open, onOpenChange }: {
+  email: EmailItem | null
+  open: boolean
+  onOpenChange: (v: boolean) => void
+}) {
+  if (!email) return null
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{email.subject}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div>
+            <span className="font-medium text-muted-foreground">To:</span>{' '}
+            {email.to.join(', ')}
+          </div>
+          <div>
+            <span className="font-medium text-muted-foreground">Status:</span>{' '}
+            <Badge className={cn('text-[10px] px-1.5 py-0 rounded-sm border-0', statusColors[email.status])}>
+              {email.status}
+            </Badge>
+          </div>
+          <div>
+            <span className="font-medium text-muted-foreground">Queued:</span>{' '}
+            {new Date(email.queued_at).toLocaleString()}
+          </div>
+          {email.sent_at && (
+            <div>
+              <span className="font-medium text-muted-foreground">Sent:</span>{' '}
+              {new Date(email.sent_at).toLocaleString()}
+            </div>
+          )}
+          {email.error && (
+            <div className="text-red-500">
+              <span className="font-medium">Error:</span> {email.error}
+            </div>
+          )}
+          <div className="rounded-md border bg-muted/50 p-3 whitespace-pre-wrap text-xs font-mono">
+            {email.body_md}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function EmailsPage() {
   const { user, loading } = useAuth()
   const [outbox, setOutbox] = useState<EmailItem[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [detailEmail, setDetailEmail] = useState<EmailItem | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+
+  async function cancelEmail(id: string) {
+    setCancellingId(id)
+    try {
+      const res = await fetch(`/api/emails/outbox/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      })
+      if (res.ok) {
+        setOutbox(o => o.map(e => e.id === id ? { ...e, status: 'cancelled' } : e))
+        toast.success('Email cancelled')
+      } else {
+        toast.error('Failed to cancel email')
+      }
+    } catch {
+      toast.error('Failed to cancel email')
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
   useEffect(() => {
     if (!user) return
@@ -177,7 +248,11 @@ export default function EmailsPage() {
           ) : (
             <div className="space-y-2">
               {outbox.map(email => (
-                <div key={email.id} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-border bg-card">
+                <div
+                  key={email.id}
+                  className="flex items-start gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors cursor-pointer"
+                  onClick={() => { setDetailEmail(email); setDetailOpen(true) }}
+                >
                   <Send className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -194,6 +269,18 @@ export default function EmailsPage() {
                     </p>
                     {email.error && <p className="text-[11px] text-red-500 mt-0.5">{email.error}</p>}
                   </div>
+                  {email.status === 'queued' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      disabled={cancellingId === email.id}
+                      onClick={(e) => { e.stopPropagation(); cancelEmail(email.id) }}
+                    >
+                      <XCircle className="h-3.5 w-3.5 mr-1" />
+                      Cancel
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -222,6 +309,12 @@ export default function EmailsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <EmailDetailDialog
+        email={detailEmail}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </PageShell>
   )
 }

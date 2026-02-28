@@ -36,13 +36,27 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { insightsService, type Insight, type InsightsResponse } from '@/lib/services/insights.service'
 
+interface RunData {
+  id: string
+  status: string
+  [key: string]: unknown
+}
+
+interface EventData {
+  id: string
+  type: string
+  [key: string]: unknown
+}
+
 interface AIInsightsProps {
   userId: string
   organizationId?: string
   className?: string
+  runs?: RunData[]
+  recentEvents?: EventData[]
 }
 
-export function AIInsights({ userId, organizationId, className }: AIInsightsProps) {
+export function AIInsights({ userId, organizationId, className, runs, recentEvents }: AIInsightsProps) {
   const [insights, setInsights] = useState<InsightsResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -237,6 +251,34 @@ export function AIInsights({ userId, organizationId, className }: AIInsightsProp
   }
 
   if (error) {
+    // Data-driven fallback when AI service is unavailable
+    const completedCount = runs?.filter(r => r.status === 'completed').length ?? 0
+    const failedCount = runs?.filter(r => r.status === 'failed').length ?? 0
+    const totalRuns = runs?.length ?? 0
+    const eventCount = recentEvents?.length ?? 0
+
+    if (totalRuns > 0 || eventCount > 0) {
+      return (
+        <Card className={cn('border-0 shadow-lg', className)}>
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600 flex-shrink-0">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base mb-1">Fleet Summary</h3>
+                <p className="text-sm text-muted-foreground">
+                  {completedCount} run{completedCount !== 1 ? 's' : ''} completed
+                  {failedCount > 0 && `, ${failedCount} failed`}
+                  {eventCount > 0 && ` · ${eventCount} recent event${eventCount !== 1 ? 's' : ''}`}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
     return (
       <Card className={cn('border-0 shadow-lg', className)}>
         <CardContent className="p-6">

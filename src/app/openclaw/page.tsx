@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Wifi, WifiOff, RefreshCw, CircleDot, Unplug, Globe,
   Terminal, Shield, AlertTriangle, Wrench, CheckCircle2, XCircle,
-  Play, Square, ScrollText, Zap, Send, Bot, Clock,
+  Play, Square, ScrollText, Zap, Send, Bot, Clock, Link as LinkIcon,
 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -75,6 +76,10 @@ export default function OpenClawPage() {
   const logsEndRef = useRef<HTMLDivElement>(null)
   
   const { dispatchSwarm } = useSwarm()
+
+  useEffect(() => {
+    document.title = 'Dispatch | Mission Control'
+  }, [])
 
   // Fetch status
   const refresh = useCallback(async () => {
@@ -185,9 +190,9 @@ export default function OpenClawPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mission Control</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Dispatch</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            OpenClaw Gateway · Agent Orchestration · Live Logs
+            Agent Orchestration · Gateway · Live Logs
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -248,10 +253,19 @@ export default function OpenClawPage() {
                   rows={3}
                 />
               </div>
+              {status && (!status.relay.reachable || !status.token.valid) && (
+                <div className="flex items-start gap-2 rounded-md border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    {!status.relay.reachable ? 'Relay unreachable' : 'Token invalid'} — dispatch unavailable.{' '}
+                    <Link href="/settings" className="underline">Fix in Settings</Link>
+                  </span>
+                </div>
+              )}
               <Button
                 id="dispatch-button"
                 onClick={createTask}
-                disabled={creating || !task.trim() || !agentId.trim()}
+                disabled={creating || !task.trim() || !agentId.trim() || !status?.relay?.reachable || !status?.token?.valid}
                 className="w-full gap-2 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90"
               >
                 {creating ? (
@@ -350,16 +364,26 @@ export default function OpenClawPage() {
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {logs.map((log, i) => (
+                    {logs.map((log, i) => {
+                      // Infer severity from content if level is missing
+                      const inferredLevel = log.level
+                        ?? (log.type === 'error' || /\b(failed|error|denied|crash)\b/i.test(log.message ?? '') ? 'error' : undefined)
+                        ?? (log.type === 'connected' ? 'info' : undefined)
+                        ?? (/\bwarn/i.test(log.message ?? '') ? 'warn' : undefined)
+                      const LEVEL_COLORS: Record<string, string> = {
+                        error: 'text-red-400',
+                        warn: 'text-amber-400',
+                        info: 'text-blue-400',
+                        debug: 'text-zinc-500',
+                      }
+                      return (
                       <div
                         key={i}
                         className={cn(
                           'break-all',
-                          log.type === 'error' && 'text-red-400',
+                          inferredLevel ? LEVEL_COLORS[inferredLevel] : undefined,
                           log.type === 'connected' && 'text-green-400',
-                          log.level === 'debug' && 'text-gray-500',
-                          log.level === 'info' && 'text-blue-400',
-                          !log.type && !log.level && 'text-gray-300'
+                          !inferredLevel && !log.type && 'text-gray-300'
                         )}
                       >
                         {log.time && (
@@ -369,7 +393,8 @@ export default function OpenClawPage() {
                         )}
                         {log.message || JSON.stringify(log)}
                       </div>
-                    ))}
+                      )
+                    })}
                     <div ref={logsEndRef} />
                   </div>
                 )}

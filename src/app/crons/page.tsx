@@ -23,6 +23,34 @@ type Cron = {
   created_at: string
 }
 
+function describeCron(expr: string): string {
+  const parts = expr.trim().split(/\s+/)
+  if (parts.length !== 5) return ''
+  const [min, hour, dom, mon, dow] = parts
+
+  // Common patterns
+  if (expr === '* * * * *') return 'Every minute'
+  if (min === '0' && hour === '*' && dom === '*' && mon === '*' && dow === '*') return 'Every hour'
+  if (min === '0' && hour === '0' && dom === '*' && mon === '*' && dow === '*') return 'Daily at midnight'
+  if (min === '0' && hour === '0' && dom === '*' && mon === '*' && dow === '1') return 'Every Monday at midnight'
+  if (min === '0' && hour === '0' && dom === '1' && mon === '*' && dow === '*') return 'First day of every month at midnight'
+
+  // */N patterns
+  if (min.startsWith('*/') && hour === '*' && dom === '*' && mon === '*' && dow === '*') {
+    return `Every ${min.slice(2)} minutes`
+  }
+  if (min === '0' && hour.startsWith('*/') && dom === '*' && mon === '*' && dow === '*') {
+    return `Every ${hour.slice(2)} hours`
+  }
+
+  // Specific hour:minute
+  if (/^\d+$/.test(min) && /^\d+$/.test(hour) && dom === '*' && mon === '*' && dow === '*') {
+    return `Daily at ${hour.padStart(2, '0')}:${min.padStart(2, '0')}`
+  }
+
+  return ''
+}
+
 function CreateCronDialog({ open, onOpenChange, onCreated }: {
   open: boolean
   onOpenChange: (v: boolean) => void
@@ -88,6 +116,11 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
               required
               className="font-mono"
             />
+            {describeCron(schedule) && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {describeCron(schedule)}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cron-handler">Handler</Label>

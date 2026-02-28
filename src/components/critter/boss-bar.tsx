@@ -117,7 +117,7 @@ export function BossBar({ className }: BossBarProps) {
       )}
     >
       {/* Fleet status indicator */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0" title={paused ? 'Fleet is paused — all agents halted' : 'All autonomous agents are active'}>
         <div className={cn(
           'h-1.5 w-1.5 rounded-full',
           paused ? 'bg-red-500' : 'bg-[color:var(--foco-teal)] animate-pulse'
@@ -130,7 +130,7 @@ export function BossBar({ className }: BossBarProps) {
       <div className="h-3 w-px bg-border flex-shrink-0" />
 
       {/* Critter relay */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0" title="Chrome relay connection status">
         {relayConnected
           ? <Wifi className="h-3 w-3 text-[color:var(--foco-teal)]" />
           : <WifiOff className="h-3 w-3 text-muted-foreground" />}
@@ -143,7 +143,7 @@ export function BossBar({ className }: BossBarProps) {
 
       {/* OpenClaw gateway health + tab count */}
       <SwarmDockTarget>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0" title={`${openclawStatus?.tabs.filter(t => t.attached).length ?? 0} browser tabs attached to Critter`}>
           <span className={cn(
             'h-1.5 w-1.5 rounded-full flex-shrink-0',
             openclawStatus?.relay.reachable
@@ -153,7 +153,7 @@ export function BossBar({ className }: BossBarProps) {
           <span className="text-muted-foreground">critter</span>
           {openclawStatus && openclawStatus.relay.reachable && (
             <span className="text-[color:var(--foco-teal)]">
-              {openclawStatus.tabs.filter(t => t.attached).length}t
+              {openclawStatus.tabs.filter(t => t.attached).length} tabs
             </span>
           )}
         </div>
@@ -162,7 +162,7 @@ export function BossBar({ className }: BossBarProps) {
       <div className="h-3 w-px bg-border flex-shrink-0" />
 
       {/* Recent ledger events rolling ticker */}
-      <div className="flex-1 overflow-hidden flex items-center gap-2 min-w-0">
+      <div className="flex-1 overflow-hidden flex items-center gap-2 min-w-0" title="Ledger events in last 24h">
         <Activity className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         {recentEvents.length === 0 ? (
           <span className="text-muted-foreground">no recent events</span>

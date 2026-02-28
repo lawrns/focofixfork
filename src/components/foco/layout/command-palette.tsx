@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCommandPaletteStore } from '@/lib/stores/foco-store';
-import { useCreateTaskModal } from '@/features/tasks';
+// import { useCreateTaskModal } from '@/features/tasks';
 import { cn } from '@/lib/utils';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import {
@@ -14,20 +14,18 @@ import {
 import {
   Search,
   Home,
-  Inbox,
-  FolderKanban,
-  CheckSquare,
-  Calendar,
-  FileText,
-  Users,
-  BarChart3,
+  Send,
+  Activity,
+  BookOpen,
+  Clock,
+  Mail,
+  FileBox,
+  Shield,
   Settings,
   Plus,
   ArrowRight,
-  Hash,
-  Clock,
-  Star,
   Zap,
+  Rss,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -45,35 +43,30 @@ export function CommandPalette() {
   const router = useRouter();
   const { isOpen, mode, query, close, setQuery } = useCommandPaletteStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const { openTaskModal } = useCreateTaskModal();
   const isMobile = useMobile();
 
   const commands: CommandItem[] = useMemo(() => [
     // Navigation
-    { id: 'nav-home', label: 'Go to Home', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/dashboard'), keywords: ['dashboard'] },
-    { id: 'nav-inbox', label: 'Go to Inbox', icon: Inbox, shortcut: 'G I', group: 'Navigation', action: () => router.push('/inbox'), keywords: ['notifications'] },
-    { id: 'nav-mywork', label: 'Go to My Work', icon: CheckSquare, shortcut: 'G M', group: 'Navigation', action: () => router.push('/my-work'), keywords: ['tasks', 'assigned'] },
-    { id: 'nav-projects', label: 'Go to Projects', icon: FolderKanban, shortcut: 'G P', group: 'Navigation', action: () => router.push('/projects') },
-    { id: 'nav-timeline', label: 'Go to Timeline', icon: Calendar, shortcut: 'G T', group: 'Navigation', action: () => router.push('/timeline') },
-    { id: 'nav-docs', label: 'Go to Docs', icon: FileText, shortcut: 'G D', group: 'Navigation', action: () => router.push('/docs') },
-    { id: 'nav-people', label: 'Go to People', icon: Users, shortcut: 'G E', group: 'Navigation', action: () => router.push('/people') },
-    { id: 'nav-reports', label: 'Go to Reports', icon: BarChart3, shortcut: 'G R', group: 'Navigation', action: () => router.push('/reports') },
+    { id: 'nav-dashboard', label: 'Go to Dashboard', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/dashboard'), keywords: ['home', 'overview'] },
+    { id: 'nav-dispatch', label: 'Go to Dispatch', icon: Send, shortcut: 'G D', group: 'Navigation', action: () => router.push('/openclaw'), keywords: ['agent', 'openclaw', 'mission control'] },
+    { id: 'nav-intel', label: 'Go to Intel Feed', icon: Rss, shortcut: 'G I', group: 'Navigation', action: () => router.push('/clawdbot'), keywords: ['intel', 'feed'] },
+    { id: 'nav-runs', label: 'Go to Runs', icon: Activity, shortcut: 'G R', group: 'Navigation', action: () => router.push('/runs'), keywords: ['executions', 'history'] },
+    { id: 'nav-ledger', label: 'Go to Ledger', icon: BookOpen, shortcut: 'G L', group: 'Navigation', action: () => router.push('/ledger'), keywords: ['events', 'log'] },
+    { id: 'nav-crons', label: 'Go to Crons', icon: Clock, shortcut: 'G K', group: 'Navigation', action: () => router.push('/crons'), keywords: ['scheduler', 'jobs'] },
+    { id: 'nav-emails', label: 'Go to Emails', icon: Mail, shortcut: 'G E', group: 'Navigation', action: () => router.push('/emails'), keywords: ['outbox', 'messages'] },
+    { id: 'nav-artifacts', label: 'Go to Artifacts', icon: FileBox, shortcut: 'G A', group: 'Navigation', action: () => router.push('/artifacts'), keywords: ['files'] },
+    { id: 'nav-policies', label: 'Go to Policies', icon: Shield, shortcut: 'G Y', group: 'Navigation', action: () => router.push('/policies'), keywords: ['guardrails', 'fleet'] },
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
-    
+
     // Quick Actions
-    { id: 'create-task', label: 'Create Task', icon: Plus, shortcut: 'C', group: 'Quick Actions', action: () => openTaskModal(), keywords: ['new', 'add'] },
-    { id: 'create-project', label: 'Create Project', icon: FolderKanban, shortcut: 'P', group: 'Quick Actions', action: () => router.push('/projects?create=true'), keywords: ['new', 'add'] },
-    { id: 'create-doc', label: 'Create Doc', icon: FileText, shortcut: 'D', group: 'Quick Actions', action: () => router.push('/docs?create=true'), keywords: ['new', 'add', 'document'] },
-    
+    { id: 'dispatch-agent', label: 'Dispatch Agent', icon: Send, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/openclaw'), keywords: ['new', 'task', 'agent'] },
+    { id: 'new-cron', label: 'New Cron', icon: Clock, group: 'Quick Actions', action: () => router.push('/crons?create=true'), keywords: ['new', 'schedule'] },
+    { id: 'new-email', label: 'New Email', icon: Mail, group: 'Quick Actions', action: () => router.push('/emails?create=true'), keywords: ['new', 'send'] },
+
     // AI Actions
     { id: 'ai-brief', label: 'Generate Daily Brief', icon: Zap, group: 'AI Actions', action: () => router.push('/dashboard?brief=generate'), keywords: ['summary', 'ai'] },
     { id: 'ai-status', label: 'Generate Status Update', icon: Zap, group: 'AI Actions', action: () => router.push('/reports?generate=status'), keywords: ['report', 'ai'] },
-    { id: 'ai-suggest', label: 'Get AI Suggestions', icon: Zap, group: 'AI Actions', action: () => router.push('/dashboard?suggestions=true'), keywords: ['help', 'ai'] },
-    
-    // Recent
-    { id: 'recent-1', label: 'Website Redesign', description: 'Project', icon: FolderKanban, group: 'Recent', action: () => router.push('/projects/website-redesign') },
-    { id: 'recent-2', label: 'Design homepage mockups', description: 'Task in Website Redesign', icon: CheckSquare, group: 'Recent', action: () => router.push('/my-work') },
-  ], [router, openTaskModal]);
+  ], [router]);
 
   const filteredCommands = useMemo(() => {
     if (!query) return commands;

@@ -7,7 +7,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { aiService } from './openai'
+import { aiService } from './ai-service'
 
 export interface ProjectSpecification {
   name: string

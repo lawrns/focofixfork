@@ -1,18 +1,29 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PauseCircle, PlayCircle } from 'lucide-react'
+import { PauseCircle, PlayCircle, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export default function PoliciesPage() {
   const { user, loading } = useAuth()
   const [fleetPaused, setFleetPaused] = useState(false)
   const [pausing, setPausing] = useState(false)
+  const [confirmPauseOpen, setConfirmPauseOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -22,10 +33,19 @@ export default function PoliciesPage() {
       .catch(() => {})
   }, [user])
 
-  async function toggleFleet() {
+  function handleToggleClick() {
+    if (fleetPaused) {
+      // Resume is instant — no confirmation needed
+      executeToggle('resume')
+    } else {
+      // Pause requires confirmation
+      setConfirmPauseOpen(true)
+    }
+  }
+
+  async function executeToggle(action: 'pause' | 'resume') {
     setPausing(true)
     try {
-      const action = fleetPaused ? 'resume' : 'pause'
       const res = await fetch('/api/policies/pause-fleet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +95,7 @@ export default function PoliciesPage() {
               <Button
                 variant={fleetPaused ? 'default' : 'destructive'}
                 size="sm"
-                onClick={toggleFleet}
+                onClick={handleToggleClick}
                 disabled={pausing}
               >
                 {fleetPaused ? (
@@ -88,7 +108,38 @@ export default function PoliciesPage() {
           </div>
         </div>
 
+        {/* + New Policy placeholder */}
+        <button
+          className="rounded-xl border-2 border-dashed border-border bg-transparent p-5 w-full flex items-center gap-3 hover:border-muted-foreground/50 transition-colors cursor-pointer"
+          onClick={() => toast.info('Custom policies coming soon')}
+        >
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-muted">
+            <Plus className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <span className="text-sm font-medium text-muted-foreground">+ New Policy</span>
+        </button>
       </div>
+
+      {/* Pause Fleet Confirmation Dialog */}
+      <AlertDialog open={confirmPauseOpen} onOpenChange={setConfirmPauseOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Halt all agents?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will immediately stop all active runs and scheduled crons.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => executeToggle('pause')}
+            >
+              Pause Fleet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   )
 }

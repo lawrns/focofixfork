@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Activity, RefreshCw, Clock, Zap } from 'lucide-react'
+import { Activity, RefreshCw, Clock, Zap, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -78,13 +78,26 @@ export default function RunsPage() {
 
       {runs.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
-          <div className="h-12 w-12 rounded-2xl bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
-            <Activity className="h-6 w-6 text-[color:var(--foco-teal)]" />
-          </div>
-          <p className="text-sm font-medium">No runs yet</p>
-          <p className="text-xs text-muted-foreground max-w-xs">
-            Agent executions will appear here.
-          </p>
+          {filter === 'failed' ? (
+            <>
+              <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              </div>
+              <p className="text-sm font-medium">No failed runs — fleet is healthy.</p>
+            </>
+          ) : (
+            <>
+              <div className="h-12 w-12 rounded-2xl bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
+                <Activity className="h-6 w-6 text-[color:var(--foco-teal)]" />
+              </div>
+              <p className="text-sm font-medium">
+                {filter === 'all' && 'No runs recorded. Dispatch your first agent.'}
+                {filter === 'pending' && 'Nothing queued.'}
+                {filter === 'running' && 'No agents running right now.'}
+                {filter === 'completed' && 'No completed runs yet.'}
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

@@ -70,7 +70,7 @@ export default function PoliciesPage() {
                 </Badge>
               </div>
               <p className="text-[13px] text-muted-foreground mb-3">
-                Immediately halt all autonomous agent activity — Bosun, Critter, and scheduled crons.
+                Immediately halt all autonomous agent activity — all agents and scheduled crons.
               </p>
               <Button
                 variant={fleetPaused ? 'default' : 'destructive'}

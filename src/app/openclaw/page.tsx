@@ -20,7 +20,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
-import { useSwarm } from '@/components/clawfusion/swarm-context'
+import { useSwarm } from '@/components/critter/swarm-context'
 
 interface TabRecord {
   id: string

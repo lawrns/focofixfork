@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { GitBranch, Mic, Users } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Crear cuenta — Foco',
-  description: 'Crea tu cuenta de Foco gratis.',
+  title: 'Create account — Critter',
+  description: 'Create your free Critter account.',
 }
 
 function RegisterFormWrapper() {
@@ -35,8 +35,8 @@ function RegisterFormWrapper() {
 
         {/* Logo */}
         <div className="relative flex items-center gap-2.5 z-10">
-          <Image src="/focologo.png" alt="Foco" width={28} height={28} className="w-7 h-7 rounded-lg" />
-          <span className="text-[16px] font-semibold tracking-tight text-foreground">Foco</span>
+          <Image src="/focologo.png" alt="Critter" width={28} height={28} className="w-7 h-7 rounded-lg" />
+          <span className="text-[16px] font-semibold tracking-tight text-foreground">Critter</span>
         </div>
 
         {/* Content */}
@@ -92,8 +92,8 @@ function RegisterFormWrapper() {
 
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Image src="/focologo.png" alt="Foco" width={26} height={26} className="w-6.5 h-6.5 rounded-md" />
-            <span className="text-[15px] font-semibold text-foreground">Foco</span>
+            <Image src="/focologo.png" alt="Critter" width={26} height={26} className="w-6.5 h-6.5 rounded-md" />
+            <span className="text-[15px] font-semibold text-foreground">Critter</span>
           </div>
 
           <div className="mb-8">

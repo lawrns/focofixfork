@@ -8,9 +8,13 @@ import {
   Menu,
   X,
   Home,
-  Inbox,
-  FolderKanban,
-  Users,
+  Send,
+  Activity,
+  BookOpen,
+  Clock,
+  Mail,
+  Archive,
+  Shield,
   Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -20,16 +24,19 @@ interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
-  badge?: number
+  section?: string
 }
 
 const navItems: NavItem[] = [
-  { label: 'Home', href: '/dashboard', icon: Home },
-  { label: 'Inbox', href: '/inbox', icon: Inbox, badge: 3 },
-  { label: 'My Work', href: '/my-work', icon: Home },
-  { label: 'Projects', href: '/projects', icon: FolderKanban },
-  { label: 'People', href: '/people', icon: Users },
-  { label: 'Settings', href: '/settings', icon: Settings },
+  { label: 'Dashboard', href: '/dashboard', icon: Home },
+  { label: 'Dispatch',  href: '/openclaw',  icon: Send },
+  { label: 'Runs',      href: '/runs',      icon: Activity },
+  { label: 'Ledger',    href: '/ledger',    icon: BookOpen },
+  { label: 'Crons',     href: '/crons',     icon: Clock,    section: 'Operate' },
+  { label: 'Emails',    href: '/emails',    icon: Mail },
+  { label: 'Artifacts', href: '/artifacts', icon: Archive },
+  { label: 'Policies',  href: '/policies',  icon: Shield },
+  { label: 'Settings',  href: '/settings',  icon: Settings, section: 'Settings' },
 ]
 
 export function MobileMenu() {
@@ -40,32 +47,25 @@ export function MobileMenu() {
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
 
-  // Detect mobile screen size
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
-
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Handle Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false)
-      }
+      if (e.key === 'Escape') setIsOpen(false)
     }
-
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
       return () => document.removeEventListener('keydown', handleEscape)
     }
   }, [isOpen])
 
-  // Handle swipe right to close
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -74,14 +74,9 @@ export function MobileMenu() {
   const handleTouchEnd = (e: React.TouchEvent) => {
     const touchEndX = e.changedTouches[0].clientX
     const touchEndY = e.changedTouches[0].clientY
-
     const deltaX = touchEndX - touchStartX.current
     const deltaY = Math.abs(touchEndY - touchStartY.current)
-
-    // Swipe right (deltaX > 50) with minimal vertical movement (deltaY < 50)
-    if (deltaX > 50 && deltaY < 50) {
-      setIsOpen(false)
-    }
+    if (deltaX > 50 && deltaY < 50) setIsOpen(false)
   }
 
   if (!isMobile) return null
@@ -133,13 +128,13 @@ export function MobileMenu() {
             role="navigation"
             aria-hidden="false"
           >
-            {/* Header with close button */}
+            {/* Header */}
             <div className="flex items-center justify-between h-14 px-4 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-lg bg-zinc-900 dark:bg-zinc-50 flex items-center justify-center">
-                  <span className="text-sm font-bold text-zinc-50 dark:text-zinc-900">F</span>
+                  <span className="text-sm font-bold text-zinc-50 dark:text-zinc-900">C</span>
                 </div>
-                <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Foco</span>
+                <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Critter</span>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -174,31 +169,34 @@ export function MobileMenu() {
                 const active = isActive(item.href)
 
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      'nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                      'hover:bg-zinc-100 dark:hover:bg-zinc-800',
-                      active
-                        ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
-                        : 'text-zinc-600 dark:text-zinc-400'
+                  <React.Fragment key={item.href}>
+                    {item.section && (
+                      <div className="px-4 pt-4 pb-1">
+                        <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400">
+                          {item.section}
+                        </span>
+                      </div>
                     )}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span className="flex-1">{item.label}</span>
-                    {item.badge && item.badge > 0 && (
-                      <span className="px-2 py-1 text-xs bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
+                    <Link
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        'nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                        'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+                        active
+                          ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
+                          : 'text-zinc-600 dark:text-zinc-400'
+                      )}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
+                  </React.Fragment>
                 )
               })}
             </nav>
 
-            {/* Footer - Safe area padding */}
+            {/* Footer */}
             <div className="h-4 flex-shrink-0 border-t border-zinc-200 dark:border-zinc-800" />
           </motion.nav>
         )}

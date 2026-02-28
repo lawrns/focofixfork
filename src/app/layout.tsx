@@ -8,8 +8,8 @@ import { GeistMono } from 'geist/font/mono';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'Foco - Project Management',
-  description: 'Modern project management for teams',
+  title: 'Critter — Agent Orchestration',
+  description: 'Visual orchestration for autonomous agents',
 };
 
 export const viewport: Viewport = {

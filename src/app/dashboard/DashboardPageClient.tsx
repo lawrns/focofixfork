@@ -1,585 +1,380 @@
 'use client'
 
-import { Suspense, useEffect, useState, useCallback, lazy, useRef } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { DashboardSkeleton, Skeleton } from '@/components/skeleton-screens'
-import { useToastHelpers, useToast } from '@/components/ui/toast'
-import { SkipToMainContent } from '@/components/ui/accessibility'
-import { ProductTour, useProductTour, defaultTourSteps } from '@/components/onboarding/product-tour'
-import { useOnboarding } from '@/lib/hooks/use-onboarding'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCreateTaskModal } from '@/features/tasks';
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { useSavedViews, ViewConfig } from '@/lib/hooks/use-saved-views'
-import { useCommandPaletteStore } from '@/lib/stores/foco-store'
-import { projectStore } from '@/lib/stores/project-store'
-import { Project } from '@/features/projects/types'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
-import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
-import { useKeyboardShortcuts, commonShortcuts } from '@/lib/hooks/use-keyboard-shortcuts'
-import { dialogs, placeholders, buttons } from '@/lib/copy'
-import { showProjectCreated, showError } from '@/lib/toast-helpers'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import ErrorBoundary from '@/components/error/error-boundary'
-import { filterValidSelectOptions } from '@/lib/ui/select-validation'
-import { Plus, Sparkles, Upload, Download, Loader2 } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
-import { audioService } from '@/lib/audio/audio-service'
-import { hapticService } from '@/lib/audio/haptic-service'
+import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
+import dynamic from 'next/dynamic'
 
-// Lazy load heavy components
-const ViewTabs = lazy(() => import('@/features/projects/components/ViewTabs'))
-const KanbanBoard = lazy(() => import('@/features/projects/components/kanban-board').then(m => ({ default: m.KanbanBoard })))
-const ProjectTable = lazy(() => import('@/features/projects/components/ProjectTable'))
-const ExportDialog = lazy(() => import('@/components/export/export-dialog'))
-const ImportDialog = lazy(() => import('@/components/import/import-dialog'))
-const AIProjectCreator = lazy(() => import('@/components/ai/ai-project-creator').then(m => ({ default: m.AIProjectCreator })))
-const QuickActionsMenu = lazy(() => import('@/components/ui/quick-actions-menu').then(m => ({ default: m.QuickActionsMenu })))
-const ImportExportModal = lazy(() => import('@/components/import-export/import-export-modal').then(m => ({ default: m.ImportExportModal })))
+// Lazy-load AIInsights — it instantiates OpenAIService at module load time,
+// which throws in dev when GLM_API_KEY / OPENAI_API_KEY is not set.
+// dynamic() isolates the error to this widget only.
+const AIInsights = dynamic(
+  () => import('@/components/dashboard/AIInsights').then(m => m.AIInsights),
+  { ssr: false, loading: () => null }
+)
+import {
+  Activity,
+  Cpu,
+  Pause,
+  Play,
+  Send,
+  RefreshCw,
+  Clock,
+  Loader2,
+  Zap,
+  BookOpen,
+} from 'lucide-react'
 
-function DashboardSkeletonWrapper() {
-  return (
-    <div className="space-y-6">
-      <SkipToMainContent />
-      <div id="main-content" className="space-y-6">
-        <DashboardSkeleton />
-      </div>
-    </div>
-  )
+type Run = {
+  id: string
+  runner: string
+  status: string
+  task_id: string | null
+  started_at: string | null
+  ended_at: string | null
 }
 
-interface Organization {
+type LedgerEvent = {
   id: string
-  name: string
-  slug: string
-  role: string
-  owner_id: string
+  event_type: string
+  runner: string | null
+  payload: any
   created_at: string
-  updated_at: string
+}
+
+function elapsed(start: string | null): string {
+  if (!start) return '—'
+  const ms = Date.now() - new Date(start).getTime()
+  const s = Math.floor(ms / 1000)
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m ${s % 60}s`
+  return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
 export default function DashboardPageClient() {
-  // ALL HOOKS MUST BE HERE - NO EXCEPTIONS
   const router = useRouter()
-  const pathname = usePathname()
   const { user, loading } = useAuth()
-  const { openTaskModal } = useCreateTaskModal()
-  const { createView, setActiveView } = useSavedViews()
-  const toast = useToastHelpers()
-  
-  // Register global shortcuts
-  useKeyboardShortcuts({
-    shortcuts: [
-      { ...commonShortcuts.search, action: () => useCommandPaletteStore.getState().open() },
-      { ...commonShortcuts.newTask, action: () => setShowNewProjectModal(true) }, // Using project modal as placeholder
-      { ...commonShortcuts.goHome, action: () => router.push('/dashboard') },
-      { ...commonShortcuts.goInbox, action: () => router.push('/inbox') },
-      { ...commonShortcuts.goMyWork, action: () => router.push('/my-work') },
-      { ...commonShortcuts.goProjects, action: () => router.push('/projects') },
-    ]
-  })
 
-  const toastNotification = useToast()
-  const { shouldShowTour, markTourComplete } = useOnboarding()
-  const { isOpen: isTourOpen, startTour, closeTour, completeTour } = useProductTour()
+  const [gatewayStatus, setGatewayStatus] = useState<'online' | 'offline' | 'loading'>('loading')
+  const [activeRuns, setActiveRuns] = useState<Run[]>([])
+  const [allRuns, setAllRuns] = useState<Run[]>([])
+  const [fleetPaused, setFleetPaused] = useState(false)
+  const [recentEvents, setRecentEvents] = useState<LedgerEvent[]>([])
+  const [refreshing, setRefreshing] = useState(false)
 
-  // Redirect to personalized dashboard - disabled to prevent flickering
-  // useEffect(() => {
-  //   if (!loading && user) {
-  //     router.replace('/dashboard/personalized')
-  //   }
-  // }, [loading, user, router])
+  // Quick dispatch state
+  const [dispatchAgent, setDispatchAgent] = useState('')
+  const [dispatchTask, setDispatchTask] = useState('')
+  const [dispatching, setDispatching] = useState(false)
 
-  // Set page title
+  const hasFetched = useRef(false)
+
   useEffect(() => {
-    document.title = 'Dashboard | Foco'
+    document.title = 'Dashboard | Critter'
   }, [])
 
-  // Auto-start tour only for brand-new users (created within last 48 hours)
-  useEffect(() => {
-    if (!user || !shouldShowTour() || isTourOpen) return;
-    const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
-    const isNewUser = Date.now() - createdAt < 48 * 60 * 60 * 1000;
-    if (!isNewUser) {
-      // Mark tour complete so it never re-triggers for returning users
-      markTourComplete();
-      return;
-    }
-    const timer = setTimeout(() => { startTour(); }, 1000);
-    return () => clearTimeout(timer);
-  }, [user, shouldShowTour, isTourOpen, startTour, markTourComplete])
-
-  const handleTourComplete = () => {
-    markTourComplete()
-    completeTour()
-  }
-  const [activeView, setActiveViewState] = useState<'table' | 'kanban' | 'gantt'>('table')
-  const [showNewProjectModal, setShowNewProjectModal] = useState(false)
-  const [showAIProjectModal, setShowAIProjectModal] = useState(false)
-  const [showBriefGeneration, setShowBriefGeneration] = useState(false)
-  const [showAISuggestions, setShowAISuggestions] = useState(false)
-  const [showImportExportModal, setShowImportExportModal] = useState(false)
-  const [importExportTab, setImportExportTab] = useState<'export' | 'import'>('export')
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false)
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
-  
-  // Refs to prevent duplicate fetch calls
-  const hasLoadedOrganizations = useRef(false)
-  const hasLoadedProjects = useRef(false)
-
-  const fetchOrganizations = useCallback(async () => {
-    if (!user || hasLoadedOrganizations.current) return
-
-    setIsLoadingOrganizations(true)
-    hasLoadedOrganizations.current = true
-    
-    try {
-      const data = await apiClient.get('/api/workspaces')
-
-      if (data.success) {
-        // Handle both direct array and nested data structure
-        const orgs = Array.isArray(data.data)
-          ? data.data
-          : Array.isArray(data.data?.data)
-            ? data.data.data
-            : []
-        setOrganizations(orgs)
-      } else {
-        throw new Error(data.error || 'Failed to load organizations')
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error)
-      const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar las organizaciones'
-      toast.error('Error al cargar organizaciones', errorMessage)
-      setOrganizations([]) // Ensure organizations is always an array
-    } finally {
-      setIsLoadingOrganizations(false)
-    }
-  }, [user, toast])
-
-  const fetchProjects = useCallback(async () => {
-    if (!user || hasLoadedProjects.current) return
-
-    setIsLoadingProjects(true)
-    hasLoadedProjects.current = true
-    
-    try {
-      const data = await apiClient.get('/api/projects')
-      
-      if (data.success) {
-        const projs = data.data?.data || data.data || []
-        setProjects(projs)
-      } else {
-        throw new Error(data.error || 'Failed to load projects')
-      }
-    } catch (error) {
-      console.error('Error fetching projects:', error)
-      const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los proyectos'
-      toast.error('Error al cargar proyectos', errorMessage)
-    } finally {
-      setIsLoadingProjects(false)
-    }
-  }, [user, toast])
-
-  // ALL useEffect hooks here
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login')
     }
   }, [user, loading, router])
 
-  // Handle query parameters from command palette
-  // Note: using window.location.search to avoid useSearchParams() SSR mismatch
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const briefParam = params.get('brief')
-    const suggestionsParam = params.get('suggestions')
+  const fetchAll = useCallback(async () => {
+    if (!user) return
+    setRefreshing(true)
 
-    if (briefParam === 'generate') {
-      setShowBriefGeneration(true)
-      toast.success('Generating daily brief...')
-      router.replace(pathname || '/dashboard')
-    }
+    try {
+      const [statusRes, runsRes, fleetRes, ledgerRes] = await Promise.allSettled([
+        fetch('/api/openclaw/status'),
+        fetch('/api/runs'),
+        fetch('/api/policies/fleet-status'),
+        fetch('/api/ledger?limit=10'),
+      ])
 
-    if (suggestionsParam === 'true') {
-      setShowAISuggestions(true)
-      toast.success('Loading AI suggestions...')
-      router.replace(pathname || '/dashboard')
-    }
-  }, [router, pathname, toast])
-
-  useEffect(() => {
-    // Check if we should show the new project modal
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('new') === 'true') {
-      setShowNewProjectModal(true)
-      // Clean up the URL
-      router.replace('/dashboard')
-    }
-  }, [router])
-
-  useEffect(() => {
-    // Load organizations and projects
-    if (user) {
-      fetchOrganizations()
-      fetchProjects()
-    }
-  }, [user, fetchOrganizations, fetchProjects])
-
-  // Listen for quick action events
-  useEffect(() => {
-    const handleOpenCreateProject = () => {
-      setShowNewProjectModal(true)
-    }
-
-    const handleOpenCreateTask = () => {
-      openTaskModal()
-    }
-
-    const handleOpenCreateOrganization = () => {
-      router.push('/organizations')
-    }
-
-    const handleToggleView = (event: CustomEvent) => {
-      const { view } = event.detail
-      if (view === 'board') {
-        setActiveViewState('kanban')
-      } else if (view === 'table') {
-        setActiveViewState('table')
+      // Gateway status
+      if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
+        const d = await statusRes.value.json()
+        setGatewayStatus(d.status === 'running' || d.online ? 'online' : 'offline')
+      } else {
+        setGatewayStatus('offline')
       }
+
+      // Runs
+      if (runsRes.status === 'fulfilled' && runsRes.value.ok) {
+        const d = await runsRes.value.json()
+        const runs: Run[] = d.data || d.runs || []
+        setAllRuns(runs)
+        setActiveRuns(runs.filter((r: Run) => r.status === 'running' || r.status === 'pending'))
+      }
+
+      // Fleet status
+      if (fleetRes.status === 'fulfilled' && fleetRes.value.ok) {
+        const d = await fleetRes.value.json()
+        if (typeof d.paused === 'boolean') setFleetPaused(d.paused)
+      }
+
+      // Ledger events
+      if (ledgerRes.status === 'fulfilled' && ledgerRes.value.ok) {
+        const d = await ledgerRes.value.json()
+        setRecentEvents(d.data || d.events || [])
+      }
+    } catch {
+      // individual errors handled above
+    } finally {
+      setRefreshing(false)
     }
+  }, [user])
 
-    const handleToggleTheme = () => {
-      // Toggle theme logic would go here
-      toast.success('Theme toggle coming soon!')
+  useEffect(() => {
+    if (user && !hasFetched.current) {
+      hasFetched.current = true
+      fetchAll()
     }
+  }, [user, fetchAll])
 
-    const handleShowShortcuts = () => {
-      toast.success('Keyboard shortcuts: Press "/" to open quick actions, "?" for help')
+  // Auto-refresh every 30s
+  useEffect(() => {
+    if (!user) return
+    const interval = setInterval(fetchAll, 30_000)
+    return () => clearInterval(interval)
+  }, [user, fetchAll])
+
+  const handleDispatch = async () => {
+    if (!dispatchAgent.trim() || !dispatchTask.trim()) return
+    setDispatching(true)
+    try {
+      const res = await fetch('/api/openclaw-gateway/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_id: dispatchAgent, task: dispatchTask }),
+      })
+      if (res.ok) {
+        setDispatchAgent('')
+        setDispatchTask('')
+        fetchAll()
+      }
+    } catch {
+      // silent
+    } finally {
+      setDispatching(false)
     }
+  }
 
-    window.addEventListener('open-create-project', handleOpenCreateProject)
-    window.addEventListener('open-create-task', handleOpenCreateTask)
-    window.addEventListener('open-create-organization', handleOpenCreateOrganization)
-    window.addEventListener('toggle-view', handleToggleView as EventListener)
-    window.addEventListener('toggle-theme', handleToggleTheme)
-    window.addEventListener('show-shortcuts', handleShowShortcuts)
-
-    return () => {
-      window.removeEventListener('open-create-project', handleOpenCreateProject)
-      window.removeEventListener('open-create-task', handleOpenCreateTask)
-      window.removeEventListener('open-create-organization', handleOpenCreateOrganization)
-      window.removeEventListener('toggle-view', handleToggleView as EventListener)
-      window.removeEventListener('toggle-theme', handleToggleTheme)
-      window.removeEventListener('show-shortcuts', handleShowShortcuts)
-    }
-  }, [router, toast, openTaskModal])
-
-  // TODO: Load projects data for Gantt view when needed
-
-  // CONDITIONAL RENDERING ONLY AFTER ALL HOOKS
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
-  // Saved views handlers
-  const handleViewSelect = (view: ViewConfig) => {
-    setActiveView(view.id)
-    // TODO: Apply view filters and settings to the current view
-    console.log('Selected view:', view)
-  }
-
-  const handleViewSave = (name: string) => {
-    // TODO: Capture current view configuration and save it
-    const currentConfig = {
-      type: 'table' as const,
-      filters: {},
-      // Add more current view state here
-    }
-    createView({
-      ...currentConfig,
-      name,
-    })
-  }
-
-  const currentViewConfig = {
-    type: 'table' as const,
-    filters: {},
-    // Add more current view configuration
-  }
-
-  const handleCreateProject = async (formData: FormData) => {
-    if (!user) return
-
-    setIsLoading(true)
-    try {
-      const payload = {
-        name: formData.get('name'),
-        description: formData.get('description'),
-        workspace_id: formData.get('workspace_id') || null,
-        due_date: formData.get('due_date') || null,
-      }
-
-      const response = await apiClient.post('/api/projects', payload)
-
-      if (response.success) {
-        audioService.play('complete')
-        hapticService.success()
-        projectStore.addProject(response.data)
-        setShowNewProjectModal(false)
-        toast.success('Project created successfully')
-      } else {
-        audioService.play('error')
-        hapticService.error()
-        console.error('Failed to create project:', response.error)
-        toast.error('Failed to create project', response.error)
-      }
-    } catch (error) {
-      audioService.play('error')
-      hapticService.error()
-      console.error('Error creating project:', error)
-      toast.error('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const recentEventsCount = recentEvents.length
 
   return (
     <ErrorBoundary>
       <PageShell>
-        <OnboardingChecklist />
         <PageHeader
           title="Dashboard"
-          subtitle={`${projects.length} projects`}
+          subtitle="Fleet overview"
           primaryAction={
-            <div className="flex items-center gap-2" data-tour="dashboard-actions">
-              <Button
-                onClick={() => setShowNewProjectModal(true)}
-                data-tour="create-project-button"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Create project</span>
-                <span className="sm:hidden">Create</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowAIProjectModal(true)}
-                data-tour="ai-button"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">AI create</span>
-                <span className="sm:hidden">AI</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchAll()}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+              <span className="hidden sm:inline ml-1">Refresh</span>
+            </Button>
           }
-          secondaryActions={[
-            { label: 'Import', onClick: () => { setImportExportTab('import'); setShowImportExportModal(true); }, icon: Upload },
-            { label: 'Export', onClick: () => { setImportExportTab('export'); setShowImportExportModal(true); }, icon: Download },
-          ]}
         />
 
-      {/* View Tabs */}
-      <Suspense fallback={<Skeleton className="h-10 w-64" />}>
-        <ViewTabs
-          activeTab={activeView}
-          onTabChange={(tabId) => {
-            if (tabId === 'table' || tabId === 'kanban' || tabId === 'gantt' || tabId === 'analytics' || tabId === 'goals') {
-              setActiveViewState(tabId as typeof activeView)
-            }
-          }}
-          data-tour="view-tabs"
-        />
-      </Suspense>
-
-      {/* Main Content */}
-      <Suspense fallback={<DashboardSkeleton />}>
-        {activeView === 'table' && (
-          <ProjectTable 
-            onCreateProject={() => setShowNewProjectModal(true)}
-            onTakeTour={startTour}
-            onImportProjects={() => {
-              console.log('Opening import dialog')
-            }}
-          />
-        )}
-        {activeView === 'kanban' && <KanbanBoard />}
-      </Suspense>
-
-      {/* Create Project Dialog */}
-      <Dialog open={showNewProjectModal} onOpenChange={setShowNewProjectModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{dialogs.createProject.title}</DialogTitle>
-            <DialogDescription>{dialogs.createProject.description}</DialogDescription>
-          </DialogHeader>
-          <form action={handleCreateProject} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder={placeholders.projectName}
-                required
-                autoFocus
-              />
+        {/* Fleet Status Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {/* Gateway */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium">Gateway</span>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder={placeholders.description}
-                rows={3}
-              />
-              <p className="text-xs text-zinc-500">Optional. Helps your team understand the goal.</p>
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                'h-2 w-2 rounded-full',
+                gatewayStatus === 'online' ? 'bg-emerald-500' :
+                gatewayStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+              )} />
+              <span className="text-sm font-semibold capitalize">
+                {gatewayStatus === 'loading' ? 'Checking...' : gatewayStatus}
+              </span>
             </div>
+          </div>
 
-            {organizations.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="workspace_id">Workspace</Label>
-                <Select name="workspace_id" disabled={isLoadingOrganizations}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select workspace" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filterValidSelectOptions(organizations).map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="due_date">Due date</Label>
-              <Input
-                id="due_date"
-                name="due_date"
-                type="date"
-              />
-              <p className="text-xs text-zinc-500">When should this be complete?</p>
+          {/* Active runs */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium">Active Runs</span>
             </div>
+            <span className="text-2xl font-bold font-mono">{activeRuns.length}</span>
+          </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowNewProjectModal(false)}
-              >
-                {buttons.cancel}
+          {/* Fleet state */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              {fleetPaused ? (
+                <Pause className="h-4 w-4 text-amber-500" />
+              ) : (
+                <Play className="h-4 w-4 text-emerald-500" />
+              )}
+              <span className="text-xs text-muted-foreground font-medium">Fleet State</span>
+            </div>
+            <Badge variant={fleetPaused ? 'secondary' : 'default'} className="text-xs">
+              {fleetPaused ? 'PAUSED' : 'ACTIVE'}
+            </Badge>
+          </div>
+
+          {/* Recent events */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium">Recent Events</span>
+            </div>
+            <span className="text-2xl font-bold font-mono">{recentEventsCount}</span>
+          </div>
+        </div>
+
+        {/* Two-column layout: Active Runs + Recent Ledger */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Active Runs */}
+          <div className="rounded-lg border border-border bg-card">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold">Active Runs</h3>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/runs')}>
+                View all
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {buttons.creating}
-                  </>
-                ) : (
-                  buttons.createProject
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* AI Project Creator Dialog */}
-      <Dialog open={showAIProjectModal} onOpenChange={setShowAIProjectModal}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-indigo-500/10">
-                <Sparkles className="h-5 w-5 text-indigo-500" />
-              </div>
-              <div>
-                <DialogTitle>Create with AI</DialogTitle>
-                <DialogDescription>
-                  Describe your project and AI will create tasks and milestones.
-                </DialogDescription>
-              </div>
             </div>
-          </DialogHeader>
-          <AIProjectCreator
-            onSuccess={async (projectId) => {
-              setShowAIProjectModal(false)
-              // Fetch project to get slug
-              try {
-                const response = await fetch(`/api/projects?id=${projectId}`)
-                const data = await response.json()
-                if (data.success && data.data?.slug) {
-                  router.push(`/projects/${data.data.slug}`)
-                } else {
-                  router.push('/projects')
-                }
-              } catch (error) {
-                console.error('Failed to fetch project:', error)
-                router.push('/projects')
-              }
-            }}
-            onCancel={() => setShowAIProjectModal(false)}
+            <div className="divide-y divide-border">
+              {activeRuns.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  No active runs. Dispatch an agent to get started.
+                </div>
+              ) : (
+                activeRuns.slice(0, 8).map((run) => (
+                  <div key={run.id} className="px-4 py-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">{run.runner}</span>
+                        <Badge variant="secondary" className="text-[10px] shrink-0">
+                          {run.status}
+                        </Badge>
+                      </div>
+                      {run.task_id && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {run.task_id}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">
+                      {elapsed(run.started_at)}
+                    </span>
+                    <CritterLaunchPadButton
+                      runId={run.id}
+                      runner={run.runner}
+                      variant="ghost"
+                      size="icon-sm"
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Recent Ledger Events */}
+          <div className="rounded-lg border border-border bg-card">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold">Recent Events</h3>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/ledger')}>
+                View all
+              </Button>
+            </div>
+            <div className="divide-y divide-border">
+              {recentEvents.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  No events yet.
+                </div>
+              ) : (
+                recentEvents.map((evt) => (
+                  <div key={evt.id} className="px-4 py-2.5 flex items-center gap-3">
+                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium">
+                        {evt.event_type}
+                      </span>
+                      {evt.runner && (
+                        <span className="text-xs text-muted-foreground ml-1.5">
+                          · {evt.runner}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                      {new Date(evt.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* AI Insights — silent fallback when AI service keys aren't configured */}
+        <ErrorBoundary fallback={() => null}>
+          <AIInsights
+            userId={user.id}
+            className="mb-6"
           />
-        </DialogContent>
-      </Dialog>
+        </ErrorBoundary>
 
-      {/* Product Tour */}
-      <ProductTour
-        isOpen={isTourOpen}
-        onClose={closeTour}
-        onComplete={handleTourComplete}
-        steps={defaultTourSteps}
-      />
-
-      {/* Quick Actions Menu */}
-      <QuickActionsMenu />
-
-      {/* Import/Export Modal */}
-      <ImportExportModal
-        projects={projects}
-        tasks={[]}
-        workspaces={organizations}
-        labels={[]}
-        open={showImportExportModal}
-        onOpenChange={setShowImportExportModal}
-        defaultTab={importExportTab}
-        onImportComplete={(result) => {
-          if (result.success) {
-            toastNotification.addToast({
-              type: 'success',
-              title: 'Import complete',
-              description: `${result.imported.projects + result.imported.tasks} items imported`
-            })
-            fetchOrganizations()
-            fetchProjects()
-          }
-        }}
-        onExportComplete={() => {
-          toastNotification.addToast({
-            type: 'success',
-            title: 'Export complete',
-            description: 'Your data has been exported'
-          })
-        }}
-      />
-    </PageShell>
+        {/* Quick Dispatch */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Send className="h-4 w-4 text-[color:var(--foco-teal)]" />
+            Quick Dispatch
+          </h3>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              placeholder="Agent ID"
+              value={dispatchAgent}
+              onChange={(e) => setDispatchAgent(e.target.value)}
+              className="sm:w-40"
+            />
+            <Input
+              placeholder="Task description"
+              value={dispatchTask}
+              onChange={(e) => setDispatchTask(e.target.value)}
+              className="flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleDispatch()}
+            />
+            <CritterLaunchPadButton
+              label={dispatching ? 'Dispatching...' : 'Dispatch'}
+              variant="default"
+              size="sm"
+              disabled={dispatching || !dispatchAgent.trim() || !dispatchTask.trim()}
+              onClick={handleDispatch}
+            />
+          </div>
+        </div>
+      </PageShell>
     </ErrorBoundary>
   )
 }

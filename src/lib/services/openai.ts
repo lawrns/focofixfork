@@ -57,11 +57,14 @@ export class OpenAIService {
     let chatModel = 'gpt-4o-mini'
 
     if (provider === 'glm') {
-      apiKey = process.env.GLM_API_KEY || ''
-      baseURL = 'https://api.z.ai/api/paas/v4/'
-      model = process.env.GLM_MODEL || 'glm-4.7'
+      // Support both GLM_API_KEY and Z_AI_API_KEY (user preference)
+      apiKey = process.env.Z_AI_API_KEY || process.env.GLM_API_KEY || ''
+      // Use the CODING endpoint for paid GLM Coding plans (Max-Quarterly, etc.)
+      baseURL = 'https://api.z.ai/api/coding/paas/v4/'
+      model = process.env.GLM_MODEL || 'glm-5'
       chatModel = model
-      console.log('[OpenAIService] Using GLM (Z.AI) provider with model:', model)
+      console.log('[OpenAIService] Using GLM (Z.AI) CODING endpoint with model:', model)
+      console.log('[OpenAIService] API Key present:', apiKey ? 'Yes (length: ' + apiKey.length + ')' : 'No')
     } else if (provider === 'deepseek') {
       apiKey = process.env.DEEPSEEK_API_KEY || ''
       baseURL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
@@ -76,10 +79,9 @@ export class OpenAIService {
     }
 
     // In production without API key, we'll use mock responses
-    if (!apiKey && this.isProduction) {
-      console.warn('AI API key not configured in production - using mock responses')
-    } else if (!apiKey) {
-      throw new Error(`AI API key not configured for provider: ${provider}`)
+    // In development, also use mock responses instead of crashing
+    if (!apiKey) {
+      console.warn(`[OpenAIService] AI API key not configured for provider: ${provider} - using mock responses`)
     }
 
     this.config = {
@@ -107,6 +109,13 @@ export class OpenAIService {
    * Test connection to OpenAI API
    */
   async testConnection(): Promise<{ success: boolean; message: string; models?: string[] }> {
+    if (!this.client) {
+      return {
+        success: false,
+        message: 'OpenAI client not initialized - API key not configured'
+      }
+    }
+
     try {
       // Try a simple models list call to verify API key
       const models = await this.client.models.list()
@@ -129,6 +138,11 @@ export class OpenAIService {
    * Generate text completion using OpenAI
    */
   async generate(request: AIRequest): Promise<AIResponse> {
+    // Check if client is initialized (API key available)
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized - API key not configured')
+    }
+
     try {
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = []
 
@@ -184,6 +198,13 @@ export class OpenAIService {
     userId: string
     correlationId?: string
   }): Promise<{ success: boolean; data?: any; error?: string }> {
+    if (!this.client) {
+      return {
+        success: false,
+        error: 'OpenAI client not initialized - API key not configured'
+      }
+    }
+
     try {
       const systemPrompt = 'You are a helpful AI assistant for project management. Provide concise, actionable advice.'
 

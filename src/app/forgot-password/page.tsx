@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
           <div className="flex justify-center mb-4">
             <Image
               src="/focologo.png"
-              alt="Foco Logo"
+              alt="Critter Logo"
               width={64}
               height={64}
               className="h-16 w-auto"

@@ -10,7 +10,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
-import { CritterLaunchPadButton } from '@/components/clawfusion/critter-launch-pad-button'
+import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
 
 // Status badge color map
 const statusColors: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function RunsPage() {
     <PageShell>
       <PageHeader
         title="Runs"
-        subtitle="Bosun &amp; Critter execution history"
+        subtitle="Agent execution history"
         primaryAction={
           <Button variant="outline" size="sm" onClick={load} disabled={fetching}>
             <RefreshCw className={cn('h-4 w-4 mr-2', fetching && 'animate-spin')} />
@@ -83,7 +83,7 @@ export default function RunsPage() {
           </div>
           <p className="text-sm font-medium">No runs yet</p>
           <p className="text-xs text-muted-foreground max-w-xs">
-            Bosun and Critter executions will appear here.
+            Agent executions will appear here.
           </p>
         </div>
       ) : (

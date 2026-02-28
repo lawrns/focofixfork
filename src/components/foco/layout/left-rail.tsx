@@ -1,34 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
-import { useCreateTaskModal } from '@/features/tasks';
 import { useAuth } from '@/lib/hooks/use-auth';
 import {
   Home,
-  Inbox,
-  FolderKanban,
-  CheckSquare,
-  Calendar,
-  Users,
-  BarChart3,
   Settings,
   PanelLeftClose,
   PanelLeft,
-  Plus,
-  Star,
-  GitBranch,
-  BookOpen,
+  Send,
   Activity,
   Clock,
   Mail,
   Archive,
   Shield,
-  Cpu,
+  BookOpen,
+  Radar,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -43,104 +34,31 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Home',    href: '/dashboard', icon: Home,        shortcut: 'G H' },
-  { label: 'Inbox',   href: '/inbox',     icon: Inbox,       shortcut: 'G I' },
-  { label: 'My Work', href: '/my-work',   icon: CheckSquare, shortcut: 'G M' },
+  { label: 'Dashboard',  href: '/dashboard', icon: Home,     shortcut: 'G H' },
+  { label: 'Dispatch',   href: '/openclaw',  icon: Send,     shortcut: 'G D' },
+  { label: 'Intel Feed', href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
+  { label: 'Runs',       href: '/runs',      icon: Activity, shortcut: 'G R' },
+  { label: 'Ledger',     href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
 ];
 
-const baseWorkspaceNavItems: NavItem[] = [
-  { label: 'Projects',  href: '/projects',  icon: FolderKanban, shortcut: 'G P' },
-  { label: 'Proposals', href: '/proposals', icon: GitBranch,    shortcut: 'G O' },
-  { label: 'Timeline',  href: '/timeline',  icon: Calendar,     shortcut: 'G T' },
-  { label: 'People',    href: '/people',    icon: Users,        shortcut: 'G W' },
-  { label: 'Reports',   href: '/reports',   icon: BarChart3,    shortcut: 'G B' },
+const operateNavItems: NavItem[] = [
+  { label: 'Crons',     href: '/crons',     icon: Clock,    shortcut: 'G K' },
+  { label: 'Emails',    href: '/emails',    icon: Mail,     shortcut: 'G E' },
+  { label: 'Artifacts', href: '/artifacts', icon: Archive,  shortcut: 'G A' },
+  { label: 'Policies',  href: '/policies',  icon: Shield,   shortcut: 'G Y' },
 ];
-
-const clawfusionNavItems: NavItem[] = [
-  { label: 'Critter',   href: '/openclaw',  icon: Cpu,          shortcut: 'G C' },
-  { label: 'Runs',      href: '/runs',      icon: Activity,     shortcut: 'G R' },
-  { label: 'Crons',     href: '/crons',     icon: Clock,        shortcut: 'G K' },
-  { label: 'Emails',    href: '/emails',    icon: Mail,         shortcut: 'G E' },
-  { label: 'Artifacts', href: '/artifacts', icon: Archive,      shortcut: 'G A' },
-  { label: 'Ledger',    href: '/ledger',    icon: BookOpen,     shortcut: 'G L' },
-  { label: 'Policies',  href: '/policies',  icon: Shield,       shortcut: 'G Y' },
-];
-
-const pinnedProjects: { id: string; name: string; slug: string; color: string }[] = [];
 
 export function LeftRail() {
   const pathname = usePathname();
+  const router = useRouter();
   const { sidebarCollapsed: sidebarCollapsedRaw, toggleSidebar } = useUIPreferencesStore();
-  const { openTaskModal } = useCreateTaskModal();
   const { user } = useAuth();
-  const [workspaceNavItems, setWorkspaceNavItems] = useState<NavItem[]>(baseWorkspaceNavItems);
-  const [inboxBadge, setInboxBadge] = useState<number | undefined>(undefined);
 
   // Gate sidebarCollapsed on isMounted — Zustand persist reads localStorage
   // synchronously on the client, causing SSR mismatch if used directly.
-  // Always start collapsed=false to match SSR, then switch after mount.
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
   const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
-
-  /* Fetch unread inbox count */
-  useEffect(() => {
-    if (!user) return;
-    fetch('/api/notifications?unread=true', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        const count = data?.count ?? data?.data?.length ?? 0;
-        setInboxBadge(count > 0 ? count : undefined);
-      })
-      .catch(() => {});
-  }, [user]);
-
-  /* Add Cursos for Fyves members */
-  useEffect(() => {
-    let isMounted = true;
-
-    const addCursosLink = async () => {
-      if (!user?.email) {
-        if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
-        return;
-      }
-      if (!user.email.endsWith('@fyves.com')) {
-        if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
-        return;
-      }
-      try {
-        const res = await fetch('/api/workspaces');
-        if (!res.ok) {
-          if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
-          return;
-        }
-        const data = await res.json();
-        const fyvesWorkspace = data.data?.workspaces?.find(
-          (ws: any) => ws.slug === 'fyves-team'
-        );
-        if (isMounted) {
-          if (fyvesWorkspace) {
-            setWorkspaceNavItems([
-              ...baseWorkspaceNavItems,
-              {
-                label: 'Cursos',
-                href: `/organizations/${fyvesWorkspace.id}/cursos`,
-                icon: BookOpen,
-                shortcut: 'G C',
-              },
-            ]);
-          } else {
-            setWorkspaceNavItems(baseWorkspaceNavItems);
-          }
-        }
-      } catch {
-        if (isMounted) setWorkspaceNavItems(baseWorkspaceNavItems);
-      }
-    };
-
-    addCursosLink();
-    return () => { isMounted = false; };
-  }, [user?.email]);
 
   /* ── NavLink ──────────────────────────────────────────────── */
   const NavLink = ({ item }: { item: NavItem }) => {
@@ -230,14 +148,14 @@ export function LeftRail() {
         <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
           <Image
             src="/focologo.png"
-            alt="Foco"
+            alt="Critter"
             width={28}
             height={28}
             className="h-7 w-7 rounded-lg flex-shrink-0"
           />
           {!sidebarCollapsed && (
             <span className="text-[15px] font-semibold tracking-tight text-foreground truncate">
-              Foco
+              Critter
             </span>
           )}
         </Link>
@@ -246,7 +164,7 @@ export function LeftRail() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-hide">
 
-        {/* Create button */}
+        {/* Dispatch button */}
         {sidebarCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -254,87 +172,43 @@ export function LeftRail() {
                 variant="ghost"
                 size="icon"
                 className="w-full h-9 mb-3 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-                onClick={() => openTaskModal()}
+                onClick={() => router.push('/openclaw')}
               >
-                <Plus className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Create task</TooltipContent>
+            <TooltipContent side="right">Dispatch</TooltipContent>
           </Tooltip>
         ) : (
           <Button
             variant="ghost"
             className="w-full justify-start mb-3 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-            onClick={() => openTaskModal()}
+            onClick={() => router.push('/openclaw')}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Create
+            <Send className="h-4 w-4 mr-2" />
+            Dispatch
           </Button>
         )}
 
         {/* Main nav */}
         {mainNavItems.map(item => (
-          <NavLink
-            key={item.href}
-            item={item.href === '/inbox' ? { ...item, badge: inboxBadge } : item}
-          />
+          <NavLink key={item.href} item={item} />
         ))}
 
         {/* Divider */}
         <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* Workspace label */}
+        {/* Operate section label */}
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Workspace
+              Operate
             </span>
           </div>
         )}
 
-        {/* Workspace nav */}
-        {workspaceNavItems.map(item => <NavLink key={item.href} item={item} />)}
-
-        {/* Critter divider */}
-        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
-
-        {/* Critter section label */}
-        {!sidebarCollapsed && (
-          <div className="px-3 mb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Critter
-            </span>
-          </div>
-        )}
-
-        {/* Critter nav */}
-        {clawfusionNavItems.map(item => <NavLink key={item.href} item={item} />)}
-
-        {/* Pinned projects */}
-        {!sidebarCollapsed && pinnedProjects.length > 0 && (
-          <>
-            <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
-            <div className="px-3 mb-1 flex items-center justify-between">
-              <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-                Pinned
-              </span>
-              <Star className="h-3 w-3 text-muted-foreground" />
-            </div>
-            {pinnedProjects.map(project => (
-              <Link
-                key={project.id}
-                href={`/projects/${project.slug}`}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-              >
-                <div
-                  className="h-2 w-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: project.color }}
-                />
-                <span className="truncate">{project.name}</span>
-              </Link>
-            ))}
-          </>
-        )}
+        {/* Operate nav */}
+        {operateNavItems.map(item => <NavLink key={item.href} item={item} />)}
       </nav>
 
       {/* Bottom: Settings + Collapse */}

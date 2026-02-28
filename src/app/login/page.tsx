@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { GitBranch, Mic, Zap } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Sign in — Foco',
-  description: 'Sign in to your Foco account.',
+  title: 'Sign in — Critter',
+  description: 'Sign in to your Critter account.',
 }
 
 export default function LoginPage() {
@@ -34,15 +34,15 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative flex items-center gap-2.5 z-10">
-          <Image src="/focologo.png" alt="Foco" width={28} height={28} className="w-7 h-7 rounded-lg" />
-          <span className="text-[16px] font-semibold tracking-tight text-foreground">Foco</span>
+          <Image src="/focologo.png" alt="Critter" width={28} height={28} className="w-7 h-7 rounded-lg" />
+          <span className="text-[16px] font-semibold tracking-tight text-foreground">Critter</span>
         </div>
 
         {/* Feature list */}
         <div className="relative z-10 space-y-8">
           <div>
             <p className="text-xs font-mono-display text-[color:var(--foco-teal)] tracking-widest uppercase mb-4">
-              Why Foco
+              Why Critter
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-foreground leading-snug mb-2">
               From idea to team
@@ -73,7 +73,7 @@ export default function LoginPage() {
         {/* Testimonial */}
         <div className="relative z-10">
           <p className="text-[13px] text-muted-foreground italic leading-relaxed mb-3">
-            &ldquo;Foco cut our weekly status meetings by 80%. We now speak our projects and the team executes.&rdquo;
+            &ldquo;Critter gives us full visibility into every agent run. We dispatch, monitor, and sleep easy.&rdquo;
           </p>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
@@ -90,8 +90,8 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Image src="/focologo.png" alt="Foco" width={26} height={26} className="w-6.5 h-6.5 rounded-md" />
-            <span className="text-[15px] font-semibold text-foreground">Foco</span>
+            <Image src="/focologo.png" alt="Critter" width={26} height={26} className="w-6.5 h-6.5 rounded-md" />
+            <span className="text-[15px] font-semibold text-foreground">Critter</span>
           </div>
 
           <LoginForm />

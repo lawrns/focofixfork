@@ -14,7 +14,7 @@
  * Part of Foco's Phase 2: Simplified Mode - Replace Analytics with AI Insights
  */
 
-import { aiService } from './openai'
+import { aiService } from './ai-service'
 import { supabase as supabaseClient } from '@/lib/supabase-client'
 
 const untypedSupabase = supabaseClient as any

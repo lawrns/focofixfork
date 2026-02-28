@@ -61,3 +61,6 @@ pids/
 
 # Local Netlify folder
 .netlify
+
+# Claude Code local session data
+.claude/

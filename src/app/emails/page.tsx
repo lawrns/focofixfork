@@ -7,6 +7,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -35,10 +39,96 @@ const statusColors: Record<string, string> = {
   failed: 'bg-red-500/15 text-red-600 dark:text-red-400',
 }
 
+function CreateEmailDialog({ open, onOpenChange, onCreated }: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  onCreated: (email: EmailItem) => void
+}) {
+  const [to, setTo] = useState('')
+  const [subject, setSubject] = useState('')
+  const [bodyMd, setBodyMd] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!to.trim() || !subject.trim() || !bodyMd.trim()) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/emails/outbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: to.trim(), subject: subject.trim(), body_md: bodyMd.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        toast.error(json.error ?? 'Failed to queue email')
+        return
+      }
+      toast.success('Email queued')
+      onCreated(json.data)
+      onOpenChange(false)
+      setTo('')
+      setSubject('')
+      setBodyMd('')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New Email</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email-to">To</Label>
+            <Input
+              id="email-to"
+              type="email"
+              placeholder="recipient@example.com"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email-subject">Subject</Label>
+            <Input
+              id="email-subject"
+              placeholder="Your subject"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email-body">Body (Markdown)</Label>
+            <Textarea
+              id="email-body"
+              placeholder="Write your message…"
+              rows={5}
+              value={bodyMd}
+              onChange={e => setBodyMd(e.target.value)}
+              required
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Sending…' : 'Queue Email'}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function EmailsPage() {
   const { user, loading } = useAuth()
   const [outbox, setOutbox] = useState<EmailItem[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -51,7 +141,22 @@ export default function EmailsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Emails" subtitle="Outbox and templates" />
+      <PageHeader
+        title="Emails"
+        subtitle="Outbox and templates"
+        primaryAction={
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            New Email
+          </Button>
+        }
+      />
+
+      <CreateEmailDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onCreated={email => setOutbox(o => [email, ...o])}
+      />
 
       <Tabs defaultValue="outbox">
         <TabsList>
@@ -64,7 +169,7 @@ export default function EmailsPage() {
             <div className="flex flex-col items-center justify-center min-h-[200px] gap-3">
               <Mail className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">No emails in outbox</p>
-              <Button size="sm" onClick={() => toast.info('Email creation coming soon')}>
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />
                 New Email
               </Button>

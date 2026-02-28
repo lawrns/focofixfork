@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Loader2, X } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 import { audioService } from '@/lib/audio/audio-service'
@@ -179,18 +179,7 @@ export function CreateTaskModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Create New Task</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 rounded-full"
-              aria-label="Close dialog"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle>Create New Task</DialogTitle>
         </DialogHeader>
 
         {loadingData ? (

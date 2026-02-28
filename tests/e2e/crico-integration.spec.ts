@@ -14,24 +14,6 @@ test.describe('CRICO Integration Tests', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('API: Voice command processing', async ({ request }) => {
-    // Test voice command API
-    const response = await request.post(`${BASE_URL}/api/crico/voice`, {
-      data: {
-        action: 'process',
-        transcript: 'Create a task to test Crico integration',
-        sttConfidence: 0.95,
-        environment: 'development',
-      },
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Should return 401 without auth (expected)
-    expect(response.status()).toBe(401);
-  });
-
   test('API: Actions endpoint accessibility', async ({ request }) => {
     const response = await request.get(`${BASE_URL}/api/crico/actions?limit=10`);
     
@@ -133,22 +115,6 @@ test.describe('CRICO Integration Tests', () => {
     expect(true).toBe(true);
   });
 
-  test('API: Voice command validation works', async ({ request }) => {
-    const response = await request.post(`${BASE_URL}/api/crico/voice`, {
-      data: {
-        action: 'process',
-        // Missing transcript - should fail validation
-        sttConfidence: 0.95,
-      },
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Should return 401 (auth) or 400 (validation)
-    expect([400, 401]).toContain(response.status());
-  });
-
   test('API: Actions validation works', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/api/crico/actions`, {
       data: {
@@ -166,7 +132,6 @@ test.describe('CRICO Integration Tests', () => {
 
   test('Server: All Crico API routes are accessible', async ({ request }) => {
     const routes = [
-      '/api/crico/voice',
       '/api/crico/actions',
       '/api/crico/suggestions',
       '/api/crico/alignment',
@@ -208,13 +173,12 @@ test.describe('CRICO Integration Tests', () => {
   test('Integration: Crico TypeScript modules exist', async ({ page }) => {
     const fs = require('fs');
     const path = require('path');
-    
+
     const modules = [
       'src/lib/crico/index.ts',
       'src/lib/crico/types/index.ts',
       'src/lib/crico/agents/base-agent.ts',
       'src/lib/crico/actions/action-executor.ts',
-      'src/lib/crico/voice/voice-controller.ts',
       'src/lib/crico/alignment/alignment-engine.ts',
       'src/lib/crico/suggestions/suggestion-engine.ts',
       'src/lib/crico/audit/audit-service.ts',
@@ -230,9 +194,8 @@ test.describe('CRICO Integration Tests', () => {
   test('Integration: Crico API routes exist', async ({ page }) => {
     const fs = require('fs');
     const path = require('path');
-    
+
     const routes = [
-      'src/app/api/crico/voice/route.ts',
       'src/app/api/crico/actions/route.ts',
       'src/app/api/crico/suggestions/route.ts',
       'src/app/api/crico/alignment/route.ts',
@@ -247,7 +210,6 @@ test.describe('CRICO Integration Tests', () => {
 
   test('Performance: API endpoints respond quickly', async ({ request }) => {
     const routes = [
-      '/api/crico/voice',
       '/api/crico/actions',
       '/api/crico/suggestions',
       '/api/crico/alignment',
@@ -270,7 +232,6 @@ test.describe('CRICO Integration Tests', () => {
       { method: 'GET', path: '/api/crico/suggestions' },
       { method: 'GET', path: '/api/crico/alignment' },
       { method: 'GET', path: '/api/crico/audit' },
-      { method: 'POST', path: '/api/crico/voice' },
     ];
 
     for (const route of routes) {
@@ -379,7 +340,6 @@ test.describe('CRICO Implementation Validation', () => {
 
     const types = [
       'CricoAction',
-      'VoiceCommand',
       'Agent',
       'Suggestion',
       'AlignmentCheck',
@@ -398,7 +358,6 @@ test.describe('CRICO Implementation Validation', () => {
     const path = require('path');
 
     const endpoints = [
-      'src/app/api/crico/voice/route.ts',
       'src/app/api/crico/actions/route.ts',
       'src/app/api/crico/suggestions/route.ts',
       'src/app/api/crico/alignment/route.ts',

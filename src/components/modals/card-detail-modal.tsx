@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, ChevronLeft, ChevronRight, Edit2, Trash2, Copy, Archive, Calendar, User, Tag, Paperclip, MessageSquare } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit2, Trash2, Copy, Archive, Calendar, User, Tag, Paperclip, MessageSquare } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -202,13 +202,13 @@ export function CardDetailModal({
         {/* Header with cover */}
         <div className="relative">
           {optimisticCard.cover && (
-            <CardCoverDisplay 
-              cover={optimisticCard.cover} 
+            <CardCoverDisplay
+              cover={optimisticCard.cover}
               size="full"
               className="rounded-t-lg"
             />
           )}
-          
+
           {/* Navigation arrows */}
           {canNavigate && onNavigateCard && (
             <>
@@ -230,16 +230,6 @@ export function CardDetailModal({
               </Button>
             </>
           )}
-
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="absolute right-4 top-4 bg-white/80 hover:bg-white/90 backdrop-blur-sm"
-          >
-            <X className="w-4 h-4" />
-          </Button>
         </div>
 
         {/* Content */}

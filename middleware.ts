@@ -73,7 +73,6 @@ export async function middleware(req: NextRequest) {
     '/organizations',
     '/settings',
     '/profile',
-    '/voice',
     '/instructions',
     '/runs',
     '/crons',

@@ -168,15 +168,6 @@ test.describe('Production - My Work Page Functionality', () => {
 });
 
 test.describe('Production - CRICO API Endpoints', () => {
-  test('CRICO voice endpoint exists', async ({ request }) => {
-    const response = await request.post(`${PRODUCTION_URL}/api/crico/voice`, {
-      data: { action: 'process', transcript: 'test', sttConfidence: 0.9 }
-    });
-    
-    // Should return 401 (auth required) not 404 (not found)
-    expect(response.status()).toBe(401);
-  });
-
   test('CRICO actions endpoint exists', async ({ request }) => {
     const response = await request.get(`${PRODUCTION_URL}/api/crico/actions`);
     

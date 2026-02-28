@@ -243,7 +243,7 @@ export default function ClawdbotPage() {
         <div className="mb-6">
           <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-[color:var(--foco-teal)]" />
-            Today's Brief
+            Today&apos;s Brief
           </h2>
           {intelError ? (
             <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">

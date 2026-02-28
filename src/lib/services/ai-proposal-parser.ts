@@ -6,7 +6,7 @@
  * and what-if scenario planning with high-quality prompts and comprehensive error handling.
  */
 
-import { aiService } from './openai'
+import { aiService } from './ai-service'
 import type {
   WorkItem,
   WorkItemType,

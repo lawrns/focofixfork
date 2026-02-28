@@ -14,7 +14,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { aiService } from './openai'
+import { aiService } from './ai-service'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   Proposal,

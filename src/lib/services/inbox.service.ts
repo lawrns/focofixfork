@@ -7,7 +7,7 @@
  * Phase 2: Simplified Mode - The #1 Essential Tool
  */
 
-import { aiService } from './openai'
+import { aiService } from './ai-service'
 import { supabase as supabaseClient } from '@/lib/supabase-client'
 
 const untypedSupabase = supabaseClient as any

@@ -1,16 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, Play, ToggleLeft, ToggleRight, Plus } from 'lucide-react'
+import { Clock, Play, ToggleLeft, ToggleRight, Plus, History, Settings, Folder, AlertCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { toast } from 'sonner'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 type Cron = {
   id: string
@@ -20,7 +23,49 @@ type Cron = {
   enabled: boolean
   last_run_at: string | null
   next_run_at: string | null
+  last_status: string | null
+  policy: Record<string, unknown> | null
+  project_id: string | null
+  project?: {
+    id: string
+    name: string
+    color: string
+  } | null
+  metadata: Record<string, unknown> | null
   created_at: string
+}
+
+type AutomationRun = {
+  id: string
+  status: string
+  trigger_type: string
+  started_at: string | null
+  ended_at: string | null
+  duration_ms: number | null
+  error: string | null
+  created_at: string
+}
+
+type Project = {
+  id: string
+  name: string
+  color: string
+}
+
+const statusIcons: Record<string, React.ReactNode> = {
+  completed: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+  failed: <XCircle className="h-4 w-4 text-red-500" />,
+  running: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
+  pending: <Clock className="h-4 w-4 text-yellow-500" />,
+  cancelled: <AlertCircle className="h-4 w-4 text-zinc-500" />,
+}
+
+const statusColors: Record<string, string> = {
+  completed: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  failed: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  running: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+  pending: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
+  cancelled: 'bg-zinc-500/15 text-zinc-500',
 }
 
 function describeCron(expr: string): string {
@@ -51,15 +96,23 @@ function describeCron(expr: string): string {
   return ''
 }
 
-function CreateCronDialog({ open, onOpenChange, onCreated }: {
+function CreateCronDialog({
+  open,
+  onOpenChange,
+  onCreated,
+  projects,
+}: {
   open: boolean
   onOpenChange: (v: boolean) => void
   onCreated: (cron: Cron) => void
+  projects: Project[]
 }) {
   const [name, setName] = useState('')
   const [schedule, setSchedule] = useState('0 * * * *')
   const [handler, setHandler] = useState('')
   const [enabled, setEnabled] = useState(true)
+  const [projectId, setProjectId] = useState('')
+  const [policy, setPolicy] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function submit(e: React.FormEvent) {
@@ -70,7 +123,14 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
       const res = await fetch('/api/crons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), schedule: schedule.trim(), handler: handler.trim(), enabled }),
+        body: JSON.stringify({
+          name: name.trim(),
+          schedule: schedule.trim(),
+          handler: handler.trim(),
+          enabled,
+          project_id: projectId || undefined,
+          policy: policy ? JSON.parse(policy) : {},
+        }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -83,6 +143,8 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
       setName('')
       setSchedule('0 * * * *')
       setHandler('')
+      setProjectId('')
+      setPolicy('')
       setEnabled(true)
     } finally {
       setSaving(false)
@@ -102,7 +164,7 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
               id="cron-name"
               placeholder="Daily report"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
@@ -112,14 +174,12 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
               id="cron-schedule"
               placeholder="0 * * * *"
               value={schedule}
-              onChange={e => setSchedule(e.target.value)}
+              onChange={(e) => setSchedule(e.target.value)}
               required
               className="font-mono"
             />
             {describeCron(schedule) && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {describeCron(schedule)}
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{describeCron(schedule)}</p>
             )}
           </div>
           <div className="space-y-1.5">
@@ -128,9 +188,42 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
               id="cron-handler"
               placeholder="jobs/daily-report"
               value={handler}
-              onChange={e => setHandler(e.target.value)}
+              onChange={(e) => setHandler(e.target.value)}
               required
               className="font-mono"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cron-project">Project (optional)</Label>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: p.color || '#64748b' }}
+                      />
+                      {p.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cron-policy">Policy (JSON, optional)</Label>
+            <Textarea
+              id="cron-policy"
+              placeholder='{"max_retries": 3}'
+              value={policy}
+              onChange={(e) => setPolicy(e.target.value)}
+              className="font-mono text-xs"
+              rows={3}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -138,16 +231,91 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
               id="cron-enabled"
               type="checkbox"
               checked={enabled}
-              onChange={e => setEnabled(e.target.checked)}
+              onChange={(e) => setEnabled(e.target.checked)}
               className="h-4 w-4"
             />
-            <Label htmlFor="cron-enabled" className="cursor-pointer">Enabled</Label>
+            <Label htmlFor="cron-enabled" className="cursor-pointer">
+              Enabled
+            </Label>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Creating…' : 'Create'}
+            </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CronRunsDialog({
+  cron,
+  open,
+  onOpenChange,
+}: {
+  cron: Cron | null
+  open: boolean
+  onOpenChange: (v: boolean) => void
+}) {
+  const [runs, setRuns] = useState<AutomationRun[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!cron || !open) return
+    setLoading(true)
+    fetch(`/api/automation/jobs/${cron.id}/runs`)
+      .then((r) => r.json())
+      .then((d) => setRuns(d.data || []))
+      .finally(() => setLoading(false))
+  }, [cron, open])
+
+  if (!cron) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Run History: {cron.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : runs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No runs yet. Click Test to trigger a manual run.
+            </p>
+          ) : (
+            runs.map((run) => (
+              <div
+                key={run.id}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card"
+              >
+                {statusIcons[run.status] || statusIcons.pending}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Badge className={cn('text-[10px] border-0', statusColors[run.status] || statusColors.pending)}>
+                      {run.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground capitalize">{run.trigger_type}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {run.started_at && new Date(run.started_at).toLocaleString()}
+                    {run.duration_ms && ` · ${(run.duration_ms / 1000).toFixed(1)}s`}
+                  </p>
+                  {run.error && (
+                    <p className="text-xs text-red-500 mt-1 truncate">{run.error}</p>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -156,15 +324,23 @@ function CreateCronDialog({ open, onOpenChange, onCreated }: {
 export default function CronsPage() {
   const { user, loading } = useAuth()
   const [crons, setCrons] = useState<Cron[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [fetching, setFetching] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [runsDialogOpen, setRunsDialogOpen] = useState(false)
+  const [selectedCron, setSelectedCron] = useState<Cron | null>(null)
 
   async function load() {
     setFetching(true)
     try {
-      const res = await fetch('/api/crons')
-      const json = await res.json()
-      setCrons(json.data ?? [])
+      const [cronsRes, projectsRes] = await Promise.all([
+        fetch('/api/crons'),
+        fetch('/api/projects'),
+      ])
+      const cronsJson = await cronsRes.json()
+      const projectsJson = await projectsRes.json()
+      setCrons(cronsJson.data || [])
+      setProjects(projectsJson.data || [])
     } finally {
       setFetching(false)
     }
@@ -177,7 +353,7 @@ export default function CronsPage() {
       body: JSON.stringify({ enabled: !cron.enabled }),
     })
     if (res.ok) {
-      setCrons(c => c.map(x => x.id === cron.id ? { ...x, enabled: !x.enabled } : x))
+      setCrons((c) => c.map((x) => (x.id === cron.id ? { ...x, enabled: !x.enabled } : x)))
       toast.success(`Cron ${!cron.enabled ? 'enabled' : 'disabled'}`)
     }
   }
@@ -186,12 +362,26 @@ export default function CronsPage() {
     const res = await fetch(`/api/crons/${cron.id}/test-run`, { method: 'POST' })
     if (res.ok) {
       toast.success(`Test run queued for "${cron.name}"`)
+      // Refresh after a delay
+      setTimeout(load, 2000)
     }
   }
 
-  useEffect(() => { if (user) load() }, [user])
+  function openRuns(cron: Cron) {
+    setSelectedCron(cron)
+    setRunsDialogOpen(true)
+  }
 
-  if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" /></div>
+  useEffect(() => {
+    if (user) load()
+  }, [user])
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" />
+      </div>
+    )
   if (!user) return null
 
   return (
@@ -210,8 +400,14 @@ export default function CronsPage() {
       <CreateCronDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onCreated={cron => setCrons(c => [cron, ...c])}
+        onCreated={(cron) => {
+          setCrons((c) => [cron, ...c])
+          load()
+        }}
+        projects={projects}
       />
+
+      <CronRunsDialog cron={selectedCron} open={runsDialogOpen} onOpenChange={setRunsDialogOpen} />
 
       {crons.length === 0 && !fetching ? (
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
@@ -227,31 +423,81 @@ export default function CronsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {crons.map(cron => (
-            <div key={cron.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card">
+          {crons.map((cron) => (
+            <div
+              key={cron.id}
+              className="flex items-start gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors"
+            >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[13px] font-medium">{cron.name}</span>
-                  <Badge variant="outline" className="font-mono text-[10px]">{cron.schedule}</Badge>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {cron.schedule}
+                  </Badge>
                   <Badge variant={cron.enabled ? 'default' : 'secondary'} className="text-[10px]">
                     {cron.enabled ? 'enabled' : 'disabled'}
                   </Badge>
+                  {cron.last_status && (
+                    <Badge className={cn('text-[10px] border-0', statusColors[cron.last_status])}>
+                      {cron.last_status}
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-[12px] text-muted-foreground mt-0.5 font-mono-display">{cron.handler}</p>
-                {cron.last_run_at && (
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Last: {new Date(cron.last_run_at).toLocaleString()}
+                <p className="text-[12px] text-muted-foreground mt-0.5 font-mono-display">
+                  {cron.handler}
+                </p>
+                {describeCron(cron.schedule) && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {describeCron(cron.schedule)}
                   </p>
                 )}
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                  {cron.project && (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Folder className="h-3 w-3" />
+                      <span
+                        className="inline-block w-2 h-2 rounded-full"
+                        style={{ backgroundColor: cron.project.color || '#64748b' }}
+                      />
+                      {cron.project.name}
+                    </div>
+                  )}
+                  {cron.last_run_at && (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <History className="h-3 w-3" />
+                      Last: {new Date(cron.last_run_at).toLocaleString()}
+                    </div>
+                  )}
+                  {cron.next_run_at && (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Next: {new Date(cron.next_run_at).toLocaleString()}
+                    </div>
+                  )}
+                  {cron.policy && Object.keys(cron.policy).length > 0 && (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Settings className="h-3 w-3" />
+                      Policy set
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={() => openRuns(cron)}>
+                  <History className="h-3.5 w-3.5 mr-1" />
+                  Runs
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => testRun(cron)}>
-                  <Play className="h-3.5 w-3.5 mr-1" />Test
+                  <Play className="h-3.5 w-3.5 mr-1" />
+                  Test
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => toggle(cron)}>
-                  {cron.enabled
-                    ? <ToggleRight className="h-5 w-5 text-[color:var(--foco-teal)]" />
-                    : <ToggleLeft className="h-5 w-5 text-muted-foreground" />}
+                  {cron.enabled ? (
+                    <ToggleRight className="h-5 w-5 text-[color:var(--foco-teal)]" />
+                  ) : (
+                    <ToggleLeft className="h-5 w-5 text-muted-foreground" />
+                  )}
                 </Button>
               </div>
             </div>

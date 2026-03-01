@@ -4,6 +4,35 @@ import { authRequiredResponse } from '@/lib/api/response-helpers'
 
 export const dynamic = 'force-dynamic'
 
+// GET /api/automation/jobs/[id] — get single automation job
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
+  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
+
+  const { data, error: dbError } = await supabase
+    .from('automation_jobs')
+    .select(`
+      *,
+      project:foco_projects(id, name, slug, color),
+      workspace:foco_workspaces(id, name, slug)
+    `)
+    .eq('id', params.id)
+    .single()
+
+  if (dbError) {
+    if (dbError.code === 'PGRST116') {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
+    return NextResponse.json({ error: dbError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ data })
+}
+
+// PATCH /api/automation/jobs/[id] — update automation job
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -14,17 +43,19 @@ export async function PATCH(
   const body = await req.json()
   const allowed = [
     'name',
+    'description',
+    'job_type',
     'schedule',
+    'enabled',
     'handler',
     'payload',
-    'enabled',
     'policy',
     'project_id',
     'workspace_id',
-    'metadata',
     'last_run_at',
     'last_status',
     'next_run_at',
+    'metadata',
   ]
   const update: Record<string, unknown> = {}
   for (const key of allowed) {
@@ -32,21 +63,21 @@ export async function PATCH(
   }
 
   // Check access
-  const { data: existingCron } = await supabase
-    .from('crons')
+  const { data: existingJob } = await supabase
+    .from('automation_jobs')
     .select('workspace_id')
     .eq('id', params.id)
     .single()
 
-  if (!existingCron) {
-    return NextResponse.json({ error: 'Cron not found' }, { status: 404 })
+  if (!existingJob) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
   }
 
-  if (existingCron.workspace_id) {
+  if (existingJob.workspace_id) {
     const { data: member } = await supabase
       .from('foco_workspace_members')
       .select('role')
-      .eq('workspace_id', existingCron.workspace_id)
+      .eq('workspace_id', existingJob.workspace_id)
       .eq('user_id', user.id)
       .single()
 
@@ -55,18 +86,17 @@ export async function PATCH(
     }
   }
 
-  // Recalculate next_run_at if schedule changed
-  if (body.schedule && typeof body.schedule === 'string') {
-    update.next_run_at = calculateNextRun(body.schedule)
-  }
-
   const { data, error: dbError } = await supabase
-    .from('crons')
-    .update(update)
+    .from('automation_jobs')
+    .update({
+      ...update,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', params.id)
     .select(`
       *,
-      project:foco_projects(id, name, slug, color)
+      project:foco_projects(id, name, slug, color),
+      workspace:foco_workspaces(id, name, slug)
     `)
     .single()
 
@@ -75,6 +105,7 @@ export async function PATCH(
   return NextResponse.json({ data })
 }
 
+// DELETE /api/automation/jobs/[id] — delete automation job
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -83,21 +114,21 @@ export async function DELETE(
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   // Check access
-  const { data: existingCron } = await supabase
-    .from('crons')
+  const { data: existingJob } = await supabase
+    .from('automation_jobs')
     .select('workspace_id')
     .eq('id', params.id)
     .single()
 
-  if (!existingCron) {
-    return NextResponse.json({ error: 'Cron not found' }, { status: 404 })
+  if (!existingJob) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
   }
 
-  if (existingCron.workspace_id) {
+  if (existingJob.workspace_id) {
     const { data: member } = await supabase
       .from('foco_workspace_members')
       .select('role')
-      .eq('workspace_id', existingCron.workspace_id)
+      .eq('workspace_id', existingJob.workspace_id)
       .eq('user_id', user.id)
       .single()
 
@@ -106,53 +137,12 @@ export async function DELETE(
     }
   }
 
-  const { error: dbError } = await supabase.from('crons').delete().eq('id', params.id)
+  const { error: dbError } = await supabase
+    .from('automation_jobs')
+    .delete()
+    .eq('id', params.id)
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
 
   return NextResponse.json({ success: true })
-}
-
-// Simple cron next-run calculator
-function calculateNextRun(schedule: string): string | null {
-  try {
-    const parts = schedule.trim().split(/\s+/)
-    if (parts.length !== 5) return null
-
-    const [min, hour] = parts
-    const now = new Date()
-    const next = new Date(now)
-
-    // Simple cases only for now
-    if (min === '*') {
-      next.setMinutes(now.getMinutes() + 1)
-    } else if (min.startsWith('*/')) {
-      const interval = parseInt(min.slice(2))
-      const currentMin = now.getMinutes()
-      const nextMin = Math.ceil((currentMin + 1) / interval) * interval
-      if (nextMin >= 60) {
-        next.setHours(now.getHours() + 1)
-        next.setMinutes(nextMin - 60)
-      } else {
-        next.setMinutes(nextMin)
-      }
-    } else {
-      next.setMinutes(parseInt(min))
-    }
-
-    if (hour !== '*') {
-      if (hour.startsWith('*/')) {
-        // Handle interval hours
-      } else {
-        next.setHours(parseInt(hour))
-        if (next <= now) {
-          next.setDate(next.getDate() + 1)
-        }
-      }
-    }
-
-    return next.toISOString()
-  } catch {
-    return null
-  }
 }

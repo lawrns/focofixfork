@@ -17,14 +17,31 @@ function authorizeOpenClaw(req: NextRequest): boolean {
   return token === serviceToken
 }
 
-// POST /api/openclaw/events — ingest browser automation events into ledger
+// POST /api/openclaw/events — ingest automation events
 export async function POST(req: NextRequest) {
   if (!authorizeOpenClaw(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await req.json()
-  const { type, source, context_id, correlation_id, causation_id, payload, run_id, artifacts, workspace_id, user_id } = body
+  const {
+    type,
+    source,
+    context_id,
+    correlation_id,
+    causation_id,
+    payload,
+    run_id,
+    artifacts,
+    workspace_id,
+    user_id,
+    // Automation-specific fields
+    job_run,
+    email_send,
+    automation_run_id,
+    email_delivery_id,
+    job_id,
+  } = body
 
   if (!type || !source) {
     return NextResponse.json({ error: 'type and source required' }, { status: 400 })
@@ -32,7 +49,35 @@ export async function POST(req: NextRequest) {
 
   const supabase = supabaseAdmin()
 
-  // Write ledger event
+  // Handle job_run events (automation job execution)
+  if (job_run) {
+    return handleJobRunEvent(supabase, job_run, {
+      type,
+      source,
+      context_id,
+      correlation_id,
+      causation_id,
+      payload,
+      workspace_id,
+      user_id,
+    })
+  }
+
+  // Handle email_send events
+  if (email_send) {
+    return handleEmailSendEvent(supabase, email_send, {
+      type,
+      source,
+      context_id,
+      correlation_id,
+      causation_id,
+      payload,
+      workspace_id,
+      user_id,
+    })
+  }
+
+  // Write ledger event with optional automation links
   const { data: ledgerEvent, error: ledgerError } = await supabase
     .from('ledger_events')
     .insert({
@@ -43,6 +88,9 @@ export async function POST(req: NextRequest) {
       causation_id: causation_id ?? null,
       workspace_id: workspace_id ?? null,
       user_id: user_id ?? null,
+      automation_run_id: automation_run_id ?? null,
+      email_delivery_id: email_delivery_id ?? null,
+      job_id: job_id ?? null,
       payload: payload ?? {},
     })
     .select()
@@ -74,6 +122,270 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ data: ledgerEvent }, { status: 201 })
 }
 
+// Handle job_run events - create/update automation_runs and link to jobs
+async function handleJobRunEvent(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  jobRun: {
+    job_id: string
+    external_job_id?: string
+    external_run_id?: string
+    status: string
+    trigger_type?: string
+    started_at?: string
+    ended_at?: string
+    duration_ms?: number
+    logs?: unknown[]
+    output?: Record<string, unknown>
+    error?: string
+    trace?: Record<string, unknown>
+  },
+  eventMeta: {
+    type: string
+    source: string
+    context_id?: string
+    correlation_id?: string
+    causation_id?: string
+    payload?: Record<string, unknown>
+    workspace_id?: string
+    user_id?: string
+  }
+) {
+  // First, try to find the automation job by external_id
+  let automationJobId = jobRun.job_id
+  const { data: existingJob } = await supabase
+    .from('automation_jobs')
+    .select('id')
+    .eq('external_id', jobRun.external_job_id || jobRun.job_id)
+    .maybeSingle()
+
+  if (existingJob) {
+    automationJobId = existingJob.id
+  }
+
+  // Check if this run already exists (by external_run_id)
+  let automationRunId: string | undefined
+  if (jobRun.external_run_id) {
+    const { data: existingRun } = await supabase
+      .from('automation_runs')
+      .select('id')
+      .eq('external_run_id', jobRun.external_run_id)
+      .maybeSingle()
+
+    if (existingRun) {
+      automationRunId = existingRun.id
+    }
+  }
+
+  let runResult
+  if (automationRunId) {
+    // Update existing run
+    const { data, error } = await supabase
+      .from('automation_runs')
+      .update({
+        status: jobRun.status,
+        started_at: jobRun.started_at ?? null,
+        ended_at: jobRun.ended_at ?? null,
+        duration_ms: jobRun.duration_ms ?? null,
+        logs: jobRun.logs ?? [],
+        output: jobRun.output ?? {},
+        error: jobRun.error ?? null,
+        trace: jobRun.trace ?? {},
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', automationRunId)
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    runResult = data
+  } else {
+    // Create new run
+    const { data, error } = await supabase
+      .from('automation_runs')
+      .insert({
+        job_id: automationJobId,
+        external_run_id: jobRun.external_run_id ?? null,
+        status: jobRun.status,
+        trigger_type: jobRun.trigger_type || 'scheduled',
+        started_at: jobRun.started_at ?? null,
+        ended_at: jobRun.ended_at ?? null,
+        duration_ms: jobRun.duration_ms ?? null,
+        logs: jobRun.logs ?? [],
+        output: jobRun.output ?? {},
+        error: jobRun.error ?? null,
+        trace: jobRun.trace ?? {},
+      })
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    runResult = data
+    automationRunId = data.id
+  }
+
+  // Update automation_jobs with last_run info
+  await supabase
+    .from('automation_jobs')
+    .update({
+      last_run_at: jobRun.ended_at || jobRun.started_at || new Date().toISOString(),
+      last_status: jobRun.status,
+    })
+    .eq('id', automationJobId)
+
+  // Write ledger event linked to automation run
+  const { data: ledgerEvent, error: ledgerError } = await supabase
+    .from('ledger_events')
+    .insert({
+      type: eventMeta.type,
+      source: eventMeta.source,
+      context_id: eventMeta.context_id ?? null,
+      correlation_id: eventMeta.correlation_id ?? null,
+      causation_id: eventMeta.causation_id ?? null,
+      workspace_id: eventMeta.workspace_id ?? null,
+      user_id: eventMeta.user_id ?? null,
+      automation_run_id: automationRunId,
+      job_id: automationJobId,
+      payload: {
+        ...eventMeta.payload,
+        job_run: jobRun,
+      },
+    })
+    .select()
+    .single()
+
+  if (ledgerError) {
+    return NextResponse.json({ error: ledgerError.message }, { status: 500 })
+  }
+
+  return NextResponse.json(
+    { data: { run: runResult, ledger_event: ledgerEvent } },
+    { status: 201 }
+  )
+}
+
+// Handle email_send events
+async function handleEmailSendEvent(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  emailSend: {
+    to: string[]
+    cc?: string[]
+    bcc?: string[]
+    subject: string
+    body_md: string
+    body_html?: string
+    status?: string
+    provider?: string
+    automation_run_id?: string
+    task_id?: string
+    project_id?: string
+    workspace_id?: string
+    metadata?: Record<string, unknown>
+  },
+  eventMeta: {
+    type: string
+    source: string
+    context_id?: string
+    correlation_id?: string
+    causation_id?: string
+    payload?: Record<string, unknown>
+    workspace_id?: string
+    user_id?: string
+  }
+) {
+  const wsId = emailSend.workspace_id || eventMeta.workspace_id
+
+  // Create email delivery record
+  const { data: delivery, error: deliveryError } = await supabase
+    .from('email_deliveries')
+    .insert({
+      to: emailSend.to,
+      cc: emailSend.cc ?? [],
+      bcc: emailSend.bcc ?? [],
+      subject: emailSend.subject,
+      body_md: emailSend.body_md,
+      body_html: emailSend.body_html ?? null,
+      status: emailSend.status || 'queued',
+      provider: emailSend.provider ?? null,
+      automation_run_id: emailSend.automation_run_id ?? null,
+      task_id: emailSend.task_id ?? null,
+      project_id: emailSend.project_id ?? null,
+      workspace_id: wsId ?? null,
+      metadata: emailSend.metadata ?? {},
+    })
+    .select()
+    .single()
+
+  if (deliveryError) {
+    return NextResponse.json({ error: deliveryError.message }, { status: 500 })
+  }
+
+  // Also add to outbox for backward compatibility
+  const { data: outboxItem, error: outboxError } = await supabase
+    .from('email_outbox')
+    .insert({
+      to: emailSend.to,
+      cc: emailSend.cc ?? [],
+      bcc: emailSend.bcc ?? [],
+      subject: emailSend.subject,
+      body_md: emailSend.body_md,
+      body_html: emailSend.body_html ?? null,
+      status: emailSend.status || 'queued',
+      automation_run_id: emailSend.automation_run_id ?? null,
+      task_id: emailSend.task_id ?? null,
+      project_id: emailSend.project_id ?? null,
+      workspace_id: wsId ?? null,
+    })
+    .select()
+    .single()
+
+  if (outboxError) {
+    // Non-fatal, just log
+    console.warn('Failed to create outbox entry:', outboxError)
+  }
+
+  // Update delivery with outbox reference
+  if (outboxItem) {
+    await supabase
+      .from('email_deliveries')
+      .update({ outbox_id: outboxItem.id })
+      .eq('id', delivery.id)
+  }
+
+  // Write ledger event linked to email delivery
+  const { data: ledgerEvent, error: ledgerError } = await supabase
+    .from('ledger_events')
+    .insert({
+      type: eventMeta.type,
+      source: eventMeta.source,
+      context_id: eventMeta.context_id ?? null,
+      correlation_id: eventMeta.correlation_id ?? null,
+      causation_id: eventMeta.causation_id ?? null,
+      workspace_id: wsId ?? null,
+      user_id: eventMeta.user_id ?? null,
+      email_delivery_id: delivery.id,
+      automation_run_id: emailSend.automation_run_id ?? null,
+      payload: {
+        ...eventMeta.payload,
+        email_send: { to: emailSend.to, subject: emailSend.subject },
+      },
+    })
+    .select()
+    .single()
+
+  if (ledgerError) {
+    return NextResponse.json({ error: ledgerError.message }, { status: 500 })
+  }
+
+  return NextResponse.json(
+    { data: { delivery, outbox_item: outboxItem, ledger_event: ledgerEvent } },
+    { status: 201 }
+  )
+}
+
 // GET /api/openclaw/events — recent events
 export async function GET(req: NextRequest) {
   if (!authorizeOpenClaw(req)) {
@@ -83,6 +395,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const limit = parseInt(searchParams.get('limit') || '50')
   const type = searchParams.get('type')
+  const automationRunId = searchParams.get('automation_run_id')
+  const emailDeliveryId = searchParams.get('email_delivery_id')
+  const jobId = searchParams.get('job_id')
 
   const supabase = supabaseAdmin()
   let query = supabase
@@ -93,6 +408,15 @@ export async function GET(req: NextRequest) {
 
   if (type) {
     query = query.eq('type', type)
+  }
+  if (automationRunId) {
+    query = query.eq('automation_run_id', automationRunId)
+  }
+  if (emailDeliveryId) {
+    query = query.eq('email_delivery_id', emailDeliveryId)
+  }
+  if (jobId) {
+    query = query.eq('job_id', jobId)
   }
 
   const { data, error } = await query

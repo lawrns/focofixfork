@@ -11,25 +11,12 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
 import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
+import type { Run } from '@/lib/types/runs'
+import { RUN_STATUS_COLORS } from '@/lib/types/runs'
 
 // Status badge color map
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
-  running: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  completed: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  failed: 'bg-red-500/15 text-red-600 dark:text-red-400',
-  cancelled: 'bg-zinc-500/15 text-zinc-500',
-}
-
-type Run = {
-  id: string
-  runner: string
-  status: string
-  task_id: string | null
-  started_at: string | null
-  ended_at: string | null
-  summary: string | null
-  created_at: string
+  ...RUN_STATUS_COLORS,
 }
 
 export default function RunsPage() {

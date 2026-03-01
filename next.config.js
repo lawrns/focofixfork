@@ -38,7 +38,6 @@ const nextConfig = {
     optimizePackageImports: [
       'lucide-react',
       'date-fns',
-      'framer-motion',
       '@radix-ui/react-icons',
       'recharts',
     ],
@@ -60,34 +59,6 @@ const nextConfig = {
           openAnalyzer: false,
         })
       )
-    }
-    
-    // Split heavy libraries into separate chunks
-    if (!isServer) {
-      config.optimization.splitChunks = {
-        ...config.optimization.splitChunks,
-        cacheGroups: {
-          ...config.optimization.splitChunks?.cacheGroups,
-          framerMotion: {
-            test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
-            name: 'framer-motion',
-            chunks: 'all',
-            priority: 30,
-          },
-          mermaid: {
-            test: /[\\/]node_modules[\\/]mermaid[\\/]/,
-            name: 'mermaid',
-            chunks: 'all',
-            priority: 30,
-          },
-          radix: {
-            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
-            name: 'radix-ui',
-            chunks: 'all',
-            priority: 20,
-          },
-        },
-      }
     }
     
     return config

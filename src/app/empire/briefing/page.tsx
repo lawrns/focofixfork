@@ -33,8 +33,8 @@ export default function EmpireBriefingPage() {
     <PageShell>
       <PageHeader
         title="Morning Briefing"
-        description="Daily intelligence summary from ClawdBot Empire OS"
-        actions={
+        subtitle="Daily intelligence summary from ClawdBot Empire OS"
+        primaryAction={
           <Button variant="ghost" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Refresh

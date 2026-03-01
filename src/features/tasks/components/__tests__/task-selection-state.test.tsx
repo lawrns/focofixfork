@@ -106,14 +106,14 @@ describe('Task Selection State Logic', () => {
     it('should only select filtered tasks (not all tasks)', () => {
       // All tasks
       const allTasks = [
-        { id: 'task-1', status: 'todo' },
+        { id: 'task-1', status: 'backlog' },
         { id: 'task-2', status: 'in_progress' },
-        { id: 'task-3', status: 'todo' },
+        { id: 'task-3', status: 'backlog' },
         { id: 'task-4', status: 'done' }
       ]
 
-      // Filtered tasks (only todo)
-      const filteredTasks = allTasks.filter(t => t.status === 'todo')
+      // Filtered tasks (only backlog)
+      const filteredTasks = allTasks.filter(t => t.status === 'backlog')
 
       // Simulate select all on filtered view
       const selectedTasks = new Set(filteredTasks.map(t => t.id))
@@ -244,8 +244,8 @@ describe('Task Selection State Logic', () => {
   describe('Bulk move with selection', () => {
     it('should move multiple selected tasks to new status', () => {
       const tasks = [
-        { id: 'task-1', status: 'todo' },
-        { id: 'task-2', status: 'todo' },
+        { id: 'task-1', status: 'backlog' },
+        { id: 'task-2', status: 'backlog' },
         { id: 'task-3', status: 'in_progress' }
       ]
       const selectedTasks = new Set(['task-1', 'task-2'])
@@ -274,9 +274,9 @@ describe('Task Selection State Logic', () => {
   describe('Selection with filtered tasks', () => {
     it('should maintain selection when filter changes but tasks still exist', () => {
       const allTasks = [
-        { id: 'task-1', status: 'todo', priority: 'high' },
+        { id: 'task-1', status: 'backlog', priority: 'high' },
         { id: 'task-2', status: 'in_progress', priority: 'high' },
-        { id: 'task-3', status: 'todo', priority: 'low' }
+        { id: 'task-3', status: 'backlog', priority: 'low' }
       ]
 
       // Initially select task-1
@@ -293,9 +293,9 @@ describe('Task Selection State Logic', () => {
 
     it('should handle selection when filtered task is removed from results', () => {
       const allTasks = [
-        { id: 'task-1', status: 'todo', priority: 'high' },
+        { id: 'task-1', status: 'backlog', priority: 'high' },
         { id: 'task-2', status: 'in_progress', priority: 'high' },
-        { id: 'task-3', status: 'todo', priority: 'low' }
+        { id: 'task-3', status: 'backlog', priority: 'low' }
       ]
 
       // Select task-3 (low priority)

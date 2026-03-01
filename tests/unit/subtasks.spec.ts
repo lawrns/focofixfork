@@ -352,7 +352,7 @@ describe('Subtasks - Edge Cases', () => {
       id: 'task-1',
       title: 'No subtasks',
       description: null,
-      status: 'todo',
+      status: 'backlog',
       subtasks: [],
       subtask_count: 0,
       subtask_completed_count: 0,

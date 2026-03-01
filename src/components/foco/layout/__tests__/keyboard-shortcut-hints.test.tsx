@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { KeyboardShortcutHints, ShortcutHint } from '../keyboard-shortcut-hints';
+import { useKeyboardShortcutsModalStore } from '@/lib/hooks/use-keyboard-shortcuts-modal';
 
 // Test component that includes buttons with shortcuts
 function TestComponent() {
@@ -26,6 +27,8 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
     // Clear any existing tooltips
     const tooltips = document.querySelectorAll('[role="tooltip"]');
     tooltips.forEach(tooltip => tooltip.remove());
+    // Reset the keyboard shortcuts modal store so it doesn't leak across tests
+    useKeyboardShortcutsModalStore.getState().close();
   });
 
   afterEach(() => {
@@ -91,8 +94,10 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
 
       await user.unhover(button);
       await waitFor(() => {
+        // When ShortcutBadge receives visible=false, it returns null,
+        // so the badge element is removed from the DOM entirely.
         const badge = screen.queryByText('⌘K');
-        expect(badge).not.toBeVisible();
+        expect(badge).toBeNull();
       });
     });
 
@@ -258,7 +263,9 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
       window.dispatchEvent(event);
 
       await waitFor(() => {
-        expect(screen.getByText(/keyboard shortcuts/i)).toBeInTheDocument();
+        // The modal title is "Keyboard Shortcuts" (exact)
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();
       });
     });
 
@@ -272,10 +279,11 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
       window.dispatchEvent(event);
 
       await waitFor(() => {
-        expect(screen.getByText(/global/i)).toBeInTheDocument();
-        expect(screen.getByText(/navigation/i)).toBeInTheDocument();
-        expect(screen.getByText(/tasks/i)).toBeInTheDocument();
-        expect(screen.getByText(/projects/i)).toBeInTheDocument();
+        // Category headings are exact text (rendered as uppercase via CSS)
+        expect(screen.getByText('Global')).toBeInTheDocument();
+        expect(screen.getByText('Navigation')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
+        expect(screen.getByText('Projects')).toBeInTheDocument();
       });
     });
 
@@ -327,7 +335,7 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
       });
     });
 
-    it('should include Cmd+/ search shortcut', async () => {
+    it('should include Cmd+/ open keyboard shortcuts entry', async () => {
       render(<KeyboardShortcutHints />);
 
       const event = new KeyboardEvent('keydown', {
@@ -337,9 +345,10 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
       window.dispatchEvent(event);
 
       await waitFor(() => {
-        expect(screen.getByText(/search/i)).toBeInTheDocument();
-        const searchShortcut = screen.getByText(/⌘\/|Ctrl\+\//);
-        expect(searchShortcut).toBeInTheDocument();
+        // The ⌘/ shortcut is now labelled "Open keyboard shortcuts"
+        expect(screen.getByText(/open keyboard shortcuts/i)).toBeInTheDocument();
+        const shortcutKey = screen.getByText('⌘/');
+        expect(shortcutKey).toBeInTheDocument();
       });
     });
 
@@ -379,7 +388,8 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
   describe('Edge cases and performance', () => {
     it('should handle rapid hover events', async () => {
       const user = userEvent.setup();
-      render(<KeyboardShortcutHints />);
+      // Use TestComponent which includes ShortcutHint-wrapped buttons
+      render(<TestComponent />);
 
       const button = screen.getByRole('button', { name: /quick add/i });
 
@@ -411,25 +421,27 @@ describe('Keyboard Shortcut Hints (Hover Badges)', () => {
 
     it('should work with multiple buttons on the same page', async () => {
       const user = userEvent.setup();
-      render(<KeyboardShortcutHints />);
+      // Use TestComponent which includes multiple ShortcutHint-wrapped buttons
+      render(<TestComponent />);
 
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(1);
 
-      // Each button with shortcut should show its own badge
-      for (const button of buttons) {
-        if (button.hasAttribute('data-shortcut')) {
-          await user.hover(button);
-          const shortcut = button.getAttribute('data-shortcut');
+      // Hover over the first shortcut button and verify badge appears
+      const quickAddBtn = screen.getByRole('button', { name: /quick add/i });
+      await user.hover(quickAddBtn);
+      await waitFor(() => {
+        expect(screen.getByText('⌘K')).toBeVisible();
+      });
+      await user.unhover(quickAddBtn);
 
-          await waitFor(() => {
-            const badge = screen.getByText(shortcut!);
-            expect(badge).toBeVisible();
-          });
-
-          await user.unhover(button);
-        }
-      }
+      // Hover over the second shortcut button
+      const searchBtn = screen.getByRole('button', { name: /search/i });
+      await user.hover(searchBtn);
+      await waitFor(() => {
+        expect(screen.getByText('⌘/')).toBeVisible();
+      });
+      await user.unhover(searchBtn);
     });
   });
 });

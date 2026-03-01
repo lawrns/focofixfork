@@ -68,7 +68,7 @@ const MockCommandPalette = ({
         data-testid="command-input"
         aria-label="Command search"
       />
-      <div role="listbox" data-testid="command-list">
+      <div role="listbox" aria-label="Commands" data-testid="command-list">
         {commands.map((cmd, index) => (
           <button
             key={cmd.id}
@@ -195,7 +195,7 @@ describe('Keyboard Navigation - Command Palette', () => {
     expect(handleClose).toHaveBeenCalled();
   });
 
-  it('should wrap around at command boundaries', async () => {
+  it('should clamp at command boundaries', async () => {
     const user = userEvent.setup();
     const handleCommand = vi.fn();
     const handleClose = vi.fn();
@@ -211,15 +211,17 @@ describe('Keyboard Navigation - Command Palette', () => {
     const firstCmd = screen.getByTestId('command-cmd1');
     const lastCmd = screen.getByTestId('command-cmd4');
 
-    firstCmd.focus();
-
-    // Keep pressing arrow up should stay at first
+    // Initially at first item — pressing ArrowUp should stay at first
     await user.keyboard('{ArrowUp}');
     expect(firstCmd).toHaveAttribute('aria-selected', 'true');
 
-    lastCmd.focus();
+    // Navigate to last item (3 ArrowDown presses: index 0->1->2->3)
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard('{ArrowDown}');
+    expect(lastCmd).toHaveAttribute('aria-selected', 'true');
 
-    // Keep pressing arrow down should stay at last
+    // Pressing ArrowDown again should stay at last
     await user.keyboard('{ArrowDown}');
     expect(lastCmd).toHaveAttribute('aria-selected', 'true');
   });

@@ -101,7 +101,7 @@ export async function POST(
         description: task.description || null,
         project_id: newProject.id,
         priority: task.priority,
-        status: 'todo',
+        status: 'backlog',
         reporter_id: user.id,
         position: index.toString(),
       }))

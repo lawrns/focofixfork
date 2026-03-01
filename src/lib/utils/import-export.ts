@@ -259,7 +259,7 @@ class ImportExportManager {
             const task = {
               title: card.name,
               description: card.desc || '',
-              status: 'todo',
+              status: 'backlog',
               priority: card.labels && card.labels.length > 0 ? card.labels[0] : 'normal',
               due_date: card.due || null,
               created_at: new Date().toISOString(),
@@ -354,7 +354,7 @@ class ImportExportManager {
           const task = {
             title: mappedData.title,
             description: mappedData.description || '',
-            status: mappedData.status || 'todo',
+            status: mappedData.status || 'backlog',
             priority: mappedData.priority || 'normal',
             due_date: mappedData.due_date || null,
             project_id: mappedData.project_id || null,

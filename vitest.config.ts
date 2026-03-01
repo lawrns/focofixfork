@@ -18,6 +18,18 @@ export default defineConfig({
       'specs/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
+    exclude: [
+      'tests/e2e/**',
+      'tests/smoke/**',
+      'tests/performance/**',
+      'tests/accessibility/**',
+      'tests/security/**',
+      'tests/visual/**',
+      'tests/load/**',
+      'tests/production-smoke.spec.ts',
+      'tests/quick-journey.spec.ts',
+      'node_modules/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

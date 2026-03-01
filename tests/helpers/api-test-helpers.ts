@@ -107,7 +107,7 @@ export const createTestTask = async (projectId: string, workspaceId: string, org
       organization_id: organizationId,
       created_by: userId,
       assigned_to: userId,
-      status: 'todo',
+      status: 'backlog',
       priority: 'medium',
     })
     .select()
@@ -325,7 +325,7 @@ export const createBulkTestTasks = async (
     organization_id: organizationId,
     created_by: userId,
     assigned_to: userId,
-    status: ['todo', 'in_progress', 'done'][i % 3],
+    status: ['backlog', 'in_progress', 'done'][i % 3],
     priority: ['low', 'medium', 'high'][i % 3],
   }));
 

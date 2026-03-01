@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS work_items (
   project_id   TEXT REFERENCES foco_projects(id) ON DELETE SET NULL,
   title        TEXT NOT NULL,
   description  TEXT,
-  status       TEXT NOT NULL DEFAULT 'todo',
+  status       TEXT NOT NULL DEFAULT 'backlog',
   priority     TEXT,
   assignee_id  TEXT,
   due_date     TEXT,

@@ -5,12 +5,14 @@ import {
   TestEnvironment,
 } from '../../helpers/api-test-helpers';
 
+const hasSupabaseEnv = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 /**
  * Database Integration Tests: Constraints and Data Integrity
  * Tests foreign keys, unique constraints, not null, check constraints, and cascade operations
  */
 
-describe('Database Constraints - Integration Tests', () => {
+describe.skipIf(!hasSupabaseEnv)('Database Constraints - Integration Tests', () => {
   let env: TestEnvironment;
   let supabase: any;
 
@@ -248,7 +250,7 @@ describe('Database Constraints - Integration Tests', () => {
     });
 
     it('should accept valid status values', async () => {
-      const validStatuses = ['todo', 'in_progress', 'done', 'blocked'];
+      const validStatuses = ['backlog', 'next', 'in_progress', 'review', 'blocked', 'done'];
 
       for (const status of validStatuses) {
         const { data, error } = await supabase

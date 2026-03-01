@@ -56,7 +56,7 @@ export const TEST_TASKS = {
   simple: {
     title: 'Simple Test Task',
     description: 'A simple task for testing',
-    status: 'todo',
+    status: 'backlog',
     priority: 'medium',
   },
   complex: {
@@ -71,7 +71,7 @@ export const TEST_TASKS = {
   overdue: {
     title: 'Overdue Test Task',
     description: 'An overdue task for testing',
-    status: 'todo',
+    status: 'backlog',
     priority: 'high',
     due_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
   },

@@ -6,12 +6,14 @@ import {
   TestEnvironment,
 } from '../helpers/api-test-helpers';
 
+const hasSupabaseEnv = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 /**
  * API Integration Tests: /api/organizations
  * Tests organization management, member access, and workspace isolation
  */
 
-describe('/api/organizations - Integration Tests', () => {
+describe.skipIf(!hasSupabaseEnv)('/api/organizations - Integration Tests', () => {
   let env: TestEnvironment;
   let authToken: string;
   let unauthorizedToken: string;

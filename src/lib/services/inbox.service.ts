@@ -106,7 +106,7 @@ export class InboxService {
         assignee:user_profiles(full_name)
       `)
       .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
-      .in('status', ['todo', 'in_progress', 'blocked'])
+      .in('status', ['backlog', 'next', 'in_progress', 'blocked'])
       .order('created_at', { ascending: false })
       .limit(50)
 

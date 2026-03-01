@@ -931,7 +931,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
     } finally {
       setIsSavingProject(false);
     }
-  }, [editingProject, editProjectName, editProjectDescription]);
+  }, [editingProject, editProjectName, editProjectDescription, editDelegationEnabled]);
 
   const handleGenerateStatus = useCallback((project: ProjectData) => {
     router.push(`/projects/${project.slug}/status-update`);

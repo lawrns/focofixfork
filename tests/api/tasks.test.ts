@@ -10,12 +10,14 @@ import {
 } from '../helpers/api-test-helpers';
 import { INVALID_TASK_INPUTS, PERFORMANCE_BENCHMARKS } from '../fixtures/test-data';
 
+const hasSupabaseEnv = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 /**
  * API Integration Tests: /api/tasks
  * Tests all CRUD operations, validation, security, and performance
  */
 
-describe('/api/tasks - Integration Tests', () => {
+describe.skipIf(!hasSupabaseEnv)('/api/tasks - Integration Tests', () => {
   let env: TestEnvironment;
   let authToken: string;
   let unauthorizedToken: string;
@@ -106,7 +108,7 @@ describe('/api/tasks - Integration Tests', () => {
         project_id: env.project.id,
         workspace_id: env.workspace.id,
         organization_id: env.organization.id,
-        status: 'todo',
+        status: 'backlog',
         priority: 'high',
       };
 

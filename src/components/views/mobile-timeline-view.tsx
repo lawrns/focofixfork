@@ -33,7 +33,7 @@ interface Task {
   name: string
   start_date?: string
   due_date?: string
-  status: 'todo' | 'in_progress' | 'completed'
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   assignee_id?: string
 }
 
@@ -77,7 +77,7 @@ const MobileTimelineView: React.FC<MobileTimelineViewProps> = ({ project, classN
       case 'in_progress':
         return 'bg-blue-500'
       case 'planning':
-      case 'todo':
+      case 'backlog':
         return 'bg-gray-400'
       case 'cancelled':
         return 'bg-red-500'
@@ -94,7 +94,7 @@ const MobileTimelineView: React.FC<MobileTimelineViewProps> = ({ project, classN
       case 'in_progress':
         return <TrendingUp className="h-5 w-5 text-blue-600" />
       case 'planning':
-      case 'todo':
+      case 'backlog':
         return <Circle className="h-5 w-5 text-gray-500" />
       case 'cancelled':
         return <AlertCircle className="h-5 w-5 text-red-600" />
@@ -241,7 +241,7 @@ const MobileTimelineView: React.FC<MobileTimelineViewProps> = ({ project, classN
                             </Badge>
                             {milestoneTasks.length > 0 && (
                               <span className="text-xs text-muted-foreground">
-                                {milestoneTasks.filter(t => t.status === 'completed').length}/{milestoneTasks.length} tasks
+                                {milestoneTasks.filter(t => t.status === 'done').length}/{milestoneTasks.length} tasks
                               </span>
                             )}
                             <span className={cn('text-xs font-medium', daysInfo.color)}>
@@ -271,7 +271,7 @@ const MobileTimelineView: React.FC<MobileTimelineViewProps> = ({ project, classN
                                   className="flex items-start gap-3 p-2 rounded-lg bg-muted/50"
                                 >
                                   <div className="flex-shrink-0 mt-0.5">
-                                    {task.status === 'completed' ? (
+                                    {task.status === 'done' ? (
                                       <CheckCircle2 className="h-4 w-4 text-green-600" />
                                     ) : task.status === 'in_progress' ? (
                                       <TrendingUp className="h-4 w-4 text-blue-600" />
@@ -282,7 +282,7 @@ const MobileTimelineView: React.FC<MobileTimelineViewProps> = ({ project, classN
                                   <div className="flex-1 min-w-0">
                                     <p className={cn(
                                       'text-sm',
-                                      task.status === 'completed' && 'line-through text-muted-foreground'
+                                      task.status === 'done' && 'line-through text-muted-foreground'
                                     )}>
                                       {task.name}
                                     </p>

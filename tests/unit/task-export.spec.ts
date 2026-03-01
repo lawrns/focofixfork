@@ -34,7 +34,7 @@ function createMockTask(overrides?: Partial<ExportTask>): ExportTask {
     id: 'task-1',
     title: 'Test Task',
     description: 'Test Description',
-    status: 'todo',
+    status: 'backlog',
     priority: 'medium',
     due_date: '2026-02-01',
     assignee_id: 'user-1',
@@ -239,12 +239,12 @@ describe('Task Export - Filter Handling', () => {
   describe('Filtered Export', () => {
     it('should export only tasks matching status filter', () => {
       const tasks = [
-        createMockTask({ id: '1', status: 'todo' }),
+        createMockTask({ id: '1', status: 'backlog' }),
         createMockTask({ id: '2', status: 'in_progress' }),
         createMockTask({ id: '3', status: 'done' }),
       ]
 
-      const filtered = filterTasks(tasks, { status: 'todo' })
+      const filtered = filterTasks(tasks, { status: 'backlog' })
 
       expect(filtered.length).toBe(1)
       expect(filtered[0].id).toBe('1')
@@ -278,12 +278,12 @@ describe('Task Export - Filter Handling', () => {
 
     it('should apply multiple filters together', () => {
       const tasks = [
-        createMockTask({ id: '1', status: 'todo', priority: 'high' }),
-        createMockTask({ id: '2', status: 'todo', priority: 'low' }),
+        createMockTask({ id: '1', status: 'backlog', priority: 'high' }),
+        createMockTask({ id: '2', status: 'backlog', priority: 'low' }),
         createMockTask({ id: '3', status: 'done', priority: 'high' }),
       ]
 
-      const filtered = filterTasks(tasks, { status: 'todo', priority: 'high' })
+      const filtered = filterTasks(tasks, { status: 'backlog', priority: 'high' })
 
       expect(filtered.length).toBe(1)
       expect(filtered[0].id).toBe('1')
@@ -381,7 +381,7 @@ describe('Task Export - API Integration', () => {
 
       expect(response.status).toBe(200)
       // Should only contain done tasks
-      expect(response.body).not.toContain('todo')
+      expect(response.body).not.toContain('backlog')
     })
 
     it('should include filename in response headers', async () => {
@@ -491,7 +491,7 @@ async function mockFetchExport(
   // Mock successful response
   const tasks = [
     createMockTask({ id: '1', status: 'done' }),
-    createMockTask({ id: '2', status: 'todo' }),
+    createMockTask({ id: '2', status: 'backlog' }),
   ]
 
   const filtered = filterTasks(tasks, filters)

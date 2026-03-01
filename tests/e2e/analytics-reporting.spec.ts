@@ -83,7 +83,7 @@ test.describe('US-7.1: Test Project Dashboard', () => {
 
   test('should check task status distribution', async ({ page }) => {
     // Look for task status breakdown
-    const statusLabels = ['todo', 'in progress', 'done', 'completed', 'pending'];
+    const statusLabels = ['backlog', 'next', 'in progress', 'done', 'review', 'blocked'];
 
     await page.waitForTimeout(2000);
 

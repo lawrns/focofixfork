@@ -14,7 +14,7 @@ describe('Batch Operations - Core Logic', () => {
       id: 'task-1',
       title: 'Task 1',
       project_id: 'project-1',
-      status: 'todo',
+      status: 'backlog',
       priority: 'low',
       assignee_id: 'user-1',
       created_by: 'user-1',
@@ -25,7 +25,7 @@ describe('Batch Operations - Core Logic', () => {
       id: 'task-2',
       title: 'Task 2',
       project_id: 'project-1',
-      status: 'todo',
+      status: 'backlog',
       priority: 'medium',
       assignee_id: 'user-2',
       created_by: 'user-1',
@@ -58,7 +58,7 @@ describe('Batch Operations - Core Logic', () => {
       id: 'task-5',
       title: 'Task 5',
       project_id: 'project-1',
-      status: 'todo',
+      status: 'backlog',
       priority: 'low',
       created_by: 'user-1',
       created_at: '2024-01-05',
@@ -166,7 +166,7 @@ describe('Batch Operations - Core Logic', () => {
       // Undo
       tasks = originalTasks
 
-      expect(tasks.find(t => t.id === 'task-1')?.status).toBe('todo')
+      expect(tasks.find(t => t.id === 'task-1')?.status).toBe('backlog')
     })
   })
 
@@ -500,7 +500,7 @@ describe('Batch Operations - Core Logic', () => {
       expect(optimisticTasks.find(t => t.id === 'task-1')?.status).toBe('done')
 
       // Original unchanged
-      expect(tasks.find(t => t.id === 'task-1')?.status).toBe('todo')
+      expect(tasks.find(t => t.id === 'task-1')?.status).toBe('backlog')
     })
 
     it('should revert optimistic updates on error', () => {
@@ -518,7 +518,7 @@ describe('Batch Operations - Core Logic', () => {
       // Simulate error - revert
       optimisticTasks = tasks
 
-      expect(optimisticTasks.find(t => t.id === 'task-1')?.status).toBe('todo')
+      expect(optimisticTasks.find(t => t.id === 'task-1')?.status).toBe('backlog')
     })
 
     it('should track loading state during batch operation', () => {

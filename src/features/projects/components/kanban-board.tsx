@@ -21,7 +21,7 @@ interface Task {
   id: string
   title: string
   description?: string
-  status: 'todo' | 'in_progress' | 'review' | 'done'
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   assignee_id?: string
   assignee_name?: string
@@ -35,7 +35,7 @@ interface Task {
 }
 
 interface Column {
-  id: 'todo' | 'in_progress' | 'review' | 'done'
+  id: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   title: string
   tasks: Task[]
 }
@@ -44,9 +44,11 @@ export function KanbanBoard() {
   const { user } = useAuth()
   const router = useRouter()
   const [columns, setColumns] = useState<Column[]>([
-    { id: 'todo', title: 'To Do', tasks: [] },
+    { id: 'backlog', title: 'Backlog', tasks: [] },
+    { id: 'next', title: 'Next', tasks: [] },
     { id: 'in_progress', title: 'In Progress', tasks: [] },
     { id: 'review', title: 'Review', tasks: [] },
+    { id: 'blocked', title: 'Blocked', tasks: [] },
     { id: 'done', title: 'Done', tasks: [] },
   ])
   const [isLoading, setIsLoading] = useState(true)
@@ -444,9 +446,11 @@ export function KanbanBoard() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="todo">To Do</SelectItem>
+                            <SelectItem value="backlog">Backlog</SelectItem>
+                            <SelectItem value="next">Next</SelectItem>
                             <SelectItem value="in_progress">In Progress</SelectItem>
                             <SelectItem value="review">Review</SelectItem>
+                            <SelectItem value="blocked">Blocked</SelectItem>
                             <SelectItem value="done">Done</SelectItem>
                           </SelectContent>
                         </Select>

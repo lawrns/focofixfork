@@ -238,7 +238,7 @@ export async function validateDataIntegrity(data: any, entityType: string): Prom
         if (data.priority && !['low', 'medium', 'high', 'critical'].includes(data.priority)) {
           errors.push('Invalid task priority');
         }
-        if (data.status && !['todo', 'in_progress', 'review', 'completed', 'cancelled'].includes(data.status)) {
+        if (data.status && !['backlog', 'next', 'in_progress', 'review', 'blocked', 'done'].includes(data.status)) {
           errors.push('Invalid task status');
         }
         break;

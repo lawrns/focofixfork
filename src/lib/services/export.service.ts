@@ -267,7 +267,7 @@ export class ExportService {
             title: t.title,
             milestone_id: t.parent_id,
             due_date: this.formatDate(t.due_date || null),
-            status: t.status || 'todo',
+            status: t.status || 'backlog',
           }))
         ]
         this.downloadCSV(flatData, filename)

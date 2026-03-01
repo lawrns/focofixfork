@@ -77,7 +77,7 @@ const mockTask: Task = {
   title: 'Test Task',
   description: 'Test Description',
   project_id: 'proj-1',
-  status: 'todo',
+  status: 'backlog',
   priority: 'medium',
   created_by: 'user-1',
   created_at: '2024-01-01T00:00:00Z',

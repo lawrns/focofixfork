@@ -46,7 +46,7 @@ interface TaskFilterPopoverProps {
 
 const statusOptions = [
   { value: 'backlog', label: 'Backlog', color: 'bg-zinc-400' },
-  { value: 'todo', label: 'To Do', color: 'bg-slate-400' },
+  { value: 'next', label: 'Next', color: 'bg-slate-400' },
   { value: 'in_progress', label: 'In Progress', color: 'bg-blue-500' },
   { value: 'review', label: 'Review', color: 'bg-amber-500' },
   { value: 'blocked', label: 'Blocked', color: 'bg-red-500' },

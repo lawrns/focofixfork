@@ -170,7 +170,7 @@ class ImportExportService {
             type: 'task',
             title: card.name,
             description: card.desc || '',
-            status: 'todo',
+            status: 'backlog',
             priority: card.labels && card.labels.length > 0 ? card.labels[0] : 'normal',
             due_date: card.due || null
           })))

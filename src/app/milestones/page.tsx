@@ -135,8 +135,8 @@ function MilestonesContent() {
         return { label: 'In Progress', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300', icon: Clock }
       case 'review':
         return { label: 'In Review', color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300', icon: AlertTriangle }
-      case 'todo':
-        return { label: 'To Do', color: 'text-gray-600 bg-gray-100 dark:bg-gray-700/40 dark:text-gray-300', icon: Target }
+      case 'backlog':
+        return { label: 'Backlog', color: 'text-gray-600 bg-gray-100 dark:bg-gray-700/40 dark:text-gray-300', icon: Target }
       default:
         return { label: status, color: 'text-gray-600 bg-gray-100', icon: Target }
     }
@@ -261,7 +261,7 @@ function MilestonesContent() {
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="backlog">Backlog</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="review">In Review</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>

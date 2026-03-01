@@ -6,12 +6,14 @@ import {
   TestEnvironment,
 } from '../../helpers/api-test-helpers';
 
+const hasSupabaseEnv = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 /**
  * Database Integration Tests: Row-Level Security (RLS) Policies
  * Verifies that RLS policies properly isolate data between organizations and workspaces
  */
 
-describe('RLS Policies - Database Integration Tests', () => {
+describe.skipIf(!hasSupabaseEnv)('RLS Policies - Database Integration Tests', () => {
   let env1: TestEnvironment;
   let env2: TestEnvironment;
   let supabase: any;

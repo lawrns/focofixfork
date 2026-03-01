@@ -1,6 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, missingFieldResponse, internalErrorResponse } from '@/lib/api/response-helpers'
@@ -35,12 +33,17 @@ export async function GET(request: NextRequest) {
     const result = await repo.findByUser(user.id)
 
     if (isError(result)) {
-      const errorRes = databaseErrorResponse(result.error.message, result.error.details)
+      console.error('[Workspaces API] GET error:', result.error.message, result.error.details)
+      // Safely serialize error details (PostgrestError can have non-serializable fields)
+      const safeDetails = result.error.details
+        ? { message: String((result.error.details as any)?.message ?? result.error.details) }
+        : undefined
+      const errorRes = databaseErrorResponse(result.error.message, safeDetails)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Map to workspace format with icon
-    const workspaces = result.data.map(ws => ({
+    const workspaces = (result.data || []).map(ws => ({
       id: ws.id,
       name: ws.name,
       slug: ws.slug,
@@ -52,8 +55,9 @@ export async function GET(request: NextRequest) {
       total: workspaces.length,
     })
     return mergeAuthResponse(successRes, authResponse)
-  } catch {
-    return databaseErrorResponse('Failed to fetch workspaces')
+  } catch (err) {
+    console.error('[Workspaces API] GET unhandled error:', err)
+    return internalErrorResponse('Failed to fetch workspaces')
   }
 }
 
@@ -132,7 +136,8 @@ export async function POST(request: NextRequest) {
       },
     }, undefined, 201)
     return mergeAuthResponse(successRes, authResponse)
-  } catch {
+  } catch (err) {
+    console.error('[Workspaces API] POST unhandled error:', err)
     return internalErrorResponse('Workspace creation error')
   }
 }

@@ -13,7 +13,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Test Task 1',
           description: 'Description 1',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: '2026-02-01',
           assignee_id: 'user-1',
@@ -37,7 +37,7 @@ describe('Task Export - Integration', () => {
       const csv = generateCSVFromTasks(mockTasks)
 
       expect(csv).toContain('id,title,description,status,priority,due_date,assignee_id,tags,created_at')
-      expect(csv).toContain('1,Test Task 1,Description 1,todo,high,2026-02-01,user-1,bug;urgent,2026-01-12T10:00:00Z')
+      expect(csv).toContain('1,Test Task 1,Description 1,backlog,high,2026-02-01,user-1,bug;urgent,2026-01-12T10:00:00Z')
       expect(csv).toContain('2,Test Task 2,Description 2,done,low,2026-02-15,user-2,feature,2026-01-13T10:00:00Z')
     })
 
@@ -47,7 +47,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Task with "quotes"',
           description: 'Description with, comma',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: '2026-02-01',
           assignee_id: 'user-1',
@@ -71,7 +71,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Test Task',
           description: 'Description',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: '2026-02-01',
           assignee_id: 'user-1',
@@ -142,7 +142,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Task 1',
           description: 'Desc',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: null,
           assignee_id: 'user-1',
@@ -164,7 +164,7 @@ describe('Task Export - Integration', () => {
           id: '3',
           title: 'Task 3',
           description: 'Desc',
-          status: 'todo',
+          status: 'backlog',
           priority: 'low',
           due_date: null,
           assignee_id: 'user-2',
@@ -173,7 +173,7 @@ describe('Task Export - Integration', () => {
         },
       ]
 
-      const filtered = filterTasks(mockTasks, { status: 'todo', priority: 'high' })
+      const filtered = filterTasks(mockTasks, { status: 'backlog', priority: 'high' })
 
       expect(filtered.length).toBe(1)
       expect(filtered[0].id).toBe('1')
@@ -185,7 +185,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Task',
           description: 'Desc',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: null,
           assignee_id: 'user-1',
@@ -194,10 +194,10 @@ describe('Task Export - Integration', () => {
         },
       ]
 
-      const filtered1 = filterTasks(mockTasks, { status: 'todo' })
+      const filtered1 = filterTasks(mockTasks, { status: 'backlog' })
       const filtered2 = filterTasks(mockTasks, { priority: 'high' })
       const filtered3 = filterTasks(mockTasks, { assignee_id: 'user-1' })
-      const filtered4 = filterTasks(mockTasks, { status: 'todo', priority: 'high', assignee_id: 'user-1' })
+      const filtered4 = filterTasks(mockTasks, { status: 'backlog', priority: 'high', assignee_id: 'user-1' })
 
       expect(filtered1.length).toBe(1)
       expect(filtered2.length).toBe(1)
@@ -216,7 +216,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Task',
           description: 'Desc',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: null,
           assignee_id: null,
@@ -236,7 +236,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Task',
           description: 'Desc',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: null,
           assignee_id: null,
@@ -256,7 +256,7 @@ describe('Task Export - Integration', () => {
           id: '1',
           title: 'Task',
           description: 'Desc',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           due_date: null,
           assignee_id: null,

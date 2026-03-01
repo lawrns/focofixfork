@@ -21,7 +21,7 @@ describe('API Contract Tests', () => {
         {
           id: '1',
           title: 'Test Task',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           created_at: '2025-01-01T00:00:00Z',
         },
@@ -54,7 +54,7 @@ describe('API Contract Tests', () => {
       const createdTask = {
         id: '2',
         ...taskData,
-        status: 'todo',
+        status: 'backlog',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -68,7 +68,7 @@ describe('API Contract Tests', () => {
       expect(result.success).toBe(true);
       expect(result.data).toHaveProperty('id');
       expect(result.data.title).toBe(taskData.title);
-      expect(result.data.status).toBe('todo');
+      expect(result.data.status).toBe('backlog');
     });
 
     it('should validate required fields for task creation', async () => {

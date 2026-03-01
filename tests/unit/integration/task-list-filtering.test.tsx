@@ -37,7 +37,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
       id: '2',
       title: 'Design new feature',
       description: 'New dashboard UI',
-      status: 'todo' as const,
+      status: 'backlog' as const,
       priority: 'medium' as const,
       assignee_id: 'user-2',
       due_date: '2025-01-20',
@@ -79,7 +79,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
       id: '5',
       title: 'Update documentation',
       description: 'API docs missing',
-      status: 'todo' as const,
+      status: 'backlog' as const,
       priority: 'low' as const,
       tags: ['documentation', 'api'],
       created_date: '2025-01-09',
@@ -126,7 +126,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
       render(
         <TaskList
           projectId="proj-1"
-          initialStatus="todo"
+          initialStatus="backlog"
         />
       )
 
@@ -165,7 +165,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
   describe('Advanced Multi-Criteria Filtering', () => {
     it('should support combining status and priority filters', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' },
+        { field: 'status', operator: 'equals', value: 'backlog' },
         { field: 'priority', operator: 'equals', value: 'medium' }
       ]
       const result = FilteringService.filterAndSort(mockTasks, filters)
@@ -175,7 +175,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
 
     it('should support combining status, priority, and assignee', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' },
+        { field: 'status', operator: 'equals', value: 'backlog' },
         { field: 'priority', operator: 'equals', value: 'low' },
       ]
       const result = FilteringService.filterAndSort(mockTasks, filters)
@@ -214,7 +214,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
 
     it('should combine date filters with status filters', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' },
+        { field: 'status', operator: 'equals', value: 'backlog' },
         { field: 'due_date', operator: 'greater_than', value: '2025-01-15' }
       ]
       const result = FilteringService.filterAndSort(mockTasks, filters)
@@ -243,7 +243,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
 
     it('should combine tag filters with other criteria', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' },
+        { field: 'status', operator: 'equals', value: 'backlog' },
         { field: 'tags', operator: 'in', value: ['documentation'] }
       ]
       const result = FilteringService.filterAndSort(mockTasks, filters)
@@ -263,7 +263,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
   describe('Sorting with Filters', () => {
     it('should sort filtered results by priority', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' }
+        { field: 'status', operator: 'equals', value: 'backlog' }
       ]
       const sort: SortCondition[] = [
         { field: 'priority', direction: 'asc' }
@@ -322,7 +322,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
 
     it('should maintain metadata across complex filters', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' },
+        { field: 'status', operator: 'equals', value: 'backlog' },
         { field: 'priority', operator: 'equals', value: 'medium' },
         { field: 'tags', operator: 'in', value: ['design'] }
       ]
@@ -398,7 +398,7 @@ describe('TaskList with Advanced Filtering - Integration', () => {
   describe('Clear Filters', () => {
     it('should reset all filters and show all tasks', async () => {
       const filters: FilterCondition[] = [
-        { field: 'status', operator: 'equals', value: 'todo' },
+        { field: 'status', operator: 'equals', value: 'backlog' },
         { field: 'priority', operator: 'equals', value: 'high' }
       ]
 

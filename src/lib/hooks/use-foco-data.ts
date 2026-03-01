@@ -1,7 +1,7 @@
 'use client';
 
 // FIXED(DB_ALIGNMENT): Table names now correctly aligned with actual database schema
-// ✅ useWorkspaces/useCurrentWorkspace - using .from('workspaces')
+// ✅ useWorkspaces/useCurrentWorkspace - using .from('foco_workspaces')
 // ✅ useProjects/useProject - using .from('foco_projects')
 // ✅ useWorkItems/useWorkItem - using .from('work_items')
 
@@ -36,7 +36,7 @@ export function useWorkspaces() {
     async function fetchWorkspaces() {
       try {
         const { data, error } = await untypedSupabase
-          .from('workspaces')
+          .from('foco_workspaces')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -75,7 +75,7 @@ export function useCurrentWorkspace() {
 
         // Fallback to direct DB query if API fails
         const { data: workspaces } = await untypedSupabase
-          .from('workspaces')
+          .from('foco_workspaces')
           .select('*')
           .order('created_at', { ascending: true })
           .limit(1);

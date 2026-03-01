@@ -48,7 +48,7 @@ export interface ParsedProject {
     milestone_index: number
     title: string
     description: string
-    status: 'todo' | 'in_progress' | 'review' | 'done'
+    status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
     priority: 'low' | 'medium' | 'high' | 'urgent'
     estimated_hours?: number
     order: number
@@ -97,7 +97,7 @@ Return a JSON object with this EXACT structure (use only these exact field names
       "milestone_index": 0,
       "title": "Task Title",
       "description": "Task details",
-      "status": "todo",
+      "status": "backlog",
       "priority": "medium",
       "estimated_hours": 8,
       "order": 1
@@ -109,7 +109,7 @@ RULES:
 1. status for project MUST be one of: "planning", "active", "on_hold", "completed", "cancelled"
 2. priority for project/tasks MUST be: "low", "medium", "high", "urgent"
 3. priority for milestones MUST be: "low", "medium", "high", "critical"
-4. task status MUST be: "todo", "in_progress", "review", "done"
+4. task status MUST be: "backlog", "next", "in_progress", "review", "blocked", "done"
 5. milestone status MUST be: "green", "yellow", "red"
 6. All dates MUST be YYYY-MM-DD format or null
 7. milestone_index refers to index in milestones array (0-based)
@@ -546,7 +546,7 @@ Return ONLY valid JSON.`
     const validPriorities = ['low', 'medium', 'high', 'urgent']
     const validMilestonePriorities = ['low', 'medium', 'high', 'critical']
     const validMilestoneStatuses = ['green', 'yellow', 'red']
-    const validTaskStatuses = ['todo', 'in_progress', 'review', 'done']
+    const validTaskStatuses = ['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']
 
     parsed.project.status = validStatuses.includes(parsed.project.status) ? parsed.project.status : 'planning'
     parsed.project.priority = validPriorities.includes(parsed.project.priority) ? parsed.project.priority : 'medium'
@@ -575,7 +575,7 @@ Return ONLY valid JSON.`
       milestone_index: Math.max(0, Math.min(parsed.milestones.length - 1, t.milestone_index || 0)),
       title: t.title || `Task ${i + 1}`,
       description: t.description || '',
-      status: validTaskStatuses.includes(t.status) ? t.status : 'todo',
+      status: validTaskStatuses.includes(t.status) ? t.status : 'backlog',
       priority: validPriorities.includes(t.priority) ? t.priority : 'medium',
       estimated_hours: t.estimated_hours || 8,
       order: t.order || i + 1

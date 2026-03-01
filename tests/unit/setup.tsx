@@ -403,7 +403,7 @@ export const createMockTask = (overrides = {}) => ({
   id: 'task-123',
   title: 'Test Task',
   description: 'A test task',
-  status: 'todo',
+  status: 'backlog',
   priority: 'medium',
   project_id: 'project-123',
   organization_id: 'org-123',

@@ -95,7 +95,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
       priority: 'high',
       columns: [
         { id: 'backlog', name: 'Backlog', position: 0, color: '#6b7280' },
-        { id: 'todo', name: 'To Do', position: 1, color: '#3b82f6' },
+        { id: 'next', name: 'Next', position: 1, color: '#3b82f6' },
         { id: 'in-progress', name: 'In Progress', position: 2, color: '#f59e0b' },
         { id: 'review', name: 'Review', position: 3, color: '#8b5cf6' },
         { id: 'done', name: 'Done', position: 4, color: '#10b981' }
@@ -105,7 +105,7 @@ export const PREDEFINED_TEMPLATES: ProjectTemplate[] = [
           id: 'story-1',
           title: 'User Authentication System',
           description: 'Implement secure user login and registration',
-          status: 'todo',
+          status: 'backlog',
           priority: 'high',
           labels: ['backend', 'security'],
           checklist: [

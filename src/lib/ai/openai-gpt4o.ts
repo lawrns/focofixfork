@@ -356,7 +356,7 @@ Your task is to analyze transcribed speech and generate a structured project pla
     {
       "title": "string",
       "description": "string",
-      "status": "todo",
+      "status": "backlog",
       "priority": "low|medium|high|critical",
       "estimatedHours": number,
       "dependencies": ["string"],

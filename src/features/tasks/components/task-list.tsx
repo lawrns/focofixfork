@@ -582,11 +582,12 @@ export function TaskList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="todo">To Do</SelectItem>
+              <SelectItem value="backlog">Backlog</SelectItem>
+              <SelectItem value="next">Next</SelectItem>
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="review">Review</SelectItem>
-              <SelectItem value="done">Done</SelectItem>
               <SelectItem value="blocked">Blocked</SelectItem>
+              <SelectItem value="done">Done</SelectItem>
             </SelectContent>
           </Select>
 

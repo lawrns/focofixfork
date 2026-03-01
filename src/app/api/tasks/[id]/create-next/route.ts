@@ -87,7 +87,7 @@ export async function POST(
       parent_recurring_task_id: task.parent_recurring_task_id || taskId,
       occurrence_number: occurrenceCount + 1,
       next_occurrence_date: calculateNextRecurrenceDate(nextDate, pattern, occurrenceCount + 1)?.toISOString() || null,
-      status: 'todo',
+      status: 'backlog',
     };
 
     const { data: createdTask, error: createError } = await supabase

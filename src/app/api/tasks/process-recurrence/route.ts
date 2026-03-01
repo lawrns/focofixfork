@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
           parent_recurring_task_id: task.parent_recurring_task_id || task.id,
           occurrence_number: occurrenceCount + 1,
           next_occurrence_date: dateAfterNext?.toISOString() || null,
-          status: 'todo',
+          status: 'backlog',
         };
 
         const { error: insertError } = await supabase

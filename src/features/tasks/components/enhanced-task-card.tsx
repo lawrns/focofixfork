@@ -53,7 +53,7 @@ interface EnhancedTaskCardProps {
     id: string
     title: string
     description: string | null
-    status: 'todo' | 'in_progress' | 'review' | 'done'
+    status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
     priority: 'low' | 'medium' | 'high' | 'urgent'
     assignee_id: string | null
     assignee_name?: string
@@ -77,8 +77,14 @@ interface EnhancedTaskCardProps {
 }
 
 const statusConfig = {
-  todo: {
-    label: 'To Do',
+  backlog: {
+    label: 'Backlog',
+    color: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600',
+    icon: Circle,
+    borderColor: 'border-l-zinc-600',
+  },
+  next: {
+    label: 'Next',
     color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600',
     icon: Circle,
     borderColor: 'border-l-slate-600',
@@ -94,6 +100,12 @@ const statusConfig = {
     color: 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-600',
     icon: AlertTriangle,
     borderColor: 'border-l-amber-600',
+  },
+  blocked: {
+    label: 'Blocked',
+    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border border-red-300 dark:border-red-600',
+    icon: AlertTriangle,
+    borderColor: 'border-l-red-600',
   },
   done: {
     label: 'Done',
@@ -423,9 +435,9 @@ export function EnhancedTaskCard({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleStatusChange('todo')}>
+                      <DropdownMenuItem onClick={() => handleStatusChange('backlog')}>
                         <Circle className="h-4 w-4" aria-hidden="true" />
-                        Mark as To Do
+                        Mark as Backlog
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
                         <PlayCircle className="h-4 w-4" aria-hidden="true" />
@@ -482,9 +494,11 @@ export function EnhancedTaskCard({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="backlog">Backlog</SelectItem>
+                  <SelectItem value="next">Next</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
                   <SelectItem value="done">Done</SelectItem>
                 </SelectContent>
               </Select>

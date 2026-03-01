@@ -287,7 +287,7 @@ export function getGlobalWorkflowStatus(): WorkflowStatus | null {
   return globalWorkflow?.getStatus() || null
 }
 
-export default {
+const delegationWorkflowModule = {
   executeTick,
   runDelegationWorkflow,
   DelegationWorkflowManager,
@@ -295,3 +295,5 @@ export default {
   stopGlobalDelegationWorkflow,
   getGlobalWorkflowStatus
 }
+
+export default delegationWorkflowModule

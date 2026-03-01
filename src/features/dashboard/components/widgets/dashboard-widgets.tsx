@@ -28,7 +28,7 @@ interface Task {
   id: string
   title: string
   description?: string
-  status: 'todo' | 'in_progress' | 'done'
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   due_date?: string
   assignee_name?: string
@@ -188,7 +188,7 @@ export function RecentTasksWidget({ tasks, onViewTask, onEditTask, className }: 
     switch (status) {
       case 'done': return 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border border-emerald-200 dark:border-emerald-700 shadow-sm'
       case 'in_progress': return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border border-blue-200 dark:border-blue-700 shadow-sm'
-      case 'todo': return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
+      case 'backlog': return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
       default: return 'bg-gradient-to-r from-slate-500 to-slate-600 text-white border border-slate-200 dark:border-slate-700 shadow-sm'
     }
   }

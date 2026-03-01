@@ -3,7 +3,7 @@
  * Type-safe database access for workspaces (organizations) table
  *
  * Note: "Organizations" is an alias for "workspaces" in the UI/API,
- * but the underlying database table is still "workspaces"
+ * but the underlying database table is "foco_workspaces"
  */
 
 import { BaseRepository, Result, Ok, Err, isError } from './base-repository'
@@ -35,7 +35,7 @@ export interface OrganizationMember {
 }
 
 export class OrganizationRepository extends BaseRepository<Organization> {
-  protected table = 'workspaces'
+  protected table = 'foco_workspaces'
 
   constructor(supabase: SupabaseClient) {
     super(supabase)
@@ -66,7 +66,7 @@ export class OrganizationRepository extends BaseRepository<Organization> {
     // Then fetch the workspaces
     const workspaceIds = memberData.map(m => m.workspace_id)
     const { data, error } = await this.supabase
-      .from('workspaces')
+      .from('foco_workspaces')
       .select('id, name, slug, description, logo_url, settings, ai_policy, created_at, updated_at')
       .in('id', workspaceIds)
 

@@ -32,7 +32,7 @@ describe('Input Validation Security Tests', () => {
         title: 'Test Task',
         description: 'Test description',
         project_id: '123e4567-e89b-12d3-a456-426614174000',
-        status: 'todo',
+        status: 'backlog',
         priority: 'high'
       }
 

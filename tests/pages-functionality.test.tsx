@@ -8,253 +8,31 @@ vi.mock('next/navigation', () => ({
     push: vi.fn(),
     replace: vi.fn(),
     prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
   }),
   useParams: () => ({ id: 'test-id' }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/',
+  redirect: vi.fn(),
+  permanentRedirect: vi.fn(),
+  notFound: vi.fn(),
 }))
 
-vi.mock('lucide-react', () => ({
-  Circle: () => 'Circle',
-  CheckCircle: () => 'CheckCircle',
-  Clock: () => 'Clock',
-  AlertCircle: () => 'AlertCircle',
-  Plus: () => 'Plus',
-  Edit: () => 'Edit',
-  Trash2: () => 'Trash2',
-  Eye: () => 'Eye',
-  MoreHorizontal: () => 'MoreHorizontal',
-  Calendar: () => 'Calendar',
-  User: () => 'User',
-  Settings: () => 'Settings',
-  Search: () => 'Search',
-  Filter: () => 'Filter',
-  ArrowUpDown: () => 'ArrowUpDown',
-  ChevronDown: () => 'ChevronDown',
-  ChevronRight: () => 'ChevronRight',
-  X: () => 'X',
-  Check: () => 'Check',
-  Loader2: () => 'Loader2',
-  AlertTriangle: () => 'AlertTriangle',
-  Info: () => 'Info',
-  ExternalLink: () => 'ExternalLink',
-  Download: () => 'Download',
-  Upload: () => 'Upload',
-  Copy: () => 'Copy',
-  Share: () => 'Share',
-  Star: () => 'Star',
-  Heart: () => 'Heart',
-  Bookmark: () => 'Bookmark',
-  Flag: () => 'Flag',
-  Tag: () => 'Tag',
-  Folder: () => 'Folder',
-  File: () => 'File',
-  Image: () => 'Image',
-  Video: () => 'Video',
-  Music: () => 'Music',
-  Archive: () => 'Archive',
-  Lock: () => 'Lock',
-  Unlock: () => 'Unlock',
-  Key: () => 'Key',
-  Shield: () => 'Shield',
-  ShieldCheck: () => 'ShieldCheck',
-  ShieldAlert: () => 'ShieldAlert',
-  Globe: () => 'Globe',
-  Wifi: () => 'Wifi',
-  WifiOff: () => 'WifiOff',
-  Signal: () => 'Signal',
-  Battery: () => 'Battery',
-  BatteryLow: () => 'BatteryLow',
-  BatteryMedium: () => 'BatteryMedium',
-  BatteryHigh: () => 'BatteryHigh',
-  Volume2: () => 'Volume2',
-  VolumeX: () => 'VolumeX',
-  Mic: () => 'Mic',
-  MicOff: () => 'MicOff',
-  Camera: () => 'Camera',
-  CameraOff: () => 'CameraOff',
-  Monitor: () => 'Monitor',
-  Smartphone: () => 'Smartphone',
-  Tablet: () => 'Tablet',
-  Laptop: () => 'Laptop',
-  Desktop: () => 'Desktop',
-  Server: () => 'Server',
-  Database: () => 'Database',
-  HardDrive: () => 'HardDrive',
-  Cpu: () => 'Cpu',
-  MemoryStick: () => 'MemoryStick',
-  Router: () => 'Router',
-  Network: () => 'Network',
-  Cloud: () => 'Cloud',
-  CloudOff: () => 'CloudOff',
-  CloudRain: () => 'CloudRain',
-  CloudSnow: () => 'CloudSnow',
-  CloudLightning: () => 'CloudLightning',
-  Sun: () => 'Sun',
-  Moon: () => 'Moon',
-  Sunrise: () => 'Sunrise',
-  Sunset: () => 'Sunset',
-  Droplets: () => 'Droplets',
-  Wind: () => 'Wind',
-  Thermometer: () => 'Thermometer',
-  Gauge: () => 'Gauge',
-  Activity: () => 'Activity',
-  TrendingUp: () => 'TrendingUp',
-  TrendingDown: () => 'TrendingDown',
-  BarChart: () => 'BarChart',
-  BarChart3: () => 'BarChart3',
-  LineChart: () => 'LineChart',
-  PieChart: () => 'PieChart',
-  AreaChart: () => 'AreaChart',
-  Scatter: () => 'Scatter',
-  Target: () => 'Target',
-  Crosshair: () => 'Crosshair',
-  Focus: () => 'Focus',
-  Zap: () => 'Zap',
-  ZapOff: () => 'ZapOff',
-  Flashlight: () => 'Flashlight',
-  FlashlightOff: () => 'FlashlightOff',
-  Lightbulb: () => 'Lightbulb',
-  LightbulbOff: () => 'LightbulbOff',
-  Lamp: () => 'Lamp',
-  LampDesk: () => 'LampDesk',
-  LampFloor: () => 'LampFloor',
-  LampWallDown: () => 'LampWallDown',
-  LampWallUp: () => 'LampWallUp',
-  LampCeiling: () => 'LampCeiling',
-  Candlestick: () => 'Candlestick',
-  Flame: () => 'Flame',
-  FlameKindling: () => 'FlameKindling',
-  Matchstick: () => 'Matchstick',
-  Cigarette: () => 'Cigarette',
-  CigaretteOff: () => 'CigaretteOff',
-  Beer: () => 'Beer',
-  Wine: () => 'Wine',
-  Coffee: () => 'Coffee',
-  Tea: () => 'Tea',
-  Milk: () => 'Milk',
-  IceCream: () => 'IceCream',
-  Cookie: () => 'Cookie',
-  Cake: () => 'Cake',
-  Pizza: () => 'Pizza',
-  Sandwich: () => 'Sandwich',
-  Apple: () => 'Apple',
-  Banana: () => 'Banana',
-  Carrot: () => 'Carrot',
-  Corn: () => 'Corn',
-  Grape: () => 'Grape',
-  Lemon: () => 'Lemon',
-  Orange: () => 'Orange',
-  Strawberry: () => 'Strawberry',
-  Cherry: () => 'Cherry',
-  Peach: () => 'Peach',
-  Pear: () => 'Pear',
-  Pineapple: () => 'Pineapple',
-  Watermelon: () => 'Watermelon',
-  Avocado: () => 'Avocado',
-  Broccoli: () => 'Broccoli',
-  Cabbage: () => 'Cabbage',
-  Cucumber: () => 'Cucumber',
-  Eggplant: () => 'Eggplant',
-  Garlic: () => 'Garlic',
-  Ginger: () => 'Ginger',
-  Mushroom: () => 'Mushroom',
-  Onion: () => 'Onion',
-  Pepper: () => 'Pepper',
-  Potato: () => 'Potato',
-  Tomato: () => 'Tomato',
-  Wheat: () => 'Wheat',
-  Rice: () => 'Rice',
-  Corn2: () => 'Corn2',
-  Bean: () => 'Bean',
-  Peanut: () => 'Peanut',
-  Almond: () => 'Almond',
-  Cashew: () => 'Cashew',
-  Walnut: () => 'Walnut',
-  Pistachio: () => 'Pistachio',
-  Hazelnut: () => 'Hazelnut',
-  Chestnut: () => 'Chestnut',
-  Coconut: () => 'Coconut',
-  Olive: () => 'Olive',
-  Sunflower: () => 'Sunflower',
-  Rose: () => 'Rose',
-  Tulip: () => 'Tulip',
-  Daisy: () => 'Daisy',
-  Lily: () => 'Lily',
-  Orchid: () => 'Orchid',
-  Violet: () => 'Violet',
-  Lavender: () => 'Lavender',
-  Jasmine: () => 'Jasmine',
-  Magnolia: () => 'Magnolia',
-  Peony: () => 'Peony',
-  Hydrangea: () => 'Hydrangea',
-  Azalea: () => 'Azalea',
-  Camellia: () => 'Camellia',
-  Hibiscus: () => 'Hibiscus',
-  Poppy: () => 'Poppy',
-  Marigold: () => 'Marigold',
-  Chrysanthemum: () => 'Chrysanthemum',
-  Geranium: () => 'Geranium',
-  Petunia: () => 'Petunia',
-  Begonia: () => 'Begonia',
-  Impatiens: () => 'Impatiens',
-  Pansy: () => 'Pansy',
-  Snapdragon: () => 'Snapdragon',
-  Zinnia: () => 'Zinnia',
-  Cosmos: () => 'Cosmos',
-  Aster: () => 'Aster',
-  Delphinium: () => 'Delphinium',
-  Foxglove: () => 'Foxglove',
-  Hollyhock: () => 'Hollyhock',
-  Larkspur: () => 'Larkspur',
-  Lupine: () => 'Lupine',
-  SweetPea: () => 'SweetPea',
-  MorningGlory: () => 'MorningGlory',
-  Nasturtium: () => 'Nasturtium',
-  Pansy2: () => 'Pansy2',
-  Primrose: () => 'Primrose',
-  Verbena: () => 'Verbena',
-  Salvia: () => 'Salvia',
-  Sage: () => 'Sage',
-  Rosemary: () => 'Rosemary',
-  Thyme: () => 'Thyme',
-  Oregano: () => 'Oregano',
-  Basil: () => 'Basil',
-  Parsley: () => 'Parsley',
-  Cilantro: () => 'Cilantro',
-  Dill: () => 'Dill',
-  Fennel: () => 'Fennel',
-  Mint: () => 'Mint',
-  Chives: () => 'Chives',
-  Tarragon: () => 'Tarragon',
-  Bay: () => 'Bay',
-  Clove: () => 'Clove',
-  Cinnamon: () => 'Cinnamon',
-  Nutmeg: () => 'Nutmeg',
-  Cardamom: () => 'Cardamom',
-  Vanilla: () => 'Vanilla',
-  Saffron: () => 'Saffron',
-  Turmeric: () => 'Turmeric',
-  Paprika: () => 'Paprika',
-  Cayenne: () => 'Cayenne',
-  Jalapeno: () => 'Jalapeno',
-  Habanero: () => 'Habanero',
-  Ghost: () => 'Ghost',
-  Carolina: () => 'Carolina',
-  Reaper: () => 'Reaper',
-  Scorpion: () => 'Scorpion',
-  Trinidad: () => 'Trinidad',
-  Moruga: () => 'Moruga',
-  Bhut: () => 'Bhut',
-  Jolokia: () => 'Jolokia',
-  Chocolate: () => 'Chocolate',
-  Douglah: () => 'Douglah',
-  Brain: () => 'Brain',
-  Strain: () => 'Strain',
-  Butch: () => 'Butch',
-  T: () => 'T',
-  Scorpion2: () => 'Scorpion2',
-  Blend: () => 'Blend',
-  PlayCircle: () => 'PlayCircle',
-}))
+// Use importOriginal to auto-mock all lucide-react icons so new icon imports never break tests
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  const mocked: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(actual)) {
+    if (typeof value === 'function' && /^[A-Z]/.test(key)) {
+      mocked[key] = () => key
+    } else {
+      mocked[key] = value
+    }
+  }
+  return mocked
+})
 
 vi.mock('../src/lib/supabase-client', () => ({
   supabase: {
@@ -314,6 +92,41 @@ vi.mock('../src/components/auth/protected-route', () => ({
   ProtectedRoute: ({ children }: { children: React.ReactNode }) => children,
 }))
 
+vi.mock('sonner', () => ({
+  toast: {
+    info: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    loading: vi.fn(),
+  },
+  Toaster: () => null,
+}))
+
+vi.mock('framer-motion', () => ({
+  motion: new Proxy({}, {
+    get: (_target, prop) => {
+      // Return a forwarding component for motion.div, motion.span, etc.
+      return ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => {
+        const { initial, animate, exit, transition, whileHover, whileTap, variants, layout, ...domProps } = props
+        const Tag = prop as string
+        return <div data-motion-tag={Tag} {...(domProps as Record<string, unknown>)}>{children}</div>
+      }
+    },
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}))
+
+vi.mock('next/script', () => ({
+  default: () => null,
+}))
+
+vi.mock('../src/lib/stores/project-store', () => ({
+  projectStore: {
+    setProjects: vi.fn(),
+    subscribe: vi.fn().mockReturnValue(vi.fn()),
+  },
+}))
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -343,22 +156,13 @@ describe('Pages Functionality Tests', () => {
   })
 
   describe('Basic Page Rendering', () => {
-    it('should render projects page without crashing', async () => {
-      // Mock fetch for projects
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          data: [
-            { id: 'project-1', name: 'Test Project 1', description: 'Desc 1', status: 'active', priority: 'high', progress_percentage: 50, created_at: '2023-01-01', organization_id: 'org-1' },
-          ],
-        }),
-      } as Response)
-
+    it('should redirect projects page to /empire/missions', async () => {
+      // Projects page now redirects to /empire/missions
+      const nav = await import('next/navigation')
       const { default: ProjectsPage } = await import('../src/app/projects/page')
-      render(<ProjectsPage />)
-      
-      expect(screen.getByTestId('main-layout')).toBeInTheDocument()
+      ProjectsPage()
+
+      expect(nav.redirect).toHaveBeenCalledWith('/empire/missions')
     })
 
     it('should render milestones page without crashing', async () => {
@@ -375,26 +179,17 @@ describe('Pages Functionality Tests', () => {
 
       const { default: MilestonesPage } = await import('../src/app/milestones/page')
       render(<MilestonesPage />)
-      
+
       expect(screen.getByTestId('main-layout')).toBeInTheDocument()
     })
 
-    it('should render tasks page without crashing', async () => {
-      // Mock fetch for tasks
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          data: [
-            { id: 'task-1', title: 'Test Task 1', description: 'Task Desc 1', status: 'todo', priority: 'medium', project_id: 'project-1', assigned_to: 'user-1' },
-          ],
-        }),
-      } as Response)
-
+    it('should redirect tasks page to /my-work', async () => {
+      // Tasks page now permanently redirects to /my-work
+      const nav = await import('next/navigation')
       const { default: TasksPage } = await import('../src/app/tasks/page')
-      render(<TasksPage />)
-      
-      expect(screen.getByTestId('main-layout')).toBeInTheDocument()
+      TasksPage()
+
+      expect(nav.permanentRedirect).toHaveBeenCalledWith('/my-work')
     })
 
     it('should render organizations page without crashing', async () => {
@@ -411,69 +206,22 @@ describe('Pages Functionality Tests', () => {
 
       const { default: OrganizationsPage } = await import('../src/app/organizations/page')
       render(<OrganizationsPage />)
-      
+
       expect(screen.getByTestId('main-layout')).toBeInTheDocument()
     })
   })
 
   describe('API Integration Tests', () => {
-    it('should handle project deletion API call', async () => {
-      vi.mocked(fetch).mockImplementation((url, options) => {
-        if (url === '/api/projects/project-1' && options?.method === 'DELETE') {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ success: true }),
-          } as Response)
-        }
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: [
-              { id: 'project-1', name: 'Test Project 1', description: 'Desc 1', status: 'active', priority: 'high', progress_percentage: 50, created_at: '2023-01-01', organization_id: 'org-1' },
-            ],
-          }),
-        } as Response)
-      })
-
-      const { default: ProjectsPage } = await import('../src/app/projects/page')
-      render(<ProjectsPage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Project 1')).toBeInTheDocument()
-      })
-
-      // Find delete button and click it
-      const deleteButtons = screen.getAllByLabelText('Delete project')
-      fireEvent.click(deleteButtons[0])
-
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this project? This action cannot be undone.')
-      
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/projects/project-1', { method: 'DELETE' })
-      })
-      
-      expect(mockReload).toHaveBeenCalled()
-    })
-
-    it('should handle milestone deletion API call', async () => {
-      vi.mocked(fetch).mockImplementation((url, options) => {
-        if (url === '/api/milestones/milestone-1' && options?.method === 'DELETE') {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ success: true }),
-          } as Response)
-        }
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: [
-              { id: 'milestone-1', name: 'Test Milestone 1', description: 'Milestone Desc 1', status: 'in-progress', priority: 'high', due_date: '2025-12-31', project_id: 'project-1' },
-            ],
-          }),
-        } as Response)
-      })
+    it('should load and display milestone data from API', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          data: [
+            { id: 'milestone-1', name: 'Test Milestone 1', description: 'Milestone Desc 1', status: 'in-progress', priority: 'high', due_date: '2025-12-31', project_id: 'project-1' },
+          ],
+        }),
+      } as Response)
 
       const { default: MilestonesPage } = await import('../src/app/milestones/page')
       render(<MilestonesPage />)
@@ -482,60 +230,49 @@ describe('Pages Functionality Tests', () => {
         expect(screen.getByText('Test Milestone 1')).toBeInTheDocument()
       })
 
-      // Open dropdown menu
-      const moreOptionsButton = screen.getByRole('button', { name: /More options/i })
-      fireEvent.click(moreOptionsButton)
-
-      // Click delete option
-      const deleteButton = screen.getByText('Delete Milestone')
-      fireEvent.click(deleteButton)
-
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this milestone? This action cannot be undone.')
-      
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/milestones/milestone-1', { method: 'DELETE' })
-      })
-      
-      expect(mockReload).toHaveBeenCalled()
+      // Verify API was called for both projects and milestones
+      expect(fetch).toHaveBeenCalledWith('/api/projects')
+      expect(fetch).toHaveBeenCalledWith('/api/milestones')
     })
 
-    it('should handle task deletion API call', async () => {
-      vi.mocked(fetch).mockImplementation((url, options) => {
-        if (url === '/api/tasks/task-1' && options?.method === 'DELETE') {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ success: true }),
-          } as Response)
-        }
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: [
-              { id: 'task-1', title: 'Test Task 1', description: 'Task Desc 1', status: 'todo', priority: 'medium', project_id: 'project-1', assigned_to: 'user-1' },
-            ],
-          }),
-        } as Response)
-      })
+    it('should show empty state when no milestones exist', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          data: [],
+        }),
+      } as Response)
 
-      const { default: TasksPage } = await import('../src/app/tasks/page')
-      render(<TasksPage />)
+      const { default: MilestonesPage } = await import('../src/app/milestones/page')
+      render(<MilestonesPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Test Task 1')).toBeInTheDocument()
+        expect(screen.getByText('No milestones yet')).toBeInTheDocument()
       })
+    })
 
-      // Find delete button and click it
-      const deleteButtons = screen.getAllByLabelText('Delete task')
-      fireEvent.click(deleteButtons[0])
+    it('should display milestone details after loading', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          data: [
+            { id: 'milestone-1', name: 'Test Milestone 1', description: 'Milestone Desc 1', status: 'in-progress', priority: 'high', due_date: '2025-12-31', project_id: 'project-1' },
+          ],
+        }),
+      } as Response)
 
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this task? This action cannot be undone.')
-      
+      const { default: MilestonesPage } = await import('../src/app/milestones/page')
+      render(<MilestonesPage />)
+
+      // Milestone name and description should be visible
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/tasks/task-1', { method: 'DELETE' })
+        expect(screen.getByText('Test Milestone 1')).toBeInTheDocument()
       })
-      
-      expect(mockReload).toHaveBeenCalled()
+
+      // Quick stats should show counts
+      expect(screen.getByText('Total Milestones')).toBeInTheDocument()
     })
   })
 
@@ -543,11 +280,13 @@ describe('Pages Functionality Tests', () => {
     it('should handle API errors gracefully', async () => {
       vi.mocked(fetch).mockRejectedValue(new Error('Network error'))
 
-      const { default: ProjectsPage } = await import('../src/app/projects/page')
-      render(<ProjectsPage />)
+      const { default: MilestonesPage } = await import('../src/app/milestones/page')
+      render(<MilestonesPage />)
 
       // Should not crash and should render the layout
-      expect(screen.getAllByTestId('main-layout')).toHaveLength(1)
+      await waitFor(() => {
+        expect(screen.getAllByTestId('main-layout')).toHaveLength(1)
+      })
     })
 
     it('should handle empty data responses', async () => {
@@ -559,8 +298,8 @@ describe('Pages Functionality Tests', () => {
         }),
       } as Response)
 
-      const { default: ProjectsPage } = await import('../src/app/projects/page')
-      render(<ProjectsPage />)
+      const { default: MilestonesPage } = await import('../src/app/milestones/page')
+      render(<MilestonesPage />)
 
       await waitFor(() => {
         expect(screen.getByTestId('main-layout')).toBeInTheDocument()

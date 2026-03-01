@@ -67,7 +67,7 @@ interface ProjectTableItem extends BaseTableItem {
 interface TaskTableItem extends BaseTableItem {
   title: string
   description: string | null
-  status: 'todo' | 'in_progress' | 'review' | 'done'
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   assignee_id: string | null
   assignee_name?: string

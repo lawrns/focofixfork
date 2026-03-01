@@ -171,7 +171,7 @@ export function AutomationRuleBuilder({
       id: `condition_${Date.now()}`,
       type: 'field_equals',
       field: 'status',
-      value: 'todo',
+      value: 'backlog',
       operator: 'equals'
     }
     setConditions([...conditions, newCondition])

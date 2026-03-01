@@ -76,7 +76,7 @@ describe('TaskCard - Priority Indicator Integration', () => {
     title: 'Test Task',
     description: 'Test Description',
     project_id: 'project-1',
-    status: 'todo',
+    status: 'backlog',
     priority: 'urgent',
     created_by: 'user-1',
     created_at: new Date().toISOString(),
@@ -274,7 +274,7 @@ describe('TaskCard - Priority Indicator Integration', () => {
         <TaskCard
           task={{
             ...mockTask,
-            status: 'todo',
+            status: 'backlog',
             due_date: pastDate.toISOString(),
           }}
           showActions={false}

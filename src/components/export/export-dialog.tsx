@@ -60,7 +60,7 @@ export default function ExportDialog({
   const statusOptions = {
     projects: ['planning', 'active', 'on_hold', 'completed', 'cancelled'],
     milestones: ['planning', 'active', 'on_hold', 'completed', 'cancelled'],
-    tasks: ['todo', 'in_progress', 'review', 'completed', 'cancelled']
+    tasks: ['backlog', 'next', 'in_progress', 'review', 'blocked', 'done']
   }
 
   const handleStatusChange = (status: string, checked: boolean) => {

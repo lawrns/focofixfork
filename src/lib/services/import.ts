@@ -370,8 +370,8 @@ export class ImportService {
           const taskData = {
             name: row.name.trim(),
             description: row.description?.trim() || null,
-            status: ['todo', 'in_progress', 'review', 'completed', 'cancelled'].includes(row.status?.toLowerCase())
-              ? row.status.toLowerCase() : 'todo',
+            status: ['backlog', 'next', 'in_progress', 'review', 'blocked', 'done'].includes(row.status?.toLowerCase())
+              ? row.status.toLowerCase() : 'backlog',
             priority: ['low', 'medium', 'high', 'urgent'].includes(row.priority?.toLowerCase())
               ? row.priority.toLowerCase() : 'medium',
             start_date: this.parseDate(row.start_date),

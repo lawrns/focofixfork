@@ -26,6 +26,7 @@ import {
   ArrowRight,
   Zap,
   Rss,
+  Cpu,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -56,6 +57,7 @@ export function CommandPalette() {
     { id: 'nav-emails', label: 'Go to Emails', icon: Mail, shortcut: 'G E', group: 'Navigation', action: () => router.push('/emails'), keywords: ['outbox', 'messages'] },
     { id: 'nav-artifacts', label: 'Go to Artifacts', icon: FileBox, shortcut: 'G A', group: 'Navigation', action: () => router.push('/artifacts'), keywords: ['files'] },
     { id: 'nav-policies', label: 'Go to Policies', icon: Shield, shortcut: 'G Y', group: 'Navigation', action: () => router.push('/policies'), keywords: ['guardrails', 'fleet'] },
+    { id: 'nav-cmd-center', label: 'Go to Agent Command Center', icon: Cpu, shortcut: 'G C', group: 'Navigation', action: () => router.push('/empire/command'), keywords: ['agents', 'command', 'swarm', 'crico', 'clawdbot', 'bosun', 'openclaw'] },
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
 
     // Quick Actions

@@ -60,13 +60,10 @@ export function SwarmProvider({ children }: { children: React.ReactNode }) {
   const handleComplete = useCallback((swarm: SwarmRecord) => {
     setSwarms(prev => prev.filter(s => s.id !== swarm.id))
 
-    // Fire-and-forget ledger event
-    fetch('/api/openclaw/events', {
+    // Fire-and-forget ledger event (routed via server-side proxy to avoid exposing service token)
+    fetch('/api/critter/swarm-event', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENCLAW_TOKEN ?? ''}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'ui.critter.swarm.completed',
         source: 'foco-ui',

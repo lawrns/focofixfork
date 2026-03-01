@@ -159,8 +159,8 @@ export default function EmpirePage() {
     <PageShell>
       <PageHeader
         title="Empire"
-        description="ClawdBot Empire OS — infrastructure, briefings, and agent orchestration"
-        actions={
+        subtitle="ClawdBot Empire OS — infrastructure, briefings, and agent orchestration"
+        primaryAction={
           <div className="flex items-center gap-2">
             {lastRefresh && (
               <span className="text-[11px] text-muted-foreground hidden sm:block">

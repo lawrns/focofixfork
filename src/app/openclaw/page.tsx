@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useOpenClawLogs } from '@/lib/hooks/use-openclaw-logs'
 import {
   Wifi, WifiOff, RefreshCw, CircleDot, Unplug, Globe,
   Terminal, Shield, AlertTriangle, Wrench, CheckCircle2, XCircle,
@@ -48,15 +49,6 @@ interface TaskRun {
   startedAt: Date
 }
 
-interface LogEntry {
-  type: string
-  time?: string
-  level?: string
-  message?: string
-  runId?: string
-  [key: string]: unknown
-}
-
 const POLL_INTERVAL = 5_000
 
 export default function OpenClawPage() {
@@ -71,10 +63,9 @@ export default function OpenClawPage() {
   const [runs, setRuns] = useState<TaskRun[]>([])
   
   // Log stream state
-  const [logs, setLogs] = useState<LogEntry[]>([])
-  const [streamConnected, setStreamConnected] = useState(false)
+  const { logs, connected: streamConnected, clear: clearLogs } = useOpenClawLogs()
   const logsEndRef = useRef<HTMLDivElement>(null)
-  
+
   const { dispatchSwarm } = useSwarm()
 
   useEffect(() => {
@@ -102,32 +93,6 @@ export default function OpenClawPage() {
     const id = setInterval(refresh, POLL_INTERVAL)
     return () => clearInterval(id)
   }, [refresh])
-
-  // SSE Log Stream
-  useEffect(() => {
-    const eventSource = new EventSource('/api/openclaw-gateway/logs')
-    
-    eventSource.onopen = () => {
-      setStreamConnected(true)
-    }
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        setLogs(prev => [...prev.slice(-500), data]) // Keep last 500 logs
-      } catch {
-        // Ignore parse errors
-      }
-    }
-    
-    eventSource.onerror = () => {
-      setStreamConnected(false)
-    }
-    
-    return () => {
-      eventSource.close()
-    }
-  }, [])
 
   // Auto-scroll logs
   useEffect(() => {
@@ -348,7 +313,7 @@ export default function OpenClawPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setLogs([])}
+                  onClick={clearLogs}
                   className="text-[11px]"
                 >
                   Clear

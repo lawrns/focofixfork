@@ -70,6 +70,9 @@ export function GlobalKeyboardShortcuts() {
           case 's':
             router.push('/settings');
             break;
+          case 'c':
+            router.push('/empire/command');
+            break;
         }
         return;
       }

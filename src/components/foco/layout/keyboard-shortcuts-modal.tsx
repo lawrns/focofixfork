@@ -62,9 +62,10 @@ const shortcuts: Shortcut[] = [
   { id: 'nav-people',     keys: ['G', 'O'], description: 'Go to People',           category: 'Navigation' },
   { id: 'nav-timeline',   keys: ['G', 'T'], description: 'Go to Timeline',         category: 'Navigation' },
   // ── Empire
-  { id: 'nav-empire',     keys: ['G', 'M'], description: 'Go to Empire command',   category: 'Navigation' },
-  { id: 'nav-briefing',   keys: ['G', 'B'], description: 'Go to Empire briefing',  category: 'Navigation' },
-  { id: 'nav-agents',     keys: ['G', 'J'], description: 'Go to Empire agents',    category: 'Navigation' },
+  { id: 'nav-empire',     keys: ['G', 'M'], description: 'Go to Empire command',         category: 'Navigation' },
+  { id: 'nav-cmd-center', keys: ['G', 'C'], description: 'Go to Agent Command Center',   category: 'Navigation' },
+  { id: 'nav-briefing',   keys: ['G', 'B'], description: 'Go to Empire briefing',        category: 'Navigation' },
+  { id: 'nav-agents',     keys: ['G', 'J'], description: 'Go to Empire agents',          category: 'Navigation' },
   // ── Operate
   { id: 'nav-crons',      keys: ['G', 'K'], description: 'Go to Crons',            category: 'Navigation' },
   { id: 'nav-emails',     keys: ['G', 'E'], description: 'Go to Emails',           category: 'Navigation' },

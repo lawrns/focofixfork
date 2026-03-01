@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     const headers: Record<string, string> = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const res = await fetch(`${relayUrl}/health`, {
+    const res = await fetch(`${relayUrl}/`, {
       headers,
       signal: AbortSignal.timeout(3000),
     })
@@ -75,7 +75,8 @@ export async function GET(req: NextRequest) {
       result.relay.reachable = true
       result.token.valid = true
 
-      const body = await res.json().catch(() => ({}))
+      const text = await res.text().catch(() => '')
+      const body = (() => { try { return JSON.parse(text) } catch { return {} } })()
 
       // Normalize tab list (gateway may use different shapes)
       const rawTabs: Array<Record<string, unknown>> = body.tabs ?? body.attached_tabs ?? []

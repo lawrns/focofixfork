@@ -33,6 +33,7 @@ import {
   BookOpen,
   AlertTriangle,
 } from 'lucide-react'
+import { CommandSurface } from '@/components/command-surface'
 
 type Run = {
   id: string
@@ -205,6 +206,16 @@ export default function DashboardPageClient() {
               <span className="hidden sm:inline ml-1">Refresh</span>
             </Button>
           }
+        />
+
+        {/* Command Surface */}
+        <CommandSurface 
+          context="dashboard" 
+          className="mb-6"
+          onExecutionComplete={() => {
+            // Refresh data after command execution
+            setTimeout(fetchAll, 1000)
+          }}
         />
 
         {/* Fleet Status Cards */}

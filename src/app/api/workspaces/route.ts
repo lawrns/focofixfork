@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Create new workspace using the correct 'workspaces' table
     const { data: newWorkspace, error: createError } = await supabase
-      .from('workspaces')
+      .from('foco_workspaces')
       .insert([
         {
           name,
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     // Add creator as workspace member with 'admin' role
     const { error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .insert([
         {
           workspace_id: newWorkspace.id,
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     if (memberError) {
       // Clean up created workspace
       await supabase
-        .from('workspaces')
+        .from('foco_workspaces')
         .delete()
         .eq('id', newWorkspace.id)
 

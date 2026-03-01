@@ -61,7 +61,7 @@ export async function getUserWorkspaces(req: NextRequest): Promise<{
 
     // Get all workspaces user has access to
     const { data: memberships, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id, workspaces(id, name)')
       .eq('user_id', user.id)
 

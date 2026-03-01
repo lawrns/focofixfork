@@ -60,10 +60,11 @@ const workNavItems: NavItem[] = [
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Command',         href: '/empire',          icon: Crown,    shortcut: 'G M' },
-  { label: 'Command Center',  href: '/empire/command',  icon: Cpu,      shortcut: 'G C' },
-  { label: 'Briefing',        href: '/empire/briefing', icon: FileText, shortcut: 'G B' },
-  { label: 'Agents',          href: '/empire/agents',   icon: Bot,      shortcut: 'G J' },
+  { label: 'Command',         href: '/empire',           icon: Crown,     shortcut: 'G M' },
+  { label: 'Command Center',  href: '/empire/command',   icon: Cpu,       shortcut: 'G C' },
+  { label: 'Briefing',        href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
+  { label: 'Agents',          href: '/empire/agents',    icon: Bot,       shortcut: 'G J' },
+  { label: 'Pipeline',        href: '/empire/pipeline',  icon: GitBranch, shortcut: 'G V' },
 ];
 
 const operateNavItems: NavItem[] = [

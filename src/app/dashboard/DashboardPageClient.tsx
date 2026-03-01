@@ -209,47 +209,47 @@ export default function DashboardPageClient() {
         />
 
         {/* Orchestration Health */}
-        <div className="mb-6 rounded-lg border border-border bg-card p-4">
+        <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-4 w-4 text-[color:var(--foco-teal)]" />
-            <span className="text-sm font-semibold">Orchestration Health</span>
+            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+              Orchestration Health
+            </span>
             {fleetPaused && (
-              <Badge variant="destructive" className="text-[10px]">Fleet Paused</Badge>
+              <Badge variant="destructive" className="text-[10px] ml-1">Fleet Paused</Badge>
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono">Running</div>
+              <div className="text-2xl font-bold text-[color:var(--foco-teal)]">
                 {activeRuns.filter(r => r.status === 'running').length}
               </div>
-              <div className="text-[11px] text-muted-foreground">Running</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono">Pending</div>
+              <div className="text-2xl font-bold text-amber-500">
                 {activeRuns.filter(r => r.status === 'pending').length}
               </div>
-              <div className="text-[11px] text-muted-foreground">Pending</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono">Completed</div>
+              <div className="text-2xl font-bold text-emerald-500">
                 {allRuns.filter(r => r.status === 'completed').length}
               </div>
-              <div className="text-[11px] text-muted-foreground">Completed</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-zinc-700 dark:text-zinc-300">
-                {recentEventsCount}
-              </div>
-              <div className="text-[11px] text-muted-foreground">Recent Events</div>
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono">Recent Events</div>
+              <div className="text-2xl font-bold">{recentEventsCount}</div>
             </div>
-            <div className="text-center">
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono">Fleet</div>
               <div className={cn(
-                'text-sm font-semibold px-2 py-1 rounded',
-                fleetPaused ? 'bg-red-500/15 text-red-600 dark:text-red-400' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                'text-sm font-semibold',
+                fleetPaused ? 'text-rose-500' : 'text-emerald-500'
               )}>
                 {fleetPaused ? 'Paused' : 'Active'}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-1">Fleet</div>
             </div>
           </div>
         </div>

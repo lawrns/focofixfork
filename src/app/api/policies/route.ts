@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   // Get the user's workspace(s)
   const { data: memberships } = await supabaseAdmin
-    .from('workspace_members')
+    .from('foco_workspace_members')
     .select('workspace_id')
     .eq('user_id', user.id)
     .limit(1)
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   // Get the user's workspace
   const { data: memberships } = await supabaseAdmin
-    .from('workspace_members')
+    .from('foco_workspace_members')
     .select('workspace_id')
     .eq('user_id', user.id)
     .limit(1)

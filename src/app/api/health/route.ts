@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     // Test database connectivity
     const { data, error } = await supabase
-      .from('workspaces')
+      .from('foco_workspaces')
       .select('id')
       .limit(1);
 

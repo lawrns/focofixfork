@@ -51,7 +51,7 @@ export async function organizationMiddleware(
 
     // Check if user is a member of the organization
     const { data: membership, error } = await supabaseClient
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', organizationId)
       .eq('user_id', session.user.id)

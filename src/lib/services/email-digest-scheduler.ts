@@ -187,7 +187,7 @@ export class EmailDigestScheduler {
 
       // Get all workspace members with digest preferences
       const { data: workspaceMembers, error: fetchError } = await supabase
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('id, user_id, settings')
         .not('settings->digestPreferences', 'is', null);
 

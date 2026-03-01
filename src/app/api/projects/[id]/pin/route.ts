@@ -55,7 +55,7 @@ export async function POST(
 
     // Verify user is member of the workspace
     const { data: orgMember, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', project.workspace_id)
       .eq('user_id', user.id)
@@ -167,7 +167,7 @@ export async function DELETE(
 
     // Verify user is member of the workspace
     const { data: orgMember, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', project.workspace_id)
       .eq('user_id', user.id)

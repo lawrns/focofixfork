@@ -106,7 +106,7 @@ export class BackupService {
 
         // Get workspace members
         const { data: members } = await untypedSupabase
-          .from('workspace_members')
+          .from('foco_workspace_members')
           .select('*')
           .in('workspace_id', orgIds);
 

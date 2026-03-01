@@ -52,7 +52,7 @@ export async function PATCH(
 
     // Get the member to find their user_id
     const { data: memberData, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('user_id')
       .eq('id', memberId)
       .eq('workspace_id', workspaceId)
@@ -118,7 +118,7 @@ export async function DELETE(
 
     // Get the member to check if they're removing themselves
     const { data: memberToRemove, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('user_id')
       .eq('id', memberId)
       .eq('workspace_id', workspaceId)

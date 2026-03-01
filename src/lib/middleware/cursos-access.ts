@@ -104,7 +104,7 @@ export async function cursosAccessMiddleware(
 
     // Get user's role in workspace
     const { data: membership } = await supabaseClient
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', session.user.id)

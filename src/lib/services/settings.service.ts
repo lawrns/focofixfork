@@ -295,7 +295,7 @@ export class SettingsService {
     if (!user) return false
 
     const { data, error } = await untypedSupabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('user_id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)
@@ -312,7 +312,7 @@ export class SettingsService {
     if (!user) return false
 
     const { data, error } = await untypedSupabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)

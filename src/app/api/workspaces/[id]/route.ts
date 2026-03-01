@@ -25,7 +25,7 @@ export async function GET(
 
     // Check if user is a member of this workspace
     const { data: membership, error: membershipError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)
@@ -43,7 +43,7 @@ export async function GET(
 
     // Fetch workspace details
     const { data: workspace, error: workspaceError } = await supabase
-      .from('workspaces')
+      .from('foco_workspaces')
       .select('*')
       .eq('id', workspaceId)
       .single()

@@ -47,7 +47,7 @@ export class OrganizationRepository extends BaseRepository<Organization> {
   async findByUser(userId: string): Promise<Result<OrganizationWithRole[]>> {
     // First get the workspace memberships
     const { data: memberData, error: memberError } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id, role')
       .eq('user_id', userId)
 
@@ -131,7 +131,7 @@ export class OrganizationRepository extends BaseRepository<Organization> {
 
     // Add creator as admin
     const { error: memberError } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .insert({
         workspace_id: organization.id,
         user_id: userId,
@@ -152,7 +152,7 @@ export class OrganizationRepository extends BaseRepository<Organization> {
    */
   async isMember(organizationId: string, userId: string): Promise<Result<boolean>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', organizationId)
       .eq('user_id', userId)
@@ -174,7 +174,7 @@ export class OrganizationRepository extends BaseRepository<Organization> {
    */
   async getUserRole(organizationId: string, userId: string): Promise<Result<OrganizationMember['role'] | null>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', organizationId)
       .eq('user_id', userId)

@@ -2176,6 +2176,60 @@ export type Database = {
           }
         ]
       }
+      foco_workspace_members: {
+        Row: {
+          id: string
+          workspace_id: string
+          user_id: string
+          role: Database["public"]["Enums"]["member_role"] | null
+          capacity_hours_per_week: number | null
+          focus_hours_per_day: number | null
+          timezone: string | null
+          settings: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          user_id: string
+          role?: Database["public"]["Enums"]["member_role"] | null
+          capacity_hours_per_week?: number | null
+          focus_hours_per_day?: number | null
+          timezone?: string | null
+          settings?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          user_id?: string
+          role?: Database["public"]["Enums"]["member_role"] | null
+          capacity_hours_per_week?: number | null
+          focus_hours_per_day?: number | null
+          timezone?: string | null
+          settings?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foco_workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foco_workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "foco_workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       workspace_settings: {
         Row: {
           id: string
@@ -2344,6 +2398,42 @@ export type Database = {
           ai_policy_version?: number
           ai_policy_updated_by?: string | null
           ai_policy_updated_at?: string | null
+        }
+        Relationships: []
+      }
+      foco_workspaces: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          logo_url: string | null
+          settings: Json | null
+          ai_policy: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          logo_url?: string | null
+          settings?: Json | null
+          ai_policy?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          logo_url?: string | null
+          settings?: Json | null
+          ai_policy?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

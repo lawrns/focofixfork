@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
-import { listHandbooks } from '@/lib/delegation/handbook-loader'
+import { listHandbooks } from '@/lib/handbook/handbook-loader'
 
 export const dynamic = 'force-dynamic'
 

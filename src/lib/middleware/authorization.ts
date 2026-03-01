@@ -32,7 +32,7 @@ export async function checkWorkspaceRole(
 ): Promise<boolean> {
   try {
     const { data: member, error } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -58,7 +58,7 @@ export async function checkWorkspaceMembership(
 ): Promise<boolean> {
   try {
     const { data: member, error } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -98,7 +98,7 @@ export async function checkProjectPermission(
 
     // Check workspace membership and role
     const { data: workspaceMember } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', project.workspace_id)
       .eq('user_id', userId)
@@ -178,7 +178,7 @@ export async function getUserWorkspaceRole(
 ): Promise<WorkspaceRole | null> {
   try {
     const { data: member, error } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)

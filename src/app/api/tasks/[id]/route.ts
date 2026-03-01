@@ -46,7 +46,7 @@ export async function GET(
 
     // Verify user has access to this task's workspace
     const { data: membership } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', task.workspace_id)
       .eq('user_id', user.id)
@@ -125,7 +125,7 @@ export async function PATCH(
 
     // Verify user has access to this task's workspace
     const { data: membership } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', task.workspace_id)
       .eq('user_id', user.id)
@@ -209,7 +209,7 @@ export async function DELETE(
 
     // Verify user has access to this task's workspace
     const { data: membership } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id, role')
       .eq('workspace_id', task.workspace_id)
       .eq('user_id', user.id)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
+import { dispatchToClawdBot, buildSystemPrompt } from '@/lib/delegation/dispatchers'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,6 +65,32 @@ export async function POST(
       last_run_at: new Date().toISOString(),
     })
     .eq('id', params.id)
+
+  // Dispatch to ClawdBot for actual execution
+  const systemPrompt = buildSystemPrompt(
+    cron.name ?? 'Cron Job',
+    '',
+    '',
+    cron.name ?? 'Cron Job',
+    cron.description ?? cron.handler
+  )
+  const dispatchResult = await dispatchToClawdBot({
+    taskId: run.id,
+    title: cron.name ?? `Cron: ${params.id}`,
+    description: JSON.stringify({ handler: cron.handler, payload: cron.payload ?? {} }),
+    projectContext: '',
+    featureContext: '',
+    systemPrompt,
+    agentId: 'cron-executor',
+  })
+
+  // Persist external_run_id if dispatch succeeded
+  if (dispatchResult.success && dispatchResult.externalRunId && legacyRun) {
+    await supabase
+      .from('runs')
+      .update({ external_run_id: dispatchResult.externalRunId })
+      .eq('id', legacyRun.id)
+  }
 
   // Create ledger event for the test run
   await supabase.from('ledger_events').insert({

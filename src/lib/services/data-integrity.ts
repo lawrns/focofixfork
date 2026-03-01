@@ -493,7 +493,7 @@ export class DataIntegrityService {
     try {
       // Check for orphaned organization members
       const { data: orphanedMembers } = await untypedSupabase
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('id, user_id, workspace_id')
         .not('user_id', 'in', `(${untypedSupabase.from('user_profiles').select('id')})`);
 

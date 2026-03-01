@@ -697,7 +697,7 @@ export class ProposalRepository extends BaseRepository<Proposal> {
 
     // Check if user is a member of the workspace
     const { data: membership, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('user_id')
       .eq('workspace_id', proposal.workspace_id)
       .eq('user_id', userId)

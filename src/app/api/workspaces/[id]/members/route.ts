@@ -34,7 +34,7 @@ export async function GET(
         // OPTIMIZATION: Single query with JOIN instead of N+1 queries
         // Use LEFT JOIN (no !inner) to include members even if they lack a profile
         const { data: members, error: membersError } = await supabase
-          .from('workspace_members')
+          .from('foco_workspace_members')
           .select(`
             id,
             user_id,

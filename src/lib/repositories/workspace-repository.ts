@@ -32,7 +32,7 @@ export interface WorkspaceMember {
 }
 
 export class WorkspaceRepository extends BaseRepository<Workspace> {
-  protected table = 'workspaces'
+  protected table = 'foco_workspaces'
 
   constructor(supabase: SupabaseClient) {
     super(supabase)
@@ -73,7 +73,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
   async findByUser(userId: string): Promise<Result<Workspace[]>> {
     // First get the workspace IDs the user is a member of
     const { data: memberData, error: memberError } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id')
       .eq('user_id', userId)
 
@@ -92,7 +92,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
     // Then fetch the workspaces
     const workspaceIds = memberData.map(m => m.workspace_id)
     const { data, error } = await this.supabase
-      .from('workspaces')
+      .from('foco_workspaces')
       .select('id, name, slug, description, logo_url, created_at, updated_at')
       .in('id', workspaceIds)
 
@@ -112,7 +112,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    */
   async isMember(workspaceId: string, userId: string): Promise<Result<boolean>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -134,7 +134,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    */
   async getUserRole(workspaceId: string, userId: string): Promise<Result<WorkspaceMember['role'] | null>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -173,7 +173,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    */
   async getMembers(workspaceId: string): Promise<Result<WorkspaceMember[]>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('*')
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: true })
@@ -198,7 +198,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
     role: WorkspaceMember['role'] = 'member'
   ): Promise<Result<WorkspaceMember>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .insert({
         workspace_id: workspaceId,
         user_id: userId,
@@ -234,7 +234,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    */
   async removeMember(workspaceId: string, userId: string): Promise<Result<void>> {
     const { error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .delete()
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -259,7 +259,7 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
     role: WorkspaceMember['role']
   ): Promise<Result<WorkspaceMember>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .update({
         role,
         updated_at: new Date().toISOString(),

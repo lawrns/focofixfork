@@ -79,7 +79,7 @@ export class WorkspaceInvitationRepository extends BaseRepository<WorkspaceInvit
    */
   async isMember(workspaceId: string, userId: string): Promise<Result<boolean>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
@@ -105,7 +105,7 @@ export class WorkspaceInvitationRepository extends BaseRepository<WorkspaceInvit
     role: 'owner' | 'admin' | 'member' | 'guest' = 'member'
   ): Promise<Result<void>> {
     const { error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .insert({
         workspace_id: workspaceId,
         user_id: userId,

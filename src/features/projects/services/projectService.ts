@@ -83,7 +83,7 @@ export class ProjectsService {
 
       // Get user's workspace memberships first
       const { data: userWorkspaces, error: workspaceError } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('workspace_id')
         .eq('user_id', userId)
 
@@ -194,7 +194,7 @@ export class ProjectsService {
 
       // First check if user has access to this project
       const { data: userWorkspaces } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('workspace_id')
         .eq('user_id', userId)
 
@@ -355,7 +355,7 @@ export class ProjectsService {
 
       // Check owner or workspace membership
       const { data: membership } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('role')
         .eq('workspace_id', existingProject.workspace_id)
         .eq('user_id', userId)
@@ -438,7 +438,7 @@ export class ProjectsService {
 
       // Only owner or workspace admin can delete
       const { data: membership } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('role')
         .eq('workspace_id', project.workspace_id)
         .eq('user_id', userId)

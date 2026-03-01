@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { RegisterForm } from '@/components/auth/register-form'
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 import { GitBranch, Mic, Users } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -43,23 +42,23 @@ function RegisterFormWrapper() {
         <div className="relative z-10 space-y-8">
           <div>
             <p className="text-xs font-mono-display text-[color:var(--foco-teal)] tracking-widest uppercase mb-4">
-              Empieza gratis
+              Get started free
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-foreground leading-snug mb-2">
-              Tu equipo merece
+              Your team deserves
               <br />
-              una mejor herramienta
+              a better tool
             </h2>
             <p className="text-[14px] text-muted-foreground leading-relaxed">
-              Sin tarjeta de crédito. Sin trucos. Invita a tu equipo en minutos.
+              No credit card. No tricks. Invite your team in minutes.
             </p>
           </div>
 
           <div className="space-y-5">
             {[
-              { icon: Mic,      text: 'Proyectos con voz — habla, la IA estructura' },
-              { icon: GitBranch,text: 'Branching inteligente — propone, revisa y aprueba' },
-              { icon: Users,    text: 'Multi-workspace — equipos, roles y permisos' },
+              { icon: Mic,      text: 'Voice projects — speak, AI structures it' },
+              { icon: GitBranch,text: 'Smart branching — propose, review, and approve' },
+              { icon: Users,    text: 'Multi-workspace — teams, roles, and permissions' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
@@ -74,8 +73,8 @@ function RegisterFormWrapper() {
         {/* Stats */}
         <div className="relative z-10 grid grid-cols-3 gap-4">
           {[
-            { value: '10×', label: 'Más rápido' },
-            { value: '94%', label: 'Menos reuniones' },
+            { value: '10×', label: 'Faster' },
+            { value: '94%', label: 'Fewer meetings' },
             { value: '2 min', label: 'Setup' },
           ].map((s, i) => (
             <div key={i} className="text-center">
@@ -90,32 +89,7 @@ function RegisterFormWrapper() {
       <div className="flex flex-col items-center justify-center px-6 py-12 bg-background">
         <div className="w-full max-w-sm">
 
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Image src="/focologo.png" alt="Critter" width={26} height={26} className="w-6.5 h-6.5 rounded-md" />
-            <span className="text-[15px] font-semibold text-foreground">Critter</span>
-          </div>
-
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1.5">
-              Crear cuenta
-            </h1>
-            <p className="text-[14px] text-muted-foreground">
-              Gratis, sin tarjeta de crédito
-            </p>
-          </div>
-
           <RegisterForm />
-
-          <p className="mt-6 text-center text-[13px] text-muted-foreground">
-            ¿Ya tienes cuenta?{' '}
-            <Link
-              href="/login"
-              className="text-[color:var(--foco-teal)] hover:underline underline-offset-2 font-medium"
-            >
-              Iniciar sesión
-            </Link>
-          </p>
         </div>
       </div>
     </div>

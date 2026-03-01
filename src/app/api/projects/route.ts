@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     // CRITICAL: Verify user has admin or owner role in the workspace before creating projects
     // Check workspace_members for user's role
     const { data: memberData, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', body.workspace_id)
       .eq('user_id', user.id)

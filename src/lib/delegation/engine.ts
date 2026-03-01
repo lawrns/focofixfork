@@ -9,7 +9,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { matchAgent } from './agent-matcher'
-import { loadHandbook, listHandbooks } from './handbook-loader'
+import { loadHandbook as loadAdvancedHandbook, formatHandbookForAgent } from '@/lib/handbook/handbook-loader'
 import { dispatchToClawdBot, buildSystemPrompt, type DispatchPayload } from './dispatchers'
 
 export interface DelegationTickResult {
@@ -97,8 +97,10 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
     }
 
     // 4. Load handbooks
-    const projectContext = await loadHandbook(project.slug)
-    const featureContext = item.handbook_ref ? await loadHandbook(item.handbook_ref) : ''
+    const projectHandbook = await loadAdvancedHandbook(project.slug)
+    const projectContext = formatHandbookForAgent(projectHandbook)
+    const featureHandbook = item.handbook_ref ? await loadAdvancedHandbook(item.handbook_ref) : null
+    const featureContext = formatHandbookForAgent(featureHandbook)
 
     // 5. Build system prompt
     const systemPrompt = buildSystemPrompt(
@@ -178,12 +180,13 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
       })
       .eq('id', item.id)
 
-    if (dispatchResult.tokensIn != null || dispatchResult.costUsd != null) {
-      await supabaseAdmin.from('runs').update({
-        tokens_in: dispatchResult.tokensIn,
-        tokens_out: dispatchResult.tokensOut,
-        cost_usd: dispatchResult.costUsd,
-      }).eq('id', run.id)
+    const runUpdate: Record<string, unknown> = {}
+    if (dispatchResult.externalRunId) runUpdate.external_run_id = dispatchResult.externalRunId
+    if (dispatchResult.tokensIn != null) runUpdate.tokens_in = dispatchResult.tokensIn
+    if (dispatchResult.tokensOut != null) runUpdate.tokens_out = dispatchResult.tokensOut
+    if (dispatchResult.costUsd != null) runUpdate.cost_usd = dispatchResult.costUsd
+    if (Object.keys(runUpdate).length > 0) {
+      await supabaseAdmin.from('runs').update(runUpdate).eq('id', run.id)
     }
 
     // 10. Log to ledger

@@ -73,7 +73,7 @@ export async function PATCH(request: NextRequest) {
 
     // Get the user's workspace membership to update settings
     const { data: workspaceMembers, error: fetchError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id, settings')
       .eq('user_id', user.id)
       .limit(1);
@@ -109,7 +109,7 @@ export async function PATCH(request: NextRequest) {
 
     // Update workspace_members settings
     const { error: updateError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .update({
         settings: updatedSettings,
         updated_at: new Date().toISOString(),
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     // Get the user's workspace membership settings
     const { data: workspaceMembers, error: fetchError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('settings')
       .eq('user_id', user.id)
       .limit(1);

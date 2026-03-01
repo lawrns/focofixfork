@@ -361,7 +361,7 @@ export class TaskRepository extends BaseRepository<Task> {
   ): Promise<Result<boolean>> {
     // Get user's workspace IDs
     const { data: userWorkspaces, error: wsError } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id')
       .eq('user_id', userId)
 
@@ -425,7 +425,7 @@ export class TaskRepository extends BaseRepository<Task> {
 
     // Get user's roles in these workspaces
     const { data: memberships, error: memberError } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id, role')
       .eq('user_id', userId)
       .in('workspace_id', taskWorkspaceIds)

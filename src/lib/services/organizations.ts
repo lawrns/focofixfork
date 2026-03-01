@@ -80,7 +80,7 @@ export class WorkspacesService {
 
       // Get workspaces where user is a member
       const { data: memberWorkspaces, error: memberError } = await client
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select(`
           workspaces (
             id,
@@ -225,7 +225,7 @@ export class WorkspacesService {
       console.log('Adding owner as member:', { workspace_id: workspace.id, user_id: data.owner_id })
 
       const { error: memberError } = await client
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .insert({
           workspace_id: workspace.id,
           user_id: data.owner_id,
@@ -260,7 +260,7 @@ export class WorkspacesService {
   static async getWorkspaceMembers(workspaceId: string): Promise<WorkspacesResponse<WorkspaceMemberWithDetails[]>> {
     try {
       const { data, error } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select(`
           id,
           workspace_id,
@@ -408,7 +408,7 @@ export class WorkspacesService {
       if (existingProfile) {
         // User exists, check if already a member
         const { data: existingMember } = await supabaseAdmin
-          .from('workspace_members')
+          .from('foco_workspace_members')
           .select('id')
           .eq('workspace_id', workspaceId)
           .eq('user_id', existingProfile.id)
@@ -423,7 +423,7 @@ export class WorkspacesService {
 
         // Add existing user directly
         const { error: memberError } = await supabaseAdmin
-          .from('workspace_members')
+          .from('foco_workspace_members')
           .insert({
             workspace_id: workspaceId,
             user_id: existingProfile.id,
@@ -527,7 +527,7 @@ export class WorkspacesService {
 
       // Get current member data
       const { data: currentMember, error: fetchError } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('*')
         .eq('id', memberId)
         .eq('workspace_id', workspaceId)
@@ -557,7 +557,7 @@ export class WorkspacesService {
 
       // Update role
       const { data: updatedMember, error: updateError } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .update({ role: data.role })
         .eq('id', memberId)
         .eq('workspace_id', workspaceId)
@@ -599,7 +599,7 @@ export class WorkspacesService {
 
       // Get member data
       const { data: member, error: fetchError } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('*')
         .eq('id', memberId)
         .eq('workspace_id', workspaceId)
@@ -614,7 +614,7 @@ export class WorkspacesService {
 
       // Get total owners/admins count
       const { data: admins } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('id')
         .eq('workspace_id', workspaceId)
         .in('role', ['owner', 'admin'])
@@ -631,7 +631,7 @@ export class WorkspacesService {
 
       // Remove member
       const { error: deleteError } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .delete()
         .eq('id', memberId)
         .eq('workspace_id', workspaceId)
@@ -663,7 +663,7 @@ export class WorkspacesService {
   private static async getUserRoleInWorkspace(userId: string, workspaceId: string): Promise<MemberRole> {
     try {
       const { data, error } = await supabaseAdmin
-        .from('workspace_members')
+        .from('foco_workspace_members')
         .select('role')
         .eq('user_id', userId)
         .eq('workspace_id', workspaceId)

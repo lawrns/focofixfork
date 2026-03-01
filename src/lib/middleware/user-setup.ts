@@ -46,7 +46,7 @@ export async function userSetupMiddleware(
     // The user_profiles table doesn't have organization_id column
     // Instead, check workspace_members table
     const { data: membership, error } = await supabaseClient
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id')
       .eq('user_id', user.id)
       .limit(1)

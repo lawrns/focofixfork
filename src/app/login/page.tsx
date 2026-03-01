@@ -1,7 +1,6 @@
 import { LoginForm } from '@/components/auth/login-form'
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 import { GitBranch, Mic, Zap } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -95,16 +94,6 @@ export default function LoginPage() {
           </div>
 
           <LoginForm />
-
-          <p className="mt-6 text-center text-[13px] text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link
-              href="/register"
-              className="text-[color:var(--foco-teal)] hover:underline underline-offset-2 font-medium"
-            >
-              Create free account
-            </Link>
-          </p>
         </div>
       </div>
     </div>

@@ -1,18 +1,6 @@
-export {
-  getPendingWorkItems,
-  matchAgent,
-  loadProjectHandbook,
-  dispatchToAgent,
-  updateWorkItemStatus,
-  createRun,
-  processDelegation,
-  handleDelegationCallback
-} from './delegation-engine'
+// Delegation engine — re-exports from active implementation
+// delegation-engine.ts was removed (called non-existent /api/dispatch endpoint)
+// The active engine is engine.ts (processDelegationTick)
 
-export type {
-  DelegationStatus,
-  AgentType,
-  DelegationContext,
-  DispatchPayload,
-  DelegationResult
-} from './delegation-engine'
+export { processDelegationTick } from './engine'
+export type { DelegationTickResult } from './engine'

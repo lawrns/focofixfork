@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
 
     // Verify user has access to workspace
     const { data: membership } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id, role')
       .eq('workspace_id', body.workspace_id)
       .eq('user_id', user.id)

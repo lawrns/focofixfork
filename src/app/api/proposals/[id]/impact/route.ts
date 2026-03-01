@@ -44,7 +44,7 @@ export async function GET(
 
     // Verify user has access to the workspace
     const { data: membership } = await supabaseAdmin
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('id')
       .eq('workspace_id', proposal.workspace_id)
       .eq('user_id', user.id)

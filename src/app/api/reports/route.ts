@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     // Get user's workspace IDs
     const { data: memberData, error: memberError } = await supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('workspace_id')
       .eq('user_id', user.id)
 

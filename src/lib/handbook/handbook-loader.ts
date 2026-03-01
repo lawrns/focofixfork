@@ -21,6 +21,21 @@ export interface AgentHandbook {
 const SKILLS_BASE_PATH = process.env.CLAWDBOT_SKILLS_PATH ?? '/home/laurence/clawdbot/skills'
 
 /**
+ * List available handbook slugs from the skills directory.
+ */
+export async function listHandbooks(): Promise<string[]> {
+  try {
+    const { readdir } = await import('fs/promises')
+    const files = await readdir(SKILLS_BASE_PATH)
+    return files
+      .filter(f => f.endsWith('.md'))
+      .map(f => f.replace(/\.md$/, ''))
+  } catch {
+    return []
+  }
+}
+
+/**
  * Load handbook files for a project from the skills directory
  * Supports both markdown (.md) and YAML (.yaml, .yml) files
  */

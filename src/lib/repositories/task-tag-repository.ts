@@ -94,7 +94,7 @@ export class TaskTagRepository extends BaseRepository<TaskTag> {
    */
   async verifyWorkspaceAccess(workspaceId: string, userId: string): Promise<Result<{ role: string }>> {
     const { data, error } = await this.supabase
-      .from('workspace_members')
+      .from('foco_workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)

@@ -20,6 +20,16 @@ import {
   Shield,
   BookOpen,
   Radar,
+  Crown,
+  FileText,
+  Bot,
+  ListTodo,
+  Inbox,
+  FolderOpen,
+  Users,
+  GitBranch,
+  BarChart2,
+  ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,17 +45,32 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { label: 'Dashboard',  href: '/dashboard', icon: Home,     shortcut: 'G H' },
-  { label: 'Dispatch',   href: '/openclaw',  icon: Send,     shortcut: 'G D' },
   { label: 'Intel Feed', href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
   { label: 'Runs',       href: '/runs',      icon: Activity, shortcut: 'G R' },
   { label: 'Ledger',     href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
 ];
 
+const workNavItems: NavItem[] = [
+  { label: 'My Work',   href: '/my-work',  icon: ListTodo,     shortcut: 'G W' },
+  { label: 'Inbox',     href: '/inbox',    icon: Inbox,        shortcut: 'G N' },
+  { label: 'Projects',  href: '/projects', icon: FolderOpen,   shortcut: 'G P' },
+  { label: 'People',    href: '/people',   icon: Users,        shortcut: 'G O' },
+  { label: 'Timeline',  href: '/timeline', icon: GitBranch,    shortcut: 'G T' },
+];
+
+const empireNavItems: NavItem[] = [
+  { label: 'Command',  href: '/empire',          icon: Crown,    shortcut: 'G M' },
+  { label: 'Briefing', href: '/empire/briefing',  icon: FileText, shortcut: 'G B' },
+  { label: 'Agents',   href: '/empire/agents',    icon: Bot,      shortcut: 'G J' },
+];
+
 const operateNavItems: NavItem[] = [
-  { label: 'Crons',     href: '/crons',     icon: Clock,    shortcut: 'G K' },
-  { label: 'Emails',    href: '/emails',    icon: Mail,     shortcut: 'G E' },
-  { label: 'Artifacts', href: '/artifacts', icon: Archive,  shortcut: 'G A' },
-  { label: 'Policies',  href: '/policies',  icon: Shield,   shortcut: 'G Y' },
+  { label: 'Crons',      href: '/crons',      icon: Clock,          shortcut: 'G K' },
+  { label: 'Emails',     href: '/emails',     icon: Mail,           shortcut: 'G E' },
+  { label: 'Reports',    href: '/reports',    icon: BarChart2,      shortcut: 'G F' },
+  { label: 'Proposals',  href: '/proposals',  icon: ClipboardList,  shortcut: 'G Q' },
+  { label: 'Artifacts',  href: '/artifacts',  icon: Archive,        shortcut: 'G A' },
+  { label: 'Policies',   href: '/policies',   icon: Shield,         shortcut: 'G Y' },
 ];
 
 export function LeftRail() {
@@ -194,6 +219,36 @@ export function LeftRail() {
         {mainNavItems.map(item => (
           <NavLink key={item.href} item={item} />
         ))}
+
+        {/* Divider */}
+        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+
+        {/* Work section label */}
+        {!sidebarCollapsed && (
+          <div className="px-3 mb-1">
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
+              Work
+            </span>
+          </div>
+        )}
+
+        {/* Work nav */}
+        {workNavItems.map(item => <NavLink key={item.href} item={item} />)}
+
+        {/* Divider */}
+        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+
+        {/* Empire section label */}
+        {!sidebarCollapsed && (
+          <div className="px-3 mb-1">
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
+              Empire
+            </span>
+          </div>
+        )}
+
+        {/* Empire nav */}
+        {empireNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Divider */}
         <div className="my-3 h-px bg-[var(--foco-rail-border)]" />

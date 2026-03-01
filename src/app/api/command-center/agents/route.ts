@@ -18,18 +18,26 @@ export async function GET(req: NextRequest) {
     fetchOpenClawAgents(baseUrl),
   ])
 
-  const agents = []
+  const allAgents = []
   const errors: string[] = []
 
   const labels = ['crico', 'clawdbot', 'bosun', 'openclaw']
   for (let i = 0; i < results.length; i++) {
     const result = results[i]
     if (result.status === 'fulfilled') {
-      agents.push(...result.value)
+      allAgents.push(...result.value)
     } else {
       errors.push(`${labels[i]}: ${result.reason?.message ?? 'unknown error'}`)
     }
   }
+
+  // Deduplicate by ID — keep the first occurrence
+  const seen = new Set<string>()
+  const agents = allAgents.filter(a => {
+    if (seen.has(a.id)) return false
+    seen.add(a.id)
+    return true
+  })
 
   return NextResponse.json({
     agents,

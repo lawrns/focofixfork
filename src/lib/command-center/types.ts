@@ -84,3 +84,18 @@ export const BACKEND_LABELS: Record<AgentBackend, string> = {
   bosun:    'Bosun',
   openclaw: 'OpenClaw',
 }
+
+// ── Decision types (for decision queue) ──────────────────────────────────────
+
+export type DecisionSeverity = 'P0' | 'P1' | 'P2' | 'P3'
+
+export interface CommandDecision {
+  id: string
+  title: string          // from CricoAction.intent
+  system: string         // mapped from source + scope
+  severity: DecisionSeverity    // mapped from authorityLevel
+  actionHint: string     // scope + riskScore description
+  createdAt: string
+  state: 'needs_you' | 'in_review' | 'deferred'
+  raw: Record<string, unknown>
+}

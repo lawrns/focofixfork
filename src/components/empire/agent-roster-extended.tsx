@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Bot, CheckCircle2, Clock, AlertCircle, Zap } from 'lucide-react'
@@ -66,7 +67,7 @@ function AgentCard({ agent }: { agent: AgentEntry }) {
     Clock
 
   return (
-    <div className="rounded-md border bg-card px-3 py-2.5 flex items-start gap-3">
+    <Link href={`/empire/command?agent=${encodeURIComponent(agent.id)}`} className="rounded-md border bg-card px-3 py-2.5 flex items-start gap-3 hover:bg-secondary/40 transition-colors">
       <div className="flex-shrink-0 mt-0.5">
         <div className={cn(
           'h-7 w-7 rounded-md flex items-center justify-center',
@@ -98,6 +99,6 @@ function AgentCard({ agent }: { agent: AgentEntry }) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }

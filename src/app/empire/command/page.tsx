@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { CommandCenterClient } from './command-center-client'
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 }
 
 export default function CommandCenterPage() {
-  return <CommandCenterClient />
+  return (
+    <Suspense>
+      <CommandCenterClient />
+    </Suspense>
+  )
 }

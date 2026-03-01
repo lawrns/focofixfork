@@ -83,6 +83,8 @@ export async function PATCH(
     if (body.status !== undefined) updateData.status = body.status
     if (body.is_pinned !== undefined) updateData.is_pinned = body.is_pinned
     if (body.archived_at !== undefined) updateData.archived_at = body.archived_at
+    if (body.delegation_settings !== undefined) updateData.delegation_settings = body.delegation_settings
+    if (body.assigned_agent_pool !== undefined) updateData.assigned_agent_pool = body.assigned_agent_pool
 
     const result = await repo.updateProject(id, updateData)
 

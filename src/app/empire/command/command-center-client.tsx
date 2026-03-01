@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,8 @@ const DECISIONS_POLL_INTERVAL = 15_000
 
 export function CommandCenterClient() {
   const store = useCommandCenterStore()
+  const searchParams = useSearchParams()
+  const agentParamHandled = useRef(false)
   const [missionDialogOpen, setMissionDialogOpen] = useState(false)
   const [services, setServices] = useState<ServiceStatus[]>([])
   const [healthLoading, setHealthLoading] = useState(true)
@@ -109,6 +112,40 @@ export function CommandCenterClient() {
     const id = setInterval(fetchDecisions, DECISIONS_POLL_INTERVAL)
     return () => clearInterval(id)
   }, [fetchDecisions])
+
+  // ── Auto-open agent from ?agent= query param ─────────────────────────────────
+  useEffect(() => {
+    if (agentParamHandled.current) return
+    const agentId = searchParams.get('agent')
+    if (!agentId || store.agents.length === 0) return
+    const match = store.agents.find(a => a.id === agentId || a.nativeId === agentId)
+    if (match) {
+      store.selectAgent(match.id)
+      agentParamHandled.current = true
+    }
+  }, [searchParams, store.agents, store])
+
+  // ── Mode persistence ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/command-center/mode')
+      .then(r => r.json())
+      .then(data => { if (data.mode) store.setMode(data.mode) })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleModeChange = useCallback(async (mode: 'Reactive' | 'Predictive' | 'Guarded') => {
+    store.setMode(mode)
+    try {
+      await fetch('/api/command-center/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      })
+    } catch {
+      // mode is already updated in store; silently fail on network error
+    }
+  }, [store])
 
   // ── Health tiles ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -211,7 +248,7 @@ export function CommandCenterClient() {
                 size="xs"
                 variant={store.mode === mode ? 'default' : 'ghost'}
                 className={cn('text-[11px] px-2 h-6', store.mode === mode && 'bg-background shadow-sm')}
-                onClick={() => store.setMode(mode)}
+                onClick={() => handleModeChange(mode)}
               >
                 {mode}
               </Button>

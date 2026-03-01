@@ -208,9 +208,55 @@ export default function DashboardPageClient() {
           }
         />
 
+        {/* Orchestration Health */}
+        <div className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="h-4 w-4 text-[color:var(--foco-teal)]" />
+            <span className="text-sm font-semibold">Orchestration Health</span>
+            {fleetPaused && (
+              <Badge variant="destructive" className="text-[10px]">Fleet Paused</Badge>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {activeRuns.filter(r => r.status === 'running').length}
+              </div>
+              <div className="text-[11px] text-muted-foreground">Running</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {activeRuns.filter(r => r.status === 'pending').length}
+              </div>
+              <div className="text-[11px] text-muted-foreground">Pending</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                {allRuns.filter(r => r.status === 'completed').length}
+              </div>
+              <div className="text-[11px] text-muted-foreground">Completed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-700 dark:text-zinc-300">
+                {recentEventsCount}
+              </div>
+              <div className="text-[11px] text-muted-foreground">Recent Events</div>
+            </div>
+            <div className="text-center">
+              <div className={cn(
+                'text-sm font-semibold px-2 py-1 rounded',
+                fleetPaused ? 'bg-red-500/15 text-red-600 dark:text-red-400' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+              )}>
+                {fleetPaused ? 'Paused' : 'Active'}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-1">Fleet</div>
+            </div>
+          </div>
+        </div>
+
         {/* Command Surface */}
-        <CommandSurface 
-          context="dashboard" 
+        <CommandSurface
+          context="dashboard"
           className="mb-6"
           onExecutionComplete={() => {
             // Refresh data after command execution

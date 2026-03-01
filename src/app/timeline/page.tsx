@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Filter,
   Plus,
-  Zap,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -54,17 +53,15 @@ const statusLabels = {
   overdue: 'Overdue',
 };
 
-// Generate dates for January 2026
-const generateDates = () => {
+// Generate all dates for a given year/month (0-indexed month)
+const generateDatesForMonth = (year: number, month: number) => {
   const dates = [];
-  for (let i = 1; i <= 31; i++) {
-    dates.push(new Date(2026, 0, i));
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let i = 1; i <= daysInMonth; i++) {
+    dates.push(new Date(year, month, i));
   }
   return dates;
 };
-
-const dates = generateDates();
-const today = new Date(2026, 0, 10); // Jan 10, 2026 for demo
 
 function TimelineBar({ item, dates }: { item: TimelineItem; dates: Date[] }) {
   const startDate = new Date(item.startDate);
@@ -125,49 +122,23 @@ function TimelineBar({ item, dates }: { item: TimelineItem; dates: Date[] }) {
   );
 }
 
-function AISuggestionBanner({ onPreview, onDismiss }: { onPreview: () => void; onDismiss: () => void }) {
-  const [dismissed, setDismissed] = useState(false);
 
-  if (dismissed) return null;
-
-  const handleDismiss = () => {
-    setDismissed(true);
-    onDismiss();
-  };
-
-  return (
-    <div className="flex items-center gap-3 p-3 mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-      <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded">
-        <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm">
-          <span className="font-medium text-zinc-900 dark:text-zinc-50">
-            Mobile App v2 milestone is at risk
-          </span>
-          {' — '}
-          <span className="text-zinc-600 dark:text-zinc-400">
-            3 blocked tasks may delay Beta Release by 5 days. View auto-reschedule preview?
-          </span>
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="text-[10px]">94% confident</Badge>
-        <Button size="sm" variant="default" className="h-7" onClick={onPreview}>Preview</Button>
-        <Button size="sm" variant="ghost" className="h-7" onClick={handleDismiss}>Dismiss</Button>
-      </div>
-    </div>
-  );
-}
+const today = new Date();
 
 export default function TimelinePage() {
   const { user } = useAuth();
   const [view, setView] = useState<'month' | 'quarter'>('month');
-  const [currentMonth, setCurrentMonth] = useState('January 2026');
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(0); // 0 = Jan 2026
+  // Initialize to current month
+  const nowMonth = today.getMonth(); // 0-indexed
+  const nowYear = today.getFullYear();
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(nowMonth); // 0=Jan ... 11=Dec
+  const [currentYear, setCurrentYear] = useState(nowYear);
   const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
+
+  const dates = generateDatesForMonth(currentYear, currentMonthIndex);
+  const currentMonth = new Date(currentYear, currentMonthIndex, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   // Fetch timeline data from API
   useEffect(() => {
@@ -223,50 +194,33 @@ export default function TimelinePage() {
     return acc;
   }, {} as Record<string, { color: string; items: TimelineItem[] }>);
 
-  const months = [
-    'January 2026', 'February 2026', 'March 2026', 'April 2026',
-    'May 2026', 'June 2026', 'July 2026', 'August 2026',
-    'September 2026', 'October 2026', 'November 2026', 'December 2026'
-  ];
-
   const handlePrevMonth = () => {
     if (currentMonthIndex > 0) {
       setCurrentMonthIndex(prev => prev - 1);
-      setCurrentMonth(months[currentMonthIndex - 1]);
     } else {
-      toast.info('Already at the beginning of 2026');
+      setCurrentMonthIndex(11);
+      setCurrentYear(prev => prev - 1);
     }
   };
 
   const handleNextMonth = () => {
-    if (currentMonthIndex < months.length - 1) {
+    if (currentMonthIndex < 11) {
       setCurrentMonthIndex(prev => prev + 1);
-      setCurrentMonth(months[currentMonthIndex + 1]);
     } else {
-      toast.info('Already at the end of 2026');
+      setCurrentMonthIndex(0);
+      setCurrentYear(prev => prev + 1);
     }
   };
 
   const handleGoToToday = () => {
-    setCurrentMonthIndex(0);
-    setCurrentMonth('January 2026');
+    setCurrentMonthIndex(nowMonth);
+    setCurrentYear(nowYear);
     toast.success('Jumped to today');
   };
 
   const handleFilter = () => {
     setShowFilter(!showFilter);
     toast.info(showFilter ? 'Filter closed' : 'Filter options coming soon');
-  };
-
-  const handleAIPreview = () => {
-    toast.loading('Generating reschedule preview...', { id: 'ai-preview' });
-    setTimeout(() => {
-      toast.success('Preview generated - see suggested timeline changes', { id: 'ai-preview' });
-    }, 1500);
-  };
-
-  const handleAIDismiss = () => {
-    toast.success('Suggestion dismissed');
   };
 
   // Show empty state if no timeline items
@@ -329,8 +283,6 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      {/* Only show AI suggestion if there are items */}
-      {timelineItems.length > 0 && <AISuggestionBanner onPreview={handleAIPreview} onDismiss={handleAIDismiss} />}
 
       {/* Timeline Navigation */}
       <div className="flex items-center justify-between mb-4">

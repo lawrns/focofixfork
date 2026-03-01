@@ -8,6 +8,81 @@ import { authRequiredResponse, successResponse, databaseErrorResponse, createPag
 
 export const dynamic = 'force-dynamic'
 
+async function enrichProjects(supabase: any, projects: any[]) {
+  if (!projects.length) return projects
+
+  const projectIds = projects.map((p: Record<string, unknown>) => p.id as string)
+
+  // Task counts grouped by project
+  const { data: taskRows } = await supabase
+    .from('work_items')
+    .select('project_id, status')
+    .in('project_id', projectIds)
+
+  const countMap: Record<string, { total: number; done: number }> = {}
+  for (const t of taskRows ?? []) {
+    const pid = t.project_id as string
+    if (!countMap[pid]) countMap[pid] = { total: 0, done: 0 }
+    countMap[pid].total++
+    if (t.status === 'done') countMap[pid].done++
+  }
+
+  // Delegation status breakdown
+  const { data: delegationRows } = await supabase
+    .from('work_items')
+    .select('project_id, delegation_status')
+    .in('project_id', projectIds)
+    .neq('delegation_status', 'none')
+
+  const delegationMap: Record<string, Record<string, number>> = {}
+  for (const r of delegationRows ?? []) {
+    if (!r.project_id || !r.delegation_status) continue
+    if (!delegationMap[r.project_id]) delegationMap[r.project_id] = {}
+    delegationMap[r.project_id][r.delegation_status] = (delegationMap[r.project_id][r.delegation_status] ?? 0) + 1
+  }
+
+  // Active run count
+  const { data: runRows } = await supabase
+    .from('runs')
+    .select('project_id')
+    .in('project_id', projectIds)
+    .in('status', ['pending', 'running'])
+
+  const runCountMap: Record<string, number> = {}
+  for (const r of runRows ?? []) {
+    if (!r.project_id) continue
+    runCountMap[r.project_id] = (runCountMap[r.project_id] ?? 0) + 1
+  }
+
+  // Owner display names
+  const ownerIds = [...new Set(projects.map(p => p.owner_id as string).filter(Boolean))]
+  const profileMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {}
+  if (ownerIds.length) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', ownerIds)
+    for (const p of profiles ?? []) {
+      profileMap[p.id as string] = { display_name: p.display_name as string | null, avatar_url: p.avatar_url as string | null }
+    }
+  }
+
+  return projects.map(p => {
+    const pid = p.id as string
+    const counts = countMap[pid] ?? { total: 0, done: 0 }
+    const ownerProfile = profileMap[p.owner_id as string]
+    return {
+      ...p,
+      total_tasks: counts.total,
+      tasks_completed: counts.done,
+      owner_name: ownerProfile?.display_name ?? null,
+      owner_avatar: ownerProfile?.avatar_url ?? null,
+      delegation_counts: delegationMap[pid] ?? {},
+      active_run_count: runCountMap[pid] ?? 0,
+    }
+  })
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { user, supabase, error, response: authResponse } = await getAuthUser(req)
@@ -61,8 +136,9 @@ export async function GET(req: NextRequest) {
         return databaseErrorResponse(result.error.message, result.error.details)
       }
 
+      const enriched = await enrichProjects(supabase, result.data ?? [])
       const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
-      return mergeAuthResponse(successResponse(result.data, meta), authResponse)
+      return mergeAuthResponse(successResponse(enriched, meta), authResponse)
     }
 
     // Otherwise, use generic findMany with filters
@@ -75,8 +151,9 @@ export async function GET(req: NextRequest) {
       return databaseErrorResponse(result.error.message, result.error.details)
     }
 
+    const enriched = await enrichProjects(supabase, result.data ?? [])
     const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
-    return mergeAuthResponse(successResponse(result.data, meta), authResponse)
+    return mergeAuthResponse(successResponse(enriched, meta), authResponse)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to fetch projects', message)

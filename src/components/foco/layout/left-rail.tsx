@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -52,11 +52,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 const workNavItems: NavItem[] = [
-  { label: 'My Work',   href: '/my-work',  icon: ListTodo,     shortcut: 'G W' },
-  { label: 'Inbox',     href: '/inbox',    icon: Inbox,        shortcut: 'G N' },
-  { label: 'Projects',  href: '/projects', icon: FolderOpen,   shortcut: 'G P' },
-  { label: 'People',    href: '/people',   icon: Users,        shortcut: 'G O' },
-  { label: 'Timeline',  href: '/timeline', icon: GitBranch,    shortcut: 'G T' },
+  { label: 'Agent Tasks',       href: '/my-work',  icon: ListTodo,     shortcut: 'G W' },
+  { label: 'Inbox',             href: '/inbox',    icon: Inbox,        shortcut: 'G N' },
+  { label: 'Projects',          href: '/projects', icon: FolderOpen,   shortcut: 'G P' },
+  { label: 'Team Capacity',     href: '/people',   icon: Users,        shortcut: 'G O' },
+  { label: 'Execution Timeline',href: '/timeline', icon: GitBranch,    shortcut: 'G T' },
 ];
 
 const empireNavItems: NavItem[] = [
@@ -67,12 +67,12 @@ const empireNavItems: NavItem[] = [
 ];
 
 const operateNavItems: NavItem[] = [
-  { label: 'Crons',      href: '/crons',      icon: Clock,          shortcut: 'G K' },
-  { label: 'Emails',     href: '/emails',     icon: Mail,           shortcut: 'G E' },
-  { label: 'Reports',    href: '/reports',    icon: BarChart2,      shortcut: 'G F' },
-  { label: 'Proposals',  href: '/proposals',  icon: ClipboardList,  shortcut: 'G Q' },
-  { label: 'Artifacts',  href: '/artifacts',  icon: Archive,        shortcut: 'G A' },
-  { label: 'Policies',   href: '/policies',   icon: Shield,         shortcut: 'G Y' },
+  { label: 'Crons',             href: '/crons',      icon: Clock,          shortcut: 'G K' },
+  { label: 'Emails',            href: '/emails',     icon: Mail,           shortcut: 'G E' },
+  { label: 'Reports',           href: '/reports',    icon: BarChart2,      shortcut: 'G F' },
+  { label: 'Change Proposals',  href: '/proposals',  icon: ClipboardList,  shortcut: 'G Q' },
+  { label: 'Artifacts',         href: '/artifacts',  icon: Archive,        shortcut: 'G A' },
+  { label: 'Fleet Policies',    href: '/policies',   icon: Shield,         shortcut: 'G Y' },
 ];
 
 export function LeftRail() {
@@ -86,6 +86,19 @@ export function LeftRail() {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
   const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
+
+  const navRef = useRef<HTMLElement>(null);
+  const [navOverflows, setNavOverflows] = useState(false);
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const check = () => setNavOverflows(el.scrollHeight > el.clientHeight);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    el.addEventListener('scroll', check);
+    return () => { ro.disconnect(); el.removeEventListener('scroll', check); };
+  }, []);
 
   /* ── NavLink ──────────────────────────────────────────────── */
   const NavLink = ({ item }: { item: NavItem }) => {
@@ -189,7 +202,7 @@ export function LeftRail() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-hide">
+      <nav ref={navRef} className="relative flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-hide">
 
         {/* Dispatch button */}
         {sidebarCollapsed ? (
@@ -266,6 +279,11 @@ export function LeftRail() {
 
         {/* Operate nav */}
         {operateNavItems.map(item => <NavLink key={item.href} item={item} />)}
+
+        {/* Scroll fade affordance */}
+        {navOverflows && (
+          <div className="sticky bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--foco-rail-bg)] to-transparent pointer-events-none" />
+        )}
       </nav>
 
       {/* Bottom: Settings + Collapse */}

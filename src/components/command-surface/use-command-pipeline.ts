@@ -362,10 +362,11 @@ export function useCommandPipeline() {
   }, []);
 
   const executeStep = useCallback(async (
-    step: PlanStep, 
-    prompt: string, 
+    step: PlanStep,
+    prompt: string,
     mode: CommandMode,
-    decision?: CTODecision | COODecision
+    decision?: CTODecision | COODecision,
+    completedSteps?: PlanStep[]
   ): Promise<{ success: boolean; result?: unknown; error?: string }> => {
     switch (step.type) {
       case 'ledger_log':
@@ -482,13 +483,62 @@ export function useCommandPipeline() {
         }
         return { success: true, result: { skipped: true } };
 
-      case 'verify':
-        // Simple verification - in production this would check the actual state
-        await new Promise(r => setTimeout(r, 500));
-        return { success: true, result: { verified: true } };
+      case 'verify': {
+        // Verify by checking the resource actually exists in the DB
+        const taskStep = completedSteps?.find(s => s.type === 'create_task' && s.result && (s.result as any).taskId && (s.result as any).taskId !== 'queued');
+        const cronStep = completedSteps?.find(s => s.type === 'create_cron' && s.result && (s.result as any).cronId);
+        const runStep = completedSteps?.find(s => s.type === 'create_run' && s.result && (s.result as any).runId);
 
-      case 'report':
-        return { success: true, result: { reported: true } };
+        try {
+          if (taskStep?.result) {
+            const taskId = (taskStep.result as any).taskId;
+            const res = await fetch(`/api/tasks/${taskId}`);
+            if (!res.ok) return { success: false, error: 'Task not found in database after creation' };
+            return { success: true, result: { verified: true, type: 'task', id: taskId } };
+          }
+          if (cronStep?.result) {
+            const cronId = (cronStep.result as any).cronId;
+            const res = await fetch(`/api/crons/${cronId}`);
+            if (!res.ok) return { success: false, error: 'Cron not found in database after creation' };
+            return { success: true, result: { verified: true, type: 'cron', id: cronId } };
+          }
+          if (runStep?.result) {
+            const runId = (runStep.result as any).runId;
+            const res = await fetch(`/api/runs/${runId}`);
+            if (!res.ok) return { success: false, error: 'Run not found in database after creation' };
+            return { success: true, result: { verified: true, type: 'run', id: runId } };
+          }
+          // No verifiable resource — treat as verified
+          return { success: true, result: { verified: true } };
+        } catch (error) {
+          return { success: false, error: String(error) };
+        }
+      }
+
+      case 'report': {
+        // Post execution summary to ledger
+        try {
+          const completedTypes = completedSteps?.map(s => s.type) || [];
+          const resourceId = completedSteps?.find(s => s.result && (s.result as any).taskId || (s.result as any)?.cronId || (s.result as any)?.runId)?.result;
+          await fetch('/api/ledger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'command_completed',
+              source: 'command_surface',
+              payload: {
+                prompt,
+                mode,
+                steps_completed: completedTypes,
+                resource: resourceId || null
+              }
+            })
+          });
+          return { success: true, result: { reported: true } };
+        } catch (error) {
+          return { success: false, error: String(error) };
+        }
+      }
 
       default:
         return { success: false, error: 'Unknown step type' };
@@ -523,7 +573,7 @@ export function useCommandPipeline() {
       step.status = 'in_progress';
       setExecution({ ...execution });
 
-      const result = await executeStep(step, prompt, mode, decision);
+      const result = await executeStep(step, prompt, mode, decision, plan.steps.slice(0, i));
       
       if (result.success) {
         step.status = 'completed';

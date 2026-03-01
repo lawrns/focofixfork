@@ -64,6 +64,13 @@ export async function fetchClawdbotAgents(_baseUrl: string, token?: string): Pro
         nativeId = `${nativeId}-${count}`
       }
 
+      // Normalize prompt and tools into consistent fields so AgentDetailSheet can read them
+      const rawEnriched = {
+        ...item,
+        system_prompt: item.system_prompt ?? item.instructions ?? (item.config as Record<string, unknown> | null)?.system_prompt ?? (item.agent_config as Record<string, unknown> | null)?.instructions ?? item.prompt ?? null,
+        tools: item.tools ?? item.capabilities ?? item.functions ?? [],
+      }
+
       return {
         id: `clawdbot::${nativeId}`,
         backend: 'clawdbot',
@@ -73,7 +80,7 @@ export async function fetchClawdbotAgents(_baseUrl: string, token?: string): Pro
         status: mapClawdbotStatus(item.status as string | undefined),
         model: item.model ? String(item.model) : undefined,
         lastActiveAt: item.last_active ? String(item.last_active) : undefined,
-        raw: item,
+        raw: rawEnriched,
       }
     })
   } catch (err) {

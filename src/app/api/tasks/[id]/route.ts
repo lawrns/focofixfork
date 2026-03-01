@@ -149,6 +149,12 @@ export async function PATCH(
     if (body.due_date !== undefined) updateData.due_date = body.due_date
     if (body.project_id !== undefined) updateData.project_id = body.project_id
     if (body.estimate_hours !== undefined) updateData.estimate_hours = body.estimate_hours
+    if (body.delegation_status !== undefined) updateData.delegation_status = body.delegation_status
+    if (body.assigned_agent !== undefined) updateData.assigned_agent = body.assigned_agent
+    if (body.run_id !== undefined) updateData.run_id = body.run_id
+    if (body.approval_required !== undefined) updateData.approval_required = body.approval_required
+    if (body.approved_by !== undefined) updateData.approved_by = body.approved_by
+    if (body.handbook_ref !== undefined) updateData.handbook_ref = body.handbook_ref
 
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('work_items')

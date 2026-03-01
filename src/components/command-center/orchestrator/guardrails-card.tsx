@@ -18,29 +18,29 @@ import { cn } from '@/lib/utils'
 
 const MODE_DESCRIPTIONS: Record<string, { description: string; policies: string[] }> = {
   Reactive: {
-    description: 'Respond to events as they occur. Limited guardrails, faster execution.',
+    description: 'Agents act only when explicitly instructed. No autonomous decisions.',
     policies: [
-      'Immediate action on triggers',
-      'P1+ decisions require human approval',
+      'Immediate action on explicit triggers only',
+      'All decisions require human initiation',
       'Auto-rollback on errors',
     ],
   },
   Predictive: {
-    description: 'Anticipate system needs and pre-stage resources. Balanced safety and performance.',
+    description: 'Agents can queue suggested actions for human approval before execution.',
     policies: [
-      'Predictive resource scaling',
-      'P0+ decisions require human approval',
+      'Agents propose actions — humans approve',
+      'P0+ decisions require explicit approval',
       'Validation before execution',
-      'Audit all changes',
+      'Audit all suggested and approved changes',
     ],
   },
   Guarded: {
-    description: 'Maximum safety. All significant actions require explicit approval.',
+    description: 'Agents execute autonomously within pre-approved policy bounds.',
     policies: [
       'All decisions logged and auditable',
-      'P0+ decisions require human approval',
+      'Autonomous execution within policy limits',
       'Sandbox all experiments',
-      ' 2-person review for production',
+      '2-person review for production changes',
       'Full rollback capability required',
     ],
   },

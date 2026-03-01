@@ -111,7 +111,7 @@ function CreateCronDialog({
   const [schedule, setSchedule] = useState('0 * * * *')
   const [handler, setHandler] = useState('')
   const [enabled, setEnabled] = useState(true)
-  const [projectId, setProjectId] = useState('')
+  const [projectId, setProjectId] = useState('__none__')
   const [policy, setPolicy] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -128,7 +128,7 @@ function CreateCronDialog({
           schedule: schedule.trim(),
           handler: handler.trim(),
           enabled,
-          project_id: projectId || undefined,
+          project_id: projectId === '__none__' ? undefined : projectId || undefined,
           policy: policy ? JSON.parse(policy) : {},
         }),
       })
@@ -143,7 +143,7 @@ function CreateCronDialog({
       setName('')
       setSchedule('0 * * * *')
       setHandler('')
-      setProjectId('')
+      setProjectId('__none__')
       setPolicy('')
       setEnabled(true)
     } finally {
@@ -200,7 +200,7 @@ function CreateCronDialog({
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {projects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2">

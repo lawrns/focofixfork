@@ -37,6 +37,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { audioService } from '@/lib/audio/audio-service';
 import { hapticService } from '@/lib/audio/haptic-service';
 import { apiClient } from '@/lib/api-client';
@@ -684,6 +691,13 @@ export default function MyWorkPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
   const [isPlanning, setIsPlanning] = useState(false);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('mywork_selected_project_id') || '';
+    }
+    return '';
+  });
 
   const fetchWorkItems = useCallback(async () => {
     if (!user) return;
@@ -712,6 +726,25 @@ export default function MyWorkPage() {
   useEffect(() => {
     fetchWorkItems();
   }, [fetchWorkItems]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/projects', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setProjects(data.data.map((p: any) => ({ id: p.id, name: p.name })));
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const handleProjectChange = (id: string) => {
+    setSelectedProjectId(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mywork_selected_project_id', id);
+    }
+  };
 
   const handleStartFocus = (item: WorkItem) => {
     activate(item);
@@ -752,11 +785,16 @@ export default function MyWorkPage() {
   };
 
   const handleQuickAdd = async (title: string, section: 'now' | 'next' | 'later' | 'waiting') => {
+    if (!selectedProjectId) {
+      toast.error('Select a project first before adding a task');
+      return;
+    }
     try {
       const response = await apiClient.post('/api/tasks', {
         title,
         status: section === 'now' ? 'in_progress' : section === 'waiting' ? 'blocked' : section,
         priority: 'medium',
+        project_id: selectedProjectId,
       });
 
       if (!response.success || !response.data) {
@@ -938,6 +976,16 @@ export default function MyWorkPage() {
         subtitle={`${completedToday} of ${totalToday} items completed`}
         primaryAction={
           <div className="flex items-center gap-2">
+            <Select value={selectedProjectId} onValueChange={handleProjectChange}>
+              <SelectTrigger className="h-8 w-[160px] text-xs">
+                <SelectValue placeholder="Project..." />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <TaskFilterPopover
               filters={filters}
               onFiltersChange={setFilters}

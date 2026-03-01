@@ -21,6 +21,8 @@ export interface Project {
   archived_at: string | null
   created_at: string
   updated_at: string
+  assigned_agent_pool: string[] | null
+  delegation_settings: { enabled: boolean; mode?: string } | null
 }
 
 export interface CreateProjectData {
@@ -45,6 +47,8 @@ export interface UpdateProjectData {
   status?: Project['status']
   is_pinned?: boolean
   archived_at?: string | null
+  assigned_agent_pool?: string[] | null
+  delegation_settings?: { enabled: boolean; mode?: string } | null
 }
 
 export class ProjectRepository extends BaseRepository<Project> {

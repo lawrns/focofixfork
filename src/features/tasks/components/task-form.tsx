@@ -42,6 +42,7 @@ const taskSchema = z.object({
     z.number().min(0).max(1000).nullable().optional()
   ),
   due_date: z.string().optional(),
+  handbook_ref: z.string().optional(),
 })
 
 type TaskFormData = z.infer<typeof taskSchema>
@@ -74,6 +75,7 @@ export function TaskForm({
   const [error, setError] = useState<string | null>(null)
   const [allProjectTasks, setAllProjectTasks] = useState<Task[]>(projectTasks)
   const [shouldCreateAnyway, setShouldCreateAnyway] = useState(false)
+  const [handbooks, setHandbooks] = useState<string[]>([])
 
   // Suggestions state
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -110,6 +112,7 @@ export function TaskForm({
       estimated_hours: task?.estimated_hours || undefined,
       actual_hours: task?.actual_hours || undefined,
       due_date: task?.due_date || '',
+      handbook_ref: (task as any)?.handbook_ref || '',
     },
   })
 
@@ -146,6 +149,20 @@ export function TaskForm({
 
     loadProjectTasks()
   }, [user, watchedProjectId])
+
+  // Load handbooks for the selected project
+  useEffect(() => {
+    if (!watchedProjectId) {
+      setHandbooks([])
+      return
+    }
+    const selectedProject = projects.find(p => p.id === watchedProjectId)
+    if (!selectedProject) return
+    fetch(`/api/delegation/handbooks?project=${encodeURIComponent(selectedProject.name.toLowerCase().replace(/\s+/g, '-'))}`)
+      .then(r => r.ok ? r.json() : { handbooks: [] })
+      .then(data => setHandbooks(data.handbooks || []))
+      .catch(() => setHandbooks([]))
+  }, [watchedProjectId, projects])
 
   // Handle title blur - check for duplicates
   const handleTitleBlur = useCallback(() => {
@@ -245,6 +262,7 @@ export function TaskForm({
         estimated_hours: data.estimated_hours || null,
         actual_hours: data.actual_hours || null,
         due_date: data.due_date || null,
+        handbook_ref: data.handbook_ref || null,
       }
 
       const url = isEditing ? `/api/tasks/${task.id}` : '/api/tasks'
@@ -524,6 +542,30 @@ export function TaskForm({
         disabled={isSubmitting}
         error={errors.due_date?.message}
       />
+
+      {/* Handbook Reference (Delegation) */}
+      {handbooks.length > 0 && (
+        <div className="space-y-2">
+          <Label htmlFor="handbook_ref">Handbook (Optional)</Label>
+          <Select
+            value={toSelectValueWithNone(watch('handbook_ref'), 'none')}
+            onValueChange={(value) => setValue('handbook_ref', fromSelectValue(value, 'none') || '', { shouldDirty: true })}
+            disabled={isSubmitting}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select handbook for agent context" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No handbook</SelectItem>
+              {handbooks.map((slug) => (
+                <SelectItem key={slug} value={slug}>
+                  {slug}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Form Actions */}
       <div className="flex justify-end space-x-4 pt-6">

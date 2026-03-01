@@ -10,6 +10,15 @@ import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import { AGENT_STATUS_COLORS, AGENT_STATUS_DOT, BACKEND_LABELS } from '@/lib/command-center/types'
 import type { AgentBackend, AgentNodeStatus } from '@/lib/command-center/types'
 
+function modelBadgeClass(model?: string) {
+  if (!model) return 'text-muted-foreground'
+  const m = model.toLowerCase()
+  if (m.includes('opus')) return 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700'
+  if (m.includes('sonnet')) return 'text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700'
+  if (m.includes('haiku')) return 'text-zinc-500 border-zinc-300 dark:border-zinc-600'
+  return 'text-muted-foreground'
+}
+
 export function AgentTable() {
   const store = useCommandCenterStore()
   const [search, setSearch] = useState('')
@@ -98,8 +107,11 @@ export function AgentTable() {
                     {agent.status}
                   </Badge>
                 </td>
-                <td className="px-3 py-2 hidden md:table-cell text-[11px] text-muted-foreground">
-                  {agent.model ?? '—'}
+                <td className="px-3 py-2 hidden md:table-cell">
+                  {agent.model
+                    ? <Badge variant="outline" className={cn('text-[10px]', modelBadgeClass(agent.model))}>{agent.model}</Badge>
+                    : <span className="text-[11px] text-muted-foreground">—</span>
+                  }
                 </td>
                 <td className="px-3 py-2 hidden lg:table-cell text-[11px] text-muted-foreground">
                   {agent.lastActiveAt ? new Date(agent.lastActiveAt).toLocaleString() : '—'}

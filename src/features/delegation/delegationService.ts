@@ -57,7 +57,7 @@ export class DelegationService {
       const { error: updateError } = await supabaseAdmin
         .from('work_items')
         .update({
-          delegation_status: 'delegated',
+          delegation_status: 'pending',  // Engine will pick this up and dispatch
           assigned_agent: agentType,
           run_id: run.id,
           approval_required: options?.requireApproval ?? false,

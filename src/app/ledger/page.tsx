@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { BookOpen, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { BookOpen, RefreshCw, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -113,7 +114,23 @@ export default function LedgerPage() {
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-3 pt-0">
+                  <div className="px-4 pb-3 pt-0 space-y-2">
+                    {/* View Run link if payload references a run */}
+                    {(() => {
+                      const payload = event.payload as Record<string, string | undefined>
+                      const runId = payload.run_id ?? payload.runId
+                      if (!runId) return null
+                      return (
+                        <Link
+                          href={`/runs/${runId}`}
+                          className="inline-flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View Run
+                        </Link>
+                      )
+                    })()}
                     <pre className="text-[11px] bg-secondary/50 rounded p-3 overflow-auto max-h-48 font-mono-display">
                       {JSON.stringify(event.payload, null, 2)}
                     </pre>

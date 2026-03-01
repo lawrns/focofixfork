@@ -9,6 +9,9 @@ export interface Run {
   ended_at: string | null
   summary: string | null
   created_at: string
+  tokens_in?: number | null
+  tokens_out?: number | null
+  cost_usd?: number | null
 }
 
 export const RUN_STATUS_COLORS: Record<RunStatus, string> = {

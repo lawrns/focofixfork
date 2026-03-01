@@ -18,6 +18,8 @@ import {
   AlertTriangle,
   FolderKanban,
   ArrowUpDown,
+  CheckSquare,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state-standard';
@@ -73,10 +76,26 @@ interface ProjectData {
   risk: 'none' | 'low' | 'medium' | 'high';
   nextMilestone?: { name: string; dueDate: string };
   owner: { name: string; avatar?: string };
-  teamSize: number;
+  teamSize?: number;
   updatedAt: string;
+  agentPool: string[];
+  delegationCounts: { pending: number; delegated: number; running: number; completed: number; failed: number };
+  activeRuns: number;
+  delegationEnabled: boolean;
 }
 
+
+function deriveProjectRisk(
+  totalTasks: number | null | undefined,
+  tasksDone: number | null | undefined,
+  status: string | null | undefined
+): 'none' | 'medium' | 'high' {
+  if (status === 'on_hold') return 'high'
+  const total = totalTasks ?? 0
+  const done = tasksDone ?? 0
+  if (total > 5 && done === 0) return 'medium'
+  return 'none'
+}
 
 const riskColors = {
   none: '',
@@ -91,6 +110,7 @@ interface ProjectCardProps {
   onDuplicate: (project: ProjectData) => void;
   onGenerateStatus: (project: ProjectData) => void;
   onArchive: (project: ProjectData) => void;
+  onToggleDelegation: (project: ProjectData) => void;
 }
 
 function formatRelativeDate(dateString: string): string {
@@ -113,7 +133,7 @@ function formatRelativeDate(dateString: string): string {
   }
 }
 
-function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive }: ProjectCardProps) {
+function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, onToggleDelegation }: ProjectCardProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   return (
@@ -195,6 +215,14 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
               >
                 Generate status update
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  onToggleDelegation(project);
+                }}
+              >
+                {project.delegationEnabled ? 'Disable' : 'Enable'} delegation
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600"
@@ -247,18 +275,55 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-[10px]">
-              {project.owner.name.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-xs text-zinc-500">{project.owner.name}</span>
+      <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+        {/* Row 1: Owner + task count */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[10px]">
+                {project.owner.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-zinc-500">{project.owner.name}</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
+            <CheckSquare className="h-3 w-3" />
+            <span>{project.tasksCompleted}/{project.totalTasks}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-xs text-zinc-500">
-          <Users className="h-3 w-3" />
-          <span>{project.teamSize}</span>
+
+        {/* Row 2: Fleet status */}
+        <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
+          {project.activeRuns > 0 && (
+            <Link
+              href="/empire/command"
+              onClick={e => e.stopPropagation()}
+              className="flex items-center gap-1 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              </span>
+              {project.activeRuns} running
+            </Link>
+          )}
+          {project.delegationCounts.pending > 0 && (
+            <span className="text-[10px] font-mono text-amber-500">
+              {project.delegationCounts.pending} pending
+            </span>
+          )}
+          {project.delegationCounts.failed > 0 && (
+            <span className="text-[10px] font-mono text-red-500">
+              {project.delegationCounts.failed} failed
+            </span>
+          )}
+          {project.agentPool.length > 0 ? (
+            <span className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Bot className="h-3 w-3" />{project.agentPool.length}
+            </span>
+          ) : (
+            <span className="ml-auto text-[10px] text-muted-foreground/50">No agents</span>
+          )}
         </div>
       </div>
     </Link>
@@ -271,10 +336,11 @@ interface ProjectRowProps {
   onDuplicate: (project: ProjectData) => void;
   onGenerateStatus: (project: ProjectData) => void;
   onArchive: (project: ProjectData) => void;
+  onToggleDelegation: (project: ProjectData) => void;
   isMobile?: boolean;
 }
 
-function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, isMobile }: ProjectRowProps) {
+function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, onToggleDelegation, isMobile }: ProjectRowProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   // Mobile card layout
@@ -440,6 +506,27 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive,
         </div>
       </div>
 
+      {/* Fleet */}
+      <div className="hidden md:block w-36 shrink-0">
+        {project.activeRuns > 0 ? (
+          <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 border-0 gap-1">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            {project.activeRuns} running
+          </Badge>
+        ) : project.delegationEnabled ? (
+          <span className="text-[11px] text-muted-foreground">
+            {project.delegationCounts.delegated + project.delegationCounts.pending > 0
+              ? `${project.delegationCounts.delegated + project.delegationCounts.pending} queued`
+              : 'idle'}
+          </span>
+        ) : (
+          <span className="text-[11px] text-muted-foreground/40">unassigned</span>
+        )}
+      </div>
+
       {/* Owner */}
       <div className="w-32 shrink-0 flex items-center gap-2">
         <Avatar className="h-6 w-6">
@@ -547,6 +634,7 @@ export default function ProjectsPageClient() {
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [editDelegationEnabled, setEditDelegationEnabled] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
 
   // Handle query parameters from command palette
@@ -635,16 +723,27 @@ export default function ProjectsPageClient() {
           icon: project.icon || 'folder',
           status: project.status || 'active',
           isPinned: project.is_pinned || false,
-          progress: 0, // TODO: Calculate from tasks
-          tasksCompleted: 0,
-          totalTasks: 0,
-          risk: 'none' as const,
+          progress: (project.total_tasks ?? 0) > 0
+            ? Math.round(((project.tasks_completed ?? 0) / (project.total_tasks ?? 1)) * 100)
+            : 0,
+          tasksCompleted: project.tasks_completed ?? 0,
+          totalTasks: project.total_tasks ?? 0,
+          risk: deriveProjectRisk(project.total_tasks, project.tasks_completed, project.status),
           owner: {
-            name: user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown',
-            avatar: user?.user_metadata?.avatar_url
+            name: project.owner_name || user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown',
+            avatar: project.owner_avatar || user?.user_metadata?.avatar_url
           },
-          teamSize: 1,
-          updatedAt: project.updated_at
+          updatedAt: project.updated_at,
+          agentPool: project.assigned_agent_pool ?? [],
+          delegationCounts: {
+            pending:   project.delegation_counts?.pending ?? 0,
+            delegated: project.delegation_counts?.delegated ?? 0,
+            running:   project.delegation_counts?.running ?? 0,
+            completed: project.delegation_counts?.completed ?? 0,
+            failed:    project.delegation_counts?.failed ?? 0,
+          },
+          activeRuns: project.active_run_count ?? 0,
+          delegationEnabled: project.delegation_settings?.enabled ?? false,
         }));
 
         setProjects(transformedProjects);
@@ -792,6 +891,7 @@ export default function ProjectsPageClient() {
     setEditingProject(project);
     setEditProjectName(project.name);
     setEditProjectDescription(project.description || '');
+    setEditDelegationEnabled(project.delegationEnabled);
     setEditDialogOpen(true);
   }, []);
 
@@ -806,6 +906,7 @@ export default function ProjectsPageClient() {
         body: JSON.stringify({
           name: editProjectName,
           description: editProjectDescription,
+          delegation_settings: { enabled: editDelegationEnabled },
         }),
         credentials: 'include',
       });
@@ -815,7 +916,7 @@ export default function ProjectsPageClient() {
         setProjects(prev =>
           prev.map(p =>
             p.id === editingProject.id
-              ? { ...p, name: editProjectName, description: editProjectDescription }
+              ? { ...p, name: editProjectName, description: editProjectDescription, delegationEnabled: editDelegationEnabled }
               : p
           )
         );
@@ -835,6 +936,29 @@ export default function ProjectsPageClient() {
   const handleGenerateStatus = useCallback((project: ProjectData) => {
     router.push(`/projects/${project.slug}/status-update`);
   }, [router]);
+
+  const handleToggleDelegation = useCallback(async (project: ProjectData) => {
+    const newEnabled = !project.delegationEnabled;
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ delegation_settings: { enabled: newEnabled } }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to update delegation');
+        return;
+      }
+      setProjects(prev =>
+        prev.map(p => p.id === project.id ? { ...p, delegationEnabled: newEnabled } : p)
+      );
+      toast.success(`Delegation ${newEnabled ? 'enabled' : 'disabled'}`);
+    } catch {
+      toast.error('Failed to update delegation');
+    }
+  }, []);
 
   const handleArchiveProject = useCallback(async (project: ProjectData) => {
     try {
@@ -986,6 +1110,7 @@ export default function ProjectsPageClient() {
               onDuplicate={handleDuplicateProject}
               onGenerateStatus={handleGenerateStatus}
               onArchive={handleArchiveProject}
+              onToggleDelegation={handleToggleDelegation}
             />
           ))}
         </div>
@@ -996,6 +1121,7 @@ export default function ProjectsPageClient() {
             <div className="w-9" />
             <div className="flex-1">Project</div>
             <div className="w-32">Progress</div>
+            <div className="hidden md:block w-36">Fleet</div>
             <div className="w-32">Owner</div>
             <div className="w-24">Updated</div>
             <div className="w-20" />
@@ -1010,6 +1136,7 @@ export default function ProjectsPageClient() {
               onDuplicate={handleDuplicateProject}
               onGenerateStatus={handleGenerateStatus}
               onArchive={handleArchiveProject}
+              onToggleDelegation={handleToggleDelegation}
               isMobile={isMobile}
             />
           ))}
@@ -1063,6 +1190,18 @@ export default function ProjectsPageClient() {
                 value={editProjectDescription}
                 onChange={(e) => setEditProjectDescription(e.target.value)}
                 placeholder="Project description"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <div>
+                <p className="text-[13px] font-medium">Agent delegation</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Allow ClawdBot agents to pick up tasks from this project
+                </p>
+              </div>
+              <Switch
+                checked={editDelegationEnabled}
+                onCheckedChange={setEditDelegationEnabled}
               />
             </div>
           </div>

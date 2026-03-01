@@ -49,60 +49,30 @@ const shortcuts: Shortcut[] = [
   },
 
   // Navigation
-  {
-    id: 'nav-home',
-    keys: ['G', 'H'],
-    description: 'Go to home/dashboard',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-inbox',
-    keys: ['G', 'I'],
-    description: 'Go to inbox',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-mywork',
-    keys: ['G', 'M'],
-    description: 'Go to my work',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-projects',
-    keys: ['G', 'P'],
-    description: 'Go to projects',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-timeline',
-    keys: ['G', 'T'],
-    description: 'Go to timeline',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-docs',
-    keys: ['G', 'D'],
-    description: 'Go to docs',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-people',
-    keys: ['G', 'E'],
-    description: 'Go to people',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-reports',
-    keys: ['G', 'R'],
-    description: 'Go to reports',
-    category: 'Navigation',
-  },
-  {
-    id: 'nav-settings',
-    keys: ['G', 'S'],
-    description: 'Go to settings',
-    category: 'Navigation',
-  },
+  // ── Core
+  { id: 'nav-dashboard',  keys: ['G', 'H'], description: 'Go to dashboard',       category: 'Navigation' },
+  { id: 'nav-dispatch',   keys: ['G', 'D'], description: 'Go to Dispatch',         category: 'Navigation' },
+  { id: 'nav-intel',      keys: ['G', 'I'], description: 'Go to Intel Feed',       category: 'Navigation' },
+  { id: 'nav-runs',       keys: ['G', 'R'], description: 'Go to Runs',             category: 'Navigation' },
+  { id: 'nav-ledger',     keys: ['G', 'L'], description: 'Go to Ledger',           category: 'Navigation' },
+  // ── Work
+  { id: 'nav-mywork',     keys: ['G', 'W'], description: 'Go to My Work',          category: 'Navigation' },
+  { id: 'nav-inbox',      keys: ['G', 'N'], description: 'Go to Inbox',            category: 'Navigation' },
+  { id: 'nav-projects',   keys: ['G', 'P'], description: 'Go to Projects',         category: 'Navigation' },
+  { id: 'nav-people',     keys: ['G', 'O'], description: 'Go to People',           category: 'Navigation' },
+  { id: 'nav-timeline',   keys: ['G', 'T'], description: 'Go to Timeline',         category: 'Navigation' },
+  // ── Empire
+  { id: 'nav-empire',     keys: ['G', 'M'], description: 'Go to Empire command',   category: 'Navigation' },
+  { id: 'nav-briefing',   keys: ['G', 'B'], description: 'Go to Empire briefing',  category: 'Navigation' },
+  { id: 'nav-agents',     keys: ['G', 'J'], description: 'Go to Empire agents',    category: 'Navigation' },
+  // ── Operate
+  { id: 'nav-crons',      keys: ['G', 'K'], description: 'Go to Crons',            category: 'Navigation' },
+  { id: 'nav-emails',     keys: ['G', 'E'], description: 'Go to Emails',           category: 'Navigation' },
+  { id: 'nav-reports',    keys: ['G', 'F'], description: 'Go to Reports',          category: 'Navigation' },
+  { id: 'nav-proposals',  keys: ['G', 'Q'], description: 'Go to Proposals',        category: 'Navigation' },
+  { id: 'nav-artifacts',  keys: ['G', 'A'], description: 'Go to Artifacts',        category: 'Navigation' },
+  { id: 'nav-policies',   keys: ['G', 'Y'], description: 'Go to Policies',         category: 'Navigation' },
+  { id: 'nav-settings',   keys: ['G', 'S'], description: 'Go to Settings',         category: 'Navigation' },
 
   // Tasks
   {
@@ -209,7 +179,7 @@ export function KeyboardShortcutsModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
         </DialogHeader>

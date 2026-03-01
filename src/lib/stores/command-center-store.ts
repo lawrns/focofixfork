@@ -5,23 +5,32 @@ import type {
   FlowLane,
   FlowGoal,
   AgentBackend,
+  CommandDecision,
 } from '@/lib/command-center/types'
 import { BACKEND_LABELS } from '@/lib/command-center/types'
 
 interface CommandCenterStore {
   agents: UnifiedAgent[]
   missions: UnifiedMission[]
+  decisions: CommandDecision[]
   selectedAgentId: string | null
   isLoading: boolean
   lastFetch: Date | null
   error: string | null
+  mode: 'Reactive' | 'Predictive' | 'Guarded'
+  paused: boolean
+  quietMode: boolean
 
   // setters
   setAgents: (agents: UnifiedAgent[]) => void
   setMissions: (missions: UnifiedMission[]) => void
+  setDecisions: (decisions: CommandDecision[]) => void
   selectAgent: (id: string | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
+  setMode: (mode: 'Reactive' | 'Predictive' | 'Guarded') => void
+  setPaused: (paused: boolean) => void
+  setQuietMode: (quietMode: boolean) => void
 
   // derived selectors
   toFlowLanes: () => FlowLane[]
@@ -38,6 +47,7 @@ interface CommandCenterStore {
     agentIds?: string[]
     [key: string]: unknown
   }) => Promise<UnifiedMission>
+  approveDecision: (id: string, action: 'approve' | 'reject' | 'defer') => Promise<void>
 }
 
 const BACKEND_ORDER: AgentBackend[] = ['crico', 'clawdbot', 'bosun', 'openclaw']
@@ -45,16 +55,24 @@ const BACKEND_ORDER: AgentBackend[] = ['crico', 'clawdbot', 'bosun', 'openclaw']
 export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
   agents: [],
   missions: [],
+  decisions: [],
   selectedAgentId: null,
   isLoading: false,
   lastFetch: null,
   error: null,
+  mode: 'Guarded',
+  paused: false,
+  quietMode: false,
 
   setAgents: (agents) => set({ agents, lastFetch: new Date() }),
   setMissions: (missions) => set({ missions }),
+  setDecisions: (decisions) => set({ decisions }),
   selectAgent: (id) => set({ selectedAgentId: id }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
+  setMode: (mode) => set({ mode }),
+  setPaused: (paused) => set({ paused }),
+  setQuietMode: (quietMode) => set({ quietMode }),
 
   toFlowLanes: () => {
     const { agents } = get()
@@ -125,5 +143,18 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
     const mission: UnifiedMission = json.mission
     set(state => ({ missions: [mission, ...state.missions] }))
     return mission
+  },
+
+  approveDecision: async (id, action) => {
+    const res = await fetch('/api/command-center/decisions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action }),
+    })
+    if (!res.ok) throw new Error('Failed to process decision')
+    // Remove from decisions list
+    set(state => ({
+      decisions: state.decisions.filter(d => d.id !== id),
+    }))
   },
 }))

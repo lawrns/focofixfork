@@ -52,8 +52,18 @@ export async function fetchClawdbotAgents(_baseUrl: string, token?: string): Pro
       }]
     }
 
-    return items.map(item => {
-      const nativeId = String(item.id ?? item.agent_id ?? 'unknown')
+    // Deduplicate: track seen IDs and append counter for collisions
+    const seen = new Map<string, number>()
+    return items.map((item, idx) => {
+      let nativeId = String(item.id ?? item.agent_id ?? `agent-${idx}`)
+
+      // If we've seen this nativeId before, make it unique
+      const count = seen.get(nativeId) ?? 0
+      seen.set(nativeId, count + 1)
+      if (count > 0) {
+        nativeId = `${nativeId}-${count}`
+      }
+
       return {
         id: `clawdbot::${nativeId}`,
         backend: 'clawdbot',

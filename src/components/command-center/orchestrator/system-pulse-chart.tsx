@@ -93,42 +93,43 @@ export function SystemPulseChart() {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorClawdbot" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="rgb(59, 130, 246)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="rgb(59, 130, 246)" stopOpacity={0} />
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorOpenclaw" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="rgb(168, 85, 247)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="rgb(168, 85, 247)" stopOpacity={0} />
+                <stop offset="5%" stopColor="#00c8aa" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#00c8aa" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#e5e7eb"
+              stroke="hsl(var(--border))"
               vertical={false}
             />
             <XAxis
               dataKey="t"
-              tick={{ fontSize: 11 }}
-              stroke="#6b7280"
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              stroke="hsl(var(--border))"
             />
             <YAxis
-              tick={{ fontSize: 11 }}
-              stroke="#6b7280"
-              label={{ value: 'Latency (ms)', angle: -90, position: 'insideLeft', offset: 8 }}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              stroke="hsl(var(--border))"
+              label={{ value: 'Latency (ms)', angle: -90, position: 'insideLeft', offset: 8, fill: 'hsl(var(--muted-foreground))' }}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e5e7eb',
-                borderRadius: '4px',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '6px',
+                color: 'hsl(var(--foreground))',
               }}
-              labelStyle={{ color: '#000000' }}
+              labelStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(value: number | undefined) => value !== undefined ? `${Math.round(value)}ms` : '-'}
             />
             <Area
               type="monotone"
               dataKey="clawdbot_ms"
-              stroke="rgb(59, 130, 246)"
+              stroke="#6366f1"
               fillOpacity={1}
               fill="url(#colorClawdbot)"
               name="ClawdBot"
@@ -137,7 +138,7 @@ export function SystemPulseChart() {
             <Area
               type="monotone"
               dataKey="openclaw_ms"
-              stroke="rgb(168, 85, 247)"
+              stroke="#00c8aa"
               fillOpacity={1}
               fill="url(#colorOpenclaw)"
               name="OpenClaw"

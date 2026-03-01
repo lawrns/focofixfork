@@ -120,7 +120,7 @@ export function QuickActionsCard() {
             <Button
               size="sm"
               variant={store.quietMode ? 'default' : 'outline'}
-              className={cn('justify-start gap-2 text-[12px] h-9', store.quietMode && 'bg-teal-600 hover:bg-teal-700')}
+              className={cn('justify-start gap-2 text-[12px] h-9', store.quietMode && 'bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90')}
               onClick={toggleQuietMode}
             >
               <Moon className="h-4 w-4" />
@@ -144,7 +144,7 @@ export function QuickActionsCard() {
               <circle cx="16" cy="16" r="10" fill="none" stroke="hsl(var(--border))" strokeWidth="1" opacity="0.5" />
               <circle cx="16" cy="16" r="6" fill="none" stroke="hsl(var(--border))" strokeWidth="1" opacity="0.7" />
               {/* Green indicator */}
-              <circle cx="16" cy="16" r="4" fill="none" stroke="rgb(34, 197, 94)" strokeWidth="1.5" />
+              <circle cx="16" cy="16" r="4" fill="none" stroke="#10b981" strokeWidth="1.5" />
             </svg>
           </div>
           </TooltipTrigger>

@@ -58,7 +58,7 @@ export function GuardrailsCard() {
     <div className="rounded-lg border bg-card p-4 space-y-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold">Guardrails</h3>
-        <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400">
+        <Badge variant="outline" className="text-[10px] bg-[color:var(--foco-teal)]/10 text-[color:var(--foco-teal)]">
           {store.mode}
         </Badge>
       </div>

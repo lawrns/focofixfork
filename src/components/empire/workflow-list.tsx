@@ -20,7 +20,7 @@ interface WorkflowListProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  Running:        'bg-blue-500/10 text-blue-600 border-blue-400/40',
+  Running:        'bg-[color:var(--foco-teal)]/10 text-[color:var(--foco-teal)] border-[color:var(--foco-teal)]/40',
   Completed:      'bg-emerald-500/10 text-emerald-600 border-emerald-400/40',
   Failed:         'bg-rose-500/10 text-rose-600 border-rose-400/40',
   Canceled:       'bg-zinc-500/10 text-zinc-500 border-zinc-400/40',

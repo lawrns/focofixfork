@@ -90,7 +90,7 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
             <div className="flex flex-col gap-0.5 items-center">
               <div className="w-16 h-2 rounded-sm bg-muted-foreground/20 overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 transition-all duration-300"
+                  className="h-full bg-[color:var(--foco-teal)] transition-all duration-300"
                   style={{ width: `${metrics.cpu}%` }}
                 />
               </div>
@@ -106,7 +106,7 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
             <div className="flex flex-col gap-0.5 items-center">
               <div className="w-16 h-2 rounded-sm bg-muted-foreground/20 overflow-hidden">
                 <div
-                  className="h-full bg-purple-500 transition-all duration-300"
+                  className="h-full bg-indigo-500 transition-all duration-300"
                   style={{ width: `${metrics.mem}%` }}
                 />
               </div>

@@ -89,7 +89,7 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
             <Button
               size="xs"
               variant="default"
-              className="bg-teal-600 hover:bg-teal-700 text-white h-7 px-2 text-[10px]"
+              className="bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90 text-white h-7 px-2 text-[10px]"
               onClick={() => onApprove(decision.id)}
             >
               Approve

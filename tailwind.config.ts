@@ -151,6 +151,8 @@ const config: Config = {
         "fade-in": "fadeIn 150ms ease-out",
         "slide-up": "slideUp 200ms ease-out",
         "slide-down": "slideDown 200ms ease-out",
+        "dash-flow": "dashFlow 1.5s linear infinite",
+        "draw": "draw 1.5s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -164,6 +166,13 @@ const config: Config = {
         slideDown: {
           from: { opacity: "0", transform: "translateY(-10px)" },
           to: { opacity: "1", transform: "translateY(0)" },
+        },
+        dashFlow: {
+          to: { strokeDashoffset: "-200" },
+        },
+        draw: {
+          "0%": { strokeDashoffset: "200" },
+          "100%": { strokeDashoffset: "0" },
         },
       },
     },

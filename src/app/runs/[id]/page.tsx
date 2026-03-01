@@ -4,19 +4,12 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Terminal, FileEdit, Zap, Clock, ArrowLeft } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { PageShell } from '@/components/layout/page-shell'
+import { UnifiedPageShell } from '@/components/layout/unified-page-shell'
+import { UnifiedCard } from '@/components/ui/unified-card'
+import { StatusBadge } from '@/components/ui/unified-badge'
+import { SwarmProgress, type SwarmStep } from '@/components/swarm'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
-
-// Status badge color map — same as runs list
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
-  running: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  completed: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  failed: 'bg-red-500/15 text-red-600 dark:text-red-400',
-  cancelled: 'bg-zinc-500/15 text-zinc-500',
-}
 
 type RunStep = {
   id: string
@@ -59,8 +52,44 @@ function formatDuration(startedAt: string, endedAt: string): string {
   return `${hours}h ${remainingMinutes}m`
 }
 
+function mapRunStepsToSwarmSteps(runSteps: RunStep[], runStatus: string): SwarmStep[] {
+  const statusMap: Record<string, SwarmStep['status']> = {
+    'pending': 'pending',
+    'running': 'running',
+    'completed': 'completed',
+    'failed': 'error',
+    'cancelled': 'skipped',
+  }
+
+  return runSteps.map((step, index) => {
+    // Determine status based on run status and position
+    let status: SwarmStep['status'] = 'pending'
+    if (runStatus === 'completed') {
+      status = 'completed'
+    } else if (runStatus === 'failed') {
+      status = index === runSteps.length - 1 ? 'error' : 'completed'
+    } else if (runStatus === 'running') {
+      // Assume earlier steps completed, find the current one
+      const progress = Math.floor((index / runSteps.length) * 100)
+      if (progress < 50) status = 'completed'
+      else if (progress < 75) status = 'running'
+      else status = 'pending'
+    }
+
+    return {
+      id: step.id,
+      type: step.type === 'tool_use' ? 'tool_use' : 
+            step.type === 'file_edit' ? 'file_edit' : 'thinking',
+      status,
+      label: step.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      description: step.input ? Object.keys(step.input).join(', ') : undefined,
+      startedAt: step.created_at,
+    }
+  })
+}
+
 function StepIcon({ type }: { type: string }) {
-  if (type === 'tool_use') return <Terminal className="h-4 w-4 text-[color:var(--foco-teal)]" />
+  if (type === 'tool_use') return <Terminal className="h-4 w-4 text-primary" />
   if (type === 'file_edit') return <FileEdit className="h-4 w-4 text-amber-500" />
   return <Zap className="h-4 w-4 text-violet-500" />
 }
@@ -73,10 +102,10 @@ function JsonDetails({ data }: { data: Record<string, unknown> }) {
 
   return (
     <details className="mt-1">
-      <summary className="text-[11px] text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors">
+      <summary className="text-xs text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors">
         input ({lines.length} lines)
       </summary>
-      <pre className="mt-1 text-[11px] bg-secondary/60 rounded p-2 overflow-x-auto">
+      <pre className="mt-1 text-xs bg-muted rounded p-2 overflow-x-auto">
         {hasMore ? preview + '\n  …' : text}
       </pre>
     </details>
@@ -131,9 +160,11 @@ export default function RunDetailPage() {
 
   if (loading || (fetching && !notFound)) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" />
-      </div>
+      <UnifiedPageShell>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </UnifiedPageShell>
     )
   }
 
@@ -141,7 +172,7 @@ export default function RunDetailPage() {
 
   if (notFound || !run) {
     return (
-      <PageShell>
+      <UnifiedPageShell>
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
           <p className="text-sm font-medium">Run not found</p>
           <Link
@@ -152,7 +183,7 @@ export default function RunDetailPage() {
             Back to Runs
           </Link>
         </div>
-      </PageShell>
+      </UnifiedPageShell>
     )
   }
 
@@ -160,6 +191,7 @@ export default function RunDetailPage() {
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
 
+  const swarmSteps = mapRunStepsToSwarmSteps(steps, run.status)
   const artifacts = run.artifacts ?? []
 
   const duration =
@@ -168,60 +200,50 @@ export default function RunDetailPage() {
       : null
 
   return (
-    <PageShell>
-      {/* Top bar */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <UnifiedPageShell>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2">
         <Link
           href="/runs"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 shrink-0"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
         >
           <ArrowLeft className="h-3 w-3" />
           Runs
         </Link>
-        <div className="flex items-center gap-2">
-          <Badge
-            className={cn(
-              'text-[10px] px-1.5 py-0 rounded-sm border-0',
-              statusColors[run.status] ?? statusColors.cancelled
-            )}
-          >
-            {run.status}
-          </Badge>
-          <span className="text-xs font-mono bg-secondary/60 px-2 py-0.5 rounded text-muted-foreground">
-            {run.runner}
-          </span>
+      </div>
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-foreground break-words">
+            {run.summary ?? run.id}
+          </h1>
+          <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
+            <StatusBadge status={run.status} />
+            <span className="font-mono bg-muted px-2 py-0.5 rounded">{run.runner}</span>
+            {duration && <span>Duration: {duration}</span>}
+          </div>
         </div>
       </div>
 
-      {/* Title / summary */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-50 break-words">
-          {run.summary ?? run.id}
-        </h1>
-        <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-          {run.started_at && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Started: {new Date(run.started_at).toLocaleString()}
-            </span>
-          )}
-          {run.ended_at && (
-            <span>Ended: {new Date(run.ended_at).toLocaleString()}</span>
-          )}
-          {duration && <span>Duration: {duration}</span>}
-        </div>
-      </div>
+      {/* Swarm Progress - NEW! */}
+      {swarmSteps.length > 0 && (
+        <UnifiedCard>
+          <SwarmProgress steps={swarmSteps} variant="detailed" showDurations />
+        </UnifiedCard>
+      )}
 
-      {/* Timeline */}
+      {/* Timeline - Legacy view for reference */}
       <section>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-4">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Timeline
+            Step Details
           </span>
           <div className="flex-1 h-px bg-border" />
         </div>
+        
         {steps.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No steps recorded.</p>
+          <p className="text-sm text-muted-foreground">No steps recorded.</p>
         ) : (
           <div className="space-y-2">
             {steps.map(step => {
@@ -231,23 +253,20 @@ export default function RunDetailPage() {
                 Object.keys(step.input).length > 0
 
               return (
-                <div
-                  key={step.id}
-                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-border bg-card"
-                >
+                <UnifiedCard key={step.id} animate={false} className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-0.5">
                     <StepIcon type={step.type} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[12px] font-medium font-mono-display">{step.type}</span>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-sm font-medium font-mono-display">{step.type}</span>
+                      <span className="text-xs text-muted-foreground">
                         {new Date(step.created_at).toLocaleTimeString()}
                       </span>
                     </div>
                     {hasInput && <JsonDetails data={step.input as Record<string, unknown>} />}
                   </div>
-                </div>
+                </UnifiedCard>
               )
             })}
           </div>
@@ -256,17 +275,18 @@ export default function RunDetailPage() {
 
       {/* Ledger Events */}
       <section>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-4">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Ledger Events
           </span>
           <div className="flex-1 h-px bg-border" />
         </div>
+        
         {ledgerEvents.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No correlated ledger events found.</p>
+          <p className="text-sm text-muted-foreground">No correlated ledger events found.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="pb-2 pr-4 font-medium">Type</th>
@@ -277,13 +297,13 @@ export default function RunDetailPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {ledgerEvents.map(evt => (
-                  <tr key={evt.id} className="hover:bg-secondary/30 transition-colors">
-                    <td className="py-2 pr-4 font-mono">{evt.type}</td>
+                  <tr key={evt.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="py-2 pr-4 font-mono text-xs">{evt.type}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{evt.source}</td>
-                    <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">
+                    <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap text-xs">
                       {new Date(evt.timestamp).toLocaleString()}
                     </td>
-                    <td className="py-2 text-muted-foreground truncate max-w-[240px]">
+                    <td className="py-2 text-muted-foreground truncate max-w-[240px] text-xs">
                       {evt.payload ? JSON.stringify(evt.payload).slice(0, 80) : '—'}
                     </td>
                   </tr>
@@ -297,34 +317,32 @@ export default function RunDetailPage() {
       {/* Artifacts */}
       {artifacts.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3 mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Artifacts
             </span>
             <div className="flex-1 h-px bg-border" />
           </div>
+          
           <div className="space-y-2">
             {artifacts.map((artifact, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card"
-              >
-                <span className="text-[11px] font-mono bg-secondary/60 px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
+              <UnifiedCard key={i} animate={false} className="flex items-center gap-3">
+                <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
                   {artifact.type}
                 </span>
                 <a
                   href={artifact.uri}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[12px] text-[color:var(--foco-teal)] hover:underline truncate"
+                  className="text-sm text-primary hover:underline truncate"
                 >
                   {artifact.name ?? artifact.uri}
                 </a>
-              </div>
+              </UnifiedCard>
             ))}
           </div>
         </section>
       )}
-    </PageShell>
+    </UnifiedPageShell>
   )
 }

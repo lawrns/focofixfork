@@ -51,6 +51,7 @@ import {
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state-standard';
+import { ProjectEmptyState } from '@/features/delegation/components/ProjectEmptyState';
 import { emptyStates, buttons } from '@/lib/copy';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useMobile } from '@/lib/hooks/use-mobile';
@@ -1015,23 +1016,20 @@ export default function ProjectsPageClient() {
         </div>
       )}
 
-      {/* Empty State */}
-      {sortedProjects.length === 0 && (
+{/* Empty State */}
+      {sortedProjects.length === 0 && !search && currentWorkspaceId && (
+        <ProjectEmptyState workspaceId={currentWorkspaceId} hasProjects={false} />
+      )}
+      
+      {sortedProjects.length === 0 && search && (
         <EmptyState
           icon={FolderKanban}
-          title={search ? `No projects matching "${search}"` : emptyStates.projects.title}
-          description={search ? 'Try a different search term' : emptyStates.projects.description}
-          primaryAction={!search ? {
-            label: emptyStates.projects.primaryCta,
-            onClick: () => setCreateDialogOpen(true),
-          } : {
+          title={`No projects matching "${search}"`}
+          description="Try a different search term"
+          primaryAction={{
             label: 'Clear search',
             onClick: () => setSearch(''),
           }}
-          secondaryAction={!search ? {
-            label: emptyStates.projects.secondaryCta,
-            onClick: () => toast.info('Project templates coming soon'),
-          } : undefined}
         />
       )}
 

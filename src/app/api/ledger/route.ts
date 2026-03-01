@@ -1,36 +1,61 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-import { authRequiredResponse } from '@/lib/api/response-helpers'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
-export const dynamic = 'force-dynamic'
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const body = await req.json();
+    
+    const { type, source, context_id, correlation_id, causation_id, payload, prev_hash, hash } = body;
+    
+    const { data, error } = await supabase
+      .from('ledger_events')
+      .insert({
+        type,
+        source,
+        context_id,
+        correlation_id,
+        causation_id,
+        payload: payload || {},
+        prev_hash,
+        hash,
+        timestamp: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Ledger insert error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Ledger API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
 export async function GET(req: NextRequest) {
-  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
-
-  const { searchParams } = new URL(req.url)
-  const type = searchParams.get('type')
-  const source = searchParams.get('source')
-  const limit = parseInt(searchParams.get('limit') || '100')
-  const before = searchParams.get('before') // ISO timestamp cursor
-
-  let query = supabase
-    .from('ledger_events')
-    .select('*')
-    .order('timestamp', { ascending: false })
-    .limit(limit)
-
-  if (type) query = query.eq('type', type)
-  if (source) query = query.eq('source', source)
-  if (before) query = query.lt('timestamp', before)
-
-  const workspace_id = searchParams.get('workspace_id')
-  const user_id = searchParams.get('user_id')
-  if (workspace_id) query = query.eq('workspace_id', workspace_id)
-  if (user_id) query = query.eq('user_id', user_id)
-
-  const { data, error: dbError } = await query
-  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
-
-  return NextResponse.json({ data })
+  try {
+    const supabase = await createClient();
+    const { searchParams } = new URL(req.url);
+    const limit = parseInt(searchParams.get('limit') || '50');
+    
+    const { data, error } = await supabase
+      .from('ledger_events')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Ledger fetch error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Ledger API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

@@ -242,7 +242,7 @@ function MilestonePageContent() {
         if (projectData.success && projectData.data?.slug) {
           window.location.href = `/projects/${projectData.data.slug}`
         } else {
-          window.location.href = '/projects'
+          window.location.href = '/empire/missions'
         }
       } else {
         throw new Error(result.error || 'Failed to delete milestone')

@@ -323,7 +323,7 @@ function AIInsights({ members }: { members: TeamMember[] }) {
   );
 }
 
-export default function PeoplePage() {
+export function PeoplePageCore({ pageTitle = 'People' }: { pageTitle?: string }) {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'roster' | 'capacity'>('roster');
@@ -524,7 +524,7 @@ export default function PeoplePage() {
   if (isLoading) {
     return (
       <PageShell>
-        <PageHeader title="People" subtitle="Loading team..." />
+        <PageHeader title={pageTitle} subtitle="Loading team..." />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="h-48 animate-pulse bg-zinc-100 dark:bg-zinc-800" />
@@ -658,4 +658,11 @@ export default function PeoplePage() {
       </Dialog>
     </PageShell>
   );
+}
+
+export default function PeoplePage() {
+  useEffect(() => {
+    window.location.replace('/empire/fleet');
+  }, []);
+  return null;
 }

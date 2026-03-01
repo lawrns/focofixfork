@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   AtSign,
@@ -178,10 +179,13 @@ function InboxItem({
   );
 }
 
-export default function InboxPage() {
+export function InboxPageCore({ pageTitle = 'Inbox', defaultFilter = 'all' }: {
+  pageTitle?: string;
+  defaultFilter?: 'all' | 'unread' | 'mentions' | 'ai';
+}) {
   const { user } = useAuth();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [filter, setFilter] = useState<'all' | 'unread' | 'mentions' | 'ai'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'mentions' | 'ai'>(defaultFilter);
   const [items, setItems] = useState<InboxItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
@@ -397,7 +401,7 @@ export default function InboxPage() {
   if (isLoading) {
     return (
       <PageShell maxWidth="4xl">
-        <PageHeader title="Inbox" subtitle="Loading your messages..." />
+        <PageHeader title={pageTitle} subtitle="Loading your messages..." />
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-20 animate-pulse bg-zinc-100 dark:bg-zinc-800" />
@@ -410,7 +414,7 @@ export default function InboxPage() {
   return (
     <PageShell maxWidth="4xl">
       <PageHeader
-        title="Inbox"
+        title={pageTitle}
         subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You&apos;re all caught up"}
         primaryAction={
           <Button
@@ -509,4 +513,10 @@ export default function InboxPage() {
       </p>
     </PageShell>
   );
+}
+
+export default function InboxPage() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/empire/signals'); }, [router]);
+  return null;
 }

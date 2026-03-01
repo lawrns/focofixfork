@@ -43,36 +43,27 @@ export function GlobalKeyboardShortcuts() {
         if (gKeyTimeout) clearTimeout(gKeyTimeout);
 
         switch (key) {
-          case 'h':
-            router.push('/dashboard');
-            break;
-          case 'i':
-            router.push('/inbox');
-            break;
-          case 'm':
-            router.push('/my-work');
-            break;
-          case 'p':
-            router.push('/projects');
-            break;
-          case 't':
-            router.push('/timeline');
-            break;
-          case 'd':
-            router.push('/docs');
-            break;
-          case 'e':
-            router.push('/people');
-            break;
-          case 'r':
-            router.push('/reports');
-            break;
-          case 's':
-            router.push('/settings');
-            break;
-          case 'c':
-            router.push('/empire/command');
-            break;
+          case 'h': router.push('/dashboard'); break;
+          case 'i': router.push('/clawdbot'); break;
+          case 'r': router.push('/runs'); break;
+          case 'l': router.push('/ledger'); break;
+          case 'w': router.push('/my-work'); break;
+          case 'n': router.push('/empire/signals'); break;
+          case 'p': router.push('/empire/missions'); break;
+          case 'o': router.push('/empire/fleet'); break;
+          case 't': router.push('/empire/timeline'); break;
+          case 'm': router.push('/empire'); break;
+          case 'c': router.push('/empire/command'); break;
+          case 'b': router.push('/empire/briefing'); break;
+          case 'j': router.push('/empire/agents'); break;
+          case 'v': router.push('/empire/pipeline'); break;
+          case 'k': router.push('/crons'); break;
+          case 'e': router.push('/emails'); break;
+          case 'f': router.push('/reports'); break;
+          case 'q': router.push('/proposals'); break;
+          case 'a': router.push('/artifacts'); break;
+          case 'y': router.push('/policies'); break;
+          case 's': router.push('/settings'); break;
         }
         return;
       }
@@ -83,11 +74,6 @@ export function GlobalKeyboardShortcuts() {
           // Create task
           e.preventDefault();
           openTaskModal();
-          break;
-        case 'p':
-          // Create project
-          e.preventDefault();
-          router.push('/projects?create=true');
           break;
         case 'd':
           // Create doc

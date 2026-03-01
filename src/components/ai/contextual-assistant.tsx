@@ -177,7 +177,7 @@ export function ContextualAssistant({ className }: ContextualAssistantProps) {
         window.location.href = '/dashboard/analytics'
         break
       case 'view_projects':
-        window.location.href = '/projects'
+        window.location.href = '/empire/missions'
         break
       case 'view_tasks':
         window.location.href = '/tasks'

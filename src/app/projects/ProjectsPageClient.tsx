@@ -614,7 +614,7 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive,
   );
 }
 
-export default function ProjectsPageClient() {
+export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTitle?: string }) {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1023,7 +1023,7 @@ export default function ProjectsPageClient() {
     return (
       <PageShell>
         <PageHeader
-          title="Projects"
+          title={pageTitle}
           subtitle="Loading..."
           primaryAction={
             <Button disabled>

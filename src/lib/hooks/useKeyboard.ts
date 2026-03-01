@@ -134,9 +134,9 @@ export const FOCO_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     id: 'projects',
     keys: [{ key: 'p', meta: true }],
     action: () => {
-      window.location.href = '/projects'
+      window.location.href = '/empire/missions'
     },
-    description: 'Go to projects',
+    description: 'Go to missions',
     category: 'Navigation'
   },
 

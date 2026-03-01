@@ -125,7 +125,7 @@ function TimelineBar({ item, dates }: { item: TimelineItem; dates: Date[] }) {
 
 const today = new Date();
 
-export default function TimelinePage() {
+export function TimelinePageCore({ pageTitle = 'Timeline' }: { pageTitle?: string }) {
   const { user } = useAuth();
   const [view, setView] = useState<'month' | 'quarter'>('month');
   // Initialize to current month
@@ -230,7 +230,7 @@ export default function TimelinePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-              Timeline
+              {pageTitle}
             </h1>
             <p className="text-zinc-500 mt-1">
               Visualize project schedules and milestones
@@ -245,7 +245,7 @@ export default function TimelinePage() {
           <p className="text-zinc-500 text-center max-w-md mb-4">
             Set milestone dates on your projects to see them here. Projects with start and due dates will appear as timeline bars.
           </p>
-          <Button onClick={() => window.location.href = '/projects'}>
+          <Button onClick={() => window.location.href = '/empire/missions'}>
             <Plus className="h-4 w-4 mr-2" />
             Go to Projects
           </Button>
@@ -410,4 +410,11 @@ export default function TimelinePage() {
       </div>
     </div>
   );
+}
+
+export default function TimelinePage() {
+  useEffect(() => {
+    window.location.replace('/empire/timeline');
+  }, []);
+  return null;
 }

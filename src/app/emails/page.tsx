@@ -392,7 +392,7 @@ function EmailDetailDialog({
 
           {ledgerEvents.length > 0 && (
             <div>
-              <p className="font-medium text-xs text-muted-foreground mb-2">Ledger Trail</p>
+              <p className="font-medium text-xs text-muted-foreground mb-2">Audit Trail</p>
               <div className="space-y-1">
                 {ledgerEvents.map((event) => (
                   <div key={event.id} className="flex items-center gap-2 text-xs">

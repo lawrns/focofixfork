@@ -48,7 +48,7 @@ const features = [
   },
   {
     slash: '04',
-    title: 'Execution Ledger',
+    title: 'Audit Log',
     desc: 'Full audit trail of every dispatch, every event, every outcome. Filter, search, and export for compliance or debugging.',
     icon: BookOpen,
   },
@@ -170,7 +170,7 @@ export default function LandingPage() {
               <div className="animate-slide-up mb-5">
                 <span className="inline-flex items-center gap-2 text-xs font-mono-display text-[color:var(--foco-teal)] tracking-wider uppercase">
                   <span className="w-4 h-px bg-[color:var(--foco-teal)]" />
-                  Agents · Runs · Ledger
+                  Agents · Runs · Audit Log
                 </span>
               </div>
 

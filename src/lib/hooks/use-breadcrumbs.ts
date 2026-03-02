@@ -10,6 +10,25 @@ export interface Breadcrumb {
   truncated?: string;
 }
 
+// Map URL segments to user-facing labels where they differ from capitalized segment
+const SEGMENT_LABELS: Record<string, string> = {
+  'proposals': 'Task Proposals',
+  'my-work': 'My Tasks',
+  'ledger': 'Audit Log',
+  'clawdbot': 'Intel Feed',
+  'crons': 'Crons',
+  'empire': 'Empire OS',
+  'command': 'Command Center',
+  'agents': 'Agents',
+  'pipeline': 'Pipeline',
+  'briefing': 'Daily Briefing',
+  'missions': 'Projects',
+  'fleet': 'Team Capacity',
+  'signals': 'Notifications',
+  'timeline': 'Milestone Timeline',
+  'policies': 'Fleet Policies',
+};
+
 export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadcrumb[] {
   const pathname = usePathname();
 
@@ -89,7 +108,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 0) {
       const lastSegment = segments[segments.length - 1];
-      const label = lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+      const label = SEGMENT_LABELS[lastSegment] ?? (lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1));
       breadcrumbs.push({
         label,
         isCurrent: true,

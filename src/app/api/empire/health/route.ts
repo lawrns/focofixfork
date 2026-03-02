@@ -65,7 +65,7 @@ export async function GET(_req: NextRequest) {
   const [clawdbot, clawdbotJson, openclaw, temporal, n8n, chromadb] = await Promise.all([
     clawdbotProbe,
     clawdbotBody,
-    probe('OpenClaw Relay', `${OPENCLAW_URL}/`),
+    probe('Critter Relay', `${OPENCLAW_URL}/`),
     probe('Temporal',       `${temporalUiUrl}/`),
     probe('n8n',            `${N8N_URL}/healthz`),
     probe('ChromaDB',       `${CHROMADB_URL}/api/v2/heartbeat`),

@@ -243,24 +243,13 @@ export default function ReportsPage() {
 
   const handleGenerateReport = useCallback(async () => {
     try {
-      toast.loading('Generating AI report...', { id: 'generate-report' });
-      const response = await fetch('/api/reports/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timeRange }),
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        toast.success('Report generated successfully', { id: 'generate-report' });
-        fetchReportData();
-      } else {
-        toast.error('Failed to generate report', { id: 'generate-report' });
-      }
+      toast.loading('Refreshing report data...', { id: 'generate-report' });
+      await fetchReportData();
+      toast.success('Report data refreshed', { id: 'generate-report' });
     } catch {
-      toast.error('Failed to generate report', { id: 'generate-report' });
+      toast.error('Failed to refresh report data', { id: 'generate-report' });
     }
-  }, [timeRange, fetchReportData]);
+  }, [fetchReportData]);
 
   const handleReportClick = useCallback((reportId: string) => {
     toast.info(`Opening report ${reportId}...`);

@@ -892,7 +892,7 @@ export default function MyWorkPage() {
   }, []);
 
   if (isActive && currentWorkItem) {
-    return <FocusMode item={currentWorkItem} onExit={deactivate} />;
+    return <FocusMode item={currentWorkItem} onExit={deactivate} onRefresh={fetchWorkItems} />;
   }
 
   const getItemsBySection = (section: 'now' | 'next' | 'later' | 'waiting') => {
@@ -952,7 +952,7 @@ export default function MyWorkPage() {
   if (isLoading) {
     return (
       <PageShell maxWidth="4xl">
-        <PageHeader title="My Work" subtitle="Loading your work..." />
+        <PageHeader title="My Tasks" subtitle="Loading your tasks..." />
         <div className="space-y-8">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="space-y-4">

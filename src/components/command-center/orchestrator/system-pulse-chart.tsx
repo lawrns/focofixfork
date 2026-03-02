@@ -141,7 +141,7 @@ export function SystemPulseChart() {
               stroke="#00c8aa"
               fillOpacity={1}
               fill="url(#colorOpenclaw)"
-              name="OpenClaw"
+              name="Critter"
               isAnimationActive={false}
             />
           </AreaChart>

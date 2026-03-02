@@ -65,6 +65,9 @@ export function AppShell({ children }: AppShellProps) {
 
       {/*
         IMPORTANT: Gate chrome on isMounted *and* isAppPage.
+        Server renders without chrome; client adds it after mount.
+        suppressHydrationWarning on the outer div handles the structural diff.
+        This is a known React hydration pattern for Zustand-persisted layout.
       */}
       {isMounted && isAppPage && (
         <>

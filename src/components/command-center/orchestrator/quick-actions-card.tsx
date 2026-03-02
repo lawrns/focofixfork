@@ -148,7 +148,7 @@ export function QuickActionsCard() {
             </svg>
           </div>
           </TooltipTrigger>
-          <TooltipContent className="text-xs">Backend service health — inner to outer: ClawdBot, Bosun, OpenClaw</TooltipContent>
+          <TooltipContent className="text-xs">Backend service health — inner to outer: ClawdBot, Bosun, Critter</TooltipContent>
           </Tooltip>
           <div className="flex-1 space-y-1">
             <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">

@@ -22,9 +22,14 @@ function seededRandom(seed: string): number {
   for (let i = 0; i < seed.length; i++) {
     const char = seed.charCodeAt(i)
     hash = (hash << 5) - hash + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = hash & hash
   }
   return Math.abs(hash % 100) / 100
+}
+
+function minutesSince(iso?: string): number {
+  if (!iso) return 0
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
 }
 
 interface AgentResourceRowProps {
@@ -41,7 +46,6 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
   const [metrics, setMetrics] = useState(metricsRef.current)
 
   useEffect(() => {
-    // Simulate gentle drift in CPU/memory over time
     const interval = setInterval(() => {
       setMetrics(prev => ({
         cpu: Math.max(10, Math.min(90, prev.cpu + (Math.random() - 0.5) * 8)),
@@ -54,11 +58,20 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
   const statusColor = AGENT_STATUS_COLORS[agent.status]
   const isError = agent.status === 'error'
 
+  // Stagnancy: only flag agents that are supposed to be working
+  const minsIdle = agent.status === 'working' ? minutesSince(agent.lastActiveAt) : 0
+  const isAmberStale = minsIdle >= 30 && minsIdle < 60
+  const isRoseStale  = minsIdle >= 60
+
   return (
-    <div className="flex items-center gap-3 rounded-md border bg-card p-3 text-[11px] sm:text-sm">
+    <div className={cn(
+      'flex items-center gap-3 rounded-md border bg-card p-3 text-[11px] sm:text-sm',
+      isRoseStale  && 'border-rose-500/40',
+      isAmberStale && !isRoseStale && 'border-amber-500/40',
+    )}>
       {/* Status dot + Name */}
       <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
@@ -69,13 +82,41 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
             </TooltipTrigger>
             <TooltipContent className="text-xs">{STATUS_TIPS[agent.status] ?? agent.status}</TooltipContent>
           </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="font-semibold text-foreground truncate">{agent.name}</span>
             </TooltipTrigger>
             <TooltipContent className="text-xs">{agent.name}</TooltipContent>
           </Tooltip>
+
+          {/* Stagnancy chip */}
+          {(isAmberStale || isRoseStale) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold',
+                  isRoseStale
+                    ? 'bg-rose-500/15 text-rose-500'
+                    : 'bg-amber-500/15 text-amber-500',
+                )}>
+                  {/* Pulse dot */}
+                  <span className={cn(
+                    'h-1.5 w-1.5 rounded-full animate-pulse',
+                    isRoseStale ? 'bg-rose-500' : 'bg-amber-500',
+                  )} />
+                  Stale {minsIdle}m
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs">
+                {isRoseStale
+                  ? `Working but no progress reported for ${minsIdle} minutes — may be stuck`
+                  : `No activity update for ${minsIdle} minutes — monitoring`}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
+
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <span>{agent.role}</span>
           {agent.model && (
@@ -89,7 +130,6 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
 
       {/* Resource bars */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* CPU bar */}
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex flex-col gap-0.5 items-center">
@@ -105,7 +145,6 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
           <TooltipContent className="text-xs">Estimated CPU usage (simulated)</TooltipContent>
         </Tooltip>
 
-        {/* Memory bar */}
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex flex-col gap-0.5 items-center">

@@ -20,6 +20,7 @@ interface CommandCenterStore {
   mode: 'Reactive' | 'Predictive' | 'Guarded'
   paused: boolean
   quietMode: boolean
+  quietCategories: { p3: boolean; heartbeat: boolean }
 
   // setters
   setAgents: (agents: UnifiedAgent[]) => void
@@ -31,6 +32,7 @@ interface CommandCenterStore {
   setMode: (mode: 'Reactive' | 'Predictive' | 'Guarded') => void
   setPaused: (paused: boolean) => void
   setQuietMode: (quietMode: boolean) => void
+  setQuietCategory: (key: 'p3' | 'heartbeat', value: boolean) => void
 
   // derived selectors
   toFlowLanes: () => FlowLane[]
@@ -63,6 +65,7 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
   mode: 'Guarded',
   paused: false,
   quietMode: false,
+  quietCategories: { p3: false, heartbeat: false },
 
   setAgents: (agents) => set({ agents, lastFetch: new Date() }),
   setMissions: (missions) => set({ missions }),
@@ -73,6 +76,9 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
   setMode: (mode) => set({ mode }),
   setPaused: (paused) => set({ paused }),
   setQuietMode: (quietMode) => set({ quietMode }),
+  setQuietCategory: (key, value) => set(state => ({
+    quietCategories: { ...state.quietCategories, [key]: value },
+  })),
 
   toFlowLanes: () => {
     const { agents } = get()
@@ -152,9 +158,20 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
       body: JSON.stringify({ id, action }),
     })
     if (!res.ok) throw new Error('Failed to process decision')
-    // Remove from decisions list
-    set(state => ({
-      decisions: state.decisions.filter(d => d.id !== id),
-    }))
+
+    if (action === 'defer') {
+      // Keep in queue but increment deferCount so it escalates visually
+      set(state => ({
+        decisions: state.decisions.map(d =>
+          d.id === id
+            ? { ...d, state: 'deferred' as const, deferCount: (d.deferCount ?? 0) + 1 }
+            : d
+        ),
+      }))
+    } else {
+      set(state => ({
+        decisions: state.decisions.filter(d => d.id !== id),
+      }))
+    }
   },
 }))

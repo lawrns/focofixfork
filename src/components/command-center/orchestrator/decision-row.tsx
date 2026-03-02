@@ -3,9 +3,9 @@
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Clock, X } from 'lucide-react'
+import { Clock, X, AlertTriangle } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import type { CommandDecision } from '@/lib/command-center/types'
+import type { CommandDecision, DecisionSeverity } from '@/lib/command-center/types'
 import { cn } from '@/lib/utils'
 
 const SEVERITY_TIPS: Record<string, string> = {
@@ -22,6 +22,14 @@ const SEVERITY_COLORS: Record<string, string> = {
   P3: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
 }
 
+// Severity escalation when a decision has been repeatedly deferred
+const SEVERITY_ORDER: DecisionSeverity[] = ['P3', 'P2', 'P1', 'P0']
+function escalatedSeverity(base: DecisionSeverity, deferCount: number): DecisionSeverity {
+  if (deferCount < 3) return base
+  const idx = SEVERITY_ORDER.indexOf(base)
+  return SEVERITY_ORDER[Math.min(idx + 1, SEVERITY_ORDER.length - 1)]
+}
+
 interface DecisionRowProps {
   decision: CommandDecision
   onApprove: (id: string) => Promise<void>
@@ -36,27 +44,45 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
   const diffMins = Math.floor(diffMs / 60000)
   const timeStr = diffMins < 1 ? 'now' : diffMins === 1 ? '1m ago' : `${diffMins}m ago`
 
+  const deferCount = decision.deferCount ?? 0
+  const displaySeverity = escalatedSeverity(decision.severity, deferCount)
+  const wasEscalated = displaySeverity !== decision.severity
+
+  // Left border color ramps up with defer pressure
+  const borderAccent =
+    deferCount === 0 ? 'border-l-transparent' :
+    deferCount < 3   ? 'border-l-amber-400' :
+                       'border-l-rose-500'
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 8 }}
       transition={{ duration: 0.2 }}
-      className="flex items-start gap-3 rounded-md border bg-card p-3 text-[11px] sm:text-sm"
+      className={cn(
+        'flex items-start gap-3 rounded-md border border-l-4 bg-card p-3 text-[11px] sm:text-sm',
+        borderAccent,
+      )}
     >
-      {/* Severity pill */}
+      {/* Severity pill — shows escalated severity with a tooltip if it changed */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <span>
+          <span className="flex flex-col items-center gap-0.5 mt-0.5">
             <Badge
               variant="outline"
-              className={cn('mt-0.5 whitespace-nowrap text-xs font-bold', SEVERITY_COLORS[decision.severity])}
+              className={cn('whitespace-nowrap text-xs font-bold', SEVERITY_COLORS[displaySeverity])}
             >
-              {decision.severity}
+              {displaySeverity}
+              {wasEscalated && <AlertTriangle className="ml-1 h-2.5 w-2.5 inline" />}
             </Badge>
           </span>
         </TooltipTrigger>
-        <TooltipContent className="text-xs">{SEVERITY_TIPS[decision.severity] ?? decision.severity}</TooltipContent>
+        <TooltipContent className="text-xs">
+          {wasEscalated
+            ? `Escalated from ${decision.severity} — deferred ${deferCount}×`
+            : SEVERITY_TIPS[displaySeverity] ?? displaySeverity}
+        </TooltipContent>
       </Tooltip>
 
       {/* Content */}
@@ -74,11 +100,31 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
             <TooltipContent className="text-xs">Source system for this action</TooltipContent>
           </Tooltip>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <Clock className="h-3 w-3" />
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground flex-wrap">
+          <Clock className="h-3 w-3 shrink-0" />
           <span>{timeStr}</span>
           <span>•</span>
           <span>{decision.actionHint}</span>
+          {deferCount > 0 && (
+            <>
+              <span>•</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn(
+                    'font-mono font-semibold',
+                    deferCount >= 3 ? 'text-rose-500' : 'text-amber-500',
+                  )}>
+                    Deferred {deferCount}×
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  {deferCount >= 3
+                    ? 'Severity auto-escalated — this decision needs attention'
+                    : `Deferred ${deferCount} time${deferCount > 1 ? 's' : ''}. Escalates after 3 deferrals.`}
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
         </div>
       </div>
 
@@ -121,7 +167,9 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
               <Clock className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent className="text-xs">Defer — revisit later</TooltipContent>
+          <TooltipContent className="text-xs">
+            {deferCount >= 2 ? `Defer again (${deferCount + 1}× — will escalate severity)` : 'Defer — revisit later'}
+          </TooltipContent>
         </Tooltip>
       </div>
     </motion.div>

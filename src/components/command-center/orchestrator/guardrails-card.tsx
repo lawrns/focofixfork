@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ShieldAlert, Info } from 'lucide-react'
+import { ShieldAlert, BellOff } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import {
@@ -45,6 +45,11 @@ const MODE_DESCRIPTIONS: Record<string, { description: string; policies: string[
     ],
   },
 }
+
+const QUIET_CATEGORIES: { key: 'p3' | 'heartbeat'; label: string; description: string }[] = [
+  { key: 'p3',        label: 'P3 decisions',    description: 'Suppress read-only approval requests' },
+  { key: 'heartbeat', label: 'Heartbeat events', description: 'Suppress routine cron / health-check log entries' },
+]
 
 export function GuardrailsCard() {
   const store = useCommandCenterStore()
@@ -140,6 +145,43 @@ export function GuardrailsCard() {
             </TooltipTrigger>
             <TooltipContent className="text-xs">SLA breach — all agents paused, full incident review</TooltipContent>
           </Tooltip>
+        </div>
+      </div>
+
+      {/* Quiet mode — category level */}
+      <div className="space-y-2 pt-2 border-t">
+        <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+          <BellOff className="h-3.5 w-3.5" />
+          Suppress noise
+        </div>
+        <div className="space-y-1.5">
+          {QUIET_CATEGORIES.map(({ key, label, description }) => {
+            const active = store.quietCategories[key]
+            return (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => store.setQuietCategory(key, !active)}
+                    className={cn(
+                      'w-full flex items-center justify-between gap-2 rounded px-2 py-1.5 text-[11px] transition-colors',
+                      active
+                        ? 'bg-[color:var(--foco-teal)]/10 text-[color:var(--foco-teal)]'
+                        : 'bg-muted/40 text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    <span>{label}</span>
+                    <span className={cn(
+                      'h-3.5 w-3.5 rounded-full border-2 shrink-0 transition-colors',
+                      active
+                        ? 'bg-[color:var(--foco-teal)] border-[color:var(--foco-teal)]'
+                        : 'border-muted-foreground/50',
+                    )} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">{description}</TooltipContent>
+              </Tooltip>
+            )
+          })}
         </div>
       </div>
 

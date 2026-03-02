@@ -173,6 +173,13 @@ export function CommandCenterClient() {
   const errorCount = store.agents.filter(a => a.status === 'error').length
   const decisionsCount = store.decisions.length
 
+  // Agents that are "working" but haven't reported progress in >30 min
+  const staleCount = store.agents.filter(a => {
+    if (a.status !== 'working' || !a.lastActiveAt) return false
+    const minsIdle = Math.floor((Date.now() - new Date(a.lastActiveAt).getTime()) / 60000)
+    return minsIdle >= 30
+  }).length
+
   // ── Filtering ────────────────────────────────────────────────────────────────
   const filteredAgents = globalSearch
     ? store.agents.filter(a => a.name.toLowerCase().includes(globalSearch.toLowerCase()))
@@ -330,10 +337,16 @@ export function CommandCenterClient() {
             <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{errorCount}</div>
           </div>
         </Tip>
-        <Tip label="All registered agents across backends">
-          <div className="rounded-lg border bg-card p-3 space-y-1">
-            <div className="text-[10px] text-muted-foreground font-mono">Total agents</div>
-            <div className="text-2xl font-bold">{agentCount}</div>
+        <Tip label="Working agents with no progress update in 30+ minutes">
+          <div className={cn(
+            'rounded-lg border bg-card p-3 space-y-1',
+            staleCount > 0 && 'border-amber-500/40',
+          )}>
+            <div className="text-[10px] text-muted-foreground font-mono">Stale (&gt;30m)</div>
+            <div className={cn(
+              'text-2xl font-bold',
+              staleCount > 0 ? 'text-amber-500' : 'text-foreground',
+            )}>{staleCount}</div>
           </div>
         </Tip>
       </div>

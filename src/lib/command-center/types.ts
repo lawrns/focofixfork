@@ -97,5 +97,6 @@ export interface CommandDecision {
   actionHint: string     // scope + riskScore description
   createdAt: string
   state: 'needs_you' | 'in_review' | 'deferred'
+  deferCount?: number    // how many times this decision has been deferred
   raw: Record<string, unknown>
 }

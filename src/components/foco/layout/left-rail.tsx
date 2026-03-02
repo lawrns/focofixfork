@@ -31,6 +31,7 @@ import {
   Radio,
   Crosshair,
   Satellite,
+  History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -61,16 +62,16 @@ const empireNavItems: NavItem[] = [
   { label: 'Mission Boards',  href: '/empire/missions',   icon: Crosshair, shortcut: 'G P' },
   { label: 'Signal Queue',    href: '/empire/signals',    icon: Radio,     shortcut: 'G N' },
   { label: 'Fleet Status',    href: '/empire/fleet',      icon: Satellite, shortcut: 'G O' },
-  { label: 'Run Timeline',    href: '/empire/timeline',   icon: GitBranch, shortcut: 'G T' },
+  { label: 'Run Timeline',    href: '/empire/timeline',   icon: History,   shortcut: 'G T' },
+  { label: 'Crons',           href: '/crons',             icon: Clock,     shortcut: 'G K' },
 ];
 
 const operateNavItems: NavItem[] = [
-  { label: 'Crons',             href: '/crons',      icon: Clock,          shortcut: 'G K' },
-  { label: 'Emails',            href: '/emails',     icon: Mail,           shortcut: 'G E' },
-  { label: 'Reports',           href: '/reports',    icon: BarChart2,      shortcut: 'G F' },
-  { label: 'Change Proposals',  href: '/proposals',  icon: ClipboardList,  shortcut: 'G Q' },
-  { label: 'Artifacts',         href: '/artifacts',  icon: Archive,        shortcut: 'G A' },
-  { label: 'Fleet Policies',    href: '/policies',   icon: Shield,         shortcut: 'G Y' },
+  { label: 'Emails',           href: '/emails',     icon: Mail,          shortcut: 'G E' },
+  { label: 'Reports',          href: '/reports',    icon: BarChart2,     shortcut: 'G F' },
+  { label: 'Task Proposals',   href: '/proposals',  icon: ClipboardList, shortcut: 'G Q' },
+  { label: 'Artifacts',        href: '/artifacts',  icon: Archive,       shortcut: 'G A' },
+  { label: 'Fleet Policies',   href: '/policies',   icon: Shield,        shortcut: 'G Y' },
 ];
 
 export function LeftRail() {
@@ -251,11 +252,11 @@ export function LeftRail() {
         {/* Divider */}
         <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* Operate section label */}
+        {/* Manage section label */}
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Operate
+              Manage
             </span>
           </div>
         )}

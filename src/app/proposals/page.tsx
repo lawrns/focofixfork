@@ -206,12 +206,13 @@ export default function ProposalsPage() {
   })
 
   // Impact summary for dashboard
+  const totalItems = proposals.reduce((acc, p) => acc + ((p as any).items?.length || 0), 0);
   const impactSummary: ImpactDashboardData = {
-    total_items: proposals.reduce((acc, p) => acc + ((p as any).items?.length || 0), 0),
+    total_items: totalItems,
     items_by_type: {
-      create: filteredProposals.filter(p => p.status === 'draft').length,
-      update: filteredProposals.filter(p => p.status === 'pending_review').length,
-      delete: 0,
+      create: proposals.reduce((acc, p) => acc + ((p as any).items?.filter((i: any) => i.action === 'create').length || 0), 0),
+      update: proposals.reduce((acc, p) => acc + ((p as any).items?.filter((i: any) => i.action === 'update').length || 0), 0),
+      delete: proposals.reduce((acc, p) => acc + ((p as any).items?.filter((i: any) => i.action === 'delete').length || 0), 0),
     },
     items_by_status: {
       pending: stats.pending,
@@ -219,7 +220,7 @@ export default function ProposalsPage() {
       rejected: proposals.filter(p => p.status === 'rejected').length,
     },
     entities_affected: {
-      tasks: proposals.reduce((acc, p) => acc + ((p as any).items?.length || 0), 0),
+      tasks: totalItems,
       projects: proposals.length > 0 ? 1 : 0,
       milestones: 0,
     },
@@ -237,7 +238,7 @@ export default function ProposalsPage() {
   if (isLoading) {
     return (
       <PageShell maxWidth="6xl">
-        <PageHeader title="Proposals" subtitle="Loading..." />
+        <PageHeader title="Task Proposals" subtitle="Loading..." />
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-24 animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
@@ -276,8 +277,8 @@ export default function ProposalsPage() {
   return (
     <PageShell maxWidth="6xl">
       <PageHeader
-        title="Proposals"
-        subtitle={`${stats.pending} pending review`}
+        title="Task Proposals"
+        subtitle={stats.pending > 0 ? `${stats.pending} pending review` : 'AI-proposed task and workload changes'}
         primaryAction={
           <div className="flex gap-2">
             <Button
@@ -353,8 +354,8 @@ export default function ProposalsPage() {
           >
             <EmptyState
               icon={GitBranch}
-              title="No proposals"
-              description="Create your first proposal to suggest changes to the project. You can use voice, text or upload files."
+              title="No task proposals"
+              description="Proposals let you preview AI-suggested changes to task assignments, priorities, and workload distribution before applying them. Record your intent by voice, text, or file upload."
               primaryAction={{
                 label: 'Create Proposal',
                 onClick: () => setIsCreateModalOpen(true),

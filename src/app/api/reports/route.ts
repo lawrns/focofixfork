@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       }), authResponse)
     }
 
-    const workspaceIds = memberData.map(m => m.workspace_id)
+    const workspaceIds = memberData.map((m: { workspace_id: string }) => m.workspace_id)
 
     // Calculate date range
     const now = new Date()

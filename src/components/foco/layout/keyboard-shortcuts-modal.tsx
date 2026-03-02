@@ -66,11 +66,11 @@ const shortcuts: Shortcut[] = [
   { id: 'nav-cmd-center', keys: ['G', 'C'], description: 'Go to Agent Command Center',   category: 'Navigation' },
   { id: 'nav-briefing',   keys: ['G', 'B'], description: 'Go to Empire briefing',        category: 'Navigation' },
   { id: 'nav-agents',     keys: ['G', 'J'], description: 'Go to Empire agents',          category: 'Navigation' },
-  // ── Operate
-  { id: 'nav-crons',      keys: ['G', 'K'], description: 'Go to Crons',            category: 'Navigation' },
-  { id: 'nav-emails',     keys: ['G', 'E'], description: 'Go to Emails',           category: 'Navigation' },
-  { id: 'nav-reports',    keys: ['G', 'F'], description: 'Go to Reports',          category: 'Navigation' },
-  { id: 'nav-proposals',  keys: ['G', 'Q'], description: 'Go to Proposals',        category: 'Navigation' },
+  { id: 'nav-crons',      keys: ['G', 'K'], description: 'Go to Crons',                category: 'Navigation' },
+  // ── Manage
+  { id: 'nav-emails',     keys: ['G', 'E'], description: 'Go to Emails',               category: 'Navigation' },
+  { id: 'nav-reports',    keys: ['G', 'F'], description: 'Go to Reports',              category: 'Navigation' },
+  { id: 'nav-proposals',  keys: ['G', 'Q'], description: 'Go to Task Proposals',       category: 'Navigation' },
   { id: 'nav-artifacts',  keys: ['G', 'A'], description: 'Go to Artifacts',        category: 'Navigation' },
   { id: 'nav-policies',   keys: ['G', 'Y'], description: 'Go to Policies',         category: 'Navigation' },
   { id: 'nav-settings',   keys: ['G', 'S'], description: 'Go to Settings',         category: 'Navigation' },

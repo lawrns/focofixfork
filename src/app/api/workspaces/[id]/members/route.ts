@@ -31,27 +31,10 @@ export async function GET(
     const membersWithDetails = await cachedFetch(
       cacheKey,
       async () => {
-        // OPTIMIZATION: Single query with JOIN instead of N+1 queries
-        // Use LEFT JOIN (no !inner) to include members even if they lack a profile
+        // Step 1: Fetch workspace members
         const { data: members, error: membersError } = await supabase
           .from('foco_workspace_members')
-          .select(`
-            id,
-            user_id,
-            role,
-            capacity_hours_per_week,
-            focus_hours_per_day,
-            timezone,
-            settings,
-            created_at,
-            updated_at,
-            user_profiles (
-              id,
-              full_name,
-              avatar_url,
-              email
-            )
-          `)
+          .select('id, user_id, role, capacity_hours_per_week, focus_hours_per_day, timezone, settings, created_at, updated_at')
           .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: true })
 
@@ -59,32 +42,39 @@ export async function GET(
           throw new Error('Failed to fetch members')
         }
 
-        // Transform the joined data - profile data comes from LEFT JOIN
-        return members?.map(member => {
-          const profile = Array.isArray(member.user_profiles)
-            ? member.user_profiles[0]
-            : member.user_profiles
+        if (!members || members.length === 0) return []
 
-          return {
-            id: member.id,
-            user_id: member.user_id,
-            role: member.role,
-            capacity_hours_per_week: member.capacity_hours_per_week,
-            focus_hours_per_day: member.focus_hours_per_day,
-            timezone: member.timezone,
-            settings: member.settings,
-            created_at: member.created_at,
-            updated_at: member.updated_at,
-            user: {
-              id: member.user_id,
-              email: profile?.email || '',
-              full_name: profile?.full_name || '',
-              avatar_url: profile?.avatar_url || '',
-            },
-            email: profile?.email || '',
-            user_name: profile?.full_name || profile?.email?.split('@')[0] || 'Unknown User',
-          }
-        }) || []
+        // Step 2: Fetch profiles for those users (user_profiles.id = auth.users.id)
+        const userIds = members.map(m => m.user_id)
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('id, display_name')
+          .in('id', userIds)
+
+        const profileMap: Record<string, string> = {}
+        for (const p of profiles ?? []) {
+          profileMap[p.id] = p.display_name || ''
+        }
+
+        return members.map(member => ({
+          id: member.id,
+          user_id: member.user_id,
+          role: member.role,
+          capacity_hours_per_week: member.capacity_hours_per_week,
+          focus_hours_per_day: member.focus_hours_per_day,
+          timezone: member.timezone,
+          settings: member.settings,
+          created_at: member.created_at,
+          updated_at: member.updated_at,
+          user: {
+            id: member.user_id,
+            email: '',
+            full_name: profileMap[member.user_id] || '',
+            avatar_url: '',
+          },
+          email: '',
+          user_name: profileMap[member.user_id] || 'Unknown User',
+        }))
       },
       { ttl: CACHE_TTL.WORKSPACE_MEMBERS }
     )

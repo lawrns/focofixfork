@@ -288,6 +288,10 @@ export function useCommandPipeline() {
   const [execution, setExecution] = useState<CommandExecution | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const clearExecution = useCallback(() => {
+    setExecution(null);
+  }, []);
+
   const analyzePrompt = useCallback((prompt: string, defaultMode?: CommandMode): { 
     mode: CommandMode; 
     plan: CommandPlan;
@@ -603,6 +607,7 @@ export function useCommandPipeline() {
     execution,
     isProcessing,
     analyzePrompt,
-    executeCommand
+    executeCommand,
+    clearExecution
   };
 }

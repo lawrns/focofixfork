@@ -57,14 +57,14 @@ async function enrichProjects(supabase: any, projects: any[]) {
 
   // Owner display names
   const ownerIds = [...new Set(projects.map(p => p.owner_id as string).filter(Boolean))]
-  const profileMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {}
+  const profileMap: Record<string, { display_name: string | null }> = {}
   if (ownerIds.length) {
     const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, display_name, avatar_url')
+      .from('user_profiles')
+      .select('id, display_name')
       .in('id', ownerIds)
     for (const p of profiles ?? []) {
-      profileMap[p.id as string] = { display_name: p.display_name as string | null, avatar_url: p.avatar_url as string | null }
+      profileMap[p.id as string] = { display_name: p.display_name as string | null }
     }
   }
 
@@ -77,7 +77,7 @@ async function enrichProjects(supabase: any, projects: any[]) {
       total_tasks: counts.total,
       tasks_completed: counts.done,
       owner_name: ownerProfile?.display_name ?? null,
-      owner_avatar: ownerProfile?.avatar_url ?? null,
+      owner_avatar: null,
       delegation_counts: delegationMap[pid] ?? {},
       active_run_count: runCountMap[pid] ?? 0,
     }

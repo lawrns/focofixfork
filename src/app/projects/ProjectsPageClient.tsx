@@ -51,6 +51,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state-standard';
@@ -60,6 +62,7 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { ProjectHealthIndicator } from '@/components/crico/project-health-indicator';
 
 interface ProjectData {
   id: string;
@@ -139,26 +142,30 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
   return (
     <Link
       href={`/projects/${project.slug}`}
-      className={cn(
-        'block p-4 sm:p-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800',
-        'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all',
-        'group overflow-hidden'
-      )}
+      className="group block"
     >
+      <Card variant="interactive" padding="none" className="overflow-hidden">
+      <div className="p-4 sm:p-5">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-white"
-            style={{ backgroundColor: project.color }}
-          >
-            <FolderKanban className="h-5 w-5" />
+          <div className="relative">
+            <div
+              className="h-10 w-10 rounded-lg flex items-center justify-center text-white"
+              style={{ backgroundColor: project.color }}
+            >
+              <FolderKanban className="h-5 w-5" />
+            </div>
+            <ProjectHealthIndicator
+              projectId={project.id}
+              className="absolute -bottom-0.5 -right-0.5 ring-2 ring-background"
+            />
           </div>
           <div>
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
               {project.name}
             </h3>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Updated {formatRelativeDate(project.updatedAt)}
             </p>
           </div>
@@ -240,7 +247,7 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
 
       {/* Description */}
       {project.description && (
-        <p className="text-sm text-zinc-500 mb-4 line-clamp-2">
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {project.description}
         </p>
       )}
@@ -248,7 +255,7 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
       {/* Progress */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-zinc-500">Progress</span>
+          <span className="text-xs text-muted-foreground">Progress</span>
           <span className="text-xs font-medium">
             {project.tasksCompleted}/{project.totalTasks} tasks
           </span>
@@ -267,7 +274,7 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
           </Badge>
         )}
         {project.nextMilestone && (
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>{project.nextMilestone.name}</span>
           </div>
@@ -275,7 +282,7 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
       </div>
 
       {/* Footer */}
-      <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+      <div className="pt-3 border-t border-border space-y-2">
         {/* Row 1: Owner + task count */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -284,9 +291,9 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
                 {project.owner.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-zinc-500">{project.owner.name}</span>
+            <span className="text-xs text-muted-foreground">{project.owner.name}</span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-zinc-500">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <CheckSquare className="h-3 w-3" />
             <span>{project.tasksCompleted}/{project.totalTasks}</span>
           </div>
@@ -326,6 +333,8 @@ function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive
           )}
         </div>
       </div>
+      </div>
+      </Card>
     </Link>
   );
 }
@@ -1025,7 +1034,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
   if (isLoading) {
     return (
-      <PageShell>
+      <PageShell maxWidth="6xl">
         <PageHeader
           title={pageTitle}
           subtitle="Loading..."
@@ -1036,7 +1045,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
             </Button>
           }
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-64 rounded-xl" />
           ))}
@@ -1046,10 +1055,16 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
   }
 
   return (
-    <PageShell>
+    <PageShell maxWidth="6xl">
       <PageHeader
         title="Projects"
         subtitle={`${projects.length} active projects`}
+        primaryAction={
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Project
+          </Button>
+        }
       />
 
       {/* Toolbar */}
@@ -1082,30 +1097,18 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
             <Filter className="h-4 w-4" />
           </Button>
 
-          <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-lg p-0.5 shrink-0">
-            <Button
-              variant={view === 'grid' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setView('grid')}
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={view === 'list' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setView('list')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
+          <Tabs value={view} onValueChange={(v) => setView(v as 'grid' | 'list')} className="w-auto">
+            <TabsList>
+              <TabsTrigger value="grid"><Grid3X3 className="h-4 w-4" /></TabsTrigger>
+              <TabsTrigger value="list"><List className="h-4 w-4" /></TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
       {/* Projects */}
       {view === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedProjects.map((project) => (
             <ProjectCard
               key={project.id}
@@ -1154,16 +1157,13 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
       {/* Error State — show retry when fetch failed */}
       {fetchFailed && sortedProjects.length === 0 && (
-        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
-          <div className="h-12 w-12 rounded-2xl bg-rose-500/10 flex items-center justify-center">
-            <FolderKanban className="h-6 w-6 text-rose-500" />
-          </div>
-          <p className="text-sm font-medium">Failed to load projects</p>
-          <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
-          <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </div>
+        <EmptyState
+          icon={AlertTriangle}
+          title="Failed to load projects"
+          description="There was a problem loading your projects. Please try again."
+          primaryAction={{ label: 'Retry', onClick: () => window.location.reload() }}
+          size="md"
+        />
       )}
       
       {sortedProjects.length === 0 && search && (

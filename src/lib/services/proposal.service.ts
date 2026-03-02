@@ -198,7 +198,7 @@ export class ProposalService {
       // Get proposal with source content
       const { data: proposal, error: proposalError } = await this.supabase
         .from('proposals')
-        .select('*, foco_projects(id, title, workspace_id)')
+        .select('*, foco_projects(id, name, workspace_id)')
         .eq('id', proposalId)
         .maybeSingle()
 

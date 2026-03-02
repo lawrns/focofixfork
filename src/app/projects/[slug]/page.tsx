@@ -42,6 +42,7 @@ import type { WorkItem, WorkItemStatus, PriorityLevel } from '@/types/foco';
 import { ListView, PeopleView, SettingsView, TimelineView } from '@/components/project';
 import { useCreateTaskModal } from '@/features/tasks';
 import { toast } from 'sonner';
+import { ProjectInsightsPanel } from '@/components/crico/project-insights-panel';
 
 interface Project {
   id: string;
@@ -877,6 +878,10 @@ export default function ProjectPage() {
                   </span>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="insights" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+                <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>Insights</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -1271,6 +1276,11 @@ export default function ProjectPage() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Insights Tab */}
+        <TabsContent value="insights">
+          <ProjectInsightsPanel projectId={project.id} />
         </TabsContent>
       </Tabs>
     </div>

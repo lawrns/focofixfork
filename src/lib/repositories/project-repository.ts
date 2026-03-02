@@ -102,7 +102,7 @@ export class ProjectRepository extends BaseRepository<Project> {
   ): Promise<Result<Project[]>> {
     let query = this.supabase
       .from(this.table)
-      .select('*, workspaces(name)', { count: 'exact' })
+      .select('*, foco_workspaces(name)', { count: 'exact' })
       .eq('workspace_id', workspaceId)
 
     // Filter by status

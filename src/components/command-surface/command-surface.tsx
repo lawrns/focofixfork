@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -46,11 +46,28 @@ export function CommandSurface({
   const [pendingDecision, setPendingDecision] = useState<CTODecision | COODecision | null>(null);
   const [pendingPlan, setPendingPlan] = useState<ReturnType<typeof analyzePrompt>['plan'] | null>(null);
   
-  const { execution, isProcessing, analyzePrompt, executeCommand } = useCommandPipeline();
+  const { execution, isProcessing, analyzePrompt, executeCommand, clearExecution } = useCommandPipeline();
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Auto-dismiss completed/failed execution after 4 seconds
+  useEffect(() => {
+    if (execution && (execution.status === 'completed' || execution.status === 'failed')) {
+      dismissTimerRef.current = setTimeout(() => {
+        clearExecution();
+      }, 4000);
+    }
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    };
+  }, [execution, clearExecution]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isProcessing) return;
+
+    // Clear any previous execution before starting
+    clearExecution();
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
 
     const analysis = analyzePrompt(prompt, mode);
     setPendingPlan(analysis.plan);
@@ -165,34 +182,45 @@ export function CommandSurface({
         {/* Execution Status */}
         {execution && !pendingDecision && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              {execution.status === 'executing' && (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-muted-foreground">Executing... {execution.plan.steps[execution.currentStepIndex]?.description}</span>
-                </>
-              )}
-              {execution.status === 'completed' && (
-                <>
-                  <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  <span className="text-emerald-600">Completed</span>
-                </>
-              )}
-              {execution.status === 'failed' && (
-                <>
-                  <XCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-red-600">Failed: {execution.error}</span>
-                </>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                {execution.status === 'executing' && (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-muted-foreground">Executing... {execution.plan.steps[execution.currentStepIndex]?.description}</span>
+                  </>
+                )}
+                {execution.status === 'completed' && (
+                  <>
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    <span className="text-emerald-600">Done — {execution.plan.steps.filter(s => s.status === 'completed').length} steps completed</span>
+                  </>
+                )}
+                {execution.status === 'failed' && (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-red-600">Failed: {execution.error}</span>
+                  </>
+                )}
+              </div>
+              {(execution.status === 'completed' || execution.status === 'failed') && (
+                <button
+                  onClick={clearExecution}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
-            
+
             {/* Progress bar */}
             {execution.status === 'executing' && (
               <div className="h-1 bg-muted rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-primary transition-all duration-300"
-                  style={{ 
-                    width: `${((execution.currentStepIndex + 1) / execution.plan.steps.length) * 100}%` 
+                  style={{
+                    width: `${((execution.currentStepIndex + 1) / execution.plan.steps.length) * 100}%`
                   }}
                 />
               </div>
@@ -229,7 +257,7 @@ export function CommandSurface({
         </form>
 
         {/* Quick Suggestions */}
-        {!prompt && !execution && !pendingDecision && (
+        {!prompt && !isProcessing && !pendingDecision && (
           <div className="flex flex-wrap gap-2">
             {mode === 'cto' ? (
               <>

@@ -122,7 +122,7 @@ export class InsightsService {
     // Fetch projects
     const { data: activeProjects } = await this.supabase
       .from('foco_projects')
-      .select('id, title, status, created_at, updated_at')
+      .select('id, name, status, created_at, updated_at')
       .in('status', ['active', 'planning'])
       .order('created_at', { ascending: false })
       .limit(20)

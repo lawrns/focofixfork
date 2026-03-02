@@ -459,12 +459,14 @@ export function InboxPageCore({ pageTitle = 'Inbox', defaultFilter = 'all' }: {
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-          <Checkbox
-            checked={selectedItems.size === items.length && items.length > 0}
-            onCheckedChange={handleSelectAll}
-          />
+          {filteredItems.length > 0 && (
+            <Checkbox
+              checked={selectedItems.size === items.length && items.length > 0}
+              onCheckedChange={handleSelectAll}
+            />
+          )}
           <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-            {filteredItems.length} notifications
+            {filteredItems.length} {filteredItems.length === 1 ? 'notification' : 'notifications'}
           </span>
         </div>
 

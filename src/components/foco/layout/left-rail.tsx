@@ -183,7 +183,7 @@ export function LeftRail() {
       {/* Logo */}
       <div
         className={cn(
-          'h-13 flex items-center border-b border-[var(--foco-rail-border)]',
+          'h-16 flex items-center border-b border-[var(--foco-rail-border)]',
           sidebarCollapsed ? 'justify-center px-0' : 'px-4',
         )}
       >
@@ -193,7 +193,7 @@ export function LeftRail() {
             alt="Critter"
             width={28}
             height={28}
-            className="h-7 w-7 rounded-lg flex-shrink-0"
+            className="h-7 w-7 rounded-lg flex-shrink-0 dark:invert-0 grayscale"
           />
           {!sidebarCollapsed && (
             <span className="text-[15px] font-semibold tracking-tight text-foreground truncate">

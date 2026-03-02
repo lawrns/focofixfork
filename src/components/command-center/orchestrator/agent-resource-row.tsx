@@ -69,7 +69,12 @@ export function AgentResourceRow({ agent, onKill }: AgentResourceRowProps) {
             </TooltipTrigger>
             <TooltipContent className="text-xs">{STATUS_TIPS[agent.status] ?? agent.status}</TooltipContent>
           </Tooltip>
-          <span className="font-semibold text-foreground truncate">{agent.name}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="font-semibold text-foreground truncate">{agent.name}</span>
+            </TooltipTrigger>
+            <TooltipContent className="text-xs">{agent.name}</TooltipContent>
+          </Tooltip>
         </div>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <span>{agent.role}</span>

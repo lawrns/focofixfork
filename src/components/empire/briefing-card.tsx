@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { FileText, TrendingUp, Brain, Code2, Loader2, AlertCircle } from 'lucide-react'
+import { FileText, TrendingUp, Brain, Code2, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface BriefingData {
   stub?: boolean
@@ -29,6 +31,7 @@ interface BriefingCardProps {
 }
 
 export function BriefingCard({ data, loading, error }: BriefingCardProps) {
+  const [expanded, setExpanded] = useState(false)
   if (loading) {
     return (
       <Card>
@@ -133,11 +136,30 @@ export function BriefingCard({ data, loading, error }: BriefingCardProps) {
           </div>
         )}
 
-        {/* Full text (collapsed) */}
+        {/* Full text (expandable) */}
         {data.text && !data.sections?.intelligence && (
-          <p className="text-[12px] text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-6">
-            {data.text}
-          </p>
+          <div>
+            <p className={cn(
+              'text-[12px] text-muted-foreground leading-relaxed whitespace-pre-wrap',
+              !expanded && 'line-clamp-6'
+            )}>
+              {data.text}
+            </p>
+            {data.text.length > 400 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1 h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? (
+                  <><ChevronUp className="h-3 w-3 mr-1" />Show less</>
+                ) : (
+                  <><ChevronDown className="h-3 w-3 mr-1" />Read more</>
+                )}
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

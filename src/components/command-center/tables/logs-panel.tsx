@@ -1,10 +1,10 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ScrollText, Clock, Search } from 'lucide-react'
+import { ScrollText, Clock, Search, ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOpenClawLogs } from '@/lib/hooks/use-openclaw-logs'
 
@@ -18,11 +18,24 @@ const LEVEL_COLORS: Record<string, string> = {
 export function LogsPanel() {
   const { logs, connected, clear } = useOpenClawLogs()
   const [filter, setFilter] = useState('')
+  const [autoScroll, setAutoScroll] = useState(true)
   const logsEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  // Only auto-scroll when enabled
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [logs])
+    if (autoScroll) {
+      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [logs, autoScroll])
+
+  // Detect manual scroll-up to disable auto-scroll
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+    setAutoScroll(atBottom)
+  }, [])
 
   const filtered = filter
     ? logs.filter(l => JSON.stringify(l).toLowerCase().includes(filter.toLowerCase()))
@@ -50,7 +63,12 @@ export function LogsPanel() {
         <Button variant="outline" size="sm" onClick={clear} className="text-[11px]">Clear</Button>
       </div>
 
-      <div className="h-[400px] overflow-auto rounded-md border bg-black/90 p-4 font-mono text-xs">
+      <div className="relative">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="h-[400px] overflow-auto rounded-md border bg-black/90 p-4 font-mono text-xs"
+      >
         {filtered.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <Clock className="h-4 w-4 mr-2" />
@@ -86,6 +104,22 @@ export function LogsPanel() {
             <div ref={logsEndRef} />
           </div>
         )}
+      </div>
+      {/* Scroll-to-bottom indicator */}
+      {!autoScroll && filtered.length > 0 && (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="absolute bottom-3 right-3 h-7 gap-1 text-[10px] shadow-md opacity-90 hover:opacity-100"
+          onClick={() => {
+            setAutoScroll(true)
+            logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+          }}
+        >
+          <ArrowDown className="h-3 w-3" />
+          Latest
+        </Button>
+      )}
       </div>
     </div>
   )

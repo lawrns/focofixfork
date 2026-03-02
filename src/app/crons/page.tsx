@@ -665,7 +665,12 @@ export default function CronsPage() {
                 {/* Main content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] font-medium">{cron.name}</span>
+                    <button
+                      className="text-[13px] font-medium hover:text-[color:var(--foco-teal)] hover:underline underline-offset-2 transition-colors text-left"
+                      onClick={() => openRuns(cron)}
+                    >
+                      {cron.name}
+                    </button>
                     {cron.native && (
                       <Tooltip>
                         <TooltipTrigger>

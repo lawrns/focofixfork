@@ -636,6 +636,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
   const [editProjectDescription, setEditProjectDescription] = useState('');
   const [editDelegationEnabled, setEditDelegationEnabled] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
 
   // Handle query parameters from command palette
   useEffect(() => {
@@ -705,6 +706,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
           toast.error('Failed to load projects');
         }
 
+        setFetchFailed(true);
         return;
       }
 
@@ -747,6 +749,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
         }));
 
         setProjects(transformedProjects);
+        setFetchFailed(false);
       } else {
         console.error('Invalid response format:', data);
         setProjects([]);
@@ -755,6 +758,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
       console.error('Failed to fetch projects:', error);
       toast.error('Failed to load projects');
       setProjects([]);
+      setFetchFailed(true);
     } finally {
       setIsLoading(false);
     }
@@ -1143,9 +1147,23 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
         </div>
       )}
 
-{/* Empty State */}
-      {sortedProjects.length === 0 && !search && currentWorkspaceId && (
+{/* Empty State — only show welcome when no fetch error */}
+      {sortedProjects.length === 0 && !search && currentWorkspaceId && !fetchFailed && (
         <ProjectEmptyState workspaceId={currentWorkspaceId} hasProjects={false} />
+      )}
+
+      {/* Error State — show retry when fetch failed */}
+      {fetchFailed && sortedProjects.length === 0 && (
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
+          <div className="h-12 w-12 rounded-2xl bg-rose-500/10 flex items-center justify-center">
+            <FolderKanban className="h-6 w-6 text-rose-500" />
+          </div>
+          <p className="text-sm font-medium">Failed to load projects</p>
+          <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
+          <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
       )}
       
       {sortedProjects.length === 0 && search && (

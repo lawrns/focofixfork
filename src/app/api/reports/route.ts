@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
+import { supabaseAdmin } from '@/lib/supabase-server'
 import {
   successResponse,
   authRequiredResponse,
@@ -22,8 +23,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const timeRange = searchParams.get('timeRange') || 'week'
 
+    // Use admin client to bypass RLS recursion on foco_workspace_members
+    const adminClient = supabaseAdmin || supabase
+
     // Get user's workspace IDs
-    const { data: memberData, error: memberError } = await supabase
+    const { data: memberData, error: memberError } = await adminClient
       .from('foco_workspace_members')
       .select('workspace_id')
       .eq('user_id', user.id)

@@ -3,6 +3,7 @@ import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, missingFieldResponse, internalErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
       return authRequiredResponse()
     }
 
-    const repo = new WorkspaceRepository(supabase)
+    // Use admin client to bypass RLS recursion on foco_workspace_members
+    const repo = new WorkspaceRepository(supabaseAdmin || supabase)
     const result = await repo.findByUser(user.id)
 
     if (isError(result)) {

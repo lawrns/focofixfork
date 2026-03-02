@@ -40,7 +40,7 @@ const FocoFields = [
   { value: 'name', label: 'Project Name', description: 'The name of the project', required: true },
   { value: 'title', label: 'Task Title', description: 'The title of the task', required: true },
   { value: 'description', label: 'Description', description: 'Detailed description', required: false },
-  { value: 'status', label: 'Status', description: 'Current status (todo, in_progress, completed)', required: false },
+  { value: 'status', label: 'Status', description: 'Current status (backlog, next, in_progress, review, blocked, done)', required: false },
   { value: 'priority', label: 'Priority', description: 'Priority level (low, normal, high, urgent)', required: false },
   { value: 'due_date', label: 'Due Date', description: 'Due date in YYYY-MM-DD format', required: false },
   { value: 'project_id', label: 'Project ID', description: 'ID of the parent project', required: false },

@@ -89,6 +89,12 @@ export async function middleware(req: NextRequest) {
     '/search',
     '/favorites',
     '/openclaw',
+    '/empire',
+    '/clawdbot',
+    '/decisions',
+    '/dashboard-simple',
+    '/calendar',
+    '/team',
   ]
 
   // Public routes (accessible without authentication)

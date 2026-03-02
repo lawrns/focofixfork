@@ -12,12 +12,10 @@ export async function GET(req: NextRequest) {
   const workspaceId = searchParams.get('workspace_id')
   const projectId = searchParams.get('project_id')
 
+  // Note: no FK relationship between crons and foco_projects in schema cache — select without join
   let query = supabase
     .from('crons')
-    .select(`
-      *,
-      project:foco_projects(id, name, slug, color)
-    `)
+    .select('*')
     .order('created_at', { ascending: false })
 
   if (workspaceId) query = query.eq('workspace_id', workspaceId)
@@ -78,10 +76,7 @@ export async function POST(req: NextRequest) {
       next_run_at: nextRunAt,
       last_status: 'pending',
     })
-    .select(`
-      *,
-      project:foco_projects(id, name, slug, color)
-    `)
+    .select('*')
     .single()
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })

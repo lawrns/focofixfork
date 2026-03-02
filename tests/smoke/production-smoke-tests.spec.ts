@@ -33,7 +33,7 @@ test.describe('Production Smoke Tests - Critical Path', () => {
     expect(response?.status()).toBeLessThan(400)
 
     // Verify page loads
-    await expect(page).toHaveTitle(/Foco/i)
+    await expect(page).toHaveTitle(/Critter/i)
 
     // Check for critical errors
     const errors = []
@@ -122,8 +122,7 @@ test.describe('Production Smoke Tests - Critical Path', () => {
     await expect(nav).toBeVisible()
 
     // Verify key navigation items are present
-    // (adjust selectors based on your actual navigation)
-    await expect(page.locator('a[href*="/tasks"]').first()).toBeVisible()
+    await expect(page.locator('a[href*="/my-work"], a[href*="/dashboard"], nav').first()).toBeVisible()
   })
 
   test('P0: Sign up page loads', async ({ page }) => {

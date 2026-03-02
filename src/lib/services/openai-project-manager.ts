@@ -404,7 +404,7 @@ Return JSON:
 {
   "title": "Task Title",
   "description": "Detailed description",
-  "status": "todo|in_progress|review|done",
+  "status": "backlog|next|in_progress|review|blocked|done",
   "priority": "low|medium|high|urgent",
   "estimated_hours": 8
 }

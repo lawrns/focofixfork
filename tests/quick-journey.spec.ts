@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Quick User Journey Test', () => {
-  const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3004';
+  const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4000';
   const TEST_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
   const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'test-password';
 

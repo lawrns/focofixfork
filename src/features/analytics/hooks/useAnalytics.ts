@@ -100,16 +100,17 @@ export function useAnalytics(filters?: AnalyticsFilters) {
 }
 
 export function useProjectAnalytics(organizationId?: string) {
+  const { user } = useAuth()
   const [analytics, setAnalytics] = useState<import('../types').ProjectAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAnalytics = useCallback(async () => {
+    if (!user?.id) { setLoading(false); return }
     try {
       setLoading(true)
       setError(null)
-      // Get user ID from somewhere - this should be passed or from context
-      const userId = 'current-user' // TODO: Get from auth context
+      const userId = user.id
       const data = await analyticsService.getDashboardAnalytics(userId, '30d', organizationId)
       // Extract project analytics from dashboard data
       const projectAnalytics = {
@@ -125,7 +126,7 @@ export function useProjectAnalytics(organizationId?: string) {
     } finally {
       setLoading(false)
     }
-  }, [organizationId])
+  }, [user?.id, organizationId])
 
   useEffect(() => {
     fetchAnalytics()
@@ -140,16 +141,17 @@ export function useProjectAnalytics(organizationId?: string) {
 }
 
 export function useTaskAnalytics(organizationId?: string) {
+  const { user } = useAuth()
   const [analytics, setAnalytics] = useState<import('../types').TaskAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAnalytics = useCallback(async () => {
+    if (!user?.id) { setLoading(false); return }
     try {
       setLoading(true)
       setError(null)
-      // Get user ID from somewhere - this should be passed or from context
-      const userId = 'current-user' // TODO: Get from auth context
+      const userId = user.id
       const data = await analyticsService.getDashboardAnalytics(userId, '30d', organizationId)
       // Extract task analytics from dashboard data
       const taskAnalytics = {
@@ -166,7 +168,7 @@ export function useTaskAnalytics(organizationId?: string) {
     } finally {
       setLoading(false)
     }
-  }, [organizationId])
+  }, [user?.id, organizationId])
 
   useEffect(() => {
     fetchAnalytics()
@@ -181,16 +183,17 @@ export function useTaskAnalytics(organizationId?: string) {
 }
 
 export function useTimeTrackingAnalytics(organizationId?: string, startDate?: string, endDate?: string) {
+  const { user } = useAuth()
   const [analytics, setAnalytics] = useState<import('../types').TimeTrackingAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAnalytics = useCallback(async () => {
+    if (!user?.id) { setLoading(false); return }
     try {
       setLoading(true)
       setError(null)
-      // Get user ID from somewhere - this should be passed or from context
-      const userId = 'current-user' // TODO: Get from auth context
+      const userId = user.id
       const data = await analyticsService.getDashboardAnalytics(userId, '30d', organizationId)
       // Extract time tracking analytics from dashboard data
       const timeTrackingAnalytics = {
@@ -204,7 +207,7 @@ export function useTimeTrackingAnalytics(organizationId?: string, startDate?: st
     } finally {
       setLoading(false)
     }
-  }, [organizationId])
+  }, [user?.id, organizationId])
 
   useEffect(() => {
     fetchAnalytics()

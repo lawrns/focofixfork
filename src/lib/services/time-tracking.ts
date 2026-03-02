@@ -250,48 +250,19 @@ export class TimeTrackingService {
     limit?: number
     offset?: number
   } = {}): Promise<{ entries: TimeEntry[]; total: number }> {
-    let query = untypedSupabase
+    let query: any = untypedSupabase
       .from('time_entries')
       .select('*', { count: 'exact' })
       .order('started_at', { ascending: false })
 
-    // @ts-ignore - Avoiding deep type instantiation issues with Supabase query chaining
-    if (filters.user_id) {
-      // @ts-ignore
-      query = query.eq('user_id', filters.user_id)
-    }
+    if (filters.user_id) query = query.eq('user_id', filters.user_id)
+    if (filters.work_item_id) query = query.eq('work_item_id', filters.work_item_id)
+    if (filters.start_date) query = query.gte('started_at', filters.start_date)
+    if (filters.end_date) query = query.lte('started_at', filters.end_date)
+    if (filters.is_billable !== undefined) query = query.eq('is_billable', filters.is_billable)
+    if (filters.limit) query = query.limit(filters.limit)
+    if (filters.offset) query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1)
 
-    if (filters.work_item_id) {
-      // @ts-ignore
-      query = query.eq('work_item_id', filters.work_item_id)
-    }
-
-    if (filters.start_date) {
-      // @ts-ignore
-      query = query.gte('started_at', filters.start_date)
-    }
-
-    if (filters.end_date) {
-      // @ts-ignore
-      query = query.lte('started_at', filters.end_date)
-    }
-
-    if (filters.is_billable !== undefined) {
-      // @ts-ignore
-      query = query.eq('is_billable', filters.is_billable)
-    }
-
-    if (filters.limit) {
-      // @ts-ignore
-      query = query.limit(filters.limit)
-    }
-
-    if (filters.offset) {
-      // @ts-ignore
-      query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1)
-    }
-
-    // @ts-ignore
     const { data, error, count } = await query
 
     if (error) {

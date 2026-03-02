@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { fetchCricoAgents } from '@/lib/command-center/adapters/crico-adapter'
 import { fetchClawdbotAgents } from '@/lib/command-center/adapters/clawdbot-adapter'
 import { fetchBosunAgents } from '@/lib/command-center/adapters/bosun-adapter'
@@ -7,6 +8,10 @@ import { fetchOpenClawAgents } from '@/lib/command-center/adapters/openclaw-adap
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  const { user, error: authError, response: authResponse } = await getAuthUser(req)
+  if (authError || !user) {
+    return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
+  }
   const baseUrl = 'http://127.0.0.1:3001'  // Not used but kept for signature compatibility
   const openclawToken = process.env.OPENCLAW_SERVICE_TOKEN
   const bosunToken = process.env.BOSUN_SERVICE_TOKEN

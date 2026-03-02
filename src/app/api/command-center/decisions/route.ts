@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import type { CommandDecision, DecisionSeverity } from '@/lib/command-center/types'
 
@@ -58,7 +59,11 @@ function mapCricoActionToDecision(action: CricoAction): CommandDecision {
   }
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  const { user, error: authError, response: authResponse } = await getAuthUser(req)
+  if (authError || !user) {
+    return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
+  }
   try {
     if (!supabaseAdmin) {
       return NextResponse.json(
@@ -96,6 +101,10 @@ export async function GET(_req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error: authError, response: authResponse } = await getAuthUser(req)
+  if (authError || !user) {
+    return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
+  }
   try {
     if (!supabaseAdmin) {
       return NextResponse.json(

@@ -5,6 +5,7 @@ import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { CreateProjectData } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, createPaginationMeta, missingFieldResponse, duplicateSlugResponse, isValidUUID, workspaceNotFoundResponse, forbiddenResponse } from '@/lib/api/response-helpers'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -141,17 +142,19 @@ export async function GET(req: NextRequest) {
       return mergeAuthResponse(successResponse(enriched, meta), authResponse)
     }
 
-    // Otherwise, use generic findMany with filters
-    const filters: Record<string, string> = {}
+    // Otherwise, use generic findMany filtered to projects the user owns
+    // (Use admin client to bypass RLS recursion on foco_workspace_members)
+    const adminRepo = new ProjectRepository(supabaseAdmin || supabase)
+    const filters: Record<string, string> = { owner_id: user.id }
     if (status) filters.status = status
 
-    const result = await repo.findMany(filters, { limit, offset })
+    const result = await adminRepo.findMany(filters, { limit, offset })
 
     if (isError(result)) {
       return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    const enriched = await enrichProjects(supabase, result.data ?? [])
+    const enriched = await enrichProjects(supabaseAdmin || supabase, result.data ?? [])
     const meta = createPaginationMeta(result.meta?.count ?? 0, limit, offset)
     return mergeAuthResponse(successResponse(enriched, meta), authResponse)
   } catch (err: unknown) {

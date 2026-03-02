@@ -8,6 +8,34 @@ import { authRequiredResponse, successResponse, databaseErrorResponse } from '@/
 
 export const dynamic = 'force-dynamic'
 
+export async function GET(request: NextRequest) {
+  let authResponse: NextResponse | undefined;
+  try {
+    const { user, supabase, error: authError, response } = await getAuthUser(request)
+    authResponse = response;
+
+    if (authError || !user) {
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
+    }
+
+    const repo = new SettingsRepository(supabase)
+    const result = await repo.getSettings(user.id)
+
+    if (isError(result)) {
+      // Return empty settings if profile not found yet
+      if (result.error.code === 'NOT_FOUND') {
+        return mergeAuthResponse(successResponse({ success: true, settings: {} }), authResponse)
+      }
+      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
+    }
+
+    return mergeAuthResponse(successResponse({ success: true, settings: result.data }), authResponse)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to fetch settings', message), authResponse)
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   let authResponse: NextResponse | undefined;
   try {

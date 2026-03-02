@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
-
 import { NotificationsService } from '@/lib/services/notifications';
 
 export const dynamic = 'force-dynamic'
@@ -18,14 +17,24 @@ export async function GET(request: NextRequest) {
       ), authResponse);
     }
 
-    // Return empty notifications for now - notifications table not in schema
-    // TODO: Implement notifications using inbox_items or activity_logs table
+    const { searchParams } = new URL(request.url);
+    const unreadOnly = searchParams.get('unread') === 'true';
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    const { notifications, total } = await NotificationsService.getNotifications(user.id, {
+      is_read: unreadOnly ? [false] : undefined,
+      limit,
+      offset,
+    });
+
     return mergeAuthResponse(NextResponse.json({
       success: true,
-      data: [],
-      total: 0,
+      data: notifications,
+      total,
     }), authResponse);
-  } catch {
+  } catch (err) {
+    console.error('Notifications API error:', err);
     return mergeAuthResponse(NextResponse.json(
       { success: true, data: [], total: 0 },
       { status: 200 }

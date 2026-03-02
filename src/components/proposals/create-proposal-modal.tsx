@@ -840,7 +840,7 @@ export function CreateProposalModal({
 
                 <AnimatePresence mode="wait">
                   {/* Voice Input Tab */}
-                  <TabsContent value="voice" className="mt-4">
+                  <TabsContent key="tab-voice" value="voice" className="mt-4">
                     <motion.div
                       key="voice"
                       variants={tabContentVariants}
@@ -892,7 +892,7 @@ export function CreateProposalModal({
                   </TabsContent>
 
                   {/* Text Input Tab */}
-                  <TabsContent value="text" className="mt-4">
+                  <TabsContent key="tab-text" value="text" className="mt-4">
                     <motion.div
                       key="text"
                       variants={tabContentVariants}
@@ -915,7 +915,7 @@ export function CreateProposalModal({
                   </TabsContent>
 
                   {/* File Upload Tab */}
-                  <TabsContent value="file" className="mt-4">
+                  <TabsContent key="tab-file" value="file" className="mt-4">
                     <motion.div
                       key="file"
                       variants={tabContentVariants}

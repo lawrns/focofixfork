@@ -224,7 +224,7 @@ function WorkItemRow({
               className="text-red-600"
               onClick={() => onRemoveFromMyWork(item.id)}
             >
-              Remove from My Work
+              Remove from My Tasks
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -717,7 +717,7 @@ export default function MyWorkPage() {
       }
     } catch (error) {
       console.error('Failed to fetch work items:', error);
-      toast.error('Failed to load My Work');
+      toast.error('Failed to load My Tasks');
     } finally {
       setIsLoading(false);
     }
@@ -879,7 +879,7 @@ export default function MyWorkPage() {
       } else {
         // Remove from local state
         setItems(prev => prev.filter(item => item.id !== itemId));
-        toast.success('Removed from My Work');
+        toast.success('Removed from My Tasks');
       }
       audioService.play('error'); // Use warning sound for removal
       hapticService.medium();
@@ -972,7 +972,7 @@ export default function MyWorkPage() {
   return (
     <PageShell maxWidth="4xl">
       <PageHeader
-        title="My Work"
+        title="My Tasks"
         subtitle={`${completedToday} of ${totalToday} items completed`}
         primaryAction={
           <div className="flex items-center gap-2">

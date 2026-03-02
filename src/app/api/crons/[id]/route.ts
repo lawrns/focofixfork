@@ -1,158 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
+import { patchClawdCron, deleteClawdCron } from '@/lib/clawdbot/crons-client'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * PATCH /api/crons/[id]
+ * Toggle cron enabled/disabled on ClawdBot.
+ */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
+  const { user, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const body = await req.json()
-  const allowed = [
-    'name',
-    'schedule',
-    'handler',
-    'payload',
-    'enabled',
-    'policy',
-    'project_id',
-    'workspace_id',
-    'metadata',
-    'last_run_at',
-    'last_status',
-    'next_run_at',
-  ]
-  const update: Record<string, unknown> = {}
-  for (const key of allowed) {
-    if (key in body) update[key] = body[key]
+
+  try {
+    const cron = await patchClawdCron(params.id, { enabled: body.enabled })
+    return NextResponse.json({ data: cron })
+  } catch (err) {
+    console.error(`[crons] Patch ${params.id} failed:`, err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to update cron' },
+      { status: 502 }
+    )
   }
-
-  // Check access
-  const { data: existingCron } = await supabase
-    .from('crons')
-    .select('workspace_id')
-    .eq('id', params.id)
-    .single()
-
-  if (!existingCron) {
-    return NextResponse.json({ error: 'Cron not found' }, { status: 404 })
-  }
-
-  if (existingCron.workspace_id) {
-    const { data: member } = await supabase
-      .from('foco_workspace_members')
-      .select('role')
-      .eq('workspace_id', existingCron.workspace_id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
-    }
-  }
-
-  // Recalculate next_run_at if schedule changed
-  if (body.schedule && typeof body.schedule === 'string') {
-    update.next_run_at = calculateNextRun(body.schedule)
-  }
-
-  const { data, error: dbError } = await supabase
-    .from('crons')
-    .update(update)
-    .eq('id', params.id)
-    .select(`
-      *,
-      project:foco_projects(id, name, slug, color)
-    `)
-    .single()
-
-  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
-
-  return NextResponse.json({ data })
 }
 
+/**
+ * DELETE /api/crons/[id]
+ * Delete a user-created cron from ClawdBot.
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
+  const { user, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  // Check access
-  const { data: existingCron } = await supabase
-    .from('crons')
-    .select('workspace_id')
-    .eq('id', params.id)
-    .single()
-
-  if (!existingCron) {
-    return NextResponse.json({ error: 'Cron not found' }, { status: 404 })
-  }
-
-  if (existingCron.workspace_id) {
-    const { data: member } = await supabase
-      .from('foco_workspace_members')
-      .select('role')
-      .eq('workspace_id', existingCron.workspace_id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member || !['owner', 'admin'].includes(member.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
-    }
-  }
-
-  const { error: dbError } = await supabase.from('crons').delete().eq('id', params.id)
-
-  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
-
-  return NextResponse.json({ success: true })
-}
-
-// Simple cron next-run calculator
-function calculateNextRun(schedule: string): string | null {
   try {
-    const parts = schedule.trim().split(/\s+/)
-    if (parts.length !== 5) return null
-
-    const [min, hour] = parts
-    const now = new Date()
-    const next = new Date(now)
-
-    // Simple cases only for now
-    if (min === '*') {
-      next.setMinutes(now.getMinutes() + 1)
-    } else if (min.startsWith('*/')) {
-      const interval = parseInt(min.slice(2))
-      const currentMin = now.getMinutes()
-      const nextMin = Math.ceil((currentMin + 1) / interval) * interval
-      if (nextMin >= 60) {
-        next.setHours(now.getHours() + 1)
-        next.setMinutes(nextMin - 60)
-      } else {
-        next.setMinutes(nextMin)
-      }
-    } else {
-      next.setMinutes(parseInt(min))
-    }
-
-    if (hour !== '*') {
-      if (hour.startsWith('*/')) {
-        // Handle interval hours
-      } else {
-        next.setHours(parseInt(hour))
-        if (next <= now) {
-          next.setDate(next.getDate() + 1)
-        }
-      }
-    }
-
-    return next.toISOString()
-  } catch {
-    return null
+    await deleteClawdCron(params.id)
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error(`[crons] Delete ${params.id} failed:`, err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to delete cron' },
+      { status: 502 }
+    )
   }
 }

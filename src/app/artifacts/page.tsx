@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Archive, Camera, Terminal, FileText, File } from 'lucide-react'
+import { Archive, Camera, Terminal, FileText, File, ExternalLink, Download } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
@@ -16,6 +16,14 @@ type Artifact = {
   uri: string
   meta: Record<string, unknown>
   created_at: string
+}
+
+function isImageUri(uri: string): boolean {
+  return /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(uri)
+}
+
+function isExternalUrl(uri: string): boolean {
+  return uri.startsWith('http://') || uri.startsWith('https://')
 }
 
 const typeIcons: Record<string, React.ElementType> = {
@@ -65,17 +73,39 @@ export default function ArtifactsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {artifacts.map(artifact => {
             const Icon = typeIcons[artifact.type] ?? File
+            const isImage = isImageUri(artifact.uri)
+            const isExternal = isExternalUrl(artifact.uri)
+            const href = isExternal ? artifact.uri : `/api/artifacts/${artifact.id}/download`
+
             return (
-              <div key={artifact.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors">
+              <a
+                key={artifact.id}
+                href={href}
+                target={isExternal ? '_blank' : undefined}
+                rel={isExternal ? 'noopener noreferrer' : undefined}
+                download={!isExternal && !isImage ? '' : undefined}
+                className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors cursor-pointer group"
+              >
                 <div className="h-8 w-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
-                  <Icon className="h-4 w-4 text-[color:var(--foco-teal)]" />
+                  {isImage ? (
+                    <img src={artifact.uri} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                  ) : (
+                    <Icon className="h-4 w-4 text-[color:var(--foco-teal)]" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <Badge variant="outline" className="text-[10px] mb-1">{artifact.type}</Badge>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Badge variant="outline" className="text-[10px]">{artifact.type}</Badge>
+                    {isExternal ? (
+                      <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    ) : (
+                      <Download className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </div>
                   <p className="text-[12px] text-muted-foreground font-mono-display truncate">{artifact.uri}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{new Date(artifact.created_at).toLocaleString()}</p>
                 </div>
-              </div>
+              </a>
             )
           })}
         </div>

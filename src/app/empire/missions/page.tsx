@@ -29,7 +29,7 @@ function MissionsFallback() {
 export default function MissionBoardsPage() {
   return (
     <Suspense fallback={<MissionsFallback />}>
-      <ProjectsPageClient pageTitle="Mission Boards" />
+      <ProjectsPageClient pageTitle="Projects" />
     </Suspense>
   );
 }

@@ -32,7 +32,7 @@ export default function EmpireBriefingPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Morning Briefing"
+        title="Daily Briefing"
         subtitle="Daily intelligence summary from your agent fleet"
         primaryAction={
           <Button variant="ghost" size="sm" onClick={load} disabled={loading}>

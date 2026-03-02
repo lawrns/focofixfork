@@ -213,7 +213,7 @@ export default function DashboardPageClient() {
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Orchestration Health
+              Execution Health
             </span>
             {fleetPaused && (
               <Badge variant="destructive" className="text-[10px] ml-1">Fleet Paused</Badge>
@@ -270,7 +270,7 @@ export default function DashboardPageClient() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Relay</span>
+              <span className="text-xs text-muted-foreground font-medium">AI Gateway</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={cn(
@@ -288,7 +288,7 @@ export default function DashboardPageClient() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Token</span>
+              <span className="text-xs text-muted-foreground font-medium">Authentication</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={cn(
@@ -302,11 +302,11 @@ export default function DashboardPageClient() {
             </div>
           </div>
 
-          {/* Tabs */}
+          {/* Active Sessions */}
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Tabs</span>
+              <span className="text-xs text-muted-foreground font-medium">Active Sessions</span>
             </div>
             <span className="text-2xl font-bold font-mono">{attachedTabs}</span>
           </div>
@@ -315,7 +315,7 @@ export default function DashboardPageClient() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Active Runs</span>
+              <span className="text-xs text-muted-foreground font-medium">Running & Queued</span>
             </div>
             <span className="text-2xl font-bold font-mono">{activeRuns.length}</span>
           </div>
@@ -350,7 +350,7 @@ export default function DashboardPageClient() {
           {/* Active Runs */}
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold">Active Runs</h3>
+              <h3 className="text-sm font-semibold">Running & Queued</h3>
               <Button variant="ghost" size="sm" onClick={() => router.push('/runs')}>
                 View all
               </Button>
@@ -452,7 +452,7 @@ export default function DashboardPageClient() {
             <div className="flex items-start gap-2 mb-3 rounded-md border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
-                {relayReachable === false ? 'Relay unreachable' : 'Token invalid'} — dispatch unavailable.
+                {relayReachable === false ? 'AI Gateway unreachable' : 'Service authentication error'} — dispatch unavailable.
               </span>
             </div>
           ) : null}

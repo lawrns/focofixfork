@@ -63,7 +63,7 @@ export default function LedgerPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Ledger"
+        title="Audit Log"
         subtitle="Append-only event log"
         primaryAction={
           <Button variant="outline" size="sm" onClick={load} disabled={fetching}>

@@ -1,71 +1,113 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Clock, Play, ToggleLeft, ToggleRight, Plus, History, Settings, Folder, AlertCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import {
+  Clock,
+  Play,
+  ToggleLeft,
+  ToggleRight,
+  Plus,
+  History,
+  Lock,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Radio,
+  Globe,
+  FileText,
+  Mail,
+  Users,
+  Activity,
+  AlertTriangle,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { toast } from 'sonner'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 type Cron = {
   id: string
   name: string
   schedule: string
   handler: string
+  description?: string
   enabled: boolean
+  native: boolean
   last_run_at: string | null
   next_run_at: string | null
   last_status: string | null
-  policy: Record<string, unknown> | null
-  project_id: string | null
-  project?: {
-    id: string
-    name: string
-    color: string
-  } | null
-  metadata: Record<string, unknown> | null
   created_at: string
 }
 
-type AutomationRun = {
+type CronRun = {
   id: string
+  timestamp: string | null
   status: string
-  trigger_type: string
-  started_at: string | null
-  ended_at: string | null
-  duration_ms: number | null
-  error: string | null
-  created_at: string
+  // Hourly
+  gateway_ok?: boolean
+  file_activity_count?: number
+  recent_reports?: string[]
+  cron_count?: number | null
+  // Daily intel
+  date?: string
+  repo_count?: number
+  top_repo?: string | null
+  top_score?: number | null
+  email_sent?: boolean
+  summary?: string
+  // GSID
+  agents_total?: number
+  agents_succeeded?: number
+  agents_timed_out?: number
+  brief_saved?: string | null
+  emails_sent?: number
+  // User crons
+  output?: string | null
 }
 
-type Project = {
-  id: string
-  name: string
-  color: string
+type HealthData = {
+  last_checkin: string | null
+  cron_ran_today: boolean
 }
+
+// ── Status helpers ───────────────────────────────────────────────────────────
 
 const statusIcons: Record<string, React.ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
-  failed: <XCircle className="h-4 w-4 text-red-500" />,
-  running: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
-  pending: <Clock className="h-4 w-4 text-yellow-500" />,
-  cancelled: <AlertCircle className="h-4 w-4 text-zinc-500" />,
+  failed: <XCircle className="h-4 w-4 text-rose-500" />,
+  running: <Loader2 className="h-4 w-4 text-[color:var(--foco-teal)] animate-spin" />,
+  pending: <Clock className="h-4 w-4 text-amber-500" />,
+  unknown: <AlertTriangle className="h-4 w-4 text-zinc-500" />,
 }
 
 const statusColors: Record<string, string> = {
   completed: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  failed: 'bg-red-500/15 text-red-600 dark:text-red-400',
-  running: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  pending: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
-  cancelled: 'bg-zinc-500/15 text-zinc-500',
+  failed: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+  running: 'bg-[color:var(--foco-teal-dim)] text-[color:var(--foco-teal)]',
+  pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  unknown: 'bg-zinc-500/15 text-zinc-500',
 }
 
 function describeCron(expr: string): string {
@@ -73,51 +115,78 @@ function describeCron(expr: string): string {
   if (parts.length !== 5) return ''
   const [min, hour, dom, mon, dow] = parts
 
-  // Common patterns
   if (expr === '* * * * *') return 'Every minute'
   if (min === '0' && hour === '*' && dom === '*' && mon === '*' && dow === '*') return 'Every hour'
   if (min === '0' && hour === '0' && dom === '*' && mon === '*' && dow === '*') return 'Daily at midnight'
   if (min === '0' && hour === '0' && dom === '*' && mon === '*' && dow === '1') return 'Every Monday at midnight'
-  if (min === '0' && hour === '0' && dom === '1' && mon === '*' && dow === '*') return 'First day of every month at midnight'
-
-  // */N patterns
-  if (min.startsWith('*/') && hour === '*' && dom === '*' && mon === '*' && dow === '*') {
-    return `Every ${min.slice(2)} minutes`
-  }
-  if (min === '0' && hour.startsWith('*/') && dom === '*' && mon === '*' && dow === '*') {
-    return `Every ${hour.slice(2)} hours`
-  }
-
-  // Specific hour:minute
+  if (min === '0' && hour === '0' && dom === '1' && mon === '*' && dow === '*') return 'First day of month'
+  if (min.startsWith('*/') && hour === '*' && dom === '*' && mon === '*' && dow === '*') return `Every ${min.slice(2)} minutes`
+  if (min === '0' && hour.startsWith('*/') && dom === '*' && mon === '*' && dow === '*') return `Every ${hour.slice(2)} hours`
   if (/^\d+$/.test(min) && /^\d+$/.test(hour) && dom === '*' && mon === '*' && dow === '*') {
     return `Daily at ${hour.padStart(2, '0')}:${min.padStart(2, '0')}`
   }
-
   return ''
 }
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return 'never'
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+// ── ClawdBot Status Bar ──────────────────────────────────────────────────────
+
+function StatusBar({ health }: { health: HealthData | null }) {
+  if (!health) return null
+
+  return (
+    <div className="flex gap-3 mb-4">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-xs">
+        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">Daily Intel</span>
+        {health.cron_ran_today ? (
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+        ) : (
+          <Clock className="h-3.5 w-3.5 text-amber-500" />
+        )}
+        <span className={health.cron_ran_today ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+          {health.cron_ran_today ? 'Ran today' : 'Pending'}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-xs">
+        <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">Last Check-in</span>
+        <span className="text-foreground">{relativeTime(health.last_checkin)}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Create Cron Dialog ───────────────────────────────────────────────────────
 
 function CreateCronDialog({
   open,
   onOpenChange,
   onCreated,
-  projects,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   onCreated: (cron: Cron) => void
-  projects: Project[]
 }) {
   const [name, setName] = useState('')
   const [schedule, setSchedule] = useState('0 * * * *')
-  const [handler, setHandler] = useState('')
-  const [enabled, setEnabled] = useState(true)
-  const [projectId, setProjectId] = useState('__none__')
-  const [policy, setPolicy] = useState('')
+  const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !schedule.trim() || !handler.trim()) return
+    if (!name.trim() || !schedule.trim()) return
     setSaving(true)
     try {
       const res = await fetch('/api/crons', {
@@ -126,10 +195,8 @@ function CreateCronDialog({
         body: JSON.stringify({
           name: name.trim(),
           schedule: schedule.trim(),
-          handler: handler.trim(),
-          enabled,
-          project_id: projectId === '__none__' ? undefined : projectId || undefined,
-          policy: policy ? JSON.parse(policy) : {},
+          description: description.trim() || undefined,
+          enabled: true,
         }),
       })
       const json = await res.json()
@@ -142,10 +209,7 @@ function CreateCronDialog({
       onOpenChange(false)
       setName('')
       setSchedule('0 * * * *')
-      setHandler('')
-      setProjectId('__none__')
-      setPolicy('')
-      setEnabled(true)
+      setDescription('')
     } finally {
       setSaving(false)
     }
@@ -162,7 +226,7 @@ function CreateCronDialog({
             <Label htmlFor="cron-name">Name</Label>
             <Input
               id="cron-name"
-              placeholder="Daily report"
+              placeholder="Weekly digest"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -183,60 +247,14 @@ function CreateCronDialog({
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="cron-handler">Handler</Label>
-            <Input
-              id="cron-handler"
-              placeholder="jobs/daily-report"
-              value={handler}
-              onChange={(e) => setHandler(e.target.value)}
-              required
-              className="font-mono"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cron-project">Project (optional)</Label>
-            <Select value={projectId} onValueChange={setProjectId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: p.color || '#64748b' }}
-                      />
-                      {p.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cron-policy">Policy (JSON, optional)</Label>
+            <Label htmlFor="cron-desc">Description (optional)</Label>
             <Textarea
-              id="cron-policy"
-              placeholder='{"max_retries": 3}'
-              value={policy}
-              onChange={(e) => setPolicy(e.target.value)}
-              className="font-mono text-xs"
-              rows={3}
+              id="cron-desc"
+              placeholder="What does this cron do?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="cron-enabled"
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setEnabled(e.target.checked)}
-              className="h-4 w-4"
-            />
-            <Label htmlFor="cron-enabled" className="cursor-pointer">
-              Enabled
-            </Label>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -252,6 +270,140 @@ function CreateCronDialog({
   )
 }
 
+// ── Run History Dialog ───────────────────────────────────────────────────────
+
+function HourlyRunCard({ run }: { run: CronRun }) {
+  return (
+    <div className="px-3 py-2.5 rounded-lg border border-border bg-card space-y-1.5">
+      <div className="flex items-center gap-2">
+        {statusIcons[run.status] || statusIcons.completed}
+        <span className="text-xs font-medium">
+          {run.timestamp ? new Date(run.timestamp).toLocaleString() : 'Unknown'}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 flex-wrap text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          {run.gateway_ok ? (
+            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+          ) : (
+            <XCircle className="h-3 w-3 text-rose-500" />
+          )}
+          Gateway {run.gateway_ok ? 'OK' : 'Down'}
+        </span>
+        <span className="flex items-center gap-1">
+          <FileText className="h-3 w-3" />
+          {run.file_activity_count ?? 0} files modified
+        </span>
+        {run.cron_count != null && (
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {run.cron_count} crons active
+          </span>
+        )}
+      </div>
+      {run.recent_reports && run.recent_reports.length > 0 && (
+        <div className="text-[11px] text-muted-foreground">
+          Reports: {run.recent_reports.map(r => r.split('/').pop()).join(', ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DailyIntelRunCard({ run }: { run: CronRun }) {
+  return (
+    <div className="px-3 py-2.5 rounded-lg border border-border bg-card space-y-1.5">
+      <div className="flex items-center gap-2">
+        {statusIcons[run.status] || statusIcons.completed}
+        <span className="text-xs font-medium">{run.date ?? 'Unknown date'}</span>
+        {run.email_sent && (
+          <Badge className="text-[10px] border-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <Mail className="h-3 w-3 mr-0.5" /> Sent
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-center gap-3 flex-wrap text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Globe className="h-3 w-3" />
+          {run.repo_count ?? 0} repos scanned
+        </span>
+        {run.top_repo && (
+          <span className="flex items-center gap-1">
+            Top: <span className="font-medium text-foreground">{run.top_repo}</span>
+            {run.top_score != null && ` (${run.top_score}/10)`}
+          </span>
+        )}
+      </div>
+      {run.summary && (
+        <p className="text-[11px] text-muted-foreground line-clamp-2">{run.summary}</p>
+      )}
+    </div>
+  )
+}
+
+function GsidRunCard({ run }: { run: CronRun }) {
+  const successRate = run.agents_total
+    ? Math.round((run.agents_succeeded! / run.agents_total) * 100)
+    : 0
+
+  return (
+    <div className="px-3 py-2.5 rounded-lg border border-border bg-card space-y-1.5">
+      <div className="flex items-center gap-2">
+        {statusIcons[run.status] || statusIcons.completed}
+        <span className="text-xs font-medium">
+          {run.timestamp ? new Date(run.timestamp).toLocaleString() : 'Unknown'}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 flex-wrap text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Users className="h-3 w-3" />
+          {run.agents_succeeded ?? 0}/{run.agents_total ?? 0} agents
+          <span className={cn(
+            'font-medium',
+            successRate >= 70 ? 'text-emerald-500' : successRate >= 40 ? 'text-amber-500' : 'text-rose-500'
+          )}>
+            ({successRate}%)
+          </span>
+        </span>
+        {(run.agents_timed_out ?? 0) > 0 && (
+          <span className="flex items-center gap-1 text-amber-500">
+            <AlertTriangle className="h-3 w-3" />
+            {run.agents_timed_out} timed out
+          </span>
+        )}
+        {(run.emails_sent ?? 0) > 0 && (
+          <span className="flex items-center gap-1">
+            <Mail className="h-3 w-3" />
+            {run.emails_sent} emails
+          </span>
+        )}
+      </div>
+      {run.brief_saved && (
+        <p className="text-[11px] text-muted-foreground font-mono truncate">{run.brief_saved}</p>
+      )}
+    </div>
+  )
+}
+
+function UserCronRunCard({ run }: { run: CronRun }) {
+  return (
+    <div className="px-3 py-2.5 rounded-lg border border-border bg-card space-y-1.5">
+      <div className="flex items-center gap-2">
+        {statusIcons[run.status] || statusIcons.pending}
+        <span className="text-xs font-medium">
+          {run.timestamp ? new Date(run.timestamp).toLocaleString() : 'Unknown'}
+        </span>
+        <Badge className={cn('text-[10px] border-0', statusColors[run.status] || statusColors.pending)}>
+          {run.status}
+        </Badge>
+      </div>
+      {run.output && (
+        <p className="text-[11px] text-muted-foreground line-clamp-3 font-mono">{run.output}</p>
+      )}
+    </div>
+  )
+}
+
 function CronRunsDialog({
   cron,
   open,
@@ -261,59 +413,54 @@ function CronRunsDialog({
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
-  const [runs, setRuns] = useState<AutomationRun[]>([])
+  const [runs, setRuns] = useState<CronRun[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!cron || !open) return
     setLoading(true)
-    fetch(`/api/automation/jobs/${cron.id}/runs`)
+    fetch(`/api/crons/${cron.id}/runs?limit=20`)
       .then((r) => r.json())
       .then((d) => setRuns(d.data || []))
+      .catch(() => setRuns([]))
       .finally(() => setLoading(false))
   }, [cron, open])
 
   if (!cron) return null
 
+  const renderRun = (run: CronRun) => {
+    switch (cron.id) {
+      case 'hourly-checkin':
+        return <HourlyRunCard key={run.id} run={run} />
+      case 'daily-intel':
+        return <DailyIntelRunCard key={run.id} run={run} />
+      case 'gsid-run':
+        return <GsidRunCard key={run.id} run={run} />
+      default:
+        return <UserCronRunCard key={run.id} run={run} />
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Run History: {cron.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Run History: {cron.name}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader2 className="h-6 w-6 animate-spin text-[color:var(--foco-teal)]" />
             </div>
           ) : runs.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No runs yet. Click Test to trigger a manual run.
+              No runs recorded yet.
             </p>
           ) : (
-            runs.map((run) => (
-              <div
-                key={run.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card"
-              >
-                {statusIcons[run.status] || statusIcons.pending}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge className={cn('text-[10px] border-0', statusColors[run.status] || statusColors.pending)}>
-                      {run.status}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground capitalize">{run.trigger_type}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {run.started_at && new Date(run.started_at).toLocaleString()}
-                    {run.duration_ms && ` · ${(run.duration_ms / 1000).toFixed(1)}s`}
-                  </p>
-                  {run.error && (
-                    <p className="text-xs text-red-500 mt-1 truncate">{run.error}</p>
-                  )}
-                </div>
-              </div>
-            ))
+            runs.map(renderRun)
           )}
         </div>
       </DialogContent>
@@ -321,32 +468,97 @@ function CronRunsDialog({
   )
 }
 
-export default function CronsPage() {
-  const { user, loading } = useAuth()
-  const [crons, setCrons] = useState<Cron[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
-  const [fetching, setFetching] = useState(false)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [runsDialogOpen, setRunsDialogOpen] = useState(false)
-  const [selectedCron, setSelectedCron] = useState<Cron | null>(null)
+// ── Delete Confirmation Dialog ───────────────────────────────────────────────
 
-  async function load() {
-    setFetching(true)
+function DeleteCronDialog({
+  cron,
+  open,
+  onOpenChange,
+  onDeleted,
+}: {
+  cron: Cron | null
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  onDeleted: (id: string) => void
+}) {
+  const [deleting, setDeleting] = useState(false)
+
+  async function confirm() {
+    if (!cron) return
+    setDeleting(true)
     try {
-      const [cronsRes, projectsRes] = await Promise.all([
-        fetch('/api/crons'),
-        fetch('/api/projects'),
-      ])
-      const cronsJson = await cronsRes.json()
-      const projectsJson = await projectsRes.json()
-      setCrons(cronsJson.data || [])
-      setProjects(projectsJson.data || [])
+      const res = await fetch(`/api/crons/${cron.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success(`Cron "${cron.name}" deleted`)
+        onDeleted(cron.id)
+        onOpenChange(false)
+      } else {
+        const json = await res.json()
+        toast.error(json.error ?? 'Failed to delete')
+      }
     } finally {
-      setFetching(false)
+      setDeleting(false)
     }
   }
 
+  if (!cron) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Cron</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Delete <span className="font-medium text-foreground">{cron.name}</span>? This will also remove the crontab entry.
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={confirm} disabled={deleting}>
+            {deleting ? 'Deleting…' : 'Delete'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
+
+export default function CronsPage() {
+  const { user, loading } = useAuth()
+  const [crons, setCrons] = useState<Cron[]>([])
+  const [health, setHealth] = useState<HealthData | null>(null)
+  const [fetching, setFetching] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [runsDialogOpen, setRunsDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedCron, setSelectedCron] = useState<Cron | null>(null)
+
+  const load = useCallback(async () => {
+    setFetching(true)
+    try {
+      const [cronsRes, healthRes] = await Promise.all([
+        fetch('/api/crons'),
+        fetch('/api/empire/health').catch(() => null),
+      ])
+      const cronsJson = await cronsRes.json()
+      setCrons(cronsJson.data || [])
+
+      if (healthRes?.ok) {
+        const healthJson = await healthRes.json()
+        setHealth({
+          last_checkin: healthJson.clawdbot?.last_checkin ?? null,
+          cron_ran_today: healthJson.clawdbot?.cron_ran_today ?? false,
+        })
+      }
+    } finally {
+      setFetching(false)
+    }
+  }, [])
+
   async function toggle(cron: Cron) {
+    if (cron.native) return // Prevent toggling native crons from UI
     const res = await fetch(`/api/crons/${cron.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -362,8 +574,9 @@ export default function CronsPage() {
     const res = await fetch(`/api/crons/${cron.id}/test-run`, { method: 'POST' })
     if (res.ok) {
       toast.success(`Test run queued for "${cron.name}"`)
-      // Refresh after a delay
       setTimeout(load, 2000)
+    } else {
+      toast.error('Failed to queue test run')
     }
   }
 
@@ -372,9 +585,14 @@ export default function CronsPage() {
     setRunsDialogOpen(true)
   }
 
+  function openDelete(cron: Cron) {
+    setSelectedCron(cron)
+    setDeleteDialogOpen(true)
+  }
+
   useEffect(() => {
     if (user) load()
-  }, [user])
+  }, [user, load])
 
   if (loading)
     return (
@@ -388,7 +606,7 @@ export default function CronsPage() {
     <PageShell>
       <PageHeader
         title="Crons"
-        subtitle="Generalized scheduler"
+        subtitle="ClawdBot scheduled activity"
         primaryAction={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
@@ -397,6 +615,8 @@ export default function CronsPage() {
         }
       />
 
+      <StatusBar health={health} />
+
       <CreateCronDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -404,10 +624,16 @@ export default function CronsPage() {
           setCrons((c) => [cron, ...c])
           load()
         }}
-        projects={projects}
       />
 
       <CronRunsDialog cron={selectedCron} open={runsDialogOpen} onOpenChange={setRunsDialogOpen} />
+
+      <DeleteCronDialog
+        cron={selectedCron}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDeleted={(id) => setCrons((c) => c.filter((x) => x.id !== id))}
+      />
 
       {crons.length === 0 && !fetching ? (
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
@@ -415,94 +641,126 @@ export default function CronsPage() {
             <Clock className="h-6 w-6 text-[color:var(--foco-teal)]" />
           </div>
           <p className="text-sm font-medium">No crons configured yet</p>
-          <p className="text-xs text-muted-foreground">Scheduled jobs will appear here once configured.</p>
+          <p className="text-xs text-muted-foreground">
+            Scheduled jobs will appear here once ClawdBot is running.
+          </p>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
             New Cron
           </Button>
         </div>
       ) : (
-        <div className="space-y-2">
-          {crons.map((cron) => (
-            <div
-              key={cron.id}
-              className="flex items-start gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[13px] font-medium">{cron.name}</span>
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    {cron.schedule}
-                  </Badge>
-                  <Badge variant={cron.enabled ? 'default' : 'secondary'} className="text-[10px]">
-                    {cron.enabled ? 'enabled' : 'disabled'}
-                  </Badge>
-                  {cron.last_status && (
-                    <Badge className={cn('text-[10px] border-0', statusColors[cron.last_status])}>
-                      {cron.last_status}
+        <TooltipProvider>
+          <div className="space-y-2">
+            {crons.map((cron) => (
+              <div
+                key={cron.id}
+                className="flex items-start gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors"
+              >
+                {/* Status indicator */}
+                <div className="mt-0.5">
+                  {statusIcons[cron.last_status ?? 'unknown'] || statusIcons.unknown}
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[13px] font-medium">{cron.name}</span>
+                    {cron.native && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Lock className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Managed by ClawdBot — edit crontab directly</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {cron.schedule}
                     </Badge>
+                    {describeCron(cron.schedule) && (
+                      <span className="text-[11px] text-muted-foreground">
+                        {describeCron(cron.schedule)}
+                      </span>
+                    )}
+                    {cron.last_status && (
+                      <Badge className={cn('text-[10px] border-0', statusColors[cron.last_status] || statusColors.unknown)}>
+                        {cron.last_status}
+                      </Badge>
+                    )}
+                    {!cron.enabled && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        disabled
+                      </Badge>
+                    )}
+                  </div>
+
+                  {cron.description && (
+                    <p className="text-[12px] text-muted-foreground mt-0.5">
+                      {cron.description}
+                    </p>
                   )}
+
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-muted-foreground">
+                    <span className="font-mono">{cron.handler}</span>
+                    {cron.last_run_at && (
+                      <span className="flex items-center gap-1">
+                        <Activity className="h-3 w-3" />
+                        {relativeTime(cron.last_run_at)}
+                      </span>
+                    )}
+                    {cron.next_run_at && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Next: {new Date(cron.next_run_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[12px] text-muted-foreground mt-0.5 font-mono-display">
-                  {cron.handler}
-                </p>
-                {describeCron(cron.schedule) && (
-                  <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {describeCron(cron.schedule)}
-                  </p>
-                )}
-                <div className="flex items-center gap-3 mt-2 flex-wrap">
-                  {cron.project && (
-                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Folder className="h-3 w-3" />
-                      <span
-                        className="inline-block w-2 h-2 rounded-full"
-                        style={{ backgroundColor: cron.project.color || '#64748b' }}
-                      />
-                      {cron.project.name}
-                    </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => openRuns(cron)}>
+                    <History className="h-3.5 w-3.5 mr-1" />
+                    Runs
+                  </Button>
+                  {!cron.native && (
+                    <Button variant="ghost" size="sm" onClick={() => testRun(cron)}>
+                      <Play className="h-3.5 w-3.5 mr-1" />
+                      Test
+                    </Button>
                   )}
-                  {cron.last_run_at && (
-                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <History className="h-3 w-3" />
-                      Last: {new Date(cron.last_run_at).toLocaleString()}
-                    </div>
-                  )}
-                  {cron.next_run_at && (
-                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      Next: {new Date(cron.next_run_at).toLocaleString()}
-                    </div>
-                  )}
-                  {cron.policy && Object.keys(cron.policy).length > 0 && (
-                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Settings className="h-3 w-3" />
-                      Policy set
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => openRuns(cron)}>
-                  <History className="h-3.5 w-3.5 mr-1" />
-                  Runs
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => testRun(cron)}>
-                  <Play className="h-3.5 w-3.5 mr-1" />
-                  Test
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => toggle(cron)}>
-                  {cron.enabled ? (
-                    <ToggleRight className="h-5 w-5 text-[color:var(--foco-teal)]" />
+                  {cron.native ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="h-8 w-8 flex items-center justify-center">
+                          <Lock className="h-4 w-4 text-muted-foreground/50" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Native cron — managed by ClawdBot</p>
+                      </TooltipContent>
+                    </Tooltip>
                   ) : (
-                    <ToggleLeft className="h-5 w-5 text-muted-foreground" />
+                    <>
+                      <Button variant="ghost" size="icon" onClick={() => toggle(cron)}>
+                        {cron.enabled ? (
+                          <ToggleRight className="h-5 w-5 text-[color:var(--foco-teal)]" />
+                        ) : (
+                          <ToggleLeft className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openDelete(cron)}>
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-rose-500" />
+                      </Button>
+                    </>
                   )}
-                </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </TooltipProvider>
       )}
     </PageShell>
   )

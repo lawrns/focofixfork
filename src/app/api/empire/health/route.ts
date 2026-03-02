@@ -51,15 +51,27 @@ export async function GET(_req: NextRequest) {
   const clawdbotToken = process.env.OPENCLAW_SERVICE_TOKEN ?? ''
   const temporalUiUrl = `http://127.0.0.1:8233`
 
-  const [clawdbot, openclaw, temporal, n8n, chromadb] = await Promise.all([
-    probe('ClawdBot API',   `${CLAWDBOT_API}/health`, {
-      headers: clawdbotToken ? { Authorization: `Bearer ${clawdbotToken}` } : undefined,
-    }),
+  // Fetch ClawdBot health with full response body for cron status
+  let clawdbotDetail: Record<string, unknown> | null = null
+  const clawdbotHeaders: Record<string, string> = {}
+  if (clawdbotToken) clawdbotHeaders['Authorization'] = `Bearer ${clawdbotToken}`
+
+  const clawdbotProbe = probe('ClawdBot API', `${CLAWDBOT_API}/health`, { headers: clawdbotHeaders })
+  const clawdbotBody = fetch(`${CLAWDBOT_API}/health`, {
+    headers: clawdbotHeaders,
+    signal: AbortSignal.timeout(3000),
+  }).then(r => r.ok ? r.json() : null).catch(() => null)
+
+  const [clawdbot, clawdbotJson, openclaw, temporal, n8n, chromadb] = await Promise.all([
+    clawdbotProbe,
+    clawdbotBody,
     probe('OpenClaw Relay', `${OPENCLAW_URL}/`),
     probe('Temporal',       `${temporalUiUrl}/`),
     probe('n8n',            `${N8N_URL}/healthz`),
     probe('ChromaDB',       `${CHROMADB_URL}/api/v2/heartbeat`),
   ])
+
+  if (clawdbotJson) clawdbotDetail = clawdbotJson
 
   const services: ServiceStatus[] = [clawdbot, openclaw, temporal, n8n, chromadb]
   const upCount = services.filter(s => s.status === 'up').length
@@ -69,5 +81,11 @@ export async function GET(_req: NextRequest) {
     overall: overallStatus,
     timestamp: new Date().toISOString(),
     services,
+    // Forward ClawdBot-specific data for consumers (crons page, dashboard)
+    clawdbot: clawdbotDetail ? {
+      last_checkin: clawdbotDetail.last_checkin ?? null,
+      last_checkin_line: clawdbotDetail.last_checkin_line ?? null,
+      cron_ran_today: clawdbotDetail.cron_ran_today ?? false,
+    } : null,
   })
 }

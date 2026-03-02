@@ -162,7 +162,7 @@ export function BossBar({ className }: BossBarProps) {
       <div className="h-3 w-px bg-border flex-shrink-0" />
 
       {/* Recent ledger events rolling ticker */}
-      <div className="flex-1 overflow-hidden flex items-center gap-2 min-w-0" title="Ledger events in last 24h">
+      <div className="flex-1 overflow-hidden flex items-center gap-2 min-w-0" title="Audit log events in last 24h">
         <Activity className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         {recentEvents.length === 0 ? (
           <span className="text-muted-foreground">no recent events</span>

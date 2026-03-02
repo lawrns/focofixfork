@@ -68,6 +68,9 @@ export function GlobalKeyboardShortcuts() {
         return;
       }
 
+      // Don't intercept modifier combos (Cmd+C for copy, Cmd+V for paste, etc.)
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
       // Handle single key shortcuts
       switch (key) {
         case 'c':

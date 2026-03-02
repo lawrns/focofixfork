@@ -48,22 +48,25 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { label: 'Dashboard',      href: '/dashboard', icon: Home,     shortcut: 'G H' },
   { label: 'Intel Feed',     href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
-  { label: 'Operator Tasks', href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
-  { label: 'Runs',           href: '/runs',      icon: Activity, shortcut: 'G R' },
-  { label: 'Ledger',         href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
+  { label: 'My Tasks',        href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
+  { label: 'Runs',            href: '/runs',      icon: Activity, shortcut: 'G R' },
+  { label: 'Audit Log',       href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Command',         href: '/empire',            icon: Crown,     shortcut: 'G M' },
+  { label: 'Empire OS',       href: '/empire',            icon: Crown,     shortcut: 'G M' },
   { label: 'Command Center',  href: '/empire/command',    icon: Cpu,       shortcut: 'G C' },
-  { label: 'Briefing',        href: '/empire/briefing',   icon: FileText,  shortcut: 'G B' },
   { label: 'Agents',          href: '/empire/agents',     icon: Bot,       shortcut: 'G J' },
   { label: 'Pipeline',        href: '/empire/pipeline',   icon: GitBranch, shortcut: 'G V' },
-  { label: 'Mission Boards',  href: '/empire/missions',   icon: Crosshair, shortcut: 'G P' },
-  { label: 'Signal Queue',    href: '/empire/signals',    icon: Radio,     shortcut: 'G N' },
-  { label: 'Fleet Status',    href: '/empire/fleet',      icon: Satellite, shortcut: 'G O' },
-  { label: 'Run Timeline',    href: '/empire/timeline',   icon: History,   shortcut: 'G T' },
   { label: 'Crons',           href: '/crons',             icon: Clock,     shortcut: 'G K' },
+];
+
+const projectsNavItems: NavItem[] = [
+  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
+  { label: 'Projects',           href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
+  { label: 'Team Capacity',      href: '/empire/fleet',     icon: Satellite, shortcut: 'G O' },
+  { label: 'Notifications',      href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
+  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
 ];
 
 const operateNavItems: NavItem[] = [
@@ -248,6 +251,21 @@ export function LeftRail() {
 
         {/* Empire nav */}
         {empireNavItems.map(item => <NavLink key={item.href} item={item} />)}
+
+        {/* Divider */}
+        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+
+        {/* Projects section label */}
+        {!sidebarCollapsed && (
+          <div className="px-3 mb-1">
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
+              Projects
+            </span>
+          </div>
+        )}
+
+        {/* Projects nav */}
+        {projectsNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Divider */}
         <div className="my-3 h-px bg-[var(--foco-rail-border)]" />

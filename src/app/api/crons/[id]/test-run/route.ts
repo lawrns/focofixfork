@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { dispatchToClawdBot, buildSystemPrompt } from '@/lib/delegation/dispatchers'
+import { getClawdCrons } from '@/lib/clawdbot/crons-client'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * POST /api/crons/[id]/test-run
+ *
+ * Triggers a manual execution of a cron job.
+ * Fetches cron definition from ClawdBot (source of truth), dispatches
+ * to ClawdBot for execution, and records the run in the `runs` table.
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -12,26 +20,29 @@ export async function POST(
   const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  const { data: cron, error: fetchError } = await supabase
-    .from('crons')
-    .select('*')
-    .eq('id', params.id)
-    .single()
+  // Fetch cron definition from ClawdBot (single source of truth)
+  let cron
+  try {
+    const { crons } = await getClawdCrons()
+    cron = crons.find(c => c.id === params.id)
+  } catch (err) {
+    console.error('[crons/test-run] ClawdBot unreachable:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'ClawdBot unreachable' }, { status: 502 })
+  }
 
-  if (fetchError || !cron) {
+  if (!cron) {
     return NextResponse.json({ error: 'Cron not found' }, { status: 404 })
   }
 
-  // Create an automation_run for this cron test
+  // Create a run record for tracking
   const { data: run, error: runError } = await supabase
-    .from('automation_runs')
+    .from('runs')
     .insert({
-      job_id: params.id,
+      runner: 'cron',
       status: 'pending',
-      trigger_type: 'manual',
-      started_at: new Date().toISOString(),
       trace: {
         cron_id: params.id,
+        cron_name: cron.name,
         handler: cron.handler,
         test: true,
         triggered_by: user.id,
@@ -40,44 +51,23 @@ export async function POST(
     .select()
     .single()
 
-  if (runError) return NextResponse.json({ error: runError.message }, { status: 500 })
-
-  // Also create a legacy run for backward compatibility
-  const { data: legacyRun, error: legacyRunError } = await supabase
-    .from('runs')
-    .insert({
-      runner: 'cron',
-      status: 'pending',
-      trace: { cron_id: params.id, handler: cron.handler, test: true, automation_run_id: run.id },
-    })
-    .select()
-    .single()
-
-  if (legacyRunError) {
-    console.warn('Failed to create legacy run:', legacyRunError)
+  if (runError) {
+    console.error('[crons/test-run] Failed to create run:', runError.message)
+    return NextResponse.json({ error: runError.message }, { status: 500 })
   }
 
-  // Update cron last_status
-  await supabase
-    .from('crons')
-    .update({
-      last_status: 'pending',
-      last_run_at: new Date().toISOString(),
-    })
-    .eq('id', params.id)
-
-  // Dispatch to ClawdBot for actual execution
+  // Dispatch to ClawdBot for execution
   const systemPrompt = buildSystemPrompt(
-    cron.name ?? 'Cron Job',
+    cron.name,
     '',
     '',
-    cron.name ?? 'Cron Job',
-    cron.description ?? cron.handler
+    cron.name,
+    cron.description || cron.handler
   )
   const dispatchResult = await dispatchToClawdBot({
     taskId: run.id,
-    title: cron.name ?? `Cron: ${params.id}`,
-    description: JSON.stringify({ handler: cron.handler, payload: cron.payload ?? {} }),
+    title: cron.name,
+    description: JSON.stringify({ handler: cron.handler, cron_id: params.id }),
     projectContext: '',
     featureContext: '',
     systemPrompt,
@@ -85,30 +75,37 @@ export async function POST(
   })
 
   // Persist external_run_id if dispatch succeeded
-  if (dispatchResult.success && dispatchResult.externalRunId && legacyRun) {
+  if (dispatchResult.success && dispatchResult.externalRunId) {
     await supabase
       .from('runs')
       .update({ external_run_id: dispatchResult.externalRunId })
-      .eq('id', legacyRun.id)
+      .eq('id', run.id)
   }
 
-  // Create ledger event for the test run
+  // Record ledger event
   await supabase.from('ledger_events').insert({
     type: 'cron_test_run',
     source: 'foco_crons',
     context_id: params.id,
-    automation_run_id: run.id,
     user_id: user.id,
-    workspace_id: cron.workspace_id,
     payload: {
       cron_name: cron.name,
       handler: cron.handler,
+      run_id: run.id,
+      external_run_id: dispatchResult.externalRunId ?? null,
       test: true,
     },
   })
 
   return NextResponse.json(
-    { data: { automation_run: run, legacy_run: legacyRun, cron } },
+    {
+      data: {
+        run,
+        cron: { id: cron.id, name: cron.name },
+        dispatched: dispatchResult.success,
+        external_run_id: dispatchResult.externalRunId ?? null,
+      },
+    },
     { status: 201 }
   )
 }

@@ -3,5 +3,5 @@
 import { TimelinePageCore } from '@/app/timeline/TimelinePageCore';
 
 export default function RunTimelinePage() {
-  return <TimelinePageCore pageTitle="Run Timeline" />;
+  return <TimelinePageCore pageTitle="Milestone Timeline" />;
 }

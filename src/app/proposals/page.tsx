@@ -7,7 +7,6 @@ import {
   Plus,
   Filter,
   Search,
-  Mic,
   ArrowLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,7 +22,6 @@ import { toast } from 'sonner'
 import { ProposalList } from '@/components/proposals/proposal-list'
 import { ProposalDetailView } from '@/components/proposals/proposal-detail-view'
 import { CreateProposalModal } from '@/components/proposals/create-proposal-modal'
-import { ImpactDashboard, type ImpactDashboardData } from '@/components/proposals/impact-dashboard'
 import type { Proposal, ProposalStatus, ProposalWithItems } from '@/types/proposals'
 
 type FilterStatus = 'all' | ProposalStatus
@@ -113,9 +111,11 @@ export default function ProposalsPage() {
 
   const handleApprove = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/proposals/${id}/approve`, {
-        method: 'POST',
+      const response = await fetch(`/api/proposals/${id}`, {
+        method: 'PATCH',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' }),
       })
 
       if (!response.ok) {
@@ -136,11 +136,11 @@ export default function ProposalsPage() {
 
   const handleReject = useCallback(async (id: string, reason: string) => {
     try {
-      const response = await fetch(`/api/proposals/${id}/reject`, {
-        method: 'POST',
+      const response = await fetch(`/api/proposals/${id}`, {
+        method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rejection_reason: reason }),
+        body: JSON.stringify({ status: 'rejected' }),
       })
 
       if (!response.ok) {
@@ -161,7 +161,7 @@ export default function ProposalsPage() {
 
   const handleMerge = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/proposals/${id}/apply`, {
+      const response = await fetch(`/api/proposals/${id}/merge`, {
         method: 'POST',
         credentials: 'include',
       })
@@ -205,36 +205,6 @@ export default function ProposalsPage() {
     return true
   })
 
-  // Impact summary for dashboard
-  const totalItems = proposals.reduce((acc, p) => acc + ((p as any).items?.length || 0), 0);
-  const impactSummary: ImpactDashboardData = {
-    total_items: totalItems,
-    items_by_type: {
-      create: proposals.reduce((acc, p) => acc + ((p as any).items?.filter((i: any) => i.action === 'create').length || 0), 0),
-      update: proposals.reduce((acc, p) => acc + ((p as any).items?.filter((i: any) => i.action === 'update').length || 0), 0),
-      delete: proposals.reduce((acc, p) => acc + ((p as any).items?.filter((i: any) => i.action === 'delete').length || 0), 0),
-    },
-    items_by_status: {
-      pending: stats.pending,
-      approved: stats.approved,
-      rejected: proposals.filter(p => p.status === 'rejected').length,
-    },
-    entities_affected: {
-      tasks: totalItems,
-      projects: proposals.length > 0 ? 1 : 0,
-      milestones: 0,
-    },
-    hours: {
-      added: 0,
-      removed: 0,
-      net: 0,
-    },
-    workloadShifts: [],
-    deadlineImpacts: [],
-    resourceConflicts: [],
-    riskScore: 0,
-  }
-
   if (isLoading) {
     return (
       <PageShell maxWidth="6xl">
@@ -266,7 +236,6 @@ export default function ProposalsPage() {
 
         <ProposalDetailView
           proposalId={selectedProposal.id}
-          onClose={() => setSelectedProposal(null)}
           onMerge={() => handleMerge(selectedProposal.id)}
         />
       </PageShell>
@@ -280,27 +249,12 @@ export default function ProposalsPage() {
         title="Task Proposals"
         subtitle={stats.pending > 0 ? `${stats.pending} pending review` : 'AI-proposed task and workload changes'}
         primaryAction={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="gap-2"
-            >
-              <Mic className="h-4 w-4" />
-              Record
-            </Button>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Proposal
-            </Button>
-          </div>
+          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Proposal
+          </Button>
         }
       />
-
-      {/* Impact Dashboard */}
-      <div className="mb-6">
-        <ImpactDashboard impact={impactSummary} className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20" />
-      </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">

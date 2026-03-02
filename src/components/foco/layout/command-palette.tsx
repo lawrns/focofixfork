@@ -52,7 +52,7 @@ export function CommandPalette() {
     { id: 'nav-dispatch', label: 'Go to Dispatch', icon: Send, shortcut: 'G D', group: 'Navigation', action: () => router.push('/openclaw'), keywords: ['agent', 'openclaw', 'mission control'] },
     { id: 'nav-intel', label: 'Go to Intel Feed', icon: Rss, shortcut: 'G I', group: 'Navigation', action: () => router.push('/clawdbot'), keywords: ['intel', 'feed'] },
     { id: 'nav-runs', label: 'Go to Runs', icon: Activity, shortcut: 'G R', group: 'Navigation', action: () => router.push('/runs'), keywords: ['executions', 'history'] },
-    { id: 'nav-ledger', label: 'Go to Ledger', icon: BookOpen, shortcut: 'G L', group: 'Navigation', action: () => router.push('/ledger'), keywords: ['events', 'log'] },
+    { id: 'nav-ledger', label: 'Go to Audit Log', icon: BookOpen, shortcut: 'G L', group: 'Navigation', action: () => router.push('/ledger'), keywords: ['events', 'log', 'ledger'] },
     { id: 'nav-crons', label: 'Go to Crons', icon: Clock, shortcut: 'G K', group: 'Navigation', action: () => router.push('/crons'), keywords: ['scheduler', 'jobs'] },
     { id: 'nav-emails', label: 'Go to Emails', icon: Mail, shortcut: 'G E', group: 'Navigation', action: () => router.push('/emails'), keywords: ['outbox', 'messages'] },
     { id: 'nav-artifacts', label: 'Go to Artifacts', icon: FileBox, shortcut: 'G A', group: 'Navigation', action: () => router.push('/artifacts'), keywords: ['files'] },

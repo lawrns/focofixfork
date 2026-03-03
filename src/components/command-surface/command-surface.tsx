@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,14 @@ type ExecutionPolicy = {
   mode: 'auto' | 'semi_auto';
   confidenceMinForAuto: number;
   requireApprovalForChanges: boolean;
+};
+
+type ProjectBriefDraft = {
+  name: string;
+  goal: string;
+  scope: string;
+  timeline: string;
+  owner: string;
 };
 
 const MODE_CONFIG: Record<CommandMode, { label: string; icon: React.ReactNode; color: string; description: string }> = {
@@ -105,13 +114,22 @@ export function CommandSurface({
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<CTODecision | COODecision | null>(null);
   const [pendingPlan, setPendingPlan] = useState<ReturnType<typeof analyzePrompt>['plan'] | null>(null);
+  const [projectBriefOpen, setProjectBriefOpen] = useState(false);
+  const [projectBriefPrompt, setProjectBriefPrompt] = useState('');
+  const [projectBrief, setProjectBrief] = useState<ProjectBriefDraft>({
+    name: '',
+    goal: '',
+    scope: '',
+    timeline: '',
+    owner: '',
+  });
   const [executionPolicy, setExecutionPolicy] = useState<ExecutionPolicy>({
     mode: 'auto',
     confidenceMinForAuto: 0.75,
     requireApprovalForChanges: false,
   });
 
-  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, history } = useCommandPipeline();
+  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history } = useCommandPipeline();
 
   const [runningCount, setRunningCount] = useState(0)
   useEffect(() => {
@@ -162,7 +180,16 @@ export function CommandSurface({
     return extractOutcome(execution.plan.steps);
   }, [execution]);
 
-  const handleSubmitText = useCallback(async (text: string) => {
+  const shouldAskProjectBrief = useCallback((text: string) => {
+    const trimmed = text.trim();
+    const isProjectIntent = /\b(create|new|start|launch)\s+project\b/i.test(trimmed) || /\bproject called\b/i.test(trimmed);
+    if (!isProjectIntent) return false;
+    const hasNameSignal = /\b(project called|project named)\b/i.test(trimmed) || /["'].+["']/.test(trimmed);
+    const isBarePrompt = /^(create|new|start|launch)\s+(a\s+)?project$/i.test(trimmed) || trimmed.split(/\s+/).length <= 5;
+    return !hasNameSignal || isBarePrompt;
+  }, []);
+
+  const handleSubmitText = useCallback(async (text: string, options?: { skipBrief?: boolean }) => {
     if (!text.trim() || isProcessing) return;
 
     clearExecution();
@@ -173,6 +200,23 @@ export function CommandSurface({
 
     if (analysis.injectionDetected) {
       toast.error('Input rejected: potentially unsafe content detected');
+      return;
+    }
+
+    if (!options?.skipBrief && analysis.plan.intent === 'create_project' && shouldAskProjectBrief(text)) {
+      const suggestedName =
+        analysis.decision && 'projects' in analysis.decision && analysis.decision.projects?.[0]?.name
+          ? analysis.decision.projects[0].name
+          : '';
+      setProjectBrief({
+        name: suggestedName && suggestedName !== 'New Project' ? suggestedName : '',
+        goal: '',
+        scope: '',
+        timeline: '',
+        owner: '',
+      });
+      setProjectBriefPrompt(text);
+      setProjectBriefOpen(true);
       return;
     }
 
@@ -211,7 +255,7 @@ export function CommandSurface({
 
     onExecutionComplete?.(result);
     setPrompt('');
-  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router]);
+  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router, shouldAskProjectBrief]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,6 +288,24 @@ export function CommandSurface({
     setPendingPlan(null);
     toast.info('Decision rejected');
   }, []);
+
+  const handleProjectBriefSubmit = useCallback(async () => {
+    if (!projectBrief.name.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    const enriched = [
+      `Create project called "${projectBrief.name.trim()}".`,
+      projectBrief.goal.trim() ? `Goal: ${projectBrief.goal.trim()}.` : '',
+      projectBrief.scope.trim() ? `Scope: ${projectBrief.scope.trim()}.` : '',
+      projectBrief.timeline.trim() ? `Timeline: ${projectBrief.timeline.trim()}.` : '',
+      projectBrief.owner.trim() ? `Owner: ${projectBrief.owner.trim()}.` : '',
+      `Original request: ${projectBriefPrompt.trim()}`,
+    ].filter(Boolean).join(' ');
+
+    setProjectBriefOpen(false);
+    await handleSubmitText(enriched, { skipBrief: true });
+  }, [handleSubmitText, projectBrief, projectBriefPrompt]);
 
   const currentMode = MODE_CONFIG[mode];
 
@@ -307,6 +369,60 @@ export function CommandSurface({
         </div>
 
         {/* Decision Preview */}
+        {projectBriefOpen && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 space-y-3 dark:border-amber-800 dark:bg-amber-950/20">
+            <div>
+              <p className="text-sm font-semibold">Before I create this project, define the brief</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This keeps creation actionable instead of generating a generic implementation plan.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Input
+                placeholder="Project name"
+                value={projectBrief.name}
+                onChange={(e) => setProjectBrief(prev => ({ ...prev, name: e.target.value }))}
+              />
+              <Textarea
+                placeholder="Primary goal (what success looks like)"
+                value={projectBrief.goal}
+                onChange={(e) => setProjectBrief(prev => ({ ...prev, goal: e.target.value }))}
+                rows={2}
+              />
+              <Textarea
+                placeholder="Scope (key deliverables, constraints)"
+                value={projectBrief.scope}
+                onChange={(e) => setProjectBrief(prev => ({ ...prev, scope: e.target.value }))}
+                rows={2}
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Input
+                  placeholder="Timeline (e.g. 2 weeks)"
+                  value={projectBrief.timeline}
+                  onChange={(e) => setProjectBrief(prev => ({ ...prev, timeline: e.target.value }))}
+                />
+                <Input
+                  placeholder="Owner"
+                  value={projectBrief.owner}
+                  onChange={(e) => setProjectBrief(prev => ({ ...prev, owner: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setProjectBriefOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleProjectBriefSubmit}>
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+
         {pendingDecision && (
           <DecisionPreview
             decision={pendingDecision}
@@ -455,6 +571,15 @@ export function CommandSurface({
                 <Send className="h-4 w-4" />
               )}
             </Button>
+            {isProcessing && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={cancelExecution}
+              >
+                Stop
+              </Button>
+            )}
           </form>
         )}
 

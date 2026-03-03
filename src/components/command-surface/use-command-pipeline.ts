@@ -340,6 +340,8 @@ export function useCommandPipeline() {
   const [history, setHistory] = useState<CommandHistoryItem[]>([]);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelRequestedRef = useRef(false);
 
   const persistHistory = useCallback((items: CommandHistoryItem[]) => {
     if (typeof window === 'undefined') return;
@@ -391,7 +393,7 @@ export function useCommandPipeline() {
 
   const finalizeCommandRun = useCallback(async (
     runId: string | undefined,
-    status: 'completed' | 'failed',
+    status: 'completed' | 'failed' | 'cancelled',
     summary?: string,
   ) => {
     if (!runId) return;
@@ -410,12 +412,33 @@ export function useCommandPipeline() {
   }, []);
 
   const clearExecution = useCallback(() => {
+    cancelRequestedRef.current = false;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
     setExecution(null);
     setStreamingText('');
+  }, []);
+
+  const cancelExecution = useCallback(() => {
+    cancelRequestedRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsProcessing(false);
+    setExecution(prev => prev ? {
+      ...prev,
+      status: 'failed',
+      error: 'Cancelled by user',
+      updatedAt: new Date(),
+    } : prev);
+    setStreamingText(prev => prev ? `${prev}\n\n[Stopped by user]` : '[Stopped by user]');
   }, []);
 
   // Clear poll interval on unmount
@@ -894,6 +917,7 @@ export function useCommandPipeline() {
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
     setStreamingText('');
+    cancelRequestedRef.current = false;
 
     const historyId = options?.historyId ?? uuidv4();
     const now = new Date().toISOString();
@@ -927,6 +951,23 @@ export function useCommandPipeline() {
 
     // Execute each step
     for (let i = 0; i < plan.steps.length; i++) {
+      if (cancelRequestedRef.current) {
+        execution.status = 'failed';
+        execution.error = 'Cancelled by user';
+        setExecution({ ...execution });
+        const cancelledItem: CommandHistoryItem = {
+          ...historyBase,
+          status: 'failed',
+          error: 'Cancelled by user',
+          outputPreview: 'Stopped by user',
+          updatedAt: new Date().toISOString(),
+        };
+        upsertHistoryItem(cancelledItem);
+        logHistoryEvent(cancelledItem);
+        await finalizeCommandRun(bootstrapRunId, 'cancelled', 'Stopped by user');
+        setIsProcessing(false);
+        return execution;
+      }
       const step = plan.steps[i];
       execution.currentStepIndex = i;
       step.status = 'in_progress';
@@ -1007,6 +1048,7 @@ export function useCommandPipeline() {
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
     setStreamingText('');
+    cancelRequestedRef.current = false;
 
     // Build a minimal execution shell so the UI renders immediately
     const { intent, confidence } = detectIntent(prompt);
@@ -1042,10 +1084,13 @@ export function useCommandPipeline() {
     setExecution({ ...exec });
 
     try {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       const res = await fetch('/api/command-surface/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, mode }),
+        signal: controller.signal,
       });
 
       // Non-SSE response means ClawdBot is down or auth failed
@@ -1145,6 +1190,7 @@ export function useCommandPipeline() {
       exec.status = 'completed';
       exec.updatedAt = new Date();
       setExecution({ ...exec });
+      abortControllerRef.current = null;
       const completedItem: CommandHistoryItem = {
         ...historyBase,
         status: 'completed',
@@ -1159,19 +1205,25 @@ export function useCommandPipeline() {
 
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      const cancelled = err instanceof Error && err.name === 'AbortError';
       exec.status = 'failed';
-      exec.error = message;
+      exec.error = cancelled ? 'Cancelled by user' : message;
       setExecution({ ...exec });
       const failedItem: CommandHistoryItem = {
         ...historyBase,
         status: 'failed',
-        error: message,
-        outputPreview: summarizeOutput(message),
+        error: cancelled ? 'Cancelled by user' : message,
+        outputPreview: summarizeOutput(cancelled ? 'Stopped by user' : message),
         updatedAt: new Date().toISOString(),
       };
       upsertHistoryItem(failedItem);
       logHistoryEvent(failedItem);
-      await finalizeCommandRun(runId, 'failed', summarizeOutput(message));
+      await finalizeCommandRun(
+        runId,
+        cancelled ? 'cancelled' : 'failed',
+        summarizeOutput(cancelled ? 'Stopped by user' : message),
+      );
+      abortControllerRef.current = null;
       setIsProcessing(false);
       return exec;
     }
@@ -1185,6 +1237,7 @@ export function useCommandPipeline() {
     executeCommand,
     submitPrompt,
     clearExecution,
+    cancelExecution,
     history,
   };
 }

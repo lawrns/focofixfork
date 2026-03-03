@@ -35,13 +35,23 @@ export async function POST(req: NextRequest) {
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const body = await req.json()
-  const { runner, task_id, status } = body
+  const { runner, task_id, status, summary, project_id } = body
 
   if (!runner) return NextResponse.json({ error: 'runner required' }, { status: 400 })
 
+  const initialStatus = status ?? 'pending'
+  const startedAt = initialStatus === 'running' ? new Date().toISOString() : null
+
   const { data, error: dbError } = await supabase
     .from('runs')
-    .insert({ runner, task_id: task_id ?? null, status: status ?? 'pending' })
+    .insert({
+      runner,
+      task_id: task_id ?? null,
+      project_id: project_id ?? null,
+      summary: summary ?? null,
+      status: initialStatus,
+      started_at: startedAt,
+    })
     .select()
     .single()
 

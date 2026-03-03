@@ -111,7 +111,7 @@ export function CommandSurface({
     requireApprovalForChanges: false,
   });
 
-  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution } = useCommandPipeline();
+  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, history } = useCommandPipeline();
 
   const [runningCount, setRunningCount] = useState(0)
   useEffect(() => {
@@ -385,6 +385,41 @@ export function CommandSurface({
             onViewRun={() => router.push(`/runs/${execution.agentTracker!.runId}`)}
             onDismiss={clearExecution}
           />
+        )}
+
+        {/* Persistent command history */}
+        {history.length > 0 && (
+          <div className="rounded-md border border-border/50 bg-muted/20 p-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Recent Actions
+            </p>
+            <div className="space-y-2">
+              {history.slice(0, 5).map((item) => (
+                <div key={item.id} className="flex items-start gap-2 text-xs">
+                  <span className={cn(
+                    'mt-0.5 h-1.5 w-1.5 rounded-full',
+                    item.status === 'completed' && 'bg-emerald-400',
+                    item.status === 'failed' && 'bg-rose-400',
+                    item.status === 'running' && 'bg-amber-400'
+                  )} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-foreground/90">{item.prompt}</p>
+                    <p className="truncate text-muted-foreground/80">
+                      {item.outputPreview || (item.status === 'running' ? 'Running...' : 'No output')}
+                    </p>
+                  </div>
+                  {item.runId && (
+                    <button
+                      className="text-teal-400 hover:underline"
+                      onClick={() => router.push(`/runs/${item.runId}`)}
+                    >
+                      Run
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Input Form - or Quick Capture in intake mode */}

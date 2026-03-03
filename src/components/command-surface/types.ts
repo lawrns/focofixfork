@@ -63,6 +63,20 @@ export type CommandExecution = {
   agentTracker?: AgentTrackerState;
 };
 
+export type CommandHistoryItem = {
+  id: string;
+  prompt: string;
+  mode: CommandMode;
+  intent: IntentType;
+  confidence: number;
+  status: 'running' | 'completed' | 'failed';
+  outputPreview?: string;
+  error?: string;
+  runId?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type CommandSurfaceProps = {
   context?: 'dashboard' | 'projects' | 'task' | 'crons' | 'emails' | 'decision-queue';
   contextId?: string;

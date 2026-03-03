@@ -29,10 +29,20 @@ export function BossBar({ className }: BossBarProps) {
   const [relayConnected, setRelayConnected] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
   const [openclawStatus, setOpenclawStatus] = useState<OpenClawStatus | null>(null)
+  const [apiAvailability, setApiAvailability] = useState({
+    fleet: true,
+    ledger: true,
+    openclaw: true,
+  })
 
   const pollFleetStatus = useCallback(async () => {
+    if (!apiAvailability.fleet) return
     try {
       const res = await fetch('/api/policies/fleet-status')
+      if (res.status === 404) {
+        setApiAvailability(prev => ({ ...prev, fleet: false }))
+        return
+      }
       if (res.ok) {
         const json = await res.json()
         if (typeof json.paused === 'boolean') setPaused(json.paused)
@@ -40,11 +50,17 @@ export function BossBar({ className }: BossBarProps) {
     } catch {
       // ignore
     }
-  }, [])
+  }, [apiAvailability.fleet])
 
   const pollEvents = useCallback(async () => {
+    if (!apiAvailability.ledger) return
     try {
       const res = await fetch('/api/ledger?limit=5')
+      if (res.status === 404) {
+        setApiAvailability(prev => ({ ...prev, ledger: false }))
+        setRelayConnected(false)
+        return
+      }
       if (res.ok) {
         const json = await res.json()
         setRecentEvents(json.data ?? [])
@@ -56,11 +72,16 @@ export function BossBar({ className }: BossBarProps) {
     } catch {
       setRelayConnected(false)
     }
-  }, [])
+  }, [apiAvailability.ledger])
 
   const pollOpenClaw = useCallback(async () => {
+    if (!apiAvailability.openclaw) return
     try {
       const res = await fetch('/api/openclaw/status')
+      if (res.status === 404) {
+        setApiAvailability(prev => ({ ...prev, openclaw: false }))
+        return
+      }
       if (res.ok) {
         const json = await res.json()
         setOpenclawStatus(json)
@@ -68,21 +89,21 @@ export function BossBar({ className }: BossBarProps) {
     } catch {
       // ignore — OpenClaw is optional
     }
-  }, [])
+  }, [apiAvailability.openclaw])
 
   useEffect(() => {
     pollFleetStatus()
     pollEvents()
     pollOpenClaw()
-    const fleetInterval = setInterval(pollFleetStatus, 30_000)
-    const ledgerInterval = setInterval(pollEvents, 15_000)
-    const openclawInterval = setInterval(pollOpenClaw, 5_000)
+    const fleetInterval = apiAvailability.fleet ? setInterval(pollFleetStatus, 30_000) : null
+    const ledgerInterval = apiAvailability.ledger ? setInterval(pollEvents, 15_000) : null
+    const openclawInterval = apiAvailability.openclaw ? setInterval(pollOpenClaw, 5_000) : null
     return () => {
-      clearInterval(fleetInterval)
-      clearInterval(ledgerInterval)
-      clearInterval(openclawInterval)
+      if (fleetInterval) clearInterval(fleetInterval)
+      if (ledgerInterval) clearInterval(ledgerInterval)
+      if (openclawInterval) clearInterval(openclawInterval)
     }
-  }, [pollFleetStatus, pollEvents, pollOpenClaw])
+  }, [apiAvailability, pollFleetStatus, pollEvents, pollOpenClaw])
 
   async function toggleFleet() {
     const action = paused ? 'resume' : 'pause'

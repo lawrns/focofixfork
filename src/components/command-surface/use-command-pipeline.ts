@@ -11,7 +11,8 @@ import type {
   CommandExecution,
   AgentTrackerState,
   CTODecision,
-  COODecision
+  COODecision,
+  CommandHistoryItem
 } from './types';
 import { scanPrompt } from '@/lib/ai/prompt-guard';
 
@@ -324,11 +325,89 @@ function parseProjectIntent(prompt: string): { name: string; description: string
   };
 }
 
+const HISTORY_STORAGE_KEY = 'command_surface_history_v1';
+
+function summarizeOutput(text: string): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return '';
+  return compact.length > 180 ? `${compact.slice(0, 177)}...` : compact;
+}
+
 export function useCommandPipeline() {
   const [execution, setExecution] = useState<CommandExecution | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+  const [history, setHistory] = useState<CommandHistoryItem[]>([]);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
+
+  const persistHistory = useCallback((items: CommandHistoryItem[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore storage issues
+    }
+  }, []);
+
+  const upsertHistoryItem = useCallback((item: CommandHistoryItem) => {
+    setHistory(prev => {
+      const next = [item, ...prev.filter(h => h.id !== item.id)].slice(0, 50);
+      persistHistory(next);
+      return next;
+    });
+  }, [persistHistory]);
+
+  const logHistoryEvent = useCallback(async (item: CommandHistoryItem) => {
+    try {
+      await fetch('/api/command-surface/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+    } catch {
+      // History telemetry should never break execution
+    }
+  }, []);
+
+  const createCommandRun = useCallback(async (prompt: string, mode: CommandMode): Promise<string | undefined> => {
+    try {
+      const res = await fetch('/api/runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runner: 'command-surface',
+          status: 'running',
+          summary: `[${mode.toUpperCase()}] ${prompt.slice(0, 140)}`,
+        }),
+      });
+      if (!res.ok) return undefined;
+      const json = await res.json();
+      return json?.data?.id;
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const finalizeCommandRun = useCallback(async (
+    runId: string | undefined,
+    status: 'completed' | 'failed',
+    summary?: string,
+  ) => {
+    if (!runId) return;
+    try {
+      await fetch(`/api/runs/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          summary,
+        }),
+      });
+    } catch {
+      // Non-fatal
+    }
+  }, []);
 
   const clearExecution = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -342,12 +421,50 @@ export function useCommandPipeline() {
   // Clear poll interval on unmount
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CommandHistoryItem[];
+        if (Array.isArray(parsed)) {
+          setHistory(parsed.slice(0, 25));
+        }
+      }
+    } catch {
+      // ignore invalid storage payload
+    }
+
+    const hydrateFromServer = async () => {
+      try {
+        const res = await fetch('/api/command-surface/history?limit=25');
+        if (!res.ok) return;
+        const json = await res.json();
+        const items = Array.isArray(json?.data) ? json.data as CommandHistoryItem[] : [];
+        if (!mountedRef.current || items.length === 0) return;
+        setHistory(prev => {
+          const merged = [...items, ...prev]
+            .filter((item, idx, arr) => arr.findIndex(i => i.id === item.id) === idx)
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            .slice(0, 50);
+          persistHistory(merged);
+          return merged;
+        });
+      } catch {
+        // keep local cache
+      }
+    };
+
+    hydrateFromServer();
+  }, [persistHistory]);
 
   const startRunTracking = useCallback((runId: string) => {
     // Initialise the tracker on the current execution
@@ -428,8 +545,9 @@ export function useCommandPipeline() {
     }
 
     const { intent, confidence } = detectIntent(prompt);
-    const mode = defaultMode === 'auto' || !defaultMode ? determineMode(intent, prompt) : defaultMode;
-    const plan = generatePlan(intent, mode, prompt);
+    let mode = defaultMode === 'auto' || !defaultMode ? determineMode(intent, prompt) : defaultMode;
+    let plannedIntent: IntentType = intent;
+    let plan = generatePlan(plannedIntent, mode, prompt);
 
     let decision: CTODecision | COODecision | undefined;
 
@@ -503,6 +621,34 @@ export function useCommandPipeline() {
             status: 'pending'
           };
         }
+      }
+    }
+
+    // Fallback action-first behavior:
+    // if no explicit decision was produced, convert input into an actionable task + run.
+    if (!decision && guard.safe) {
+      const taskInfo = parseTaskIntent(prompt);
+      if (taskInfo) {
+        mode = defaultMode === 'auto' || !defaultMode ? 'cto' : mode;
+        plannedIntent = 'create_task';
+        plan = generatePlan(plannedIntent, mode, prompt);
+        decision = {
+          id: uuidv4(),
+          type: 'implementation',
+          title: taskInfo.title,
+          description: taskInfo.description || `Action generated from prompt: "${prompt}"`,
+          tasks: [{
+            title: taskInfo.title,
+            description: taskInfo.description,
+            priority: taskInfo.priority,
+            estimatedHours: taskInfo.priority === 'urgent' ? 2 : taskInfo.priority === 'high' ? 4 : 8,
+          }],
+          runs: [{
+            runner: 'openclaw',
+            task: `Execute action plan for: ${taskInfo.title}`,
+          }],
+          status: 'pending',
+        };
       }
     }
 
@@ -743,9 +889,28 @@ export function useCommandPipeline() {
     prompt: string, 
     mode: CommandMode,
     plan: CommandPlan,
-    decision?: CTODecision | COODecision
+    decision?: CTODecision | COODecision,
+    options?: { historyId?: string; existingRunId?: string }
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
+    setStreamingText('');
+
+    const historyId = options?.historyId ?? uuidv4();
+    const now = new Date().toISOString();
+    const bootstrapRunId = options?.existingRunId ?? await createCommandRun(prompt, mode);
+    const historyBase: CommandHistoryItem = {
+      id: historyId,
+      prompt,
+      mode,
+      intent: plan.intent,
+      confidence: plan.confidence,
+      status: 'running',
+      runId: bootstrapRunId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    upsertHistoryItem(historyBase);
+    logHistoryEvent(historyBase);
     
     const execution: CommandExecution = {
       id: uuidv4(),
@@ -778,6 +943,16 @@ export function useCommandPipeline() {
         execution.status = 'failed';
         execution.error = result.error;
         setExecution({ ...execution });
+        const failedItem: CommandHistoryItem = {
+          ...historyBase,
+          status: 'failed',
+          error: result.error,
+          outputPreview: result.error,
+          updatedAt: new Date().toISOString(),
+        };
+        upsertHistoryItem(failedItem);
+        logHistoryEvent(failedItem);
+        await finalizeCommandRun(bootstrapRunId, 'failed', summarizeOutput(result.error ?? 'Execution failed'));
         setIsProcessing(false);
         return execution;
       }
@@ -801,8 +976,21 @@ export function useCommandPipeline() {
       }
     }
 
+    const completionRunId =
+      (runStep?.result && (runStep.result as { runId?: string }).runId) || bootstrapRunId;
+    const completedItem: CommandHistoryItem = {
+      ...historyBase,
+      status: 'completed',
+      runId: completionRunId,
+      outputPreview: summarizeOutput(`Completed ${plan.steps.filter(s => s.status === 'completed').length} steps`),
+      updatedAt: new Date().toISOString(),
+    };
+    upsertHistoryItem(completedItem);
+    logHistoryEvent(completedItem);
+    await finalizeCommandRun(completionRunId, 'completed', summarizeOutput(completedItem.outputPreview ?? 'Completed'));
+
     return execution;
-  }, [executeStep, startRunTracking]);
+  }, [createCommandRun, executeStep, finalizeCommandRun, logHistoryEvent, startRunTracking, upsertHistoryItem]);
 
   /**
    * submitPrompt — streaming-first command execution.
@@ -824,6 +1012,22 @@ export function useCommandPipeline() {
     const { intent, confidence } = detectIntent(prompt);
     const resolvedMode = mode === 'auto' ? determineMode(intent, prompt) : mode;
     const plan = generatePlan(intent, resolvedMode, prompt);
+    const historyId = uuidv4();
+    const runId = await createCommandRun(prompt, resolvedMode);
+    const startedAt = new Date().toISOString();
+    const historyBase: CommandHistoryItem = {
+      id: historyId,
+      prompt,
+      mode: resolvedMode,
+      intent,
+      confidence,
+      status: 'running',
+      runId,
+      createdAt: startedAt,
+      updatedAt: startedAt,
+    };
+    upsertHistoryItem(historyBase);
+    logHistoryEvent(historyBase);
 
     const exec: CommandExecution = {
       id: uuidv4(),
@@ -856,7 +1060,10 @@ export function useCommandPipeline() {
         // Retry with the local step engine for transient service outages.
         if (res.status >= 500) {
           setStreamingText(`Agent stream unavailable (${errorMsg}). Running local fallback workflow...`);
-          const fallback = await executeCommand(prompt, resolvedMode, plan, decision);
+          const fallback = await executeCommand(prompt, resolvedMode, plan, decision, {
+            historyId,
+            existingRunId: runId,
+          });
           if (fallback.status === 'failed') {
             fallback.error = `Agent stream unavailable: ${errorMsg}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
           }
@@ -866,6 +1073,16 @@ export function useCommandPipeline() {
         exec.status = 'failed';
         exec.error = errorMsg;
         setExecution({ ...exec });
+        const failedItem: CommandHistoryItem = {
+          ...historyBase,
+          status: 'failed',
+          error: errorMsg,
+          outputPreview: summarizeOutput(errorMsg),
+          updatedAt: new Date().toISOString(),
+        };
+        upsertHistoryItem(failedItem);
+        logHistoryEvent(failedItem);
+        await finalizeCommandRun(runId, 'failed', summarizeOutput(errorMsg));
         setIsProcessing(false);
         return exec;
       }
@@ -875,6 +1092,7 @@ export function useCommandPipeline() {
       const decoder = new TextDecoder();
       let buffer = '';
       let accumulated = '';
+      let degradedStatus: number | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -893,6 +1111,9 @@ export function useCommandPipeline() {
               accumulated += event.text;
               setStreamingText(accumulated);
             } else if (event.type === 'done') {
+              if (event.degraded === true && typeof event.status === 'number') {
+                degradedStatus = event.status;
+              }
               // ClawdBot may send final full output in done event
               if (typeof event.output === 'string' && event.output.length > accumulated.length) {
                 accumulated = event.output;
@@ -909,9 +1130,30 @@ export function useCommandPipeline() {
         }
       }
 
+      if (degradedStatus !== null && degradedStatus >= 400) {
+        setStreamingText(`Agent stream degraded (HTTP ${degradedStatus}). Running local fallback workflow...`);
+        const fallback = await executeCommand(prompt, resolvedMode, plan, decision, {
+          historyId,
+          existingRunId: runId,
+        });
+        if (fallback.status === 'failed') {
+          fallback.error = `Agent stream degraded: HTTP ${degradedStatus}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
+        }
+        return fallback;
+      }
+
       exec.status = 'completed';
       exec.updatedAt = new Date();
       setExecution({ ...exec });
+      const completedItem: CommandHistoryItem = {
+        ...historyBase,
+        status: 'completed',
+        outputPreview: summarizeOutput(accumulated),
+        updatedAt: new Date().toISOString(),
+      };
+      upsertHistoryItem(completedItem);
+      logHistoryEvent(completedItem);
+      await finalizeCommandRun(runId, 'completed', summarizeOutput(accumulated));
       setIsProcessing(false);
       return exec;
 
@@ -920,10 +1162,20 @@ export function useCommandPipeline() {
       exec.status = 'failed';
       exec.error = message;
       setExecution({ ...exec });
+      const failedItem: CommandHistoryItem = {
+        ...historyBase,
+        status: 'failed',
+        error: message,
+        outputPreview: summarizeOutput(message),
+        updatedAt: new Date().toISOString(),
+      };
+      upsertHistoryItem(failedItem);
+      logHistoryEvent(failedItem);
+      await finalizeCommandRun(runId, 'failed', summarizeOutput(message));
       setIsProcessing(false);
       return exec;
     }
-  }, [executeCommand]);
+  }, [createCommandRun, executeCommand, finalizeCommandRun, logHistoryEvent, upsertHistoryItem]);
 
   return {
     execution,
@@ -932,6 +1184,7 @@ export function useCommandPipeline() {
     analyzePrompt,
     executeCommand,
     submitPrompt,
-    clearExecution
+    clearExecution,
+    history,
   };
 }

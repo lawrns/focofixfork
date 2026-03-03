@@ -29,11 +29,21 @@ export async function PATCH(
   const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  const { status, policy_decision } = await req.json()
+  const { status, summary, policy_decision } = await req.json()
+  const now = new Date().toISOString()
+  const terminal = status === 'completed' || status === 'failed' || status === 'cancelled'
+  const startedAt = status === 'running' ? now : undefined
+  const endedAt = terminal ? now : undefined
 
   const { data, error: dbError } = await supabase
     .from('runs')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({
+      ...(status ? { status } : {}),
+      ...(typeof summary === 'string' ? { summary } : {}),
+      ...(startedAt ? { started_at: startedAt } : {}),
+      ...(endedAt ? { ended_at: endedAt } : {}),
+      updated_at: now,
+    })
     .eq('id', params.id)
     .select()
     .single()

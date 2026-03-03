@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TopBar } from '../top-bar';
 import { useCommandPaletteStore } from '@/lib/stores/foco-store';
@@ -24,10 +24,12 @@ vi.mock('next-themes', () => ({
 }));
 
 // Mock next/navigation
+const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({
-    push: vi.fn(),
+    push: mockPush,
   })),
+  usePathname: vi.fn(() => '/dashboard'),
 }));
 
 // Mock use-auth hook
@@ -37,6 +39,13 @@ vi.mock('@/lib/hooks/use-auth', () => ({
       email: 'test@example.com',
       user_metadata: { full_name: 'Test User' },
     },
+  })),
+}));
+
+const mockOpenTaskModal = vi.fn();
+vi.mock('@/features/tasks', () => ({
+  useCreateTaskModal: vi.fn(() => ({
+    openTaskModal: mockOpenTaskModal,
   })),
 }));
 
@@ -74,67 +83,51 @@ describe('TopBar Create Dropdown', () => {
     ) as any;
   });
 
-  it('calls openCommandPalette with "create-project" when Project button is clicked', async () => {
+  it('routes to create initiative when Initiative is clicked', async () => {
     const user = userEvent.setup();
     render(<TopBar />);
 
-    // Open the Create dropdown
-    const createButton = screen.getByRole('button', { name: /create/i });
+    const createButton = screen.getByRole('button', { name: /new action/i });
     await user.click(createButton);
 
-    // Click the Project menu item
-    const projectMenuItem = await screen.findByText('Project');
-    await user.click(projectMenuItem);
-
-    // Verify the command palette was opened with correct mode
-    expect(mockOpen).toHaveBeenCalledWith('create-project');
+    const item = await screen.findByText('Initiative');
+    await user.click(item);
+    expect(mockPush).toHaveBeenCalledWith('/projects?create=true');
   });
 
-  it('calls openCommandPalette with "create-doc" when Doc button is clicked', async () => {
+  it('routes to create playbook note when Playbook Note is clicked', async () => {
     const user = userEvent.setup();
     render(<TopBar />);
 
-    // Open the Create dropdown
-    const createButton = screen.getByRole('button', { name: /create/i });
+    const createButton = screen.getByRole('button', { name: /new action/i });
     await user.click(createButton);
 
-    // Click the Doc menu item
-    const docMenuItem = await screen.findByText('Doc');
-    await user.click(docMenuItem);
-
-    // Verify the command palette was opened with correct mode
-    expect(mockOpen).toHaveBeenCalledWith('create-doc');
+    const item = await screen.findByText('Playbook Note');
+    await user.click(item);
+    expect(mockPush).toHaveBeenCalledWith('/docs?create=true');
   });
 
-  it('calls openCommandPalette with "import" when Import button is clicked', async () => {
+  it('routes to import when Import Data is clicked', async () => {
     const user = userEvent.setup();
     render(<TopBar />);
 
-    // Open the Create dropdown
-    const createButton = screen.getByRole('button', { name: /create/i });
+    const createButton = screen.getByRole('button', { name: /new action/i });
     await user.click(createButton);
 
-    // Click the Import menu item
-    const importMenuItem = await screen.findByText('Import...');
-    await user.click(importMenuItem);
-
-    // Verify the command palette was opened with correct mode
-    expect(mockOpen).toHaveBeenCalledWith('import');
+    const item = await screen.findByText('Import Data...');
+    await user.click(item);
+    expect(mockPush).toHaveBeenCalledWith('/projects?import=true');
   });
 
-  it('already has onClick handler for Task button (existing functionality)', async () => {
+  it('opens task modal when Execution Task is clicked', async () => {
     const user = userEvent.setup();
     render(<TopBar />);
 
-    // Open the Create dropdown
-    const createButton = screen.getByRole('button', { name: /create/i });
+    const createButton = screen.getByRole('button', { name: /new action/i });
     await user.click(createButton);
 
-    // Click the Task menu item
-    const taskMenuItem = await screen.findByText('Task');
-    await user.click(taskMenuItem);
-
-    // Verify the command palette was opened with 'create' mode (existing)
-    expect(mockOpen).toHaveBeenCalledWith('create');
+    const item = await screen.findByText('Execution Task');
+    await user.click(item);
+    expect(mockOpenTaskModal).toHaveBeenCalledTimes(1);
   });
 });

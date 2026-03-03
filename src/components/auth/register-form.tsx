@@ -281,7 +281,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
             name="email"
             type="email"
             inputMode="email"
-            placeholder="name@company.com"
+            placeholder="correo@empresa.com"
             value={formData.email}
             onChange={handleInputChange}
             required
@@ -335,7 +335,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
               Creating account...
             </>
           ) : (
-            'Create account'
+            'Create account / Crear cuenta'
           )}
         </Button>
       </form>
@@ -390,5 +390,4 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
     </div>
   )
 }
-
 

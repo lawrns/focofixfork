@@ -48,38 +48,38 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Dashboard',      href: '/dashboard', icon: Home,     shortcut: 'G H' },
-  { label: 'Intel Feed',     href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
-  { label: 'My Tasks',        href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
-  { label: 'Runs',            href: '/runs',      icon: Activity, shortcut: 'G R' },
-  { label: 'Audit Log',       href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
+  { label: 'Revenue Dashboard', href: '/dashboard', icon: Home,     shortcut: 'G H' },
+  { label: 'Market Signals',    href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
+  { label: 'Execution Board',   href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
+  { label: 'Agent Runs',        href: '/runs',      icon: Activity, shortcut: 'G R' },
+  { label: 'Trust Ledger',      href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Empire OS',       href: '/empire',            icon: Crown,     shortcut: 'G M' },
-  { label: 'Command Center',  href: '/empire/command',    icon: Cpu,       shortcut: 'G C' },
-  { label: 'Agents',          href: '/empire/agents',     icon: Bot,       shortcut: 'G J' },
-  { label: 'Orchestration',   href: '/empire/orchestration', icon: GitBranch, shortcut: 'G X' },
-  { label: 'Pipeline',        href: '/empire/pipeline',   icon: GitBranch, shortcut: 'G V' },
-  { label: 'Crons',           href: '/crons',             icon: Clock,     shortcut: 'G K' },
+  { label: 'Strategy Hub',      href: '/empire',              icon: Crown,     shortcut: 'G M' },
+  { label: 'Command Surface',   href: '/empire/command',      icon: Cpu,       shortcut: 'G C' },
+  { label: 'Agent Fleet',       href: '/empire/agents',       icon: Bot,       shortcut: 'G J' },
+  { label: 'Orchestration',     href: '/empire/orchestration', icon: GitBranch, shortcut: 'G X' },
+  { label: 'Content Pipeline',  href: '/empire/pipeline',     icon: GitBranch, shortcut: 'G V' },
+  { label: 'Automation Schedule', href: '/crons',             icon: Clock,     shortcut: 'G K' },
 ];
 
 const projectsNavItems: NavItem[] = [
-  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
-  { label: 'Projects',           href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
-  { label: 'Content',            href: '/empire/content',   icon: Newspaper, shortcut: 'G Z' },
-  { label: 'Team Capacity',      href: '/empire/fleet',     icon: Satellite, shortcut: 'G O' },
-  { label: 'Notifications',      href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
-  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
+  { label: 'Daily Revenue Brief', href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
+  { label: 'Revenue Initiatives', href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
+  { label: 'Content Engine',      href: '/empire/content',   icon: Newspaper, shortcut: 'G Z' },
+  { label: 'Team Load',           href: '/empire/fleet',     icon: Satellite, shortcut: 'G O' },
+  { label: 'Signals',             href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
+  { label: '12-Week Timeline',    href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
 ];
 
 const operateNavItems: NavItem[] = [
-  { label: 'Emails',           href: '/emails',     icon: Mail,          shortcut: 'G E' },
-  { label: 'Reports',          href: '/reports',    icon: BarChart2,     shortcut: 'G F' },
-  { label: 'Task Proposals',   href: '/proposals',  icon: ClipboardList, shortcut: 'G Q' },
-  { label: 'Artifacts',        href: '/artifacts',  icon: Archive,       shortcut: 'G A' },
-  { label: 'Fleet Policies',   href: '/policies',   icon: Shield,        shortcut: 'G Y' },
-  { label: 'Maintenance',      href: '/maintenance', icon: Wrench,       shortcut: 'G D' },
+  { label: 'Outreach',         href: '/emails',      icon: Mail,          shortcut: 'G E' },
+  { label: 'Insights',         href: '/reports',     icon: BarChart2,     shortcut: 'G F' },
+  { label: 'Plan Proposals',   href: '/proposals',   icon: ClipboardList, shortcut: 'G Q' },
+  { label: 'Evidence',         href: '/artifacts',   icon: Archive,       shortcut: 'G A' },
+  { label: 'Guardrails',       href: '/policies',    icon: Shield,        shortcut: 'G Y' },
+  { label: 'System Health',    href: '/maintenance', icon: Wrench,        shortcut: 'G D' },
 ];
 
 export function LeftRail() {
@@ -224,7 +224,7 @@ export function LeftRail() {
                 <Send className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Dispatch</TooltipContent>
+            <TooltipContent side="right">Run Command</TooltipContent>
           </Tooltip>
         ) : (
           <Button
@@ -233,7 +233,7 @@ export function LeftRail() {
             onClick={() => router.push('/openclaw')}
           >
             <Send className="h-4 w-4 mr-2" />
-            Dispatch
+            Run Command
           </Button>
         )}
 
@@ -249,7 +249,7 @@ export function LeftRail() {
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Empire
+              Execution
             </span>
           </div>
         )}
@@ -264,7 +264,7 @@ export function LeftRail() {
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Projects
+              Growth
             </span>
           </div>
         )}
@@ -279,7 +279,7 @@ export function LeftRail() {
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Manage
+              Operate
             </span>
           </div>
         )}

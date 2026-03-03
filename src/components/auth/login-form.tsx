@@ -34,7 +34,7 @@ interface LoginFormProps {
   redirectTo?: string
 }
 
-export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }: LoginFormProps) {
+export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -358,7 +358,7 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
             name="email"
             type="email"
             inputMode="email"
-            placeholder="name@company.com"
+            placeholder="correo@empresa.com"
             value={formData.email}
             onChange={handleInputChange}
             required
@@ -431,7 +431,7 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
               Signing in...
             </>
           ) : (
-            'Sign in'
+            'Sign in / Iniciar sesión'
           )}
         </Button>
       </form>
@@ -486,5 +486,4 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard/personalized' }:
     </div>
   )
 }
-
 

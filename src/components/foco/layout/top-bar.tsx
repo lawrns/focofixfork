@@ -127,26 +127,26 @@ export function TopBar({ className }: TopBarProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="default" size="sm" className="h-9 min-h-[44px] px-2 md:px-3">
               <Plus className="h-4 w-4" />
-              <span className="hidden md:inline">Create</span>
+              <span className="hidden md:inline">New Action</span>
               <ChevronDown className="h-3 w-3 opacity-60 hidden md:inline" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={() => openTaskModal()}>
-              <span>Task</span>
+              <span>Execution Task</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">C</kbd>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/projects?create=true')}>
-              <span>Project</span>
+              <span>Initiative</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">P</kbd>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/docs?create=true')}>
-              <span>Doc</span>
+              <span>Playbook Note</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">D</kbd>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/projects?import=true')}>
-              <span>Import...</span>
+              <span>Import Data...</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

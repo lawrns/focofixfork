@@ -11,6 +11,7 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { buildExecuteContext } from '@/lib/pipeline/context-builder'
 import type { PlanResult } from '@/lib/pipeline/types'
+import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { run_id, executor_model = 'kimi-k2-standard' } = body
+    const { run_id, executor_model: requested_executor_model = null } = body
 
     if (!run_id) {
       return mergeAuthResponse(badRequestResponse('run_id is required'), authResponse)
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
       run.task_description,
       run.plan_result as PlanResult
     )
+    const routing = await resolveClawdRoutingProfile(run.routing_profile_id ?? null)
+    const executor_model = pickPreferredModel(routing, 'execute', requested_executor_model)
 
     let executorRunId: string | null = null
     try {
@@ -77,6 +80,7 @@ export async function POST(req: NextRequest) {
       .update({
         executor_run_id: executorRunId,
         executor_model,
+        routing_profile_id: run.routing_profile_id ?? routing.profile_id,
         status: 'executing',
       })
       .eq('id', run.id)

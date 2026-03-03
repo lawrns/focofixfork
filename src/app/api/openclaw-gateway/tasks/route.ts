@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -6,7 +7,12 @@ const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+    if (!authorizeOpenClawRequest(request, rawBody)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = rawBody ? JSON.parse(rawBody) : {};
     const { agentId, task, context } = body;
     const correlationId = crypto.randomUUID();
 

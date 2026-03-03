@@ -145,6 +145,7 @@ export function PhaseCard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
+      suppressHydrationWarning
       className={cn(
         'rounded-xl border-2 transition-colors bg-card',
         status === 'active' &&

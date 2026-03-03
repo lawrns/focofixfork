@@ -16,6 +16,19 @@ import type {
 } from './types';
 import { scanPrompt } from '@/lib/ai/prompt-guard';
 
+// Normalize API error responses — APIs may return {code, message, details, timestamp} objects
+function normalizeApiError(err: unknown): string {
+  if (!err) return 'Unknown error';
+  if (typeof err === 'string') return err;
+  if (typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    if (typeof e.message === 'string') return e.message;
+    if (typeof e.error === 'string') return e.error;
+    return JSON.stringify(e);
+  }
+  return String(err);
+}
+
 // Intent detection patterns
 const INTENT_PATTERNS: Record<IntentType, RegExp[]> = {
   create_project: [/create project/i, /new project/i, /start project/i, /project called/i, /launch project/i],
@@ -372,7 +385,7 @@ export function useCommandPipeline() {
     }
   }, []);
 
-  const createCommandRun = useCallback(async (prompt: string, mode: CommandMode): Promise<string | undefined> => {
+  const createCommandRun = useCallback(async (prompt: string, mode: CommandMode, projectId?: string | null): Promise<string | undefined> => {
     try {
       const res = await fetch('/api/runs', {
         method: 'POST',
@@ -381,6 +394,7 @@ export function useCommandPipeline() {
           runner: 'command-surface',
           status: 'running',
           summary: `[${mode.toUpperCase()}] ${prompt.slice(0, 140)}`,
+          project_id: projectId ?? null,
         }),
       });
       if (!res.ok) return undefined;
@@ -683,7 +697,8 @@ export function useCommandPipeline() {
     prompt: string,
     mode: CommandMode,
     decision?: CTODecision | COODecision,
-    completedSteps?: PlanStep[]
+    completedSteps?: PlanStep[],
+    projectId?: string | null
   ): Promise<{ success: boolean; result?: StepResult; error?: string }> => {
     switch (step.type) {
       case 'ledger_log':
@@ -720,7 +735,7 @@ export function useCommandPipeline() {
             if (res.ok) {
               return { success: true, result: { cronId: data.data?.id } };
             }
-            return { success: false, error: data.error };
+            return { success: false, error: normalizeApiError(data.error) };
           } catch (error) {
             return { success: false, error: String(error) };
           }
@@ -744,7 +759,7 @@ export function useCommandPipeline() {
             if (res.ok) {
               return { success: true, result: { emailId: data.data?.id } };
             }
-            return { success: false, error: data.error };
+            return { success: false, error: normalizeApiError(data.error) };
           } catch (error) {
             return { success: false, error: String(error) };
           }
@@ -769,7 +784,7 @@ export function useCommandPipeline() {
             if (res.ok || data.queued) {
               return { success: true, result: { taskId: data.data?.id || 'queued', queued: data.queued } };
             }
-            return { success: false, error: data.error };
+            return { success: false, error: normalizeApiError(data.error) };
           } catch (error) {
             return { success: false, error: String(error) };
           }
@@ -785,7 +800,7 @@ export function useCommandPipeline() {
             const workspaceId = workspaceJson?.data?.workspace_id ?? workspaceJson?.workspace_id;
 
             if (!workspaceRes.ok || !workspaceId) {
-              return { success: false, error: workspaceJson?.error || 'No workspace found for project creation' };
+              return { success: false, error: normalizeApiError(workspaceJson?.error) || 'No workspace found for project creation' };
             }
 
             const res = await fetch('/api/projects', {
@@ -808,7 +823,7 @@ export function useCommandPipeline() {
                 }
               };
             }
-            return { success: false, error: data.error || 'Project creation failed' };
+            return { success: false, error: normalizeApiError(data.error) || 'Project creation failed' };
           } catch (error) {
             return { success: false, error: String(error) };
           }
@@ -825,14 +840,15 @@ export function useCommandPipeline() {
               body: JSON.stringify({
                 runner: run.runner,
                 status: 'pending',
-                summary: run.task
+                summary: run.task,
+                project_id: projectId ?? null,
               })
             });
             const data = await res.json();
             if (res.ok) {
               return { success: true, result: { runId: data.data?.id } };
             }
-            return { success: false, error: data.error };
+            return { success: false, error: normalizeApiError(data.error) };
           } catch (error) {
             return { success: false, error: String(error) };
           }
@@ -909,11 +925,11 @@ export function useCommandPipeline() {
   }, []);
 
   const executeCommand = useCallback(async (
-    prompt: string, 
+    prompt: string,
     mode: CommandMode,
     plan: CommandPlan,
     decision?: CTODecision | COODecision,
-    options?: { historyId?: string; existingRunId?: string }
+    options?: { historyId?: string; existingRunId?: string; projectId?: string | null }
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
     setStreamingText('');
@@ -921,7 +937,7 @@ export function useCommandPipeline() {
 
     const historyId = options?.historyId ?? uuidv4();
     const now = new Date().toISOString();
-    const bootstrapRunId = options?.existingRunId ?? await createCommandRun(prompt, mode);
+    const bootstrapRunId = options?.existingRunId ?? await createCommandRun(prompt, mode, options?.projectId);
     const historyBase: CommandHistoryItem = {
       id: historyId,
       prompt,
@@ -973,7 +989,7 @@ export function useCommandPipeline() {
       step.status = 'in_progress';
       setExecution({ ...execution });
 
-      const result = await executeStep(step, prompt, mode, decision, plan.steps.slice(0, i));
+      const result = await executeStep(step, prompt, mode, decision, plan.steps.slice(0, i), options?.projectId);
       
       if (result.success) {
         step.status = 'completed';
@@ -1044,6 +1060,7 @@ export function useCommandPipeline() {
   const submitPrompt = useCallback(async (
     prompt: string,
     mode: CommandMode,
+    projectId?: string | null,
     decision?: CTODecision | COODecision,
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
@@ -1055,7 +1072,7 @@ export function useCommandPipeline() {
     const resolvedMode = mode === 'auto' ? determineMode(intent, prompt) : mode;
     const plan = generatePlan(intent, resolvedMode, prompt);
     const historyId = uuidv4();
-    const runId = await createCommandRun(prompt, resolvedMode);
+    const runId = await createCommandRun(prompt, resolvedMode, projectId);
     const startedAt = new Date().toISOString();
     const historyBase: CommandHistoryItem = {
       id: historyId,
@@ -1089,7 +1106,7 @@ export function useCommandPipeline() {
       const res = await fetch('/api/command-surface/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, mode }),
+        body: JSON.stringify({ prompt, mode, project_id: projectId ?? null }),
         signal: controller.signal,
       });
 
@@ -1108,6 +1125,7 @@ export function useCommandPipeline() {
           const fallback = await executeCommand(prompt, resolvedMode, plan, decision, {
             historyId,
             existingRunId: runId,
+            projectId,
           });
           if (fallback.status === 'failed') {
             fallback.error = `Agent stream unavailable: ${errorMsg}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;

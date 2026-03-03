@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       return missingFieldResponse('name');
     }
 
-    if (!body.url) {
+    if (!body.url && body.type !== 'apify') {
       return missingFieldResponse('url');
     }
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate type
-    const validTypes = ['rss', 'api', 'webhook', 'scrape'];
+    const validTypes = ['rss', 'api', 'webhook', 'scrape', 'apify'];
     if (!validTypes.includes(body.type)) {
       return NextResponse.json(
         { error: `Invalid type. Must be one of: ${validTypes.join(', ')}` },
@@ -136,10 +136,12 @@ export async function POST(req: NextRequest) {
       .insert({
         project_id: body.project_id,
         name: body.name,
-        url: body.url,
+        url: body.url || 'https://api.apify.com',
         type: body.type,
         poll_interval_minutes: body.poll_interval_minutes || 60,
         headers: body.headers || {},
+        provider_config: body.provider_config || {},
+        webhook_secret: body.webhook_secret || null,
         status: body.status || 'active',
       })
       .select()
@@ -204,6 +206,8 @@ export async function PUT(req: NextRequest) {
     if (body.type !== undefined) updateData.type = body.type;
     if (body.poll_interval_minutes !== undefined) updateData.poll_interval_minutes = body.poll_interval_minutes;
     if (body.headers !== undefined) updateData.headers = body.headers;
+    if (body.provider_config !== undefined) (updateData as any).provider_config = body.provider_config;
+    if (body.webhook_secret !== undefined) (updateData as any).webhook_secret = body.webhook_secret;
     if (body.status !== undefined) updateData.status = body.status;
     if (body.last_error !== undefined) updateData.last_error = body.last_error;
     if (body.error_count !== undefined) updateData.error_count = body.error_count;

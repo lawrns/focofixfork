@@ -38,6 +38,7 @@ const sourceTypes: { value: ContentSourceType; label: string }[] = [
   { value: 'api', label: 'API Endpoint' },
   { value: 'webhook', label: 'Webhook' },
   { value: 'scrape', label: 'Web Scraper' },
+  { value: 'apify', label: 'Apify Actor' },
 ];
 
 export function ContentSourceManager({
@@ -186,9 +187,16 @@ export function ContentSourceManager({
 
   const handlePoll = async (id: string) => {
     try {
-      const res = await fetch(`/api/content-pipeline/poll?source_id=${id}`, {
-        method: 'POST',
-      });
+      const source = sources.find((s) => s.id === id);
+      const res = source?.type === 'apify'
+        ? await fetch('/api/content-pipeline/apify/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_id: id, wait_for_finish: true }),
+          })
+        : await fetch(`/api/content-pipeline/poll?source_id=${id}`, {
+            method: 'POST',
+          });
 
       if (!res.ok) {
         throw new Error('Failed to poll source');

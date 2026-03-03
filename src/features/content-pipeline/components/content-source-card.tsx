@@ -7,6 +7,7 @@ import {
   Globe, 
   Webhook, 
   Scissors,
+  Bot,
   Pause,
   Play,
   AlertCircle,
@@ -34,6 +35,7 @@ const typeIcons: Record<ContentSourceType, typeof Rss> = {
   api: Globe,
   webhook: Webhook,
   scrape: Scissors,
+  apify: Bot,
 };
 
 const typeLabels: Record<ContentSourceType, string> = {
@@ -41,6 +43,7 @@ const typeLabels: Record<ContentSourceType, string> = {
   api: 'API Endpoint',
   webhook: 'Webhook',
   scrape: 'Scraper',
+  apify: 'Apify Actor',
 };
 
 const statusColors = {

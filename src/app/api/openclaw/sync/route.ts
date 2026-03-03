@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,16 +13,9 @@ function supabaseAdmin() {
   )
 }
 
-function authorizeOpenClaw(req: NextRequest): boolean {
-  const token = (req.headers.get('authorization') ?? '').replace('Bearer ', '')
-  const serviceToken = process.env.OPENCLAW_SERVICE_TOKEN ?? process.env.BOSUN_SERVICE_TOKEN
-  if (!serviceToken) return false
-  return token === serviceToken
-}
-
 // GET /api/openclaw/sync — sync jobs from OpenClaw gateway
 export async function GET(req: NextRequest) {
-  if (!authorizeOpenClaw(req)) {
+  if (!authorizeOpenClawRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -55,12 +49,13 @@ export async function GET(req: NextRequest) {
 
 // POST /api/openclaw/sync — manual sync with specific job data
 export async function POST(req: NextRequest) {
-  if (!authorizeOpenClaw(req)) {
+  const rawBody = await req.text()
+  if (!authorizeOpenClawRequest(req, rawBody)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const body = await req.json()
+    const body = rawBody ? JSON.parse(rawBody) : {}
     const { jobs, workspace_id } = body
 
     if (!Array.isArray(jobs)) {

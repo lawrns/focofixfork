@@ -12,6 +12,7 @@ import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { buildReviewContext } from '@/lib/pipeline/context-builder'
 import { listHandbooks } from '@/lib/handbook/handbook-loader'
 import type { PlanResult, ExecutionResult } from '@/lib/pipeline/types'
+import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { run_id, reviewer_model = 'codex-standard', handbook_slug } = body
+    const { run_id, reviewer_model: requested_reviewer_model = null, handbook_slug } = body
 
     if (!run_id) {
       return mergeAuthResponse(badRequestResponse('run_id is required'), authResponse)
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
         authResponse
       )
     }
+
+    const routing = await resolveClawdRoutingProfile(run.routing_profile_id ?? null)
+    const reviewer_model = pickPreferredModel(routing, 'review', requested_reviewer_model)
 
     const migrationFiles = await listHandbooks()
 
@@ -81,6 +85,7 @@ export async function POST(req: NextRequest) {
       .update({
         reviewer_run_id: reviewerRunId,
         reviewer_model,
+        routing_profile_id: run.routing_profile_id ?? routing.profile_id,
         status: 'reviewing',
         ...(handbook_slug ? { handbook_ref: handbook_slug } : {}),
       })

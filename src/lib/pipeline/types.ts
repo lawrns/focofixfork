@@ -37,6 +37,12 @@ export interface PipelineRun {
   planner_model: string
   executor_model: string
   reviewer_model: string | null
+  routing_profile_id?: string | null
+  provider_chain?: string[]
+  plan_model_actual?: string | null
+  execute_model_actual?: string | null
+  review_model_actual?: string | null
+  fallbacks_triggered?: unknown[]
   status: PipelineStatus
   plan_result: PlanResult | null
   execution_result: ExecutionResult | null

@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox } from 'lucide-react';
+import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { CommandSurfaceProps, CommandMode, CTODecision, COODecision, AgentTrackerState } from './types';
@@ -15,6 +16,18 @@ import { QuickCapture } from '@/features/task-intake/components/quick-capture';
 import { useCommandPipeline } from './use-command-pipeline';
 import { DecisionPreview } from './decision-preview';
 import { extractOutcome } from './execution-result';
+
+function normalizeError(err: unknown): string {
+  if (!err) return 'Unknown error'
+  if (typeof err === 'string') return err
+  if (typeof err === 'object') {
+    const e = err as Record<string, unknown>
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.error === 'string') return e.error
+    return JSON.stringify(err)
+  }
+  return String(err)
+}
 
 type ExecutionPolicy = {
   mode: 'auto' | 'semi_auto';
@@ -87,7 +100,7 @@ function AgentTrackerBar({
       {icons[tracker.status]}
       <span className="flex-1 text-muted-foreground">{labels[tracker.status]}</span>
       {tracker.outputPreview && (
-        <span className="max-w-[200px] truncate text-xs text-muted-foreground/70">{tracker.outputPreview}</span>
+        <span className="max-w-[200px] truncate text-xs text-muted-foreground/70">{normalizeError(tracker.outputPreview)}</span>
       )}
       {isTerminal && (
         <button onClick={onViewRun} className="text-xs text-teal-400 hover:underline">
@@ -101,16 +114,19 @@ function AgentTrackerBar({
   )
 }
 
-export function CommandSurface({ 
-  context = 'dashboard', 
+export function CommandSurface({
+  context = 'dashboard',
   contextId,
   defaultMode = 'auto',
   onExecutionComplete,
-  className 
+  className
 }: CommandSurfaceProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<CommandMode>(defaultMode);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(contextId ?? null);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [isSyncingGit, setIsSyncingGit] = useState(false);
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<CTODecision | COODecision | null>(null);
   const [pendingPlan, setPendingPlan] = useState<ReturnType<typeof analyzePrompt>['plan'] | null>(null);
@@ -175,6 +191,40 @@ export function CommandSurface({
     loadPolicy();
   }, []);
 
+  const fetchProjects = useCallback(async () => {
+    try {
+      const res = await fetch('/api/projects');
+      if (!res.ok) return;
+      const json = await res.json();
+      const list = (json.data?.projects ?? json.data ?? []) as { id: string; name: string }[];
+      setProjects(Array.isArray(list) ? list : []);
+    } catch {
+      // Non-fatal
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const handleSyncGit = useCallback(async () => {
+    setIsSyncingGit(true);
+    try {
+      const res = await fetch('/api/projects/sync-git', { method: 'POST' });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(`Synced ${json.synced?.length ?? 0} git repos`);
+        await fetchProjects();
+      } else {
+        toast.error(json.error ?? 'Git sync failed');
+      }
+    } catch {
+      toast.error('Git sync failed');
+    } finally {
+      setIsSyncingGit(false);
+    }
+  }, [fetchProjects]);
+
   const outcome = useMemo(() => {
     if (!execution || execution.status !== 'completed') return null;
     return extractOutcome(execution.plan.steps);
@@ -229,7 +279,7 @@ export function CommandSurface({
         return; // Wait for user approval in the decision dialog
       }
 
-      const result = await executeCommand(text, mode, analysis.plan, analysis.decision);
+      const result = await executeCommand(text, mode, analysis.plan, analysis.decision, { projectId: selectedProjectId });
       if (result.status === 'completed') {
         const o = extractOutcome(result.plan.steps);
         toast.success(o.label, {
@@ -237,7 +287,7 @@ export function CommandSurface({
           action: { label: o.viewLabel, onClick: () => router.push(o.viewRoute) },
         });
       } else {
-        toast.error(result.error || 'Execution failed');
+        toast.error(normalizeError(result.error) || 'Execution failed');
       }
       onExecutionComplete?.(result);
       setPendingDecision(null);
@@ -247,15 +297,15 @@ export function CommandSurface({
     }
 
     // Stream the command through ClawdBot
-    const result = await submitPrompt(text, mode);
+    const result = await submitPrompt(text, mode, selectedProjectId);
 
     if (result.status === 'failed') {
-      toast.error(result.error || 'Command failed');
+      toast.error(normalizeError(result.error) || 'Command failed');
     }
 
     onExecutionComplete?.(result);
     setPrompt('');
-  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router, shouldAskProjectBrief]);
+  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router, shouldAskProjectBrief, selectedProjectId]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,7 +315,7 @@ export function CommandSurface({
   const handleApprove = useCallback(async () => {
     if (!pendingDecision || !pendingPlan) return;
 
-    const result = await executeCommand(prompt, mode, pendingPlan, pendingDecision);
+    const result = await executeCommand(prompt, mode, pendingPlan, pendingDecision, { projectId: selectedProjectId });
     
     if (result.status === 'completed') {
       const o = extractOutcome(result.plan.steps);
@@ -274,7 +324,7 @@ export function CommandSurface({
         action: { label: o.viewLabel, onClick: () => router.push(o.viewRoute) },
       });
     } else {
-      toast.error(result.error || 'Execution failed');
+      toast.error(normalizeError(result.error) || 'Execution failed');
     }
 
     onExecutionComplete?.(result);
@@ -329,6 +379,41 @@ export function CommandSurface({
             )}
           </div>
           
+          {/* Project Selector */}
+          <div className="flex items-center gap-1">
+            <Select
+              value={selectedProjectId ?? 'none'}
+              onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
+            >
+              <SelectTrigger className="h-7 text-xs w-[140px]">
+                <SelectValue placeholder="Project…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No project</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="truncate max-w-[120px] block">{p.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleSyncGit}
+              disabled={isSyncingGit}
+              title="Sync git repos as projects"
+            >
+              {isSyncingGit ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <GitBranch className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+
           {/* Mode Selector */}
           <div className="relative">
             <Button
@@ -481,7 +566,7 @@ export function CommandSurface({
             {/* Error details (when no streaming text was produced) */}
             {execution.status === 'failed' && execution.error && !streamingText && (
               <div className="rounded-md bg-rose-950/30 border border-rose-800/50 p-3 text-sm text-rose-300 whitespace-pre-wrap">
-                {execution.error}
+                {normalizeError(execution.error)}
               </div>
             )}
 
@@ -521,7 +606,7 @@ export function CommandSurface({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-foreground/90">{item.prompt}</p>
                     <p className="truncate text-muted-foreground/80">
-                      {item.outputPreview || (item.status === 'running' ? 'Running...' : 'No output')}
+                      {normalizeError(item.outputPreview) || (item.status === 'running' ? 'Running...' : 'No output')}
                     </p>
                   </div>
                   {item.runId && (

@@ -16,6 +16,7 @@ import { PIPELINE_PROMPTS } from '@/lib/pipeline/dispatcher'
 import { buildPlanContext, buildExecuteContext, buildReviewContext } from '@/lib/pipeline/context-builder'
 import { listHandbooks } from '@/lib/handbook/handbook-loader'
 import type { PlanResult, ExecutionResult, ReviewReport, PipelinePhase } from '@/lib/pipeline/types'
+import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min max for streaming
@@ -38,11 +39,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
     task_description,
-    planner_model = 'claude-opus-4-6',
-    executor_model = 'kimi-k2-standard',
-    reviewer_model = 'codex-standard',
+    planner_model: requested_planner_model = null,
+    executor_model: requested_executor_model = null,
+    reviewer_model: requested_reviewer_model = null,
+    routing_profile_id = null,
     auto_review = false,
     handbook_slug = 'general',
+    project_id = null,
   } = body
 
   if (!task_description?.trim()) {
@@ -52,6 +55,11 @@ export async function POST(req: NextRequest) {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ error: 'DB not available' }), { status: 500 })
   }
+
+  const routing = await resolveClawdRoutingProfile(routing_profile_id)
+  const planner_model = pickPreferredModel(routing, 'plan', requested_planner_model)
+  const executor_model = pickPreferredModel(routing, 'execute', requested_executor_model)
+  const reviewer_model = pickPreferredModel(routing, 'review', requested_reviewer_model)
 
   // Create pipeline run in DB
   const startedAt = new Date().toISOString()
@@ -63,10 +71,13 @@ export async function POST(req: NextRequest) {
       planner_model,
       executor_model,
       reviewer_model,
+      routing_profile_id: routing.profile_id,
+      provider_chain: routing.fallback_chain,
       status: 'planning',
       auto_reviewed: auto_review,
       handbook_ref: handbook_slug || null,
       started_at: startedAt,
+      ...(project_id ? { project_id } : {}),
     })
     .select('id')
     .single()
@@ -92,6 +103,11 @@ export async function POST(req: NextRequest) {
 
       // ── Run Start ───────────────────────────────────────────────────────
       emit({ type: 'run_start', run_id: runId, started_at: pipelineStartMs })
+      emit({
+        type: 'activity',
+        phase: 'system',
+        message: `Routing profile ${routing.profile_id}: ${planner_model} -> ${executor_model} -> ${reviewer_model}`,
+      })
       emit({ type: 'activity', phase: 'system', message: 'Pipeline started' })
 
       // ── Phase 1: Planning (streaming via ClawdBot) ──────────────────────
@@ -108,6 +124,7 @@ export async function POST(req: NextRequest) {
       let planCostUsd = 0
       let planElapsedMs = 0
       let planTtftMs: number | null = null
+      let planModelActual = planner_model
       let planSuccess = false
 
       try {
@@ -168,6 +185,7 @@ export async function POST(req: NextRequest) {
                 planTokensIn = event.input_tokens
                 planTokensOut = event.output_tokens
                 planCostUsd = event.cost_usd ?? 0
+                planModelActual = event.model ?? planModelActual
                 emit({
                   type: 'usage',
                   phase: 'plan',
@@ -297,6 +315,7 @@ export async function POST(req: NextRequest) {
           planner_ttft_ms: planTtftMs,
           planner_elapsed_ms: planElapsedMs,
           total_cost_usd: planCostUsd,
+          plan_model_actual: planModelActual,
         })
         .eq('id', runId)
 
@@ -313,6 +332,7 @@ export async function POST(req: NextRequest) {
       let execTokensOut = 0
       let execCostUsd = 0
       let execElapsedMs = 0
+      let execModelActual = executor_model
       let execSuccess = false
 
       try {
@@ -366,6 +386,7 @@ export async function POST(req: NextRequest) {
                 execTokensIn = event.input_tokens
                 execTokensOut = event.output_tokens
                 execCostUsd = event.cost_usd ?? 0
+                execModelActual = event.model ?? execModelActual
                 emit({ type: 'usage', phase: 'execute', input_tokens: execTokensIn, output_tokens: execTokensOut, cost_usd: execCostUsd, model: event.model ?? executor_model })
               } else if (event.type === 'done') {
                 execOutput = event.output ?? execOutput
@@ -475,6 +496,7 @@ export async function POST(req: NextRequest) {
           executor_tokens_out: execTokensOut,
           executor_elapsed_ms: execElapsedMs,
           total_cost_usd: planCostUsd + execCostUsd,
+          execute_model_actual: execModelActual,
         })
         .eq('id', runId)
 
@@ -493,6 +515,7 @@ export async function POST(req: NextRequest) {
         let reviewTokensOut = 0
         let reviewCostUsd = 0
         let reviewElapsedMs = 0
+        let reviewModelActual = reviewer_model
         let reviewSuccess = false
 
         try {
@@ -541,6 +564,7 @@ export async function POST(req: NextRequest) {
                   reviewTokensIn = event.input_tokens
                   reviewTokensOut = event.output_tokens
                   reviewCostUsd = event.cost_usd ?? 0
+                  reviewModelActual = event.model ?? reviewModelActual
                   emit({ type: 'usage', phase: 'review', input_tokens: reviewTokensIn, output_tokens: reviewTokensOut, cost_usd: reviewCostUsd, model: event.model ?? reviewer_model })
                 } else if (event.type === 'done') {
                   reviewOutput = event.output ?? reviewOutput
@@ -633,6 +657,7 @@ export async function POST(req: NextRequest) {
               reviewer_tokens_out: reviewTokensOut,
               reviewer_elapsed_ms: reviewElapsedMs,
               total_cost_usd: planCostUsd + execCostUsd + reviewCostUsd,
+              review_model_actual: reviewModelActual,
             })
             .eq('id', runId)
         } else {
@@ -646,7 +671,17 @@ export async function POST(req: NextRequest) {
 
       // ── Pipeline Complete ──────────────────────────────────────────────────
       const totalElapsedMs = Date.now() - pipelineStartMs
-      emit({ type: 'pipeline_complete', run_id: runId, total_elapsed_ms: totalElapsedMs })
+      emit({
+        type: 'pipeline_complete',
+        run_id: runId,
+        total_elapsed_ms: totalElapsedMs,
+        hierarchy: {
+          routing_profile_id: routing.profile_id,
+          plan: planner_model,
+          execute: executor_model,
+          review: reviewer_model,
+        },
+      })
       emit({
         type: 'activity',
         phase: 'system',

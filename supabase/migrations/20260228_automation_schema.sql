@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS automation_runs (
 CREATE INDEX IF NOT EXISTS automation_runs_job_id_idx ON automation_runs (job_id);
 CREATE INDEX IF NOT EXISTS automation_runs_status_idx ON automation_runs (status);
 CREATE INDEX IF NOT EXISTS automation_runs_created_at_idx ON automation_runs (created_at DESC);
-CREATE INDEX IF NOT EXISTS automation_runs_external_run_id_idx ON automation_runs (external_run_id);
+CREATE UNIQUE INDEX IF NOT EXISTS automation_runs_external_run_id_uidx
+  ON automation_runs (external_run_id);
 
 ALTER TABLE automation_runs ENABLE ROW LEVEL SECURITY;
 

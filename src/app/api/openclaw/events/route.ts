@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,20 +11,20 @@ function supabaseAdmin() {
   )
 }
 
-function authorizeOpenClaw(req: NextRequest): boolean {
-  const token = (req.headers.get('authorization') ?? '').replace('Bearer ', '')
-  const serviceToken = process.env.OPENCLAW_SERVICE_TOKEN ?? process.env.BOSUN_SERVICE_TOKEN
-  if (!serviceToken) return false
-  return token === serviceToken
-}
-
 // POST /api/openclaw/events — ingest automation events
 export async function POST(req: NextRequest) {
-  if (!authorizeOpenClaw(req)) {
+  const rawBody = await req.text()
+  if (!authorizeOpenClawRequest(req, rawBody)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
+  let body: Record<string, unknown> = {}
+  try {
+    body = rawBody ? JSON.parse(rawBody) : {}
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
   const {
     type,
     source,
@@ -41,13 +42,33 @@ export async function POST(req: NextRequest) {
     automation_run_id,
     email_delivery_id,
     job_id,
-  } = body
+  } = body as Record<string, any>
 
   if (!type || !source) {
     return NextResponse.json({ error: 'type and source required' }, { status: 400 })
   }
 
   const supabase = supabaseAdmin()
+  const idempotencyCandidate =
+    req.headers.get('x-idempotency-key') ??
+    body.idempotency_key ??
+    null
+  const idempotencyKey =
+    typeof idempotencyCandidate === 'string' && idempotencyCandidate.trim().length > 0
+      ? idempotencyCandidate
+      : null
+
+  if (idempotencyKey) {
+    const { data: existingEvent } = await supabase
+      .from('ledger_events')
+      .select('*')
+      .eq('idempotency_key', idempotencyKey)
+      .maybeSingle()
+
+    if (existingEvent) {
+      return NextResponse.json({ data: existingEvent, idempotent: true }, { status: 200 })
+    }
+  }
 
   // Handle job_run events (automation job execution)
   if (job_run) {
@@ -60,6 +81,7 @@ export async function POST(req: NextRequest) {
       payload,
       workspace_id,
       user_id,
+      idempotency_key: idempotencyKey ?? undefined,
     })
   }
 
@@ -74,6 +96,7 @@ export async function POST(req: NextRequest) {
       payload,
       workspace_id,
       user_id,
+      idempotency_key: idempotencyKey ?? undefined,
     })
   }
 
@@ -92,6 +115,7 @@ export async function POST(req: NextRequest) {
       email_delivery_id: email_delivery_id ?? null,
       job_id: job_id ?? null,
       payload: payload ?? {},
+      idempotency_key: idempotencyKey,
     })
     .select()
     .single()
@@ -148,6 +172,7 @@ async function handleJobRunEvent(
     payload?: Record<string, unknown>
     workspace_id?: string
     user_id?: string
+    idempotency_key?: string
   }
 ) {
   // First, try to find the automation job by external_id
@@ -253,6 +278,7 @@ async function handleJobRunEvent(
         ...eventMeta.payload,
         job_run: jobRun,
       },
+      idempotency_key: eventMeta.idempotency_key ?? null,
     })
     .select()
     .single()
@@ -294,6 +320,7 @@ async function handleEmailSendEvent(
     payload?: Record<string, unknown>
     workspace_id?: string
     user_id?: string
+    idempotency_key?: string
   }
 ) {
   const wsId = emailSend.workspace_id || eventMeta.workspace_id
@@ -372,6 +399,7 @@ async function handleEmailSendEvent(
         ...eventMeta.payload,
         email_send: { to: emailSend.to, subject: emailSend.subject },
       },
+      idempotency_key: eventMeta.idempotency_key ?? null,
     })
     .select()
     .single()
@@ -388,7 +416,7 @@ async function handleEmailSendEvent(
 
 // GET /api/openclaw/events — recent events
 export async function GET(req: NextRequest) {
-  if (!authorizeOpenClaw(req)) {
+  if (!authorizeOpenClawRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

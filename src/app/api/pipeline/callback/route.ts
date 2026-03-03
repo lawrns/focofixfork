@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
           planner_tokens_out: tokens_out ?? 0,
           planner_elapsed_ms: elapsedMs,
           total_cost_usd: (run.total_cost_usd ?? 0) + (cost_usd ?? 0),
+          plan_model_actual: model ?? run.plan_model_actual ?? null,
         })
         .eq('id', pipelineRunId)
     } else if (phase === 'execute') {
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
           executor_tokens_out: tokens_out ?? 0,
           executor_elapsed_ms: elapsedMs,
           total_cost_usd: (run.total_cost_usd ?? 0) + (cost_usd ?? 0),
+          execute_model_actual: model ?? run.execute_model_actual ?? null,
         })
         .eq('id', pipelineRunId)
     } else if (phase === 'review') {
@@ -124,6 +126,7 @@ export async function POST(req: NextRequest) {
         reviewer_tokens_out: tokens_out ?? 0,
         reviewer_elapsed_ms: elapsedMs,
         total_cost_usd: (run.total_cost_usd ?? 0) + (cost_usd ?? 0),
+        review_model_actual: model ?? run.review_model_actual ?? null,
       }
 
       // Append handbook learnings if additions exist

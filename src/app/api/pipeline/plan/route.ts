@@ -4,6 +4,7 @@ import { successResponse, authRequiredResponse, badRequestResponse, internalErro
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { buildPlanContext } from '@/lib/pipeline/context-builder'
+import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { task_description, planner_model = 'claude-opus-4-6', workspace_id } = body
+    const { task_description, planner_model: requested_planner_model = null, routing_profile_id = null, workspace_id } = body
 
     if (!task_description?.trim()) {
       return mergeAuthResponse(badRequestResponse('task_description is required'), authResponse)
@@ -28,6 +29,9 @@ export async function POST(req: NextRequest) {
       return mergeAuthResponse(internalErrorResponse('DB not available'), authResponse)
     }
 
+    const routing = await resolveClawdRoutingProfile(routing_profile_id)
+    const planner_model = pickPreferredModel(routing, 'plan', requested_planner_model)
+
     // Create pipeline_runs row
     const { data: run, error: insertError } = await supabaseAdmin
       .from('pipeline_runs')
@@ -36,6 +40,7 @@ export async function POST(req: NextRequest) {
         workspace_id: workspace_id ?? null,
         task_description: task_description.trim(),
         planner_model,
+        routing_profile_id: routing.profile_id,
         status: 'planning',
         started_at: new Date().toISOString(),
       })

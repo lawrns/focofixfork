@@ -1,45 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { authRequiredResponse } from '@/lib/api/response-helpers'
+import { n8nRequest, normalizeWorkflows } from '@/lib/n8n/client'
 
 export const dynamic = 'force-dynamic'
 
-const N8N_URL    = process.env.N8N_URL    ?? 'http://127.0.0.1:5678'
-const N8N_API_KEY = process.env.N8N_API_KEY ?? ''
-
-export async function GET(_req: NextRequest) {
-  if (!N8N_API_KEY) {
-    return NextResponse.json({ workflows: [], error: 'N8N_API_KEY not configured' })
+export async function GET(req: NextRequest) {
+  const { user, error, response: authResponse } = await getAuthUser(req)
+  if (error || !user) {
+    return mergeAuthResponse(authRequiredResponse(), authResponse)
   }
 
   try {
-    const res = await fetch(`${N8N_URL}/api/v1/workflows?limit=20`, {
-      headers: { 'X-N8N-API-KEY': N8N_API_KEY },
-      signal: AbortSignal.timeout(5000),
-    })
-
-    if (!res.ok) {
-      return NextResponse.json({ workflows: [], error: `n8n HTTP ${res.status}` })
-    }
-
-    const data = (await res.json()) as {
+    const { searchParams } = new URL(req.url)
+    const payload = await n8nRequest<{
       data?: Array<{
         id?: string
         name?: string
         active?: boolean
         updatedAt?: string
-        tags?: Array<{ name: string }>
+        tags?: Array<{ name?: string }>
       }>
-    }
+      nextCursor?: string | null
+    }>('/api/v1/workflows', {
+      query: {
+        limit: searchParams.get('limit') ?? 20,
+        cursor: searchParams.get('cursor'),
+        active: searchParams.get('active'),
+        name: searchParams.get('name'),
+        tags: searchParams.get('tags'),
+      },
+    })
 
-    const workflows = (data.data ?? []).map(w => ({
-      id:        w.id ?? '',
-      name:      w.name ?? '',
-      active:    w.active ?? false,
-      updatedAt: w.updatedAt ?? null,
-      tags:      (w.tags ?? []).map(t => t.name),
-    }))
+    const workflows = normalizeWorkflows(payload)
 
-    return NextResponse.json({ workflows })
-  } catch {
-    return NextResponse.json({ workflows: [], error: 'n8n unreachable' })
+    return NextResponse.json({
+      workflows,
+      nextCursor: payload.nextCursor ?? null,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'n8n unreachable'
+    return NextResponse.json({ workflows: [], error: message })
   }
 }

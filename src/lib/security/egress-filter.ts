@@ -25,6 +25,10 @@ const BUILTIN_ALLOWED: string[] = [
   // Z.ai / GLM
   'open.bigmodel.cn',
   'api.zhipuai.cn',
+  // Apify
+  'api.apify.com',
+  // ElevenLabs
+  'api.elevenlabs.io',
 ]
 
 function getAllowedDomains(): string[] {

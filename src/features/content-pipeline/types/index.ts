@@ -1,4 +1,4 @@
-export type ContentSourceType = 'rss' | 'api' | 'webhook' | 'scrape';
+export type ContentSourceType = 'rss' | 'api' | 'webhook' | 'scrape' | 'apify';
 
 export interface ContentSource {
   id: string;
@@ -8,6 +8,8 @@ export interface ContentSource {
   type: ContentSourceType;
   poll_interval_minutes: number;
   headers: Record<string, string>;
+  provider_config?: Record<string, unknown>;
+  webhook_secret?: string;
   status: 'active' | 'paused' | 'error';
   last_checked_at?: string;
   last_error?: string;

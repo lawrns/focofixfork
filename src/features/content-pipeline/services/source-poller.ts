@@ -6,6 +6,7 @@
 import type { ContentSource, RawContentItem, PollResult } from '../types';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
+import { getDatasetItems, mapApifyItemsToRawContent, startApifyRun } from './apify-client';
 
 // Simple XML parser for RSS feeds
 // Uses regex-based parsing for lightweight operation without external deps
@@ -77,6 +78,9 @@ export class SourcePoller {
         case 'scrape':
           // Scrape requires puppeteer or similar - placeholder
           return { success: false, itemsProcessed: 0, itemsNew: 0, error: 'Scrape not implemented' };
+        case 'apify':
+          items = await this.pollApify(source);
+          break;
         default:
           return { success: false, itemsProcessed: 0, itemsNew: 0, error: `Unknown source type: ${source.type}` };
       }
@@ -109,6 +113,36 @@ export class SourcePoller {
 
       return { success: false, itemsProcessed: 0, itemsNew: 0, error: errorMsg };
     }
+  }
+
+  /**
+   * Poll an Apify actor and map resulting dataset items.
+   */
+  private static async pollApify(source: ContentSource): Promise<RawContentItem[]> {
+    const config = (source.provider_config || {}) as Record<string, unknown>;
+    const run = await startApifyRun(config, { waitForFinishSeconds: 120 });
+
+    if (!supabaseAdmin) {
+      throw new Error('supabaseAdmin is not available');
+    }
+
+    await supabaseAdmin.from('apify_runs').upsert({
+      source_id: source.id,
+      external_run_id: run.runId,
+      dataset_id: run.defaultDatasetId ?? null,
+      status: run.status === 'succeeded' ? 'succeeded' : 'running',
+      metrics: {},
+      completed_at: run.status === 'succeeded' ? new Date().toISOString() : null,
+    }, {
+      onConflict: 'source_id,external_run_id',
+    });
+
+    if (run.status !== 'succeeded' || !run.defaultDatasetId) {
+      return [];
+    }
+
+    const datasetItems = await getDatasetItems(run.defaultDatasetId);
+    return mapApifyItemsToRawContent(datasetItems);
   }
 
   /**

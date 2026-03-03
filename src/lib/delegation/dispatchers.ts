@@ -2,7 +2,7 @@
  * Dispatchers — sends tasks to agent backends with handbook context.
  */
 
-const CLAWDBOT_BASE = 'http://127.0.0.1:18794'
+const CLAWDBOT_BASE = process.env.CLAWDBOT_API_URL ?? 'http://127.0.0.1:18794'
 const BOSUN_BASE = 'http://127.0.0.1:3001'
 const CLAWDBOT_TOKEN = process.env.OPENCLAW_SERVICE_TOKEN
 const BOSUN_TOKEN = process.env.BOSUN_SERVICE_TOKEN

@@ -28,12 +28,12 @@ function StatusBadge({ status }: { status: PipelineRun['status'] }) {
     executing: {
       label: 'Executing',
       icon: <Loader2 className="h-3 w-3 animate-spin" />,
-      className: 'text-blue-500 border-blue-500/30',
+      className: 'text-indigo-500 border-indigo-500/30',
     },
     reviewing: {
       label: 'Reviewing',
       icon: <Loader2 className="h-3 w-3 animate-spin" />,
-      className: 'text-purple-500 border-purple-500/30',
+      className: 'text-amber-500 border-amber-500/30',
     },
     complete: {
       label: 'Complete',
@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: PipelineRun['status'] }) {
   return (
     <Badge
       variant="outline"
-      className={cn('gap-1 text-[11px] font-mono-display', cfg.className)}
+      className={cn('gap-1 text-[11px] whitespace-nowrap', cfg.className)}
     >
       {cfg.icon}
       {cfg.label}
@@ -60,14 +60,14 @@ function StatusBadge({ status }: { status: PipelineRun['status'] }) {
 
 function modelLabel(m: string) {
   const map: Record<string, string> = {
-    'claude-opus-4-6': 'Opus',
-    'kimi-k2-fast': 'Kimi Fast',
-    'kimi-k2-standard': 'Kimi',
-    'kimi-k2-max': 'Kimi Max',
-    'codex-lite': 'Codex Lite',
-    'codex-standard': 'Codex',
-    'codex-pro': 'Codex Pro',
-    'codex-max': 'Codex Max',
+    'claude-opus-4-6':  'Opus 4.6',
+    'kimi-k2-fast':     'Kimi Fast',
+    'kimi-k2-standard': 'Kimi Std',
+    'kimi-k2-max':      'Kimi Max',
+    'codex-lite':       'Codex Lite',
+    'codex-standard':   'Codex',
+    'codex-pro':        'Codex Pro',
+    'codex-max':        'Codex Max',
   }
   return map[m] ?? m
 }
@@ -83,60 +83,62 @@ export function RunHistoryTable({ runs, onSelect }: RunHistoryTableProps) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Task</TableHead>
-          <TableHead className="w-[100px]">Status</TableHead>
-          <TableHead className="w-[180px]">Models</TableHead>
-          <TableHead className="w-[80px] text-center">Files</TableHead>
-          <TableHead className="w-[80px] text-center">Handbook</TableHead>
-          <TableHead className="w-[120px]">Date</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {runs.map((run) => (
-          <TableRow
-            key={run.id}
-            className="cursor-pointer hover:bg-secondary/40"
-            onClick={() => onSelect?.(run)}
-          >
-            <TableCell className="max-w-[300px]">
-              <p className="text-sm truncate">{run.task_description}</p>
-            </TableCell>
-            <TableCell>
-              <StatusBadge status={run.status} />
-            </TableCell>
-            <TableCell>
-              <span className="text-xs text-muted-foreground font-mono-display">
-                {modelLabel(run.planner_model)} →{' '}
-                {modelLabel(run.executor_model)}
-                {run.reviewer_model && ` → ${modelLabel(run.reviewer_model)}`}
-              </span>
-            </TableCell>
-            <TableCell className="text-center">
-              <span className="text-xs text-muted-foreground">
-                {run.files_changed?.length ?? 0}
-              </span>
-            </TableCell>
-            <TableCell className="text-center">
-              {run.handbook_ref ? (
-                <Badge variant="secondary" className="gap-1 text-[10px]">
-                  <BookOpen className="h-2.5 w-2.5" />
-                  {run.handbook_ref}
-                </Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground">—</span>
-              )}
-            </TableCell>
-            <TableCell>
-              <span className="text-xs text-muted-foreground">
-                {new Date(run.created_at).toLocaleDateString()}
-              </span>
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="min-w-[180px]">Task</TableHead>
+            <TableHead className="w-[96px]">Status</TableHead>
+            <TableHead className="w-[160px]">Models</TableHead>
+            <TableHead className="w-[56px] text-center">Files</TableHead>
+            <TableHead className="w-[90px]">Date</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {runs.map((run) => (
+            <TableRow
+              key={run.id}
+              className="cursor-pointer hover:bg-secondary/40"
+              onClick={() => onSelect?.(run)}
+            >
+              <TableCell className="max-w-[240px]">
+                <p
+                  className="text-sm truncate"
+                  title={run.task_description}
+                >
+                  {run.task_description}
+                </p>
+                {run.handbook_ref && (
+                  <Badge variant="secondary" className="gap-1 text-[10px] mt-1">
+                    <BookOpen className="h-2.5 w-2.5" />
+                    {run.handbook_ref}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <StatusBadge status={run.status} />
+              </TableCell>
+              <TableCell>
+                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                  {modelLabel(run.planner_model)} →{' '}
+                  {modelLabel(run.executor_model)}
+                  {run.reviewer_model && ` → ${modelLabel(run.reviewer_model)}`}
+                </span>
+              </TableCell>
+              <TableCell className="text-center">
+                <span className="text-xs text-muted-foreground">
+                  {run.files_changed?.length ?? 0}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(run.created_at).toLocaleDateString()}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

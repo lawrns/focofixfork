@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Play, AlertCircle, StopCircle } from 'lucide-react'
+import { Play, AlertCircle, OctagonX, Terminal as TerminalIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type {
   PipelineRun,
@@ -31,6 +31,7 @@ import { OrchestrationGraph } from './orchestration-graph'
 import { TelemetryBar } from './telemetry-bar'
 import { PhaseCard, type PhaseCardStatus } from './phase-card'
 import { ActivityFeed, type FeedEntry } from './activity-feed'
+import { TerminalSidebar } from './terminal-sidebar'
 
 // Complexity heuristics
 const COMPLEXITY_KEYWORDS = [
@@ -128,6 +129,7 @@ export function PipelineControl() {
   const [runs, setRuns] = useState<PipelineRun[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [terminalOpen, setTerminalOpen] = useState(false)
 
   // Mission control state
   const [feedEntries, setFeedEntries] = useState<FeedEntry[]>([])
@@ -288,6 +290,7 @@ export function PipelineControl() {
     if (!task.trim()) return
     setError(null)
     setLoading(true)
+    setTerminalOpen(true)
 
     // Reset all state
     const now = Date.now()
@@ -559,144 +562,187 @@ export function PipelineControl() {
   // Complexity from plan result or unknown
   const complexity = currentRun?.plan_result?.estimated_complexity ?? 'unknown'
 
-  return (
-    <div className="space-y-5 max-w-4xl mx-auto">
-      {/* ── Task + Model Config ─────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Model Config
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Planner</Label>
-              <Select value={plannerModel} onValueChange={setPlannerModel}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Claude Opus 4.6" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PLANNER_MODELS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Executor</Label>
-              <Select value={executorModel} onValueChange={setExecutorModel}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Kimi K2.5 Standard" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXECUTOR_MODELS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Reviewer</Label>
-              <Select value={reviewerModel} onValueChange={setReviewerModel}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Codex Standard" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REVIEWER_MODELS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Switch
-              id="auto-review"
-              checked={autoReview}
-              onCheckedChange={setAutoReview}
-              className="data-[state=checked]:bg-[color:var(--foco-teal)]"
-            />
-            <Label htmlFor="auto-review" className="text-sm cursor-pointer">
-              Auto-review after execution
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
+  // Derive active phase and stream text for terminal sidebar
+  const activePhase: 'plan' | 'execute' | 'review' | null =
+    pipelineStatus === 'planning'  ? 'plan'    :
+    pipelineStatus === 'executing' ? 'execute' :
+    pipelineStatus === 'reviewing' ? 'review'  : null
 
-      {/* Task Input */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Task
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {complexHint && (
-            <div className="flex items-center gap-2 text-amber-500 text-xs bg-amber-500/10 border border-amber-500/20 rounded-md px-3 py-2">
-              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-              This task may benefit from Codex review.
-            </div>
-          )}
-          {triggerHint && (
-            <div className="flex items-center gap-2 text-[color:var(--foco-teal)] text-xs bg-[color:var(--foco-teal-dim)] border border-[color:var(--foco-teal)]/20 rounded-md px-3 py-2">
-              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-              Detected trigger:{' '}
-              <span className="font-mono ml-1">&ldquo;{triggerHint}&rdquo; mode</span>
-            </div>
-          )}
-          <Textarea
-            placeholder="Describe the engineering task… (e.g. Add RLS policies to the quotes table and write a migration)"
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            rows={4}
-            className="resize-none text-sm"
+  const activeStreamText =
+    activePhase === 'plan'    ? planStream.text   :
+    activePhase === 'execute' ? execStream.text   :
+    activePhase === 'review'  ? reviewStream.text : ''
+
+  const hasTask = task.trim().length > 0
+
+  const modelConfigCard = (
+    <Card>
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Model Config
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 px-4 pb-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Planner</Label>
+            <Select value={plannerModel} onValueChange={setPlannerModel}>
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue placeholder="Claude Opus 4.6" />
+              </SelectTrigger>
+              <SelectContent>
+                {PLANNER_MODELS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Executor</Label>
+            <Select value={executorModel} onValueChange={setExecutorModel}>
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue placeholder="Kimi K2.5 Std" />
+              </SelectTrigger>
+              <SelectContent>
+                {EXECUTOR_MODELS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Reviewer</Label>
+            <Select value={reviewerModel} onValueChange={setReviewerModel}>
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue placeholder="Codex Std" />
+              </SelectTrigger>
+              <SelectContent>
+                {REVIEWER_MODELS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Switch
+            id="auto-review"
+            checked={autoReview}
+            onCheckedChange={setAutoReview}
+            className="data-[state=checked]:bg-[color:var(--foco-teal)]"
           />
-          {error && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {error}
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={startPipeline}
-              disabled={!task.trim() || loading}
-              className="bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90 text-white"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Run Pipeline
-            </Button>
-            {isRunning && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={cancelPipeline}
-                className="text-destructive hover:text-destructive"
-              >
-                <StopCircle className="h-4 w-4 mr-1" />
-                Cancel
-              </Button>
-            )}
+          <Label htmlFor="auto-review" className="text-xs cursor-pointer text-muted-foreground">
+            Auto-review after execution
+          </Label>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const taskCard = (
+    <Card>
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold">
+          Task
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 px-4 pb-4">
+        {complexHint && (
+          <div className="flex items-center gap-2 text-amber-500 text-xs bg-amber-500/10 border border-amber-500/20 rounded-md px-3 py-2">
+            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+            This task may benefit from Codex review.
           </div>
-        </CardContent>
-      </Card>
+        )}
+        {triggerHint && (
+          <div className="flex items-center gap-2 text-[color:var(--foco-teal)] text-xs bg-[color:var(--foco-teal-dim)] border border-[color:var(--foco-teal)]/20 rounded-md px-3 py-2">
+            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+            Detected trigger:{' '}
+            <span className="font-mono ml-1">&ldquo;{triggerHint}&rdquo; mode</span>
+          </div>
+        )}
+        <Textarea
+          placeholder="Describe the engineering task… (e.g. Add RLS policies to the quotes table and write a migration)"
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          rows={4}
+          className="resize-none text-sm"
+        />
+        {error && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            {error}
+          </p>
+        )}
+        {/* Run + Stop — right-aligned, natural width */}
+        <div className="flex items-center justify-end gap-2">
+          {isRunning && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-1.5"
+              onClick={cancelPipeline}
+            >
+              <OctagonX className="h-3.5 w-3.5" />
+              Stop
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={startPipeline}
+            disabled={!task.trim() || loading || isRunning}
+            className="bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90 text-white gap-1.5"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Run Pipeline
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
-      {/* ── Orchestration Graph ─────────────────────────────────────────────── */}
-      <OrchestrationGraph
-        status={pipelineStatus}
-        plannerModel={plannerModel}
-        executorModel={executorModel}
-        reviewerModel={reviewerModel}
-      />
+  const graph = (
+    <OrchestrationGraph
+      status={pipelineStatus}
+      plannerModel={plannerModel}
+      executorModel={executorModel}
+      reviewerModel={reviewerModel}
+      hasTask={hasTask}
+    />
+  )
 
-      {/* ── Telemetry Bar ───────────────────────────────────────────────────── */}
+  const historyCard = (
+    <Card>
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Run History
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <RunHistoryTable runs={runs} onSelect={(run) => {
+          setCurrentRun(run)
+          setPipelineStatus(run.status)
+          const total = (run.planner_tokens_in + run.planner_tokens_out) +
+            (run.executor_tokens_in + run.executor_tokens_out) +
+            (run.reviewer_tokens_in + run.reviewer_tokens_out)
+          if (total > 0) {
+            setTotalTokens(total)
+            setTotalCostUsd(run.total_cost_usd ?? 0)
+            setHasLiveTokens(true)
+          }
+        }} />
+      </CardContent>
+    </Card>
+  )
+
+  const phaseSection = (
+    <>
+      {/* ── Telemetry Bar ─────────────────────────────────────────────────── */}
       <AnimatePresence>
         {pipelineStatus && (
           <motion.div
@@ -705,6 +751,7 @@ export function PipelineControl() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
+            suppressHydrationWarning
           >
             <TelemetryBar
               tokens={totalTokens}
@@ -718,7 +765,7 @@ export function PipelineControl() {
         )}
       </AnimatePresence>
 
-      {/* ── Phase Cards ─────────────────────────────────────────────────────── */}
+      {/* ── Phase Cards ───────────────────────────────────────────────────── */}
       <AnimatePresence>
         {pipelineStatus && (
           <motion.div
@@ -727,6 +774,7 @@ export function PipelineControl() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="space-y-3"
+            suppressHydrationWarning
           >
             {/* Planning */}
             <PhaseCard
@@ -833,32 +881,38 @@ export function PipelineControl() {
         )}
       </AnimatePresence>
 
-      {/* ── Activity Feed ───────────────────────────────────────────────────── */}
-      {feedEntries.length > 0 && <ActivityFeed entries={feedEntries} />}
+      {/* ── Activity Feed (mobile fallback only) ─────────────────────────── */}
+      {feedEntries.length > 0 && (
+        <div className="xl:hidden">
+          <ActivityFeed entries={feedEntries} />
+        </div>
+      )}
+    </>
+  )
 
-      {/* ── Run History ─────────────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Run History
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <RunHistoryTable runs={runs} onSelect={(run) => {
-            setCurrentRun(run)
-            setPipelineStatus(run.status)
-            // Populate tokens from historical run
-            const total = (run.planner_tokens_in + run.planner_tokens_out) +
-              (run.executor_tokens_in + run.executor_tokens_out) +
-              (run.reviewer_tokens_in + run.reviewer_tokens_out)
-            if (total > 0) {
-              setTotalTokens(total)
-              setTotalCostUsd(run.total_cost_usd ?? 0)
-              setHasLiveTokens(true)
-            }
-          }} />
-        </CardContent>
-      </Card>
+  return (
+    <div className="grid xl:grid-cols-[460px_1fr] gap-5 items-start max-w-[1400px] mx-auto">
+      {/* ── Left column: config + task + graph + history ─────────────────── */}
+      <div className="space-y-4">
+        {modelConfigCard}
+        {taskCard}
+        {graph}
+        {historyCard}
+      </div>
+
+      {/* ── Right column: telemetry + phases + terminal ───────────────────── */}
+      <div className="space-y-4 min-w-0">
+        {phaseSection}
+        {/* Single terminal instance — collapsible */}
+        <TerminalSidebar
+          feedEntries={feedEntries}
+          activePhase={activePhase}
+          activeStreamText={activeStreamText}
+          isRunning={isRunning}
+          isOpen={terminalOpen}
+          onToggle={() => setTerminalOpen((v) => !v)}
+        />
+      </div>
     </div>
   )
 }

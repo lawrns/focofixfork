@@ -13,6 +13,7 @@
 import { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null)
-  const { prompt, mode } = body as { prompt?: string; mode?: string }
+  const { prompt, mode, project_id } = body as { prompt?: string; mode?: string; project_id?: string | null }
 
   if (!prompt?.trim()) {
     return mergeAuthResponse(
@@ -72,10 +73,10 @@ export async function POST(req: NextRequest) {
 
   const encoder = new TextEncoder()
 
-  // Fixed execution hierarchy
-  const plannerModel = 'claude-opus-4-6'
-  const executorModel = 'kimi-k2-standard'
-  const reviewerModel = 'codex-standard'
+  const routing = await resolveClawdRoutingProfile('strict_clawd_only')
+  const plannerModel = routing.plan_model
+  const executorModel = routing.execute_model
+  const reviewerModel = routing.review_model
 
   try {
     const pipelineRes = await fetch(`${req.nextUrl.origin}/api/pipeline/stream`, {
@@ -90,11 +91,13 @@ export async function POST(req: NextRequest) {
           `Mode: ${mode ?? 'auto'}\n` +
           `User: ${user.email}\n\n` +
           `${prompt.trim()}`,
+        routing_profile_id: routing.profile_id,
         planner_model: plannerModel,
         executor_model: executorModel,
         reviewer_model: reviewerModel,
         auto_review: true,
         handbook_slug: 'general',
+        project_id: project_id ?? null,
       }),
       signal: AbortSignal.timeout(300_000),
     })
@@ -154,8 +157,12 @@ export async function POST(req: NextRequest) {
                 }
 
                 if (type === 'pipeline_complete') {
+                  const hierarchy =
+                    (event.hierarchy && typeof event.hierarchy === 'object')
+                      ? event.hierarchy
+                      : { plan: plannerModel, execute: executorModel, review: reviewerModel }
                   controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ type: 'done', output: accumulated, hierarchy: { plan: plannerModel, execute: executorModel, review: reviewerModel } })}\n\n`)
+                    encoder.encode(`data: ${JSON.stringify({ type: 'done', output: accumulated, hierarchy })}\n\n`)
                   )
                   return
                 }
@@ -167,7 +174,7 @@ export async function POST(req: NextRequest) {
 
           // stream ended without explicit pipeline_complete
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'done', output: accumulated, hierarchy: { plan: plannerModel, execute: executorModel, review: reviewerModel } })}\n\n`)
+            encoder.encode(`data: ${JSON.stringify({ type: 'done', output: accumulated, hierarchy: { plan: plannerModel, execute: executorModel, review: reviewerModel, routing_profile_id: routing.profile_id } })}\n\n`)
           )
         } catch (e) {
           // Emit an error event so the client knows something went wrong mid-stream

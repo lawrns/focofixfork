@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ensureHeartbeat } from '@/lib/heartbeat/init'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 // Start heartbeat on first import (this route is polled every 30s by System Pulse)
 ensureHeartbeat()
@@ -65,10 +66,15 @@ export async function GET(_req: NextRequest) {
     headers: clawdbotHeaders,
     signal: AbortSignal.timeout(3000),
   }).then(r => r.ok ? r.json() : null).catch(() => null)
+  const capabilityBody = fetch(`${CLAWDBOT_API}/capabilities`, {
+    headers: clawdbotHeaders,
+    signal: AbortSignal.timeout(3000),
+  }).then(r => r.ok ? r.json() : null).catch(() => null)
 
-  const [clawdbot, clawdbotJson, openclaw, temporal, n8n, chromadb] = await Promise.all([
+  const [clawdbot, clawdbotJson, capabilityJson, openclaw, temporal, n8n, chromadb] = await Promise.all([
     clawdbotProbe,
     clawdbotBody,
+    capabilityBody,
     probe('Critter Relay', `${OPENCLAW_URL}/`),
     probe('Temporal',       `${temporalUiUrl}/`),
     probe('n8n',            `${N8N_URL}/healthz`),
@@ -81,6 +87,33 @@ export async function GET(_req: NextRequest) {
   const upCount = services.filter(s => s.status === 'up').length
   const overallStatus = upCount === services.length ? 'up' : upCount >= 3 ? 'degraded' : 'down'
 
+  if (supabaseAdmin) {
+    // Best-effort heartbeat snapshots for dashboards and alerting.
+    void supabaseAdmin.from('service_heartbeats').insert(
+      services.map((service) => ({
+        service: service.name,
+        status: service.status,
+        latency_ms: service.latencyMs ?? null,
+        detail: service.detail ?? null,
+        metadata: { url: service.url },
+      }))
+    )
+
+    if (capabilityJson) {
+      void supabaseAdmin.from('clawd_capability_snapshots').insert({
+        source: 'clawdbot',
+        payload: capabilityJson,
+      })
+    }
+  }
+
+  const routingProfiles = Array.isArray((capabilityJson as any)?.routing_profiles)
+    ? (capabilityJson as any).routing_profiles
+    : []
+  const availableModels = Array.isArray((capabilityJson as any)?.models)
+    ? (capabilityJson as any).models.filter((m: any) => m?.available).length
+    : 0
+
   return NextResponse.json({
     overall: overallStatus,
     timestamp: new Date().toISOString(),
@@ -91,5 +124,13 @@ export async function GET(_req: NextRequest) {
       last_checkin_line: clawdbotDetail.last_checkin_line ?? null,
       cron_ran_today: clawdbotDetail.cron_ran_today ?? false,
     } : null,
+    capabilities: capabilityJson
+      ? {
+          last_sync_at: new Date().toISOString(),
+          routing_profiles: routingProfiles.length,
+          models_available: availableModels,
+          default_profile: routingProfiles[0]?.profile_id ?? null,
+        }
+      : null,
   })
 }

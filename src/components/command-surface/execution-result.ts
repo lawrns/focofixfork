@@ -9,6 +9,7 @@ export interface ExecutionOutcome {
 }
 
 const ROUTE_MAP: Record<string, { label: string; viewLabel: string; viewRoute: string | ((id: string) => string) }> = {
+  create_project: { label: 'Project created', viewLabel: 'View project', viewRoute: '/empire/missions' },
   create_task: { label: 'Task created', viewLabel: 'View task', viewRoute: '/my-work' },
   create_cron: { label: 'Cron created', viewLabel: 'View cron', viewRoute: '/crons' },
   send_email: { label: 'Email sent', viewLabel: 'View emails', viewRoute: '/emails' },
@@ -18,6 +19,7 @@ const ROUTE_MAP: Record<string, { label: string; viewLabel: string; viewRoute: s
 function extractResourceId(_stepType: string, result: StepResult): string | undefined {
   if (!result || typeof result !== 'object') return undefined
   const r = result as Record<string, unknown>
+  if ('projectId' in r && typeof r.projectId === 'string') return r.projectId
   if ('taskId' in r && typeof r.taskId === 'string') return r.taskId
   if ('cronId' in r && typeof r.cronId === 'string') return r.cronId
   if ('runId' in r && typeof r.runId === 'string') return r.runId

@@ -158,7 +158,7 @@ export function useQuickActions() {
       category: 'navigate',
       shortcut: 'Cmd+,',
       icon: '⚙️',
-      action: () => router.push('/dashboard/settings'),
+      action: () => router.push('/settings'),
       keywords: ['settings', 'preferences', 'account', 'go']
     },
 

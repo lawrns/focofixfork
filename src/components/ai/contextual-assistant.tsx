@@ -171,7 +171,7 @@ export function ContextualAssistant({ className }: ContextualAssistantProps) {
         window.location.href = '/projects?create=true'
         break
       case 'add_task':
-        window.location.href = '/tasks?create=true'
+        window.location.href = '/tasks/new'
         break
       case 'view_analytics':
         window.location.href = '/dashboard/analytics'
@@ -180,7 +180,7 @@ export function ContextualAssistant({ className }: ContextualAssistantProps) {
         window.location.href = '/empire/missions'
         break
       case 'view_tasks':
-        window.location.href = '/tasks'
+        window.location.href = '/my-work'
         break
       default:
         break

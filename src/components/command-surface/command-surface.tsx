@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,12 @@ import { QuickCapture } from '@/features/task-intake/components/quick-capture';
 import { useCommandPipeline } from './use-command-pipeline';
 import { DecisionPreview } from './decision-preview';
 import { extractOutcome } from './execution-result';
+
+type ExecutionPolicy = {
+  mode: 'auto' | 'semi_auto';
+  confidenceMinForAuto: number;
+  requireApprovalForChanges: boolean;
+};
 
 const MODE_CONFIG: Record<CommandMode, { label: string; icon: React.ReactNode; color: string; description: string }> = {
   cto: {
@@ -99,9 +105,13 @@ export function CommandSurface({
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<CTODecision | COODecision | null>(null);
   const [pendingPlan, setPendingPlan] = useState<ReturnType<typeof analyzePrompt>['plan'] | null>(null);
+  const [executionPolicy, setExecutionPolicy] = useState<ExecutionPolicy>({
+    mode: 'auto',
+    confidenceMinForAuto: 0.75,
+    requireApprovalForChanges: false,
+  });
 
   const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution } = useCommandPipeline();
-  const dismissTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const [runningCount, setRunningCount] = useState(0)
   useEffect(() => {
@@ -117,28 +127,45 @@ export function CommandSurface({
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    const loadPolicy = async () => {
+      try {
+        const workspaceRes = await fetch('/api/user/workspace');
+        if (!workspaceRes.ok) return;
+        const workspaceJson = await workspaceRes.json();
+        const workspaceId = workspaceJson?.data?.workspace_id ?? workspaceJson?.workspace_id;
+        if (!workspaceId) return;
+
+        const policyRes = await fetch(`/api/workspaces/${workspaceId}/ai-policy`);
+        if (!policyRes.ok) return;
+        const policyJson = await policyRes.json();
+        const policy = policyJson?.data ?? policyJson;
+
+        const mode = policy?.execution_mode === 'semi_auto' ? 'semi_auto' : 'auto';
+        const threshold = Number(policy?.approval_thresholds?.confidence_min_for_auto ?? 0.75);
+        const requireApprovalForChanges = Boolean(policy?.constraints?.require_approval_for_changes);
+
+        setExecutionPolicy({
+          mode,
+          confidenceMinForAuto: Number.isFinite(threshold) ? threshold : 0.75,
+          requireApprovalForChanges,
+        });
+      } catch {
+        // Use defaults if policy cannot be fetched
+      }
+    };
+    loadPolicy();
+  }, []);
+
   const outcome = useMemo(() => {
     if (!execution || execution.status !== 'completed') return null;
     return extractOutcome(execution.plan.steps);
   }, [execution]);
 
-  // Auto-dismiss completed/failed execution after 10 seconds
-  // Don't dismiss if agent tracker is still active (not in a terminal state)
-  useEffect(() => {
-    if (!execution || execution.status !== 'completed') return
-    const trackerDone = !execution.agentTracker ||
-      ['completed', 'failed', 'cancelled'].includes(execution.agentTracker.status)
-    if (!trackerDone) return
-
-    const timer = setTimeout(() => clearExecution(), 10_000)
-    return () => clearTimeout(timer)
-  }, [execution?.status, execution?.agentTracker?.status, clearExecution]);
-
   const handleSubmitText = useCallback(async (text: string) => {
     if (!text.trim() || isProcessing) return;
 
     clearExecution();
-    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
 
     // Check for injection / generate decision preview before streaming
     const analysis = analyzePrompt(text, mode);
@@ -150,8 +177,29 @@ export function CommandSurface({
     }
 
     if (analysis.decision) {
-      setPendingDecision(analysis.decision);
-      return; // Wait for user approval in the decision dialog
+      const lowConfidence = analysis.plan.confidence < executionPolicy.confidenceMinForAuto;
+      const needsApproval = executionPolicy.mode === 'semi_auto' || lowConfidence || (executionPolicy.requireApprovalForChanges && analysis.plan.requiresApproval);
+
+      if (needsApproval) {
+        setPendingDecision(analysis.decision);
+        return; // Wait for user approval in the decision dialog
+      }
+
+      const result = await executeCommand(text, mode, analysis.plan, analysis.decision);
+      if (result.status === 'completed') {
+        const o = extractOutcome(result.plan.steps);
+        toast.success(o.label, {
+          duration: 10000,
+          action: { label: o.viewLabel, onClick: () => router.push(o.viewRoute) },
+        });
+      } else {
+        toast.error(result.error || 'Execution failed');
+      }
+      onExecutionComplete?.(result);
+      setPendingDecision(null);
+      setPendingPlan(null);
+      setPrompt('');
+      return;
     }
 
     // Stream the command through ClawdBot
@@ -163,7 +211,7 @@ export function CommandSurface({
 
     onExecutionComplete?.(result);
     setPrompt('');
-  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution]);
+  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

@@ -200,11 +200,11 @@ export default function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>
               <Settings className="h-3.5 w-3.5" />
               <span className="text-xs">Settings</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+            <DropdownMenuItem onClick={() => router.push('/profile')}>
               <User className="h-3.5 w-3.5" />
               <span className="text-xs">Profile</span>
             </DropdownMenuItem>

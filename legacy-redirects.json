@@ -1,5 +1,11 @@
 [
-  { "source": "/blog/:slug", "destination": "/articles/:slug", "permanent": true },
-  { "source": "/pricing", "destination": "/plans", "permanent": true },
-  { "source": "/docs/:path*", "destination": "/guide/:path*", "permanent": true }
+  { "source": "/guide", "destination": "/docs", "permanent": true },
+  { "source": "/guide/:path*", "destination": "/docs/:path*", "permanent": true },
+  { "source": "/pricing", "destination": "/register", "permanent": false },
+  { "source": "/plans", "destination": "/register", "permanent": false },
+  { "source": "/blog/:slug", "destination": "/docs", "permanent": false },
+  { "source": "/dashboard/settings", "destination": "/settings", "permanent": false },
+  { "source": "/dashboard/profile", "destination": "/profile", "permanent": false },
+  { "source": "/dashboard-simple", "destination": "/dashboard", "permanent": false },
+  { "source": "/tasks", "destination": "/my-work", "permanent": false }
 ]

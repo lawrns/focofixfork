@@ -299,11 +299,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+                <DropdownMenuItem onClick={() => router.push('/profile')}>
                   <User className="h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
@@ -404,5 +404,4 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 }
 
 export default DashboardHeader
-
 

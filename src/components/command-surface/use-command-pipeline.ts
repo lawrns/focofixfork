@@ -17,6 +17,7 @@ import { scanPrompt } from '@/lib/ai/prompt-guard';
 
 // Intent detection patterns
 const INTENT_PATTERNS: Record<IntentType, RegExp[]> = {
+  create_project: [/create project/i, /new project/i, /start project/i, /project called/i, /launch project/i],
   create_task: [/create task/i, /add task/i, /new task/i, /fix.*bug/i, /implement/i],
   create_cron: [/schedule/i, /cron/i, /daily.*email/i, /weekly.*report/i, /every.*day/i, /every.*hour/i],
   send_email: [/send email/i, /email.*to/i, /notify/i, /remind.*me/i],
@@ -61,6 +62,7 @@ function determineMode(intent: IntentType, prompt: string): CommandMode {
   // Default based on intent
   switch (intent) {
     case 'create_task':
+    case 'create_project':
     case 'fix_issue':
     case 'architect_feature':
       return 'cto';
@@ -88,6 +90,22 @@ function generatePlan(intent: IntentType, mode: CommandMode, prompt: string): Co
   });
 
   switch (intent) {
+    case 'create_project':
+      steps.push({
+        id: uuidv4(),
+        type: 'create_project',
+        description: 'Create project in workspace',
+        status: 'pending'
+      });
+      steps.push({
+        id: uuidv4(),
+        type: 'verify',
+        description: 'Verify project was created',
+        status: 'pending'
+      });
+      estimatedDuration = 2500;
+      break;
+
     case 'create_cron':
       steps.push({
         id: uuidv4(),
@@ -287,6 +305,25 @@ function parseTaskIntent(prompt: string): { title: string; description: string; 
   return { title, description, priority, type };
 }
 
+function parseProjectIntent(prompt: string): { name: string; description: string } {
+  const normalized = prompt.trim();
+  const nameMatch =
+    normalized.match(/(?:create|start|launch|new)\s+project(?:\s+called|\s+named)?\s+["']?([^"'.\n]+)["']?/i) ||
+    normalized.match(/project(?:\s+called|\s+named)\s+["']?([^"'.\n]+)["']?/i);
+  const extracted = nameMatch?.[1]?.trim();
+
+  const rawName = extracted && extracted.length > 0 ? extracted : normalized;
+  const cleanName = rawName
+    .replace(/^(create|start|launch|new)\s+project\s*/i, '')
+    .trim();
+  const safeName = (cleanName || 'New Project').slice(0, 100);
+
+  return {
+    name: safeName.charAt(0).toUpperCase() + safeName.slice(1),
+    description: `Created from Command Surface prompt: "${prompt.trim()}"`,
+  };
+}
+
 export function useCommandPipeline() {
   const [execution, setExecution] = useState<CommandExecution | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -397,7 +434,20 @@ export function useCommandPipeline() {
     let decision: CTODecision | COODecision | undefined;
 
     // Generate CTO decision for architecture/implementation intents
-    if (mode === 'cto' && (intent === 'create_task' || intent === 'fix_issue' || intent === 'architect_feature')) {
+    if (mode === 'cto' && (intent === 'create_project' || intent === 'create_task' || intent === 'fix_issue' || intent === 'architect_feature')) {
+      if (intent === 'create_project') {
+        const projectInfo = parseProjectIntent(prompt);
+        decision = {
+          id: uuidv4(),
+          type: 'implementation',
+          title: `Create project: ${projectInfo.name}`,
+          description: projectInfo.description,
+          projects: [projectInfo],
+          tasks: [],
+          runs: [],
+          status: 'pending'
+        };
+      } else {
       const taskInfo = parseTaskIntent(prompt);
       if (taskInfo) {
         decision = {
@@ -417,6 +467,7 @@ export function useCommandPipeline() {
           }] : [],
           status: 'pending'
         };
+      }
       }
     }
 
@@ -556,6 +607,45 @@ export function useCommandPipeline() {
         }
         return { success: false, error: 'No task configuration found' };
 
+      case 'create_project':
+        if (decision && 'projects' in decision && decision.projects && decision.projects.length > 0) {
+          const project = decision.projects[0];
+          try {
+            const workspaceRes = await fetch('/api/user/workspace');
+            const workspaceJson = await workspaceRes.json();
+            const workspaceId = workspaceJson?.data?.workspace_id ?? workspaceJson?.workspace_id;
+
+            if (!workspaceRes.ok || !workspaceId) {
+              return { success: false, error: workspaceJson?.error || 'No workspace found for project creation' };
+            }
+
+            const res = await fetch('/api/projects', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: project.name,
+                description: project.description,
+                workspace_id: workspaceId,
+                status: 'active',
+              })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              return {
+                success: true,
+                result: {
+                  projectId: data.data?.id,
+                  slug: data.data?.slug
+                }
+              };
+            }
+            return { success: false, error: data.error || 'Project creation failed' };
+          } catch (error) {
+            return { success: false, error: String(error) };
+          }
+        }
+        return { success: false, error: 'No project configuration found' };
+
       case 'create_run':
         if (decision && 'runs' in decision && decision.runs.length > 0) {
           const run = decision.runs[0];
@@ -582,11 +672,18 @@ export function useCommandPipeline() {
 
       case 'verify': {
         // Verify by checking the resource actually exists in the DB
+        const projectStep = completedSteps?.find(s => s.type === 'create_project' && s.result && (s.result as any).projectId);
         const taskStep = completedSteps?.find(s => s.type === 'create_task' && s.result && (s.result as any).taskId && (s.result as any).taskId !== 'queued');
         const cronStep = completedSteps?.find(s => s.type === 'create_cron' && s.result && (s.result as any).cronId);
         const runStep = completedSteps?.find(s => s.type === 'create_run' && s.result && (s.result as any).runId);
 
         try {
+          if (projectStep?.result) {
+            const projectId = (projectStep.result as any).projectId;
+            const res = await fetch(`/api/projects?id=${projectId}`);
+            if (!res.ok) return { success: false, error: 'Project not found in database after creation' };
+            return { success: true, result: { verified: true, type: 'project', id: projectId } };
+          }
           if (taskStep?.result) {
             const taskId = (taskStep.result as any).taskId;
             const res = await fetch(`/api/tasks/${taskId}`);
@@ -729,7 +826,7 @@ export function useCommandPipeline() {
     const plan = generatePlan(intent, resolvedMode, prompt);
 
     const exec: CommandExecution = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       prompt,
       mode: resolvedMode,
       plan,
@@ -755,6 +852,16 @@ export function useCommandPipeline() {
           const json = await res.json() as { error?: string; message?: string };
           errorMsg = json.error ?? json.message ?? errorMsg;
         } catch { /* ignore */ }
+
+        // Retry with the local step engine for transient service outages.
+        if (res.status >= 500) {
+          setStreamingText(`Agent stream unavailable (${errorMsg}). Running local fallback workflow...`);
+          const fallback = await executeCommand(prompt, resolvedMode, plan, decision);
+          if (fallback.status === 'failed') {
+            fallback.error = `Agent stream unavailable: ${errorMsg}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
+          }
+          return fallback;
+        }
 
         exec.status = 'failed';
         exec.error = errorMsg;
@@ -816,7 +923,7 @@ export function useCommandPipeline() {
       setIsProcessing(false);
       return exec;
     }
-  }, []);
+  }, [executeCommand]);
 
   return {
     execution,

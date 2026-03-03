@@ -40,8 +40,14 @@ const WorkspaceAIPolicySchema = z.object({
     allow_task_creation: true,
     allow_task_updates: true,
     allow_task_deletion: false,
-    require_approval_for_changes: true,
+    require_approval_for_changes: false,
     max_tokens_per_request: 4096,
+  }),
+  execution_mode: z.enum(['auto', 'semi_auto']).default('auto'),
+  approval_thresholds: z.object({
+    confidence_min_for_auto: z.number().min(0).max(1).default(0.75),
+  }).default({
+    confidence_min_for_auto: 0.75,
   }),
   audit_level: z.enum(['minimal', 'standard', 'full']).default('standard'),
 })
@@ -111,8 +117,12 @@ export async function GET(
         allow_task_creation: true,
         allow_task_updates: true,
         allow_task_deletion: false,
-        require_approval_for_changes: true,
+        require_approval_for_changes: false,
         max_tokens_per_request: 4096,
+      },
+      execution_mode: 'auto',
+      approval_thresholds: {
+        confidence_min_for_auto: 0.75,
       },
       audit_level: 'standard',
       version: 1,
@@ -130,6 +140,10 @@ export async function GET(
       constraints: {
         ...defaultPolicy.constraints,
         ...(storedPolicy?.constraints || {}),
+      },
+      approval_thresholds: {
+        ...defaultPolicy.approval_thresholds,
+        ...(storedPolicy?.approval_thresholds || {}),
       },
     }
 

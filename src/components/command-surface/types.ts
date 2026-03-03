@@ -1,6 +1,7 @@
 export type CommandMode = 'cto' | 'coo' | 'auto' | 'intake';
 
 export type IntentType = 
+  | 'create_project'
   | 'create_task' 
   | 'create_cron' 
   | 'send_email' 
@@ -11,6 +12,7 @@ export type IntentType =
   | 'unknown';
 
 export type StepResult =
+  | { projectId: string; slug?: string }
   | { taskId: string; queued?: boolean }
   | { cronId: string }
   | { runId: string }
@@ -22,7 +24,7 @@ export type StepResult =
 
 export type PlanStep = {
   id: string;
-  type: 'create_task' | 'create_cron' | 'send_email' | 'create_run' | 'ledger_log' | 'verify' | 'report';
+  type: 'create_project' | 'create_task' | 'create_cron' | 'send_email' | 'create_run' | 'ledger_log' | 'verify' | 'report';
   description: string;
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   result?: StepResult;
@@ -74,6 +76,10 @@ export type CTODecision = {
   type: 'architecture' | 'implementation' | 'refactor' | 'security' | 'performance';
   title: string;
   description: string;
+  projects?: Array<{
+    name: string;
+    description: string;
+  }>;
   tasks: Array<{
     title: string;
     description: string;

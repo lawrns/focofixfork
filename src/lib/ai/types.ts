@@ -14,6 +14,10 @@ export interface WorkspaceAIPolicy {
   allowed_actions: string[]
   auto_apply: boolean
   confidence_threshold: number
+  execution_mode?: 'auto' | 'semi_auto'
+  approval_thresholds?: {
+    confidence_min_for_auto?: number
+  }
   data_sources: string[]
   audit_visible: boolean
   constraints?: {

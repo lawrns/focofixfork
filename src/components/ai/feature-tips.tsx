@@ -217,7 +217,7 @@ export function FeatureTipsManager({ className }: FeatureTipsManagerProps) {
         window.location.href = '/projects?create=true'
         break
       case 'add_tasks':
-        window.location.href = '/tasks?create=true'
+        window.location.href = '/tasks/new'
         break
       case 'invite_team':
         window.location.href = '/organizations?invite=true'
@@ -229,7 +229,7 @@ export function FeatureTipsManager({ className }: FeatureTipsManagerProps) {
         window.dispatchEvent(new CustomEvent('open-ai-assistant'))
         break
       case 'set_deadlines':
-        window.location.href = '/tasks?filter=no-deadline'
+        window.location.href = '/my-work?filter=no-deadline'
         break
       case 'organize_projects':
         window.location.href = '/projects?organize=true'

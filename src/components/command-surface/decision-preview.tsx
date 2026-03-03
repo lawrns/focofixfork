@@ -1,6 +1,6 @@
 'use client';
 
-import { Terminal, Cpu, CheckCircle, XCircle, ListTodo, Mail, Calendar, Play } from 'lucide-react';
+import { Terminal, Cpu, CheckCircle, XCircle, ListTodo, Mail, Calendar, Play, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -57,6 +57,27 @@ export function DecisionPreview({ decision, mode, onApprove, onReject }: Decisio
       {/* CTO Content */}
       {isCTO && (
         <div className="space-y-3">
+          {/* Projects Section */}
+          {!!(decision as CTODecision).projects?.length && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FolderOpen className="h-4 w-4" />
+                Projects to Create ({(decision as CTODecision).projects!.length})
+              </div>
+              <div className="space-y-1.5">
+                {(decision as CTODecision).projects!.map((project, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 text-sm px-3 py-2 bg-white dark:bg-black/20 rounded border"
+                  >
+                    <span className="font-medium truncate">{project.name}</span>
+                    <span className="text-xs text-muted-foreground truncate">{project.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Tasks Section */}
           {(decision as CTODecision).tasks.length > 0 && (
             <div className="space-y-2">

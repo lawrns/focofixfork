@@ -22,6 +22,8 @@ import {
   Layers,
   Loader2,
   Sparkles,
+  Flag,
+  TrendingUp,
 } from 'lucide-react';
 import { AiPreviewModal } from '@/components/ai/ai-preview-modal';
 import type { TaskActionType } from '@/lib/services/task-action-service';
@@ -66,11 +68,38 @@ const priorityColors: Record<PriorityLevel, string> = {
 };
 
 const sectionConfig = {
-  now: { label: 'Now', icon: Target, description: 'Focus on these today' },
-  next: { label: 'Next', icon: Layers, description: 'Coming up soon' },
-  later: { label: 'Later', icon: Calendar, description: 'On the backlog' },
-  waiting: { label: 'Waiting', icon: Clock, description: 'Blocked or waiting on others' },
+  now: { label: 'Now: Revenue Moves', icon: Target, description: 'Tasks that directly drive active customers and cash flow this week.' },
+  next: { label: 'Next: Validation Queue', icon: Layers, description: 'High-leverage tasks queued right after current revenue work.' },
+  later: { label: 'Later: Backlog', icon: Calendar, description: 'Important, but not immediate to this week’s goals.' },
+  waiting: { label: 'Waiting: Blocked', icon: Clock, description: 'Pending dependencies, approvals, or external input.' },
 };
+
+type GoalId = 'G1' | 'G2' | 'G3' | 'G4' | 'G5';
+
+const goalConfig: Record<GoalId, { label: string; short: string; className: string }> = {
+  G1: { label: 'G1 First Revenue', short: 'Revenue', className: 'bg-emerald-500/10 text-emerald-700 border-emerald-300' },
+  G2: { label: 'G2 Simplicity', short: 'Simplicity', className: 'bg-blue-500/10 text-blue-700 border-blue-300' },
+  G3: { label: 'G3 Trustworthy Autonomy', short: 'Trust', className: 'bg-amber-500/10 text-amber-700 border-amber-300' },
+  G4: { label: 'G4 Distribution', short: 'Growth', className: 'bg-violet-500/10 text-violet-700 border-violet-300' },
+  G5: { label: 'G5 Retention/Lock-In', short: 'Retention', className: 'bg-zinc-500/10 text-zinc-700 border-zinc-300' },
+};
+
+function inferGoal(item: WorkItem & { section?: string }): GoalId | null {
+  const title = (item.title || '').toLowerCase();
+  const description = (item.description || '').toLowerCase();
+  const rawTags = ((item as any).tags || []) as Array<string | { name?: string }>;
+  const tags = rawTags
+    .map((t) => (typeof t === 'string' ? t : t?.name || ''))
+    .map((t) => t.toLowerCase());
+  const haystack = `${title} ${description} ${tags.join(' ')}`;
+
+  if (/\bg1\b|revenue|customer|trial|pricing|payment|invoice|sales|lead|onboard|restaurant|salon|store|waitlist/.test(haystack)) return 'G1';
+  if (/\bg2\b|onboarding|simpl|ux|ui|time to value|5-minute|navigation/.test(haystack)) return 'G2';
+  if (/\bg3\b|trust|approval|audit|trace|confidence|agent|autonom/.test(haystack)) return 'G3';
+  if (/\bg4\b|growth|distribution|content|community|referral|campaign|marketing/.test(haystack)) return 'G4';
+  if (/\bg5\b|retention|churn|lock-in|workflow|integration|historical/.test(haystack)) return 'G5';
+  return null;
+}
 
 function WorkItemRow({
   item,
@@ -84,6 +113,7 @@ function WorkItemRow({
   onRemoveFromMyWork: (itemId: string) => Promise<void>;
 }) {
   const [isCompleted, setIsCompleted] = useState(item.status === 'done');
+  const goal = inferGoal(item);
 
   const handleToggleComplete = async () => {
     const nextStatus = !isCompleted ? 'done' : 'in_progress';
@@ -147,6 +177,12 @@ function WorkItemRow({
           )}>
             {item.title}
           </span>
+          {goal && (
+            <Badge variant="outline" className={cn('h-5 text-[10px] border', goalConfig[goal].className)}>
+              <Flag className="h-3 w-3 mr-1" />
+              {goal}
+            </Badge>
+          )}
           {item.type === 'bug' && (
             <Badge variant="outline" className="h-5 text-[10px] text-red-600 border-red-200">
               Bug
@@ -299,6 +335,7 @@ function Section({
           {items.length}
         </span>
       </div>
+      <p className="text-xs text-zinc-500 mb-3">{config.description}</p>
       
       <div className="space-y-1">
         {items.map((item) => (
@@ -948,11 +985,14 @@ export default function MyWorkPage() {
 
   const completedToday = items.filter(i => i.status === 'done').length; // This is a simplification
   const totalToday = items.length;
+  const alignedItems = items.filter((i) => inferGoal(i) !== null).length;
+  const g1Items = items.filter((i) => inferGoal(i) === 'G1').length;
+  const alignmentPct = totalToday > 0 ? Math.round((alignedItems / totalToday) * 100) : 0;
 
   if (isLoading) {
     return (
       <PageShell maxWidth="4xl">
-        <PageHeader title="My Tasks" subtitle="Loading your tasks..." />
+        <PageHeader title="Execution Board" subtitle="Loading strategy-aligned tasks..." />
         <div className="space-y-8">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="space-y-4">
@@ -972,8 +1012,8 @@ export default function MyWorkPage() {
   return (
     <PageShell maxWidth="4xl">
       <PageHeader
-        title="My Tasks"
-        subtitle={`${completedToday} of ${totalToday} items completed`}
+        title="Execution Board"
+        subtitle={`${completedToday} of ${totalToday} completed • ${g1Items} linked to Goal 1`}
         primaryAction={
           <div className="flex items-center gap-2">
             <Select value={selectedProjectId} onValueChange={handleProjectChange}>
@@ -1005,14 +1045,37 @@ export default function MyWorkPage() {
         }
       />
 
-      <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Today&apos;s Progress</span>
+      <Card className="mb-6 p-4 border-zinc-200/80 dark:border-zinc-800">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
+            <h3 className="text-base font-semibold mt-1">If it doesn&apos;t support one of the 5 goals, it doesn&apos;t ship.</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">
+              Goal 1 is dominant: prioritize tasks that get to 10 paying customers in 90 days.
+            </p>
+          </div>
+          <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10">
+            G1 Absolute Priority
+          </Badge>
+        </div>
+      </Card>
+
+      <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-zinc-500" />
+            Execution Health
+          </span>
           <span className="text-sm text-zinc-500">
-            {totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0}%
+            {totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0}% done today
           </span>
         </div>
         <Progress value={totalToday > 0 ? (completedToday / totalToday) * 100 : 0} className="h-2" />
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <Badge variant="outline" className="border-zinc-300 text-zinc-700">{alignedItems}/{totalToday} mapped to strategy ({alignmentPct}%)</Badge>
+          <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-500/10">{g1Items} for Goal 1</Badge>
+          <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-500/10">Keep nav focused: build only what drives value</Badge>
+        </div>
       </div>
 
       <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />

@@ -32,6 +32,8 @@ import {
   Zap,
   BookOpen,
   AlertTriangle,
+  Flag,
+  TrendingUp,
 } from 'lucide-react'
 import { CommandSurface } from '@/components/command-surface'
 
@@ -261,8 +263,8 @@ export default function DashboardPageClient() {
     <ErrorBoundary>
       <PageShell>
         <PageHeader
-          title="Dashboard"
-          subtitle="Fleet overview"
+          title="Execution Dashboard"
+          subtitle="Goal 1 first: track work that gets to 10 paying customers"
           primaryAction={
             <Button
               variant="outline"
@@ -275,6 +277,22 @@ export default function DashboardPageClient() {
             </Button>
           }
         />
+
+        <div className="mb-6 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
+              <h2 className="text-sm font-semibold mt-1">Revenue is the only feature that matters right now.</h2>
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
+                Use this dashboard to prioritize customer-facing execution over platform complexity.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10">
+              <Flag className="h-3 w-3 mr-1" />
+              G1 Absolute Priority
+            </Badge>
+          </div>
+        </div>
 
         {/* Orchestration Health */}
         <div className="mb-6">
@@ -327,6 +345,15 @@ export default function DashboardPageClient() {
                 {autonomousStats.improvementsWeek}
               </div>
               <div className="text-[9px] text-muted-foreground">this week</div>
+            </div>
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> G1 Share
+              </div>
+              <div className="text-2xl font-bold">
+                {allRuns.length > 0 ? `${Math.round((allRuns.filter(r => /revenue|customer|sales|onboard|trial/i.test((r.runner || '') + ' ' + (r.task_id || ''))).length / allRuns.length) * 100)}%` : '—'}
+              </div>
+              <div className="text-[9px] text-muted-foreground">runs tagged by revenue intent</div>
             </div>
           </div>
         </div>

@@ -23,7 +23,7 @@ import { AgentResourceRow } from '@/components/command-center/orchestrator/agent
 import { QuickActionsCard } from '@/components/command-center/orchestrator/quick-actions-card'
 import { GuardrailsCard } from '@/components/command-center/orchestrator/guardrails-card'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
-import { RefreshCw, Plus, Cpu, AlertCircle, Pause, Play, Settings } from 'lucide-react'
+import { RefreshCw, Plus, Cpu, AlertCircle, Pause, Play, Settings, Flag, Target } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { AnimatePresence } from 'framer-motion'
@@ -208,8 +208,8 @@ export function CommandCenterClient() {
     <TooltipProvider delayDuration={200}>
     <PageShell>
       <PageHeader
-        title="Agent Command Center"
-        subtitle="Unified control surface for all agent backends"
+        title="Execution Command Center"
+        subtitle="Run agents with explicit Goal 1 focus and visible outcomes"
         primaryAction={
           <div className="flex items-center gap-2">
             {store.error && (
@@ -250,6 +250,28 @@ export function CommandCenterClient() {
           </div>
         }
       />
+
+      <div className="mb-4 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
+            <h2 className="text-sm font-semibold mt-1">Command → action → outcome must be visible and tied to revenue goals.</h2>
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
+              Prefer missions that support customer activation, retention, and measurable weekly progress.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10">
+              <Flag className="h-3 w-3 mr-1" />
+              G1 Priority
+            </Badge>
+            <Badge variant="outline" className="text-[11px] border-blue-300 text-blue-700 bg-blue-500/10">
+              <Target className="h-3 w-3 mr-1" />
+              Trust Through Visibility
+            </Badge>
+          </div>
+        </div>
+      </div>
 
       {/* Health tiles */}
       <EmpireHealthGrid services={services} loading={healthLoading} />

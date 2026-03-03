@@ -31,11 +31,7 @@ export function AgentControls({ agent }: AgentControlsProps) {
     setPausingId(agent.id)
     try {
       if (isPaused) {
-        await fetch('/api/command-center/control', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'resume', backend: agent.backend, nativeId: agent.nativeId }),
-        })
+        await store.resumeAgent(agent.backend, agent.nativeId)
       } else {
         await store.pauseAgent(agent.backend, agent.nativeId)
       }

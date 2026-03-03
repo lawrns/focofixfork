@@ -33,10 +33,10 @@ export function DeleteMissionConfirm({ open, missionId, onClose }: DeleteMission
       const res = await fetch(`/api/command-center/missions?id=${missionId}`, { method: 'DELETE' })
       if (res.ok) {
         store.setMissions(store.missions.filter(m => m.id !== missionId))
+        onClose()
       }
     } finally {
       setLoading(false)
-      onClose()
     }
   }
 

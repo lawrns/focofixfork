@@ -18,6 +18,12 @@ interface NotificationSettings {
   email_digest_frequency: string;
   enable_sound: boolean;
   show_badges: boolean;
+  enable_telegram: boolean;
+  telegram_chat_id: string | null;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start: string;
+  quiet_hours_end: string;
+  quiet_hours_timezone: string;
 }
 
 const DEFAULT_SETTINGS: Omit<NotificationSettings, 'user_id'> = {
@@ -33,6 +39,12 @@ const DEFAULT_SETTINGS: Omit<NotificationSettings, 'user_id'> = {
   email_digest_frequency: 'daily',
   enable_sound: true,
   show_badges: true,
+  enable_telegram: false,
+  telegram_chat_id: null,
+  quiet_hours_enabled: false,
+  quiet_hours_start: '22:00',
+  quiet_hours_end: '07:00',
+  quiet_hours_timezone: 'America/Mexico_City',
 };
 
 export async function GET(request: NextRequest) {
@@ -86,7 +98,7 @@ export async function PUT(request: NextRequest) {
     const allowedFields = [
       'enable_push',
       'notify_task_assignments',
-      'notify_mentions', 
+      'notify_mentions',
       'notify_project_updates',
       'notify_deadlines',
       'notify_team_members',
@@ -95,10 +107,16 @@ export async function PUT(request: NextRequest) {
       'enable_email',
       'email_digest_frequency',
       'enable_sound',
-      'show_badges'
+      'show_badges',
+      'enable_telegram',
+      'telegram_chat_id',
+      'quiet_hours_enabled',
+      'quiet_hours_start',
+      'quiet_hours_end',
+      'quiet_hours_timezone',
     ];
 
-    const updateData: Record<string, boolean | string> = {};
+    const updateData: Record<string, boolean | string | null> = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updateData[field] = body[field];

@@ -1,0 +1,686 @@
+{
+  "plan_id": "projects-section-master-plan-2026-03-02",
+  "version": "1.0",
+  "timestamp": "2026-03-02T11:13:24.301170-06:00",
+  "executive_summary": "Comprehensive plan to fix the 'failed to load projects' error, consolidate styling to house standards, and fully integrate Projects with CRICO (Claude/Cognitive Operating System) functionality. This is a 3-phase implementation spanning styling fixes, database alignment, and AI-powered project intelligence.",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Critical Bug Fix & Database Alignment",
+      "priority": "P0-CRITICAL",
+      "duration": "2-3 days",
+      "summary": "Fix the root cause of 'failed to load projects' - database schema mismatch between code expectations and actual tables. Standardize on FOCO 2.0 schema.",
+      "issues_addressed": [
+        "DB-001: Dual schema problem - code expects foco_workspaces/foco_projects but migrations create workspaces/projects",
+        "DB-002: RLS policy recursion causing infinite loops",
+        "DB-003: Missing workspace membership for users",
+        "DB-004: Type definition mismatch in database.types.ts"
+      ],
+      "tasks": [
+        {
+          "id": "P1-T1",
+          "title": "Audit and align table names",
+          "description": "Ensure all code references use consistent table names. Repository layer expects 'foco_workspaces', 'foco_projects' - verify migrations match.",
+          "files_to_check": [
+            "src/lib/repositories/workspace-repository.ts",
+            "src/lib/repositories/project-repository.ts",
+            "supabase/migrations/100_foco_2_core_schema.sql",
+            "supabase/migrations/20260115_create_workspaces_and_fix_projects.sql"
+          ],
+          "decision_required": "Choose canonical naming: foco_* prefix or no prefix. Recommendation: standardize on foco_* for FOCO 2.0 tables."
+        },
+        {
+          "id": "P1-T2",
+          "title": "Fix RLS recursion in workspace_members",
+          "description": "The RLS policy on foco_workspace_members causes infinite recursion when querying across tables. Rewrite to use workspace-based checks instead of self-referential queries.",
+          "problematic_policy": "CREATE POLICY ... USING (EXISTS (SELECT 1 FROM foco_workspace_members WHERE ...))",
+          "solution": "Use direct workspace_id comparison or auth.uid() membership check without subqueries on same table"
+        },
+        {
+          "id": "P1-T3",
+          "title": "Ensure user workspace membership",
+          "description": "Verify the current user is in foco_workspace_members table for at least one workspace. If not, create default workspace and membership.",
+          "validation_query": "SELECT * FROM foco_workspace_members WHERE user_id = auth.uid();"
+        },
+        {
+          "id": "P1-T4",
+          "title": "Sync TypeScript types with database",
+          "description": "Update src/lib/supabase/types.ts to match actual database schema. Remove or update src/types/database.types.ts which has incorrect legacy definitions.",
+          "action": "Generate fresh types from Supabase or manually align to foco_* tables"
+        },
+        {
+          "id": "P1-T5",
+          "title": "Verify API routes use correct schema",
+          "description": "Check all projects API routes use the correct table names and RLS bypass strategy.",
+          "files": [
+            "src/app/api/projects/route.ts",
+            "src/app/api/workspaces/[id]/projects/route.ts"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "Projects page loads without 'failed to load' error",
+        "API returns 200 with project data",
+        "No RLS recursion errors in logs",
+        "TypeScript types match database schema"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Styling Consolidation to House Style",
+      "priority": "P1-HIGH",
+      "duration": "3-5 days",
+      "summary": "Refactor Projects page to match the established 'Cybernetic Clean' house style used across proposals, my-work, and settings pages.",
+      "design_system": {
+        "name": "Cybernetic Clean",
+        "philosophy": "Refined minimalist aesthetic inspired by Linear, Notion, Asana - teal-accented indigo palette with professional whitespace",
+        "key_characteristics": [
+          "Electric teal (#00C49A) accent color",
+          "DM Sans font family",
+          "HSL-based CSS variables for theming",
+          "Consistent spacing tokens (space-y-6 between sections)",
+          "Card-based layouts with subtle borders",
+          "Glass morphism effects with teal glow",
+          "Mobile-first responsive design"
+        ]
+      },
+      "violations_to_fix": [
+        {
+          "id": "STYLE-001",
+          "severity": "CRITICAL",
+          "issue": "PageShell missing maxWidth prop",
+          "current": "<PageShell> (defaults to 7xl)",
+          "correct": "<PageShell maxWidth='6xl'> (consistent with proposals/settings)",
+          "file": "src/app/projects/ProjectsPageClient.tsx:1045"
+        },
+        {
+          "id": "STYLE-002",
+          "severity": "CRITICAL",
+          "issue": "PageHeader missing primaryAction",
+          "current": "Buttons in custom toolbar",
+          "correct": "primaryAction prop with Create Project button",
+          "file": "src/app/projects/ProjectsPageClient.tsx:1046-1049"
+        },
+        {
+          "id": "STYLE-003",
+          "severity": "HIGH",
+          "issue": "Custom card instead of Card component",
+          "current": "Manual Link with rounded-xl border-zinc-200",
+          "correct": "Use <Card variant='interactive'> with rounded-lg border-zinc-100",
+          "file": "src/app/projects/ProjectsPageClient.tsx:143-144"
+        },
+        {
+          "id": "STYLE-004",
+          "severity": "HIGH",
+          "issue": "Hardcoded zinc colors instead of design tokens",
+          "current": "text-zinc-900, bg-zinc-100, border-zinc-200",
+          "correct": "text-foreground, bg-card, border-border",
+          "files": [
+            "src/app/projects/ProjectsPageClient.tsx:143",
+            "src/app/projects/ProjectsPageClient.tsx:158",
+            "src/app/projects/ProjectsPageClient.tsx:161"
+          ]
+        },
+        {
+          "id": "STYLE-005",
+          "severity": "HIGH",
+          "issue": "Custom empty state instead of standard EmptyState",
+          "current": "ProjectEmptyState component",
+          "correct": "EmptyState from @/components/ui/empty-state-standard",
+          "file": "src/app/projects/ProjectsPageClient.tsx:1147-1149"
+        },
+        {
+          "id": "STYLE-006",
+          "severity": "MEDIUM",
+          "issue": "Custom view toggle instead of Tabs/ToggleGroup",
+          "current": "Manual bordered div with Button variants",
+          "correct": "Tabs or ToggleGroup component for view switching",
+          "file": "src/app/projects/ProjectsPageClient.tsx:1081-1098"
+        },
+        {
+          "id": "STYLE-007",
+          "severity": "MEDIUM",
+          "issue": "Inconsistent grid gap",
+          "current": "gap-4",
+          "correct": "gap-6 (consistent with other pages)",
+          "file": "src/app/projects/ProjectsPageClient.tsx"
+        },
+        {
+          "id": "STYLE-008",
+          "severity": "MEDIUM",
+          "issue": "Different loading skeleton pattern",
+          "current": "<Skeleton> components with rounded-xl",
+          "correct": "Use PageLoading or CardSkeleton from loading-states",
+          "file": "src/app/projects/ProjectsPageClient.tsx:1022-1041"
+        },
+        {
+          "id": "STYLE-009",
+          "severity": "LOW",
+          "issue": "Toast-only error handling",
+          "current": "toast.error('Failed to load projects')",
+          "correct": "Display ErrorState UI component with retry",
+          "file": "src/app/projects/ProjectsPageClient.tsx:700-706"
+        }
+      ],
+      "component_replacements": [
+        {
+          "old": "Custom PageShell without maxWidth",
+          "new": "<PageShell maxWidth='6xl'>",
+          "import": "import { PageShell } from '@/components/layout/page-shell'"
+        },
+        {
+          "old": "Custom toolbar with search/sort/filter",
+          "new": "Standard filter bar pattern with Tabs",
+          "reference": "See proposals/page.tsx:260-275"
+        },
+        {
+          "old": "ProjectCard custom implementation",
+          "new": "<UnifiedCard hover onClick={...}>",
+          "import": "import { UnifiedCard, UnifiedCardList } from '@/components/ui/unified-card'"
+        },
+        {
+          "old": "Custom view toggle buttons",
+          "new": "<Tabs value={view} onValueChange={setView}>",
+          "import": "import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'"
+        },
+        {
+          "old": "ProjectEmptyState",
+          "new": "<EmptyState icon={FolderOpen} title='No projects' ... />",
+          "import": "import { EmptyState } from '@/components/ui/empty-state-standard'"
+        },
+        {
+          "old": "Inline Skeleton for loading",
+          "new": "<PageLoading message='Loading projects...' />",
+          "import": "import { PageLoading } from '@/components/ui/loading-states'"
+        }
+      ],
+      "styling_checklist": [
+        "Replace all text-zinc-* with text-foreground/text-muted-foreground",
+        "Replace all bg-zinc-* with bg-card/bg-background",
+        "Replace all border-zinc-* with border-border",
+        "Use rounded-lg instead of rounded-xl for cards",
+        "Use space-y-6 between sections",
+        "Use gap-6 for grid layouts",
+        "Add glass-card class for elevated cards",
+        "Use foco-teal for primary accent states"
+      ],
+      "success_criteria": [
+        "Projects page visually matches proposals/settings pages",
+        "All hardcoded zinc colors replaced with design tokens",
+        "Using standard Card, EmptyState, PageHeader components",
+        "Consistent spacing and typography",
+        "Proper loading and error states",
+        "Mobile-responsive layout"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "CRICO (Claude/Cognitive OS) Integration",
+      "priority": "P2-MEDIUM",
+      "duration": "6-8 weeks",
+      "summary": "Fully integrate Projects with CRICO's AI capabilities including Project Health Agents, Alignment Engine, Suggestion Engine, and automated insights.",
+      "crico_overview": {
+        "what_is_crico": "Cognitive Operating System for Builders - AI-driven architecture with Agent Orchestra, Alignment Engine, and Suggestion Engine",
+        "current_state": "CRICO agents use static analysis only (regex/pattern matching) - no LLM integration yet",
+        "integration_goal": "Connect Projects to CRICO for intelligent project monitoring, health scoring, and automated suggestions"
+      },
+      "new_database_tables": [
+        {
+          "name": "crico_project_settings",
+          "purpose": "Per-project CRICO configuration",
+          "columns": [
+            "project_id (FK)",
+            "workspace_id (FK)",
+            "analysis_enabled (boolean)",
+            "analysis_frequency (enum: on_change/hourly/daily/manual)",
+            "analysis_depth (enum: light/standard/deep)",
+            "enable_deadline_analysis",
+            "enable_resource_analysis",
+            "enable_team_workload",
+            "auto_suggest_threshold (numeric)",
+            "linked_repos (jsonb)"
+          ]
+        },
+        {
+          "name": "crico_project_snapshots",
+          "purpose": "Health metric snapshots for trend tracking",
+          "columns": [
+            "project_id (FK)",
+            "snapshot_type (enum: health/milestone/sprint/on_demand)",
+            "health_scores (jsonb: overall, schedule, resources, quality, team)",
+            "task_metrics (jsonb)",
+            "team_metrics (jsonb)",
+            "timeline_analysis (jsonb)",
+            "risk_factors (jsonb array)",
+            "overall_risk_score"
+          ]
+        },
+        {
+          "name": "crico_project_suggestions",
+          "purpose": "Project-specific AI suggestions",
+          "columns": [
+            "suggestion_id (FK to crico_suggestions)",
+            "project_id (FK)",
+            "suggestion_type (enum: schedule_adjustment/resource_reallocation/etc)",
+            "impact_scope (enum: single_task/milestone/project/cross_project)",
+            "affected_items (jsonb)",
+            "suggested_assignee (FK)",
+            "estimated_effort_hours",
+            "estimated_value_score",
+            "implementation_status"
+          ]
+        },
+        {
+          "name": "crico_workload_snapshots",
+          "purpose": "Per-member workload tracking",
+          "columns": [
+            "project_id (FK)",
+            "user_id (FK)",
+            "assigned_tasks",
+            "in_progress_tasks",
+            "overdue_tasks",
+            "capacity_percentage",
+            "workload_score"
+          ]
+        },
+        {
+          "name": "crico_project_events",
+          "purpose": "Event log for triggering analysis",
+          "columns": [
+            "project_id (FK)",
+            "event_type (enum: task_created/task_updated/milestone_completed/etc)",
+            "event_data (jsonb)",
+            "triggered_analysis (boolean)"
+          ]
+        }
+      ],
+      "crico_agents_for_projects": [
+        {
+          "name": "ProjectHealthAgent",
+          "analyzes": [
+            "Schedule adherence - are milestones being met?",
+            "Velocity trends - is team speed consistent?",
+            "Completion forecast - when will project finish?",
+            "Scope creep detection - unplanned task additions",
+            "Blocked item analysis - why are items blocked?"
+          ],
+          "outputs": [
+            "Health score (0-100)",
+            "Trend indicators (improving/stable/declining)",
+            "Risk alerts"
+          ]
+        },
+        {
+          "name": "ResourceAllocationAgent",
+          "analyzes": [
+            "Workload distribution - even across team?",
+            "Skill matching - right person for right task?",
+            "Capacity planning - future availability",
+            "Bottleneck identification - who's blocking progress?",
+            "Overallocation warnings - burnout risk"
+          ],
+          "outputs": [
+            "Workload balance score",
+            "Reallocation suggestions",
+            "Capacity forecast"
+          ]
+        },
+        {
+          "name": "DeadlineRiskAgent",
+          "analyzes": [
+            "Milestone at risk - will this be missed?",
+            "Critical path analysis - which tasks affect delivery?",
+            "Dependency delays - are dependencies causing issues?",
+            "Buffer consumption - how much schedule buffer remains?",
+            "Early warning signals - predict delays before they happen"
+          ],
+          "outputs": [
+            "Risk probability scores",
+            "Deadline adjustment suggestions",
+            "Critical task alerts"
+          ]
+        },
+        {
+          "name": "ProjectAlignmentAgent",
+          "analyzes": [
+            "Template vs Project Structure - missing default tasks?",
+            "Project Settings vs Actual Usage - unused statuses?",
+            "Milestone Plan vs Task Execution - deadline mismatches?",
+            "Custom Fields vs Data Population - empty fields?"
+          ],
+          "outputs": [
+            "Alignment score",
+            "Drift detection alerts",
+            "Normalization suggestions"
+          ]
+        }
+      ],
+      "event_triggers": [
+        {
+          "event": "project.created",
+          "triggered_agents": ["ProjectHealthAgent", "ResourceAllocationAgent"],
+          "action": "Initial health check and team capacity baseline"
+        },
+        {
+          "event": "task.status_changed → done",
+          "triggered_agents": ["ProjectHealthAgent"],
+          "action": "Progress tracking, velocity calculation"
+        },
+        {
+          "event": "task.status_changed → blocked",
+          "triggered_agents": ["DeadlineRiskAgent", "ProjectHealthAgent"],
+          "action": "Risk escalation, unblock suggestions"
+        },
+        {
+          "event": "milestone.completed",
+          "triggered_agents": ["ProjectHealthAgent", "ResourceAllocationAgent"],
+          "action": "Velocity update, next milestone planning"
+        },
+        {
+          "event": "milestone.missed",
+          "triggered_agents": ["DeadlineRiskAgent", "ProjectHealthAgent"],
+          "action": "Recovery planning, schedule adjustment"
+        },
+        {
+          "event": "member.added/removed",
+          "triggered_agents": ["ResourceAllocationAgent"],
+          "action": "Capacity rebalancing"
+        },
+        {
+          "event": "deadline.changed",
+          "triggered_agents": ["DeadlineRiskAgent"],
+          "action": "Timeline impact analysis"
+        }
+      ],
+      "ui_integration_points": [
+        {
+          "location": "Project List View",
+          "component": "ProjectHealthIndicator",
+          "display": "Subtle health indicator on project card (green/yellow/red dot)",
+          "data": "Overall health score, alert count"
+        },
+        {
+          "location": "Project Detail - New 'Insights' Tab",
+          "component": "CricoInsightsPanel",
+          "display": "Full dashboard with health radar, suggestions list, risk factors",
+          "data": "All health metrics, suggestions, workload charts"
+        },
+        {
+          "location": "Project Board View",
+          "component": "AISuggestionStrip",
+          "display": "Banner above board with actionable suggestions",
+          "data": "Schedule adjustments, resource reallocation suggestions"
+        },
+        {
+          "location": "Project Settings",
+          "component": "CricoSettingsSection",
+          "display": "Configuration panel for analysis settings",
+          "data": "Enable/disable analysis types, set thresholds"
+        },
+        {
+          "location": "Notifications",
+          "component": "CricoAlertSystem",
+          "display": "Toast notifications for critical health drops, milestone risks",
+          "data": "Real-time alerts from agent analysis"
+        }
+      ],
+      "api_endpoints_to_create": [
+        {
+          "route": "GET /api/crico/projects/[id]/health",
+          "purpose": "Get current health snapshot for project"
+        },
+        {
+          "route": "GET /api/crico/projects/[id]/health/history",
+          "purpose": "Get health score history for trend chart"
+        },
+        {
+          "route": "POST /api/crico/projects/[id]/analyze",
+          "purpose": "Trigger on-demand analysis"
+        },
+        {
+          "route": "GET /api/crico/projects/[id]/suggestions",
+          "purpose": "Get AI suggestions for project"
+        },
+        {
+          "route": "PATCH /api/crico/suggestions/[id]",
+          "purpose": "Accept, reject, or schedule a suggestion"
+        },
+        {
+          "route": "GET /api/crico/projects/[id]/workload",
+          "purpose": "Get team workload distribution"
+        },
+        {
+          "route": "GET /api/crico/projects/[id]/alignment",
+          "purpose": "Get alignment check results"
+        }
+      ],
+      "components_to_create": [
+        {
+          "name": "ProjectHealthIndicator",
+          "location": "src/components/crico/ProjectHealthIndicator.tsx",
+          "props": ["projectId", "healthScore", "alertCount", "size"]
+        },
+        {
+          "name": "ProjectInsightsPanel",
+          "location": "src/components/crico/ProjectInsightsPanel.tsx",
+          "props": ["projectId"]
+        },
+        {
+          "name": "HealthScoreCard",
+          "location": "src/components/crico/HealthScoreCard.tsx",
+          "props": ["scores", "trends"]
+        },
+        {
+          "name": "ProjectSuggestionCard",
+          "location": "src/components/crico/ProjectSuggestionCard.tsx",
+          "props": ["suggestion", "onApply", "onDismiss", "onSchedule"]
+        },
+        {
+          "name": "TeamWorkloadChart",
+          "location": "src/components/crico/TeamWorkloadChart.tsx",
+          "props": ["workloadData"]
+        },
+        {
+          "name": "RiskRadar",
+          "location": "src/components/crico/RiskRadar.tsx",
+          "props": ["riskFactors", "overallScore"]
+        },
+        {
+          "name": "CricoSettingsSection",
+          "location": "src/components/crico/CricoSettingsSection.tsx",
+          "props": ["settings", "onUpdate"]
+        }
+      ],
+      "hooks_to_create": [
+        {
+          "name": "useProjectCrico",
+          "location": "src/lib/hooks/use-project-crico.ts",
+          "purpose": "Get CRICO data for a project"
+        },
+        {
+          "name": "useProjectHealth",
+          "location": "src/lib/hooks/use-project-health.ts",
+          "purpose": "Get health metrics with auto-refresh"
+        },
+        {
+          "name": "useProjectSuggestions",
+          "location": "src/lib/hooks/use-project-suggestions.ts",
+          "purpose": "Get and manage CRICO suggestions"
+        }
+      ],
+      "services_to_create": [
+        {
+          "name": "ProjectAnalysisService",
+          "location": "src/lib/crico/projects/project-analysis-service.ts",
+          "methods": [
+            "analyzeProject(projectId)",
+            "calculateHealthScore(projectId)",
+            "generateSuggestions(projectId)",
+            "checkAlignment(projectId)"
+          ]
+        },
+        {
+          "name": "ProjectSuggestionEngine",
+          "location": "src/lib/crico/projects/project-suggestion-engine.ts",
+          "methods": [
+            "findScheduleImprovements(projectId)",
+            "findResourceOptimizations(projectId)",
+            "findDeadlineRisks(projectId)",
+            "findWorkloadImbalances(projectId)"
+          ]
+        }
+      ],
+      "implementation_roadmap": [
+        {
+          "week": 1,
+          "focus": "Foundation",
+          "tasks": [
+            "Create database migration for CRICO-Projects tables",
+            "Set up TypeScript types",
+            "Create API route stubs"
+          ]
+        },
+        {
+          "week": 2,
+          "focus": "Core Agents",
+          "tasks": [
+            "Implement ProjectHealthAgent",
+            "Implement ResourceAllocationAgent",
+            "Add to AgentOrchestra"
+          ]
+        },
+        {
+          "week": 3,
+          "focus": "Analysis Engine",
+          "tasks": [
+            "Implement ProjectAnalysisService",
+            "Create health score calculation",
+            "Add snapshot generation"
+          ]
+        },
+        {
+          "week": 4,
+          "focus": "Suggestion Engine",
+          "tasks": [
+            "Implement ProjectSuggestionEngine",
+            "Create suggestion hunters",
+            "Add scoring algorithm"
+          ]
+        },
+        {
+          "week": 5,
+          "focus": "Event System",
+          "tasks": [
+            "Create database triggers",
+            "Implement event handlers",
+            "Add queue processing"
+          ]
+        },
+        {
+          "week": 6,
+          "focus": "UI Components",
+          "tasks": [
+            "Create HealthIndicator",
+            "Create InsightsPanel",
+            "Create SuggestionCard"
+          ]
+        },
+        {
+          "week": 7,
+          "focus": "Integration",
+          "tasks": [
+            "Add Insights tab to project page",
+            "Add health indicators to project list",
+            "Create settings panel"
+          ]
+        },
+        {
+          "week": 8,
+          "focus": "Polish",
+          "tasks": [
+            "Add animations",
+            "Optimize performance",
+            "Add comprehensive tests"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "Projects show health indicators in list view",
+        "Project detail has 'Insights' tab with full CRICO dashboard",
+        "AI suggestions appear for schedule/resource/deadline issues",
+        "Users can configure CRICO analysis per-project",
+        "Event-driven analysis triggers automatically",
+        "Health scores are accurate and actionable"
+      ]
+    }
+  ],
+  "dependencies_between_phases": {
+    "phase_2_requires": "Phase 1 must be complete (projects must load before restyling)",
+    "phase_3_requires": "Phase 2 should be complete (UI patterns established before adding CRICO components)"
+  },
+  "files_affected_summary": {
+    "phase_1_files": [
+      "src/lib/repositories/workspace-repository.ts",
+      "src/lib/repositories/project-repository.ts",
+      "src/lib/supabase/types.ts",
+      "supabase/migrations/*",
+      "src/app/api/projects/route.ts"
+    ],
+    "phase_2_files": [
+      "src/app/projects/ProjectsPageClient.tsx",
+      "src/app/projects/page.tsx",
+      "src/features/projects/components/ProjectCard.tsx",
+      "src/features/projects/components/ProjectList.tsx"
+    ],
+    "phase_3_files": [
+      "src/app/projects/[slug]/page.tsx",
+      "src/lib/crico/agents/AgentOrchestra.ts",
+      "supabase/migrations/20260302_crico_projects_integration.sql",
+      "Multiple new files in src/components/crico/",
+      "Multiple new files in src/lib/crico/projects/",
+      "Multiple new files in src/app/api/crico/projects/"
+    ]
+  },
+  "risk_mitigation": [
+    {
+      "risk": "Database migration conflicts",
+      "mitigation": "Create comprehensive migration test, backup data before running"
+    },
+    {
+      "risk": "RLS policy recursion reoccurs",
+      "mitigation": "Test all queries with EXPLAIN, verify no circular dependencies"
+    },
+    {
+      "risk": "CRICO integration affects performance",
+      "mitigation": "Use background jobs, cache snapshots, lazy-load insights panel"
+    },
+    {
+      "risk": "UI changes break mobile responsiveness",
+      "mitigation": "Test all changes on mobile viewport, use mobile-first patterns"
+    }
+  ],
+  "testing_strategy": {
+    "phase_1": [
+      "Unit tests for repository methods",
+      "Integration tests for API routes",
+      "RLS policy tests with different user roles"
+    ],
+    "phase_2": [
+      "Visual regression tests",
+      "Mobile responsiveness tests",
+      "Accessibility audit (a11y)"
+    ],
+    "phase_3": [
+      "Agent logic unit tests",
+      "Suggestion scoring accuracy tests",
+      "Event trigger integration tests",
+      "End-to-end CRICO workflow tests"
+    ]
+  },
+  "appendices": {
+    "appendix_a": "House Style Guide - Complete design tokens, colors, typography reference",
+    "appendix_b": "CRICO Architecture - Agent system, alignment engine, suggestion engine details",
+    "appendix_c": "Database Schema - Full SQL for new CRICO tables",
+    "appendix_d": "Component Library - All standard components with usage examples"
+  }
+}

@@ -1,4 +1,4 @@
-export type CommandMode = 'cto' | 'coo' | 'auto';
+export type CommandMode = 'cto' | 'coo' | 'auto' | 'intake';
 
 export type IntentType = 
   | 'create_task' 
@@ -10,12 +10,22 @@ export type IntentType =
   | 'schedule_reminder'
   | 'unknown';
 
+export type StepResult =
+  | { taskId: string; queued?: boolean }
+  | { cronId: string }
+  | { runId: string }
+  | { emailId: string }
+  | { verified: true }
+  | { reported: true }
+  | { logged: true }
+  | Record<string, unknown>;
+
 export type PlanStep = {
   id: string;
   type: 'create_task' | 'create_cron' | 'send_email' | 'create_run' | 'ledger_log' | 'verify' | 'report';
   description: string;
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  result?: unknown;
+  result?: StepResult;
   error?: string;
 };
 
@@ -25,6 +35,16 @@ export type CommandPlan = {
   steps: PlanStep[];
   estimatedDuration: number;
   requiresApproval: boolean;
+};
+
+export type AgentTrackerState = {
+  runId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  runner?: string;
+  startedAt?: string;
+  currentStep?: string;
+  outputPreview?: string;
+  pollCount: number;
 };
 
 export type CommandExecution = {
@@ -38,6 +58,7 @@ export type CommandExecution = {
   updatedAt: Date;
   result?: unknown;
   error?: string;
+  agentTracker?: AgentTrackerState;
 };
 
 export type CommandSurfaceProps = {

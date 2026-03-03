@@ -18,18 +18,19 @@ export function SystemPulseChart() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchHealth = async () => {
       try {
         setLoading(true)
-        const res = await fetch('/api/empire/health')
+        const res = await fetch('/api/empire/health', { signal: controller.signal })
         if (res.ok) {
           const json = await res.json()
           const services = json.services || []
 
-          // Extract latencies
-          const clawdbotService = services.find((s: any) => s.name === 'ClawdBot API')
-          const openclawService = services.find((s: any) => s.name === 'OpenClaw Relay')
-          const upCount = services.filter((s: any) => s.status === 'up').length
+          const clawdbotService = services.find((s: { name: string }) => s.name === 'ClawdBot API')
+          const openclawService = services.find((s: { name: string }) => s.name === 'OpenClaw Relay')
+          const upCount = services.filter((s: { status: string }) => s.status === 'up').length
 
           const now = new Date()
           const timeStr = now.toLocaleTimeString('en-US', {
@@ -47,23 +48,20 @@ export function SystemPulseChart() {
 
           setData(prev => {
             const updated = [...prev, snapshot]
-            // Keep last 20 data points
             return updated.slice(-20)
           })
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
         console.error('Failed to fetch health:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    // Initial fetch
     fetchHealth()
-
-    // Poll every 30s
     const id = setInterval(fetchHealth, 30_000)
-    return () => clearInterval(id)
+    return () => { controller.abort(); clearInterval(id) }
   }, [])
 
   const hasData = data.length > 0

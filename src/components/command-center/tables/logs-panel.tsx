@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollText, Clock, Search, ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOpenClawLogs } from '@/lib/hooks/use-openclaw-logs'
+import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 
 const LEVEL_COLORS: Record<string, string> = {
   error: 'text-red-400',
@@ -37,6 +38,7 @@ const SOURCE_LABELS: Record<LogSource, string> = {
 
 export function LogsPanel() {
   const { logs, connected, clear } = useOpenClawLogs()
+  const { quietMode, quietCategories } = useCommandCenterStore()
   const [filter, setFilter] = useState('')
   const [source, setSource] = useState<LogSource>('all')
   const [autoScroll, setAutoScroll] = useState(true)
@@ -58,6 +60,7 @@ export function LogsPanel() {
 
   const filtered = logs.filter(l => {
     if (source !== 'all' && inferSource(l) !== source) return false
+    if ((quietMode || quietCategories.heartbeat) && inferSource(l) === 'crons' && /heartbeat/i.test(l.message ?? '')) return false
     if (filter && !JSON.stringify(l).toLowerCase().includes(filter.toLowerCase())) return false
     return true
   })

@@ -8,7 +8,17 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import { cn } from '@/lib/utils'
 
-export function QuickActionsCard() {
+interface ServiceStatus {
+  name: string
+  status: 'up' | 'down' | 'degraded'
+  latencyMs?: number
+}
+
+interface QuickActionsCardProps {
+  services?: ServiceStatus[]
+}
+
+export function QuickActionsCard({ services = [] }: QuickActionsCardProps) {
   const store = useCommandCenterStore()
   const [loading, setLoading] = useState(false)
 
@@ -151,9 +161,23 @@ export function QuickActionsCard() {
           <TooltipContent className="text-xs">Backend service health — inner to outer: ClawdBot, Bosun, Critter</TooltipContent>
           </Tooltip>
           <div className="flex-1 space-y-1">
-            <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              5/5 services up
-            </Badge>
+            {(() => {
+              const total = services.length
+              const upCount = services.filter(s => s.status === 'up').length
+              const anyDown = services.some(s => s.status === 'down')
+              const badgeColor = total === 0
+                ? 'bg-zinc-500/10 text-zinc-500'
+                : upCount === total
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : anyDown
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              return (
+                <Badge variant="outline" className={cn('text-[9px]', badgeColor)}>
+                  {total === 0 ? 'No data' : `${upCount}/${total} services up`}
+                </Badge>
+              )
+            })()}
           </div>
         </div>
       </div>

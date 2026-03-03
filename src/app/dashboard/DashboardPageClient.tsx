@@ -62,6 +62,63 @@ function elapsed(start: string | null): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
+function ActiveRunsCard() {
+  const [runs, setRuns] = useState<any[]>([])
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/runs?status=running&limit=5')
+        const json = await res.json()
+        setRuns(json.data ?? [])
+      } catch {
+        // silent — card simply stays hidden
+      }
+    }
+    poll()
+    const interval = setInterval(poll, 10_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (runs.length === 0) return null
+
+  return (
+    <div className="rounded-lg border border-border bg-card mb-6">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+        <Loader2 className="h-3.5 w-3.5 text-teal-400 animate-spin" />
+        <span className="text-sm font-semibold">Active Runs</span>
+        <Badge
+          variant="secondary"
+          className="ml-1 text-[10px] bg-teal-950/60 text-teal-400 border-teal-800"
+        >
+          {runs.length}
+        </Badge>
+      </div>
+      <div className="divide-y divide-border">
+        {runs.map((run) => (
+          <div key={run.id} className="px-4 py-3 flex items-center gap-3">
+            <Loader2 className="h-3.5 w-3.5 text-teal-400 animate-spin shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate text-foreground">
+                {run.summary ?? run.runner ?? run.id}
+              </p>
+              {run.summary && run.runner && (
+                <p className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">
+                  {run.runner}
+                </p>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono shrink-0 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {elapsed(run.started_at ?? null)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPageClient() {
   const router = useRouter()
   const { user, loading } = useAuth()
@@ -80,6 +137,7 @@ export default function DashboardPageClient() {
   const [dispatchTask, setDispatchTask] = useState('')
   const [dispatching, setDispatching] = useState(false)
 
+  const [autonomousStats, setAutonomousStats] = useState({ improvementsWeek: 0, handbookEntries: 0 })
   const hasFetched = useRef(false)
 
   useEffect(() => {
@@ -135,6 +193,16 @@ export default function DashboardPageClient() {
         const d = await ledgerRes.value.json()
         setRecentEvents(d.data || d.events || [])
       }
+
+      // Autonomous improvement stats (lightweight cached read)
+      fetch('/api/dashboard/autonomous-stats')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d) {
+            setAutonomousStats({ improvementsWeek: d.improvementsWeek ?? 0, handbookEntries: d.improvementsMonth ?? 0 })
+          }
+        })
+        .catch(() => {})
     } catch {
       // individual errors handled above
     } finally {
@@ -219,7 +287,7 @@ export default function DashboardPageClient() {
               <Badge variant="destructive" className="text-[10px] ml-1">Fleet Paused</Badge>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
             <div className="rounded-lg border bg-card p-3 space-y-1">
               <div className="text-[10px] text-muted-foreground font-mono">Running</div>
               <div className="text-2xl font-bold text-[color:var(--foco-teal)]">
@@ -251,8 +319,20 @@ export default function DashboardPageClient() {
                 {fleetPaused ? 'Paused' : 'Active'}
               </div>
             </div>
+            <div className="rounded-lg border bg-card p-3 space-y-1">
+              <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+                <Zap className="h-3 w-3" /> Auto
+              </div>
+              <div className="text-2xl font-bold text-[color:var(--foco-teal)]">
+                {autonomousStats.improvementsWeek}
+              </div>
+              <div className="text-[9px] text-muted-foreground">this week</div>
+            </div>
           </div>
         </div>
+
+        {/* Active Runs — live polling widget, hidden when idle */}
+        <ActiveRunsCard />
 
         {/* Command Surface */}
         <CommandSurface

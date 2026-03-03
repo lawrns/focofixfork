@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,12 @@ export async function GET(_req: NextRequest) {
     )
 
     if (!res.ok) {
-      return NextResponse.json({ workflows: [], error: `Temporal HTTP ${res.status}` })
+      const fallback = await getFallbackWorkflowRuns()
+      return NextResponse.json({
+        workflows: fallback,
+        error: `Temporal HTTP ${res.status}`,
+        fallback: true,
+      })
     }
 
     const data = (await res.json()) as {
@@ -38,7 +44,12 @@ export async function GET(_req: NextRequest) {
 
     return NextResponse.json({ workflows })
   } catch {
-    return NextResponse.json({ workflows: [], error: 'Temporal unreachable' })
+    const fallback = await getFallbackWorkflowRuns()
+    return NextResponse.json({
+      workflows: fallback,
+      error: 'Temporal unreachable',
+      fallback: true,
+    })
   }
 }
 
@@ -70,15 +81,26 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const err = await res.text()
-      return NextResponse.json({ error: err }, { status: res.status })
+      const fallback = await queueFallbackWorkflow(workflowId, workflowType)
+      return NextResponse.json({
+        workflowId,
+        started: false,
+        queued: fallback,
+        fallback: true,
+        error: `Temporal rejected request: ${err || `HTTP ${res.status}`}`,
+      }, { status: 202 })
     }
 
     return NextResponse.json({ workflowId, started: true })
   } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Temporal unreachable' },
-      { status: 503 }
-    )
+    const fallback = await queueFallbackWorkflow(workflowId, workflowType)
+    return NextResponse.json({
+      workflowId,
+      started: false,
+      queued: fallback,
+      fallback: true,
+      error: err instanceof Error ? err.message : 'Temporal unreachable',
+    }, { status: 202 })
   }
 }
 
@@ -88,4 +110,60 @@ function mapStatus(code: number): string {
     4: 'Canceled', 5: 'Terminated', 6: 'ContinuedAsNew', 7: 'TimedOut',
   }
   return map[code] ?? 'Unknown'
+}
+
+async function queueFallbackWorkflow(workflowId: string, workflowType: string): Promise<boolean> {
+  if (!supabaseAdmin) return false
+  const { error } = await supabaseAdmin
+    .from('runs')
+    .insert({
+      runner: `temporal:${workflowType}`,
+      status: 'pending',
+      summary: `Fallback queued workflow ${workflowId}`,
+      task_id: null,
+    })
+  return !error
+}
+
+async function getFallbackWorkflowRuns(): Promise<Array<{
+  workflowId: string
+  runId: string
+  type: string
+  status: string
+  startTime: string | null
+  closeTime: string | null
+}>> {
+  if (!supabaseAdmin) return []
+  const { data, error } = await supabaseAdmin
+    .from('runs')
+    .select('id, runner, status, created_at, completed_at')
+    .ilike('runner', 'temporal:%')
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (error || !data) return []
+
+  return data.map((run: any) => {
+    const type = typeof run.runner === 'string' && run.runner.startsWith('temporal:')
+      ? run.runner.slice('temporal:'.length)
+      : String(run.runner ?? 'UnknownWorkflow')
+    return {
+      workflowId: run.id,
+      runId: run.id,
+      type,
+      status: mapRunStatus(run.status),
+      startTime: run.created_at ?? null,
+      closeTime: run.completed_at ?? null,
+    }
+  })
+}
+
+function mapRunStatus(status: string): string {
+  const normalized = status?.toLowerCase?.() ?? 'unknown'
+  if (normalized === 'running') return 'Running'
+  if (normalized === 'completed' || normalized === 'complete') return 'Completed'
+  if (normalized === 'failed') return 'Failed'
+  if (normalized === 'cancelled' || normalized === 'canceled') return 'Canceled'
+  if (normalized === 'timed_out' || normalized === 'timedout') return 'TimedOut'
+  return 'Unknown'
 }

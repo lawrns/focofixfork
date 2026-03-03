@@ -129,6 +129,7 @@
     "redis": "^5.10.0",
     "remotion": "^4.0.409",
     "resend": "^6.1.1",
+    "sharp": "^0.34.5",
     "sonner": "^1.4.41",
     "speakeasy": "^2.0.0",
     "tailwind-merge": "^2.3.0",

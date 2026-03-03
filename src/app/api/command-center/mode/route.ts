@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .maybeSingle()
 
-    const mode: Mode = (data?.payload as any)?.mode ?? 'Reactive'
+    const mode: Mode = (data?.payload as { mode?: string } | null)?.mode as Mode ?? 'Reactive'
     return NextResponse.json({ mode })
   } catch {
     return NextResponse.json({ mode: 'Reactive' })

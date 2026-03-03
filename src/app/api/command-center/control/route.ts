@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import type { AgentBackend } from '@/lib/command-center/types'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,11 @@ interface ControlBody {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, error: authError, response: authResponse } = await getAuthUser(req)
+  if (authError || !user) {
+    return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
+  }
+
   const body = await req.json() as ControlBody
   const { action, backend, nativeId } = body
 
@@ -34,7 +40,7 @@ export async function POST(req: NextRequest) {
           })
           return NextResponse.json({ ok: res.ok, backend, action, nativeId })
         }
-        return NextResponse.json({ supported: false, reason: 'CRICO only supports stop' })
+        return NextResponse.json({ supported: false, reason: 'CRICO only supports stop/resume' })
       }
 
       case 'bosun': {
@@ -70,7 +76,7 @@ export async function POST(req: NextRequest) {
       }
 
       case 'openclaw':
-        return NextResponse.json({ supported: false, reason: 'OpenClaw has no stop endpoint' })
+        return NextResponse.json({ supported: false, reason: 'OpenClaw has no stop/resume endpoint' })
 
       default:
         return NextResponse.json({ error: 'Unknown backend' }, { status: 400 })

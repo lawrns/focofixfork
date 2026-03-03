@@ -65,11 +65,11 @@ export function CommandCenterClient() {
 
   // ── Agent polling ────────────────────────────────────────────────────────────
   const { setAgents, setMissions, setError, setDecisions, approveDecision } = store
-  const fetchAgents = useCallback(async () => {
+  const fetchAgents = useCallback(async (signal?: AbortSignal) => {
     try {
       const [agentRes, missionRes] = await Promise.allSettled([
-        fetch('/api/command-center/agents'),
-        fetch('/api/command-center/missions'),
+        fetch('/api/command-center/agents', { signal }),
+        fetch('/api/command-center/missions', { signal }),
       ])
 
       if (agentRes.status === 'fulfilled' && agentRes.value.ok) {
@@ -83,35 +83,40 @@ export function CommandCenterClient() {
         const json = await missionRes.value.json()
         setMissions(json.missions ?? [])
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       setError('Failed to fetch agent data')
     }
   }, [setAgents, setMissions, setError])
 
   // ── Decisions polling ─────────────────────────────────────────────────────────
-  const fetchDecisions = useCallback(async () => {
+  const fetchDecisions = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/command-center/decisions')
+      const res = await fetch('/api/command-center/decisions', { signal })
       if (res.ok) {
         const json = await res.json()
         setDecisions(json.decisions ?? [])
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
     }
   }, [setDecisions])
 
   useEffect(() => {
-    fetchAgents()
-    const id = setInterval(fetchAgents, AGENT_POLL_INTERVAL)
-    return () => clearInterval(id)
-  }, [fetchAgents])
+    if (store.paused) return
+    const controller = new AbortController()
+    fetchAgents(controller.signal)
+    const id = setInterval(() => fetchAgents(controller.signal), AGENT_POLL_INTERVAL)
+    return () => { controller.abort(); clearInterval(id) }
+  }, [fetchAgents, store.paused])
 
   useEffect(() => {
-    fetchDecisions()
-    const id = setInterval(fetchDecisions, DECISIONS_POLL_INTERVAL)
-    return () => clearInterval(id)
-  }, [fetchDecisions])
+    if (store.paused) return
+    const controller = new AbortController()
+    fetchDecisions(controller.signal)
+    const id = setInterval(() => fetchDecisions(controller.signal), DECISIONS_POLL_INTERVAL)
+    return () => { controller.abort(); clearInterval(id) }
+  }, [fetchDecisions, store.paused])
 
   // ── Auto-open agent from ?agent= query param ─────────────────────────────────
   useEffect(() => {
@@ -135,15 +140,17 @@ export function CommandCenterClient() {
   }, [])
 
   const handleModeChange = useCallback(async (mode: 'Reactive' | 'Predictive' | 'Guarded') => {
+    const prev = store.mode
     store.setMode(mode)
     try {
-      await fetch('/api/command-center/mode', {
+      const res = await fetch('/api/command-center/mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode }),
       })
+      if (!res.ok) store.setMode(prev)
     } catch {
-      // mode is already updated in store; silently fail on network error
+      store.setMode(prev)
     }
   }, [store])
 
@@ -185,9 +192,11 @@ export function CommandCenterClient() {
     ? store.agents.filter(a => a.name.toLowerCase().includes(globalSearch.toLowerCase()))
     : store.agents
 
-  const filteredDecisions = globalSearch
-    ? store.decisions.filter(d => d.title.toLowerCase().includes(globalSearch.toLowerCase()))
-    : store.decisions
+  const filteredDecisions = store.decisions.filter(d => {
+    if ((store.quietMode || store.quietCategories.p3) && d.severity === 'P3') return false
+    if (globalSearch && !d.title.toLowerCase().includes(globalSearch.toLowerCase())) return false
+    return true
+  })
 
   const MODE_TIPS: Record<string, string> = {
     Reactive: 'Fast response, minimal guardrails',
@@ -220,7 +229,7 @@ export function CommandCenterClient() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={fetchAgents}
+                onClick={() => fetchAgents()}
                 disabled={store.isLoading}
                 className="gap-1.5"
               >
@@ -304,7 +313,7 @@ export function CommandCenterClient() {
             <DropdownMenuItem onClick={() => store.setQuietMode(!store.quietMode)}>
               {store.quietMode ? 'Disable' : 'Enable'} Quiet Mode
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={fetchAgents}>
+            <DropdownMenuItem onClick={() => fetchAgents()}>
               Refresh Now
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -355,7 +364,7 @@ export function CommandCenterClient() {
       <div className="grid lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7 space-y-4">
           <SystemPulseChart />
-          <QuickActionsCard />
+          <QuickActionsCard services={services} />
         </div>
         <div className="lg:col-span-5 space-y-4">
           {/* Decision Queue */}

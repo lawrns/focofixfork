@@ -109,6 +109,7 @@ function mapRunStatus(status: string): UnifiedMission['status'] {
   if (status === 'running') return 'active'
   if (status === 'completed') return 'met'
   if (status === 'failed') return 'failed'
+  if (status === 'cancelled') return 'failed'
   return 'pending'
 }
 

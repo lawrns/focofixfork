@@ -11,6 +11,8 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { matchAgent } from './agent-matcher'
 import { loadHandbook as loadAdvancedHandbook, formatHandbookForAgent } from '@/lib/handbook/handbook-loader'
 import { dispatchToClawdBot, buildSystemPrompt, type DispatchPayload } from './dispatchers'
+import { sendTelegramAlert } from '@/lib/services/telegram'
+import { assembleProjectContext } from '@/features/memory'
 
 export interface DelegationTickResult {
   processed: number
@@ -96,11 +98,17 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
       continue
     }
 
-    // 4. Load handbooks
+    // 4. Load handbooks and assemble memory context
     const projectHandbook = await loadAdvancedHandbook(project.slug)
-    const projectContext = formatHandbookForAgent(projectHandbook)
+    const handbookContext = formatHandbookForAgent(projectHandbook)
     const featureHandbook = item.handbook_ref ? await loadAdvancedHandbook(item.handbook_ref) : null
     const featureContext = formatHandbookForAgent(featureHandbook)
+    
+    // 4b. Assemble memory context and prepend to project context
+    const memoryContext = await assembleProjectContext(project.id, item.title, item.description)
+    const projectContext = memoryContext 
+      ? `${memoryContext}\n\n---\n\n${handbookContext}`
+      : handbookContext
 
     // 5. Build system prompt
     const systemPrompt = buildSystemPrompt(
@@ -205,6 +213,17 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
     })
 
     result.delegated.push(item.id)
+  }
+
+  // Alert on delegation errors via Telegram
+  if (result.errors.length > 0) {
+    const details = result.errors
+      .slice(0, 5)
+      .map((e) => `  \u2022 ${e.taskId}: ${e.error}`)
+      .join('\n')
+    sendTelegramAlert(
+      `\u26A0\uFE0F Delegation errors: ${result.errors.length}\n${details}`
+    ).catch(() => {})
   }
 
   return result

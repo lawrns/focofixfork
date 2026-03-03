@@ -64,37 +64,47 @@ export async function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl
 
+  // Permanent redirects for deleted/renamed pages (301)
+  const PERMANENT_REDIRECTS: Record<string, string> = {
+    '/signup': '/register',
+    '/tasks': '/my-work',
+    '/inbox': '/empire/signals',
+    '/people': '/empire/fleet',
+    '/calendar': '/empire/timeline',
+    '/dashboard-simple': '/dashboard',
+    '/favorites': '/my-work',
+    '/instructions': '/help',
+    '/team': '/empire/fleet',
+    '/dashboard/settings': '/settings',
+    '/projects': '/empire/missions',
+    '/decisions': '/empire/command',
+    '/milestones': '/empire/timeline',
+    '/timeline': '/empire/timeline',
+  }
+  const redirectTarget = PERMANENT_REDIRECTS[pathname]
+  if (redirectTarget) {
+    return NextResponse.redirect(new URL(redirectTarget, req.url), 301)
+  }
+
   // Protected page routes
   const protectedRoutes = [
     '/dashboard',
-    '/projects',
-    '/tasks',
-    '/milestones',
     '/organizations',
     '/settings',
     '/profile',
-    '/instructions',
     '/runs',
     '/crons',
     '/emails',
     '/artifacts',
     '/ledger',
     '/policies',
-    '/inbox',
     '/my-work',
-    '/people',
     '/reports',
-    '/timeline',
     '/proposals',
     '/search',
-    '/favorites',
     '/openclaw',
     '/empire',
     '/clawdbot',
-    '/decisions',
-    '/dashboard-simple',
-    '/calendar',
-    '/team',
   ]
 
   // Public routes (accessible without authentication)

@@ -96,6 +96,9 @@ export enum ErrorCode {
   // Rate limiting (429)
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   
+  // Service unavailable (503)
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
+  
   // Server errors (500)
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   DATABASE_ERROR = 'DATABASE_ERROR',
@@ -147,6 +150,9 @@ export function getStatusCode(code: ErrorCode): number {
     
     // 429
     [ErrorCode.RATE_LIMIT_EXCEEDED]: 429,
+    
+    // 503
+    [ErrorCode.SERVICE_UNAVAILABLE]: 503,
     
     // 500
     [ErrorCode.INTERNAL_ERROR]: 500,

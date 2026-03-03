@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { 
-  CommandMode, 
-  IntentType, 
-  CommandPlan, 
-  PlanStep, 
+import type {
+  CommandMode,
+  IntentType,
+  CommandPlan,
+  PlanStep,
+  StepResult,
   CommandExecution,
+  AgentTrackerState,
   CTODecision,
   COODecision
 } from './types';
+import { scanPrompt } from '@/lib/ai/prompt-guard';
 
 // Intent detection patterns
 const INTENT_PATTERNS: Record<IntentType, RegExp[]> = {
@@ -287,16 +290,106 @@ function parseTaskIntent(prompt: string): { title: string; description: string; 
 export function useCommandPipeline() {
   const [execution, setExecution] = useState<CommandExecution | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearExecution = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
     setExecution(null);
+    setStreamingText('');
   }, []);
 
-  const analyzePrompt = useCallback((prompt: string, defaultMode?: CommandMode): { 
-    mode: CommandMode; 
+  // Clear poll interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  const startRunTracking = useCallback((runId: string) => {
+    // Initialise the tracker on the current execution
+    setExecution(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        agentTracker: {
+          runId,
+          status: 'pending',
+          pollCount: 0
+        }
+      };
+    });
+
+    const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled']);
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/runs/${runId}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const data = json?.data as {
+          status?: string;
+          runner?: string;
+          started_at?: string;
+          run_steps?: Array<{ description?: string }>;
+        } | undefined;
+
+        if (!data) return;
+
+        const status = (data.status ?? 'pending') as AgentTrackerState['status'];
+        const runner = data.runner;
+        const startedAt = data.started_at;
+        const currentStep = data.run_steps?.slice(-1)[0]?.description;
+
+        setExecution(prev => {
+          if (!prev) return prev;
+          const prevTracker = prev.agentTracker;
+          const pollCount = (prevTracker?.pollCount ?? 0) + 1;
+          return {
+            ...prev,
+            agentTracker: {
+              runId,
+              status,
+              runner,
+              startedAt,
+              currentStep,
+              outputPreview: prevTracker?.outputPreview,
+              pollCount
+            }
+          };
+        });
+
+        if (TERMINAL_STATUSES.has(status)) {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+        }
+      } catch {
+        // Non-fatal — keep polling
+      }
+    }, 3000);
+  }, []);
+
+  const analyzePrompt = useCallback((rawPrompt: string, defaultMode?: CommandMode): {
+    mode: CommandMode;
     plan: CommandPlan;
     decision?: CTODecision | COODecision;
+    injectionDetected?: boolean;
   } => {
+    const guard = scanPrompt(rawPrompt);
+    const prompt = guard.sanitized;
+
+    if (!guard.safe) {
+      console.warn('[PromptGuard] Injection pattern detected:', guard.matches);
+    }
+
     const { intent, confidence } = detectIntent(prompt);
     const mode = defaultMode === 'auto' || !defaultMode ? determineMode(intent, prompt) : defaultMode;
     const plan = generatePlan(intent, mode, prompt);
@@ -362,7 +455,7 @@ export function useCommandPipeline() {
       }
     }
 
-    return { mode, plan, decision };
+    return { mode, plan, decision, injectionDetected: !guard.safe };
   }, []);
 
   const executeStep = useCallback(async (
@@ -371,7 +464,7 @@ export function useCommandPipeline() {
     mode: CommandMode,
     decision?: CTODecision | COODecision,
     completedSteps?: PlanStep[]
-  ): Promise<{ success: boolean; result?: unknown; error?: string }> => {
+  ): Promise<{ success: boolean; result?: StepResult; error?: string }> => {
     switch (step.type) {
       case 'ledger_log':
         try {
@@ -599,15 +692,139 @@ export function useCommandPipeline() {
     execution.status = 'completed';
     setExecution({ ...execution });
     setIsProcessing(false);
-    
+
+    // Start polling the run if a create_run step produced a runId
+    const runStep = plan.steps.find(
+      s => s.type === 'create_run' && s.result && (s.result as { runId?: string }).runId
+    );
+    if (runStep?.result) {
+      const runId = (runStep.result as { runId: string }).runId;
+      if (runId) {
+        startRunTracking(runId);
+      }
+    }
+
     return execution;
-  }, [executeStep]);
+  }, [executeStep, startRunTracking]);
+
+  /**
+   * submitPrompt — streaming-first command execution.
+   *
+   * Calls /api/command-surface/execute, reads the SSE stream from ClawdBot,
+   * and updates streamingText as tokens arrive.  Falls back to the existing
+   * step-execution engine if the streaming endpoint returns a non-SSE response
+   * (e.g. 503 JSON error).
+   */
+  const submitPrompt = useCallback(async (
+    prompt: string,
+    mode: CommandMode,
+    decision?: CTODecision | COODecision,
+  ): Promise<CommandExecution> => {
+    setIsProcessing(true);
+    setStreamingText('');
+
+    // Build a minimal execution shell so the UI renders immediately
+    const { intent, confidence } = detectIntent(prompt);
+    const resolvedMode = mode === 'auto' ? determineMode(intent, prompt) : mode;
+    const plan = generatePlan(intent, resolvedMode, prompt);
+
+    const exec: CommandExecution = {
+      id: crypto.randomUUID(),
+      prompt,
+      mode: resolvedMode,
+      plan,
+      status: 'executing',
+      currentStepIndex: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setExecution({ ...exec });
+
+    try {
+      const res = await fetch('/api/command-surface/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, mode }),
+      });
+
+      // Non-SSE response means ClawdBot is down or auth failed
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('text/event-stream')) {
+        let errorMsg = `HTTP ${res.status}`;
+        try {
+          const json = await res.json() as { error?: string; message?: string };
+          errorMsg = json.error ?? json.message ?? errorMsg;
+        } catch { /* ignore */ }
+
+        exec.status = 'failed';
+        exec.error = errorMsg;
+        setExecution({ ...exec });
+        setIsProcessing(false);
+        return exec;
+      }
+
+      // Read SSE stream
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as Record<string, unknown>;
+
+            if (event.type === 'text_delta' && typeof event.text === 'string') {
+              accumulated += event.text;
+              setStreamingText(accumulated);
+            } else if (event.type === 'done') {
+              // ClawdBot may send final full output in done event
+              if (typeof event.output === 'string' && event.output.length > accumulated.length) {
+                accumulated = event.output;
+                setStreamingText(accumulated);
+              }
+            } else if (event.type === 'error') {
+              throw new Error(typeof event.message === 'string' ? event.message : 'Stream error');
+            }
+          } catch (parseErr) {
+            // Skip malformed SSE lines unless they carry an error message
+            if (parseErr instanceof Error && parseErr.message !== 'Stream error') continue;
+            throw parseErr;
+          }
+        }
+      }
+
+      exec.status = 'completed';
+      exec.updatedAt = new Date();
+      setExecution({ ...exec });
+      setIsProcessing(false);
+      return exec;
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      exec.status = 'failed';
+      exec.error = message;
+      setExecution({ ...exec });
+      setIsProcessing(false);
+      return exec;
+    }
+  }, []);
 
   return {
     execution,
     isProcessing,
+    streamingText,
     analyzePrompt,
     executeCommand,
+    submitPrompt,
     clearExecution
   };
 }

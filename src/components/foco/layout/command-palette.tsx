@@ -27,6 +27,16 @@ import {
   Zap,
   Rss,
   Cpu,
+  CheckSquare,
+  Sun,
+  FolderOpen,
+  Users,
+  Bell,
+  GitBranch,
+  FileText,
+  BarChart,
+  Workflow,
+  Loader2,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -45,6 +55,8 @@ export function CommandPalette() {
   const { isOpen, mode, query, close, setQuery } = useCommandPaletteStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const isMobile = useMobile();
+  const [searchResults, setSearchResults] = useState<{ tasks: any[], projects: any[] }>({ tasks: [], projects: [] });
+  const [searching, setSearching] = useState(false);
 
   const commands: CommandItem[] = useMemo(() => [
     // Navigation
@@ -59,6 +71,16 @@ export function CommandPalette() {
     { id: 'nav-policies', label: 'Go to Policies', icon: Shield, shortcut: 'G Y', group: 'Navigation', action: () => router.push('/policies'), keywords: ['guardrails', 'fleet'] },
     { id: 'nav-cmd-center', label: 'Go to Agent Command Center', icon: Cpu, shortcut: 'G C', group: 'Navigation', action: () => router.push('/empire/command'), keywords: ['agents', 'command', 'swarm', 'crico', 'clawdbot', 'bosun', 'openclaw'] },
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
+    { id: 'nav-my-work', label: 'My Tasks', icon: CheckSquare, shortcut: 'G W', group: 'Navigation', action: () => router.push('/my-work'), keywords: ['tasks', 'work', 'todo'] },
+    { id: 'nav-briefing', label: 'Daily Briefing', icon: Sun, shortcut: 'G B', group: 'Navigation', action: () => router.push('/empire/briefing'), keywords: ['briefing', 'daily', 'summary'] },
+    { id: 'nav-missions', label: 'Projects', icon: FolderOpen, shortcut: 'G P', group: 'Navigation', action: () => router.push('/empire/missions'), keywords: ['projects', 'missions', 'boards'] },
+    { id: 'nav-fleet', label: 'Team Capacity', icon: Users, shortcut: 'G O', group: 'Navigation', action: () => router.push('/empire/fleet'), keywords: ['team', 'capacity', 'fleet', 'people'] },
+    { id: 'nav-signals', label: 'Notifications', icon: Bell, shortcut: 'G N', group: 'Navigation', action: () => router.push('/empire/signals'), keywords: ['notifications', 'signals', 'inbox'] },
+    { id: 'nav-timeline', label: 'Milestone Timeline', icon: GitBranch, shortcut: 'G T', group: 'Navigation', action: () => router.push('/empire/timeline'), keywords: ['timeline', 'milestones'] },
+    { id: 'nav-proposals', label: 'Task Proposals', icon: FileText, shortcut: 'G Q', group: 'Navigation', action: () => router.push('/proposals'), keywords: ['proposals', 'tasks'] },
+    { id: 'nav-reports', label: 'Reports', icon: BarChart, shortcut: 'G F', group: 'Navigation', action: () => router.push('/reports'), keywords: ['reports', 'analytics'] },
+    { id: 'nav-empire', label: 'Empire OS', icon: Zap, shortcut: 'G M', group: 'Navigation', action: () => router.push('/empire'), keywords: ['empire', 'os', 'command'] },
+    { id: 'nav-pipeline', label: 'Pipeline', icon: Workflow, shortcut: 'G V', group: 'Navigation', action: () => router.push('/empire/pipeline'), keywords: ['pipeline', 'workflow'] },
 
     // Quick Actions
     { id: 'dispatch-agent', label: 'Dispatch Agent', icon: Send, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/openclaw'), keywords: ['new', 'task', 'agent'] },
@@ -72,7 +94,7 @@ export function CommandPalette() {
 
   const filteredCommands = useMemo(() => {
     if (!query) return commands;
-    
+
     const lowerQuery = query.toLowerCase();
     return commands.filter(cmd => {
       const searchText = [
@@ -105,6 +127,25 @@ export function CommandPalette() {
     setSelectedIndex(0);
   }, [query]);
 
+  // Live search when no commands match
+  useEffect(() => {
+    if (filteredCommands.length > 0 || query.length < 2) {
+      setSearchResults({ tasks: [], projects: [] });
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const json = await res.json();
+        if (json.success) setSearchResults(json.data);
+      } catch {} finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, filteredCommands.length]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -123,6 +164,10 @@ export function CommandPalette() {
           e.preventDefault();
           if (flatCommands[selectedIndex]) {
             executeCommand(flatCommands[selectedIndex]);
+          } else if (query.trim().length > 0) {
+            // Fallback: navigate to global search page
+            close();
+            router.push(`/search?q=${encodeURIComponent(query.trim())}`);
           }
           break;
         case 'Escape':
@@ -133,7 +178,7 @@ export function CommandPalette() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, flatCommands, selectedIndex, executeCommand, close]);
+  }, [isOpen, flatCommands, selectedIndex, executeCommand, close, query, router]);
 
   // Global keyboard shortcut
   useEffect(() => {
@@ -148,6 +193,7 @@ export function CommandPalette() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const hasSearchResults = searchResults.projects.length > 0 || searchResults.tasks.length > 0;
   let currentIndex = 0;
 
   return (
@@ -201,8 +247,66 @@ export function CommandPalette() {
           isMobile && "max-h-[calc(100vh-10rem)] p-3"
         )}>
           {Object.entries(groupedCommands).length === 0 ? (
-            <div className="py-8 text-center text-sm text-zinc-500">
-              No results found for &quot;{query}&quot;
+            <div className="py-4">
+              {searching ? (
+                <div className="flex items-center justify-center gap-2 py-4 text-sm text-zinc-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Searching...</span>
+                </div>
+              ) : hasSearchResults ? (
+                <div>
+                  {searchResults.projects.slice(0, 3).map((project: any) => (
+                    <button
+                      key={project.id}
+                      className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+                      onClick={() => { close(); router.push(`/empire/missions/${project.id}`); }}
+                    >
+                      <FolderOpen className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-zinc-900 dark:text-zinc-50 truncate">{project.name || project.title}</div>
+                        <div className="text-xs text-zinc-500">Project</div>
+                      </div>
+                    </button>
+                  ))}
+                  {searchResults.tasks.slice(0, 5).map((task: any) => (
+                    <button
+                      key={task.id}
+                      className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+                      onClick={() => { close(); router.push(`/my-work?task=${task.id}`); }}
+                    >
+                      <CheckSquare className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-zinc-900 dark:text-zinc-50 truncate">{task.title || task.name}</div>
+                        <div className="text-xs text-zinc-500">Task</div>
+                      </div>
+                    </button>
+                  ))}
+                  <button
+                    className="w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-md text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                    onClick={() => { close(); router.push(`/search?q=${encodeURIComponent(query)}`); }}
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span>View all results for &quot;{query}&quot;</span>
+                    <ArrowRight className="h-3 w-3 ml-auto" />
+                  </button>
+                </div>
+              ) : query.length >= 2 ? (
+                <div className="py-6 text-center">
+                  <p className="text-sm text-zinc-500 mb-2">No results found for &quot;{query}&quot;</p>
+                  <button
+                    className="inline-flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                    onClick={() => { close(); router.push(`/search?q=${encodeURIComponent(query)}`); }}
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    Search everywhere for &quot;{query}&quot;
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-sm text-zinc-500">
+                  No results found for &quot;{query}&quot;
+                </div>
+              )}
             </div>
           ) : (
             Object.entries(groupedCommands).map(([group, items]) => (

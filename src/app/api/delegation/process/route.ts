@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processDelegationTick } from '@/lib/delegation/engine'
+import { processAutoExecutableSuggestions } from '@/lib/crico/auto-executor'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +14,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Process CRICO auto-executable suggestions first (creates work items for delegation)
+    const autoResult = await processAutoExecutableSuggestions()
     const result = await processDelegationTick()
-    return NextResponse.json({ success: true, result })
+    return NextResponse.json({ success: true, result, autoExecution: autoResult })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     console.error('[delegation/process] Error:', message)

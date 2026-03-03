@@ -14,7 +14,7 @@ import path from 'path'
 
 const DEMO_EMAIL = 'member@demo.foco.local'
 const DEMO_PASSWORD = 'DemoMember123!'
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
+const BASE_URL = process.env.E2E_BASE_URL || process.env.BASE_URL || 'http://localhost:4000'
 
 // Helper function to login
 async function login(page: Page) {

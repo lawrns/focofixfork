@@ -1,3 +1,5 @@
+import type { AgentSurface } from '@/features/agent-surfaces/types'
+
 export type AgentBackend = 'crico' | 'clawdbot' | 'bosun' | 'openclaw'
 
 export type AgentNodeStatus = 'idle' | 'working' | 'blocked' | 'done' | 'error' | 'paused'
@@ -13,6 +15,7 @@ export interface UnifiedAgent {
   currentMissionId?: string
   lastActiveAt?: string
   errorMessage?: string
+  surfaces?: AgentSurface[]  // Agent multi-surface execution capabilities
   raw: Record<string, unknown>
 }
 

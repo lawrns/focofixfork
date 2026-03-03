@@ -15,7 +15,7 @@ import { test, expect, Page } from '@playwright/test'
 // Test configuration
 const DEMO_EMAIL = 'manager@demo.foco.local'
 const DEMO_PASSWORD = 'DemoManager123!'
-const BASE_URL = 'http://localhost:3000'
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4000'
 
 // Test data
 const TEST_PROJECT = {

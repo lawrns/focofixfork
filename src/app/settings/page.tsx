@@ -450,6 +450,10 @@ function NotificationSettings() {
     slack: false,
   });
 
+  // Telegram state
+  const [enableTelegram, setEnableTelegram] = useState(false);
+  const [telegramChatId, setTelegramChatId] = useState('');
+
   // Notification types state
   const [types, setTypes] = useState({
     mentions: true,
@@ -461,10 +465,12 @@ function NotificationSettings() {
   });
 
   // Quiet hours state
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [quietHours, setQuietHours] = useState({
     start: '22:00',
-    end: '08:00',
+    end: '07:00',
   });
+  const [quietHoursTimezone, setQuietHoursTimezone] = useState('America/Mexico_City');
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -479,6 +485,12 @@ function NotificationSettings() {
             channels,
             types,
             quietHours,
+            enable_telegram: enableTelegram,
+            telegram_chat_id: telegramChatId || null,
+            quiet_hours_enabled: quietHoursEnabled,
+            quiet_hours_start: quietHours.start,
+            quiet_hours_end: quietHours.end,
+            quiet_hours_timezone: quietHoursTimezone,
           },
         }),
       });
@@ -524,6 +536,30 @@ function NotificationSettings() {
               />
             </div>
           ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base">Telegram notifications</Label>
+              <p className="text-sm text-zinc-500">Send alerts via Telegram bot</p>
+            </div>
+            <Switch
+              checked={enableTelegram}
+              onCheckedChange={setEnableTelegram}
+            />
+          </div>
+          {enableTelegram && (
+            <div className="ml-0 space-y-2 pl-0">
+              <Label htmlFor="telegram-chat-id">Telegram Chat ID</Label>
+              <Input
+                id="telegram-chat-id"
+                placeholder="e.g. 673711346"
+                value={telegramChatId}
+                onChange={(e) => setTelegramChatId(e.target.value)}
+              />
+              <p className="text-xs text-zinc-500">
+                Message @jimmyhelpfulbot on Telegram to get your chat ID
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -558,42 +594,71 @@ function NotificationSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Quiet Hours</CardTitle>
-          <CardDescription>
-            Mute notifications during your designated do-not-disturb time
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="quiet-start">Start Time</Label>
-              <Input
-                id="quiet-start"
-                type="time"
-                value={quietHours.start}
-                onChange={(e) =>
-                  setQuietHours({ ...quietHours, start: e.target.value })
-                }
-                aria-label="Quiet hours start time"
-              />
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Quiet Hours</CardTitle>
+              <CardDescription>
+                Mute notifications during your designated do-not-disturb time
+              </CardDescription>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="quiet-end">End Time</Label>
-              <Input
-                id="quiet-end"
-                type="time"
-                value={quietHours.end}
-                onChange={(e) =>
-                  setQuietHours({ ...quietHours, end: e.target.value })
-                }
-                aria-label="Quiet hours end time"
-              />
-            </div>
+            <Switch
+              checked={quietHoursEnabled}
+              onCheckedChange={setQuietHoursEnabled}
+            />
           </div>
-          <p className="text-sm text-zinc-500">
-            Email notifications will be delayed during these hours. Other channels will be suppressed entirely.
-          </p>
-        </CardContent>
+        </CardHeader>
+        {quietHoursEnabled && (
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quiet-start">Start Time</Label>
+                <Input
+                  id="quiet-start"
+                  type="time"
+                  value={quietHours.start}
+                  onChange={(e) =>
+                    setQuietHours({ ...quietHours, start: e.target.value })
+                  }
+                  aria-label="Quiet hours start time"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quiet-end">End Time</Label>
+                <Input
+                  id="quiet-end"
+                  type="time"
+                  value={quietHours.end}
+                  onChange={(e) =>
+                    setQuietHours({ ...quietHours, end: e.target.value })
+                  }
+                  aria-label="Quiet hours end time"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quiet-tz">Timezone</Label>
+              <Select value={quietHoursTimezone} onValueChange={setQuietHoursTimezone}>
+                <SelectTrigger id="quiet-tz">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="America/Mexico_City">America/Mexico_City (CST)</SelectItem>
+                  <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                  <SelectItem value="America/Chicago">America/Chicago (CST)</SelectItem>
+                  <SelectItem value="America/Denver">America/Denver (MST)</SelectItem>
+                  <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
+                  <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                  <SelectItem value="Europe/Berlin">Europe/Berlin (CET)</SelectItem>
+                  <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+                  <SelectItem value="UTC">UTC</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-zinc-500">
+              Notifications will be suppressed during these hours. P0 alerts bypass quiet hours.
+            </p>
+          </CardContent>
+        )}
       </Card>
 
       <Button onClick={handleSave} disabled={isSaving}>

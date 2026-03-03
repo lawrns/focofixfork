@@ -8,7 +8,7 @@ import type { APIResponse } from '@/lib/api/response-envelope'
 import { isSuccess, isError, ErrorCode } from '@/lib/api/response-envelope'
 
 describe('/api/projects Contract Tests', () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
   let authToken: string
 
   beforeAll(async () => {

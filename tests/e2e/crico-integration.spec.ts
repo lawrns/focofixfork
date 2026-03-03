@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3002';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4000';
 
 test.describe('CRICO Integration Tests', () => {
   test.beforeEach(async ({ page }) => {

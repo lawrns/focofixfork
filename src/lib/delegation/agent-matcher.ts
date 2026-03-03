@@ -1,7 +1,12 @@
 /**
  * Agent Matcher — selects an idle agent from the project's agent pool.
  * Queries ClawdBot directly (server-side via 127.0.0.1) to check live status.
+ * 
+ * Enhanced with surface-aware matching (Module 8).
  */
+
+import { getSurfacesForAgent } from '@/features/agent-surfaces';
+import type { SurfaceType } from '@/features/agent-surfaces/types';
 
 const CLAWDBOT_BASE = 'http://127.0.0.1:18794'
 const TOKEN = process.env.OPENCLAW_SERVICE_TOKEN
@@ -47,4 +52,27 @@ export async function matchAgent(agentPool: string[]): Promise<string | null> {
 
   // Fallback: return the first pool entry
   return agentPool[0]
+}
+
+/**
+ * Match agent with required surface capability (Module 8).
+ * Returns the best agent from the pool that has the required surface.
+ */
+export async function matchAgentWithSurface(
+  agentPool: string[],
+  requiredSurface?: SurfaceType
+): Promise<{ agentId: string | null; hasSurface: boolean }> {
+  const agentId = await matchAgent(agentPool);
+  
+  if (!agentId || !requiredSurface) {
+    return { agentId, hasSurface: false };
+  }
+
+  // Check if agent has the required surface
+  const surfaces = await getSurfacesForAgent(agentId);
+  const hasSurface = surfaces.some(
+    s => s.surface_type === requiredSurface && s.status === 'available'
+  );
+
+  return { agentId, hasSurface };
 }

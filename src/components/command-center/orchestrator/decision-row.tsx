@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +39,7 @@ interface DecisionRowProps {
 }
 
 export function DecisionRow({ decision, onApprove, onReject, onDefer }: DecisionRowProps) {
+  const [loading, setLoading] = useState(false)
   const timeAgo = new Date(decision.createdAt)
   const now = new Date()
   const diffMs = now.getTime() - timeAgo.getTime()
@@ -136,7 +138,8 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
               size="xs"
               variant="default"
               className="bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90 text-white h-7 px-2 text-[10px]"
-              onClick={() => onApprove(decision.id)}
+              disabled={loading}
+              onClick={async () => { setLoading(true); try { await onApprove(decision.id) } finally { setLoading(false) } }}
             >
               Approve
             </Button>
@@ -149,7 +152,8 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
               size="xs"
               variant="outline"
               className="h-7 px-2 text-[10px]"
-              onClick={() => onReject(decision.id)}
+              disabled={loading}
+              onClick={async () => { setLoading(true); try { await onReject(decision.id) } finally { setLoading(false) } }}
             >
               Reject
             </Button>
@@ -162,7 +166,8 @@ export function DecisionRow({ decision, onApprove, onReject, onDefer }: Decision
               size="xs"
               variant="ghost"
               className="h-7 w-7 p-0"
-              onClick={() => onDefer(decision.id)}
+              disabled={loading}
+              onClick={async () => { setLoading(true); try { await onDefer(decision.id) } finally { setLoading(false) } }}
             >
               <Clock className="h-3.5 w-3.5" />
             </Button>

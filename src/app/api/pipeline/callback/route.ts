@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { appendHandbookLearnings } from '@/lib/pipeline/handbook-sync'
+import { indexFromPipelineRun } from '@/features/memory'
+import { sendTelegramAlert } from '@/lib/services/telegram'
 import type { PlanResult, ExecutionResult, ReviewReport } from '@/lib/pipeline/types'
 
 export const dynamic = 'force-dynamic'
@@ -136,10 +138,58 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Index learnings into project memory (Module 6)
+      if (run.project_id) {
+        try {
+          const learnings: string[] = []
+          
+          // Extract learnings from review result
+          if (reviewResult.summary) {
+            learnings.push(`Review Summary: ${reviewResult.summary}`)
+          }
+          if (reviewResult.critical_issues?.length) {
+            learnings.push(`Critical Issues: ${reviewResult.critical_issues.join(', ')}`)
+          }
+          if (reviewResult.improvements?.length) {
+            learnings.push(`Improvements: ${reviewResult.improvements.join(', ')}`)
+          }
+          if (reviewResult.handbook_additions?.length) {
+            learnings.push(...reviewResult.handbook_additions.map((a: any) => 
+              `Pattern: ${a.pattern} - ${a.lesson}`
+            ))
+          }
+          
+          if (learnings.length > 0) {
+            await indexFromPipelineRun(run.project_id, pipelineRunId, learnings, 'review')
+          }
+        } catch (memErr) {
+          console.error('[Pipeline:callback] memory index failed:', memErr)
+          // Don't fail the callback — just log
+        }
+      }
+
       await supabaseAdmin
         .from('pipeline_runs')
         .update(updates)
         .eq('id', pipelineRunId)
+
+      // Telegram alert on pipeline completion
+      const verdict = reviewResult.confidence_score >= 70 ? 'pass' : 'needs-review'
+      const totalCost = ((run.total_cost_usd ?? 0) + (cost_usd ?? 0)).toFixed(4)
+      sendTelegramAlert(
+        `\uD83D\uDD27 Pipeline done: ${run.task_description ?? pipelineRunId}\nVerdict: ${verdict}\nCost: $${totalCost}`
+      ).catch(() => {})
+
+      // Trigger project health recalculation (Phase D1)
+      const projectId = run.project_id
+      if (projectId) {
+        const port = process.env.PORT ?? '3000'
+        const internalToken = process.env.DELEGATION_INTERNAL_TOKEN ?? ''
+        fetch(`http://127.0.0.1:${port}/api/cron/project-health?project_id=${projectId}`, {
+          headers: { 'x-cron-secret': process.env.CRON_SECRET ?? '' },
+          signal: AbortSignal.timeout(5000),
+        }).catch(() => {})
+      }
     }
 
     return NextResponse.json({ ok: true })

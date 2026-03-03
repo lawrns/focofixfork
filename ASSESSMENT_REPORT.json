@@ -1,0 +1,284 @@
+{
+  "assessment_id": "foco-architecture-assessment-2026-03-02",
+  "timestamp": "2026-03-02T11:13:24.301170-06:00",
+  "summary": "Critical issues found across Change Proposals, Artifacts, and Keyboard Shortcuts. The cmd+c bug is a P0 blocking issue. CRICO integration is partial. Artifacts system is non-functional for file display.",
+  "issues": [
+    {
+      "id": "KB-001",
+      "severity": "P0-CRITICAL",
+      "category": "Keyboard Shortcuts",
+      "title": "Cmd+C Opens Create Task Modal Instead of Copying",
+      "description": "When users press Cmd+C (or Ctrl+C), the browser's native copy functionality is blocked and the 'Create Task' modal opens instead.",
+      "root_cause": "In global-keyboard-shortcuts.tsx, the 'c' key shortcut handler does not check for modifier keys (metaKey/ctrlKey). When Cmd+C is pressed, e.key returns 'c', which matches the case statement, triggering preventDefault() and opening the modal.",
+      "location": {
+        "file": "src/components/foco/layout/global-keyboard-shortcuts.tsx",
+        "lines": "72-77"
+      },
+      "problematic_code": "switch (key) {\n  case 'c':\n    // Create task\n    e.preventDefault();\n    openTaskModal();\n    break;",
+      "affected_shortcuts": [
+        {
+          "key": "c",
+          "blocked_native": "Cmd+C (Copy)",
+          "impact": "Users cannot copy text using keyboard"
+        },
+        {
+          "key": "d", 
+          "blocked_native": "Cmd+D (Bookmark)",
+          "impact": "Cannot bookmark page"
+        },
+        {
+          "key": "g",
+          "blocked_native": "Cmd+G (Find Next)",
+          "impact": "Cannot use find navigation"
+        }
+      ],
+      "fix_recommendation": "Add modifier key checks: if (e.metaKey || e.ctrlKey || e.altKey) return; before triggering single-key shortcuts"
+    },
+    {
+      "id": "PROP-001",
+      "severity": "P2-INFO",
+      "category": "Change Proposals",
+      "title": "Change Proposals Feature is Fully Implemented",
+      "description": "The Change Proposals feature is a sophisticated, production-ready AI-powered project planning system with complete database schema, API, and UI.",
+      "findings": {
+        "functionality": [
+          "Multi-modal input (voice, text, file upload)",
+          "AI-powered parsing using GPT-4",
+          "Intelligent auto-allocation based on team workload",
+          "Time estimation with confidence levels",
+          "Review workflow (draft → pending_review → approved/partially_approved/rejected → archived)",
+          "Line-item approval for individual proposal items",
+          "Impact dashboard showing workload shifts and risk scores",
+          "Merge to production converts proposals into actual tasks"
+        ],
+        "implementation_status": {
+          "database_schema": "COMPLETE - 4 tables (proposals, proposal_items, proposal_discussions, proposal_impact_summary)",
+          "api_routes": "COMPLETE - 8+ REST endpoints",
+          "react_components": "COMPLETE - 28 components including animations",
+          "ai_integration": "COMPLETE - Uses ai-proposal-parser.ts (839 lines)",
+          "navigation": "COMPLETE - Listed as 'Propuestas' in sidebar"
+        },
+        "crico_integration": {
+          "status": "PARTIAL - Designed alongside CRICO but operates independently",
+          "shared_components": ["AI service (aiService.generate())", "Event system", "Design philosophy"],
+          "gap": "No direct calls from proposals code into CRICO-specific functionality"
+        }
+      },
+      "files": {
+        "migration": "supabase/migrations/20260118000000_proposals_feature.sql",
+        "api": "src/app/api/proposals/",
+        "components": "src/components/proposals/",
+        "service": "src/lib/services/proposal.service.ts",
+        "ai_parser": "src/lib/services/ai-proposal-parser.ts",
+        "repository": "src/lib/repositories/proposal-repository.ts",
+        "types": "src/types/proposals.ts"
+      }
+    },
+    {
+      "id": "ART-001",
+      "severity": "P1-HIGH",
+      "category": "Artifacts",
+      "title": "Artifacts System Does Not Display File Contents",
+      "description": "The artifacts system only stores and displays metadata (URI as text) but does not show gathered or output file contents. No preview, download, or content viewing capability exists.",
+      "findings": {
+        "what_works": [
+          "Artifacts are created via OpenClaw events API",
+          "Artifacts are stored in database with proper schema",
+          "List view exists with filtering by type",
+          "RLS policies are implemented"
+        ],
+        "what_is_broken": [
+          {
+            "issue": "No file content display",
+            "details": "Artifacts page only shows type, URI (truncated text), and timestamp - no preview"
+          },
+          {
+            "issue": "Run detail doesn't fetch artifacts",
+            "details": "API query is .select('*, run_steps(*)') but should be .select('*, run_steps(*), artifacts(*)')",
+            "file": "src/app/api/runs/[id]/route.ts",
+            "line": 16
+          },
+          {
+            "issue": "No artifact detail view",
+            "details": "No /artifacts/[id]/page.tsx for viewing individual artifacts"
+          },
+          {
+            "issue": "No download functionality",
+            "details": "URIs are displayed as plain text, not clickable links or download buttons"
+          },
+          {
+            "issue": "Missing TypeScript types",
+            "details": "Artifacts table not defined in src/lib/supabase/types.ts"
+          }
+        ],
+        "architecture_issue": "Artifacts are designed as a reference/metadata tracker pointing to external storage (via URI), not as a file storage system. No integration with Supabase Storage."
+      },
+      "files": {
+        "page": "src/app/artifacts/page.tsx",
+        "api": "src/app/api/artifacts/route.ts",
+        "run_page": "src/app/runs/[id]/page.tsx",
+        "run_api": "src/app/api/runs/[id]/route.ts",
+        "events_api": "src/app/api/openclaw/events/route.ts",
+        "schema": "supabase/migrations/20260226_clawfusion_os.sql"
+      }
+    },
+    {
+      "id": "ART-002",
+      "severity": "P2-MEDIUM",
+      "category": "Artifacts",
+      "title": "Artifacts System Lacks Proper Operation Logging",
+      "description": "No audit trail exists for artifact operations (create, view, download). Only console errors are logged.",
+      "findings": {
+        "missing_logging": [
+          "Artifact creation events not logged to audit table",
+          "No artifact access logging",
+          "No artifact deletion tracking"
+        ],
+        "existing_but_separate": [
+          "Ledger events system exists for general tracking",
+          "Console logging for errors only"
+        ]
+      }
+    },
+    {
+      "id": "CRICO-001",
+      "severity": "P2-MEDIUM",
+      "category": "AI/CRICO Integration",
+      "title": "CRICO Agents Use Static Analysis Only - No LLM Integration",
+      "description": "The CRICO (Cognitive Operating System) agent framework exists but performs only regex-based static analysis without calling LLMs for intelligent analysis.",
+      "findings": {
+        "what_is_crico": "Cognitive Operating System for Builders - monitors code quality and alignment across UI/API/DB layers",
+        "agent_orchestra": {
+          "location": "src/lib/crico/agents/AgentOrchestra.ts",
+          "agents": ["Conductor", "Planner", "Code Auditor", "Test Architect", "Schema Integrity", "Risk & Regression"],
+          "issue": "All agents use static analysis only (regex, pattern matching) - no OpenAI/DeepSeek calls"
+        },
+        "parallel_ai_systems": [
+          {
+            "name": "CRICO",
+            "type": "Static analysis",
+            "status": "Disconnected from LLMs"
+          },
+          {
+            "name": "Task Action Service",
+            "type": "Direct OpenAI/DeepSeek",
+            "status": "Working independently"
+          },
+          {
+            "name": "Pipeline System",
+            "type": "ClawdBot external gateway",
+            "status": "Siloed from CRICO"
+          }
+        ],
+        "gaps": [
+          "No connection between CRICO agents and actual LLM calls",
+          "Pipeline and CRICO are completely siloed",
+          "Event system doesn't feed into CRICO analysis",
+          "Two different suggestion engines (crico vs client-side)"
+        ]
+      },
+      "files": {
+        "agent_orchestra": "src/lib/crico/agents/AgentOrchestra.ts",
+        "alignment_engine": "src/lib/crico/alignment/alignment-engine.ts",
+        "suggestion_engine": "src/lib/crico/suggestions/suggestion-engine.ts",
+        "delegation": "src/features/delegation/delegationService.ts",
+        "task_actions": "src/lib/services/task-action-service.ts",
+        "openclaw_events": "src/app/api/openclaw/events/route.ts"
+      }
+    },
+    {
+      "id": "KB-002",
+      "severity": "P1-HIGH",
+      "category": "Keyboard Shortcuts",
+      "title": "Multiple Conflicting Keyboard Shortcut Hooks",
+      "description": "The codebase has 5+ different keyboard shortcut hooks with conflicting registrations, causing potential double-triggering and inconsistent behavior.",
+      "findings": {
+        "conflicting_hooks": [
+          "use-keyboard-shortcuts.ts - Global window listener",
+          "use-keyboard.ts - Global document listener", 
+          "use-keyboard-navigation.ts - Component document listener",
+          "use-keyboard-nav.ts - Component document listener",
+          "useKeyboard.ts - Global document listener"
+        ],
+        "conflicting_shortcuts": [
+          {
+            "shortcut": "Cmd/Ctrl+K",
+            "locations": ["command-palette.tsx", "use-keyboard-shortcuts.ts", "useSearch.ts"],
+            "issue": "Multiple handlers for same shortcut"
+          },
+          {
+            "shortcut": "Cmd/Ctrl+1,2,3",
+            "locations": ["view-switcher.tsx", "useKeyboard.ts"],
+            "issue": "Duplicate view switching shortcuts"
+          }
+        ],
+        "inconsistent_target": [
+          "Some hooks use window.addEventListener",
+          "Some hooks use document.addEventListener"
+        ]
+      }
+    },
+    {
+      "id": "KB-003",
+      "severity": "P2-MEDIUM",
+      "category": "Keyboard Shortcuts",
+      "title": "Input Field Detection Missing in Some Components",
+      "description": "Several components with keyboard handlers don't check if user is typing in an input field, causing focus hijacking.",
+      "affected_components": [
+        {
+          "file": "src/components/modals/card-detail-modal.tsx",
+          "issue": "'e' key handler doesn't check input field, focuses title instead"
+        },
+        {
+          "file": "src/components/views/view-switcher.tsx",
+          "issue": "Ctrl+1,2,3 doesn't check if user is in input field"
+        }
+      ],
+      "recommended_pattern": "Check target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable"
+    },
+    {
+      "id": "DB-001",
+      "severity": "P2-MEDIUM",
+      "category": "Database",
+      "title": "Proposals Repository Table Name Mismatch",
+      "description": "Repository code references 'foco_proposals' but migration creates 'proposals' table (without foco_ prefix).",
+      "files": {
+        "migration": "supabase/migrations/20260118000000_proposals_feature.sql",
+        "repository": "src/lib/repositories/proposal-repository.ts"
+      }
+    },
+    {
+      "id": "ART-003",
+      "severity": "P2-MEDIUM",
+      "category": "Artifacts",
+      "title": "Artifacts Table Missing Ownership Columns",
+      "description": "The artifacts table has no user_id or workspace_id columns, meaning all users see all artifacts with no filtering by workspace.",
+      "schema_location": "supabase/migrations/20260226_clawfusion_os.sql (lines 95-108)"
+    }
+  ],
+  "recommendations": {
+    "immediate_fixes": [
+      "Fix KB-001: Add modifier key checks to global-keyboard-shortcuts.tsx 'c', 'd', 'g' cases",
+      "Fix ART-001: Add artifacts to runs API query (change select to include 'artifacts(*)')",
+      "Fix ART-001: Add artifacts table to supabase types"
+    ],
+    "short_term_fixes": [
+      "Consolidate keyboard shortcut hooks into single system",
+      "Add input field detection to card-detail-modal and view-switcher",
+      "Connect CRICO agents to LLM service (aiService.generate())",
+      "Add artifact detail view and download functionality"
+    ],
+    "long_term_improvements": [
+      "Integrate artifacts with Supabase Storage for actual file handling",
+      "Add workspace/user ownership to artifacts",
+      "Unify the parallel AI systems (CRICO, Pipeline, Task Actions)",
+      "Add artifact operation audit logging"
+    ]
+  },
+  "severity_counts": {
+    "P0-CRITICAL": 1,
+    "P1-HIGH": 3,
+    "P2-MEDIUM": 5,
+    "P2-INFO": 1
+  }
+}

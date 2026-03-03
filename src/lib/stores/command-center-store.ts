@@ -3,7 +3,6 @@ import type {
   UnifiedAgent,
   UnifiedMission,
   FlowLane,
-  FlowGoal,
   AgentBackend,
   CommandDecision,
 } from '@/lib/command-center/types'
@@ -15,7 +14,6 @@ interface CommandCenterStore {
   decisions: CommandDecision[]
   selectedAgentId: string | null
   isLoading: boolean
-  lastFetch: Date | null
   error: string | null
   mode: 'Reactive' | 'Predictive' | 'Guarded'
   paused: boolean
@@ -27,7 +25,6 @@ interface CommandCenterStore {
   setMissions: (missions: UnifiedMission[]) => void
   setDecisions: (decisions: CommandDecision[]) => void
   selectAgent: (id: string | null) => void
-  setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   setMode: (mode: 'Reactive' | 'Predictive' | 'Guarded') => void
   setPaused: (paused: boolean) => void
@@ -36,12 +33,12 @@ interface CommandCenterStore {
 
   // derived selectors
   toFlowLanes: () => FlowLane[]
-  toFlowGoals: () => FlowGoal[]
   selectedAgent: () => UnifiedAgent | null
 
   // control actions
   stopAgent: (backend: AgentBackend, nativeId: string) => Promise<void>
   pauseAgent: (backend: AgentBackend, nativeId: string) => Promise<void>
+  resumeAgent: (backend: AgentBackend, nativeId: string) => Promise<void>
   createMission: (input: {
     title: string
     description?: string
@@ -60,18 +57,16 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
   decisions: [],
   selectedAgentId: null,
   isLoading: false,
-  lastFetch: null,
   error: null,
   mode: 'Guarded',
   paused: false,
   quietMode: false,
   quietCategories: { p3: false, heartbeat: false },
 
-  setAgents: (agents) => set({ agents, lastFetch: new Date() }),
+  setAgents: (agents) => set({ agents }),
   setMissions: (missions) => set({ missions }),
   setDecisions: (decisions) => set({ decisions }),
   selectAgent: (id) => set({ selectedAgentId: id }),
-  setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   setMode: (mode) => set({ mode }),
   setPaused: (paused) => set({ paused }),
@@ -90,16 +85,6 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
     }))
   },
 
-  toFlowGoals: () => {
-    const { missions } = get()
-    return missions.map(m => ({
-      id: m.id,
-      label: m.title,
-      status: m.status,
-      agentIds: m.assignedAgentIds,
-    }))
-  },
-
   selectedAgent: () => {
     const { agents, selectedAgentId } = get()
     if (!selectedAgentId) return null
@@ -107,11 +92,7 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
   },
 
   stopAgent: async (backend, nativeId) => {
-    await fetch('/api/command-center/control', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'stop', backend, nativeId }),
-    })
+    const prev = get().agents
     // Optimistic update
     set(state => ({
       agents: state.agents.map(a =>
@@ -120,14 +101,22 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
           : a
       ),
     }))
+    try {
+      const res = await fetch('/api/command-center/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop', backend, nativeId }),
+      })
+      if (!res.ok) {
+        set({ agents: prev, error: 'Failed to stop agent' })
+      }
+    } catch {
+      set({ agents: prev, error: 'Failed to stop agent' })
+    }
   },
 
   pauseAgent: async (backend, nativeId) => {
-    await fetch('/api/command-center/control', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'pause', backend, nativeId }),
-    })
+    const prev = get().agents
     // Optimistic update
     set(state => ({
       agents: state.agents.map(a =>
@@ -136,6 +125,42 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
           : a
       ),
     }))
+    try {
+      const res = await fetch('/api/command-center/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pause', backend, nativeId }),
+      })
+      if (!res.ok) {
+        set({ agents: prev, error: 'Failed to pause agent' })
+      }
+    } catch {
+      set({ agents: prev, error: 'Failed to pause agent' })
+    }
+  },
+
+  resumeAgent: async (backend, nativeId) => {
+    const prev = get().agents
+    // Optimistic update
+    set(state => ({
+      agents: state.agents.map(a =>
+        a.backend === backend && a.nativeId === nativeId
+          ? { ...a, status: 'working' }
+          : a
+      ),
+    }))
+    try {
+      const res = await fetch('/api/command-center/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resume', backend, nativeId }),
+      })
+      if (!res.ok) {
+        set({ agents: prev, error: 'Failed to resume agent' })
+      }
+    } catch {
+      set({ agents: prev, error: 'Failed to resume agent' })
+    }
   },
 
   createMission: async (input) => {
@@ -152,15 +177,9 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
   },
 
   approveDecision: async (id, action) => {
-    const res = await fetch('/api/command-center/decisions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, action }),
-    })
-    if (!res.ok) throw new Error('Failed to process decision')
-
+    const prev = get().decisions
+    // Optimistic update
     if (action === 'defer') {
-      // Keep in queue but increment deferCount so it escalates visually
       set(state => ({
         decisions: state.decisions.map(d =>
           d.id === id
@@ -172,6 +191,19 @@ export const useCommandCenterStore = create<CommandCenterStore>((set, get) => ({
       set(state => ({
         decisions: state.decisions.filter(d => d.id !== id),
       }))
+    }
+
+    try {
+      const res = await fetch('/api/command-center/decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action }),
+      })
+      if (!res.ok) {
+        set({ decisions: prev, error: 'Failed to process decision' })
+      }
+    } catch {
+      set({ decisions: prev, error: 'Failed to process decision' })
     }
   },
 }))

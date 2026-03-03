@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollText, Clock, Copy, ChevronDown, ChevronUp } from 'lucide-react'
+import { ScrollText, Clock, Copy, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import { useOpenClawLogs } from '@/lib/hooks/use-openclaw-logs'
@@ -18,6 +18,8 @@ import { AgentControls } from './agent-controls'
 import { MissionTimeline } from './mission-timeline'
 import { AGENT_STATUS_COLORS, BACKEND_LABELS } from '@/lib/command-center/types'
 import type { UnifiedAgent } from '@/lib/command-center/types'
+import { AgentSurfaceController } from '@/features/agent-surfaces/components/agent-surface-controller'
+import { SurfaceCapabilityBadge } from '@/features/agent-surfaces/components/surface-capability-badge'
 
 function modelBadgeClass(model?: string) {
   if (!model) return ''
@@ -152,11 +154,12 @@ export function AgentDetailSheet() {
             </div>
 
             <Tabs defaultValue="overview">
-              <TabsList className="w-full grid grid-cols-5">
+              <TabsList className="w-full grid grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="runs">Runs</TabsTrigger>
                 <TabsTrigger value="prompt">Prompt</TabsTrigger>
                 <TabsTrigger value="steps">Steps</TabsTrigger>
+                <TabsTrigger value="surfaces">Surfaces</TabsTrigger>
                 <TabsTrigger value="logs">Logs</TabsTrigger>
               </TabsList>
 
@@ -188,12 +191,34 @@ export function AgentDetailSheet() {
 
               {/* System Prompt */}
               <TabsContent value="prompt" className="mt-4">
-                <SystemPromptSection prompt={(agent.raw as any)?.system_prompt} />
+                <SystemPromptSection prompt={agent.raw?.system_prompt as string | undefined} />
               </TabsContent>
 
               {/* Steps */}
               <TabsContent value="steps" className="mt-4">
                 <MissionTimeline steps={mission?.steps ?? []} />
+              </TabsContent>
+
+              {/* Surfaces */}
+              <TabsContent value="surfaces" className="mt-4">
+                <div className="space-y-3">
+                  {/* Surface summary */}
+                  {agent.surfaces && agent.surfaces.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {agent.surfaces.map(surface => (
+                        <SurfaceCapabilityBadge
+                          key={surface.id}
+                          surfaceType={surface.surface_type}
+                          status={surface.status}
+                          capabilities={surface.capabilities}
+                          showLabel
+                          size="sm"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <AgentSurfaceController agentId={agent.id} />
+                </div>
               </TabsContent>
 
               {/* Logs */}

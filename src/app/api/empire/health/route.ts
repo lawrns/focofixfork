@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { ensureHeartbeat } from '@/lib/heartbeat/init'
+
+// Start heartbeat on first import (this route is polled every 30s by System Pulse)
+ensureHeartbeat()
 
 export const dynamic = 'force-dynamic'
 

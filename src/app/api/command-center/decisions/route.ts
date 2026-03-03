@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import type { CommandDecision, DecisionSeverity } from '@/lib/command-center/types'
+import { sendTelegramAlert } from '@/lib/services/telegram'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,19 @@ function mapCricoActionToDecision(action: CricoAction): CommandDecision {
     actionHint,
     createdAt: action.created_at,
     state: 'needs_you',
-    raw: action as unknown as Record<string, unknown>,
+    deferCount: (action.metadata?.defer_count as number) ?? 0,
+    raw: {
+      id: action.id,
+      intent: action.intent,
+      source: action.source,
+      scope: action.scope,
+      authority_level: action.authority_level,
+      risk_score: action.risk_score,
+      requires_approval: action.requires_approval,
+      status: action.status,
+      created_at: action.created_at,
+      metadata: action.metadata,
+    },
   }
 }
 
@@ -85,7 +98,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ decisions: [], timestamp: new Date().toISOString() })
     }
 
-    const decisions = (data as CricoAction[] | null || []).map(mapCricoActionToDecision)
+    const actions = (data as CricoAction[] | null) || []
+    const decisions = actions.map(mapCricoActionToDecision)
+
+    // Alert on new P0/P1 decisions not yet alerted via Telegram
+    for (const action of actions) {
+      const severity = mapAuthorityToPriority(action.authority_level)
+      if ((severity === 'P0' || severity === 'P1') && !action.metadata?.telegram_alerted) {
+        sendTelegramAlert(
+          `\u26A1 New ${severity} Decision: ${action.intent}`,
+          { severity }
+        ).catch(() => {})
+        // Mark as alerted (fire-and-forget)
+        supabaseAdmin
+          .from('crico_actions')
+          .update({ metadata: { ...(action.metadata || {}), telegram_alerted: true } })
+          .eq('id', action.id)
+          .then(() => {})
+          .catch(() => {})
+      }
+    }
 
     return NextResponse.json({
       decisions,
@@ -132,13 +164,20 @@ export async function POST(req: NextRequest) {
 
     const updates: Record<string, unknown> = {}
 
+    // Fetch the action's details for Telegram alerts
+    const { data: actionRow } = await supabaseAdmin
+      .from('crico_actions')
+      .select('intent, authority_level')
+      .eq('id', id)
+      .single()
+
     if (action === 'approve') {
       updates.status = 'approved'
       updates.approved_at = new Date().toISOString()
     } else if (action === 'reject') {
       updates.status = 'cancelled'
     } else if (action === 'defer') {
-      // Keep status as pending, add deferred metadata
+      // Keep status as pending, increment defer count in metadata
       const { data: existing } = await supabaseAdmin
         .from('crico_actions')
         .select('metadata')
@@ -146,6 +185,8 @@ export async function POST(req: NextRequest) {
         .single()
 
       const metadata = (existing?.metadata as Record<string, unknown>) || {}
+      const prevCount = (metadata.defer_count as number) ?? 0
+      metadata.defer_count = prevCount + 1
       metadata.deferred_at = new Date().toISOString()
       updates.metadata = metadata
     }
@@ -158,6 +199,17 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.warn('CRICO action update failed (table may not exist):', error.message)
       return NextResponse.json({ ok: false, error: error.message })
+    }
+
+    // Send Telegram alert for approved P0/P1 decisions
+    if (action === 'approve' && actionRow) {
+      const severity = mapAuthorityToPriority(actionRow.authority_level)
+      if (severity === 'P0' || severity === 'P1') {
+        sendTelegramAlert(
+          `\u2705 Decision Approved [${severity}]: ${actionRow.intent}`,
+          { severity }
+        ).catch(() => {})
+      }
     }
 
     return NextResponse.json({ ok: true })

@@ -32,6 +32,8 @@ import {
   Crosshair,
   Satellite,
   History,
+  Newspaper,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -57,6 +59,7 @@ const empireNavItems: NavItem[] = [
   { label: 'Empire OS',       href: '/empire',            icon: Crown,     shortcut: 'G M' },
   { label: 'Command Center',  href: '/empire/command',    icon: Cpu,       shortcut: 'G C' },
   { label: 'Agents',          href: '/empire/agents',     icon: Bot,       shortcut: 'G J' },
+  { label: 'Orchestration',   href: '/empire/orchestration', icon: GitBranch, shortcut: 'G X' },
   { label: 'Pipeline',        href: '/empire/pipeline',   icon: GitBranch, shortcut: 'G V' },
   { label: 'Crons',           href: '/crons',             icon: Clock,     shortcut: 'G K' },
 ];
@@ -64,6 +67,7 @@ const empireNavItems: NavItem[] = [
 const projectsNavItems: NavItem[] = [
   { label: 'Daily Briefing',     href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
   { label: 'Projects',           href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
+  { label: 'Content',            href: '/empire/content',   icon: Newspaper, shortcut: 'G Z' },
   { label: 'Team Capacity',      href: '/empire/fleet',     icon: Satellite, shortcut: 'G O' },
   { label: 'Notifications',      href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
   { label: 'Milestone Timeline', href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
@@ -75,6 +79,7 @@ const operateNavItems: NavItem[] = [
   { label: 'Task Proposals',   href: '/proposals',  icon: ClipboardList, shortcut: 'G Q' },
   { label: 'Artifacts',        href: '/artifacts',  icon: Archive,       shortcut: 'G A' },
   { label: 'Fleet Policies',   href: '/policies',   icon: Shield,        shortcut: 'G Y' },
+  { label: 'Maintenance',      href: '/maintenance', icon: Wrench,       shortcut: 'G D' },
 ];
 
 export function LeftRail() {

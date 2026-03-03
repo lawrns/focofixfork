@@ -1,0 +1,315 @@
+{
+  "plan_metadata": {
+    "generated_at": "2026-03-02T19:12:06Z",
+    "source_repos": "https://github.com/grandamenium",
+    "target_project": "focofixfork",
+    "claude_sync_level": "full",
+    "estimated_complexity_reduction": "60-75%"
+  },
+  "enrichment_modules": [
+    {
+      "module_id": "codemap-integration",
+      "source_repo": "codemap",
+      "enrichment_type": "project_intelligence",
+      "claude_capability_alignment": "context_window_optimization",
+      "implementation": {
+        "integration_point": "src/features/projects/codemap/",
+        "api_route": "app/api/projects/[id]/codemap/route.ts",
+        "ui_component": "components/projects/CodemapPanel.tsx"
+      },
+      "features_added": [
+        {
+          "feature": "auto_codebase_mapping",
+          "description": "Automatic codebase visualization for linked GitHub repos",
+          "value": "AI agents understand project structure instantly without file exploration"
+        },
+        {
+          "feature": "mermaid_dependency_graphs",
+          "description": "Visual dependency graphs using existing Mermaid infrastructure",
+          "value": "Leverages foco's Mermaid feature; adds practical code visualization"
+        },
+        {
+          "feature": "entry_point_detection",
+          "description": "Auto-detect project entry points (main files, APIs, configs)",
+          "value": "New team members onboard 10x faster"
+        }
+      ],
+      "foco_enrichment": "Transforms project documentation from static to living code maps"
+    },
+    {
+      "module_id": "m2c1-orchestration",
+      "source_repo": "m2c1",
+      "enrichment_type": "autonomous_workflow_engine",
+      "claude_capability_alignment": "multi_phase_orchestration",
+      "implementation": {
+        "integration_point": "src/features/orchestration/",
+        "database_tables": ["orchestration_workflows", "workflow_phases", "phase_tasks"],
+        "api_routes": "app/api/orchestration/",
+        "ui_component": "components/orchestration/WorkflowOrchestrator.tsx"
+      },
+      "features_added": [
+        {
+          "feature": "12_phase_workflows",
+          "description": "Brain dump → PRD → Research → Discovery → Implementation → Testing pipeline",
+          "value": "Turn vague project ideas into executed, tested deliverables"
+        },
+        {
+          "feature": "task_sharding",
+          "description": "Break phases into atomic, parallel-executable task prompts",
+          "value": "Massive parallelization of development work"
+        },
+        {
+          "feature": "artifact_templates",
+          "description": "Standardized templates for PRDs, research, phases, progress tracking",
+          "value": "Consistent documentation across all projects"
+        },
+        {
+          "feature": "synergy_review",
+          "description": "Cross-phase coherence checking before execution",
+          "value": "Prevents contradictions and gaps in multi-phase work"
+        }
+      ],
+      "foco_enrichment": "Upgrades foco from task tracker to autonomous project execution engine"
+    },
+    {
+      "module_id": "memory-management",
+      "source_repo": "claude-code-memory-skill",
+      "enrichment_type": "context_optimization",
+      "claude_capability_alignment": "200_line_memory_limit",
+      "implementation": {
+        "integration_point": "src/lib/ai/memory/",
+        "project_enhancement": "AI_MEMORY_INDEX.md auto-generation per project",
+        "database_table": "project_memory_segments"
+      },
+      "features_added": [
+        {
+          "feature": "topic_file_segmentation",
+          "description": "Auto-segment project knowledge into topic files (debugging.md, patterns.md, etc.)",
+          "value": "Optimal Claude context usage within 200-line limit"
+        },
+        {
+          "feature": "memory_hygiene_audits",
+          "description": "Regular cleanup and reorganization of project memory",
+          "value": "Prevents context bloat and keeps AI responses focused"
+        },
+        {
+          "feature": "smart_pointers",
+          "description": "MEMORY.md as index with pointers to detailed topic files",
+          "value": "Fast context retrieval without loading unnecessary data"
+        }
+      ],
+      "foco_enrichment": "Ensures AI assistance stays fast and relevant as projects scale"
+    },
+    {
+      "module_id": "nano-banana-media",
+      "source_repo": "nano-banana-2-skill",
+      "enrichment_type": "generative_media",
+      "claude_capability_alignment": "multimodal_output",
+      "implementation": {
+        "integration_point": "src/features/media/",
+        "api_route": "app/api/media/generate/route.ts",
+        "ui_component": "components/media/ImageGenerator.tsx",
+        "database_table": "generated_media_assets"
+      },
+      "features_added": [
+        {
+          "feature": "project_thumbnail_generation",
+          "description": "Auto-generate project thumbnails and cover images",
+          "value": "Visual project identity without designer dependency"
+        },
+        {
+          "feature": "diagram_to_image",
+          "description": "Convert Mermaid diagrams to high-res PNGs for sharing",
+          "value": "Export-ready visuals from existing diagram feature"
+        },
+        {
+          "feature": "task_visualization",
+          "description": "Generate images illustrating complex tasks or concepts",
+          "value": "Visual thinking aids for complex project work"
+        }
+      ],
+      "foco_enrichment": "Adds visual dimension to project management and documentation"
+    },
+    {
+      "module_id": "agent-orchestration",
+      "source_repo": "general-task-agent-orchestration",
+      "enrichment_type": "multi_surface_execution",
+      "claude_capability_alignment": "browser_mcp_playwright",
+      "implementation": {
+        "integration_point": "src/features/agents/",
+        "execution_surfaces": ["browser", "native_apps", "files", "apis", "communication", "calendar"],
+        "api_routes": "app/api/agents/execute/",
+        "ui_component": "components/agents/AgentController.tsx"
+      },
+      "features_added": [
+        {
+          "feature": "6_surface_execution",
+          "description": "Agents execute across browser, macOS apps, files, APIs, Slack/Email, Calendar",
+          "value": "True end-to-end automation beyond just code"
+        },
+        {
+          "feature": "peekaboo_integration",
+          "description": "Native macOS app automation for desktop workflows",
+          "value": "Bridge between web app and native desktop work"
+        },
+        {
+          "feature": "verified_output_pipeline",
+          "description": "12-phase workflow with built-in verification at each step",
+          "value": "Production-ready outputs, not just drafts"
+        }
+      ],
+      "foco_enrichment": "Expands foco from web app to universal task execution hub"
+    },
+    {
+      "module_id": "content-pipeline",
+      "source_repo": "ai-content-pipeline",
+      "enrichment_type": "content_automation",
+      "claude_capability_alignment": "content_generation",
+      "implementation": {
+        "integration_point": "src/features/content/",
+        "api_route": "app/api/content/pipeline/route.ts",
+        "ui_component": "components/content/ContentPipeline.tsx",
+        "database_tables": ["content_sources", "content_outputs", "content_schedules"]
+      },
+      "features_added": [
+        {
+          "feature": "source_monitoring",
+          "description": "Monitor external sources (Twitter, RSS, APIs) for project-relevant content",
+          "value": "Auto-curated intelligence feeds per project"
+        },
+        {
+          "feature": "claude_analysis_pipeline",
+          "description": "Route captured content through Claude for analysis/summarization",
+          "value": "AI-processed insights instead of raw data dumps"
+        },
+        {
+          "feature": "gdrive_notion_export",
+          "description": "Export processed content to external documentation systems",
+          "value": "Seamless integration with existing team workflows"
+        }
+      ],
+      "foco_enrichment": "Turns foco into an intelligent information hub for projects"
+    },
+    {
+      "module_id": "reminder-processor",
+      "source_repo": "reminder-processor-skill",
+      "enrichment_type": "task_intake_automation",
+      "claude_capability_alignment": "task_classification",
+      "implementation": {
+        "integration_point": "src/features/tasks/intake/",
+        "api_route": "app/api/tasks/intake/route.ts",
+        "ui_component": "components/tasks/QuickCapture.tsx"
+      },
+      "features_added": [
+        {
+          "feature": "natural_language_task_creation",
+          "description": "Convert brain dumps into structured tasks via AI classification",
+          "value": "Zero-friction task entry"
+        },
+        {
+          "feature": "hybrid_task_intelligence",
+          "description": "Auto-identify tasks needing human vs AI completion",
+          "value": "Proper delegation without manual triage"
+        },
+        {
+          "feature": "auto_task_completion",
+          "description": "AI completes research, writing, analysis tasks automatically",
+          "value": "Invisible progress on routine work"
+        }
+      ],
+      "foco_enrichment": "Eliminates friction between thinking and task tracking"
+    },
+    {
+      "module_id": "stale-deps-monitor",
+      "source_repo": "stale-deps",
+      "enrichment_type": "maintenance_automation",
+      "claude_capability_alignment": "code_analysis",
+      "implementation": {
+        "integration_point": "src/features/maintenance/",
+        "scheduled_job": "app/api/cron/dependency-check/route.ts",
+        "ui_component": "components/maintenance/DependencyHealth.tsx"
+      },
+      "features_added": [
+        {
+          "feature": "dependency_health_dashboard",
+          "description": "Visual status of all project dependencies with staleness indicators",
+          "value": "Proactive maintenance instead of reactive fixes"
+        },
+        {
+          "feature": "unused_dependency_detection",
+          "description": "AST-based scan for imported-but-unused packages",
+          "value": "Smaller bundles, faster builds"
+        },
+        {
+          "feature": "security_vulnerability_warnings",
+          "description": "Flag abandoned packages and major version drift",
+          "value": "Security-first dependency management"
+        }
+      ],
+      "foco_enrichment": "Keeps projects healthy with automated maintenance intelligence"
+    }
+  ],
+  "claude_ability_synchronization": {
+    "description": "All modules leverage Claude's native capabilities without workarounds",
+    "sync_points": [
+      {
+        "claude_feature": "200-line memory limit",
+        "module_alignment": "memory-management uses topic segmentation + pointers"
+      },
+      {
+        "claude_feature": "MCP server support",
+        "module_alignment": "agent-orchestration uses browser/playwright MCP"
+      },
+      {
+        "claude_feature": "Skills system",
+        "module_alignment": "All modules export as installable Claude Code skills"
+      },
+      {
+        "claude_feature": "Parallel subagent spawning",
+        "module_alignment": "m2c1-orchestration shards tasks for parallel execution"
+      },
+      {
+        "claude_feature": "Code understanding",
+        "module_alignment": "codemap generates structured context for unfamiliar repos"
+      },
+      {
+        "claude_feature": "Image generation",
+        "module_alignment": "nano-banana-media exposes Gemini Flash Image API"
+      }
+    ]
+  },
+  "implementation_roadmap": {
+    "phase_1_quick_wins": [
+      "codemap-integration: Add codebase visualization panel to projects",
+      "memory-management: Auto-generate AI_MEMORY_INDEX.md for each project",
+      "stale-deps-monitor: Weekly dependency health reports"
+    ],
+    "phase_2_core_power": [
+      "m2c1-orchestration: Full 12-phase workflow engine",
+      "reminder-processor: Natural language task capture",
+      "content-pipeline: Project intelligence feeds"
+    ],
+    "phase_3_advanced_automation": [
+      "agent-orchestration: Cross-surface task execution",
+      "nano-banana-media: Visual asset generation",
+      "Full agentic workspace integration"
+    ]
+  },
+  "expected_impact": {
+    "developer_productivity": "5-10x reduction in boilerplate and setup work",
+    "onboarding_speed": "10x faster for new team members via codemap",
+    "context_efficiency": "Optimal AI assistance within Claude's limits",
+    "maintenance_overhead": "60-75% reduction via automation",
+    "creative_output": "Visual + textual AI-generated assets on demand"
+  },
+  "technical_considerations": {
+    "database_impact": "+4 tables (orchestration, memory, media, content)",
+    "api_surface": "+8 API route groups",
+    "external_dependencies": [
+      "Gemini API key for image generation",
+      "Optional: Google Drive API for content export",
+      "Optional: Playwright MCP for browser automation"
+    ],
+    "claude_code_integration": "All modules available as installable skills in ~/.claude/skills/"
+  }
+}

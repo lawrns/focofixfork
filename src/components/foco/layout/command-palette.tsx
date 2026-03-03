@@ -61,7 +61,7 @@ export function CommandPalette() {
   const commands: CommandItem[] = useMemo(() => [
     // Navigation
     { id: 'nav-dashboard', label: 'Go to Dashboard', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/dashboard'), keywords: ['home', 'overview'] },
-    { id: 'nav-dispatch', label: 'Go to Dispatch', icon: Send, shortcut: 'G D', group: 'Navigation', action: () => router.push('/openclaw'), keywords: ['agent', 'openclaw', 'mission control'] },
+    { id: 'nav-dispatch', label: 'Go to Dispatch', icon: Send, shortcut: 'G D', group: 'Navigation', action: () => router.push('/empire/command'), keywords: ['agent', 'command center', 'mission control'] },
     { id: 'nav-intel', label: 'Go to Intel Feed', icon: Rss, shortcut: 'G I', group: 'Navigation', action: () => router.push('/clawdbot'), keywords: ['intel', 'feed'] },
     { id: 'nav-runs', label: 'Go to Runs', icon: Activity, shortcut: 'G R', group: 'Navigation', action: () => router.push('/runs'), keywords: ['executions', 'history'] },
     { id: 'nav-ledger', label: 'Go to Audit Log', icon: BookOpen, shortcut: 'G L', group: 'Navigation', action: () => router.push('/ledger'), keywords: ['events', 'log', 'ledger'] },
@@ -69,7 +69,7 @@ export function CommandPalette() {
     { id: 'nav-emails', label: 'Go to Emails', icon: Mail, shortcut: 'G E', group: 'Navigation', action: () => router.push('/emails'), keywords: ['outbox', 'messages'] },
     { id: 'nav-artifacts', label: 'Go to Artifacts', icon: FileBox, shortcut: 'G A', group: 'Navigation', action: () => router.push('/artifacts'), keywords: ['files'] },
     { id: 'nav-policies', label: 'Go to Policies', icon: Shield, shortcut: 'G Y', group: 'Navigation', action: () => router.push('/policies'), keywords: ['guardrails', 'fleet'] },
-    { id: 'nav-cmd-center', label: 'Go to Agent Command Center', icon: Cpu, shortcut: 'G C', group: 'Navigation', action: () => router.push('/empire/command'), keywords: ['agents', 'command', 'swarm', 'crico', 'clawdbot', 'bosun', 'openclaw'] },
+    { id: 'nav-cmd-center', label: 'Go to Agent Command Center', icon: Cpu, shortcut: 'G C', group: 'Navigation', action: () => router.push('/empire/command'), keywords: ['agents', 'command', 'swarm', 'crico', 'clawdbot', 'bosun'] },
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
     { id: 'nav-my-work', label: 'My Tasks', icon: CheckSquare, shortcut: 'G W', group: 'Navigation', action: () => router.push('/my-work'), keywords: ['tasks', 'work', 'todo'] },
     { id: 'nav-briefing', label: 'Daily Briefing', icon: Sun, shortcut: 'G B', group: 'Navigation', action: () => router.push('/empire/briefing'), keywords: ['briefing', 'daily', 'summary'] },
@@ -83,7 +83,7 @@ export function CommandPalette() {
     { id: 'nav-pipeline', label: 'Pipeline', icon: Workflow, shortcut: 'G V', group: 'Navigation', action: () => router.push('/empire/pipeline'), keywords: ['pipeline', 'workflow'] },
 
     // Quick Actions
-    { id: 'dispatch-agent', label: 'Dispatch Agent', icon: Send, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/openclaw'), keywords: ['new', 'task', 'agent'] },
+    { id: 'dispatch-agent', label: 'Dispatch Agent', icon: Send, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/empire/command'), keywords: ['new', 'task', 'agent'] },
     { id: 'new-cron', label: 'New Cron', icon: Clock, group: 'Quick Actions', action: () => router.push('/crons?create=true'), keywords: ['new', 'schedule'] },
     { id: 'new-email', label: 'New Email', icon: Mail, group: 'Quick Actions', action: () => router.push('/emails?create=true'), keywords: ['new', 'send'] },
 

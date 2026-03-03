@@ -44,6 +44,7 @@ export function GlobalKeyboardShortcuts() {
 
         switch (key) {
           case 'h': router.push('/dashboard'); break;
+          case 'd': router.push('/empire/command'); break;
           case 'i': router.push('/clawdbot'); break;
           case 'r': router.push('/runs'); break;
           case 'l': router.push('/ledger'); break;

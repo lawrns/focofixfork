@@ -79,7 +79,7 @@ const operateNavItems: NavItem[] = [
   { label: 'Plan Proposals',   href: '/proposals',   icon: ClipboardList, shortcut: 'G Q' },
   { label: 'Evidence',         href: '/artifacts',   icon: Archive,       shortcut: 'G A' },
   { label: 'Guardrails',       href: '/policies',    icon: Shield,        shortcut: 'G Y' },
-  { label: 'System Health',    href: '/maintenance', icon: Wrench,        shortcut: 'G D' },
+  { label: 'System Health',    href: '/maintenance', icon: Wrench },
 ];
 
 export function LeftRail() {

@@ -7,11 +7,11 @@ import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import ErrorBoundary from '@/components/error/error-boundary'
 import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
 import dynamic from 'next/dynamic'
+import { toast } from 'sonner'
 
 // Lazy-load AIInsights — it instantiates OpenAIService at module load time,
 // which throws in dev when GLM_API_KEY / OPENAI_API_KEY is not set.
@@ -25,15 +25,15 @@ import {
   Cpu,
   Pause,
   Play,
-  Send,
   RefreshCw,
   Clock,
   Loader2,
   Zap,
   BookOpen,
-  AlertTriangle,
   Flag,
   TrendingUp,
+  Trash2,
+  Square,
 } from 'lucide-react'
 import { CommandSurface } from '@/components/command-surface'
 
@@ -66,21 +66,55 @@ function elapsed(start: string | null): string {
 
 function ActiveRunsCard() {
   const [runs, setRuns] = useState<any[]>([])
+  const [busyRunId, setBusyRunId] = useState<string | null>(null)
+
+  const poll = useCallback(async () => {
+    try {
+      const res = await fetch('/api/runs?status=running&limit=5')
+      const json = await res.json()
+      setRuns(json.data ?? [])
+    } catch {
+      // silent — card simply stays hidden
+    }
+  }, [])
+
+  const stopRun = useCallback(async (runId: string) => {
+    setBusyRunId(runId)
+    try {
+      const res = await fetch(`/api/runs/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', summary: 'Stopped from Active Runs' }),
+      })
+      if (!res.ok) throw new Error('Failed to stop run')
+      toast.success('Run stopped')
+      await poll()
+    } catch {
+      toast.error('Could not stop run')
+    } finally {
+      setBusyRunId(null)
+    }
+  }, [poll])
+
+  const deleteRun = useCallback(async (runId: string) => {
+    setBusyRunId(runId)
+    try {
+      const res = await fetch(`/api/runs/${runId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete run')
+      toast.success('Run deleted')
+      setRuns(prev => prev.filter(r => r.id !== runId))
+    } catch {
+      toast.error('Could not delete run')
+    } finally {
+      setBusyRunId(null)
+    }
+  }, [])
 
   useEffect(() => {
-    const poll = async () => {
-      try {
-        const res = await fetch('/api/runs?status=running&limit=5')
-        const json = await res.json()
-        setRuns(json.data ?? [])
-      } catch {
-        // silent — card simply stays hidden
-      }
-    }
     poll()
     const interval = setInterval(poll, 10_000)
     return () => clearInterval(interval)
-  }, [])
+  }, [poll])
 
   if (runs.length === 0) return null
 
@@ -114,6 +148,28 @@ function ActiveRunsCard() {
               <Clock className="h-3 w-3" />
               {elapsed(run.started_at ?? null)}
             </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                disabled={busyRunId === run.id}
+                onClick={() => stopRun(run.id)}
+                title="Stop run"
+              >
+                <Square className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-red-600 hover:text-red-700"
+                disabled={busyRunId === run.id}
+                onClick={() => deleteRun(run.id)}
+                title="Delete run"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         ))}
       </div>
@@ -133,11 +189,6 @@ export default function DashboardPageClient() {
   const [fleetPaused, setFleetPaused] = useState(false)
   const [recentEvents, setRecentEvents] = useState<LedgerEvent[]>([])
   const [refreshing, setRefreshing] = useState(false)
-
-  // Quick dispatch state
-  const [dispatchAgent, setDispatchAgent] = useState('')
-  const [dispatchTask, setDispatchTask] = useState('')
-  const [dispatching, setDispatching] = useState(false)
 
   const [autonomousStats, setAutonomousStats] = useState({ improvementsWeek: 0, handbookEntries: 0 })
   const hasFetched = useRef(false)
@@ -225,27 +276,6 @@ export default function DashboardPageClient() {
     const interval = setInterval(fetchAll, 30_000)
     return () => clearInterval(interval)
   }, [user, fetchAll])
-
-  const handleDispatch = async () => {
-    if (!dispatchAgent.trim() || !dispatchTask.trim()) return
-    setDispatching(true)
-    try {
-      const res = await fetch('/api/openclaw-gateway/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: dispatchAgent, task: dispatchTask }),
-      })
-      if (res.ok) {
-        setDispatchAgent('')
-        setDispatchTask('')
-        fetchAll()
-      }
-    } catch {
-      // silent
-    } finally {
-      setDispatching(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -549,41 +579,20 @@ export default function DashboardPageClient() {
           />
         </ErrorBoundary>
 
-        {/* Quick Dispatch */}
+        {/* Execution Surfaces */}
         <div className="rounded-lg border border-border bg-card p-4">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Send className="h-4 w-4 text-[color:var(--foco-teal)]" />
-            Quick Dispatch
+            <Cpu className="h-4 w-4 text-[color:var(--foco-teal)]" />
+            Execution Surfaces
           </h3>
-          {relayReachable === false || tokenValid === false ? (
-            <div className="flex items-start gap-2 mb-3 rounded-md border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>
-                {relayReachable === false ? 'AI Gateway unreachable' : 'Service authentication error'} — dispatch unavailable.
-              </span>
-            </div>
-          ) : null}
+          <p className="text-xs text-muted-foreground mb-3">
+            Use Command Center for primary execution. Legacy OpenClaw dispatch remains available during migration.
+          </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="Agent ID"
-              value={dispatchAgent}
-              onChange={(e) => setDispatchAgent(e.target.value)}
-              className="sm:w-40"
-            />
-            <Input
-              placeholder="Task description"
-              value={dispatchTask}
-              onChange={(e) => setDispatchTask(e.target.value)}
-              className="flex-1"
-              onKeyDown={(e) => e.key === 'Enter' && handleDispatch()}
-            />
-            <CritterLaunchPadButton
-              label={dispatching ? 'Dispatching...' : 'Dispatch'}
-              variant="default"
-              size="sm"
-              disabled={dispatching || !dispatchAgent.trim() || !dispatchTask.trim() || relayReachable === false || tokenValid === false}
-              onClick={handleDispatch}
-            />
+            <Button onClick={() => router.push('/empire/command')}>Open Command Center</Button>
+            <Button variant="outline" onClick={() => router.push('/openclaw')}>
+              Open Legacy Dispatch
+            </Button>
           </div>
         </div>
       </PageShell>

@@ -152,10 +152,21 @@ export default function OpenClawPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
+      <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <span>
+            Legacy dispatch surface: new execution workflows are now centered in Command Center.
+          </span>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/empire/command">Open Command Center</Link>
+          </Button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dispatch</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Legacy Dispatch</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Agent Orchestration · Gateway · Live Logs
           </p>

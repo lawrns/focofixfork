@@ -51,7 +51,7 @@ const shortcuts: Shortcut[] = [
   // Navigation
   // ── Core
   { id: 'nav-dashboard',  keys: ['G', 'H'], description: 'Go to dashboard',       category: 'Navigation' },
-  { id: 'nav-dispatch',   keys: ['G', 'D'], description: 'Go to Dispatch',         category: 'Navigation' },
+  { id: 'nav-dispatch',   keys: ['G', 'D'], description: 'Go to Command Center',   category: 'Navigation' },
   { id: 'nav-intel',      keys: ['G', 'I'], description: 'Go to Intel Feed',       category: 'Navigation' },
   { id: 'nav-runs',       keys: ['G', 'R'], description: 'Go to Runs',             category: 'Navigation' },
   { id: 'nav-ledger',     keys: ['G', 'L'], description: 'Go to Audit Log',        category: 'Navigation' },

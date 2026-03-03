@@ -104,22 +104,6 @@ export function useQuickActions() {
       },
       keywords: ['new', 'task', 'todo', 'create']
     },
-    {
-      id: 'create-organization',
-      title: 'Create Organization',
-      description: 'Start a new organization',
-      category: 'create',
-      icon: '🏢',
-      action: () => {
-        router.push('/organizations')
-        setTimeout(() => {
-          const event = new CustomEvent('open-create-organization')
-          window.dispatchEvent(event)
-        }, 100)
-      },
-      keywords: ['new', 'org', 'organization', 'team', 'create']
-    },
-
     // Navigate actions
     {
       id: 'go-dashboard',
@@ -130,16 +114,6 @@ export function useQuickActions() {
       icon: '🏠',
       action: () => router.push('/dashboard'),
       keywords: ['dashboard', 'home', 'projects', 'go']
-    },
-    {
-      id: 'go-organizations',
-      title: 'Go to Organizations',
-      description: 'Manage organizations',
-      category: 'navigate',
-      shortcut: 'Cmd+O',
-      icon: '🏢',
-      action: () => router.push('/organizations'),
-      keywords: ['organizations', 'orgs', 'teams', 'go']
     },
     {
       id: 'go-reports',
@@ -216,6 +190,16 @@ export function useQuickActions() {
         window.dispatchEvent(event)
       },
       keywords: ['theme', 'dark', 'light', 'toggle']
+    },
+    {
+      id: 'night-mode-controls',
+      title: 'Night Mode Controls',
+      description: 'Manage overnight co-founder autonomy',
+      category: 'settings',
+      shortcut: 'G C',
+      icon: '🌙',
+      action: () => router.push('/empire/command'),
+      keywords: ['night mode', 'autonomy', 'overnight', 'cofounder', 'command center']
     },
     {
       id: 'show-shortcuts',

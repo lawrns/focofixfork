@@ -27,7 +27,7 @@ interface MobileBottomNavProps {
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Home,     href: '/dashboard' },
-  { id: 'dispatch',  label: 'Dispatch',  icon: Send,     href: '/openclaw' },
+  { id: 'dispatch',  label: 'Dispatch',  icon: Send,     href: '/empire/command' },
   { id: 'runs',      label: 'Runs',      icon: Activity, href: '/runs' },
   { id: 'settings',  label: 'Settings',  icon: Settings, href: '/settings' },
 ]

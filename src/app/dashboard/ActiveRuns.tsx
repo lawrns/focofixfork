@@ -15,6 +15,7 @@ import {
   Activity,
   Play,
   ArrowRight,
+  Eraser,
 } from 'lucide-react'
 
 type Run = {
@@ -69,6 +70,7 @@ export function ActiveRuns({ initialRuns = [], onRunsChanged, className }: Activ
   const router = useRouter()
   const [runs, setRuns] = useState<Run[]>(initialRuns)
   const [busyRunId, setBusyRunId] = useState<string | null>(null)
+  const [clearingAll, setClearingAll] = useState(false)
 
   const poll = useCallback(async () => {
     try {
@@ -115,6 +117,21 @@ export function ActiveRuns({ initialRuns = [], onRunsChanged, className }: Activ
     }
   }, [onRunsChanged])
 
+  const clearAll = useCallback(async () => {
+    if (runs.length === 0) return
+    setClearingAll(true)
+    try {
+      await Promise.all(runs.map(r => fetch(`/api/runs/${r.id}`, { method: 'DELETE' })))
+      setRuns([])
+      onRunsChanged?.()
+      toast.success(`Cleared ${runs.length} run${runs.length === 1 ? '' : 's'}`)
+    } catch {
+      toast.error('Could not clear all runs')
+    } finally {
+      setClearingAll(false)
+    }
+  }, [runs, onRunsChanged])
+
   // Live polling every 10 seconds
   useEffect(() => {
     poll()
@@ -146,15 +163,34 @@ export function ActiveRuns({ initialRuns = [], onRunsChanged, className }: Activ
             </span>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs gap-1"
-          onClick={() => router.push('/runs')}
-        >
-          View all
-          <ArrowRight className="h-3 w-3" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {runs.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 text-muted-foreground hover:text-red-500"
+              disabled={clearingAll || busyRunId !== null}
+              onClick={clearAll}
+              title="Delete all runs"
+            >
+              {clearingAll ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Eraser className="h-3 w-3" />
+              )}
+              Clear all
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => router.push('/runs')}
+          >
+            View all
+            <ArrowRight className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
 
       {/* Content */}

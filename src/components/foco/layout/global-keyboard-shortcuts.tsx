@@ -5,20 +5,22 @@ import { useRouter } from 'next/navigation';
 import { useCreateTaskModal } from '@/features/tasks';
 import { useCommandPaletteStore, useFocusModeStore } from '@/lib/stores/foco-store';
 import { useKeyboardShortcutsModalStore } from '@/lib/hooks/use-keyboard-shortcuts-modal';
+import { usePromptOptimizerStore } from '@/lib/stores/prompt-optimizer-store';
 import { useTheme } from '@/components/providers/theme-provider';
 import { toast } from 'sonner';
-import { 
-  Command, 
-  FilePlus, 
-  FolderPlus, 
-  Focus, 
-  Sun, 
-  Moon, 
+import {
+  Command,
+  FilePlus,
+  FolderPlus,
+  Focus,
+  Sun,
+  Moon,
   LayoutDashboard,
   Terminal,
   Users,
   CheckSquare,
-  HelpCircle
+  HelpCircle,
+  Wand2
 } from 'lucide-react';
 
 /**
@@ -80,6 +82,7 @@ export function GlobalKeyboardShortcuts() {
   const { openTaskModal } = useCreateTaskModal();
   const { open: openCommandPalette, toggle: toggleCommandPalette } = useCommandPaletteStore();
   const { open: openShortcutsModal } = useKeyboardShortcutsModalStore();
+  const { open: openPromptOptimizer } = usePromptOptimizerStore();
   const { isActive: isFocusModeActive, deactivate: deactivateFocusMode } = useFocusModeStore();
   const { theme, setTheme, resolvedTheme } = useTheme();
 
@@ -161,6 +164,14 @@ export function GlobalKeyboardShortcuts() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'l') {
         e.preventDefault();
         toggleTheme();
+        return;
+      }
+
+      // Cmd/Ctrl+Shift+O - Open Prompt Optimizer
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'o') {
+        e.preventDefault();
+        openPromptOptimizer();
+        showShortcutToast('Prompt Optimizer', <Wand2 className="h-4 w-4" />);
         return;
       }
 
@@ -277,7 +288,8 @@ export function GlobalKeyboardShortcuts() {
     openProjectCreation,
     toggleFocusMode,
     toggleTheme,
-    openShortcutsModal
+    openShortcutsModal,
+    openPromptOptimizer
   ]);
 
   return null;

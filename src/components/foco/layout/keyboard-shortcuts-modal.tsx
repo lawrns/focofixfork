@@ -40,7 +40,8 @@ import {
   Workflow,
   Cpu,
   Zap as Bolt,
-  Rss
+  Rss,
+  Wand2
 } from 'lucide-react';
 
 type ShortcutCategory = 'Global' | 'Navigation' | 'Quick Actions' | 'Views';
@@ -120,6 +121,13 @@ const shortcuts: Shortcut[] = [
     description: 'Toggle light/dark theme',
     category: 'Quick Actions',
     icon: Sun,
+  },
+  {
+    id: 'quick-prompt-optimizer',
+    keys: ['⌘⇧O', 'Ctrl+Shift+O'],
+    description: 'Open Prompt Optimizer',
+    category: 'Quick Actions',
+    icon: Wand2,
   },
 
   // ============================================

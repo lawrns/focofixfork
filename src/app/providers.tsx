@@ -14,6 +14,7 @@ import { ProgressBar } from '@/components/progress-bar';
 
 import { GlobalKeyboardShortcuts } from '@/components/foco/layout/global-keyboard-shortcuts';
 import { KeyboardShortcutsModal } from '@/components/foco/layout/keyboard-shortcuts-modal';
+import { PromptOptimizerModal } from '@/components/foco/layout/prompt-optimizer-modal';
 import { CreateTaskModalProvider } from '@/features/tasks';
 import NProgress from 'nprogress';
 import { AccessibilityService } from '@/lib/accessibility/accessibility';
@@ -96,22 +97,28 @@ export function Providers({ children }: ProvidersProps) {
                 {/* Global modals */}
                 <CreateTaskModalProvider />
                 <KeyboardShortcutsModal />
-                
+                <PromptOptimizerModal />
+
                 {/* Main app content */}
                 {children}
                 
                 {/* Mobile navigation */}
                 <ConditionalMobileNav />
                 
-                {/* Toast notifications */}
-                <Toaster 
+                {/* Toast notifications — single instance to prevent duplicate toasts */}
+                <Toaster
                   position="bottom-right"
+                  closeButton
+                  richColors
+                  visibleToasts={5}
+                  expand
                   toastOptions={{
                     style: {
-                      background: 'var(--background)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--foreground)',
+                      background: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--foreground))',
                     },
+                    className: 'font-sans',
                   }}
                 />
               </AuthProvider>

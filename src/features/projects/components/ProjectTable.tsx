@@ -1,142 +1,27 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { ProjectClientService } from '../services/projectClientService'
 import { useOrganizationRealtime } from '@/lib/hooks/useRealtime'
 import { projectStore } from '@/lib/stores/project-store'
-import { QuickActions, createProjectActions } from '@/components/ui/quick-actions'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
-import { Archive, Trash2, Users } from 'lucide-react'
 import { FilteringService, FilterCondition, SortCondition } from '@/lib/services/filtering'
-import ProjectEditDialog from '@/components/dialogs/project-edit-dialog'
-import ProjectDeleteDialog from '@/components/dialogs/project-delete-dialog'
-import TeamManagementDialog from '@/components/dialogs/team-management-dialog'
-import BulkOperationsDialog from '@/components/dialogs/bulk-operations-dialog'
-import ProjectSettingsDialog from '@/components/dialogs/project-settings-dialog'
-import { useToast, toast } from '@/components/toast/toast'
-import { UpdateProject } from '@/lib/validation/schemas/project.schema'
-import { usePermissions } from '@/hooks/usePermissions'
-import { ProjectsEmpty } from '@/components/empty-states/projects-empty'
-import { useInlineEdit } from '@/lib/hooks/use-inline-edit'
-import { DateInput } from '@/components/ui/date-input'
-import styles from './ProjectTable.module.css'
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
+import { useToast } from '@/components/toast/toast'
 import { Badge } from '@/components/ui/badge'
-import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react'
-import { audioService } from '@/lib/audio/audio-service'
-import { hapticService } from '@/lib/audio/haptic-service'
-import { apiClient } from '@/lib/api-client'
+import { Archive, X } from 'lucide-react'
+import { ProjectWithOrg, ProjectTableProps } from './ProjectTableTypes'
+import { ProjectTableDesktop } from './ProjectTableDesktop'
+import { ProjectTableMobile } from './ProjectTableMobile'
+import { ProjectTableDialogs } from './ProjectTableDialogs'
+import { ProjectTableBulkBar } from './ProjectTableBulkBar'
+import { useProjectTableHandlers } from './useProjectTableHandlers'
 
-interface Project {
-  id: string
-  name: string
-  slug: string
-  description?: string | null
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
-  due_date?: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  progress_percentage?: number
-  created_at: string
-  workspace_id?: string
-  archived_at?: string | null
-}
-
-interface ProjectWithOrg extends Project {
-  organizations?: {
-    name: string
-  }
-}
-
-interface ProjectTableProps {
-  searchTerm?: string
-  onCreateProject?: () => void
-  onTakeTour?: () => void
-  onImportProjects?: () => void
-}
-
-// Inline editable project name component
-function InlineEditableProjectName({ 
-  project, 
-  onSave 
-}: { 
-  project: ProjectWithOrg
-  onSave: (projectId: string, data: UpdateProject) => Promise<void>
-}) {
-  const inlineEdit = useInlineEdit({
-    initialValue: project.name,
-    onSave: async (newName) => {
-      await onSave(project.id, { name: newName })
-    },
-    validate: (value) => {
-      if (!value.trim()) return 'Project name is required'
-      if (value.length > 100) return 'Project name must be less than 100 characters'
-      return null
-    }
-  })
-
-  if (inlineEdit.isEditing) {
-    return (
-      <input
-        ref={inlineEdit.inputRef as React.RefObject<HTMLInputElement>}
-        value={inlineEdit.value}
-        onChange={inlineEdit.handleChange}
-        onKeyDown={inlineEdit.handleKeyDown}
-        onBlur={inlineEdit.handleBlur}
-        className="text-sm font-semibold text-slate-900 dark:text-slate-100 bg-transparent border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        style={{ width: '100%' }}
-      />
-    )
-  }
-
-  return (
-    <span 
-      className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2 py-1 transition-colors"
-      onClick={inlineEdit.startEditing}
-      title="Click to edit project name"
-    >
-      {project.name}
-    </span>
-  )
-}
-
-// Inline editable due date component
-function InlineEditableDueDate({ 
-  project, 
-  onSave 
-}: { 
-  project: ProjectWithOrg
-  onSave: (projectId: string, data: UpdateProject) => Promise<void>
-}) {
-  const handleDateChange = async (date: Date | null) => {
-    await onSave(project.id, { 
-      due_date: date ? date.toISOString().split('T')[0] : null 
-    })
-  }
-
-  return (
-    <div className="block">
-      <DateInput
-        value={project.due_date ? new Date(project.due_date) : null}
-        onChange={handleDateChange}
-        placeholder="Set due date..."
-        className="text-xs"
-        allowPast={false}
-      />
-    </div>
-  )
-}
-
-export default function ProjectTable({ 
-  searchTerm = '', 
-  onCreateProject, 
-  onTakeTour, 
-  onImportProjects 
+export default function ProjectTable({
+  searchTerm = '',
+  onCreateProject,
+  onTakeTour,
+  onImportProjects
 }: ProjectTableProps) {
   const { user } = useAuth()
-  const router = useRouter()
   const [projects, setProjects] = useState<ProjectWithOrg[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -161,8 +46,26 @@ export default function ProjectTable({
   const [showArchived, setShowArchived] = useState(false)
   const { toast: toastNotification } = useToast()
 
+  const handlers = useProjectTableHandlers({
+    user,
+    projects,
+    selectedProject,
+    selectedProjects,
+    showArchived,
+    setSelectedProject,
+    setEditDialogOpen,
+    setDeleteDialogOpen,
+    setTeamDialogOpen,
+    setSettingsDialogOpen,
+    setBulkDialogOpen,
+    setBulkOperation,
+    setTeamMembers,
+    setLoadingTeamMembers,
+    setSelectedProjects,
+    setShowBulkActions,
+  })
+
   // Subscribe to global project store - SINGLE SOURCE OF TRUTH for data fetching
-  // This consolidates all fetch triggers to prevent race conditions
   useEffect(() => {
     console.log('ProjectTable: subscribing to project store, showArchived:', showArchived)
     const unsubscribe = projectStore.subscribe((storeProjects) => {
@@ -174,33 +77,22 @@ export default function ProjectTable({
       setLoading(false)
     })
 
-    // Always refresh via the store with the current archived filter
-    // The store handles debouncing internally to prevent duplicate requests
     console.log('ProjectTable: refreshing via store with archived:', showArchived)
-    projectStore.refreshProjects(showArchived).then(() => {
-      setLoading(false)
-    })
+    projectStore.refreshProjects(showArchived).then(() => setLoading(false))
 
     return unsubscribe
-  }, [showArchived]) // Re-subscribe and refresh when showArchived changes
+  }, [showArchived])
 
   // Listen for force refresh events
   useEffect(() => {
     const handleForceRefresh = () => {
       console.log('ProjectTable: Force refresh requested, reloading from store')
-      const latestProjects = projectStore.getProjects()
-      setProjects(latestProjects as ProjectWithOrg[])
+      setProjects(projectStore.getProjects() as ProjectWithOrg[])
     }
-
     window.addEventListener('forceProjectRefresh', handleForceRefresh)
-
-    return () => {
-      window.removeEventListener('forceProjectRefresh', handleForceRefresh)
-    }
+    return () => { window.removeEventListener('forceProjectRefresh', handleForceRefresh) }
   }, [])
 
-  // Permissions - for demo purposes, assume admin permissions
-  // In real app, this would be based on actual user roles
   const permissions = useMemo(() => ({
     canEdit: true,
     canDelete: true,
@@ -208,672 +100,29 @@ export default function ProjectTable({
     canView: true,
   }), [])
 
-  // Helper functions
-  const getStatusBadge = (status: Project['status']) => {
-    const backgroundColors = {
-      'planning': '#f1f5f9',
-      'active': '#dbeafe',
-      'on_hold': '#fed7aa',
-      'completed': '#bbf7d0',
-      'cancelled': '#fecaca'
-    }
-
-    const textColors = {
-      'planning': '#475569',
-      'active': '#1e40af',
-      'on_hold': '#c2410c',
-      'completed': '#14532d',
-      'cancelled': '#991b1b'
-    }
-
-    const borderColors = {
-      'planning': '#cbd5e1',
-      'active': '#93c5fd',
-      'on_hold': '#fb923c',
-      'completed': '#86efac',
-      'cancelled': '#fca5a5'
-    }
-
-    const labels = {
-      'planning': 'Planning',
-      'active': 'Active',
-      'on_hold': 'On Hold',
-      'completed': 'Completed',
-      'cancelled': 'Cancelled'
-    }
-
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '4px 12px',
-          minWidth: '85px',
-          borderRadius: '6px',
-          fontSize: '11px',
-          fontWeight: '600',
-          letterSpacing: '0.025em',
-          textTransform: 'uppercase',
-          backgroundColor: backgroundColors[status] || backgroundColors.planning,
-          color: textColors[status] || textColors.planning,
-          border: `1px solid ${borderColors[status] || borderColors.planning}`
-        }}
-      >
-        {labels[status] || status}
-      </span>
-    )
-  }
-
-  const getPriorityBadge = (priority: Project['priority']) => {
-    const backgroundColors = {
-      'low': '#e2e8f0',
-      'medium': '#3b82f6',
-      'high': '#f97316',
-      'urgent': '#dc2626'
-    }
-
-    const textColors = {
-      'low': '#475569',
-      'medium': '#ffffff',
-      'high': '#ffffff',
-      'urgent': '#ffffff'
-    }
-
-    const labels = {
-      'low': 'Low',
-      'medium': 'Medium',
-      'high': 'High',
-      'urgent': 'Urgent'
-    }
-
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '4px 12px',
-          minWidth: '70px',
-          borderRadius: '6px',
-          fontSize: '11px',
-          fontWeight: '600',
-          letterSpacing: '0.025em',
-          textTransform: 'uppercase',
-          backgroundColor: backgroundColors[priority] || backgroundColors.medium,
-          color: textColors[priority] || textColors.medium,
-          border: priority === 'low' ? '1px solid #cbd5e1' : 'none'
-        }}
-      >
-        {labels[priority] || priority}
-      </span>
-    )
-  }
-
-  // Action handlers
-  const handleViewProject = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (project) {
-      router.push(`/projects/${project.slug}`)
-    }
-  }
-
-  const handleEditProject = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (project) {
-      setSelectedProject(project)
-      setEditDialogOpen(true)
-    }
-  }
-
-  const handleDuplicateProject = async (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (!project || !user) return
-
-    try {
-      const response = await apiClient.post('/api/projects', {
-        name: `${project.name} (Copy)`,
-        status: 'planning',
-        priority: project.priority,
-        due_date: project.due_date,
-        workspace_id: project.workspace_id,
-      })
-
-      if (!response.success || !response.data) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to duplicate project')
-      }
-
-      audioService.play('complete')
-      hapticService.success()
-      toast({
-        variant: 'success',
-        title: 'Success',
-        description: response.data.queued ? 'Duplication queued for offline sync' : `Project "${project.name}" has been duplicated.`
-      })
-
-      // Refresh projects list via store (single source of truth)
-      if (!response.data.queued) {
-        projectStore.refreshProjects(showArchived)
-      }
-    } catch (error) {
-      console.error('Error duplicating project:', error)
-      audioService.play('error')
-      hapticService.error()
-      toast({
-        variant: 'destructive', title: 'Error',
-        description: 'Failed to duplicate project. Please try again.',
-      })
-    }
-  }
-
-  const handleArchiveProject = (projectId: string) => {
-    setBulkOperation('archive')
-    setSelectedProjects(new Set([projectId]))
-    setBulkDialogOpen(true)
-  }
-
-  const handleUnarchiveProject = async (projectId: string) => {
-    try {
-      const response = await apiClient.patch(`/api/projects/${projectId}`, { archived_at: null })
-
-      if (!response.success || !response.data) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to unarchive project')
-      }
-
-      audioService.play('complete')
-      hapticService.success()
-      toast({
-        variant: 'success',
-        title: 'Success',
-        description: response.data.queued ? 'Restore queued for offline sync' : 'Project has been restored.'
-      })
-
-      // Refresh the archived projects view via store (single source of truth)
-      if (!response.data.queued && showArchived) {
-        projectStore.refreshProjects(true)
-      }
-    } catch (error) {
-      console.error('Error unarchiving project:', error)
-      audioService.play('error')
-      hapticService.error()
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to restore project. Please try again.',
-      })
-    }
-  }
-
-  const handleDeleteProject = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (project) {
-      setSelectedProject(project)
-      setDeleteDialogOpen(true)
-    }
-  }
-
-  const handleManageTeam = async (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (project) {
-      setSelectedProject(project)
-      await fetchTeamMembers(projectId)
-      setTeamDialogOpen(true)
-    }
-  }
-
-  const handleProjectSettings = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId)
-    if (project) {
-      setSelectedProject(project)
-      setSettingsDialogOpen(true)
-    }
-  }
-
-  // Fetch team members for a project
-  const fetchTeamMembers = async (projectId: string) => {
-    setLoadingTeamMembers(true)
-    try {
-      const response = await apiClient.get(`/api/projects/${projectId}/team`)
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch team members')
-      }
-      setTeamMembers(response.data?.data || response.data || [])
-    } catch (error) {
-      console.error('Error fetching team members:', error)
-      setTeamMembers([])
-      toast({
-        variant: 'destructive', title: 'Error',
-        description: 'Failed to load team members',
-      })
-    } finally {
-      setLoadingTeamMembers(false)
-    }
-  }
-
-  // Dialog action handlers
-  const handleSaveProject = async (projectId: string, data: UpdateProject) => {
-    try {
-      // Start operation tracking to prevent race conditions with real-time updates
-      projectStore.startOperation(projectId)
-
-      const response = await apiClient.put(`/api/projects/${projectId}`, data)
-
-      if (!response.success || !response.data) {
-        // End operation tracking on error
-        projectStore.endOperation(projectId)
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to update project')
-      }
-
-      // Get the updated project data from response
-      const result = response
-
-      // End operation tracking first, then update the store
-      projectStore.endOperation(projectId)
-
-      audioService.play('complete')
-      hapticService.success()
-
-      // Immediately update the store with the new data for instant UI feedback
-      if (result.success && result.data && !result.data.queued) {
-        console.log('ProjectTable: updating project in store after edit:', result.data.id, 'new name:', result.data.name, 'status:', result.data.status, 'priority:', result.data.priority)
-        projectStore.updateProject(result.data.id, result.data)
-
-        // Update selectedProject state if it's the same project
-        if (selectedProject && selectedProject.id === result.data.id) {
-          setSelectedProject(result.data)
-        }
-
-        // Notify other components that a project was updated
-        window.dispatchEvent(new CustomEvent('projectUpdated', {
-          detail: { projectId: result.data.id, project: result.data }
-        }))
-      } else if (result.data?.queued) {
-        toast({
-          title: 'Queued',
-          description: 'Project update queued for offline sync',
-        })
-      }
-    } catch (error) {
-      // Ensure operation tracking is ended on error
-      projectStore.endOperation(projectId)
-      audioService.play('error')
-      hapticService.error()
-      throw error
-    }
-  }
-
-  const handleDeleteProjectConfirm = async (projectId: string) => {
-    try {
-      // Start operation tracking to prevent race conditions
-      projectStore.startOperation(projectId)
-
-      const response = await apiClient.delete(`/api/projects/${projectId}`)
-
-      if (!response.success) {
-        // End operation tracking on error
-        projectStore.endOperation(projectId)
-        audioService.play('error')
-        hapticService.error()
-
-        // If project is already deleted (404), consider it a success
-        if (response.status === 404) {
-          console.log('Project was already deleted or not found, removing from store')
-          // Immediately remove from global store
-          projectStore.removeProject(projectId)
-          return
-        }
-        throw new Error(response.error || 'Failed to delete project')
-      }
-
-      // Immediately remove from global store for instant UI feedback across all components
-      console.log('Project deleted successfully, removing from store:', projectId)
-      if (!response.data?.queued) {
-        projectStore.removeProject(projectId)
-      }
-
-      // Clear the deleted project from selection state
-      setSelectedProjects(prev => {
-        const newSelected = new Set(prev)
-        newSelected.delete(projectId)
-        return newSelected
-      })
-
-      // Clear selectedProject state if it matches the deleted project
-      if (selectedProject && selectedProject.id === projectId) {
-        setSelectedProject(null)
-      }
-
-      audioService.play('error') // Use error sound for deletion warning
-      hapticService.heavy()
-
-      // Notify other components that a project was deleted
-      window.dispatchEvent(new CustomEvent('projectDeleted', {
-        detail: { projectId }
-      }))
-    } catch (error) {
-      // Ensure operation tracking is ended on error
-      projectStore.endOperation(projectId)
-      audioService.play('error')
-      hapticService.error()
-      throw error
-    }
-  }
-
-  const handleAddTeamMember = async (projectId: string, data: any) => {
-    try {
-      const response = await apiClient.post(`/api/projects/${projectId}/team`, data)
-
-      if (!response.success) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to add team member')
-      }
-
-      audioService.play('complete')
-      hapticService.success()
-      toast({
-        variant: 'success', title: 'Success',
-        description: response.data?.queued ? 'Add member queued for offline sync' : 'Team member added successfully',
-      })
-    } catch (error: any) {
-      audioService.play('error')
-      hapticService.error()
-      toast({
-        variant: 'destructive', title: 'Error',
-        description: error.message || 'Failed to add team member',
-      })
-      throw error
-    }
-  }
-
-  const handleRemoveTeamMember = async (projectId: string, userId: string) => {
-    try {
-      const response = await apiClient.delete(`/api/projects/${projectId}/team/${userId}`)
-
-      if (!response.success) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to remove team member')
-      }
-
-      audioService.play('error') // Warning sound for removal
-      hapticService.medium()
-      toast({
-        variant: 'success', title: 'Success',
-        description: response.data?.queued ? 'Removal queued for offline sync' : 'Team member removed successfully',
-      })
-    } catch (error: any) {
-      audioService.play('error')
-      hapticService.error()
-      toast({
-        variant: 'destructive', title: 'Error',
-        description: error.message || 'Failed to remove team member',
-      })
-      throw error
-    }
-  }
-
-  const handleUpdateTeamRole = async (projectId: string, userId: string, role: string) => {
-    try {
-      const response = await apiClient.put(`/api/projects/${projectId}/team/${userId}`, { role })
-
-      if (!response.success) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to update team member role')
-      }
-
-      audioService.play('complete')
-      hapticService.light()
-      toast({
-        variant: 'success', title: 'Success',
-        description: response.data?.queued ? 'Role update queued for offline sync' : 'Team member role updated successfully',
-      })
-    } catch (error: any) {
-      audioService.play('error')
-      hapticService.error()
-      toast({
-        variant: 'destructive', title: 'Error',
-        description: error.message || 'Failed to update team member role',
-      })
-      throw error
-    }
-  }
-
-  const handleBulkOperation = async (operation: 'archive' | 'delete', projectIds: string[], force?: boolean) => {
-    try {
-      // Start operation tracking for all projects
-      projectIds.forEach(projectId => {
-        projectStore.startOperation(projectId)
-      })
-
-      const response = await apiClient.post('/api/projects/bulk', {
-        operation,
-        project_ids: projectIds,
-        parameters: { force }
-      })
-
-      if (!response.success || !response.data) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Bulk operation failed')
-      }
-
-      const result = response.data
-
-      // Update store with successful operations
-      if (result.successful) {
-        result.successful.forEach((projectId: string) => {
-          if (operation === 'delete' && !result.queued) {
-            projectStore.removeProject(projectId)
-
-            // Clear the deleted project from selection state
-            setSelectedProjects(prev => {
-              const newSelected = new Set(prev)
-              newSelected.delete(projectId)
-              return newSelected
-            })
-
-            // Clear selectedProject state if it matches the deleted project
-            if (selectedProject && selectedProject.id === projectId) {
-              setSelectedProject(null)
-            }
-
-            // Notify other components that a project was deleted
-            window.dispatchEvent(new CustomEvent('projectDeleted', {
-              detail: { projectId }
-            }))
-          }
-        })
-      }
-
-      // End operation tracking for successful operations
-      if (result.successful) {
-        result.successful.forEach((projectId: string) => {
-          setTimeout(() => {
-            projectStore.endOperation(projectId)
-          }, 100)
-        })
-      }
-
-      // End operation tracking for failed operations
-      if (result.failed) {
-        result.failed.forEach((failure: any) => {
-          projectStore.endOperation(failure.id)
-        })
-      }
-
-      if (result.queued) {
-        audioService.play('sync')
-        hapticService.light()
-      } else {
-        audioService.play('complete')
-        hapticService.success()
-      }
-
-      return {
-        successful: result.successful || [],
-        failed: result.failed || []
-      }
-    } catch (error) {
-      // Ensure operation tracking is ended on error
-      projectIds.forEach(projectId => {
-        projectStore.endOperation(projectId)
-      })
-      audioService.play('error')
-      hapticService.error()
-      throw error
-    }
-  }
-
-  const handleSaveSettings = async (projectId: string, settings: any) => {
-    try {
-      const response = await apiClient.patch(`/api/projects/${projectId}/settings`, settings)
-
-      if (!response.success) {
-        audioService.play('error')
-        hapticService.error()
-        throw new Error(response.error || 'Failed to save project settings')
-      }
-
-      audioService.play('complete')
-      hapticService.success()
-      toast({
-        variant: 'success', title: 'Success',
-        description: response.data?.queued ? 'Settings queued for offline sync' : 'Project settings saved successfully',
-      })
-    } catch (error: any) {
-      audioService.play('error')
-      hapticService.error()
-      toast({
-        variant: 'destructive', title: 'Error',
-        description: error.message || 'Failed to save project settings',
-      })
-      throw error
-    }
-  }
-
-  // Selection handlers
-  const handleSelectProject = (projectId: string, checked: boolean) => {
-    const newSelected = new Set(selectedProjects)
-    if (checked) {
-      newSelected.add(projectId)
-    } else {
-      newSelected.delete(projectId)
-    }
-    setSelectedProjects(newSelected)
-    setShowBulkActions(newSelected.size > 0)
-  }
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const safeFiltered = Array.isArray(filteredProjects) ? filteredProjects : []
-      setSelectedProjects(new Set(safeFiltered.map(p => p.id)))
-    } else {
-      setSelectedProjects(new Set())
-    }
-    setShowBulkActions(checked)
-  }
-
-  // Bulk action handlers
-  const handleBulkArchive = async () => {
-    setBulkOperation('archive')
-    setBulkDialogOpen(true)
-    setShowBulkActions(false)
-  }
-
-  const handleBulkDelete = async () => {
-    // If only one project is selected, use the individual delete dialog for consistency
-    if (selectedProjects.size === 1) {
-      const projectId = Array.from(selectedProjects)[0]
-      const project = projects.find(p => p.id === projectId)
-      if (project) {
-        setSelectedProject(project)
-        setDeleteDialogOpen(true)
-        setShowBulkActions(false)
-        return
-      }
-    }
-
-    // For multiple projects, use the bulk dialog
-    setBulkOperation('delete')
-    setBulkDialogOpen(true)
-    setShowBulkActions(false)
-  }
-
-  const handleBulkManageTeam = async () => {
-    if (selectedProjects.size === 0) {
-      toast({
-        variant: 'warning',
-        title: 'No Projects Selected',
-        description: 'Please select at least one project to manage team members.'
-      })
-      return
-    }
-
-    if (selectedProjects.size === 1) {
-      // If only one project selected, open the team dialog for that project
-      const projectId = Array.from(selectedProjects)[0]
-      handleManageTeam(projectId)
-      return
-    }
-
-    // For multiple projects, show a dialog to manage team across all selected projects
-    toast({
-      variant: 'info',
-      title: 'Bulk Team Management',
-      description: `Managing team for ${selectedProjects.size} projects. Opening team management interface...`
-    })
-
-    // Navigate to a bulk team management page or show a modal
-    // For now, we'll just open settings with members tab
-    window.location.href = '/dashboard/settings?tab=members'
-  }
-
-  const allSelected = projects.length > 0 && selectedProjects.size === projects.length
-  const someSelected = selectedProjects.size > 0 && selectedProjects.size < projects.length
-
-  // Fetch projects function
+  // Fetch projects function (kept for backward compat with fetchProjectsRef)
   const fetchProjectsRef = useRef<((archived?: boolean) => Promise<void>) | null>(null)
 
   const fetchProjects = useCallback(async (archived: boolean = false) => {
     if (!user?.id) return
-
     try {
       setLoading(true)
       const { apiClient } = await import('@/lib/api-client')
       const url = archived ? '/api/projects?archived=true' : '/api/projects'
       const data = await apiClient.get(url)
 
-      // Handle wrapped response: {success: true, data: {data: [...], pagination: {}}}
       let projectsData: ProjectWithOrg[] = []
       if (data.success && data.data) {
-        // wrapRoute wraps the response
-        if (Array.isArray(data.data.data)) {
-          // {success: true, data: {data: [...], pagination: {}}}
-          projectsData = data.data.data
-        } else if (Array.isArray(data.data)) {
-          // {success: true, data: [...]}
-          projectsData = data.data
-        }
+        if (Array.isArray(data.data.data)) projectsData = data.data.data
+        else if (Array.isArray(data.data)) projectsData = data.data
       } else if (Array.isArray(data.data)) {
-        // {data: [...]}
         projectsData = data.data
       } else if (Array.isArray(data)) {
-        // Direct array
         projectsData = data
       }
 
       console.log('ProjectTable: fetched projects from API:', projectsData.length)
-      if (!archived) {
-        projectStore.setProjects(projectsData)
-      }
+      if (!archived) projectStore.setProjects(projectsData)
       setProjects(projectsData)
     } catch (err) {
       console.error('Error fetching projects:', err)
@@ -882,23 +131,14 @@ export default function ProjectTable({
     } finally {
       setLoading(false)
     }
-  }, [user?.id]) // Only depend on user.id
+  }, [user?.id])
 
-  // Store latest fetchProjects in ref (used only for unarchive action)
-  useEffect(() => {
-    fetchProjectsRef.current = fetchProjects
-  }, [fetchProjects])
-
-  // NOTE: Removed duplicate fetch trigger that was causing race conditions
-  // Data fetching is now consolidated in the store subscription useEffect above
-  // which handles both initial load and showArchived changes via projectStore.refreshProjects()
+  useEffect(() => { fetchProjectsRef.current = fetchProjects }, [fetchProjects])
 
   // Apply filtering and sorting
   useEffect(() => {
-    // Ensure projects is always an array before filtering
     const safeProjects = Array.isArray(projects) ? projects : []
 
-    // Apply search term filter first
     let searchFiltered = safeProjects
     if (searchTerm && searchTerm.trim()) {
       searchFiltered = safeProjects.filter(project =>
@@ -909,61 +149,35 @@ export default function ProjectTable({
       console.log('ProjectTable: search applied:', { searchTerm, resultsCount: searchFiltered.length })
     }
 
-    // Then apply advanced filters and sorting
     const result = FilteringService.filterAndSort(searchFiltered, filters, sortConditions)
     setFilteredProjects(result.items)
   }, [projects, filters, sortConditions, searchTerm])
 
   const toggleSort = (field: string) => {
     const existing = sortConditions.find((s) => s.field === field)
-    if (!existing) {
-      setSortConditions([{ field, direction: 'asc' }])
-    } else if (existing.direction === 'asc') {
-      setSortConditions([{ field, direction: 'desc' }])
-    } else {
-      setSortConditions([])
-    }
+    if (!existing) setSortConditions([{ field, direction: 'asc' }])
+    else if (existing.direction === 'asc') setSortConditions([{ field, direction: 'desc' }])
+    else setSortConditions([])
   }
 
-  const sortIcon = (field: string) => {
-    const existing = sortConditions.find((s) => s.field === field)
-    if (!existing) return <ArrowUpDown className="h-3 w-3" />
-    return existing.direction === 'asc' ? (
-      <ArrowUp className="h-3 w-3" />
-    ) : (
-      <ArrowDown className="h-3 w-3" />
-    )
-  }
-
-  // Real-time updates for projects in table (updates store)
-  // Use a single organization subscription if user has organizations, otherwise use global
   const [userOrganizations, setUserOrganizations] = useState<string[]>([])
 
-  // Fetch user organizations for real-time subscriptions
   useEffect(() => {
     const fetchUserOrganizations = async () => {
       if (!user) return
-
       try {
-        const response = await fetch('/api/organizations', {
-                  })
-
+        const response = await fetch('/api/organizations', {})
         if (response.ok) {
           const data = await response.json()
-          if (data.success && data.data) {
-            const orgIds = data.data.map((org: any) => org.id)
-            setUserOrganizations(orgIds)
-          }
+          if (data.success && data.data) setUserOrganizations(data.data.map((org: any) => org.id))
         }
       } catch (error) {
         console.error('Error fetching user organizations for real-time:', error)
       }
     }
-
     fetchUserOrganizations()
   }, [user])
 
-  // Real-time updates with operation tracking to prevent race conditions
   const handleRealtimeEvent = useCallback((payload: any, source: string) => {
     console.log(`ProjectTable: ${source} real-time event received:`, {
       eventType: payload.eventType,
@@ -976,8 +190,6 @@ export default function ProjectTable({
     if (payload.table === 'foco_projects') {
       const projectId = payload.new?.id || payload.old?.id
 
-      // Skip real-time events if a local operation is in progress for this project
-      // This prevents race conditions between optimistic UI updates and real-time events
       if (projectId && projectStore.isOperationInProgress(projectId)) {
         console.log(`ProjectTable: Skipping ${source} real-time event for project ${projectId} - operation in progress`)
         return
@@ -985,55 +197,32 @@ export default function ProjectTable({
 
       if (payload.eventType === 'INSERT') {
         console.log(`ProjectTable: Adding project via ${source} real-time:`, payload.new?.id)
-        if (payload.new?.id && payload.new?.name) {
-          projectStore.addProject(payload.new)
-        } else {
-          console.warn('ProjectTable: Invalid INSERT payload, missing id or name:', payload.new)
-        }
+        if (payload.new?.id && payload.new?.name) projectStore.addProject(payload.new)
+        else console.warn('ProjectTable: Invalid INSERT payload, missing id or name:', payload.new)
       } else if (payload.eventType === 'UPDATE') {
         console.log(`ProjectTable: Updating project via ${source} real-time:`, payload.new?.id, 'with data:', payload.new)
-        if (payload.new?.id && payload.new?.name) {
-          projectStore.updateProject(payload.new.id, payload.new, true) // Mark as from real-time
-        } else {
-          console.warn('ProjectTable: Invalid UPDATE payload, missing id or name:', payload.new)
-        }
+        if (payload.new?.id && payload.new?.name) projectStore.updateProject(payload.new.id, payload.new, true)
+        else console.warn('ProjectTable: Invalid UPDATE payload, missing id or name:', payload.new)
       } else if (payload.eventType === 'DELETE') {
         const deletedProjectId = payload.old?.id
         console.log(`ProjectTable: Removing project via ${source} real-time:`, deletedProjectId)
         if (deletedProjectId) {
-          projectStore.removeProject(deletedProjectId, true) // Mark as from real-time
-
-          // Clear the deleted project from selection state
-          setSelectedProjects(prev => {
-            const newSelected = new Set(prev)
-            newSelected.delete(deletedProjectId)
-            return newSelected
-          })
-
-          // Clear selectedProject state if it matches the deleted project
-          if (selectedProject && selectedProject.id === deletedProjectId) {
-            setSelectedProject(null)
-          }
+          projectStore.removeProject(deletedProjectId, true)
+          setSelectedProjects(prev => { const s = new Set(prev); s.delete(deletedProjectId); return s })
+          if (selectedProject && selectedProject.id === deletedProjectId) setSelectedProject(null)
         }
       }
     }
   }, [selectedProject])
 
-  // Use organization-specific real-time subscription for the first organization
-  // This avoids calling hooks in a loop while still providing real-time updates
   const primaryOrgId = userOrganizations.length > 0 ? userOrganizations[0] : null
 
-  // Use organization-specific realtime subscription
-  // This handles all project updates within the user's organization
   useOrganizationRealtime(primaryOrgId || '', (payload: any) => {
-    if (primaryOrgId) {
-      handleRealtimeEvent(payload, 'organization')
-    }
+    if (primaryOrgId) handleRealtimeEvent(payload, 'organization')
   })
 
-  // Note: Removed global realtime subscription to prevent "realtime:global" errors
-  // The organization-specific subscription above handles all necessary updates
-  // Personal projects without organization_id will still sync via the project store
+  const allSelected = projects.length > 0 && selectedProjects.size === projects.length
+  const someSelected = selectedProjects.size > 0 && selectedProjects.size < projects.length
 
   if (error) {
     return (
@@ -1044,13 +233,29 @@ export default function ProjectTable({
     )
   }
 
+  const sharedActionProps = {
+    onViewProject: handlers.handleViewProject,
+    onEditProject: handlers.handleEditProject,
+    onDuplicateProject: handlers.handleDuplicateProject,
+    onArchiveProject: handlers.handleArchiveProject,
+    onDeleteProject: handlers.handleDeleteProject,
+    onManageTeam: handlers.handleManageTeam,
+    onProjectSettings: handlers.handleProjectSettings,
+    onUnarchiveProject: handlers.handleUnarchiveProject,
+    onCreateProject,
+    onImportProjects,
+    onResetFilters: () => { setFilters([]); setSortConditions([]) },
+    permissions,
+    showArchived,
+    searchTerm,
+  }
+
   return (
     <div className={`w-full space-y-4 relative ${selectedProjects.size > 0 ? 'pb-20' : ''}`}>
 
-      {/* Filtering Controls - Mobile responsive toolbar */}
+      {/* Filtering Controls */}
       <div className="mb-4 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-          {/* Archived toggle as a chip/toggle */}
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
@@ -1064,7 +269,6 @@ export default function ProjectTable({
             <span>{showArchived ? 'Archived' : 'Archived'}</span>
           </button>
 
-          {/* Filter count indicator */}
           {(filters.length > 0 || sortConditions.length > 0) && (
             <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
               {filteredProjects.length} of {projects.length}
@@ -1072,8 +276,7 @@ export default function ProjectTable({
           )}
         </div>
 
-        {/* Active filters */}
-        {(filters.length > 0) && (
+        {filters.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {filters.map((f, idx) => (
               <Badge key={idx} variant="outline" className="gap-1 text-xs">
@@ -1093,374 +296,64 @@ export default function ProjectTable({
         )}
       </div>
 
-      {/* Mobile Card View - Only on small screens */}
-      <div className={`${styles.mobileCardView} space-y-4`}>
-        {loading ? (
-          // Loading cards for mobile
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4 animate-pulse">
-              <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-3"></div>
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-            </div>
-          ))
-        ) : projects.length === 0 ? (
-          <ProjectsEmpty
-            onCreateProject={onCreateProject || (() => console.log('Create project clicked'))}
-            onImportProjects={onImportProjects || (() => console.log('Import projects clicked'))}
-            onResetFilters={() => {
-              setFilters([])
-              setSortConditions([])
-            }}
-            isFiltered={filters.length > 0 || searchTerm.length > 0}
-          />
-        ) : (
-          filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className={`bg-white dark:bg-slate-900 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                selectedProjects.has(project.id)
-                  ? 'border-primary bg-primary/5'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-primary/50'
-              }`}
-              onClick={() => handleViewProject(project.id)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start gap-3 flex-1">
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedProjects.has(project.id)}
-                      onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
-                      aria-label={`Select project ${project.name}`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{project.name}</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                      {project.organizations?.name || 'Personal'}
-                    </p>
-                  </div>
-                </div>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <QuickActions
-                    actions={createProjectActions(
-                      project.id,
-                      handleViewProject,
-                      permissions.canEdit ? handleEditProject : () => {
-                        console.log('Permission Denied: edit projects')
-                      },
-                      handleDuplicateProject,
-                      permissions.canDelete ? handleArchiveProject : () => {
-                        console.log('Permission Denied: archive projects')
-                      },
-                      permissions.canDelete ? handleDeleteProject : () => {
-                        console.log('Permission Denied: delete projects')
-                      },
-                      permissions.canManageTeam ? handleManageTeam : () => {
-                        console.log('Permission Denied: manage teams')
-                      },
-                      permissions.canManageTeam ? handleProjectSettings : () => {
-                        console.log('Permission Denied: change settings')
-                      },
-                      showArchived && project.archived_at !== null && project.archived_at !== undefined,
-                      handleUnarchiveProject
-                    )}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {getStatusBadge(project.status)}
-                {getPriorityBadge(project.priority)}
-                {project.due_date && (
-                  <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {new Date(project.due_date).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <ProjectTableMobile
+        loading={loading}
+        projects={projects}
+        filteredProjects={filteredProjects}
+        selectedProjects={selectedProjects}
+        onSelectProject={handlers.handleSelectProject}
+        filterCount={filters.length}
+        {...sharedActionProps}
+      />
 
-      {/* Desktop Table View - Hidden on mobile, visible on sm and up */}
-      <div className={`${styles.desktopTableView} w-full rounded-xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700`}>
-        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <Table className={styles.projectTable}>
-            <TableHeader className="sticky top-0 z-10 bg-muted/50">
-              <TableRow>
-                <TableHead style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-3">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="Select all projects"
-                    className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
-                  />
-                </TableHead>
-                <TableHead
-                  style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }}
-                  className="px-3 py-3 cursor-pointer select-none"
-                  onClick={() => toggleSort('name')}
-                >
-                  <div className="inline-flex items-center gap-1">Name {sortIcon('name')}</div>
-                </TableHead>
-                <TableHead
-                  style={{ width: '120px', display: 'table-cell !important' }}
-                  className="px-3 py-3 cursor-pointer select-none"
-                  onClick={() => toggleSort('status')}
-                >
-                  <div className="inline-flex items-center gap-1">Status {sortIcon('status')}</div>
-                </TableHead>
-                <TableHead
-                  style={{ width: '120px', display: 'table-cell !important' }}
-                  className="px-3 py-3 cursor-pointer select-none"
-                  onClick={() => toggleSort('due_date')}
-                >
-                  <div className="inline-flex items-center gap-1">Due Date {sortIcon('due_date')}</div>
-                </TableHead>
-                <TableHead
-                  style={{ width: '140px', display: 'table-cell !important' }}
-                  className="px-3 py-3 cursor-pointer select-none"
-                  onClick={() => toggleSort('organizations.name')}
-                >
-                  <div className="inline-flex items-center gap-1">Organization {sortIcon('organizations.name')}</div>
-                </TableHead>
-                <TableHead
-                  style={{ width: '100px', display: 'table-cell !important' }}
-                  className="px-3 py-3 cursor-pointer select-none"
-                  onClick={() => toggleSort('priority')}
-                >
-                  <div className="inline-flex items-center gap-1">Priority {sortIcon('priority')}</div>
-                </TableHead>
-                <TableHead style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-3 text-right">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="bg-white dark:bg-slate-900">
-              {loading ? (
-                // Loading skeleton
-                [...Array(3)].map((_, i) => (
-                  <TableRow key={i} className="animate-pulse">
-                    <TableCell className="px-3 py-3">
-                      <div className="h-4 w-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-20"></div>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28"></div>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-8 ml-auto"></div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : projects.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="px-3 py-12">
-                    <ProjectsEmpty
-                      onCreateProject={onCreateProject || (() => {})}
-                      onImportProjects={onImportProjects || (() => {})}
-                      onResetFilters={() => {
-                        setFilters([])
-                        setSortConditions([])
-                      }}
-                      isFiltered={filters.length > 0 || searchTerm.length > 0}
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredProjects.map((project) => (
-                  <TableRow
-                    key={project.id}
-                    className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent transition-all duration-200 cursor-pointer border-l-4 ${
-                      selectedProjects.has(project.id)
-                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-primary shadow-sm'
-                        : 'border-l-transparent hover:border-l-primary/30'
-                    }`}
-                    onClick={() => handleViewProject(project.id)}
-                  >
-                    <TableCell style={{ width: '50px', display: 'table-cell !important' }} className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedProjects.has(project.id)}
-                        onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
-                        aria-label={`Select project ${project.name}`}
-                      />
-                    </TableCell>
-                    <TableCell style={{ width: '25%', minWidth: '200px', display: 'table-cell !important' }} className="px-3 py-3">
-                      <div className="flex flex-col w-full">
-                        <InlineEditableProjectName 
-                          project={project} 
-                          onSave={handleSaveProject}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-3">
-                      {getStatusBadge(project.status)}
-                    </TableCell>
-                    <TableCell style={{ width: '120px', display: 'table-cell !important' }} className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
-                      <InlineEditableDueDate 
-                        project={project} 
-                        onSave={handleSaveProject}
-                      />
-                    </TableCell>
-                    <TableCell style={{ width: '140px', display: 'table-cell !important' }} className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
-                      <span className="block truncate">{project.organizations?.name || 'Personal'}</span>
-                    </TableCell>
-                    <TableCell style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-3">
-                      {getPriorityBadge(project.priority)}
-                    </TableCell>
-                    <TableCell style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-3 text-right">
-                      <div onClick={(e) => e.stopPropagation()}>
-                      <QuickActions
-                        actions={createProjectActions(
-                          project.id,
-                          handleViewProject,
-                          permissions.canEdit ? handleEditProject : () => {
-                            console.log('Permission Denied: edit projects')
-                          },
-                          handleDuplicateProject,
-                          permissions.canDelete ? handleArchiveProject : () => {
-                            console.log('Permission Denied: archive projects')
-                          },
-                          permissions.canDelete ? handleDeleteProject : () => {
-                            console.log('Permission Denied: delete projects')
-                          },
-                          permissions.canManageTeam ? handleManageTeam : () => {
-                            console.log('Permission Denied: manage teams')
-                          },
-                          permissions.canManageTeam ? handleProjectSettings : () => {
-                            console.log('Permission Denied: change settings')
-                          },
-                          showArchived && project.archived_at !== null && project.archived_at !== undefined,
-                          handleUnarchiveProject
-                        )}
-                      />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <ProjectTableDesktop
+        loading={loading}
+        projects={projects}
+        filteredProjects={filteredProjects}
+        selectedProjects={selectedProjects}
+        allSelected={allSelected}
+        someSelected={someSelected}
+        sortConditions={sortConditions}
+        onSelectProject={handlers.handleSelectProject}
+        onSelectAll={(checked) => handlers.handleSelectAll(checked, filteredProjects)}
+        onToggleSort={toggleSort}
+        onSaveProject={handlers.handleSaveProject}
+        {...sharedActionProps}
+      />
 
-      {/* Dialog Components - Only render when we have valid data */}
-      {selectedProject && (
-        <ProjectEditDialog
-          project={selectedProject as any}
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          onSave={handleSaveProject}
-        />
-      )}
+      <ProjectTableDialogs
+        selectedProject={selectedProject}
+        editDialogOpen={editDialogOpen}
+        deleteDialogOpen={deleteDialogOpen}
+        teamDialogOpen={teamDialogOpen}
+        settingsDialogOpen={settingsDialogOpen}
+        bulkDialogOpen={bulkDialogOpen}
+        bulkOperation={bulkOperation}
+        selectedProjects={selectedProjects}
+        filteredProjects={filteredProjects}
+        teamMembers={teamMembers}
+        currentUserId={user?.id || ''}
+        onEditOpenChange={setEditDialogOpen}
+        onDeleteOpenChange={setDeleteDialogOpen}
+        onTeamOpenChange={setTeamDialogOpen}
+        onSettingsOpenChange={setSettingsDialogOpen}
+        onBulkOpenChange={setBulkDialogOpen}
+        onSaveProject={handlers.handleSaveProject}
+        onDeleteProject={handlers.handleDeleteProjectConfirm}
+        onAddMember={handlers.handleAddTeamMember}
+        onRemoveMember={handlers.handleRemoveTeamMember}
+        onUpdateRole={handlers.handleUpdateTeamRole}
+        onBulkOperation={handlers.handleBulkOperation}
+        onSaveSettings={handlers.handleSaveSettings}
+      />
 
-      {selectedProject && (
-        <ProjectDeleteDialog
-          project={selectedProject as any}
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          onDelete={handleDeleteProjectConfirm}
-        />
-      )}
-
-      {selectedProject && (
-        <TeamManagementDialog
-          projectId={selectedProject.id}
-          projectName={selectedProject.name}
-          currentUserId={user?.id || ''}
-          teamMembers={teamMembers}
-          open={teamDialogOpen}
-          onOpenChange={setTeamDialogOpen}
-          onAddMember={handleAddTeamMember}
-          onRemoveMember={handleRemoveTeamMember}
-          onUpdateRole={handleUpdateTeamRole}
-        />
-      )}
-
-      {(selectedProjects.size > 0 || bulkDialogOpen) && (
-        <BulkOperationsDialog
-          selectedProjects={(Array.isArray(filteredProjects) ? filteredProjects : []).filter(p => selectedProjects.has(p.id)) as any}
-          operation={bulkOperation}
-          open={bulkDialogOpen}
-          onOpenChange={setBulkDialogOpen}
-          onExecute={handleBulkOperation}
-        />
-      )}
-
-      {selectedProject && (
-        <ProjectSettingsDialog
-          project={selectedProject as any}
-          open={settingsDialogOpen}
-          onOpenChange={setSettingsDialogOpen}
-          onSave={handleSaveSettings}
-        />
-      )}
-
-      {/* Sticky Bottom Selection Display */}
-      {selectedProjects.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 dark:bg-blue-950 backdrop-blur-sm border-2 border-blue-400 dark:border-blue-600 p-3 pb-4 shadow-lg rounded-lg max-w-xl w-full mx-4">
-          <div className="flex flex-row items-center justify-between gap-4">
-            <div className="flex items-center flex-1 min-w-0">
-              <span className="text-sm font-medium !text-blue-900 dark:!text-blue-100 whitespace-nowrap">
-                {selectedProjects.size} project{selectedProjects.size !== 1 ? 's' : ''} selected
-              </span>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkManageTeam}
-                className="flex items-center space-x-1 sm:space-x-2"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Team</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkArchive}
-                className="flex items-center space-x-1 sm:space-x-2"
-              >
-                <Archive className="h-4 w-4" />
-                <span>Archive</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkDelete}
-                className="flex items-center space-x-1 sm:space-x-2 text-destructive hover:text-destructive border-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedProjects(new Set())
-                  setShowBulkActions(false)
-                }}
-                className=""
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProjectTableBulkBar
+        selectedCount={selectedProjects.size}
+        onManageTeam={handlers.handleBulkManageTeam}
+        onArchive={handlers.handleBulkArchive}
+        onDelete={() => handlers.handleBulkDelete(filteredProjects)}
+        onCancel={() => { setSelectedProjects(new Set()); setShowBulkActions(false) }}
+      />
     </div>
   )
 }

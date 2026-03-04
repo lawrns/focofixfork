@@ -9,7 +9,6 @@ import { TopBar } from './top-bar';
 import { MobileMenu } from './mobile-menu';
 import { CommandPalette } from './command-palette';
 import { KeyboardShortcutsModal } from './keyboard-shortcuts-modal';
-import { ToastContainer } from '../ui/toast-container';
 import { UndoToast } from '../ui/undo-toast';
 
 import { Send } from 'lucide-react';
@@ -115,7 +114,6 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       )}
 
-      <ToastContainer />
       <UndoToast />
 
       {/* BossBar — fleet status strip for app pages only */}

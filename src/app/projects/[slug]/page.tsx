@@ -1,752 +1,169 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useRecentItems } from '@/hooks/useRecentItems';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
-import { useMobile } from '@/lib/hooks/use-mobile';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SwipeableTaskCard } from '@/components/ui/swipeable-task-card';
-import {
-  LayoutGrid,
-  List,
-  Calendar as CalendarIcon,
-  FileText,
-  Users,
-  Settings,
-  Plus,
-  Filter,
-  MoreHorizontal,
-  ChevronDown,
-  Star,
-  Zap,
-  AlertTriangle,
-  Clock,
-  CheckCircle2,
-  GripVertical,
-} from 'lucide-react';
+import { Plus, Zap, AlertTriangle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import type { WorkItem, WorkItemStatus, PriorityLevel } from '@/types/foco';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import type { WorkItem, WorkItemStatus } from '@/types/foco';
 import { ListView, PeopleView, SettingsView, TimelineView } from '@/components/project';
 import { useCreateTaskModal } from '@/features/tasks';
 import { toast } from 'sonner';
 import { ProjectInsightsPanel } from '@/components/crico/project-insights-panel';
-
-interface Project {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  brief?: string;
-  color?: string;
-  workspace_id: string;
-}
-
-
-interface TeamMember {
-  id: string;
-  user_id: string;
-  role: string;
-  user_profiles?: {
-    full_name?: string;
-    email: string;
-  };
-}
-
-const columns: { status: WorkItemStatus; label: string; color: string }[] = [
-  { status: 'backlog', label: 'Backlog', color: 'bg-zinc-400' },
-  { status: 'next', label: 'Next', color: 'bg-blue-500' },
-  { status: 'in_progress', label: 'In Progress', color: 'bg-[color:var(--foco-teal)]' },
-  { status: 'review', label: 'Review', color: 'bg-amber-500' },
-  { status: 'blocked', label: 'Blocked', color: 'bg-red-500' },
-  { status: 'done', label: 'Done', color: 'bg-green-500' },
-];
-
-const priorityColors: Record<PriorityLevel, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-blue-500',
-  low: 'bg-zinc-400',
-  none: 'bg-zinc-300',
-};
-
-function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchive }: {
-  item: WorkItem;
-  onDragStart?: (item: WorkItem) => void;
-  onDragEnd?: () => void;
-  onComplete?: (item: WorkItem) => void;
-  onArchive?: (item: WorkItem) => void;
-}) {
-  const router = useRouter();
-  const isMobile = useMobile();
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    router.push(`/tasks/${item.id}`);
-  };
-
-  const handleDragStart = (e: React.DragEvent) => {
-    setIsDragging(true);
-    e.dataTransfer.setData('text/plain', item.id);
-    e.dataTransfer.effectAllowed = 'move';
-    onDragStart?.(item);
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    onDragEnd?.();
-  };
-
-  const handleComplete = () => {
-    onComplete?.(item);
-  };
-
-  const handleArchive = () => {
-    onArchive?.(item);
-  };
-
-  const cardContent = (
-    <div
-      draggable={!isMobile}
-      onDragStart={!isMobile ? handleDragStart : undefined}
-      onDragEnd={!isMobile ? handleDragEnd : undefined}
-      onDoubleClick={handleDoubleClick}
-      className={cn(
-        'p-2 md:p-3 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800',
-        'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all',
-        'group min-h-[44px]',
-        !isMobile && 'cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50 border-[color:var(--foco-teal)] shadow-lg'
-      )}
-    >
-      <div className="flex items-start gap-2">
-        <GripVertical className="h-4 w-4 text-zinc-300 group-hover:text-zinc-500 mt-0.5 shrink-0" />
-        <div className="flex-1 min-w-0">
-          {/* Title & Type */}
-          <div className="flex items-start gap-2 mb-2">
-            <div className={cn('h-1.5 w-1.5 md:h-2 md:w-2 rounded-full mt-1.5 shrink-0', priorityColors[item.priority])} />
-            <span className="font-medium text-xs md:text-sm text-zinc-900 dark:text-zinc-50 line-clamp-2">
-              {item.title}
-            </span>
-          </div>
-          
-          {/* Labels */}
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {item.type === 'bug' && (
-              <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
-                Bug
-              </Badge>
-            )}
-            {item.type === 'feature' && (
-              <Badge variant="outline" className="h-4 md:h-5 text-[9px] md:text-[10px] text-purple-600 border-purple-200 bg-purple-50">
-                Feature
-              </Badge>
-            )}
-            {item.status === 'blocked' && item.blocked_reason && (
-              <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Blocked
-              </Badge>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              {item.due_date && (
-                <span className={cn(
-                  'flex items-center gap-1 text-xs',
-                  new Date(item.due_date) < new Date() 
-                    ? 'text-red-500' 
-                    : 'text-zinc-500'
-                )}>
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                </span>
-              )}
-            </div>
-            {item.assignee && (
-              <Avatar className="h-4 w-4 md:h-5 md:w-5 shrink-0">
-                <AvatarFallback className="text-[7px] md:text-[8px]">
-                  {item.assignee.full_name?.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-            )}
-          </div>
-        </div>
-      </div>
-      <p className="text-[10px] text-zinc-400 mt-1 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-        Double-click to open
-      </p>
-    </div>
-  );
-
-  if (isMobile) {
-    return (
-      <SwipeableTaskCard
-        onComplete={handleComplete}
-        onArchive={handleArchive}
-      >
-        {cardContent}
-      </SwipeableTaskCard>
-    );
-  }
-
-  return cardContent;
-}
-
-function BoardColumn({ status, label, color, items, onDrop, onAddTask, onComplete, onArchive }: {
-  status: WorkItemStatus;
-  label: string;
-  color: string;
-  items: WorkItem[];
-  onDrop?: (taskId: string, newStatus: WorkItemStatus) => void;
-  onAddTask?: (status: WorkItemStatus) => void;
-  onComplete?: (item: WorkItem) => void;
-  onArchive?: (item: WorkItem) => void;
-}) {
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const taskId = e.dataTransfer.getData('text/plain');
-    if (taskId) {
-      onDrop?.(taskId, status);
-    }
-  };
-
-  return (
-    <div className="flex flex-col w-full md:w-72 min-w-[280px] shrink-0">
-      {/* Column Header */}
-      <div className="flex items-center gap-2 px-2 py-2 mb-2">
-        <div className={cn('h-1.5 w-1.5 md:h-2 md:w-2 rounded-full shrink-0', color)} />
-        <span className="font-medium text-xs md:text-sm text-zinc-900 dark:text-zinc-50 truncate">
-          {label}
-        </span>
-        <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 rounded shrink-0">
-          {items.length}
-        </span>
-        <div className="flex-1" />
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" 
-          aria-label="Add task to column"
-          onClick={() => onAddTask?.(status)}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-5 w-5 md:h-6 md:w-6 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0" aria-label="Column options">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Cards - Drop Zone */}
-      <div 
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={cn(
-          'flex-1 space-y-1 md:space-y-2 min-h-[200px] p-0.5 md:p-1 rounded-lg transition-colors',
-          isDragOver 
-            ? 'bg-secondary/50 dark:bg-secondary/20 border-2 border-dashed border-[color:var(--foco-teal)]' 
-            : 'bg-zinc-50/50 dark:bg-zinc-800/20'
-        )}
-      >
-        {items.map((item) => (
-          <WorkItemCard
-            key={item.id}
-            item={item}
-            onComplete={onComplete}
-            onArchive={onArchive}
-          />
-        ))}
-        
-        {/* Add Card Button */}
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-zinc-500 h-9 md:h-9 min-h-[44px]"
-          size="sm"
-          onClick={() => onAddTask?.(status)}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span className="text-xs md:text-sm">Add task</span>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function AISuggestionStrip({ onApply, onDismiss }: { onApply: () => void; onDismiss: () => void }) {
-  const [dismissed, setDismissed] = useState(false);
-
-  if (dismissed) return null;
-
-  return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-3 mb-4 bg-gradient-to-r from-secondary to-secondary dark:from-secondary/30 dark:to-secondary/30 rounded-lg border dark:border-secondary dark:border-secondary/50">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="p-1.5 bg-secondary dark:bg-secondary/50 rounded shrink-0">
-          <Zap className="h-4 w-4 text-[color:var(--foco-teal)] dark:text-[color:var(--foco-teal)]" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs md:text-sm text-zinc-900 dark:text-zinc-50">
-            <span className="font-medium">Team capacity is 92% next week</span>
-            <span className="hidden md:inline">{' — '}</span>
-            <span className="block md:inline text-zinc-600 dark:text-zinc-400">
-              Consider moving &quot;Checkout flow redesign&quot; by 2 days
-            </span>
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 justify-end">
-        <Badge variant="secondary" className="text-[10px] hidden md:inline-flex">
-          89% confident
-        </Badge>
-        <Button
-          size="sm"
-          variant="default"
-          className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none"
-          onClick={() => {
-            onApply();
-            setDismissed(true);
-          }}
-        >
-          Apply
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 md:h-7 min-h-[44px] md:min-h-0 flex-1 md:flex-none"
-          onClick={() => {
-            onDismiss();
-            setDismissed(true);
-          }}
-        >
-          Dismiss
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-const DELEGATION_STATUS_COLORS: Record<string, string> = {
-  none: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800',
-  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  delegated: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  running: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-};
-
-function DelegationBadge({ status }: { status: string }) {
-  return (
-    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${DELEGATION_STATUS_COLORS[status] ?? DELEGATION_STATUS_COLORS.none}`}>
-      {status ?? 'none'}
-    </span>
-  );
-}
+import type { Project } from './components/types';
+import { AISuggestionStrip } from './components/AISuggestionStrip';
+import { BoardView } from './components/BoardView';
+import { OverviewTab } from './components/OverviewTab';
+import { FleetTab } from './components/FleetTab';
+import { ProjectTabsHeader } from './components/ProjectTabsHeader';
+import { useProjectData } from './components/use-project-data';
 
 export default function ProjectPage() {
   const params = useParams();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('board');
-  const { addItem } = useRecentItems();
-  const [project, setProject] = useState<Project | null>(null);
-  const [tasks, setTasks] = useState<WorkItem[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [groupBy, setGroupBy] = useState<'status' | 'assignee' | 'priority' | 'none'>('status');
-  const [activeRuns, setActiveRuns] = useState(0);
-  const [delegationEnabled, setDelegationEnabled] = useState(false);
-  const [agentPool, setAgentPool] = useState<string[]>([]);
-  const [delegatingTaskId, setDelegatingTaskId] = useState<string | null>(null);
-  const isMobile = useMobile();
-  const { openTaskModal } = useCreateTaskModal();
-  const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
-
   const slug = params.slug as string;
 
-  // Fetch project data
-  useEffect(() => {
-    async function fetchProjectData() {
-      if (!user || !slug) return;
+  const {
+    project, setProject,
+    tasks, setTasks,
+    teamMembers,
+    loading, error,
+    activeRuns,
+    delegationEnabled, setDelegationEnabled,
+    agentPool,
+  } = useProjectData(user, slug);
 
-      try {
-        setLoading(true);
-        setError(null);
+  const [activeTab, setActiveTab] = useState('board');
+  const [groupBy, setGroupBy] = useState<'status' | 'assignee' | 'priority' | 'none'>('status');
+  const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
+  const { openTaskModal } = useCreateTaskModal();
 
-        // Fetch project
-        const { data: projectData, error: projectError } = (await supabase
-          .from('foco_projects')
-          .select('id, workspace_id, name, slug, description, brief, color, icon, status, owner_id, default_status, settings, is_pinned, archived_at, created_at, updated_at')
-          .eq('slug', slug)) as { data: Project[] | null; error: any };
-
-        if (projectError) throw projectError;
-        if (!projectData || projectData.length === 0) throw new Error('Project not found');
-        if (projectData.length > 1) throw new Error('Multiple projects found with this slug');
-        
-        const project = projectData[0];
-        setProject(project);
-
-        // Fetch fleet data (delegation_settings, assigned_agent_pool, active runs)
-        const [projectFullResult, activeRunsResult] = await Promise.all([
-          supabase
-            .from('foco_projects')
-            .select('delegation_settings, assigned_agent_pool')
-            .eq('id', project.id)
-            .maybeSingle(),
-          (supabase as any)
-            .from('runs')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .in('status', ['pending', 'running']),
-        ]);
-        setDelegationEnabled((projectFullResult.data as any)?.delegation_settings?.enabled ?? false);
-        setAgentPool((projectFullResult.data as any)?.assigned_agent_pool ?? []);
-        setActiveRuns(activeRunsResult.count ?? 0);
-
-        // Track in recent items
-        addItem({
-          type: 'project',
-          id: project.id,
-          name: project.name,
-        });
-
-        // Fetch work items (tasks) for this project
-        const { data: tasksData, error: tasksError } = (await supabase
-          .from('work_items')
-          .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, created_at, updated_at, delegation_status, assigned_agent')
-          .eq('project_id', project.id)
-          .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
-
-        if (tasksError) throw tasksError;
-        
-        // Fetch assignee profiles for work items that have assignees
-        const assigneeIds = [...new Set((tasksData || []).map(t => t.assignee_id).filter(Boolean))];
-        let assigneeMap: Record<string, any> = {};
-
-        if (assigneeIds.length > 0) {
-          const { data: assigneesData } = (await supabase
-            .from('user_profiles')
-            .select('id, email, full_name')
-            .in('id', assigneeIds)) as { data: any[] | null; error: any };
-
-          if (assigneesData) {
-            assigneeMap = Object.fromEntries(
-              assigneesData.map(a => [a.id, a])
-            );
-          }
-        }
-
-        // Map assignee data to work items
-        const tasksWithAssignees = (tasksData || []).map(task => ({
-          ...task,
-          assignee: task.assignee_id ? assigneeMap[task.assignee_id] : undefined
-        }));
-
-        setTasks(tasksWithAssignees);
-
-        // Fetch team members
-        const { data: membersData, error: membersError } = (await supabase
-          .from('foco_project_members')
-          .select('id, project_id, user_id, role, created_at')
-          .eq('project_id', project.id)) as { data: any[] | null; error: any };
-
-        if (membersError) throw membersError;
-
-        // Fetch user profiles for team members
-        const memberUserIds = (membersData || []).map(m => m.user_id);
-        let memberProfilesMap: Record<string, any> = {};
-
-        if (memberUserIds.length > 0) {
-          const { data: profilesData } = (await supabase
-            .from('user_profiles')
-            .select('id, email, full_name')
-            .in('id', memberUserIds)) as { data: any[] | null; error: any };
-
-          if (profilesData) {
-            memberProfilesMap = Object.fromEntries(
-              profilesData.map(p => [p.id, p])
-            );
-          }
-        }
-
-        // Map user profiles to team members
-        const membersWithProfiles = (membersData || []).map(member => ({
-          ...member,
-          user_profiles: memberProfilesMap[member.user_id]
-        }));
-
-        setTeamMembers(membersWithProfiles);
-
-      } catch (err: any) {
-        console.error('Error fetching project data:', err);
-        setError(err.message || 'Failed to load project');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProjectData();
-  }, [user, slug, addItem]);
-
-  // Task handlers
   const handleStatusChange = async (taskId: string, status: WorkItemStatus) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
+      const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      if (!response.ok) throw new Error('Failed to update task');
+      if (!res.ok) throw new Error();
       setTasks(tasks.map(t => t.id === taskId ? { ...t, status } : t));
-    } catch (error) {
-      toast.error('Failed to update task status');
-    }
+    } catch { toast.error('Failed to update task status'); }
   };
 
-  const handleAddTask = () => {
-    openTaskModal({ projectId: project?.id });
+  const handleDrop = async (taskId: string, newStatus: WorkItemStatus) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error();
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      toast.success('Task moved');
+    } catch { toast.error('Failed to move task'); }
+  };
+
+  const handleAddTaskToColumn = (status: WorkItemStatus) => {
+    const statusToSection: Record<WorkItemStatus, 'now' | 'next' | 'later' | 'waiting' | 'backlog'> = {
+      'in_progress': 'now', 'next': 'next', 'backlog': 'backlog',
+      'review': 'waiting', 'blocked': 'waiting', 'done': 'backlog'
+    };
+    openTaskModal({ projectId: project?.id, section: statusToSection[status] || 'backlog' });
+  };
+
+  const handleCompleteTask = async (item: WorkItem) => {
+    try {
+      const res = await fetch(`/api/tasks/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'done' }),
+      });
+      if (!res.ok) throw new Error();
+      setTasks(tasks.map(t => t.id === item.id ? { ...t, status: 'done' } : t));
+      toast.success('Task completed');
+    } catch { toast.error('Failed to complete task'); }
+  };
+
+  const handleArchiveTask = async (item: WorkItem) => {
+    try {
+      const res = await fetch(`/api/tasks/${item.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setTasks(tasks.filter(t => t.id !== item.id));
+      toast.success('Task archived');
+    } catch { toast.error('Failed to archive task'); }
+  };
+
+  const handleAddMember = async (email: string, role: string) => {
+    if (!project?.id) return;
+    try {
+      const res = await fetch(`/api/projects/${project.id}/team`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, role })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error?.message || 'Failed to add member'); return; }
+      toast.success('Member added successfully');
+    } catch { toast.error('Failed to add member'); }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!project?.id) return;
+    try {
+      const res = await fetch(`/api/projects/${project.id}/team/${memberId}`, { method: 'DELETE' });
+      if (!res.ok) { const data = await res.json(); toast.error(data.error?.message || 'Failed to remove member'); return; }
+      toast.success('Member removed successfully');
+    } catch { toast.error('Failed to remove member'); }
+  };
+
+  const handleUpdateRole = async (memberId: string, role: string) => {
+    if (!project?.id) return;
+    try {
+      const res = await fetch(`/api/projects/${project.id}/team/${memberId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      if (!res.ok) { const data = await res.json(); toast.error(data.error?.message || 'Failed to update role'); return; }
+      toast.success('Role updated successfully');
+    } catch { toast.error('Failed to update role'); }
+  };
+
+  const handleSaveSettings = async (updates: Partial<Project>) => {
+    if (!project?.id) throw new Error('Project not loaded');
+    const { error } = await supabase.from('foco_projects').update(updates).eq('id', project.id);
+    if (error) throw error;
+    setProject(prev => prev ? { ...prev, ...updates } : prev);
+  };
+
+  const handleArchiveProject = async () => {
+    if (!project?.id) throw new Error('Project not loaded');
+    const { error } = await supabase.from('foco_projects').update({ archived_at: new Date().toISOString() }).eq('id', project.id);
+    if (error) throw error;
+    window.location.href = '/empire/missions';
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project?.id) throw new Error('Project not loaded');
+    const { error } = await supabase.from('foco_projects').delete().eq('id', project.id);
+    if (error) throw error;
+    window.location.href = '/empire/missions';
   };
 
   const handleGenerateStatus = async () => {
     if (!project?.id) return;
     toast.info('Generating project status report...');
     try {
-      const response = await fetch('/api/ai/task-actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'summarize_thread',
-          task_id: tasks[0]?.id || project.id,
-          workspace_id: project.workspace_id
-        })
+      const res = await fetch('/api/ai/task-actions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'summarize_thread', task_id: tasks[0]?.id || project.id, workspace_id: project.workspace_id })
       });
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Status report generated! Check the AI panel for details.');
-      } else {
-        toast.error('Failed to generate status report');
-      }
-    } catch (error) {
-      toast.error('Failed to connect to AI service');
-    }
+      const data = await res.json();
+      data.success ? toast.success('Status report generated! Check the AI panel for details.') : toast.error('Failed to generate status report');
+    } catch { toast.error('Failed to connect to AI service'); }
   };
 
-  const handleApplyAISuggestion = () => {
-    toast.success('AI suggestion applied');
-  };
-
-  const handleDismissAISuggestion = () => {
-    toast.info('AI suggestion dismissed');
-  };
-
-  // Drag and drop handler
-  const handleDrop = async (taskId: string, newStatus: WorkItemStatus) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!response.ok) throw new Error('Failed to update task');
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-      toast.success('Task moved');
-    } catch (error) {
-      toast.error('Failed to move task');
-    }
-  };
-
-  const handleAddTaskToColumn = (status: WorkItemStatus) => {
-    // Map WorkItemStatus to section for task modal
-    const statusToSection: Record<WorkItemStatus, 'now' | 'next' | 'later' | 'waiting' | 'backlog'> = {
-      'in_progress': 'now',
-      'next': 'next',
-      'backlog': 'backlog',
-      'review': 'waiting',
-      'blocked': 'waiting',
-      'done': 'backlog'
-    };
-    openTaskModal({ 
-      projectId: project?.id,
-      section: statusToSection[status] || 'backlog'
-    });
-  };
-
-  // Team member handlers
-  const handleAddMember = async (email: string, role: string) => {
-    if (!project?.id) return;
-    try {
-      const response = await fetch(`/api/projects/${project.id}/team`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        toast.error(data.error?.message || 'Failed to add member');
-        return;
-      }
-      toast.success('Member added successfully');
-    } catch (error) {
-      toast.error('Failed to add member');
-    }
-  };
-
-  const handleRemoveMember = async (memberId: string) => {
-    if (!project?.id) return;
-    try {
-      const response = await fetch(`/api/projects/${project.id}/team/${memberId}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        toast.error(data.error?.message || 'Failed to remove member');
-        return;
-      }
-      toast.success('Member removed successfully');
-    } catch (error) {
-      toast.error('Failed to remove member');
-    }
-  };
-
-  const handleUpdateRole = async (memberId: string, role: string) => {
-    if (!project?.id) return;
-    try {
-      const response = await fetch(`/api/projects/${project.id}/team/${memberId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role })
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        toast.error(data.error?.message || 'Failed to update role');
-        return;
-      }
-      toast.success('Role updated successfully');
-    } catch (error) {
-      toast.error('Failed to update role');
-    }
-  };
-
-  // Settings handlers
-  const handleSaveSettings = async (updates: Partial<Project>) => {
-    if (!project?.id) throw new Error('Project not loaded');
-    try {
-      const { error } = await supabase
-        .from('foco_projects')
-        .update(updates)
-        .eq('id', project.id);
-      if (error) throw error;
-      setProject(prev => prev ? { ...prev, ...updates } : prev);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const handleArchiveProject = async () => {
-    if (!project?.id) throw new Error('Project not loaded');
-    try {
-      const { error } = await supabase
-        .from('foco_projects')
-        .update({ archived_at: new Date().toISOString() })
-        .eq('id', project.id);
-      if (error) throw error;
-      window.location.href = '/empire/missions';
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const handleDeleteProject = async () => {
-    if (!project?.id) throw new Error('Project not loaded');
-    try {
-      const { error } = await supabase
-        .from('foco_projects')
-        .delete()
-        .eq('id', project.id);
-      if (error) throw error;
-      window.location.href = '/empire/missions';
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const handleFilter = () => {
-    toast.info('Task filtering coming soon');
-  };
-
-  const handleGroupChange = (group: 'status' | 'assignee' | 'priority' | 'none') => {
-    setGroupBy(group);
-    toast.success(`Grouped by ${group === 'none' ? 'nothing' : group}`);
-  };
-
-  const getGroupLabel = () => {
-    switch (groupBy) {
-      case 'status': return 'Group: Status';
-      case 'assignee': return 'Group: Assignee';
-      case 'priority': return 'Group: Priority';
-      case 'none': return 'Group: None';
-    }
-  };
-
-  const getItemsByStatus = (status: WorkItemStatus) =>
-    tasks.filter(item => item.status === status);
-
-  const handleCompleteTask = async (item: WorkItem) => {
-    try {
-      const response = await fetch(`/api/tasks/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'done' }),
-      });
-      if (!response.ok) throw new Error('Failed to update task');
-      setTasks(tasks.map(t => t.id === item.id ? { ...t, status: 'done' } : t));
-      toast.success('Task completed');
-    } catch (error) {
-      toast.error('Failed to complete task');
-    }
-  };
-
-  const handleArchiveTask = async (item: WorkItem) => {
-    try {
-      const response = await fetch(`/api/tasks/${item.id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to archive task');
-      setTasks(tasks.filter(t => t.id !== item.id));
-      toast.success('Task archived');
-    } catch (error) {
-      toast.error('Failed to archive task');
-    }
-  };
-
-  // Loading state
   if (loading) {
     return (
       <div className="max-w-full">
@@ -760,31 +177,20 @@ export default function ProjectPage() {
     );
   }
 
-  // Error state
   if (error || !project) {
     return (
       <div className="max-w-full">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-              {error || 'Project not found'}
-            </h2>
-            <p className="text-sm text-zinc-500 mb-4">
-              The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
-            </p>
-            <Button asChild>
-              <Link href="/empire/missions">Back to Projects</Link>
-            </Button>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">{error || 'Project not found'}</h2>
+            <p className="text-sm text-zinc-500 mb-4">The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
+            <Button asChild><Link href="/empire/missions">Back to Projects</Link></Button>
           </div>
         </div>
       </div>
     );
   }
-
-  const completedTasks = tasks.filter(t => t.status === 'done').length;
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
-  const blockedTasks = tasks.filter(t => t.status === 'blocked').length;
 
   return (
     <div className="max-w-full">
@@ -798,330 +204,57 @@ export default function ProjectPage() {
             {project.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-semibold text-zinc-900 dark:text-zinc-50 truncate">
-                {project.name}
-              </h1>
-            </div>
-            <p className="text-zinc-500 mt-0.5 text-sm md:text-base hidden md:block">
-              {project.description || 'No description'}
-            </p>
+            <h1 className="text-xl md:text-2xl font-semibold text-zinc-900 dark:text-zinc-50 truncate">{project.name}</h1>
+            <p className="text-zinc-500 mt-0.5 text-sm md:text-base hidden md:block">{project.description || 'No description'}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 md:flex-none min-h-[44px]"
-            aria-label="Generate status report"
-            onClick={handleGenerateStatus}
-          >
-            <Zap className="h-4 w-4" />
-            <span className="hidden md:inline">Generate Status</span>
+          <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]" onClick={handleGenerateStatus}>
+            <Zap className="h-4 w-4" /><span className="hidden md:inline">Generate Status</span>
           </Button>
-          <Button
-            size="sm"
-            className="flex-1 md:flex-none min-h-[44px]"
-            aria-label="Add new task"
-            onClick={handleAddTask}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden md:inline">Add Task</span>
+          <Button size="sm" className="flex-1 md:flex-none min-h-[44px]" onClick={() => openTaskModal({ projectId: project?.id })}>
+            <Plus className="h-4 w-4" /><span className="hidden md:inline">Add Task</span>
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-0 mb-4">
-          {/* Tabs List - Scrollable on mobile */}
-          <div className="relative w-full md:w-auto">
-            {/* Scroll fade indicators for mobile */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-1 md:hidden" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-1 md:hidden" />
-            
-            <TabsList className="w-full md:w-auto overflow-x-auto scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <TabsTrigger value="overview" className="px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="board" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <LayoutGrid className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Board</span>
-              </TabsTrigger>
-              <TabsTrigger value="list" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>List</span>
-              </TabsTrigger>
-              <TabsTrigger value="timeline" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <CalendarIcon className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Timeline</span>
-              </TabsTrigger>
-              <TabsTrigger value="docs" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Docs</span>
-              </TabsTrigger>
-              <TabsTrigger value="people" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>People</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <Settings className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Settings</span>
-              </TabsTrigger>
-              <TabsTrigger value="fleet" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <Zap className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Fleet</span>
-                {activeRuns > 0 && (
-                  <span className="ml-1 relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="insights" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
-                <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Insights</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <ProjectTabsHeader
+          activeRuns={activeRuns}
+          groupBy={groupBy}
+          onGroupChange={(g) => { setGroupBy(g); toast.success(`Grouped by ${g === 'none' ? 'nothing' : g}`); }}
+        />
 
-          {/* Filter/Group Actions - Dropdown on mobile */}
-          <div className="flex items-center gap-2">
-            {/* Mobile: Single dropdown with both filter and group */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="md:hidden min-h-[44px] flex-1">
-                  <Filter className="h-4 w-4" />
-                  <span>Actions</span>
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={handleFilter}>
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleGroupChange('status')}>
-                  <span>Group: Status</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleGroupChange('assignee')}>Group: Assignee</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleGroupChange('priority')}>Group: Priority</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleGroupChange('none')}>Group: None</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <AISuggestionStrip
+          onApply={() => toast.success('AI suggestion applied')}
+          onDismiss={() => toast.info('AI suggestion dismissed')}
+        />
 
-            {/* Desktop: Separate buttons */}
-            <div className="hidden md:flex items-center gap-2">
-              <Button variant="outline" size="sm" className="min-h-[44px]" onClick={handleFilter}>
-                <Filter className="h-4 w-4" />
-                Filter
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="min-h-[44px]">
-                    {getGroupLabel()}
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleGroupChange('status')}>Status</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGroupChange('assignee')}>Assignee</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGroupChange('priority')}>Priority</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGroupChange('none')}>None</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Suggestion Strip */}
-        <AISuggestionStrip onApply={handleApplyAISuggestion} onDismiss={handleDismissAISuggestion} />
-
-        {/* Board View */}
         <TabsContent value="board" className="mt-0">
-          {isMobile ? (
-            <div className="relative">
-              {/* Mobile: Single column view with swipe navigation */}
-              <div className="overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentColumnIndex}
-                    initial={{ x: 100, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -100, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.2}
-                    onDragEnd={(e, { offset }) => {
-                      if (offset.x < -50 && currentColumnIndex < columns.length - 1) {
-                        setCurrentColumnIndex(currentColumnIndex + 1);
-                      } else if (offset.x > 50 && currentColumnIndex > 0) {
-                        setCurrentColumnIndex(currentColumnIndex - 1);
-                      }
-                    }}
-                  >
-                    <BoardColumn
-                      status={columns[currentColumnIndex].status}
-                      label={columns[currentColumnIndex].label}
-                      color={columns[currentColumnIndex].color}
-                      items={getItemsByStatus(columns[currentColumnIndex].status)}
-                      onDrop={handleDrop}
-                      onAddTask={handleAddTaskToColumn}
-                      onComplete={handleCompleteTask}
-                      onArchive={handleArchiveTask}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Column indicator dots */}
-              <div className="flex justify-center gap-2 mt-4">
-                {columns.map((column, index) => (
-                  <button
-                    key={column.status}
-                    onClick={() => setCurrentColumnIndex(index)}
-                    className={cn(
-                      'h-2 w-2 rounded-full transition-all',
-                      index === currentColumnIndex
-                        ? 'bg-[color:var(--foco-teal)] w-6'
-                        : 'bg-zinc-300 dark:bg-zinc-700'
-                    )}
-                    aria-label={`Go to ${column.label}`}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-2 md:gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {columns.map((column) => (
-                <BoardColumn
-                  key={column.status}
-                  status={column.status}
-                  label={column.label}
-                  color={column.color}
-                  items={getItemsByStatus(column.status)}
-                  onDrop={handleDrop}
-                  onAddTask={handleAddTaskToColumn}
-                  onComplete={handleCompleteTask}
-                  onArchive={handleArchiveTask}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Overview */}
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="col-span-1 md:col-span-2 space-y-4 md:space-y-6">
-              {/* Brief */}
-              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-2 text-sm md:text-base">Project Brief</h3>
-                <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-300">
-                  {project.brief || project.description || 'No project brief available.'}
-                </p>
-              </div>
-
-              {/* Milestones */}
-              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-3 text-sm md:text-base">Milestones</h3>
-                <div className="space-y-2 md:space-y-3">
-                  <div className="flex items-center justify-between p-2 md:p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg gap-2">
-                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                      <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                        <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-xs md:text-sm truncate">Design Phase Complete</p>
-                        <p className="text-[10px] md:text-xs text-zinc-500">Due Jan 20, 2026</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 shrink-0 text-[10px] md:text-xs">
-                      In Progress
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-2 md:p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg gap-2">
-                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                      <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center shrink-0">
-                        <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-zinc-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-xs md:text-sm truncate">Development Complete</p>
-                        <p className="text-[10px] md:text-xs text-zinc-500">Due Feb 28, 2026</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="shrink-0 text-[10px] md:text-xs">Upcoming</Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-4 md:space-y-6">
-              {/* Quick Stats */}
-              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-3 text-sm md:text-base">Progress</h3>
-                <div className="space-y-2 md:space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs md:text-sm text-zinc-500">Completed</span>
-                    <span className="font-medium text-sm md:text-base">{completedTasks} / {tasks.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs md:text-sm text-zinc-500">In Progress</span>
-                    <span className="font-medium text-sm md:text-base">{inProgressTasks}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs md:text-sm text-zinc-500">Blocked</span>
-                    <span className="font-medium text-sm md:text-base text-red-500">{blockedTasks}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Team */}
-              <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium mb-3 text-sm md:text-base">Team</h3>
-                <div className="space-y-2">
-                  {teamMembers.length === 0 ? (
-                    <p className="text-xs md:text-sm text-zinc-500">No team members yet</p>
-                  ) : (
-                    teamMembers.map((member) => (
-                      <div key={member.id} className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6 shrink-0">
-                          <AvatarFallback className="text-[10px]">
-                            {member.user_profiles?.full_name
-                              ?.split(' ')
-                              .map(n => n[0])
-                              .join('') || member.user_profiles?.email.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs md:text-sm truncate">
-                          {member.user_profiles?.full_name || member.user_profiles?.email}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* List View */}
-        <TabsContent value="list">
-          <ListView 
-            tasks={tasks} 
-            onStatusChange={handleStatusChange}
-            onAddTask={handleAddTask}
+          <BoardView
+            tasks={tasks}
+            currentColumnIndex={currentColumnIndex}
+            setCurrentColumnIndex={setCurrentColumnIndex}
+            onDrop={handleDrop}
+            onAddTask={handleAddTaskToColumn}
+            onComplete={handleCompleteTask}
+            onArchive={handleArchiveTask}
           />
         </TabsContent>
 
-        {/* Timeline View */}
+        <TabsContent value="overview">
+          <OverviewTab project={project} tasks={tasks} teamMembers={teamMembers} />
+        </TabsContent>
+
+        <TabsContent value="list">
+          <ListView tasks={tasks} onStatusChange={handleStatusChange} onAddTask={() => openTaskModal({ projectId: project?.id })} />
+        </TabsContent>
+
         <TabsContent value="timeline">
           <TimelineView tasks={tasks} />
         </TabsContent>
 
-        {/* Docs View - Coming Soon */}
         <TabsContent value="docs">
           <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700">
             <FileText className="h-8 w-8 text-zinc-400 mx-auto mb-3" />
@@ -1130,9 +263,8 @@ export default function ProjectPage() {
           </div>
         </TabsContent>
 
-        {/* People View */}
         <TabsContent value="people">
-          <PeopleView 
+          <PeopleView
             projectId={project.id}
             members={teamMembers}
             onAddMember={handleAddMember}
@@ -1141,144 +273,22 @@ export default function ProjectPage() {
           />
         </TabsContent>
 
-        {/* Settings View */}
         <TabsContent value="settings">
-          <SettingsView
+          <SettingsView project={project} onSave={handleSaveSettings} onArchive={handleArchiveProject} onDelete={handleDeleteProject} />
+        </TabsContent>
+
+        <TabsContent value="fleet">
+          <FleetTab
             project={project}
-            onSave={handleSaveSettings}
-            onArchive={handleArchiveProject}
-            onDelete={handleDeleteProject}
+            tasks={tasks}
+            activeRuns={activeRuns}
+            delegationEnabled={delegationEnabled}
+            setDelegationEnabled={setDelegationEnabled}
+            agentPool={agentPool}
+            setTasks={setTasks}
           />
         </TabsContent>
 
-        {/* Fleet View */}
-        <TabsContent value="fleet">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            {/* Task delegation table */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                  <h3 className="font-medium text-sm">Task Delegation</h3>
-                  <span className="text-xs text-zinc-500">{tasks.length} tasks</span>
-                </div>
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {tasks.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-sm text-zinc-400">No tasks yet</div>
-                  ) : (
-                    tasks.map(task => (
-                      <div key={task.id} className="flex items-center gap-3 px-4 py-2.5">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{task.title}</p>
-                          {(task as any).assigned_agent && (
-                            <p className="text-[11px] text-zinc-400 font-mono truncate">
-                              {(task as any).assigned_agent}
-                            </p>
-                          )}
-                        </div>
-                        <DelegationBadge status={(task as any).delegation_status ?? 'none'} />
-                        {((task as any).delegation_status === 'none' || (task as any).delegation_status === 'failed' || !(task as any).delegation_status) && (
-                          <button
-                            className="text-[11px] text-[color:var(--foco-teal)] hover:underline shrink-0 disabled:opacity-50"
-                            disabled={delegatingTaskId === task.id}
-                            onClick={async () => {
-                              setDelegatingTaskId(task.id);
-                              try {
-                                const res = await fetch(`/api/tasks/${task.id}/delegate`, { method: 'POST', credentials: 'include' });
-                                if (res.ok) {
-                                  setTasks(prev => prev.map(t => t.id === task.id ? { ...t, delegation_status: 'pending' } as any : t));
-                                  toast.success('Task queued for delegation');
-                                } else {
-                                  toast.error('Failed to delegate task');
-                                }
-                              } finally {
-                                setDelegatingTaskId(null);
-                              }
-                            }}
-                          >
-                            {delegatingTaskId === task.id ? 'Delegating…' : 'Delegate'}
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Fleet card */}
-            <div className="space-y-4">
-              {/* Active runs */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium text-sm mb-3">Active Runs</h3>
-                {activeRuns > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                    <span className="text-sm font-medium text-emerald-600">{activeRuns} running</span>
-                    <a href="/empire/command" className="ml-auto text-[11px] text-[color:var(--foco-teal)] hover:underline">
-                      View →
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-sm text-zinc-400">No active runs</p>
-                )}
-              </div>
-
-              {/* Delegation toggle */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Agent delegation</p>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">Allow ClawdBot to pick up tasks</p>
-                  </div>
-                  <button
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none ${delegationEnabled ? 'bg-[color:var(--foco-teal)]' : 'bg-zinc-200 dark:bg-zinc-700'}`}
-                    onClick={async () => {
-                      const newVal = !delegationEnabled;
-                      try {
-                        const res = await fetch(`/api/projects/${project?.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          credentials: 'include',
-                          body: JSON.stringify({ delegation_settings: { enabled: newVal } }),
-                        });
-                        if (res.ok) {
-                          setDelegationEnabled(newVal);
-                          toast.success(`Delegation ${newVal ? 'enabled' : 'disabled'}`);
-                        }
-                      } catch {
-                        toast.error('Failed to update delegation');
-                      }
-                    }}
-                  >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${delegationEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Agent pool */}
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-medium text-sm mb-3">Agent Pool</h3>
-                {agentPool.length === 0 ? (
-                  <p className="text-sm text-zinc-400">No agents assigned</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {agentPool.map(agent => (
-                      <div key={agent} className="flex items-center gap-2 text-[11px] font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-2 py-1 rounded">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        {agent}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Insights Tab */}
         <TabsContent value="insights">
           <ProjectInsightsPanel projectId={project.id} />
         </TabsContent>

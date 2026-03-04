@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ interface ScanWithProject extends DependencyScan {
   };
 }
 
-export default function MaintenancePage() {
+function MaintenancePageContent() {
   const { error: showError, info: showInfo } = useToastHelpers();
   const searchParams = useSearchParams();
   const projectId = searchParams.get('projectId');
@@ -394,5 +394,17 @@ export default function MaintenancePage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function MaintenancePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    }>
+      <MaintenancePageContent />
+    </Suspense>
   );
 }

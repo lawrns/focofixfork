@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Clock,
@@ -687,7 +687,7 @@ function DeleteCronDialog({
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
-export default function CronsPage() {
+function CronsPageContent() {
   const searchParams = useSearchParams()
   const { user, loading } = useAuth()
   const [crons, setCrons] = useState<Cron[]>([])
@@ -991,5 +991,17 @@ export default function CronsPage() {
         </TooltipProvider>
       )}
     </PageShell>
+  )
+}
+
+export default function CronsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" />
+      </div>
+    }>
+      <CronsPageContent />
+    </Suspense>
   )
 }

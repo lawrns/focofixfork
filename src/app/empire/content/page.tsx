@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Newspaper, Loader2 } from 'lucide-react';
 import { PageShell } from '@/components/layout/page-shell';
@@ -19,7 +19,7 @@ interface Project {
 
 export const dynamic = 'force-dynamic';
 
-export default function ContentPage() {
+function ContentPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const initialProjectId = searchParams.get('project_id');
@@ -170,5 +170,17 @@ export default function ContentPage() {
         </div>
       )}
     </PageShell>
+  );
+}
+
+export default function ContentPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    }>
+      <ContentPageContent />
+    </Suspense>
   );
 }

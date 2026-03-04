@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, RefreshCw, Clock, Zap, CheckCircle2, DollarSign, Square, Trash2 } from 'lucide-react'
@@ -49,7 +49,7 @@ function queueTime(run: Run): string {
   return ''
 }
 
-export default function RunsPage() {
+function RunsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading } = useAuth()
@@ -289,5 +289,17 @@ export default function RunsPage() {
         </div>
       )}
     </PageShell>
+  )
+}
+
+export default function RunsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" />
+      </div>
+    }>
+      <RunsPageContent />
+    </Suspense>
   )
 }

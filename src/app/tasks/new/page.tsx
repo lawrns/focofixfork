@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+// Suspense is used for the wrapper at bottom of file
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -313,3 +314,4 @@ export default function NewTaskPage() {
     </Suspense>
   );
 }
+// Note: This file already had the correct Suspense pattern in place

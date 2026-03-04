@@ -890,7 +890,7 @@ export function CommandSurface({
             {/* Action buttons row */}
             <div className="flex items-center justify-between">
               {/* Quick Suggestions */}
-              {!prompt && !isProcessing && !pendingDecision && mode !== 'intake' && (
+              {!prompt && !isProcessing && !pendingDecision && (
                 <div className="flex flex-wrap gap-2">
                   {currentMode.examples.slice(0, 3).map((example, index) => (
                     <button

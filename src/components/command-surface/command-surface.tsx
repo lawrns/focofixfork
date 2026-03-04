@@ -2,12 +2,11 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox, GitBranch, Square, Trash2 } from 'lucide-react';
+import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, X, ExternalLink, Clock, Inbox, GitBranch, Square, Trash2, Command, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -43,30 +42,60 @@ type ProjectBriefDraft = {
   owner: string;
 };
 
-const MODE_CONFIG: Record<CommandMode, { label: string; icon: React.ReactNode; color: string; description: string }> = {
+const MODE_CONFIG: Record<CommandMode, { 
+  label: string; 
+  icon: React.ReactNode; 
+  color: string; 
+  bgColor: string;
+  borderColor: string;
+  ringColor: string;
+  description: string;
+  placeholder: string;
+  examples: string[];
+}> = {
   cto: {
     label: 'CTO',
     icon: <Terminal className="h-4 w-4" />,
-    color: 'text-blue-500',
-    description: 'Architecture & Implementation'
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-500/10 hover:bg-blue-500/20',
+    borderColor: 'border-blue-500/30',
+    ringColor: 'ring-blue-500/20',
+    description: 'Architecture & Implementation',
+    placeholder: 'e.g., Fix hydration errors, refactor API client, implement dark mode...',
+    examples: ['Fix hydration errors', 'Implement dark mode', 'Refactor API client']
   },
   coo: {
     label: 'COO',
     icon: <Cpu className="h-4 w-4" />,
-    color: 'text-emerald-500',
-    description: 'Operations & Scheduling'
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-500/10 hover:bg-emerald-500/20',
+    borderColor: 'border-emerald-500/30',
+    ringColor: 'ring-emerald-500/20',
+    description: 'Operations & Scheduling',
+    placeholder: 'e.g., Send daily summary, schedule weekly reports, monitor health...',
+    examples: ['Daily 7am summary', 'Weekly Monday report', 'Hourly health check']
   },
   auto: {
     label: 'Auto',
     icon: <Sparkles className="h-4 w-4" />,
-    color: 'text-amber-500',
-    description: 'Smart detection'
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-500/10 hover:bg-amber-500/20',
+    borderColor: 'border-amber-500/30',
+    ringColor: 'ring-amber-500/20',
+    description: 'Smart detection',
+    placeholder: 'What would you like me to do? I\'ll figure out the best approach...',
+    examples: ['Create a new project', 'Schedule reminder', 'Review code']
   },
   intake: {
     label: 'Intake',
     icon: <Inbox className="h-4 w-4" />,
-    color: 'text-violet-500',
-    description: 'Quick task capture'
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-500/10 hover:bg-violet-500/20',
+    borderColor: 'border-violet-500/30',
+    ringColor: 'ring-violet-500/20',
+    description: 'Quick task capture',
+    placeholder: 'Capture a quick task, idea, or note...',
+    examples: ['Follow up with team', 'Research competitors', 'Update documentation']
   }
 };
 
@@ -96,7 +125,7 @@ function AgentTrackerBar({
   const isTerminal = ['completed', 'failed', 'cancelled'].includes(tracker.status)
 
   return (
-    <div className="flex items-center gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-sm">
+    <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-sm">
       {icons[tracker.status]}
       <span className="flex-1 text-muted-foreground">{labels[tracker.status]}</span>
       {tracker.outputPreview && (
@@ -114,6 +143,45 @@ function AgentTrackerBar({
   )
 }
 
+// Mode Selector Button Component
+function ModeButton({
+  mode,
+  isActive,
+  onClick,
+}: {
+  mode: CommandMode;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const config = MODE_CONFIG[mode];
+  
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group relative flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+        config.ringColor,
+        isActive 
+          ? cn(config.bgColor, config.color, 'shadow-sm', config.borderColor, 'border')
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+      )}
+    >
+      <span className={cn(
+        'transition-transform duration-200',
+        isActive ? 'scale-110' : 'group-hover:scale-105'
+      )}>
+        {config.icon}
+      </span>
+      <span className="hidden sm:inline">{config.label}</span>
+      {isActive && (
+        <span className="absolute inset-0 rounded-lg ring-1 ring-inset ring-current opacity-20" />
+      )}
+    </button>
+  );
+}
+
 export function CommandSurface({
   context = 'dashboard',
   contextId,
@@ -127,7 +195,6 @@ export function CommandSurface({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(contextId ?? null);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [isSyncingGit, setIsSyncingGit] = useState(false);
-  const [showModeSelector, setShowModeSelector] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<CTODecision | COODecision | null>(null);
   const [pendingPlan, setPendingPlan] = useState<ReturnType<typeof analyzePrompt>['plan'] | null>(null);
   const [projectBriefOpen, setProjectBriefOpen] = useState(false);
@@ -146,6 +213,7 @@ export function CommandSurface({
   });
   const [actionRunId, setActionRunId] = useState<string | null>(null);
   const [projectRequiredError, setProjectRequiredError] = useState<string | null>(null);
+  const [showShortcutHint, setShowShortcutHint] = useState(true);
 
   const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history } = useCommandPipeline();
 
@@ -197,6 +265,21 @@ export function CommandSurface({
       }
     };
     loadPolicy();
+  }, []);
+
+  // Keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const input = document.querySelector('[data-command-input="true"]') as HTMLInputElement;
+        if (input) {
+          input.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const fetchProjects = useCallback(async () => {
@@ -427,149 +510,167 @@ export function CommandSurface({
   }, [emitRunsMutated, refreshRunningCount]);
 
   return (
-    <Card className={cn('overflow-hidden', className)}>
-      <div className="p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Command Surface</span>
-            {runningCount > 0 && (
-              <span className="ml-2 rounded-full bg-teal-500/20 px-2 py-0.5 text-xs font-medium text-teal-400">
-                {runningCount} running
-              </span>
-            )}
-            {context !== 'dashboard' && (
-              <Badge variant="secondary" className="text-xs">
-                {context}
-              </Badge>
-            )}
-          </div>
-          
-          {/* Project Selector */}
-          <div className="flex items-center gap-1">
-            <Select
-              value={selectedProjectId ?? 'none'}
-              onValueChange={(v) => {
-                setSelectedProjectId(v === 'none' ? null : v)
-                if (v !== 'none') setProjectRequiredError(null)
-              }}
-            >
-              <SelectTrigger
-                className={cn(
-                  'h-7 text-xs w-[140px]',
-                  projectRequiredError && 'border-rose-500 focus-visible:ring-rose-500'
-                )}
-              >
-                <SelectValue placeholder="Project…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No project</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <span className="truncate max-w-[120px] block">{p.name}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleSyncGit}
-              disabled={isSyncingGit}
-              title="Sync git repos as projects"
-            >
-              {isSyncingGit ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <GitBranch className="h-3.5 w-3.5" />
+    <div className={cn(
+      'relative overflow-hidden rounded-2xl',
+      'bg-gradient-to-br from-background via-background to-muted/30',
+      'border border-border/50 shadow-xl shadow-black/5',
+      'transition-all duration-300 ease-out',
+      'hover:shadow-2xl hover:shadow-black/8',
+      className
+    )}>
+      {/* Left accent gradient border */}
+      <div className={cn(
+        'absolute left-0 top-0 bottom-0 w-1.5',
+        'bg-gradient-to-b',
+        mode === 'cto' && 'from-blue-500 via-blue-400 to-blue-600',
+        mode === 'coo' && 'from-emerald-500 via-emerald-400 to-emerald-600',
+        mode === 'auto' && 'from-amber-500 via-amber-400 to-amber-600',
+        mode === 'intake' && 'from-violet-500 via-violet-400 to-violet-600',
+        'transition-all duration-300'
+      )} />
+      
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+      
+      <div className="relative p-5 sm:p-6 space-y-5">
+        {/* Header with Mode Selector */}
+        <div className="flex flex-col gap-4">
+          {/* Top row: Title and project selector */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                'flex items-center justify-center w-10 h-10 rounded-xl',
+                'bg-gradient-to-br from-primary/10 to-primary/5',
+                'border border-primary/20 shadow-sm'
+              )}>
+                <Bot className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg leading-tight">Command Surface</h2>
+                <p className="text-xs text-muted-foreground">Your AI-powered workspace assistant</p>
+              </div>
+              {runningCount > 0 && (
+                <Badge variant="secondary" className="gap-1.5 px-2.5 py-1 bg-teal-500/10 text-teal-600 border-teal-500/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500" />
+                  </span>
+                  {runningCount} running
+                </Badge>
               )}
-            </Button>
+            </div>
+            
+            {/* Project Selector */}
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedProjectId ?? 'none'}
+                onValueChange={(v) => {
+                  setSelectedProjectId(v === 'none' ? null : v)
+                  if (v !== 'none') setProjectRequiredError(null)
+                }}
+              >
+                <SelectTrigger
+                  className={cn(
+                    'h-9 text-sm w-[160px] bg-background/50',
+                    projectRequiredError && 'border-rose-500 focus-visible:ring-rose-500'
+                  )}
+                >
+                  <SelectValue placeholder="Select project..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <span className="truncate max-w-[140px] block">{p.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={handleSyncGit}
+                disabled={isSyncingGit}
+                title="Sync git repos as projects"
+              >
+                {isSyncingGit ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <GitBranch className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
-          {/* Mode Selector */}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn('gap-2', currentMode.color)}
-              onClick={() => setShowModeSelector(!showModeSelector)}
-            >
-              {currentMode.icon}
-              {currentMode.label}
-              <ChevronDown className={cn('h-3 w-3 transition-transform', showModeSelector && 'rotate-180')} />
-            </Button>
-            
-            {showModeSelector && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-popover border rounded-md shadow-lg z-10 py-1">
-                {(Object.keys(MODE_CONFIG) as CommandMode[]).map((m) => (
-                  <button
-                    key={m}
-                    className={cn(
-                      'w-full px-3 py-2 flex items-center gap-2 hover:bg-accent text-left',
-                      mode === m && 'bg-accent'
-                    )}
-                    onClick={() => {
-                      setMode(m);
-                      setShowModeSelector(false);
-                    }}
-                  >
-                    <span className={MODE_CONFIG[m].color}>{MODE_CONFIG[m].icon}</span>
-                    <div>
-                      <div className="text-sm font-medium">{MODE_CONFIG[m].label}</div>
-                      <div className="text-xs text-muted-foreground">{MODE_CONFIG[m].description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Mode Selector - Horizontal Segmented Control */}
+          <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-muted/50 border border-border/50">
+            {(Object.keys(MODE_CONFIG) as CommandMode[]).map((m) => (
+              <ModeButton
+                key={m}
+                mode={m}
+                isActive={mode === m}
+                onClick={() => setMode(m)}
+              />
+            ))}
           </div>
+
+          {projectRequiredError && (
+            <div className="flex items-center gap-2 text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-3 py-2 rounded-lg border border-rose-200 dark:border-rose-800">
+              <XCircle className="h-4 w-4 flex-shrink-0" />
+              {projectRequiredError}
+            </div>
+          )}
         </div>
-        {projectRequiredError && (
-          <div className="text-xs text-rose-500 -mt-2">
-            {projectRequiredError}
-          </div>
-        )}
 
         {/* Decision Preview */}
         {projectBriefOpen && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 space-y-3 dark:border-amber-800 dark:bg-amber-950/20">
-            <div>
-              <p className="text-sm font-semibold">Before I create this project, define the brief</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                This keeps creation actionable instead of generating a generic implementation plan.
-              </p>
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 space-y-4 dark:border-amber-800 dark:bg-amber-950/20">
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50">
+                <Lightbulb className="h-4 w-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Before I create this project, define the brief</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This keeps creation actionable instead of generating a generic implementation plan.
+                </p>
+              </div>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               <Input
                 placeholder="Project name"
                 value={projectBrief.name}
                 onChange={(e) => setProjectBrief(prev => ({ ...prev, name: e.target.value }))}
+                className="bg-background/50"
               />
               <Textarea
                 placeholder="Primary goal (what success looks like)"
                 value={projectBrief.goal}
                 onChange={(e) => setProjectBrief(prev => ({ ...prev, goal: e.target.value }))}
                 rows={2}
+                className="bg-background/50 resize-none"
               />
               <Textarea
                 placeholder="Scope (key deliverables, constraints)"
                 value={projectBrief.scope}
                 onChange={(e) => setProjectBrief(prev => ({ ...prev, scope: e.target.value }))}
                 rows={2}
+                className="bg-background/50 resize-none"
               />
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Input
                   placeholder="Timeline (e.g. 2 weeks)"
                   value={projectBrief.timeline}
                   onChange={(e) => setProjectBrief(prev => ({ ...prev, timeline: e.target.value }))}
+                  className="bg-background/50"
                 />
                 <Input
                   placeholder="Owner"
                   value={projectBrief.owner}
                   onChange={(e) => setProjectBrief(prev => ({ ...prev, owner: e.target.value }))}
+                  className="bg-background/50"
                 />
               </div>
             </div>
@@ -599,7 +700,7 @@ export function CommandSurface({
 
         {/* Execution Status + Streaming Output */}
         {execution && !pendingDecision && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {/* Status bar */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
@@ -635,7 +736,7 @@ export function CommandSurface({
 
             {/* Streaming text output */}
             {streamingText && (
-              <div className="rounded-md bg-muted/40 border border-border/30 p-3 text-sm text-foreground/90 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">
+              <div className="rounded-lg bg-muted/40 border border-border/30 p-4 text-sm text-foreground/90 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">
                 {streamingText}
                 {execution.status === 'executing' && (
                   <span className="inline-block w-1 h-4 bg-teal-400 animate-pulse ml-0.5 align-middle" />
@@ -645,7 +746,7 @@ export function CommandSurface({
 
             {/* Error details (when no streaming text was produced) */}
             {execution.status === 'failed' && execution.error && !streamingText && (
-              <div className="rounded-md bg-rose-950/30 border border-rose-800/50 p-3 text-sm text-rose-300 whitespace-pre-wrap">
+              <div className="rounded-lg bg-rose-950/30 border border-rose-800/50 p-4 text-sm text-rose-300 whitespace-pre-wrap">
                 {normalizeError(execution.error)}
               </div>
             )}
@@ -670,8 +771,8 @@ export function CommandSurface({
 
         {/* Persistent command history */}
         {history.length > 0 && (
-          <div className="rounded-md border border-border/50 bg-muted/20 p-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Recent Actions
             </p>
             <div className="space-y-2">
@@ -735,107 +836,102 @@ export function CommandSurface({
             className="border-0 shadow-none"
           />
         ) : (
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
-              placeholder={
-                mode === 'cto' 
-                  ? "e.g., Fix hydration errors in login page..."
-                  : mode === 'coo'
-                  ? "e.g., Send daily 7am summary email..."
-                  : "What would you like me to do?"
-              }
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              disabled={isProcessing || !!pendingDecision}
-              className="flex-1"
-            />
-            <Button 
-              type="submit" 
-              disabled={isProcessing || !prompt.trim() || !!pendingDecision}
-              size="icon"
-            >
-              {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="relative">
+              <Input
+                data-command-input="true"
+                placeholder={currentMode.placeholder}
+                value={prompt}
+                onChange={(e) => {
+                  setPrompt(e.target.value);
+                  setShowShortcutHint(!e.target.value);
+                }}
+                onFocus={() => setShowShortcutHint(!prompt)}
+                onBlur={() => setShowShortcutHint(false)}
+                disabled={isProcessing || !!pendingDecision}
+                className={cn(
+                  'w-full min-h-14 pl-4 pr-24 text-base',
+                  'bg-background/80 backdrop-blur-sm',
+                  'border-border/60 focus-visible:border-primary/50',
+                  'shadow-inner transition-all duration-200',
+                  'placeholder:text-muted-foreground/60'
+                )}
+              />
+              {/* Keyboard shortcut hint */}
+              {showShortcutHint && !prompt && !isProcessing && !pendingDecision && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs text-muted-foreground/50 pointer-events-none">
+                  <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted border border-border/50 font-sans text-[10px]">
+                    <Command className="h-3 w-3" />
+                    <span>K</span>
+                  </kbd>
+                  <span className="hidden sm:inline">to focus</span>
+                </div>
               )}
-            </Button>
-            {isProcessing && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={cancelExecution}
+              {/* Send button inside input */}
+              <Button 
+                type="submit" 
+                disabled={isProcessing || !prompt.trim() || !!pendingDecision}
+                size="icon"
+                className={cn(
+                  'absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10',
+                  'transition-all duration-200',
+                  prompt.trim() && !isProcessing && 'opacity-100 scale-100',
+                  (!prompt.trim() || isProcessing) && 'opacity-50 scale-95'
+                )}
               >
-                Stop
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
-            )}
+            </div>
+            
+            {/* Action buttons row */}
+            <div className="flex items-center justify-between">
+              {/* Quick Suggestions */}
+              {!prompt && !isProcessing && !pendingDecision && mode !== 'intake' && (
+                <div className="flex flex-wrap gap-2">
+                  {currentMode.examples.slice(0, 3).map((example, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={cn(
+                        'text-xs px-3 py-1.5 rounded-full transition-all duration-200',
+                        currentMode.bgColor,
+                        currentMode.color,
+                        'hover:shadow-sm border border-transparent hover:border-current/20'
+                      )}
+                      onClick={() => { 
+                        setPrompt(example); 
+                        handleSubmitText(example); 
+                      }}
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Stop button when processing */}
+              <div className="ml-auto">
+                {isProcessing && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={cancelExecution}
+                    className="gap-1.5"
+                  >
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                    Stop
+                  </Button>
+                )}
+              </div>
+            </div>
           </form>
         )}
-
-        {/* Quick Suggestions */}
-        {!prompt && !isProcessing && !pendingDecision && mode !== 'intake' && (
-          <div className="flex flex-wrap gap-2">
-            {mode === 'cto' ? (
-              <>
-                <button
-                  className="text-xs px-2 py-1 bg-blue-500/10 text-blue-600 rounded hover:bg-blue-500/20 transition-colors"
-                  onClick={() => { setPrompt('Fix hydration errors in the dashboard'); handleSubmitText('Fix hydration errors in the dashboard'); }}
-                >
-                  Fix hydration errors
-                </button>
-                <button
-                  className="text-xs px-2 py-1 bg-blue-500/10 text-blue-600 rounded hover:bg-blue-500/20 transition-colors"
-                  onClick={() => { setPrompt('Create task to implement dark mode toggle'); handleSubmitText('Create task to implement dark mode toggle'); }}
-                >
-                  Implement dark mode
-                </button>
-                <button
-                  className="text-xs px-2 py-1 bg-blue-500/10 text-blue-600 rounded hover:bg-blue-500/20 transition-colors"
-                  onClick={() => { setPrompt('Refactor API client for better error handling'); handleSubmitText('Refactor API client for better error handling'); }}
-                >
-                  Refactor API client
-                </button>
-              </>
-            ) : mode === 'coo' ? (
-              <>
-                <button
-                  className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded hover:bg-emerald-500/20 transition-colors"
-                  onClick={() => { setPrompt('Send daily 7am summary email'); handleSubmitText('Send daily 7am summary email'); }}
-                >
-                  Daily 7am summary
-                </button>
-                <button
-                  className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded hover:bg-emerald-500/20 transition-colors"
-                  onClick={() => { setPrompt('Schedule weekly report every Monday'); handleSubmitText('Schedule weekly report every Monday'); }}
-                >
-                  Weekly Monday report
-                </button>
-                <button
-                  className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded hover:bg-emerald-500/20 transition-colors"
-                  onClick={() => { setPrompt('Monitor system health every hour'); handleSubmitText('Monitor system health every hour'); }}
-                >
-                  Hourly health check
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="text-xs px-2 py-1 bg-amber-500/10 text-amber-600 rounded hover:bg-amber-500/20 transition-colors"
-                  onClick={() => { setPrompt('Create a new project'); handleSubmitText('Create a new project'); }}
-                >
-                  Create project
-                </button>
-                <button
-                  className="text-xs px-2 py-1 bg-amber-500/10 text-amber-600 rounded hover:bg-amber-500/20 transition-colors"
-                  onClick={() => { setPrompt('Schedule a reminder'); handleSubmitText('Schedule a reminder'); }}
-                >
-                  Schedule reminder
-                </button>
-              </>
-            )}
-          </div>
-        )}
       </div>
-    </Card>
+    </div>
   );
 }

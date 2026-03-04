@@ -10,9 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { MetricTile } from '@/components/ui/metric-tile'
 import { cn } from '@/lib/utils'
 import ErrorBoundary from '@/components/error/error-boundary'
-import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
 import dynamic from 'next/dynamic'
-import { toast } from 'sonner'
+import { ActiveRuns } from './ActiveRuns'
 
 // Lazy-load AIInsights — it instantiates OpenAIService at module load time,
 // which throws in dev when GLM_API_KEY / OPENAI_API_KEY is not set.
@@ -27,14 +26,11 @@ import {
   Pause,
   Play,
   RefreshCw,
-  Clock,
-  Loader2,
   Zap,
   BookOpen,
   Flag,
-  TrendingUp,
-  Trash2,
-  Square,
+  X,
+  Terminal,
 } from 'lucide-react'
 import { CommandSurface } from '@/components/command-surface'
 
@@ -65,119 +61,6 @@ function elapsed(start: string | null): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
-function ActiveRunsCard() {
-  const [runs, setRuns] = useState<any[]>([])
-  const [busyRunId, setBusyRunId] = useState<string | null>(null)
-
-  const poll = useCallback(async () => {
-    try {
-      const res = await fetch('/api/runs?status=running&limit=5')
-      const json = await res.json()
-      setRuns(json.data ?? [])
-    } catch {
-      // silent — card simply stays hidden
-    }
-  }, [])
-
-  const stopRun = useCallback(async (runId: string) => {
-    setBusyRunId(runId)
-    try {
-      const res = await fetch(`/api/runs/${runId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'cancelled', summary: 'Stopped from Active Runs' }),
-      })
-      if (!res.ok) throw new Error('Failed to stop run')
-      toast.success('Run stopped')
-      await poll()
-    } catch {
-      toast.error('Could not stop run')
-    } finally {
-      setBusyRunId(null)
-    }
-  }, [poll])
-
-  const deleteRun = useCallback(async (runId: string) => {
-    setBusyRunId(runId)
-    try {
-      const res = await fetch(`/api/runs/${runId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete run')
-      toast.success('Run deleted')
-      setRuns(prev => prev.filter(r => r.id !== runId))
-    } catch {
-      toast.error('Could not delete run')
-    } finally {
-      setBusyRunId(null)
-    }
-  }, [])
-
-  useEffect(() => {
-    poll()
-    const interval = setInterval(poll, 10_000)
-    return () => clearInterval(interval)
-  }, [poll])
-
-  if (runs.length === 0) return null
-
-  return (
-    <div className="rounded-lg border border-border bg-card mb-6">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Loader2 className="h-3.5 w-3.5 text-teal-400 animate-spin" />
-        <span className="text-sm font-semibold">Active Runs</span>
-        <Badge
-          variant="secondary"
-          className="ml-1 text-[10px] bg-teal-950/60 text-teal-400 border-teal-800"
-        >
-          {runs.length}
-        </Badge>
-      </div>
-      <div className="divide-y divide-border">
-        {runs.map((run) => (
-          <div key={run.id} className="px-4 py-3 flex items-center gap-3">
-            <Loader2 className="h-3.5 w-3.5 text-teal-400 animate-spin shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-foreground">
-                {run.summary ?? run.runner ?? run.id}
-              </p>
-              {run.summary && run.runner && (
-                <p className="text-[10px] text-muted-foreground font-mono truncate mt-0.5">
-                  {run.runner}
-                </p>
-              )}
-            </div>
-            <span className="text-[10px] text-muted-foreground font-mono shrink-0 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {elapsed(run.started_at ?? null)}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                disabled={busyRunId === run.id}
-                onClick={() => stopRun(run.id)}
-                title="Stop run"
-              >
-                <Square className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-red-600 hover:text-red-700"
-                disabled={busyRunId === run.id}
-                onClick={() => deleteRun(run.id)}
-                title="Delete run"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function DashboardPageClient() {
   const router = useRouter()
   const { user, loading } = useAuth()
@@ -192,6 +75,7 @@ export default function DashboardPageClient() {
   const [refreshing, setRefreshing] = useState(false)
 
   const [autonomousStats, setAutonomousStats] = useState({ improvementsWeek: 0, handbookEntries: 0 })
+  const [showStrategicBanner, setShowStrategicBanner] = useState(true)
   const hasFetched = useRef(false)
 
   useEffect(() => {
@@ -305,33 +189,57 @@ export default function DashboardPageClient() {
           title="Execution Dashboard"
           subtitle="Goal 1 first: track work that gets to 10 paying customers"
           primaryAction={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchAll()}
-              disabled={refreshing}
-            >
-              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-              <span className="hidden sm:inline ml-1">Refresh</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchAll()}
+                disabled={refreshing}
+              >
+                <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+                <span className="hidden sm:inline ml-1">Refresh</span>
+              </Button>
+            </div>
           }
         />
 
-        <div className="mb-6 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-card p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
-              <h2 className="text-sm font-semibold mt-1">Revenue is the only feature that matters right now.</h2>
-              <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
-                Use this dashboard to prioritize customer-facing execution over platform complexity.
-              </p>
-            </div>
-            <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10">
-              <Flag className="h-3 w-3 mr-1" />
-              G1 Absolute Priority
-            </Badge>
-          </div>
+        {/* Command Surface - Elevated and Prominent */}
+        <div className="mb-6 shadow-lg border-l-4 border-l-[color:var(--foco-teal)] rounded-lg overflow-hidden">
+          <CommandSurface
+            context="dashboard"
+            className="border-0 shadow-none"
+            onExecutionComplete={() => {
+              // Refresh data after command execution
+              setTimeout(fetchAll, 1000)
+            }}
+          />
         </div>
+
+        {/* Strategic Banner - Collapsible/Dismissible */}
+        {showStrategicBanner && (
+          <div className="mb-6 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-card p-4 relative">
+            <button
+              onClick={() => setShowStrategicBanner(false)}
+              className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+              aria-label="Dismiss strategic banner"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex items-start justify-between gap-3 pr-8">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
+                <h2 className="text-sm font-semibold mt-1">Revenue is the only feature that matters right now.</h2>
+                <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
+                  Use this dashboard to prioritize customer-facing execution over platform complexity.
+                </p>
+              </div>
+              <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10 shrink-0">
+                <Flag className="h-3 w-3 mr-1" />
+                G1 Absolute Priority
+              </Badge>
+            </div>
+          </div>
+        )}
 
         {/* Orchestration Health */}
         <div className="mb-6">
@@ -344,7 +252,7 @@ export default function DashboardPageClient() {
               <Badge variant="destructive" className="text-[10px] ml-1">Fleet Paused</Badge>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             <MetricTile
               label="Running"
               value={activeRuns.filter(r => r.status === 'running').length}
@@ -390,143 +298,168 @@ export default function DashboardPageClient() {
           </div>
         </div>
 
-        {/* Active Runs — live polling widget, hidden when idle */}
-        <ActiveRunsCard />
-
-        {/* Command Surface */}
-        <CommandSurface
-          context="dashboard"
+        {/* Active Runs — Unified component with live polling, actions, and empty state */}
+        <ActiveRuns
+          initialRuns={activeRuns}
+          onRunsChanged={fetchAll}
           className="mb-6"
-          onExecutionComplete={() => {
-            // Refresh data after command execution
-            setTimeout(fetchAll, 1000)
-          }}
         />
 
-        {/* Fleet Status Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          {/* Relay */}
-          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">AI Gateway</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                'h-2 w-2 rounded-full',
-                relayReachable === null ? 'bg-yellow-500 animate-pulse' :
-                relayReachable ? 'bg-emerald-500' : 'bg-red-500'
-              )} />
-              <span className="text-sm font-semibold">
-                {relayReachable === null ? 'Checking...' : relayReachable ? 'Reachable' : 'Down'}
-              </span>
-            </div>
+        {/* Fleet Status Cards - Consolidated to 3 key cards */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+              Fleet Status
+            </span>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* System Health - Combined Gateway + Auth + Sessions */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Cpu className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground font-medium">System Health</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">AI Gateway</span>
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      'h-2 w-2 rounded-full',
+                      relayReachable === null ? 'bg-yellow-500 animate-pulse' :
+                      relayReachable ? 'bg-emerald-500' : 'bg-red-500'
+                    )} />
+                    <span className="text-xs font-medium">
+                      {relayReachable === null ? 'Checking...' : relayReachable ? 'Reachable' : 'Down'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Authentication</span>
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      'h-2 w-2 rounded-full',
+                      tokenValid === null ? 'bg-yellow-500 animate-pulse' :
+                      tokenValid ? 'bg-emerald-500' : 'bg-red-500'
+                    )} />
+                    <span className="text-xs font-medium">
+                      {tokenValid === null ? 'Checking...' : tokenValid ? 'Valid' : 'Invalid'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground">Active Sessions</span>
+                  <span className="text-sm font-bold font-mono">{attachedTabs}</span>
+                </div>
+              </div>
+            </div>
 
-          {/* Token */}
-          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Authentication</span>
+            {/* Workload Status - Combined Active Runs + Fleet State */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground font-medium">Workload Status</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Running & Queued</span>
+                  <span className="text-sm font-bold font-mono">{activeRuns.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Fleet State</span>
+                  <Badge variant={fleetPaused ? 'secondary' : 'default'} className="text-[10px]">
+                    {fleetPaused ? (
+                      <Pause className="h-3 w-3 mr-1" />
+                    ) : (
+                      <Play className="h-3 w-3 mr-1" />
+                    )}
+                    {fleetPaused ? 'PAUSED' : 'ACTIVE'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground">Recent Events</span>
+                  <span className="text-sm font-bold font-mono">{recentEventsCount}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                'h-2 w-2 rounded-full',
-                tokenValid === null ? 'bg-yellow-500 animate-pulse' :
-                tokenValid ? 'bg-emerald-500' : 'bg-red-500'
-              )} />
-              <span className="text-sm font-semibold">
-                {tokenValid === null ? 'Checking...' : tokenValid ? 'Valid' : 'Invalid'}
-              </span>
-            </div>
-          </div>
 
-          {/* Active Sessions */}
-          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Active Sessions</span>
+            {/* Performance Snapshot */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground font-medium">Performance</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Auto-Improvements</span>
+                  <span className="text-sm font-bold font-mono text-[color:var(--foco-teal)]">{autonomousStats.improvementsWeek}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Success Rate</span>
+                  <span className="text-xs font-medium">
+                    {allRuns.length > 0 
+                      ? `${Math.round((allRuns.filter(r => r.status === 'completed').length / allRuns.length) * 100)}%` 
+                      : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground">G1 Alignment</span>
+                  <span className="text-xs font-medium text-emerald-500">
+                    {allRuns.length > 0 
+                      ? `${Math.round((allRuns.filter(r => /revenue|customer|sales|onboard|trial/i.test((r.runner || '') + ' ' + (r.task_id || ''))).length / allRuns.length) * 100)}%` 
+                      : '—'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span className="text-2xl font-bold font-mono">{attachedTabs}</span>
-          </div>
-
-          {/* Active runs */}
-          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Running & Queued</span>
-            </div>
-            <span className="text-2xl font-bold font-mono">{activeRuns.length}</span>
-          </div>
-
-          {/* Fleet state */}
-          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              {fleetPaused ? (
-                <Pause className="h-4 w-4 text-amber-500" />
-              ) : (
-                <Play className="h-4 w-4 text-emerald-500" />
-              )}
-              <span className="text-xs text-muted-foreground font-medium">Fleet State</span>
-            </div>
-            <Badge variant={fleetPaused ? 'secondary' : 'default'} className="text-xs">
-              {fleetPaused ? 'PAUSED' : 'ACTIVE'}
-            </Badge>
-          </div>
-
-          {/* Recent events */}
-          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">Recent Events</span>
-            </div>
-            <span className="text-2xl font-bold font-mono">{recentEventsCount}</span>
           </div>
         </div>
 
-        {/* Two-column layout: Active Runs + Recent Ledger */}
+        {/* AI Insights — silent fallback when AI service keys aren't configured */}
+        <ErrorBoundary fallback={() => null}>
+          <AIInsights
+            userId={user.id}
+            className="mb-6"
+            runs={allRuns}
+            recentEvents={recentEvents}
+          />
+        </ErrorBoundary>
+
+        {/* Recent Events / Execution Summary - Two column layout */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {/* Active Runs */}
+
+          {/* Quick Stats / Info Panel */}
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold">Running & Queued</h3>
+              <h3 className="text-sm font-semibold">Execution Summary</h3>
               <Button variant="ghost" size="sm" onClick={() => router.push('/runs')}>
-                View all
+                View all runs
               </Button>
             </div>
-            <div className="divide-y divide-border">
-              {activeRuns.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No active runs. Dispatch an agent to get started.
-                </div>
-              ) : (
-                activeRuns.slice(0, 8).map((run) => (
-                  <div key={run.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">{run.runner}</span>
-                        <Badge variant="secondary" className="text-[10px] shrink-0">
-                          {run.status}
-                        </Badge>
-                      </div>
-                      {run.task_id && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {run.task_id}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">
-                      {elapsed(run.started_at)}
-                    </span>
-                    <CritterLaunchPadButton
-                      runId={run.id}
-                      runner={run.runner}
-                      variant="ghost"
-                      size="icon-sm"
-                    />
-                  </div>
-                ))
-              )}
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total runs today</span>
+                <span className="text-sm font-medium">{allRuns.filter(r => r.started_at && new Date(r.started_at).toDateString() === new Date().toDateString()).length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Completed successfully</span>
+                <span className="text-sm font-medium text-emerald-500">{allRuns.filter(r => r.status === 'completed').length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Failed / Cancelled</span>
+                <span className="text-sm font-medium text-red-500">{allRuns.filter(r => r.status === 'failed' || r.status === 'cancelled').length}</span>
+              </div>
+              <div className="pt-2 border-t border-border">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => router.push('/runs/new')}
+                >
+                  <Play className="h-3.5 w-3.5 mr-1.5" />
+                  Start new run
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -570,16 +503,6 @@ export default function DashboardPageClient() {
             </div>
           </div>
         </div>
-
-        {/* AI Insights — silent fallback when AI service keys aren't configured */}
-        <ErrorBoundary fallback={() => null}>
-          <AIInsights
-            userId={user.id}
-            className="mb-6"
-            runs={allRuns}
-            recentEvents={recentEvents}
-          />
-        </ErrorBoundary>
 
         
       </PageShell>

@@ -19,6 +19,7 @@ import {
   Monitor,
   Loader2,
   Trash2,
+  Smartphone,
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/lib/stores/foco-store';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -202,6 +203,7 @@ function AppearanceSettings() {
   const themes = [
     { value: 'light', label: 'Light', icon: Sun },
     { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'oled', label: 'OLED', icon: Smartphone, description: 'Pure black for AMOLED displays' },
     { value: 'system', label: 'System', icon: Monitor },
   ];
 
@@ -221,7 +223,7 @@ function AppearanceSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {themes.map((t) => (
               <button
                 key={t.value}
@@ -229,12 +231,17 @@ function AppearanceSettings() {
                 className={cn(
                   'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors',
                   theme === t.value
-                    ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20'
-                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                    ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20 oled:bg-secondary/20'
+                    : 'border-zinc-200 dark:border-zinc-800 oled:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 oled:hover:border-zinc-700'
                 )}
+                aria-pressed={theme === t.value}
+                aria-label={`Select ${t.label} theme`}
               >
                 <t.icon className="h-6 w-6" />
                 <span className="text-sm font-medium">{t.label}</span>
+                {'description' in t && (
+                  <span className="text-xs text-muted-foreground text-center leading-tight">{t.description}</span>
+                )}
                 {theme === t.value && (
                   <Check className="h-4 w-4 text-[color:var(--foco-teal)]" />
                 )}

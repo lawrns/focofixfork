@@ -20,20 +20,16 @@ import {
   Shield,
   BookOpen,
   Radar,
-  Crown,
   FileText,
   Bot,
   ListTodo,
   GitBranch,
   BarChart2,
   ClipboardList,
-  Cpu,
+  Terminal,
   Radio,
   Crosshair,
-
   History,
-
-
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -56,10 +52,9 @@ const mainNavItems: NavItem[] = [
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Empire OS',      href: '/empire',          icon: Crown,     shortcut: 'G M' },
-  { label: 'Command Center', href: '/empire/command',  icon: Cpu,       shortcut: 'G C' },
+  { label: 'Empire OS',      href: '/empire',          icon: Activity,  shortcut: 'G M' },
+  { label: 'Command Center', href: '/empire/command',  icon: Terminal,  shortcut: 'G C' },
   { label: 'Agents',         href: '/empire/agents',   icon: Bot,       shortcut: 'G J' },
-  
   { label: 'Pipeline',       href: '/empire/pipeline', icon: GitBranch, shortcut: 'G V' },
   { label: 'Crons',          href: '/crons',           icon: Clock,     shortcut: 'G K' },
 ];

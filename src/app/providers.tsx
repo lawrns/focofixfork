@@ -13,6 +13,7 @@ import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav';
 import { ProgressBar } from '@/components/progress-bar';
 
 import { GlobalKeyboardShortcuts } from '@/components/foco/layout/global-keyboard-shortcuts';
+import { KeyboardShortcutsModal } from '@/components/foco/layout/keyboard-shortcuts-modal';
 import { CreateTaskModalProvider } from '@/features/tasks';
 import NProgress from 'nprogress';
 import { AccessibilityService } from '@/lib/accessibility/accessibility';
@@ -89,11 +90,30 @@ export function Providers({ children }: ProvidersProps) {
           <I18nProvider>
             <ToastProvider>
               <AuthProvider>
-
+                {/* Global keyboard shortcuts handler */}
                 <GlobalKeyboardShortcuts />
+                
+                {/* Global modals */}
                 <CreateTaskModalProvider />
+                <KeyboardShortcutsModal />
+                
+                {/* Main app content */}
                 {children}
+                
+                {/* Mobile navigation */}
                 <ConditionalMobileNav />
+                
+                {/* Toast notifications */}
+                <Toaster 
+                  position="bottom-right"
+                  toastOptions={{
+                    style: {
+                      background: 'var(--background)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--foreground)',
+                    },
+                  }}
+                />
               </AuthProvider>
             </ToastProvider>
           </I18nProvider>

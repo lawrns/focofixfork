@@ -12,7 +12,11 @@ import {
   Settings,
   ChevronLeft,
   Building2,
-  X
+  X,
+  Activity,
+  Terminal,
+  Bot,
+  GitBranch
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -48,6 +52,11 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onCreateProject
 }) => {
   const isMobile = useMobile()
+  const [pathname, setPathname] = React.useState<string>('')
+  
+  React.useEffect(() => {
+    setPathname(window.location.pathname)
+  }, [])
 
   const sidebarVariants = {
     open: {
@@ -71,6 +80,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '/', active: true },
     { icon: Folder, label: 'Projects', href: '/empire/missions' },
+  ]
+
+  const empireItems = [
+    { icon: Activity, label: 'Empire OS', href: '/empire' },
+    { icon: Terminal, label: 'Command Center', href: '/empire/command' },
+    { icon: Bot, label: 'Agents', href: '/empire/agents' },
+    { icon: GitBranch, label: 'Pipeline', href: '/empire/pipeline' },
   ]
 
   const getStatusColor = (status: string) => {
@@ -141,6 +157,35 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <span className="truncate">{item.label}</span>
             </a>
           ))}
+        </div>
+
+        {/* Empire Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Empire</h3>
+          </div>
+
+          <div className="space-y-0.5">
+            {empireItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150',
+                  'min-h-[44px]',
+                  pathname?.startsWith(item.href)
+                    ? 'bg-zinc-100 dark:bg-zinc-800 font-medium text-zinc-900 dark:text-zinc-100'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'
+                )}
+              >
+                <item.icon className={cn(
+                  'h-5 w-5 flex-shrink-0 transition-colors duration-150',
+                  pathname?.startsWith(item.href) ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-500'
+                )} />
+                <span className="truncate">{item.label}</span>
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* Projects Section */}

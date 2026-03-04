@@ -71,6 +71,38 @@
     --foco-rail-bg: #0B0D12;
     --foco-rail-border: #1C1F28;
   }
+
+  .oled {
+    /* ── OLED Mode: Pure Black for AMOLED displays ── */
+    --background: 0 0% 0%;               /* #000000 — pure black */
+    --foreground: 0 0% 95%;              /* #F2F2F2 — near white for readability */
+    --card: 0 0% 3%;                     /* #080808 — slightly elevated */
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 165 100% 45%;             /* #00E6B8 — brighter teal for contrast */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 8%;                /* #141414 — subtle elevation */
+    --secondary-foreground: 0 0% 80%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 55%;        /* #8C8C8C — adjusted for pure black */
+    --accent: 165 70% 12%;               /* deep teal tint on pure black */
+    --accent-foreground: 165 100% 70%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 15%;                  /* #262626 — visible on pure black */
+    --input: 0 0% 12%;
+    --ring: 165 100% 45%;
+    --radius: 0.375rem;
+
+    /* Cybernetic custom - OLED optimized */
+    --foco-teal: #00E6B8;
+    --foco-teal-rgb: 0, 230, 184;
+    --foco-teal-dim: rgba(0, 230, 184, 0.12);
+    --foco-teal-glow: 0 0 32px rgba(0, 230, 184, 0.25);
+    --foco-rail-bg: #050505;
+    --foco-rail-border: #1A1A1A;
+  }
 }
 
 @layer base {
@@ -165,6 +197,13 @@
     background: rgba(15, 17, 23, 0.72);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+  }
+
+  .oled .glass {
+    background: rgba(8, 8, 8, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(38, 38, 38, 0.5);
   }
 
   /* Scan-line overlay — optional cybernetic texture */

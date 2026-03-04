@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { designTokens } from '@/lib/design-system/tokens'
 
-type Theme = 'light' | 'dark' | 'system'
+type Theme = 'light' | 'dark' | 'oled' | 'system'
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -14,7 +14,7 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   theme: Theme
   setTheme: (theme: Theme) => void
-  resolvedTheme: 'light' | 'dark'
+  resolvedTheme: 'light' | 'dark' | 'oled'
 }
 
 const initialState: ThemeProviderState = {
@@ -32,7 +32,7 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme)
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(defaultTheme === 'light' ? 'light' : defaultTheme === 'dark' ? 'dark' : 'light')
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark' | 'oled'>(defaultTheme === 'light' ? 'light' : defaultTheme === 'dark' ? 'dark' : defaultTheme === 'oled' ? 'oled' : 'light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -50,9 +50,9 @@ export function ThemeProvider({
     
     const root = window.document.documentElement
 
-    root.classList.remove('light', 'dark')
+    root.classList.remove('light', 'dark', 'oled')
 
-    let resolved: 'light' | 'dark'
+    let resolved: 'light' | 'dark' | 'oled'
 
     if (theme === 'system') {
       resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'

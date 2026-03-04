@@ -15,8 +15,11 @@ import {
   Moon,
   Sun,
   Monitor,
+  Smartphone,
   LogIn,
   Wand2,
+  PauseCircle,
+  PlayCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -46,6 +49,7 @@ import { useCreateTaskModal } from '@/features/tasks';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
+import { toast } from 'sonner';
 
 interface TopBarProps {
   className?: string;
@@ -63,6 +67,8 @@ export function TopBar({ className }: TopBarProps) {
   const router = useRouter();
   const isMobile = useMobile();
   const PRIMARY_ACCOUNT_EMAIL = user?.email || '';
+  const [fleetPaused, setFleetPaused] = useState(false);
+  const [fleetLoading, setFleetLoading] = useState(false);
 
   // Gate on isMounted — Zustand persist reads localStorage synchronously, which
   // differs from SSR default. Prevents className mismatch on left-position.
@@ -70,14 +76,61 @@ export function TopBar({ className }: TopBarProps) {
   useEffect(() => { setIsMounted(true); }, []);
   const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
 
+  useEffect(() => {
+    if (!user) return;
+    let mounted = true;
+
+    const loadFleetStatus = async () => {
+      try {
+        const res = await fetch('/api/policies/fleet-status');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (mounted && typeof json.paused === 'boolean') {
+          setFleetPaused(json.paused);
+        }
+      } catch {
+        // Non-fatal: keep current state.
+      }
+    };
+
+    void loadFleetStatus();
+    const interval = setInterval(loadFleetStatus, 30_000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  const toggleFleet = async () => {
+    if (!user || fleetLoading) return;
+    const nextPaused = !fleetPaused;
+    setFleetLoading(true);
+    setFleetPaused(nextPaused);
+    try {
+      const res = await fetch('/api/policies/pause-fleet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: nextPaused ? 'pause' : 'resume' }),
+      });
+      if (!res.ok) throw new Error('Failed to update fleet state');
+      if (nextPaused) toast.warning('Fleet paused');
+      else toast.success('Fleet resumed');
+    } catch {
+      setFleetPaused(!nextPaused);
+      toast.error('Could not update autonomy state');
+    } finally {
+      setFleetLoading(false);
+    }
+  };
+
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 z-40 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800',
+        'fixed top-0 right-0 z-40 bg-background border-b border-border',
         'flex items-center gap-2 md:gap-4',
         'transition-all duration-200',
-        'left-0 md:left-64',
-        sidebarCollapsed && 'md:left-16',
+        'left-0 md:left-60',
+        sidebarCollapsed && 'md:left-[52px]',
         'h-12 md:h-14 px-2 md:px-4',
         className
       )}
@@ -116,6 +169,40 @@ export function TopBar({ className }: TopBarProps) {
 
       {/* Right Actions */}
       <div className="flex items-center gap-1 md:gap-2 ml-auto">
+        {user && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={fleetPaused ? 'destructive' : 'outline'}
+                  size="sm"
+                  className="h-9 px-2 md:px-3 gap-1.5"
+                  onClick={toggleFleet}
+                  disabled={fleetLoading}
+                  aria-label={fleetPaused ? 'Resume autonomous mode' : 'Pause autonomous mode'}
+                >
+                  {fleetPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                  <span className="hidden md:inline">{fleetPaused ? 'Autonomy Off' : 'Autonomy On'}</span>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      'hidden lg:inline-flex text-[10px] h-5',
+                      fleetPaused
+                        ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+                        : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    )}
+                  >
+                    {fleetPaused ? 'Paused' : 'Active'}
+                  </Badge>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{fleetPaused ? 'Resume global autonomous execution' : 'Pause global autonomous execution'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         {/* Quick Create */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -205,7 +292,7 @@ export function TopBar({ className }: TopBarProps) {
             <DropdownMenuSeparator />
             <DropdownMenuRadioGroup
               value={theme}
-              onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}
+              onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'oled' | 'system')}
             >
               <DropdownMenuRadioItem value="light">
                 <Sun className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -214,6 +301,10 @@ export function TopBar({ className }: TopBarProps) {
               <DropdownMenuRadioItem value="dark">
                 <Moon className="h-4 w-4 mr-2" aria-hidden="true" />
                 Dark
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="oled">
+                <Smartphone className="h-4 w-4 mr-2" aria-hidden="true" />
+                OLED
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="system">
                 <Monitor className="h-4 w-4 mr-2" aria-hidden="true" />

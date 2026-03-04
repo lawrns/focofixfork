@@ -98,15 +98,15 @@ export default function SettingsPage() {
   return (
     <PageShell maxWidth="6xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold text-foreground">
           Settings
         </h1>
-        <p className="text-sm text-zinc-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Manage your workspace preferences
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
         {isMobile ? (
           <Select value={activeSection} onValueChange={setActiveSection}>
             <SelectTrigger className="w-full">
@@ -134,7 +134,7 @@ export default function SettingsPage() {
             </SelectContent>
           </Select>
         ) : (
-          <nav className="w-56 shrink-0">
+          <nav className="w-52 shrink-0">
             <div className="space-y-1">
               {settingsSections.map((section) => (
                 <button
@@ -143,8 +143,8 @@ export default function SettingsPage() {
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                     activeSection === section.id
-                      ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
                   )}
                 >
                   <section.icon className="h-4 w-4" />

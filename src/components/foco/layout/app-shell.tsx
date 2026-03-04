@@ -33,6 +33,14 @@ export function AppShell({ children }: AppShellProps) {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    router.prefetch('/dashboard');
+    router.prefetch('/runs');
+    router.prefetch('/ledger');
+    router.prefetch('/policies');
+    router.prefetch('/empire/command');
+  }, [router]);
+
   const densityClasses: Record<string, string> = {
     compact: 'text-sm',
     comfortable: 'text-sm',
@@ -96,7 +104,7 @@ export function AppShell({ children }: AppShellProps) {
           isAppPage && mainPaddingLeft,
         )}
       >
-        <div className="p-3 md:p-6 w-full">
+        <div className="px-3 py-3 md:px-4 md:py-6 w-full">
           {children}
         </div>
       </main>

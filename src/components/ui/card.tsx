@@ -9,14 +9,14 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', ...props }, ref) => {
     const variantStyles = {
-      default: 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800',
-      elevated: 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800',
-      outlined: 'bg-transparent border border-zinc-100 dark:border-zinc-800',
-      ghost: 'bg-zinc-50/50 dark:bg-zinc-900/50',
+      default: 'bg-card border border-border',
+      elevated: 'bg-card border border-border',
+      outlined: 'bg-transparent border border-border',
+      ghost: 'bg-secondary/50',
       interactive: `
-        bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800
+        bg-card border border-border
         cursor-pointer transition-all duration-200
-        hover:shadow-sm hover:border-zinc-200 dark:hover:border-zinc-700
+        hover:shadow-sm hover:border-foreground/20
       `,
     }
 
@@ -96,12 +96,11 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-6 pt-4 border-t border-zinc-100 dark:border-zinc-800', className)}
+    className={cn('flex items-center p-6 pt-4 border-t border-border', className)}
     {...props}
   />
 ))
 CardFooter.displayName = 'CardFooter'
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
-
 

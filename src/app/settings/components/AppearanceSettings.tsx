@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Moon, Sun, Monitor, Smartphone } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/providers/theme-provider';
+import { useUIPreferencesStore } from '@/lib/stores/foco-store';
 import type { DensitySetting } from '@/types/foco';
 
 export function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
-  const [density, setDensity] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable');
+  const { density, setDensity } = useUIPreferencesStore();
 
   const themes = [
     { value: 'light', label: 'Light', icon: Sun },
@@ -17,6 +17,13 @@ export function AppearanceSettings() {
     { value: 'oled', label: 'OLED', icon: Smartphone, description: 'Pure black for AMOLED displays' },
     { value: 'system', label: 'System', icon: Monitor },
   ];
+
+  const themePreviewClass: Record<string, string> = {
+    light: 'bg-[#F8F9FB] border-[#E3E6ED] text-[#0E1014]',
+    dark: 'bg-[#09090F] border-[#1C1F28] text-[#E0E3EC]',
+    oled: 'bg-[#000000] border-[#262626] text-[#F2F2F2]',
+    system: 'bg-gradient-to-r from-[#F8F9FB] to-[#09090F] border-[#1C1F28] text-[#E0E3EC]',
+  };
 
   const densities: { value: DensitySetting; label: string; description: string }[] = [
     { value: 'compact', label: 'Compact', description: 'More information, less whitespace' },
@@ -38,16 +45,21 @@ export function AppearanceSettings() {
             {themes.map((t) => (
               <button
                 key={t.value}
-                onClick={() => setTheme(t.value)}
+                onClick={() => setTheme(t.value as 'light' | 'dark' | 'oled' | 'system')}
                 className={cn(
-                  'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors',
+                  'flex flex-col items-center gap-3 p-4 rounded-lg border-2 transition-colors',
                   theme === t.value
                     ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20 oled:bg-secondary/20'
-                    : 'border-zinc-200 dark:border-zinc-800 oled:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 oled:hover:border-zinc-700'
+                    : 'border-border hover:border-foreground/30'
                 )}
                 aria-pressed={theme === t.value}
                 aria-label={`Select ${t.label} theme`}
               >
+                <div className={cn('h-12 w-full rounded-md border p-2', themePreviewClass[t.value])}>
+                  <div className="h-1.5 w-8 rounded bg-current/45" />
+                  <div className="mt-2 h-1.5 w-12 rounded bg-current/30" />
+                  <div className="mt-2 h-5 w-full rounded bg-current/20" />
+                </div>
                 <t.icon className="h-6 w-6" />
                 <span className="text-sm font-medium">{t.label}</span>
                 {'description' in t && (
@@ -79,12 +91,12 @@ export function AppearanceSettings() {
                   'w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors text-left',
                   density === d.value
                     ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20'
-                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                    : 'border-border hover:border-foreground/30'
                 )}
               >
                 <div>
                   <div className="font-medium">{d.label}</div>
-                  <div className="text-sm text-zinc-500">{d.description}</div>
+                  <div className="text-sm text-muted-foreground">{d.description}</div>
                 </div>
                 {density === d.value && (
                   <Check className="h-5 w-5 text-[color:var(--foco-teal)]" />

@@ -40,7 +40,7 @@ export function ThemeProvider({
     
     // Load theme from localStorage only after mount
     const storedTheme = localStorage.getItem(storageKey) as Theme
-    if (storedTheme) {
+    if (storedTheme && ['light', 'dark', 'oled', 'system'].includes(storedTheme)) {
       setTheme(storedTheme)
     }
   }, [storageKey])
@@ -62,6 +62,24 @@ export function ThemeProvider({
 
     root.classList.add(resolved)
     setResolvedTheme(resolved)
+  }, [theme, mounted])
+
+  useEffect(() => {
+    if (!mounted || theme !== 'system') return
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const root = window.document.documentElement
+
+    const applySystemTheme = () => {
+      const resolved = media.matches ? 'dark' : 'light'
+      root.classList.remove('light', 'dark', 'oled')
+      root.classList.add(resolved)
+      setResolvedTheme(resolved)
+    }
+
+    applySystemTheme()
+    media.addEventListener('change', applySystemTheme)
+    return () => media.removeEventListener('change', applySystemTheme)
   }, [theme, mounted])
 
   const value = {
@@ -126,5 +144,4 @@ export const useThemeColors = () => {
 
   return colors
 }
-
 

@@ -38,6 +38,12 @@ const envSchema = z.object({
   OLLAMA_ENABLED: z.string().optional(),
   NEXT_PUBLIC_AI_PROVIDER: z.enum(['openai', 'ollama', 'deepseek', 'glm']).optional(),
 
+  // Empire Agent Models
+  EMPIRE_PLANNING_MODEL: z.string().optional(),
+  EMPIRE_EXECUTION_MODEL: z.string().optional(),
+  EMPIRE_REVIEW_MODEL: z.string().optional(),
+  EMPIRE_FALLBACK_MODEL: z.string().optional(),
+
   // Email
   RESEND_API_KEY: z.string().optional(),
 

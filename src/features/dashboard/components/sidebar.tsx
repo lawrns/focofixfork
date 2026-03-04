@@ -70,8 +70,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '/', active: true },
-    { icon: Folder, label: 'Projects', href: '/projects' },
-    { icon: Users, label: 'Team', href: '/team' },
+    { icon: Folder, label: 'Projects', href: '/empire/missions' },
   ]
 
   const getStatusColor = (status: string) => {
@@ -97,13 +96,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <div className="flex items-center gap-3">
           <Image
             src="/focologo.png"
-            alt="Foco Logo"
+            alt="Critter Logo"
             width={32}
             height={32}
             className="h-8 w-auto dark:brightness-0 dark:invert"
           />
           <div className="flex flex-col">
-            <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Foco</h1>
+            <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Critter</h1>
             <p className="text-xs text-zinc-500 dark:text-zinc-500">Project Management</p>
           </div>
         </div>

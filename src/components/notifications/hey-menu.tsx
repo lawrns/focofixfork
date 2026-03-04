@@ -141,7 +141,7 @@ export function HeyMenu({ className, onNotificationClick }: HeyMenuProps) {
       case 'assignment': return 'text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300'
       case 'due_date': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/40 dark:text-orange-300'
       case 'status_change': return 'text-gray-600 bg-gray-100 dark:bg-gray-700/40 dark:text-gray-300'
-      case 'invitation': return 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300'
+      case 'invitation': return 'text-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/40 dark:text-[color:var(--foco-teal)]'
       case 'system': return 'text-gray-600 bg-gray-100 dark:bg-gray-700/40 dark:text-gray-300'
       default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700/40 dark:text-gray-300'
     }

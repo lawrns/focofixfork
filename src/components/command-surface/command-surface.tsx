@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox, GitBranch } from 'lucide-react';
+import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, ChevronDown, X, ExternalLink, Clock, Inbox, GitBranch, Square, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -144,22 +144,30 @@ export function CommandSurface({
     confidenceMinForAuto: 0.75,
     requireApprovalForChanges: false,
   });
+  const [actionRunId, setActionRunId] = useState<string | null>(null);
+  const [projectRequiredError, setProjectRequiredError] = useState<string | null>(null);
 
   const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history } = useCommandPipeline();
 
   const [runningCount, setRunningCount] = useState(0)
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        const res = await fetch('/api/runs/stats')
-        const json = await res.json()
-        setRunningCount(json.data?.running ?? 0)
-      } catch {}
-    }
-    poll()
-    const interval = setInterval(poll, 15_000)
-    return () => clearInterval(interval)
+  const refreshRunningCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/runs/stats')
+      const json = await res.json()
+      setRunningCount(json.data?.running ?? 0)
+    } catch {}
   }, [])
+
+  const emitRunsMutated = useCallback(() => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new Event('runs:mutated'))
+  }, [])
+
+  useEffect(() => {
+    refreshRunningCount()
+    const interval = setInterval(refreshRunningCount, 15_000)
+    return () => clearInterval(interval)
+  }, [refreshRunningCount])
 
   useEffect(() => {
     const loadPolicy = async () => {
@@ -248,6 +256,19 @@ export function CommandSurface({
     const analysis = analyzePrompt(text, mode);
     setPendingPlan(analysis.plan);
 
+    const requiresProject =
+      (analysis.plan.intent === 'create_task' ||
+        analysis.plan.intent === 'fix_issue' ||
+        analysis.plan.intent === 'architect_feature') &&
+      !selectedProjectId;
+    if (requiresProject) {
+      const msg = 'Select a project before creating or running implementation work.'
+      setProjectRequiredError(msg)
+      toast.error(msg)
+      return
+    }
+    setProjectRequiredError(null)
+
     if (analysis.injectionDetected) {
       toast.error('Input rejected: potentially unsafe content detected');
       return;
@@ -287,7 +308,13 @@ export function CommandSurface({
           action: { label: o.viewLabel, onClick: () => router.push(o.viewRoute) },
         });
       } else {
-        toast.error(normalizeError(result.error) || 'Execution failed');
+        const errMsg = normalizeError(result.error) || 'Execution failed'
+        if (/missing required field:\s*project_id|project_id/i.test(errMsg)) {
+          setProjectRequiredError('Please select a project from the dropdown above.')
+          toast.error('Please select a project from the dropdown above.')
+        } else {
+          toast.error(errMsg);
+        }
       }
       onExecutionComplete?.(result);
       setPendingDecision(null);
@@ -300,7 +327,13 @@ export function CommandSurface({
     const result = await submitPrompt(text, mode, selectedProjectId);
 
     if (result.status === 'failed') {
-      toast.error(normalizeError(result.error) || 'Command failed');
+      const errMsg = normalizeError(result.error) || 'Command failed'
+      if (/missing required field:\s*project_id|project_id/i.test(errMsg)) {
+        setProjectRequiredError('Please select a project from the dropdown above.')
+        toast.error('Please select a project from the dropdown above.')
+      } else {
+        toast.error(errMsg);
+      }
     }
 
     onExecutionComplete?.(result);
@@ -359,6 +392,40 @@ export function CommandSurface({
 
   const currentMode = MODE_CONFIG[mode];
 
+  const stopRun = useCallback(async (runId: string) => {
+    setActionRunId(runId);
+    try {
+      const res = await fetch(`/api/runs/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', summary: 'Stopped from Command Surface' }),
+      });
+      if (!res.ok) throw new Error('Failed to stop run');
+      await refreshRunningCount()
+      emitRunsMutated()
+      toast.success('Run stopped');
+    } catch {
+      toast.error('Could not stop run');
+    } finally {
+      setActionRunId(null);
+    }
+  }, [emitRunsMutated, refreshRunningCount]);
+
+  const deleteRun = useCallback(async (runId: string) => {
+    setActionRunId(runId);
+    try {
+      const res = await fetch(`/api/runs/${runId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete run');
+      await refreshRunningCount()
+      emitRunsMutated()
+      toast.success('Run deleted');
+    } catch {
+      toast.error('Could not delete run');
+    } finally {
+      setActionRunId(null);
+    }
+  }, [emitRunsMutated, refreshRunningCount]);
+
   return (
     <Card className={cn('overflow-hidden', className)}>
       <div className="p-4 space-y-4">
@@ -383,9 +450,17 @@ export function CommandSurface({
           <div className="flex items-center gap-1">
             <Select
               value={selectedProjectId ?? 'none'}
-              onValueChange={(v) => setSelectedProjectId(v === 'none' ? null : v)}
+              onValueChange={(v) => {
+                setSelectedProjectId(v === 'none' ? null : v)
+                if (v !== 'none') setProjectRequiredError(null)
+              }}
             >
-              <SelectTrigger className="h-7 text-xs w-[140px]">
+              <SelectTrigger
+                className={cn(
+                  'h-7 text-xs w-[140px]',
+                  projectRequiredError && 'border-rose-500 focus-visible:ring-rose-500'
+                )}
+              >
                 <SelectValue placeholder="Project…" />
               </SelectTrigger>
               <SelectContent>
@@ -452,6 +527,11 @@ export function CommandSurface({
             )}
           </div>
         </div>
+        {projectRequiredError && (
+          <div className="text-xs text-rose-500 -mt-2">
+            {projectRequiredError}
+          </div>
+        )}
 
         {/* Decision Preview */}
         {projectBriefOpen && (
@@ -610,12 +690,36 @@ export function CommandSurface({
                     </p>
                   </div>
                   {item.runId && (
-                    <button
-                      className="text-teal-400 hover:underline"
-                      onClick={() => router.push(`/runs/${item.runId}`)}
-                    >
-                      Run
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {item.status === 'running' && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          disabled={actionRunId === item.runId}
+                          onClick={() => stopRun(item.runId!)}
+                          title="Stop run"
+                        >
+                          <Square className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-red-600 hover:text-red-700"
+                        disabled={actionRunId === item.runId}
+                        onClick={() => deleteRun(item.runId!)}
+                        title="Delete run"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                      <button
+                        className="text-teal-400 hover:underline"
+                        onClick={() => router.push(`/runs/${item.runId}`)}
+                      >
+                        Run
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}

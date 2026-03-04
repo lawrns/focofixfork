@@ -61,3 +61,20 @@ export async function PATCH(
 
   return NextResponse.json({ data })
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
+  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
+
+  const { error: dbError } = await supabase
+    .from('runs')
+    .delete()
+    .eq('id', params.id)
+
+  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true })
+}

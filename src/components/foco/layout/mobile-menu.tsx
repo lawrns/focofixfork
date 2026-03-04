@@ -41,29 +41,28 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   // CORE
-  { label: 'Revenue Dashboard', href: '/dashboard', icon: Home },
-  { label: 'Market Signals',    href: '/clawdbot',  icon: Rss },
-  { label: 'Execution Board',   href: '/my-work',   icon: CheckSquare },
-  { label: 'Agent Runs',        href: '/runs',      icon: Activity },
-  { label: 'Trust Ledger',      href: '/ledger',    icon: BookOpen },
+  { label: 'Dashboard',   href: '/dashboard', icon: Home },
+  { label: 'Intel Feed',  href: '/clawdbot',  icon: Rss },
+  { label: 'My Tasks',    href: '/my-work',   icon: CheckSquare },
+  { label: 'Runs',        href: '/runs',      icon: Activity },
+  { label: 'Audit Log',   href: '/ledger',    icon: BookOpen },
   // EMPIRE
-  { label: 'Strategy Hub',        href: '/empire',           icon: Cpu,      section: 'Execution' },
-  { label: 'Command Surface',     href: '/empire/command',   icon: Terminal },
-  { label: 'Agent Fleet',         href: '/empire/agents',    icon: Bot },
-  { label: 'Content Pipeline',    href: '/empire/pipeline',  icon: Workflow },
-  { label: 'Automation Schedule', href: '/crons',            icon: Clock },
+  { label: 'Empire OS',      href: '/empire',           icon: Cpu,      section: 'Empire' },
+  { label: 'Command Center', href: '/empire/command',   icon: Terminal },
+  { label: 'Agents',         href: '/empire/agents',    icon: Bot },
+  { label: 'Pipeline',       href: '/empire/pipeline',  icon: Workflow },
+  { label: 'Crons',          href: '/crons',            icon: Clock },
   // PROJECTS
-  { label: 'Daily Revenue Brief', href: '/empire/briefing',  icon: Sun,          section: 'Growth' },
-  { label: 'Revenue Initiatives', href: '/empire/missions',  icon: FolderKanban },
-  { label: 'Team Load',           href: '/empire/fleet',     icon: Users },
-  { label: 'Signals',             href: '/empire/signals',   icon: Bell },
-  { label: '12-Week Timeline',    href: '/empire/timeline',  icon: CalendarDays },
+  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: Sun,          section: 'Projects' },
+  { label: 'Projects',           href: '/empire/missions',  icon: FolderKanban },
+  { label: 'Notifications',      href: '/empire/signals',   icon: Bell },
+  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: CalendarDays },
   // MANAGE
-  { label: 'Outreach',        href: '/emails',     icon: Mail,         section: 'Operate' },
-  { label: 'Insights',        href: '/reports',    icon: FileBarChart },
-  { label: 'Plan Proposals',  href: '/proposals',  icon: GitBranch },
-  { label: 'Evidence',        href: '/artifacts',  icon: Archive },
-  { label: 'Guardrails',      href: '/policies',   icon: Shield },
+  { label: 'Emails',         href: '/emails',     icon: Mail,         section: 'Manage' },
+  { label: 'Reports',        href: '/reports',    icon: FileBarChart },
+  { label: 'Task Proposals', href: '/proposals',  icon: GitBranch },
+  { label: 'Artifacts',      href: '/artifacts',  icon: Archive },
+  { label: 'Policies',       href: '/policies',   icon: Shield },
   // SETTINGS
   { label: 'Settings',  href: '/settings',  icon: Settings, section: 'Settings' },
 ]

@@ -13,6 +13,7 @@ export async function GET(_req: NextRequest) {
 
     const res = await fetch(`${CLAWDBOT_API}/capabilities`, {
       headers,
+      cache: 'no-store',
       signal: AbortSignal.timeout(4000),
     })
 

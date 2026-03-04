@@ -74,7 +74,7 @@ export function CommandPalette() {
     { id: 'nav-my-work', label: 'My Tasks', icon: CheckSquare, shortcut: 'G W', group: 'Navigation', action: () => router.push('/my-work'), keywords: ['tasks', 'work', 'todo'] },
     { id: 'nav-briefing', label: 'Daily Briefing', icon: Sun, shortcut: 'G B', group: 'Navigation', action: () => router.push('/empire/briefing'), keywords: ['briefing', 'daily', 'summary'] },
     { id: 'nav-missions', label: 'Projects', icon: FolderOpen, shortcut: 'G P', group: 'Navigation', action: () => router.push('/empire/missions'), keywords: ['projects', 'missions', 'boards'] },
-    { id: 'nav-fleet', label: 'Team Capacity', icon: Users, shortcut: 'G O', group: 'Navigation', action: () => router.push('/empire/fleet'), keywords: ['team', 'capacity', 'fleet', 'people'] },
+    { id: 'nav-fleet', label: 'Agent Fleet', icon: Users, shortcut: 'G O', group: 'Navigation', action: () => router.push('/empire/fleet'), keywords: ['team', 'capacity', 'fleet', 'people'] },
     { id: 'nav-signals', label: 'Notifications', icon: Bell, shortcut: 'G N', group: 'Navigation', action: () => router.push('/empire/signals'), keywords: ['notifications', 'signals', 'inbox'] },
     { id: 'nav-timeline', label: 'Milestone Timeline', icon: GitBranch, shortcut: 'G T', group: 'Navigation', action: () => router.push('/empire/timeline'), keywords: ['timeline', 'milestones'] },
     { id: 'nav-proposals', label: 'Task Proposals', icon: FileText, shortcut: 'G Q', group: 'Navigation', action: () => router.push('/proposals'), keywords: ['proposals', 'tasks'] },

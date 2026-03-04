@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate secret and backup codes
-    const secret = TwoFactorAuthService.generateSecret(email || 'user', 'Foco');
+    const secret = TwoFactorAuthService.generateSecret(email || 'user', 'Critter');
     const backupCodes = TwoFactorAuthService.generateBackupCodes(10);
     const qrCode = await TwoFactorAuthService.generateQRCode(secret.keyuri);
 

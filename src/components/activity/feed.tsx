@@ -85,7 +85,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       case 'label_added':
         return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/40'
       case 'member_assigned':
-        return 'text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/40'
+        return 'text-[color:var(--foco-teal)] bg-secondary dark:text-[color:var(--foco-teal)] dark:bg-secondary/40'
       default:
         return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/40'
     }

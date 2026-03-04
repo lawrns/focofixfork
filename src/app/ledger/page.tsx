@@ -123,7 +123,7 @@ export default function LedgerPage() {
                       return (
                         <Link
                           href={`/runs/${runId}`}
-                          className="inline-flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="inline-flex items-center gap-1 text-[11px] text-[color:var(--foco-teal)] dark:text-[color:var(--foco-teal)] hover:underline"
                           onClick={e => e.stopPropagation()}
                         >
                           <ExternalLink className="h-3 w-3" />

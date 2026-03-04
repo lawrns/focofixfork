@@ -14,7 +14,7 @@ export function ProjectEmptyState({ workspaceId, hasProjects = false }: ProjectE
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
       <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[color:var(--foco-teal)] to-purple-600 mb-6">
           <Sparkles className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-3xl font-bold mb-4">Welcome to AI-Powered Project Management</h1>

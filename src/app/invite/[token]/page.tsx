@@ -138,7 +138,7 @@ export default function InviteAcceptPage() {
         <CardHeader className="text-center">
           <CardTitle>You&apos;re Invited!</CardTitle>
           <CardDescription>
-            Join {invitation?.workspace_name} on Foco
+            Join {invitation?.workspace_name} on Critter
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

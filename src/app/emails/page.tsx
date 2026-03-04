@@ -96,9 +96,9 @@ const statusIcons: Record<EmailStatus, React.ReactNode> = {
 }
 
 const statusColors: Record<EmailStatus, string> = {
-  queued: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
-  sending: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  sent: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+  queued: 'bg-yellow-500/15 text-[color:var(--foco-warning)] dark:text-yellow-400',
+  sending: 'bg-blue-500/15 text-[color:var(--foco-teal)] dark:text-blue-400',
+  sent: 'bg-blue-500/15 text-[color:var(--foco-teal)] dark:text-blue-400',
   delivered: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
   failed: 'bg-red-500/15 text-red-600 dark:text-red-400',
   bounced: 'bg-red-500/15 text-red-600 dark:text-red-400',

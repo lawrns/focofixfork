@@ -32,8 +32,8 @@ function mapAuthorityToPriority(authority: string): DecisionSeverity {
 function mapSourceToSystem(source: string, scope: string): string {
   const sourceMap: Record<string, string> = {
     'agent': 'OpenClaw',
-    'api': 'Foco',
-    'ide': 'Foco',
+    'api': 'Critter',
+    'ide': 'Critter',
     'voice': 'Voice Control',
     'ui': 'Dashboard',
     'scheduled': 'Scheduler',

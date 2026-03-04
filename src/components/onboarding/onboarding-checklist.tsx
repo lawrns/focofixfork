@@ -131,7 +131,7 @@ export function OnboardingChecklist() {
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-zinc-900">
+        <Card className="dark:border-secondary bg-gradient-to-br from-secondary to-white dark:from-secondary/20 dark:to-zinc-900">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex-1">

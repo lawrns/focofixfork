@@ -23,6 +23,7 @@ const migrations = [
   '20260304_content_pipeline.sql',
   '20260304_dependency_snapshots.sql',
   '20260304_project_codemaps.sql',
+  '20260303_service_heartbeats_only.sql',
   '20260303_openclaw_apify_tts_hardening.sql',
   '20260305_generated_media.sql',
   '20260305_agent_surfaces.sql'

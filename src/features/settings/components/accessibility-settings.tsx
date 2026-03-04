@@ -119,7 +119,7 @@ export function AccessibilitySettings() {
             <div className="space-y-1">
               <p className="text-sm font-medium">WCAG 2.1 AA Compliance</p>
               <p className="text-xs text-muted-foreground">
-                Foco is designed to meet WCAG 2.1 AA accessibility standards
+                Critter is designed to meet WCAG 2.1 AA accessibility standards
               </p>
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -338,7 +338,7 @@ export function AccessibilitySettings() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Foco includes comprehensive ARIA labels, semantic HTML, and screen reader announcements to ensure compatibility with assistive technologies.
+              Critter includes comprehensive ARIA labels, semantic HTML, and screen reader announcements to ensure compatibility with assistive technologies.
             </AlertDescription>
           </Alert>
         </CardContent>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Activity, RefreshCw, Clock, Zap, CheckCircle2, DollarSign } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Activity, RefreshCw, Clock, Zap, CheckCircle2, DollarSign, Square, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
 import type { Run } from '@/lib/types/runs'
 import { RUN_STATUS_COLORS } from '@/lib/types/runs'
+import { toast } from 'sonner'
 
 interface RunStats {
   total_today: number
@@ -48,11 +50,17 @@ function queueTime(run: Run): string {
 }
 
 export default function RunsPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading } = useAuth()
   const [runs, setRuns] = useState<Run[]>([])
   const [stats, setStats] = useState<RunStats | null>(null)
   const [fetching, setFetching] = useState(false)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState(() => {
+    const raw = searchParams.get('status')
+    return raw && ['pending', 'running', 'completed', 'failed'].includes(raw) ? raw : 'all'
+  })
+  const [runActionId, setRunActionId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setFetching(true)
@@ -72,6 +80,53 @@ export default function RunsPage() {
   }, [filter])
 
   useEffect(() => { if (user) load() }, [user, load])
+
+  useEffect(() => {
+    const raw = searchParams.get('status')
+    const normalized = raw && ['pending', 'running', 'completed', 'failed'].includes(raw) ? raw : 'all'
+    if (normalized !== filter) setFilter(normalized)
+  }, [searchParams, filter])
+
+  const handleFilterChange = useCallback((next: string) => {
+    setFilter(next)
+    const params = new URLSearchParams(searchParams.toString())
+    if (next === 'all') params.delete('status')
+    else params.set('status', next)
+    const query = params.toString()
+    router.replace(query ? `/runs?${query}` : '/runs', { scroll: false })
+  }, [router, searchParams])
+
+  const stopRun = useCallback(async (runId: string) => {
+    setRunActionId(runId)
+    try {
+      const res = await fetch(`/api/runs/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', summary: 'Stopped from Runs page' }),
+      })
+      if (!res.ok) throw new Error('Failed to stop run')
+      await load()
+      toast.success('Run stopped')
+    } catch {
+      toast.error('Could not stop run')
+    } finally {
+      setRunActionId(null)
+    }
+  }, [load])
+
+  const deleteRun = useCallback(async (runId: string) => {
+    setRunActionId(runId)
+    try {
+      const res = await fetch(`/api/runs/${runId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete run')
+      await load()
+      toast.success('Run deleted')
+    } catch {
+      toast.error('Could not delete run')
+    } finally {
+      setRunActionId(null)
+    }
+  }, [load])
 
   if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" /></div>
   if (!user) return null
@@ -118,7 +173,7 @@ export default function RunsPage() {
         </div>
       )}
 
-      <Tabs value={filter} onValueChange={setFilter}>
+      <Tabs value={filter} onValueChange={handleFilterChange}>
         <TabsList>
           {['all','pending','running','completed','failed'].map(s => (
             <TabsTrigger key={s} value={s} className="capitalize">{s}</TabsTrigger>
@@ -182,6 +237,34 @@ export default function RunsPage() {
                   {run.summary && <p className="text-[12px] text-muted-foreground truncate mt-0.5">{run.summary}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {(run.status === 'running' || run.status === 'pending') && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={e => {
+                        e.preventDefault()
+                        void stopRun(run.id)
+                      }}
+                      disabled={runActionId === run.id}
+                      title="Stop run"
+                    >
+                      <Square className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-red-600 hover:text-red-700"
+                    onClick={e => {
+                      e.preventDefault()
+                      void deleteRun(run.id)
+                    }}
+                    disabled={runActionId === run.id}
+                    title="Delete run"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                   {run.status === 'running' && (
                     <CritterLaunchPadButton
                       label={`Run ${run.id.slice(0, 6)}`}

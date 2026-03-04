@@ -120,7 +120,7 @@ export function ActivityFeed({
       case 'due_date_changed':
         return 'text-orange-600 bg-orange-100 dark:bg-orange-900/20'
       case 'status_changed':
-        return 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900/20'
+        return 'text-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20'
       case 'file_attached':
         return 'text-gray-600 bg-gray-100 dark:bg-gray-900/20'
       default:

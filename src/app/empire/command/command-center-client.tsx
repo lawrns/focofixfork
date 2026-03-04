@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
+import { MetricTile } from '@/components/ui/metric-tile'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { EmpireHealthGrid } from '@/components/empire/empire-health-grid'
 import { DiagramContainer } from '@/components/command-center/diagram/diagram-container'
 import { AgentDetailSheet } from '@/components/command-center/panels/agent-detail-sheet'
@@ -22,8 +24,9 @@ import { DecisionRow } from '@/components/command-center/orchestrator/decision-r
 import { AgentResourceRow } from '@/components/command-center/orchestrator/agent-resource-row'
 import { QuickActionsCard } from '@/components/command-center/orchestrator/quick-actions-card'
 import { GuardrailsCard } from '@/components/command-center/orchestrator/guardrails-card'
+import { NightAutonomyCard } from '@/components/command-center/orchestrator/night-autonomy-card'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
-import { RefreshCw, Plus, Cpu, AlertCircle, Pause, Play, Settings, Flag, Target } from 'lucide-react'
+import { RefreshCw, Plus, Cpu, AlertCircle, Pause, Play, Settings, Flag, Target, Send, Wifi } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { AnimatePresence } from 'framer-motion'
@@ -209,7 +212,7 @@ export function CommandCenterClient() {
     <PageShell>
       <PageHeader
         title="Execution Command Center"
-        subtitle="Run agents with explicit Goal 1 focus and visible outcomes"
+        subtitle="Live agent orchestration and system health"
         primaryAction={
           <div className="flex items-center gap-2">
             {store.error && (
@@ -251,27 +254,7 @@ export function CommandCenterClient() {
         }
       />
 
-      <div className="mb-4 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-card p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
-            <h2 className="text-sm font-semibold mt-1">Command → action → outcome must be visible and tied to revenue goals.</h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
-              Prefer missions that support customer activation, retention, and measurable weekly progress.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10">
-              <Flag className="h-3 w-3 mr-1" />
-              G1 Priority
-            </Badge>
-            <Badge variant="outline" className="text-[11px] border-blue-300 text-blue-700 bg-blue-500/10">
-              <Target className="h-3 w-3 mr-1" />
-              Trust Through Visibility
-            </Badge>
-          </div>
-        </div>
-      </div>
+      
 
       {/* Health tiles */}
       <EmpireHealthGrid services={services} loading={healthLoading} />
@@ -342,55 +325,63 @@ export function CommandCenterClient() {
         </DropdownMenu>
       </div>
 
-      {/* NEW: KPI strip */}
+            {/* Gateway Status & Dispatch Task */}
+      <div className="grid lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-4"><GatewayStatusCard /></div>
+        <div className="lg:col-span-8"><DispatchTaskCard /></div>
+      </div>
+
+{/* NEW: KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Tip label="Agents currently executing tasks">
-          <div className="rounded-lg border bg-card p-3 space-y-1">
-            <div className="text-[10px] text-muted-foreground font-mono">Active agents</div>
-            <div className="text-2xl font-bold">{workingCount}</div>
-          </div>
+          <MetricTile
+            label="Active agents"
+            value={workingCount}
+            onClick={() => document.getElementById('active-agents-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          />
         </Tip>
         <Tip label="Actions pending human approval">
-          <div className="rounded-lg border bg-card p-3 space-y-1">
-            <div className="text-[10px] text-muted-foreground font-mono">Needs decision</div>
-            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{decisionsCount}</div>
-          </div>
+          <MetricTile
+            label="Needs decision"
+            value={decisionsCount}
+            valueClassName="text-amber-600 dark:text-amber-400"
+            onClick={() => document.getElementById('decision-queue-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          />
         </Tip>
         <Tip label="Agents blocked and unable to proceed">
-          <div className="rounded-lg border bg-card p-3 space-y-1">
-            <div className="text-[10px] text-muted-foreground font-mono">Stuck</div>
-            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{blockedCount}</div>
-          </div>
+          <MetricTile
+            label="Stuck"
+            value={blockedCount}
+            valueClassName="text-orange-600 dark:text-orange-400"
+          />
         </Tip>
         <Tip label="Agents in error state">
-          <div className="rounded-lg border bg-card p-3 space-y-1">
-            <div className="text-[10px] text-muted-foreground font-mono">Failed</div>
-            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{errorCount}</div>
-          </div>
+          <MetricTile
+            label="Failed"
+            value={errorCount}
+            valueClassName="text-rose-600 dark:text-rose-400"
+          />
         </Tip>
         <Tip label="Working agents with no progress update in 30+ minutes">
-          <div className={cn(
-            'rounded-lg border bg-card p-3 space-y-1',
-            staleCount > 0 && 'border-amber-500/40',
-          )}>
-            <div className="text-[10px] text-muted-foreground font-mono">Stale (&gt;30m)</div>
-            <div className={cn(
-              'text-2xl font-bold',
-              staleCount > 0 ? 'text-amber-500' : 'text-foreground',
-            )}>{staleCount}</div>
-          </div>
+          <MetricTile
+            label="Stale (>30m)"
+            value={staleCount}
+            valueClassName={staleCount > 0 ? 'text-amber-500' : 'text-foreground'}
+            className={cn(staleCount > 0 && 'border-amber-500/40')}
+          />
         </Tip>
       </div>
 
       {/* NEW: Main 2-col grid (System Pulse + Decisions) */}
-      <div className="grid lg:grid-cols-12 gap-4">
+      <div className="grid gap-4">
         <div className="lg:col-span-7 space-y-4">
           <SystemPulseChart />
           <QuickActionsCard services={services} />
+          <NightAutonomyCard />
         </div>
         <div className="lg:col-span-5 space-y-4">
           {/* Decision Queue */}
-          <div className="rounded-lg border bg-card p-4 space-y-3">
+          <div id="decision-queue-section" className="rounded-lg border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Decision Queue</h3>
               {decisionsCount > 0 && (
@@ -425,9 +416,9 @@ export function CommandCenterClient() {
       </div>
 
       {/* NEW: Agent rows + System log 2-col grid */}
-      <div className="grid lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-7">
-          <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="grid gap-4">
+        <div >
+          <div id="active-agents-section" className="rounded-lg border bg-card p-4 space-y-3">
             <h3 className="text-sm font-semibold">Active Agents</h3>
             {filteredAgents.length > 0 ? (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -445,10 +436,6 @@ export function CommandCenterClient() {
               </div>
             )}
           </div>
-        </div>
-        <div className="lg:col-span-5">
-          {/* System Log */}
-          <LogsPanel />
         </div>
       </div>
 
@@ -514,5 +501,133 @@ export function CommandCenterClient() {
       <CreateMissionDialog open={missionDialogOpen} onClose={() => setMissionDialogOpen(false)} />
     </PageShell>
     </TooltipProvider>
+
+
   )
 }
+
+// ─── Dispatch Task Card Component ────────────────────────────────────────────
+function DispatchTaskCard() {
+  const [agentId, setAgentId] = useState(process.env.EMPIRE_EXECUTION_MODEL || '')
+  const [task, setTask] = useState('')
+  const [dispatching, setDispatching] = useState(false)
+  const [lastRun, setLastRun] = useState<{runId: string; status: string} | null>(null)
+
+  const handleDispatch = async () => {
+    if (!task.trim() || !agentId.trim()) return
+    setDispatching(true)
+    try {
+      const res = await fetch('/api/openclaw-gateway/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, task }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setLastRun({ runId: data.runId, status: 'dispatched' })
+        setTask('')
+      } else {
+        setLastRun({ runId: 'Error', status: 'failed' })
+      }
+    } catch {
+      setLastRun({ runId: 'Error', status: 'failed' })
+    } finally {
+      setDispatching(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Send className="h-4 w-4 text-[color:var(--foco-teal)]" />
+        <h3 className="text-sm font-semibold">Dispatch Task</h3>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="sm:col-span-1">
+          <label className="text-[11px] text-muted-foreground mb-1 block">Agent ID</label>
+          <Input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="e.g., kimi-coding/k2p5" className="h-8 text-[12px] font-mono" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-[11px] text-muted-foreground mb-1 block">Task</label>
+          <Textarea value={task} onChange={(e) => setTask(e.target.value)} placeholder="Describe what you want the agent to do..." rows={2} className="min-h-[60px] text-[12px] resize-none" />
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        {lastRun && (
+          <Badge variant={lastRun.status === 'failed' ? 'destructive' : 'default'} className="text-[10px]">
+            {lastRun.status === 'failed' ? 'Failed' : `Dispatched: ${lastRun.runId.slice(0, 8)}`}
+          </Badge>
+        )}
+        <div className="ml-auto">
+          <Button size="sm" onClick={handleDispatch} disabled={dispatching || !task.trim() || !agentId.trim()} className="gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90">
+            {dispatching ? (
+              <><RefreshCw className="h-3.5 w-3.5 animate-spin" />Dispatching...</>
+            ) : (
+              <><Send className="h-3.5 w-3.5" />Dispatch</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Gateway Status Card Component ───────────────────────────────────────────
+function GatewayStatusCard() {
+  const [status, setStatus] = useState<{reachable: boolean; tokenValid: boolean; tabs: number}>({ reachable: false, tokenValid: false, tabs: 0 })
+  const [loading, setLoading] = useState(true)
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/openclaw/status')
+      if (res.ok) {
+        const data = await res.json()
+        setStatus({
+          reachable: data.relay?.reachable ?? false,
+          tokenValid: data.token?.valid ?? false,
+          tabs: data.tabs?.filter((t: any) => t.attached).length ?? 0
+        })
+      }
+    } catch {
+      setStatus({ reachable: false, tokenValid: false, tabs: 0 })
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStatus()
+    const id = setInterval(fetchStatus, 30000)
+    return () => clearInterval(id)
+  }, [fetchStatus])
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Wifi className="h-4 w-4 text-[color:var(--foco-teal)]" />
+        <h3 className="text-sm font-semibold">Gateway Status</h3>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="text-muted-foreground">Relay</span>
+          <div className="flex items-center gap-1.5">
+            <div className={cn('h-1.5 w-1.5 rounded-full', loading ? 'bg-yellow-400 animate-pulse' : status.reachable ? 'bg-emerald-500' : 'bg-red-500')} />
+            <span>{loading ? 'Checking...' : status.reachable ? 'Reachable' : 'Down'}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="text-muted-foreground">Token</span>
+          <div className="flex items-center gap-1.5">
+            <div className={cn('h-1.5 w-1.5 rounded-full', loading ? 'bg-yellow-400 animate-pulse' : status.tokenValid ? 'bg-emerald-500' : 'bg-red-500')} />
+            <span>{loading ? 'Checking...' : status.tokenValid ? 'Valid' : 'Invalid'}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="text-muted-foreground">Active Tabs</span>
+          <span className="font-mono">{status.tabs}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+

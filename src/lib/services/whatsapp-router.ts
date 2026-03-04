@@ -113,7 +113,7 @@ export class WhatsAppRouter {
     } else {
       await this.whatsAppService.sendMessage({
         to: message.from,
-        text: '⚠️ Phone not linked. Please link your WhatsApp in Foco settings first.',
+        text: '⚠️ Phone not linked. Please link your WhatsApp in Critter settings first.',
       })
     }
   }
@@ -147,12 +147,12 @@ export class WhatsAppRouter {
     if (verifyResult.data) {
       await this.whatsAppService.sendMessage({
         to: message.from,
-        text: '✅ WhatsApp linked to your Foco account! You can now send proposals and receive notifications.',
+        text: '✅ WhatsApp linked to your Critter account! You can now send proposals and receive notifications.',
       })
     } else {
       await this.whatsAppService.sendMessage({
         to: message.from,
-        text: '❌ Invalid or expired verification code. Please generate a new code in Foco settings.',
+        text: '❌ Invalid or expired verification code. Please generate a new code in Critter settings.',
       })
     }
   }
@@ -299,7 +299,7 @@ export class WhatsAppRouter {
       console.error('Failed to create proposal from WhatsApp:', error)
       await this.whatsAppService.sendMessage({
         to: message.from,
-        text: '❌ Failed to create proposal. Please try again or create it manually in Foco.',
+        text: '❌ Failed to create proposal. Please try again or create it manually in Critter.',
       })
     }
   }
@@ -309,7 +309,7 @@ export class WhatsAppRouter {
    */
 
   private async handleHelpCommand(phone: string): Promise<void> {
-    const helpText = `📱 *Foco WhatsApp Commands*
+    const helpText = `📱 *Critter WhatsApp Commands*
 
 /help - Show this help message
 /status - Show current context (workspace, project)
@@ -504,7 +504,7 @@ I'll parse it into tasks and create a proposal for you.`
     if (!projects || projects.length === 0) {
       await this.whatsAppService.sendMessage({
         to: phone,
-        text: '📂 No projects found.\n\nCreate one in Foco first!',
+        text: '📂 No projects found.\n\nCreate one in Critter first!',
       })
       return
     }

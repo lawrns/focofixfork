@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ensureHeartbeat } from '@/lib/heartbeat/init'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { logger } from '@/lib/logger'
 
 // Start heartbeat on first import (this route is polled every 30s by System Pulse)
 ensureHeartbeat()
@@ -87,23 +88,41 @@ export async function GET(_req: NextRequest) {
   const upCount = services.filter(s => s.status === 'up').length
   const overallStatus = upCount === services.length ? 'up' : upCount >= 3 ? 'degraded' : 'down'
 
+  let heartbeatsPersisted = false
+  let capabilitySnapshotPersisted = false
   if (supabaseAdmin) {
-    // Best-effort heartbeat snapshots for dashboards and alerting.
-    void supabaseAdmin.from('service_heartbeats').insert(
-      services.map((service) => ({
-        service: service.name,
-        status: service.status,
-        latency_ms: service.latencyMs ?? null,
-        detail: service.detail ?? null,
-        metadata: { url: service.url },
-      }))
-    )
+    const [heartbeatInsert, capabilityInsert] = await Promise.all([
+      supabaseAdmin.from('service_heartbeats').insert(
+        services.map((service) => ({
+          service: service.name,
+          status: service.status,
+          latency_ms: service.latencyMs ?? null,
+          detail: service.detail ?? null,
+          metadata: { url: service.url },
+        }))
+      ),
+      capabilityJson
+        ? supabaseAdmin.from('clawd_capability_snapshots').insert({
+            source: 'clawdbot',
+            payload: capabilityJson,
+          })
+        : Promise.resolve({ error: null }),
+    ])
 
-    if (capabilityJson) {
-      void supabaseAdmin.from('clawd_capability_snapshots').insert({
-        source: 'clawdbot',
-        payload: capabilityJson,
-      })
+    if (heartbeatInsert.error) {
+      logger.warn('[EmpireHealth] Failed to persist service heartbeats', {
+        error: heartbeatInsert.error.message,
+      } as any)
+    } else {
+      heartbeatsPersisted = true
+    }
+
+    if (capabilityInsert.error) {
+      logger.warn('[EmpireHealth] Failed to persist Clawd capability snapshot', {
+        error: capabilityInsert.error.message,
+      } as any)
+    } else if (capabilityJson) {
+      capabilitySnapshotPersisted = true
     }
   }
 
@@ -132,5 +151,9 @@ export async function GET(_req: NextRequest) {
           default_profile: routingProfiles[0]?.profile_id ?? null,
         }
       : null,
+    persistence: {
+      heartbeats: heartbeatsPersisted,
+      capability_snapshot: capabilitySnapshotPersisted,
+    },
   })
 }

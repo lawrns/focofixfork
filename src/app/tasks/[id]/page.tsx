@@ -90,7 +90,7 @@ import type { WorkItem, WorkItemStatus, PriorityLevel, Comment } from '@/types/f
 const statusOptions: { value: WorkItemStatus; label: string; color: string }[] = [
   { value: 'backlog', label: 'Backlog', color: 'bg-zinc-400' },
   { value: 'next', label: 'Next', color: 'bg-blue-500' },
-  { value: 'in_progress', label: 'In Progress', color: 'bg-indigo-500' },
+  { value: 'in_progress', label: 'In Progress', color: 'bg-[color:var(--foco-teal)]' },
   { value: 'review', label: 'Review', color: 'bg-amber-500' },
   { value: 'blocked', label: 'Blocked', color: 'bg-red-500' },
   { value: 'done', label: 'Done', color: 'bg-green-500' },
@@ -108,12 +108,12 @@ function CommentItem({ comment }: { comment: Comment }) {
   return (
     <div className={cn(
       'flex gap-3 p-3 rounded-lg',
-      comment.is_ai_generated && 'bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50'
+      comment.is_ai_generated && 'dark:bg-secondary/50 dark:bg-secondary/20 border dark:border-secondary dark:border-secondary/50'
     )}>
       <Avatar className="h-8 w-8 shrink-0">
         <AvatarFallback className={cn(
           'text-xs',
-          comment.is_ai_generated && 'bg-indigo-100 text-indigo-600'
+          comment.is_ai_generated && 'bg-secondary text-[color:var(--foco-teal)]'
         )}>
           {comment.is_ai_generated ? (
             <Zap className="h-4 w-4" />
@@ -125,7 +125,7 @@ function CommentItem({ comment }: { comment: Comment }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-medium text-sm">
-            {comment.is_ai_generated ? 'Foco AI' : comment.user?.full_name}
+            {comment.is_ai_generated ? 'Critter AI' : comment.user?.full_name}
           </span>
           {comment.is_ai_generated && (
             <Badge variant="secondary" className="text-[10px] h-4">AI</Badge>
@@ -450,7 +450,8 @@ function Inspector({ item, onUpdate, teamMembers, inSheet = false }: InspectorPr
             variant="ghost"
             size="sm"
             className="h-6 px-2"
-            onClick={() => toast.info('Labels management coming soon')}
+            onClick={() => // TODO: Implement labels management
+                    console.log('Labels management clicked')}
           >
             <Plus className="h-3 w-3" />
           </Button>
@@ -530,7 +531,7 @@ function Inspector({ item, onUpdate, teamMembers, inSheet = false }: InspectorPr
         </label>
         <Link 
           href={`/projects/${(item.project as any)?.slug}`}
-          className="flex items-center gap-2 text-sm hover:text-indigo-600 transition-colors"
+          className="flex items-center gap-2 text-sm hover:text-[color:var(--foco-teal)] transition-colors"
         >
           <div 
             className="h-3 w-3 rounded"
@@ -589,9 +590,9 @@ function AIPanel({ taskId, workspaceId, aiLoading, onAction }: AIPanelProps) {
   ];
 
   return (
-    <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+    <div className="p-4 bg-gradient-to-br from-secondary to-secondary dark:from-secondary/30 dark:to-secondary/30 rounded-lg border dark:border-secondary dark:border-secondary/50">
       <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-indigo-600" />
+        <Zap className="h-4 w-4 text-[color:var(--foco-teal)]" />
         <span className="font-medium text-sm">AI Actions</span>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -936,7 +937,7 @@ export default function WorkItemPage() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--foco-teal)] mx-auto mb-4"></div>
           <p className="text-zinc-500">Loading task...</p>
         </div>
       </div>
@@ -998,7 +999,8 @@ export default function WorkItemPage() {
                       <Plus className="h-4 w-4 mr-2" />
                       Duplicate
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info('Move to project coming soon')}>
+                    <DropdownMenuItem onClick={() => // TODO: Implement move to project
+                    console.log('Move to project clicked')}>
                       <FolderInput className="h-4 w-4 mr-2" />
                       Move to project...
                     </DropdownMenuItem>
@@ -1026,7 +1028,7 @@ export default function WorkItemPage() {
                 <div className="flex items-center gap-2 text-sm text-zinc-500 mb-1">
                   <Link
                     href={`/projects/${(workItem.project as any)?.slug}`}
-                    className="hover:text-indigo-600"
+                    className="hover:text-[color:var(--foco-teal)]"
                   >
                     {(workItem.project as any)?.name}
                   </Link>
@@ -1053,7 +1055,8 @@ export default function WorkItemPage() {
                     <Plus className="h-4 w-4 mr-2" />
                     Duplicate
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toast.info('Move to project coming soon')}>
+                  <DropdownMenuItem onClick={() => // TODO: Implement move to project
+                    console.log('Move to project clicked')}>
                     <FolderInput className="h-4 w-4 mr-2" />
                     Move to project...
                   </DropdownMenuItem>
@@ -1153,7 +1156,8 @@ export default function WorkItemPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => toast.info('File attachments coming soon')}
+                      onClick={() => // TODO: Implement file attachments
+                      console.log('File attachments clicked')}
                     >
                       <Paperclip className="h-4 w-4" />
                     </Button>

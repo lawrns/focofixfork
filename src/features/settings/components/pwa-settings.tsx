@@ -107,7 +107,7 @@ export function PWASettings() {
       toast.success('Notifications enabled!');
       // Send a test notification
       await sendNotification('Notifications Enabled!', {
-        body: 'You\'ll now receive important updates from Foco.',
+        body: 'You\'ll now receive important updates from Critter.',
         tag: 'notification-test',
       });
     } else {
@@ -117,7 +117,7 @@ export function PWASettings() {
 
   const handleTestNotification = async () => {
     await sendNotification('Test Notification', {
-      body: 'This is a test notification from Foco.',
+      body: 'This is a test notification from Critter.',
       tag: 'notification-test',
     });
     toast.success('Test notification sent!');
@@ -214,7 +214,7 @@ export function PWASettings() {
             App Installation
           </CardTitle>
           <CardDescription>
-            Install Foco as a native app for the best experience
+            Install Critter as a native app for the best experience
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -297,7 +297,7 @@ export function PWASettings() {
             <Alert>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                Foco is installed as a native app. You can launch it from your home screen or app drawer.
+                Critter is installed as a native app. You can launch it from your home screen or app drawer.
               </AlertDescription>
             </Alert>
           )}
@@ -440,7 +440,7 @@ export function PWASettings() {
             PWA Features
           </CardTitle>
           <CardDescription>
-            Advanced features available when using Foco as an installed app
+            Advanced features available when using Critter as an installed app
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -448,7 +448,7 @@ export function PWASettings() {
             <div className="space-y-2">
               <h4 className="font-medium text-green-600">✓ Always Available</h4>
               <p className="text-sm text-muted-foreground">
-                Launch Foco instantly from your home screen
+                Launch Critter instantly from your home screen
               </p>
             </div>
 

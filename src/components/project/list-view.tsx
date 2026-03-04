@@ -56,7 +56,7 @@ const statusLabels: Record<WorkItemStatus, string> = {
 const statusColors: Record<WorkItemStatus, string> = {
   backlog: 'bg-zinc-400',
   next: 'bg-blue-500',
-  in_progress: 'bg-indigo-500',
+  in_progress: 'bg-[color:var(--foco-teal)]',
   review: 'bg-amber-500',
   blocked: 'bg-red-500',
   done: 'bg-green-500',
@@ -171,7 +171,7 @@ function TaskRow({
         />
       </TableCell>
       <TableCell>
-        <Link href={`/tasks/${task.id}`} className="flex items-center gap-2 hover:text-indigo-600">
+        <Link href={`/tasks/${task.id}`} className="flex items-center gap-2 hover:text-[color:var(--foco-teal)]">
           <div className={cn('h-2 w-2 rounded-full shrink-0', priorityColors[task.priority])} />
           <span className={cn(
             'font-medium text-sm',

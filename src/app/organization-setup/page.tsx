@@ -101,7 +101,7 @@ export default function OrganizationSetupPage() {
               Setup Your Workspace
             </h1>
             <p className="text-muted-foreground text-base">
-              Create your workspace to get started with Foco
+              Create your workspace to get started with Critter
             </p>
           </div>
 
@@ -188,7 +188,7 @@ export default function OrganizationSetupPage() {
 
           <div className="text-center">
             <p className="text-xs text-muted-foreground">
-              This step is required to continue using Foco
+              This step is required to continue using Critter
             </p>
           </div>
         </div>

@@ -38,6 +38,7 @@ export interface ResponseMeta {
   pagination?: PaginationMeta
   timing?: TimingMeta
   version?: string
+  warnings?: string[]
 }
 
 export interface PaginationMeta {

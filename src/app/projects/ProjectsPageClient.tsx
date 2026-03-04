@@ -87,6 +87,14 @@ interface ProjectData {
   delegationEnabled: boolean;
 }
 
+type FetchFailureReason =
+  | 'none'
+  | 'unauthenticated'
+  | 'workspace-missing'
+  | 'forbidden'
+  | 'server'
+  | 'network';
+
 
 function deriveProjectRisk(
   totalTasks: number | null | undefined,
@@ -102,7 +110,7 @@ function deriveProjectRisk(
 
 const riskColors = {
   none: '',
-  low: 'text-blue-600 bg-blue-50 border-blue-200',
+  low: 'text-[color:var(--foco-teal)] bg-secondary border-secondary',
   medium: 'text-amber-600 bg-amber-50 border-amber-200',
   high: 'text-red-600 bg-red-50 border-red-200',
 };
@@ -373,7 +381,7 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive,
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+              <h3 className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-[color:var(--foco-teal)] dark:group-hover:text-[color:var(--foco-teal)] transition-colors truncate">
                 {project.name}
               </h3>
               {isPinned && <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />}
@@ -488,7 +496,7 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive,
       {/* Name & Description */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+          <h3 className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-[color:var(--foco-teal)] dark:group-hover:text-[color:var(--foco-teal)] transition-colors truncate">
             {project.name}
           </h3>
           {isPinned && <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />}
@@ -624,7 +632,7 @@ function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive,
 }
 
 export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTitle?: string }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -646,6 +654,9 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
   const [editDelegationEnabled, setEditDelegationEnabled] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [fetchFailureReason, setFetchFailureReason] = useState<FetchFailureReason>('none');
+  const [fetchFailureMessage, setFetchFailureMessage] = useState<string | null>(null);
+  const [isLanIpHost, setIsLanIpHost] = useState(false);
 
   // Handle query parameters from command palette
   useEffect(() => {
@@ -660,7 +671,15 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
   // Get user's workspace first
   useEffect(() => {
     const getUserWorkspace = async () => {
-      if (!user) return;
+      if (!user) {
+        if (!authLoading) {
+          setIsLoading(false);
+          setFetchFailed(true);
+          setFetchFailureReason('unauthenticated');
+          setFetchFailureMessage('Session required to load projects.');
+        }
+        return;
+      }
 
       try {
         const response = await fetch('/api/workspaces', {
@@ -669,6 +688,18 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
         
         if (!response.ok) {
           console.error('Failed to fetch workspaces');
+          setFetchFailed(true);
+          if (response.status === 401) {
+            setFetchFailureReason('unauthenticated');
+            setFetchFailureMessage('Session expired. Please sign in again.');
+          } else if (response.status === 403) {
+            setFetchFailureReason('forbidden');
+            setFetchFailureMessage('You do not have access to workspace data.');
+          } else {
+            setFetchFailureReason('server');
+            setFetchFailureMessage('Workspace lookup failed. Please retry.');
+          }
+          setIsLoading(false);
           return;
         }
 
@@ -679,17 +710,33 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
         if (data.ok && workspaces.length > 0) {
           // Use the first workspace the user has access to
           setCurrentWorkspaceId(workspaces[0].id);
+          setFetchFailureReason('none');
+          setFetchFailureMessage(null);
         } else {
           console.error('No workspaces found for user');
+          setFetchFailed(true);
+          setFetchFailureReason('workspace-missing');
+          setFetchFailureMessage('No workspace membership found for your account.');
           setIsLoading(false);
         }
       } catch (error) {
         console.error('Failed to fetch user workspace:', error);
+        setFetchFailed(true);
+        setFetchFailureReason('network');
+        setFetchFailureMessage('Could not reach workspace service.');
+        setIsLoading(false);
       }
     };
 
     getUserWorkspace();
-  }, [user]);
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const host = window.location.hostname;
+    const ipv4Pattern = /^\d{1,3}(\.\d{1,3}){3}$/;
+    setIsLanIpHost(ipv4Pattern.test(host));
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -709,10 +756,16 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
         if (response.status === 401) {
           toast.error('Session expired. Please sign in again.');
+          setFetchFailureReason('unauthenticated');
+          setFetchFailureMessage('Session expired. Please sign in again.');
         } else if (response.status === 403) {
           toast.error('You do not have permission to access projects.');
+          setFetchFailureReason('forbidden');
+          setFetchFailureMessage('You do not have permission to access this workspace.');
         } else {
           toast.error('Failed to load projects');
+          setFetchFailureReason('server');
+          setFetchFailureMessage('Projects service returned an unexpected error.');
         }
 
         setFetchFailed(true);
@@ -724,8 +777,14 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
       // API returns {ok: true, data: [...]} or {success: true, data: [...]}
       if ((data.success || data.ok) && data.data) {
+        const rawProjects = Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data.data?.projects)
+            ? data.data.projects
+            : [];
+
         // Transform API response to component format
-        const transformedProjects = data.data.map((project: any) => ({
+        const transformedProjects = rawProjects.map((project: any) => ({
           id: project.id,
           name: project.name,
           slug: project.slug,
@@ -759,15 +818,22 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
         setProjects(transformedProjects);
         setFetchFailed(false);
+        setFetchFailureReason('none');
+        setFetchFailureMessage(null);
       } else {
         console.error('Invalid response format:', data);
         setProjects([]);
+        setFetchFailed(true);
+        setFetchFailureReason('server');
+        setFetchFailureMessage('Projects response format was invalid.');
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       toast.error('Failed to load projects');
       setProjects([]);
       setFetchFailed(true);
+      setFetchFailureReason('network');
+      setFetchFailureMessage('Network error while loading projects.');
     } finally {
       setIsLoading(false);
     }
@@ -1159,11 +1225,39 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
       {fetchFailed && sortedProjects.length === 0 && (
         <EmptyState
           icon={AlertTriangle}
-          title="Failed to load projects"
-          description="There was a problem loading your projects. Please try again."
-          primaryAction={{ label: 'Retry', onClick: () => window.location.reload() }}
+          title={
+            fetchFailureReason === 'unauthenticated'
+              ? 'Sign in required'
+              : fetchFailureReason === 'workspace-missing'
+                ? 'No workspace found'
+                : fetchFailureReason === 'forbidden'
+                  ? 'Access denied'
+                  : fetchFailureReason === 'network'
+                    ? 'Network problem'
+                    : 'Failed to load projects'
+          }
+          description={
+            fetchFailureMessage ??
+            'There was a problem loading your projects. Please try again.'
+          }
+          primaryAction={{
+            label: fetchFailureReason === 'unauthenticated' ? 'Go to sign in' : 'Retry',
+            onClick: () => {
+              if (fetchFailureReason === 'unauthenticated') {
+                router.push('/login');
+                return;
+              }
+              window.location.reload();
+            },
+          }}
           size="md"
         />
+      )}
+
+      {isLanIpHost && (
+        <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          LAN/IP access detected. If projects fail to load after login, verify auth callback and allowed origins include this host.
+        </div>
       )}
       
       {sortedProjects.length === 0 && search && (

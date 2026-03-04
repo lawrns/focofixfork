@@ -1,3 +1,23 @@
+/**
+ * /api/crons - Cron Management API
+ * 
+ * NAMING DISTINCTION:
+ * - /api/crons/ (this file, PLURAL) = Management API for cron schedules
+ * - /api/cron/ (SINGULAR) = Individual cron job handler implementations
+ * 
+ * This route provides CRUD operations for managing cron job configurations.
+ * The actual job handlers live in /api/cron/<handler-name>/route.ts
+ * 
+ * Why both exist:
+ * - /api/crons/* manages WHEN jobs run (schedule, enable/disable)
+ * - /api/cron/* defines WHAT runs (the actual business logic)
+ * 
+ * Architecture:
+ * - This API proxies to ClawdBot for persistence
+ * - ClawdBot manages crons.json and system crontab
+ * - When a cron fires, ClawdBot calls the appropriate /api/cron/<handler>
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'

@@ -87,8 +87,16 @@ export async function createClawdCron(body: {
   return res.json()
 }
 
-/** Toggle a cron's enabled status */
-export async function patchClawdCron(id: string, body: { enabled?: boolean }): Promise<ClawdCron> {
+export interface UpdateClawdCronBody {
+  enabled?: boolean
+  name?: string
+  schedule?: string
+  description?: string | null
+  handler?: string | null
+}
+
+/** Update a cron's configuration/status */
+export async function patchClawdCron(id: string, body: UpdateClawdCronBody): Promise<ClawdCron> {
   const res = await fetch(`${CLAWDBOT_BASE}/crons/${id}`, {
     method: 'PATCH',
     headers: clawdHeaders(),

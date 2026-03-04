@@ -44,18 +44,16 @@ export function GlobalKeyboardShortcuts() {
 
         switch (key) {
           case 'h': router.push('/dashboard'); break;
-          case 'd': router.push('/empire/command'); break;
           case 'i': router.push('/clawdbot'); break;
+          case 'w': router.push('/my-work'); break;
           case 'r': router.push('/runs'); break;
           case 'l': router.push('/ledger'); break;
-          case 'w': router.push('/my-work'); break;
-          case 'n': router.push('/empire/signals'); break;
+          case 'b': router.push('/empire/briefing'); break;
           case 'p': router.push('/empire/missions'); break;
-          case 'o': router.push('/empire/fleet'); break;
+          case 'n': router.push('/empire/signals'); break;
           case 't': router.push('/empire/timeline'); break;
           case 'm': router.push('/empire'); break;
           case 'c': router.push('/empire/command'); break;
-          case 'b': router.push('/empire/briefing'); break;
           case 'j': router.push('/empire/agents'); break;
           case 'v': router.push('/empire/pipeline'); break;
           case 'k': router.push('/crons'); break;
@@ -79,11 +77,7 @@ export function GlobalKeyboardShortcuts() {
           e.preventDefault();
           openTaskModal();
           break;
-        case 'd':
-          // Create doc
-          e.preventDefault();
-          router.push('/docs?create=true');
-          break;
+        // Note: 'd' shortcut removed - no longer used
         case 'g':
           // Start G + key sequence
           e.preventDefault();

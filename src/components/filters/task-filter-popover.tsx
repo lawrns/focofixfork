@@ -386,7 +386,7 @@ export function TaskFilterPopover({
                       className={cn(
                         'w-full text-left px-2 py-1.5 rounded text-sm transition-colors',
                         filters.dueDate?.preset === preset.value
-                          ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-100'
+                          ? 'bg-secondary text-foreground dark:bg-secondary/30 dark:text-foreground'
                           : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
                       )}
                     >

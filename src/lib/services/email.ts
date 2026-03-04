@@ -37,9 +37,9 @@ export class EmailService {
 
     try {
       const { data, error } = await resend.emails.send({
-        from: 'Foco <noreply@foco.mx>',
+        from: 'Critter <noreply@foco.mx>',
         to: [digestData.userEmail],
-        subject: `Your ${digestData.frequency === 'daily' ? 'Daily' : 'Weekly'} Foco Digest`,
+        subject: `Your ${digestData.frequency === 'daily' ? 'Daily' : 'Weekly'} Critter Digest`,
         html,
       })
 
@@ -76,7 +76,7 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${data.frequency === 'daily' ? 'Daily' : 'Weekly'} Foco Digest</title>
+          <title>${data.frequency === 'daily' ? 'Daily' : 'Weekly'} Critter Digest</title>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
@@ -92,7 +92,7 @@ export class EmailService {
           </div>
 
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/inbox" style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">View in Foco</a>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/inbox" style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">View in Critter</a>
           </div>
 
           <div style="background: #f0f9ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 6px; margin: 25px 0;">
@@ -103,7 +103,7 @@ export class EmailService {
 
           <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center;">
             <p style="margin: 0; color: #666; font-size: 12px;">You received this because you have email digests enabled. Manage your preferences in account settings.</p>
-            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">© Foco 2026. All rights reserved.</p>
+            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">© Critter 2026. All rights reserved.</p>
           </div>
         </body>
       </html>
@@ -136,9 +136,9 @@ export class EmailService {
 
     try {
       const { data, error } = await resend.emails.send({
-        from: 'Foco <noreply@foco.mx>',
+        from: 'Critter <noreply@foco.mx>',
         to: [email],
-        subject: `You're invited to join ${organizationName} on Foco`,
+        subject: `You're invited to join ${organizationName} on Critter`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -150,12 +150,12 @@ export class EmailService {
             <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
                 <h1 style="color: white; margin: 0; font-size: 28px;">You're Invited!</h1>
-                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Join ${organizationName} on Foco</p>
+                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Join ${organizationName} on Critter</p>
               </div>
 
               <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
                 <p style="margin: 0 0 15px 0; font-size: 16px;"><strong>${inviterName}</strong> has invited you to collaborate as a <strong>${role}</strong> in <strong>${organizationName}</strong>.</p>
-                <p style="margin: 0; color: #666; font-size: 14px;">Foco is a powerful project management platform that helps teams stay organized and productive.</p>
+                <p style="margin: 0; color: #666; font-size: 14px;">Critter is a powerful project management platform that helps teams stay organized and productive.</p>
               </div>
 
               <div style="text-align: center; margin: 30px 0;">

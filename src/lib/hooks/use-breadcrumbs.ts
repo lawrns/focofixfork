@@ -23,7 +23,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'pipeline': 'Pipeline',
   'briefing': 'Daily Briefing',
   'missions': 'Projects',
-  'fleet': 'Team Capacity',
+  'fleet': 'Agent Fleet',
   'signals': 'Notifications',
   'timeline': 'Milestone Timeline',
   'policies': 'Fleet Policies',
@@ -54,8 +54,8 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
       });
     }
 
-    // Projects page: /projects
-    if (pathname === '/projects') {
+    // Projects page: /empire/missions (canonical)
+    if (pathname === '/empire/missions') {
       breadcrumbs.push({
         label: 'Projects',
         isCurrent: true,
@@ -63,11 +63,11 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
       return breadcrumbs;
     }
 
-    // Project detail page: /projects/[slug] or /projects/[slug]/...
-    if (pathname.includes('/projects/')) {
+    // Project detail page: /projects/[slug] or /projects/[slug]/... (legacy) or /empire/missions/[slug]
+    if (pathname.includes('/projects/') || pathname.includes('/empire/missions/')) {
       breadcrumbs.push({
         label: 'Projects',
-        href: '/projects',
+        href: '/empire/missions',
         isCurrent: false,
       });
 

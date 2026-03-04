@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 import {
   Settings,
   Users,
@@ -182,7 +183,8 @@ function WorkspaceSettings() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.info('Status customization coming soon')}
+              onClick={() => // TODO: Implement status customization
+              console.log('Status customization clicked')}
             >
               Customize Statuses
             </Button>
@@ -227,14 +229,14 @@ function AppearanceSettings() {
                 className={cn(
                   'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors',
                   theme === t.value
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20'
+                    ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20'
                     : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 )}
               >
                 <t.icon className="h-6 w-6" />
                 <span className="text-sm font-medium">{t.label}</span>
                 {theme === t.value && (
-                  <Check className="h-4 w-4 text-indigo-500" />
+                  <Check className="h-4 w-4 text-[color:var(--foco-teal)]" />
                 )}
               </button>
             ))}
@@ -258,7 +260,7 @@ function AppearanceSettings() {
                 className={cn(
                   'w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors text-left',
                   density === d.value
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20'
+                    ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20'
                     : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 )}
               >
@@ -267,7 +269,7 @@ function AppearanceSettings() {
                   <div className="text-sm text-zinc-500">{d.description}</div>
                 </div>
                 {density === d.value && (
-                  <Check className="h-5 w-5 text-indigo-500" />
+                  <Check className="h-5 w-5 text-[color:var(--foco-teal)]" />
                 )}
               </button>
             ))}
@@ -282,6 +284,16 @@ function AIPolicySettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [autoApply, setAutoApply] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState([85]);
+  const [coFounderMode, setCoFounderMode] = useState<'off' | 'advisor' | 'bounded' | 'near_full'>('bounded');
+  const [coFounderProfile, setCoFounderProfile] = useState<'advisor_first' | 'bounded_operator' | 'revenue_only' | 'near_full'>('revenue_only');
+  const [overnightWindowEnabled, setOvernightWindowEnabled] = useState(true);
+  const [overnightStart, setOvernightStart] = useState('22:00');
+  const [overnightEnd, setOvernightEnd] = useState('07:00');
+  const [overnightTimezone, setOvernightTimezone] = useState('America/Mexico_City');
+  const [spendCapUsdPerWindow, setSpendCapUsdPerWindow] = useState('100');
+  const [maxExternalMessages, setMaxExternalMessages] = useState('5');
+  const [maxLiveExperiments, setMaxLiveExperiments] = useState('2');
+  const [allowProductionDeploys, setAllowProductionDeploys] = useState(false);
 
   // Data sources state
   const [dataSources, setDataSources] = useState({
@@ -315,6 +327,22 @@ function AIPolicySettings() {
             confidenceThreshold: confidenceThreshold[0],
             dataSources,
             actions: aiActions,
+            cofounder: {
+              mode: coFounderMode,
+              profile: coFounderProfile,
+              overnightWindow: {
+                enabled: overnightWindowEnabled,
+                timezone: overnightTimezone,
+                start: overnightStart,
+                end: overnightEnd,
+              },
+              hardLimits: {
+                spendCapUsdPerWindow: Number(spendCapUsdPerWindow) || 100,
+                maxExternalMessages: Number(maxExternalMessages) || 5,
+                maxLiveExperiments: Number(maxLiveExperiments) || 2,
+                allowProductionDeploys,
+              },
+            },
           },
         }),
       });
@@ -429,6 +457,173 @@ function AIPolicySettings() {
               />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Co-Founder Autonomy Mode</CardTitle>
+          <CardDescription>
+            Configure how autonomous the co-founder can operate overnight
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="cofounder-mode">Autonomy Mode</Label>
+            <Select value={coFounderMode} onValueChange={(value) => setCoFounderMode(value as 'off' | 'advisor' | 'bounded' | 'near_full')}>
+              <SelectTrigger id="cofounder-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off">Off</SelectItem>
+                <SelectItem value="advisor">Advisor</SelectItem>
+                <SelectItem value="bounded">Bounded Operator</SelectItem>
+                <SelectItem value="near_full">Near Full</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cofounder-profile">Authority Profile</Label>
+            <Select value={coFounderProfile} onValueChange={(value) => setCoFounderProfile(value as 'advisor_first' | 'bounded_operator' | 'revenue_only' | 'near_full')}>
+              <SelectTrigger id="cofounder-profile">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="advisor_first">Advisor First</SelectItem>
+                <SelectItem value="bounded_operator">Bounded Operator</SelectItem>
+                <SelectItem value="revenue_only">Revenue Only</SelectItem>
+                <SelectItem value="near_full">Near Full</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Night Mode Controls</CardTitle>
+          <CardDescription>
+            Configure policy here, then start or stop live execution in Command Center.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/empire/command">Open Command Center</Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link href="/empire/missions">Open Mission Boards</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Night Schedule</CardTitle>
+              <CardDescription>
+                Restrict autonomous execution to a configured overnight window
+              </CardDescription>
+            </div>
+            <Switch
+              checked={overnightWindowEnabled}
+              onCheckedChange={setOvernightWindowEnabled}
+            />
+          </div>
+        </CardHeader>
+        {overnightWindowEnabled && (
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="overnight-start">Start Time</Label>
+                <Input
+                  id="overnight-start"
+                  type="time"
+                  value={overnightStart}
+                  onChange={(e) => setOvernightStart(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="overnight-end">End Time</Label>
+                <Input
+                  id="overnight-end"
+                  type="time"
+                  value={overnightEnd}
+                  onChange={(e) => setOvernightEnd(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="overnight-tz">Timezone</Label>
+              <Select value={overnightTimezone} onValueChange={setOvernightTimezone}>
+                <SelectTrigger id="overnight-tz">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="America/Mexico_City">America/Mexico_City (CST)</SelectItem>
+                  <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                  <SelectItem value="America/Chicago">America/Chicago (CST)</SelectItem>
+                  <SelectItem value="America/Denver">America/Denver (MST)</SelectItem>
+                  <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
+                  <SelectItem value="UTC">UTC</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Hard Limits</CardTitle>
+          <CardDescription>
+            Caps that cannot be bypassed by agent confidence
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cofounder-spend-cap">Spend Cap (USD / window)</Label>
+              <Input
+                id="cofounder-spend-cap"
+                type="number"
+                min={0}
+                value={spendCapUsdPerWindow}
+                onChange={(e) => setSpendCapUsdPerWindow(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cofounder-max-messages">Max External Messages</Label>
+              <Input
+                id="cofounder-max-messages"
+                type="number"
+                min={0}
+                value={maxExternalMessages}
+                onChange={(e) => setMaxExternalMessages(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cofounder-max-experiments">Max Live Experiments</Label>
+              <Input
+                id="cofounder-max-experiments"
+                type="number"
+                min={0}
+                value={maxLiveExperiments}
+                onChange={(e) => setMaxLiveExperiments(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base">Allow production deploys</Label>
+              <p className="text-sm text-zinc-500">Disable for safe overnight operation</p>
+            </div>
+            <Switch
+              checked={allowProductionDeploys}
+              onCheckedChange={setAllowProductionDeploys}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -1106,7 +1301,7 @@ function MembersSettings() {
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-medium">
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-secondary dark:bg-secondary/30 flex items-center justify-center text-[color:var(--foco-teal)] dark:text-[color:var(--foco-teal)] font-medium">
                       {getMemberInitials(member)}
                     </div>
                     <div className="min-w-0">
@@ -1293,7 +1488,7 @@ function BillingSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800">
+          <div className="flex items-center justify-between p-4 rounded-lg bg-secondary dark:bg-secondary/30 border dark:border-secondary dark:border-secondary">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">Pro Plan</span>
@@ -1349,7 +1544,8 @@ function BillingSettings() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.info('Payment method update coming soon')}
+              onClick={() => // TODO: Implement payment method update
+              console.log('Payment method update clicked')}
             >
               Update
             </Button>
@@ -1412,7 +1608,7 @@ function BillingSettings() {
                 className={cn(
                   'relative p-4 rounded-lg border-2 transition-colors',
                   currentPlan === plan.id
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20'
+                    ? 'border-[color:var(--foco-teal)] bg-secondary dark:bg-secondary/20'
                     : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 )}
               >
@@ -1497,7 +1693,7 @@ export default function SettingsPage() {
         return (
           <Card>
             <CardContent className="py-12 text-center text-zinc-500">
-              {settingsSections.find(s => s.id === activeSection)?.label} settings coming soon
+              {settingsSections.find(s => s.id === activeSection)?.label} settings under development
             </CardContent>
           </Card>
         );

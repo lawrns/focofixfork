@@ -50,22 +50,21 @@ const shortcuts: Shortcut[] = [
 
   // Navigation
   // ── Core
-  { id: 'nav-dashboard',  keys: ['G', 'H'], description: 'Go to dashboard',       category: 'Navigation' },
-  { id: 'nav-dispatch',   keys: ['G', 'D'], description: 'Go to Command Center',   category: 'Navigation' },
+  { id: 'nav-dashboard',  keys: ['G', 'H'], description: 'Go to Dashboard',       category: 'Navigation' },
   { id: 'nav-intel',      keys: ['G', 'I'], description: 'Go to Intel Feed',       category: 'Navigation' },
+  { id: 'nav-mywork',     keys: ['G', 'W'], description: 'Go to My Tasks',         category: 'Navigation' },
   { id: 'nav-runs',       keys: ['G', 'R'], description: 'Go to Runs',             category: 'Navigation' },
   { id: 'nav-ledger',     keys: ['G', 'L'], description: 'Go to Audit Log',        category: 'Navigation' },
-  // ── Work
-  { id: 'nav-mywork',     keys: ['G', 'W'], description: 'Go to My Tasks',         category: 'Navigation' },
-  { id: 'nav-inbox',      keys: ['G', 'N'], description: 'Go to Notifications',    category: 'Navigation' },
+  // ── Projects
+  { id: 'nav-briefing',   keys: ['G', 'B'], description: 'Go to Daily Briefing',         category: 'Navigation' },
   { id: 'nav-projects',   keys: ['G', 'P'], description: 'Go to Projects',         category: 'Navigation' },
-  { id: 'nav-people',     keys: ['G', 'O'], description: 'Go to Team Capacity',    category: 'Navigation' },
+  { id: 'nav-inbox',      keys: ['G', 'N'], description: 'Go to Notifications',    category: 'Navigation' },
   { id: 'nav-timeline',   keys: ['G', 'T'], description: 'Go to Milestone Timeline', category: 'Navigation' },
   // ── Empire
   { id: 'nav-empire',     keys: ['G', 'M'], description: 'Go to Empire OS',              category: 'Navigation' },
-  { id: 'nav-cmd-center', keys: ['G', 'C'], description: 'Go to Agent Command Center',   category: 'Navigation' },
-  { id: 'nav-briefing',   keys: ['G', 'B'], description: 'Go to Daily Briefing',         category: 'Navigation' },
-  { id: 'nav-agents',     keys: ['G', 'J'], description: 'Go to Empire agents',          category: 'Navigation' },
+  { id: 'nav-cmd-center', keys: ['G', 'C'], description: 'Go to Command Center',   category: 'Navigation' },
+  { id: 'nav-agents',     keys: ['G', 'J'], description: 'Go to Agents',          category: 'Navigation' },
+  { id: 'nav-pipeline',   keys: ['G', 'V'], description: 'Go to Pipeline',        category: 'Navigation' },
   { id: 'nav-crons',      keys: ['G', 'K'], description: 'Go to Crons',                category: 'Navigation' },
   // ── Manage
   { id: 'nav-emails',     keys: ['G', 'E'], description: 'Go to Emails',               category: 'Navigation' },
@@ -94,12 +93,6 @@ const shortcuts: Shortcut[] = [
     id: 'project-create',
     keys: ['P'],
     description: 'Create new project',
-    category: 'Projects',
-  },
-  {
-    id: 'project-docs',
-    keys: ['D'],
-    description: 'Create new doc',
     category: 'Projects',
   },
 ];

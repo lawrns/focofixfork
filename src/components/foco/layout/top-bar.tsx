@@ -17,7 +17,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,29 +52,14 @@ export function TopBar({ className }: TopBarProps) {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
-  const [workspace, setWorkspace] = useState<any>(null);
   const isMobile = useMobile();
+  const PRIMARY_ACCOUNT_EMAIL = user?.email || '';
 
   // Gate on isMounted — Zustand persist reads localStorage synchronously, which
   // differs from SSR default. Prevents className mismatch on left-position.
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
   const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
-
-  useEffect(() => {
-    if (user) {
-      fetch('/api/organizations', { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => {
-          if (data.ok && data.data && data.data.length > 0) {
-            setWorkspace(data.data[0]);
-          }
-        })
-        .catch(() => {
-          // Silently fail - workspace loading is not critical
-        });
-    }
-  }, [user]);
 
   return (
     <header
@@ -151,6 +136,13 @@ export function TopBar({ className }: TopBarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Search Link */}
+        <Link href="/search">
+          <Button variant="ghost" size="icon" className="h-9 w-9 min-h-[44px] min-w-[44px]" aria-label="Go to search page">
+            <Search className="h-4 w-4" />
+          </Button>
+        </Link>
+
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative h-9 w-9 min-h-[44px] min-w-[44px]" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
           <Bell className="h-4 w-4" />
@@ -163,35 +155,6 @@ export function TopBar({ className }: TopBarProps) {
             </Badge>
           )}
         </Button>
-
-        {/* Workspace Switcher */}
-        {workspace && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 min-h-[44px] px-1 md:px-2 gap-1 md:gap-2">
-                <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-white">{workspace.name.substring(0, 2).toUpperCase()}</span>
-                </div>
-                <span className="text-sm font-medium hidden lg:inline">{workspace.name}</span>
-                <ChevronDown className="h-3 w-3 opacity-60 hidden md:inline" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-              <DropdownMenuItem>
-                <div className="h-6 w-6 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-white">{workspace.name.substring(0, 2).toUpperCase()}</span>
-                </div>
-                <span>{workspace.name}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Plus className="h-4 w-4" />
-                Create workspace
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
 
         {/* Sign In Button - Only show if not authenticated */}
         {!user && (
@@ -211,19 +174,18 @@ export function TopBar({ className }: TopBarProps) {
               variant="ghost"
               size="icon"
               className="h-9 w-9 min-h-[44px] min-w-[44px]"
-              title={`Your profile — ${user?.user_metadata?.full_name || user?.email || 'User'}`}
+              title={`Your profile — ${PRIMARY_ACCOUNT_EMAIL}`}
             >
               <Avatar className="h-7 w-7">
-                <AvatarImage src={user?.user_metadata?.avatar_url} />
-                <AvatarFallback className="text-xs">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                <AvatarFallback className="text-xs">{PRIMARY_ACCOUNT_EMAIL.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span>{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</span>
-                <span className="text-xs font-normal text-zinc-500">{user?.email || ''}</span>
+                <span>{PRIMARY_ACCOUNT_EMAIL.split('@')[0]}</span>
+                <span className="text-xs font-normal text-zinc-500">{PRIMARY_ACCOUNT_EMAIL}</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

@@ -3,6 +3,7 @@ import ProjectsPageClient from '@/app/projects/ProjectsPageClient';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
 function MissionsFallback() {
   return (
@@ -28,8 +29,22 @@ function MissionsFallback() {
 
 export default function MissionBoardsPage() {
   return (
-    <Suspense fallback={<MissionsFallback />}>
-      <ProjectsPageClient pageTitle="Projects" />
-    </Suspense>
+    <div className="space-y-4">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+          Mission board uses your shared projects workspace. Manage Night Mode in{' '}
+          <Link href="/settings" className="font-medium underline">
+            Settings
+          </Link>{' '}
+          and run live autonomy controls in{' '}
+          <Link href="/empire/command" className="font-medium underline">
+            Command Center
+          </Link>.
+        </div>
+      </div>
+      <Suspense fallback={<MissionsFallback />}>
+        <ProjectsPageClient pageTitle="Missions" />
+      </Suspense>
+    </div>
   );
 }

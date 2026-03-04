@@ -7,6 +7,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { MetricTile } from '@/components/ui/metric-tile'
 import { cn } from '@/lib/utils'
 import ErrorBoundary from '@/components/error/error-boundary'
 import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
@@ -270,6 +271,14 @@ export default function DashboardPageClient() {
     }
   }, [user, fetchAll])
 
+  useEffect(() => {
+    const handleRunsMutated = () => {
+      void fetchAll()
+    }
+    window.addEventListener('runs:mutated', handleRunsMutated)
+    return () => window.removeEventListener('runs:mutated', handleRunsMutated)
+  }, [fetchAll])
+
   // Auto-refresh every 30s
   useEffect(() => {
     if (!user) return
@@ -336,55 +345,48 @@ export default function DashboardPageClient() {
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono">Running</div>
-              <div className="text-2xl font-bold text-[color:var(--foco-teal)]">
-                {activeRuns.filter(r => r.status === 'running').length}
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono">Pending</div>
-              <div className="text-2xl font-bold text-amber-500">
-                {activeRuns.filter(r => r.status === 'pending').length}
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono">Completed</div>
-              <div className="text-2xl font-bold text-emerald-500">
-                {allRuns.filter(r => r.status === 'completed').length}
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono">Recent Events</div>
-              <div className="text-2xl font-bold">{recentEventsCount}</div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono">Fleet</div>
-              <div className={cn(
-                'text-sm font-semibold',
-                fleetPaused ? 'text-rose-500' : 'text-emerald-500'
-              )}>
-                {fleetPaused ? 'Paused' : 'Active'}
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
-                <Zap className="h-3 w-3" /> Auto
-              </div>
-              <div className="text-2xl font-bold text-[color:var(--foco-teal)]">
-                {autonomousStats.improvementsWeek}
-              </div>
-              <div className="text-[9px] text-muted-foreground">this week</div>
-            </div>
-            <div className="rounded-lg border bg-card p-3 space-y-1">
-              <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> G1 Share
-              </div>
-              <div className="text-2xl font-bold">
-                {allRuns.length > 0 ? `${Math.round((allRuns.filter(r => /revenue|customer|sales|onboard|trial/i.test((r.runner || '') + ' ' + (r.task_id || ''))).length / allRuns.length) * 100)}%` : '—'}
-              </div>
-              <div className="text-[9px] text-muted-foreground">runs tagged by revenue intent</div>
-            </div>
+            <MetricTile
+              label="Running"
+              value={activeRuns.filter(r => r.status === 'running').length}
+              valueClassName="text-[color:var(--foco-teal)]"
+              onClick={() => router.push('/runs?status=running')}
+            />
+            <MetricTile
+              label="Pending"
+              value={activeRuns.filter(r => r.status === 'pending').length}
+              valueClassName="text-amber-500"
+              onClick={() => router.push('/runs?status=pending')}
+            />
+            <MetricTile
+              label="Completed"
+              value={allRuns.filter(r => r.status === 'completed').length}
+              valueClassName="text-emerald-500"
+              onClick={() => router.push('/runs?status=completed')}
+            />
+            <MetricTile
+              label="Recent Events"
+              value={recentEventsCount}
+              onClick={() => router.push('/ledger')}
+            />
+            <MetricTile
+              label="Fleet"
+              value={fleetPaused ? 'Paused' : 'Active'}
+              valueClassName={fleetPaused ? 'text-sm font-semibold text-rose-500' : 'text-sm font-semibold text-emerald-500'}
+              onClick={() => router.push('/policies')}
+            />
+            <MetricTile
+              label="Auto"
+              value={autonomousStats.improvementsWeek}
+              valueClassName="text-[color:var(--foco-teal)]"
+              subtitle="this week"
+              onClick={() => router.push('/ledger')}
+            />
+            <MetricTile
+              label="G1 Share"
+              value={allRuns.length > 0 ? `${Math.round((allRuns.filter(r => /revenue|customer|sales|onboard|trial/i.test((r.runner || '') + ' ' + (r.task_id || ''))).length / allRuns.length) * 100)}%` : '—'}
+              subtitle="runs tagged by revenue intent"
+              onClick={() => router.push('/runs')}
+            />
           </div>
         </div>
 
@@ -404,7 +406,7 @@ export default function DashboardPageClient() {
         {/* Fleet Status Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {/* Relay */}
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-medium">AI Gateway</span>
@@ -422,7 +424,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Token */}
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-medium">Authentication</span>
@@ -440,7 +442,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Active Sessions */}
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-medium">Active Sessions</span>
@@ -449,7 +451,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Active runs */}
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-medium">Running & Queued</span>
@@ -458,7 +460,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Fleet state */}
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               {fleetPaused ? (
                 <Pause className="h-4 w-4 text-amber-500" />
@@ -473,7 +475,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Recent events */}
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Zap className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-medium">Recent Events</span>
@@ -579,22 +581,7 @@ export default function DashboardPageClient() {
           />
         </ErrorBoundary>
 
-        {/* Execution Surfaces */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Cpu className="h-4 w-4 text-[color:var(--foco-teal)]" />
-            Execution Surfaces
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Use Command Center for primary execution. Legacy OpenClaw dispatch remains available during migration.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => router.push('/empire/command')}>Open Command Center</Button>
-            <Button variant="outline" onClick={() => router.push('/openclaw')}>
-              Open Legacy Dispatch
-            </Button>
-          </div>
-        </div>
+        
       </PageShell>
     </ErrorBoundary>
   )

@@ -30,10 +30,10 @@ import {
   Cpu,
   Radio,
   Crosshair,
-  Satellite,
+
   History,
-  Newspaper,
-  Wrench,
+
+
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -48,38 +48,38 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Revenue Dashboard', href: '/dashboard', icon: Home,     shortcut: 'G H' },
-  { label: 'Market Signals',    href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
-  { label: 'Execution Board',   href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
-  { label: 'Agent Runs',        href: '/runs',      icon: Activity, shortcut: 'G R' },
-  { label: 'Trust Ledger',      href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
+  { label: 'Dashboard',   href: '/dashboard', icon: Home,     shortcut: 'G H' },
+  { label: 'Intel Feed',  href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
+  { label: 'My Tasks',    href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
+  { label: 'Runs',        href: '/runs',      icon: Activity, shortcut: 'G R' },
+  { label: 'Audit Log',   href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Strategy Hub',      href: '/empire',              icon: Crown,     shortcut: 'G M' },
-  { label: 'Command Surface',   href: '/empire/command',      icon: Cpu,       shortcut: 'G C' },
-  { label: 'Agent Fleet',       href: '/empire/agents',       icon: Bot,       shortcut: 'G J' },
-  { label: 'Orchestration',     href: '/empire/orchestration', icon: GitBranch, shortcut: 'G X' },
-  { label: 'Content Pipeline',  href: '/empire/pipeline',     icon: GitBranch, shortcut: 'G V' },
-  { label: 'Automation Schedule', href: '/crons',             icon: Clock,     shortcut: 'G K' },
+  { label: 'Empire OS',      href: '/empire',          icon: Crown,     shortcut: 'G M' },
+  { label: 'Command Center', href: '/empire/command',  icon: Cpu,       shortcut: 'G C' },
+  { label: 'Agents',         href: '/empire/agents',   icon: Bot,       shortcut: 'G J' },
+  
+  { label: 'Pipeline',       href: '/empire/pipeline', icon: GitBranch, shortcut: 'G V' },
+  { label: 'Crons',          href: '/crons',           icon: Clock,     shortcut: 'G K' },
 ];
 
 const projectsNavItems: NavItem[] = [
-  { label: 'Daily Revenue Brief', href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
-  { label: 'Revenue Initiatives', href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
-  { label: 'Content Engine',      href: '/empire/content',   icon: Newspaper, shortcut: 'G Z' },
-  { label: 'Team Load',           href: '/empire/fleet',     icon: Satellite, shortcut: 'G O' },
-  { label: 'Signals',             href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
-  { label: '12-Week Timeline',    href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
+  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
+  { label: 'Projects',           href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
+  
+  
+  { label: 'Notifications',      href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
+  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
 ];
 
-const operateNavItems: NavItem[] = [
-  { label: 'Outreach',         href: '/emails',      icon: Mail,          shortcut: 'G E' },
-  { label: 'Insights',         href: '/reports',     icon: BarChart2,     shortcut: 'G F' },
-  { label: 'Plan Proposals',   href: '/proposals',   icon: ClipboardList, shortcut: 'G Q' },
-  { label: 'Evidence',         href: '/artifacts',   icon: Archive,       shortcut: 'G A' },
-  { label: 'Guardrails',       href: '/policies',    icon: Shield,        shortcut: 'G Y' },
-  { label: 'System Health',    href: '/maintenance', icon: Wrench },
+const manageNavItems: NavItem[] = [
+  { label: 'Emails',         href: '/emails',      icon: Mail,          shortcut: 'G E' },
+  { label: 'Reports',        href: '/reports',     icon: BarChart2,     shortcut: 'G F' },
+  { label: 'Task Proposals', href: '/proposals',   icon: ClipboardList, shortcut: 'G Q' },
+  { label: 'Artifacts',      href: '/artifacts',   icon: Archive,       shortcut: 'G A' },
+  { label: 'Policies',       href: '/policies',    icon: Shield,        shortcut: 'G Y' },
+  
 ];
 
 export function LeftRail() {
@@ -219,7 +219,7 @@ export function LeftRail() {
                 variant="ghost"
                 size="icon"
                 className="w-full h-9 mb-3 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-                onClick={() => router.push('/openclaw')}
+                onClick={() => router.push('/empire/command')}
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -230,7 +230,7 @@ export function LeftRail() {
           <Button
             variant="ghost"
             className="w-full justify-start mb-3 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-            onClick={() => router.push('/openclaw')}
+            onClick={() => router.push('/empire/command')}
           >
             <Send className="h-4 w-4 mr-2" />
             Run Command
@@ -249,7 +249,7 @@ export function LeftRail() {
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Execution
+              Empire
             </span>
           </div>
         )}
@@ -264,7 +264,7 @@ export function LeftRail() {
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Growth
+              Projects
             </span>
           </div>
         )}
@@ -279,13 +279,13 @@ export function LeftRail() {
         {!sidebarCollapsed && (
           <div className="px-3 mb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Operate
+              Manage
             </span>
           </div>
         )}
 
-        {/* Operate nav */}
-        {operateNavItems.map(item => <NavLink key={item.href} item={item} />)}
+        {/* Manage nav */}
+        {manageNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Scroll fade affordance */}
         {navOverflows && (

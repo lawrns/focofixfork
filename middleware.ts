@@ -68,18 +68,14 @@ export async function middleware(req: NextRequest) {
   const PERMANENT_REDIRECTS: Record<string, string> = {
     '/signup': '/register',
     '/tasks': '/my-work',
-    '/inbox': '/empire/signals',
-    '/people': '/empire/fleet',
     '/calendar': '/empire/timeline',
     '/dashboard-simple': '/dashboard',
     '/favorites': '/my-work',
-    '/instructions': '/help',
     '/team': '/empire/fleet',
     '/dashboard/settings': '/settings',
     '/projects': '/empire/missions',
     '/decisions': '/empire/command',
     '/milestones': '/empire/timeline',
-    '/timeline': '/empire/timeline',
   }
   const redirectTarget = PERMANENT_REDIRECTS[pathname]
   if (redirectTarget) {
@@ -108,13 +104,7 @@ export async function middleware(req: NextRequest) {
   ]
 
   // Public routes (accessible without authentication)
-  const publicRoutes = [
-    '/mermaid',
-    '/mermaid/new',
-    '/mermaid/share',
-    '/docs',
-    '/help'
-  ]
+  const publicRoutes: string[] = []
 
   // Auth routes (login, register, etc.)
   const authRoutes = [
@@ -170,9 +160,7 @@ export async function middleware(req: NextRequest) {
       pathname.startsWith('/api/auth/') ||
       pathname === '/api/health' ||
       (pathname === '/api/openclaw/status' && process.env.FOCO_DB === 'sqlite') ||
-      pathname.startsWith('/api/invitations/') && pathname.includes('/accept') ||
-      pathname.startsWith('/api/mermaid/share/') ||
-      (pathname.startsWith('/api/mermaid/diagrams') && req.method === 'POST')
+      pathname.startsWith('/api/invitations/') && pathname.includes('/accept')
     ) {
       return res
     }

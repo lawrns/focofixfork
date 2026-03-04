@@ -17,7 +17,7 @@ export default function EmpireAgentsPage() {
     <PageShell>
       <PageHeader
         title="Agent Roster"
-        subtitle="Agent fleet powered by ClawdBot"
+        subtitle="All registered agents and their current execution state"
       />
 
       <div className="space-y-6 max-w-3xl">

@@ -9,6 +9,17 @@ import { createWorkflow } from '@/features/orchestration/services/orchestration-
 
 export const dynamic = 'force-dynamic';
 
+function isMissingOrchestrationSchema(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as { message?: string; code?: string };
+  const msg = (err.message || '').toLowerCase();
+  return (
+    msg.includes("could not find the table 'public.orchestration_workflows'") ||
+    msg.includes("relation \"orchestration_workflows\" does not exist") ||
+    err.code === '42P01'
+  );
+}
+
 // GET list workflows
 export async function GET(req: NextRequest) {
   try {
@@ -37,6 +48,16 @@ export async function GET(req: NextRequest) {
     const { data: workflows, error } = await query;
 
     if (error) {
+      if (isMissingOrchestrationSchema(error)) {
+        // Orchestration migrations are optional in some environments.
+        // Return an empty list instead of a hard 500 to avoid noisy client retries.
+        return NextResponse.json({
+          workflows: [],
+          unavailable: true,
+          reason: 'orchestration_schema_missing',
+        });
+      }
+
       console.error('[Orchestration:API] Error fetching workflows:', error);
       return NextResponse.json(
         { error: error.message },
@@ -91,8 +112,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
+      const msg = result.error || 'Failed to create workflow';
+      if (msg.toLowerCase().includes("orchestration_workflows")) {
+        return NextResponse.json(
+          { error: 'Orchestration is not enabled in this environment (schema missing)' },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
-        { error: result.error || 'Failed to create workflow' },
+        { error: msg },
         { status: 500 }
       );
     }

@@ -70,7 +70,7 @@ const LanguageBreakdown: React.FC<{
     'bg-purple-500',
     'bg-yellow-500',
     'bg-pink-500',
-    'bg-indigo-500',
+    'bg-[color:var(--foco-teal)]',
     'bg-red-500',
     'bg-teal-500',
   ];

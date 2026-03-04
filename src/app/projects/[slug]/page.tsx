@@ -68,7 +68,7 @@ interface TeamMember {
 const columns: { status: WorkItemStatus; label: string; color: string }[] = [
   { status: 'backlog', label: 'Backlog', color: 'bg-zinc-400' },
   { status: 'next', label: 'Next', color: 'bg-blue-500' },
-  { status: 'in_progress', label: 'In Progress', color: 'bg-indigo-500' },
+  { status: 'in_progress', label: 'In Progress', color: 'bg-[color:var(--foco-teal)]' },
   { status: 'review', label: 'Review', color: 'bg-amber-500' },
   { status: 'blocked', label: 'Blocked', color: 'bg-red-500' },
   { status: 'done', label: 'Done', color: 'bg-green-500' },
@@ -129,7 +129,7 @@ function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchive }: {
         'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all',
         'group min-h-[44px]',
         !isMobile && 'cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50 border-indigo-400 shadow-lg'
+        isDragging && 'opacity-50 border-[color:var(--foco-teal)] shadow-lg'
       )}
     >
       <div className="flex items-start gap-2">
@@ -273,7 +273,7 @@ function BoardColumn({ status, label, color, items, onDrop, onAddTask, onComplet
         className={cn(
           'flex-1 space-y-1 md:space-y-2 min-h-[200px] p-0.5 md:p-1 rounded-lg transition-colors',
           isDragOver 
-            ? 'bg-indigo-100/50 dark:bg-indigo-900/20 border-2 border-dashed border-indigo-400' 
+            ? 'bg-secondary/50 dark:bg-secondary/20 border-2 border-dashed border-[color:var(--foco-teal)]' 
             : 'bg-zinc-50/50 dark:bg-zinc-800/20'
         )}
       >
@@ -307,10 +307,10 @@ function AISuggestionStrip({ onApply, onDismiss }: { onApply: () => void; onDism
   if (dismissed) return null;
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-3 mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-3 mb-4 bg-gradient-to-r from-secondary to-secondary dark:from-secondary/30 dark:to-secondary/30 rounded-lg border dark:border-secondary dark:border-secondary/50">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded shrink-0">
-          <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+        <div className="p-1.5 bg-secondary dark:bg-secondary/50 rounded shrink-0">
+          <Zap className="h-4 w-4 text-[color:var(--foco-teal)] dark:text-[color:var(--foco-teal)]" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs md:text-sm text-zinc-900 dark:text-zinc-50">
@@ -677,7 +677,7 @@ export default function ProjectPage() {
         .update({ archived_at: new Date().toISOString() })
         .eq('id', project.id);
       if (error) throw error;
-      window.location.href = '/projects';
+      window.location.href = '/empire/missions';
     } catch (error) {
       throw error;
     }
@@ -691,7 +691,7 @@ export default function ProjectPage() {
         .delete()
         .eq('id', project.id);
       if (error) throw error;
-      window.location.href = '/projects';
+      window.location.href = '/empire/missions';
     } catch (error) {
       throw error;
     }
@@ -774,7 +774,7 @@ export default function ProjectPage() {
               The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
             </p>
             <Button asChild>
-              <Link href="/projects">Back to Projects</Link>
+              <Link href="/empire/missions">Back to Projects</Link>
             </Button>
           </div>
         </div>
@@ -984,7 +984,7 @@ export default function ProjectPage() {
                     className={cn(
                       'h-2 w-2 rounded-full transition-all',
                       index === currentColumnIndex
-                        ? 'bg-indigo-500 w-6'
+                        ? 'bg-[color:var(--foco-teal)] w-6'
                         : 'bg-zinc-300 dark:bg-zinc-700'
                     )}
                     aria-label={`Go to ${column.label}`}
@@ -1178,7 +1178,7 @@ export default function ProjectPage() {
                         <DelegationBadge status={(task as any).delegation_status ?? 'none'} />
                         {((task as any).delegation_status === 'none' || (task as any).delegation_status === 'failed' || !(task as any).delegation_status) && (
                           <button
-                            className="text-[11px] text-indigo-600 hover:underline shrink-0 disabled:opacity-50"
+                            className="text-[11px] text-[color:var(--foco-teal)] hover:underline shrink-0 disabled:opacity-50"
                             disabled={delegatingTaskId === task.id}
                             onClick={async () => {
                               setDelegatingTaskId(task.id);
@@ -1217,7 +1217,7 @@ export default function ProjectPage() {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                     </span>
                     <span className="text-sm font-medium text-emerald-600">{activeRuns} running</span>
-                    <a href="/empire/command" className="ml-auto text-[11px] text-indigo-600 hover:underline">
+                    <a href="/empire/command" className="ml-auto text-[11px] text-[color:var(--foco-teal)] hover:underline">
                       View →
                     </a>
                   </div>
@@ -1234,7 +1234,7 @@ export default function ProjectPage() {
                     <p className="text-[11px] text-zinc-400 mt-0.5">Allow ClawdBot to pick up tasks</p>
                   </div>
                   <button
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none ${delegationEnabled ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none ${delegationEnabled ? 'bg-[color:var(--foco-teal)]' : 'bg-zinc-200 dark:bg-zinc-700'}`}
                     onClick={async () => {
                       const newVal = !delegationEnabled;
                       try {

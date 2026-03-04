@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useFocusModeStore } from '@/lib/stores/foco-store';
@@ -8,29 +8,24 @@ import {
   Play,
   Pause,
   X,
-  Clock,
-  Calendar,
-  ChevronRight,
   MoreHorizontal,
   Plus,
   Zap,
   CheckCircle2,
   Circle,
-  GripVertical,
   Timer,
-  Target,
-  Layers,
   Loader2,
   Sparkles,
-  Flag,
   TrendingUp,
+  TrendingDown,
+  CheckCheck,
+  MoveRight,
 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { AiPreviewModal } from '@/components/ai/ai-preview-modal';
 import type { TaskActionType } from '@/lib/services/task-action-service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -54,10 +49,10 @@ import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { toast } from 'sonner';
-import { useCreateTaskModal } from '@/features/tasks';
-import { Card } from '@/components/ui/card';
 import { TaskFilterPopover, TaskFilters, defaultFilters } from '@/components/filters/task-filter-popover';
 import { MyWorkEmpty } from '@/components/empty-states/my-work-empty';
+
+type SectionType = 'now' | 'next' | 'later' | 'waiting' | 'done';
 
 const priorityColors: Record<PriorityLevel, string> = {
   urgent: 'bg-red-500',
@@ -67,55 +62,57 @@ const priorityColors: Record<PriorityLevel, string> = {
   none: 'bg-zinc-300',
 };
 
-const sectionConfig = {
-  now: { label: 'Now: Revenue Moves', icon: Target, description: 'Tasks that directly drive active customers and cash flow this week.' },
-  next: { label: 'Next: Validation Queue', icon: Layers, description: 'High-leverage tasks queued right after current revenue work.' },
-  later: { label: 'Later: Backlog', icon: Calendar, description: 'Important, but not immediate to this week’s goals.' },
-  waiting: { label: 'Waiting: Blocked', icon: Clock, description: 'Pending dependencies, approvals, or external input.' },
+const sectionConfig: Record<SectionType, { label: string; badgeColor: string; borderColor: string }> = {
+  now: { label: 'Now', badgeColor: 'bg-rose-500', borderColor: 'border-rose-300 dark:border-rose-900' },
+  next: { label: 'Next', badgeColor: 'bg-amber-400', borderColor: 'border-amber-300 dark:border-amber-900' },
+  later: { label: 'Later', badgeColor: 'bg-blue-500', borderColor: 'border-blue-300 dark:border-blue-900' },
+  waiting: { label: 'Waiting', badgeColor: 'bg-slate-400', borderColor: 'border-slate-300 dark:border-slate-900' },
+  done: { label: 'Done', badgeColor: 'bg-emerald-500', borderColor: 'border-emerald-300 dark:border-emerald-900' },
 };
 
-type GoalId = 'G1' | 'G2' | 'G3' | 'G4' | 'G5';
-
-const goalConfig: Record<GoalId, { label: string; short: string; className: string }> = {
-  G1: { label: 'G1 First Revenue', short: 'Revenue', className: 'bg-emerald-500/10 text-emerald-700 border-emerald-300' },
-  G2: { label: 'G2 Simplicity', short: 'Simplicity', className: 'bg-blue-500/10 text-blue-700 border-blue-300' },
-  G3: { label: 'G3 Trustworthy Autonomy', short: 'Trust', className: 'bg-amber-500/10 text-amber-700 border-amber-300' },
-  G4: { label: 'G4 Distribution', short: 'Growth', className: 'bg-violet-500/10 text-violet-700 border-violet-300' },
-  G5: { label: 'G5 Retention/Lock-In', short: 'Retention', className: 'bg-zinc-500/10 text-zinc-700 border-zinc-300' },
+// Section → API Status mapping
+const sectionToStatus: Record<SectionType, WorkItemStatus> = {
+  now: 'in_progress',
+  next: 'next',
+  later: 'backlog',
+  waiting: 'blocked',
+  done: 'done',
 };
 
-function inferGoal(item: WorkItem & { section?: string }): GoalId | null {
-  const title = (item.title || '').toLowerCase();
-  const description = (item.description || '').toLowerCase();
-  const rawTags = ((item as any).tags || []) as Array<string | { name?: string }>;
-  const tags = rawTags
-    .map((t) => (typeof t === 'string' ? t : t?.name || ''))
-    .map((t) => t.toLowerCase());
-  const haystack = `${title} ${description} ${tags.join(' ')}`;
-
-  if (/\bg1\b|revenue|customer|trial|pricing|payment|invoice|sales|lead|onboard|restaurant|salon|store|waitlist/.test(haystack)) return 'G1';
-  if (/\bg2\b|onboarding|simpl|ux|ui|time to value|5-minute|navigation/.test(haystack)) return 'G2';
-  if (/\bg3\b|trust|approval|audit|trace|confidence|agent|autonom/.test(haystack)) return 'G3';
-  if (/\bg4\b|growth|distribution|content|community|referral|campaign|marketing/.test(haystack)) return 'G4';
-  if (/\bg5\b|retention|churn|lock-in|workflow|integration|historical/.test(haystack)) return 'G5';
-  return null;
+function mapStatusToSection(status: WorkItemStatus): SectionType {
+  switch (status) {
+    case 'in_progress': return 'now';
+    case 'next': return 'next';
+    case 'blocked': return 'waiting';
+    case 'done': return 'done';
+    default: return 'later';
+  }
 }
 
-function WorkItemRow({
+// ─────────────────────────────────────────────────────
+// WorkItemCard
+// ─────────────────────────────────────────────────────
+function WorkItemCard({
   item,
   onStartFocus,
   onMoveToSection,
   onRemoveFromMyWork,
+  isSelected,
+  onToggleSelect,
+  isReadOnly,
 }: {
   item: WorkItem & { section: string };
   onStartFocus: (item: WorkItem) => void;
-  onMoveToSection: (itemId: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
+  onMoveToSection: (itemId: string, section: SectionType) => Promise<void>;
   onRemoveFromMyWork: (itemId: string) => Promise<void>;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  isReadOnly?: boolean;
 }) {
   const [isCompleted, setIsCompleted] = useState(item.status === 'done');
-  const goal = inferGoal(item);
 
   const handleToggleComplete = async () => {
+    if (isReadOnly) return;
     const nextStatus = !isCompleted ? 'done' : 'in_progress';
     setIsCompleted(!isCompleted);
 
@@ -132,7 +129,7 @@ function WorkItemRow({
       if (data?.queued) {
         toast.info('Status update queued for offline sync');
       }
-      
+
       if (nextStatus === 'done') {
         audioService.play('complete');
         hapticService.success();
@@ -141,7 +138,7 @@ function WorkItemRow({
         hapticService.light();
       }
     } catch (error) {
-      setIsCompleted(isCompleted); // revert
+      setIsCompleted(isCompleted);
       audioService.play('error');
       hapticService.error();
       toast.error('Failed to update task status');
@@ -149,145 +146,171 @@ function WorkItemRow({
   };
 
   const handleSnooze = () => {
-    // For now, move to later section - a full implementation would add a snooze until date
     onMoveToSection(item.id, 'later');
     toast.info('Task snoozed until later');
   };
 
   return (
-    <div className={cn(
-      'flex items-center gap-3 p-3 -mx-2 rounded-lg group',
-      'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors'
-    )}>
-      <GripVertical className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100 cursor-grab" />
-      
-      <Checkbox
-        checked={isCompleted}
-        onCheckedChange={handleToggleComplete}
-        className="h-5 w-5"
-      />
-      
-      <div className={cn('h-2 w-2 rounded-full shrink-0', priorityColors[item.priority])} />
-      
-      <Link href={`/tasks/${item.id}`} className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+    <div
+      className={cn(
+        'p-3 rounded-lg border bg-white dark:bg-zinc-900 shadow-sm',
+        'hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing',
+        'group relative',
+        isSelected && 'ring-2 ring-[color:var(--foco-teal)] dark:border-[color:var(--foco-teal)]',
+        isReadOnly && 'opacity-75'
+      )}
+    >
+      {/* Selection checkbox — visible on hover or when selected */}
+      {onToggleSelect && (
+        <div
+          className={cn(
+            'absolute -left-2 -top-2 z-10 transition-opacity',
+            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
+          <Checkbox
+            checked={!!isSelected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+            className="h-4 w-4 bg-white border-zinc-300 shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      <div className="flex items-start gap-2 mb-2">
+        {!isReadOnly && (
+          <Checkbox
+            checked={isCompleted}
+            onCheckedChange={handleToggleComplete}
+            className="h-4 w-4 mt-0.5"
+          />
+        )}
+        {isReadOnly && (
+          <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
+        )}
+
+        <div className={cn('h-2 w-2 rounded-full shrink-0 mt-1.5', priorityColors[item.priority])} />
+
+        <Link href={`/tasks/${item.id}`} className="flex-1 min-w-0">
           <span className={cn(
-            'font-medium text-sm truncate',
-            isCompleted ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-zinc-50'
+            'text-sm font-medium leading-tight block',
+            isCompleted || isReadOnly ? 'line-through text-zinc-400' : 'text-zinc-900 dark:text-zinc-50'
           )}>
             {item.title}
           </span>
-          {goal && (
-            <Badge variant="outline" className={cn('h-5 text-[10px] border', goalConfig[goal].className)}>
-              <Flag className="h-3 w-3 mr-1" />
-              {goal}
-            </Badge>
-          )}
-          {item.type === 'bug' && (
-            <Badge variant="outline" className="h-5 text-[10px] text-red-600 border-red-200">
-              Bug
-            </Badge>
-          )}
-          {item.type === 'feature' && (
-            <Badge variant="outline" className="h-5 text-[10px] text-purple-600 border-purple-200">
-              Feature
-            </Badge>
-          )}
-        </div>
-      </Link>
+        </Link>
 
-      <div className="flex items-center gap-2 shrink-0">
+        {!isReadOnly && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/tasks/${item.id}`}>Edit</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStartFocus(item)}>
+                Start focus
+              </DropdownMenuItem>
+              {item.section !== 'now' && (
+                <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'now')}>
+                  Move to Now
+                </DropdownMenuItem>
+              )}
+              {item.section !== 'next' && (
+                <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'next')}>
+                  Move to Next
+                </DropdownMenuItem>
+              )}
+              {item.section !== 'later' && (
+                <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'later')}>
+                  Move to Later
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSnooze}>Snooze</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => onRemoveFromMyWork(item.id)}
+              >
+                Remove from My Tasks
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {isReadOnly && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/tasks/${item.id}`}>View</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'now')}>
+                Reopen → Now
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'next')}>
+                Reopen → Next
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-zinc-500">
         {item.project && (
-          <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-            <div 
-              className="h-2 w-2 rounded-full"
+          <span className="flex items-center gap-1">
+            <div
+              className="h-1.5 w-1.5 rounded-full"
               style={{ backgroundColor: (item.project as any).color }}
             />
-            {(item.project as any).name}
+            <span className="truncate max-w-[100px]">{(item.project as any).name}</span>
           </span>
         )}
-        
+
         {item.due_date && (
           <span className={cn(
-            'text-xs',
-            new Date(item.due_date) < new Date() ? 'text-red-500' : 'text-zinc-500'
+            'ml-auto',
+            new Date(item.due_date) < new Date() ? 'text-red-500' : 'text-zinc-400'
           )}>
             {new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
       </div>
-
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0"
-          onClick={(e) => {
-            e.preventDefault();
-            onStartFocus(item);
-          }}
-        >
-          <Play className="h-3.5 w-3.5" />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:min-w-0">
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/tasks/${item.id}`}>Edit</Link>
-            </DropdownMenuItem>
-            {item.section !== 'now' && (
-              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'now')}>
-                Move to Now
-              </DropdownMenuItem>
-            )}
-            {item.section !== 'next' && (
-              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'next')}>
-                Move to Next
-              </DropdownMenuItem>
-            )}
-            {item.section !== 'later' && (
-              <DropdownMenuItem onClick={() => onMoveToSection(item.id, 'later')}>
-                Move to Later
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSnooze}>Snooze</DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => onRemoveFromMyWork(item.id)}
-            >
-              Remove from My Tasks
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
     </div>
   );
 }
 
-function Section({
+// ─────────────────────────────────────────────────────
+// KanbanColumn (editable — Now / Next / Later / Waiting)
+// ─────────────────────────────────────────────────────
+function KanbanColumn({
   section,
   items,
   onStartFocus,
-  onAddTask,
   onQuickAdd,
   onMoveToSection,
   onRemoveFromMyWork,
+  selectedIds,
+  onToggleSelect,
 }: {
   section: 'now' | 'next' | 'later' | 'waiting';
   items: (WorkItem & { section: string })[];
   onStartFocus: (item: WorkItem) => void;
-  onAddTask: (section: 'now' | 'next' | 'later' | 'waiting') => void;
-  onQuickAdd: (title: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
-  onMoveToSection: (itemId: string, section: 'now' | 'next' | 'later' | 'waiting') => Promise<void>;
+  onQuickAdd: (title: string, section: SectionType) => Promise<void>;
+  onMoveToSection: (itemId: string, section: SectionType) => Promise<void>;
   onRemoveFromMyWork: (itemId: string) => Promise<void>;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
 }) {
   const config = sectionConfig[section];
-  const Icon = config.icon;
   const [showInlineInput, setShowInlineInput] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -301,7 +324,6 @@ function Section({
 
   const handleSubmit = async () => {
     if (!inputValue.trim() || isSubmitting) return;
-    
     setIsSubmitting(true);
     try {
       await onQuickAdd(inputValue.trim(), section);
@@ -325,77 +347,277 @@ function Section({
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className="h-4 w-4 text-zinc-500" />
-        <h2 className="font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="flex flex-col min-w-[260px] md:min-w-[280px] flex-1 max-w-[320px]">
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <div className={cn('h-2.5 w-2.5 rounded-full', config.badgeColor)} />
+        <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-50">
           {config.label}
-        </h2>
-        <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 rounded">
+        </h3>
+        <Badge variant="secondary" className="text-xs ml-auto">
           {items.length}
-        </span>
+        </Badge>
       </div>
-      <p className="text-xs text-zinc-500 mb-3">{config.description}</p>
-      
-      <div className="space-y-1">
-        {items.map((item) => (
-          <WorkItemRow
-            key={item.id}
-            item={item}
-            onStartFocus={onStartFocus}
-            onMoveToSection={onMoveToSection}
-            onRemoveFromMyWork={onRemoveFromMyWork}
-          />
-        ))}
-        
-        {items.length === 0 && !showInlineInput && (
-          <MyWorkEmpty
-            section={section as 'now' | 'next' | 'later' | 'waiting'}
-            onAddTask={() => setShowInlineInput(true)}
-          />
-        )}
-        
-        {showInlineInput ? (
-          <div className="flex items-center gap-2 p-2 -mx-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
-            <Circle className="h-5 w-5 text-zinc-300 shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={() => {
-                if (!inputValue.trim()) {
-                  setShowInlineInput(false);
-                }
-              }}
-              placeholder="Task name..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400"
-              disabled={isSubmitting}
-            />
-            <div className="flex items-center gap-1 text-xs text-zinc-400">
-              <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded">↵</kbd>
-              <span>to add</span>
-              <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded ml-2">esc</kbd>
-              <span>to cancel</span>
-            </div>
-          </div>
-        ) : (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-start text-zinc-500 mt-2 hover:text-zinc-900 dark:hover:text-zinc-100"
-            onClick={() => setShowInlineInput(true)}
+
+      <Droppable droppableId={section}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={cn(
+              'flex-1 rounded-lg border-2 border-dashed p-2 space-y-2 transition-colors',
+              snapshot.isDraggingOver
+                ? cn('border-solid', config.borderColor, 'bg-opacity-5')
+                : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/20'
+            )}
           >
-            <Plus className="h-3.5 w-3.5" />
-            Add task
-          </Button>
+            {items.length === 0 && !showInlineInput ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-xs text-zinc-400 mb-2">No tasks</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7"
+                  onClick={() => setShowInlineInput(true)}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add task
+                </Button>
+              </div>
+            ) : (
+              <>
+                {items.map((item, index) => (
+                  <Draggable key={item.id} draggableId={item.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={cn(snapshot.isDragging && 'opacity-50')}
+                      >
+                        <WorkItemCard
+                          item={item}
+                          onStartFocus={onStartFocus}
+                          onMoveToSection={onMoveToSection}
+                          onRemoveFromMyWork={onRemoveFromMyWork}
+                          isSelected={selectedIds.has(item.id)}
+                          onToggleSelect={onToggleSelect}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+
+                {showInlineInput ? (
+                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                    <Circle className="h-4 w-4 text-zinc-300 shrink-0" />
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onBlur={() => {
+                        if (!inputValue.trim()) setShowInlineInput(false);
+                      }}
+                      placeholder="Task name..."
+                      className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-xs text-zinc-500 h-8"
+                    onClick={() => setShowInlineInput(true)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add task
+                  </Button>
+                )}
+
+                {provided.placeholder}
+              </>
+            )}
+          </div>
         )}
-      </div>
+      </Droppable>
     </div>
   );
 }
 
+// ─────────────────────────────────────────────────────
+// DoneColumn — read-only, drag OUT supported, drag IN blocked
+// ─────────────────────────────────────────────────────
+function DoneColumn({
+  items,
+  onStartFocus,
+  onMoveToSection,
+  onRemoveFromMyWork,
+  selectedIds,
+  onToggleSelect,
+}: {
+  items: (WorkItem & { section: string })[];
+  onStartFocus: (item: WorkItem) => void;
+  onMoveToSection: (itemId: string, section: SectionType) => Promise<void>;
+  onRemoveFromMyWork: (itemId: string) => Promise<void>;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+}) {
+  const config = sectionConfig.done;
+
+  return (
+    <div className="flex flex-col min-w-[260px] md:min-w-[280px] flex-1 max-w-[320px]">
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <div className={cn('h-2.5 w-2.5 rounded-full', config.badgeColor)} />
+        <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-50">
+          {config.label}
+        </h3>
+        <Badge variant="secondary" className="text-xs ml-auto">
+          {items.length}
+        </Badge>
+      </div>
+
+      {/* isDropDisabled prevents dropping IN; items inside are still Draggable OUT */}
+      <Droppable droppableId="done" isDropDisabled={true}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={cn(
+              'flex-1 rounded-lg border-2 border-dashed p-2 space-y-2 transition-colors',
+              'border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/20'
+            )}
+          >
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <CheckCircle2 className="h-6 w-6 text-zinc-200 dark:text-zinc-700 mb-2" />
+                <p className="text-xs text-zinc-400">Nothing completed yet</p>
+              </div>
+            ) : (
+              <>
+                {items.map((item, index) => (
+                  <Draggable key={item.id} draggableId={item.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={cn(snapshot.isDragging && 'opacity-50')}
+                      >
+                        <WorkItemCard
+                          item={item}
+                          onStartFocus={onStartFocus}
+                          onMoveToSection={onMoveToSection}
+                          onRemoveFromMyWork={onRemoveFromMyWork}
+                          isReadOnly
+                          isSelected={selectedIds.has(item.id)}
+                          onToggleSelect={onToggleSelect}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </>
+            )}
+          </div>
+        )}
+      </Droppable>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// BatchToolbar — appears when items are selected
+// ─────────────────────────────────────────────────────
+function BatchToolbar({
+  selectedIds,
+  onClear,
+  onBatchComplete,
+  onBatchMove,
+}: {
+  selectedIds: Set<string>;
+  onClear: () => void;
+  onBatchComplete: () => Promise<void>;
+  onBatchMove: (section: SectionType) => Promise<void>;
+}) {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  const handle = async (action: string, fn: () => Promise<void>) => {
+    setIsLoading(action);
+    try {
+      await fn();
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  if (selectedIds.size === 0) return null;
+
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 bg-zinc-900 dark:bg-zinc-800 text-white rounded-xl shadow-2xl border border-zinc-700">
+      <span className="text-sm font-medium mr-1">
+        {selectedIds.size} selected
+      </span>
+      <div className="w-px h-4 bg-zinc-600" />
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-white hover:bg-zinc-700 h-7 text-xs"
+        disabled={isLoading !== null}
+        onClick={() => handle('complete', onBatchComplete)}
+      >
+        {isLoading === 'complete' ? (
+          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+        ) : (
+          <CheckCheck className="h-3 w-3 mr-1" />
+        )}
+        Complete
+      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-zinc-700 h-7 text-xs"
+            disabled={isLoading !== null}
+          >
+            <MoveRight className="h-3 w-3 mr-1" />
+            Move to
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center">
+          {(['now', 'next', 'later', 'waiting'] as const).map((s) => (
+            <DropdownMenuItem
+              key={s}
+              onClick={() => handle(`move-${s}`, () => onBatchMove(s))}
+            >
+              <div className={cn('h-2 w-2 rounded-full mr-2', sectionConfig[s].badgeColor)} />
+              {sectionConfig[s].label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="w-px h-4 bg-zinc-600" />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-zinc-400 hover:bg-zinc-700 hover:text-white h-7 text-xs"
+        onClick={onClear}
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// FocusMode (unchanged)
+// ─────────────────────────────────────────────────────
 function FocusMode({
   item,
   onExit,
@@ -416,7 +638,6 @@ function FocusMode({
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // AI Action state
   const [aiLoading, setAiLoading] = useState<TaskActionType | null>(null);
   const [aiPreview, setAiPreview] = useState<{
     action: TaskActionType;
@@ -481,7 +702,6 @@ function FocusMode({
     }
   };
 
-  // Update elapsed time every second when timer is running
   useEffect(() => {
     let interval: any;
     if (isTimerRunning) {
@@ -489,30 +709,21 @@ function FocusMode({
         setElapsedSeconds(getElapsedSeconds());
       }, 1000);
     } else {
-      // Update once when stopped to show final time
       setElapsedSeconds(getElapsedSeconds());
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, getElapsedSeconds]);
 
-  // Handle Page Visibility API - pause timer when tab is hidden, resume when visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab hidden - timer continues in background, just stop UI updates
-        console.log('Tab hidden - timer continues in background');
-      } else {
-        // Tab visible again - sync elapsed time from store
+      if (!document.hidden) {
         setElapsedSeconds(getElapsedSeconds());
-        console.log('Tab visible - synced timer state');
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [getElapsedSeconds]);
 
-  // Initialize elapsed seconds on mount
   useEffect(() => {
     setElapsedSeconds(getElapsedSeconds());
   }, [getElapsedSeconds]);
@@ -524,18 +735,13 @@ function FocusMode({
   };
 
   const handleToggleTimer = () => {
-    if (isTimerRunning) {
-      stopTimer();
-    } else {
-      startTimer();
-    }
+    if (isTimerRunning) stopTimer();
+    else startTimer();
   };
 
   const handleCompleteAndExit = async () => {
     try {
-      // Stop timer and save to database
       await completeAndSave(async (taskId: string, duration: number) => {
-        // Save time entry to database via resilient client
         const timeResponse = await apiClient.post('/api/time-entries', {
           task_id: taskId,
           duration_seconds: duration,
@@ -547,9 +753,8 @@ function FocusMode({
           console.error('Failed to save time entry');
         }
 
-        // Mark task as complete via resilient client
         const taskResponse = await apiClient.patch(`/api/tasks/${taskId}`, { status: 'done' });
-        
+
         if (taskResponse.success) {
           audioService.play('complete');
           hapticService.success();
@@ -582,7 +787,7 @@ function FocusMode({
             <h1 className="text-lg font-semibold">{item.title}</h1>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
             <Timer className="h-4 w-4 text-zinc-500" />
@@ -612,68 +817,31 @@ function FocusMode({
             </p>
           </div>
 
-          <div className="mt-8 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+          <div className="mt-8 p-4 bg-secondary dark:bg-secondary/30 rounded-lg border dark:border-secondary dark:border-secondary/50">
             <div className="flex items-center gap-2 mb-3">
-              <Zap className="h-4 w-4 text-indigo-600" />
+              <Zap className="h-4 w-4 text-[color:var(--foco-teal)]" />
               <span className="font-medium text-sm">AI Helpers</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={aiLoading !== null}
-                onClick={() => handleAiAction('break_into_subtasks')}
-              >
-                {aiLoading === 'break_into_subtasks' ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                ) : (
-                  <Sparkles className="h-3 w-3 mr-1.5" />
-                )}
-                Break into subtasks
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={aiLoading !== null}
-                onClick={() => handleAiAction('draft_update')}
-              >
-                {aiLoading === 'draft_update' ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                ) : (
-                  <Sparkles className="h-3 w-3 mr-1.5" />
-                )}
-                Draft update
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={aiLoading !== null}
-                onClick={() => handleAiAction('estimate_time')}
-              >
-                {aiLoading === 'estimate_time' ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                ) : (
-                  <Sparkles className="h-3 w-3 mr-1.5" />
-                )}
-                Estimate time
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={aiLoading !== null}
-                onClick={() => handleAiAction('find_similar')}
-              >
-                {aiLoading === 'find_similar' ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                ) : (
-                  <Sparkles className="h-3 w-3 mr-1.5" />
-                )}
-                Find similar work
-              </Button>
+              {(['break_into_subtasks', 'draft_update', 'estimate_time', 'find_similar'] as TaskActionType[]).map((action) => (
+                <Button
+                  key={action}
+                  variant="outline"
+                  size="sm"
+                  disabled={aiLoading !== null}
+                  onClick={() => handleAiAction(action)}
+                >
+                  {aiLoading === action ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 mr-1.5" />
+                  )}
+                  {action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </Button>
+              ))}
             </div>
           </div>
 
-          {/* AI Preview Modal */}
           <AiPreviewModal
             open={aiPreview !== null}
             action={aiPreview?.action || null}
@@ -685,27 +853,27 @@ function FocusMode({
 
         <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50 dark:bg-zinc-900">
           <h3 className="font-medium text-sm mb-4">Context</h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="text-xs text-zinc-500 uppercase tracking-wider">Project</label>
               <p className="text-sm mt-1">{(item.project as any)?.name || 'None'}</p>
             </div>
-            
+
             <div>
               <label className="text-xs text-zinc-500 uppercase tracking-wider">Due Date</label>
               <p className="text-sm mt-1">
-                {item.due_date 
-                  ? new Date(item.due_date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric' 
+                {item.due_date
+                  ? new Date(item.due_date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
                     })
                   : 'No due date'
                 }
               </p>
             </div>
-            
+
             <div>
               <label className="text-xs text-zinc-500 uppercase tracking-wider">Priority</label>
               <div className="flex items-center gap-2 mt-1">
@@ -720,10 +888,12 @@ function FocusMode({
   );
 }
 
+// ─────────────────────────────────────────────────────
+// MyWorkPage
+// ─────────────────────────────────────────────────────
 export default function MyWorkPage() {
   const { user } = useAuth();
   const { isActive, currentWorkItem, activate, deactivate } = useFocusModeStore();
-  const { openTaskModal } = useCreateTaskModal();
   const [items, setItems] = useState<(WorkItem & { section: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
@@ -735,21 +905,44 @@ export default function MyWorkPage() {
     }
     return '';
   });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // ── Velocity stats ────────────────────────────────
+  const velocityStats = useMemo(() => {
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+    const completedThisWeek = items.filter(i => {
+      const ts = i.completed_at || (i.status === 'done' ? i.updated_at : null);
+      if (!ts) return false;
+      const age = now - new Date(ts).getTime();
+      return age >= 0 && age < oneWeekMs;
+    }).length;
+
+    const lastWeek = items.filter(i => {
+      const ts = i.completed_at || (i.status === 'done' ? i.updated_at : null);
+      if (!ts) return false;
+      const age = now - new Date(ts).getTime();
+      return age >= oneWeekMs && age < 2 * oneWeekMs;
+    }).length;
+
+    return { completedThisWeek, lastWeek };
+  }, [items]);
 
   const fetchWorkItems = useCallback(async () => {
-    if (!user) return;
-    
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      // Fetch tasks assigned to the current user
       const response = await fetch('/api/my-work/assigned');
       const data = await response.json();
-      
+
       if (data.success) {
-        // Tasks already include section mapping from API
         setItems((data.data?.tasks || []).map((t: any) => ({
           ...t,
-          section: t.section || (t.status === 'in_progress' ? 'now' : t.status === 'next' ? 'next' : t.status === 'blocked' ? 'waiting' : 'later')
+          section: t.section || mapStatusToSection(t.status as WorkItemStatus),
         })));
       }
     } catch (error) {
@@ -760,9 +953,7 @@ export default function MyWorkPage() {
     }
   }, [user]);
 
-  useEffect(() => {
-    fetchWorkItems();
-  }, [fetchWorkItems]);
+  useEffect(() => { fetchWorkItems(); }, [fetchWorkItems]);
 
   useEffect(() => {
     if (!user) return;
@@ -783,23 +974,18 @@ export default function MyWorkPage() {
     }
   };
 
-  const handleStartFocus = (item: WorkItem) => {
-    activate(item);
-  };
+  const handleStartFocus = (item: WorkItem) => activate(item);
 
   const handlePlanMyDay = async () => {
     if (!user) return;
-    
     setIsPlanning(true);
     try {
       const response = await apiClient.post('/api/my-work/plan-day', {});
-      
       if (response.success) {
         audioService.play('complete');
         hapticService.success();
-        const data = response.data;
-        toast.success(data?.message || 'Day planned successfully!');
-        await fetchWorkItems(); // Refresh to show new organization
+        toast.success(response.data?.message || 'Day planned successfully!');
+        await fetchWorkItems();
       } else {
         audioService.play('error');
         hapticService.error();
@@ -815,13 +1001,7 @@ export default function MyWorkPage() {
     }
   };
 
-  const handleAddTask = (section: 'now' | 'next' | 'later' | 'waiting') => {
-    // Open task modal with section pre-selected
-    hapticService.light();
-    openTaskModal({ section });
-  };
-
-  const handleQuickAdd = async (title: string, section: 'now' | 'next' | 'later' | 'waiting') => {
+  const handleQuickAdd = async (title: string, section: SectionType) => {
     if (!selectedProjectId) {
       toast.error('Select a project first before adding a task');
       return;
@@ -829,7 +1009,7 @@ export default function MyWorkPage() {
     try {
       const response = await apiClient.post('/api/tasks', {
         title,
-        status: section === 'now' ? 'in_progress' : section === 'waiting' ? 'blocked' : section,
+        status: sectionToStatus[section],
         priority: 'medium',
         project_id: selectedProjectId,
       });
@@ -844,7 +1024,6 @@ export default function MyWorkPage() {
       if (data.queued) {
         toast.info('Task creation queued for offline sync');
       } else {
-        // Add the new task to the list
         setItems(prev => [...prev, { ...data, section }]);
         toast.success('Task created');
       }
@@ -859,17 +1038,9 @@ export default function MyWorkPage() {
     }
   };
 
-  const handleMoveToSection = useCallback(async (itemId: string, targetSection: 'now' | 'next' | 'later' | 'waiting') => {
-    // Map section to status
-    const statusMap: Record<string, WorkItemStatus> = {
-      now: 'in_progress',
-      next: 'next',
-      later: 'backlog',
-      waiting: 'blocked'
-    };
-
+  const handleMoveToSection = useCallback(async (itemId: string, targetSection: SectionType) => {
     try {
-      const response = await apiClient.patch(`/api/tasks/${itemId}`, { status: statusMap[targetSection] });
+      const response = await apiClient.patch(`/api/tasks/${itemId}`, { status: sectionToStatus[targetSection] });
 
       if (!response.success || !response.data) {
         audioService.play('error');
@@ -881,13 +1052,12 @@ export default function MyWorkPage() {
       if (data.queued) {
         toast.info('Move queued for offline sync');
       } else {
-        // Update local state
         setItems(prev => prev.map(item =>
           item.id === itemId
-            ? { ...item, section: targetSection, status: statusMap[targetSection] }
+            ? { ...item, section: targetSection, status: sectionToStatus[targetSection] }
             : item
         ));
-        toast.success(`Moved to ${targetSection}`);
+        toast.success(`Moved to ${sectionConfig[targetSection].label}`);
       }
       audioService.play('sync');
       hapticService.light();
@@ -899,9 +1069,23 @@ export default function MyWorkPage() {
     }
   }, []);
 
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    const destSection = destination.droppableId as SectionType;
+
+    // Reject drops INTO Done (belt-and-suspenders; isDropDisabled also prevents it)
+    if (destSection === 'done') return;
+
+    if (source.droppableId !== destination.droppableId) {
+      await handleMoveToSection(draggableId, destSection);
+    }
+  };
+
   const handleRemoveFromMyWork = useCallback(async (itemId: string) => {
     try {
-      // Remove assignee to take off my work list
       const response = await apiClient.patch(`/api/tasks/${itemId}`, { assignee_id: null });
 
       if (!response.success || !response.data) {
@@ -914,11 +1098,10 @@ export default function MyWorkPage() {
       if (data.queued) {
         toast.info('Removal queued for offline sync');
       } else {
-        // Remove from local state
         setItems(prev => prev.filter(item => item.id !== itemId));
         toast.success('Removed from My Tasks');
       }
-      audioService.play('error'); // Use warning sound for removal
+      audioService.play('error');
       hapticService.medium();
     } catch (error) {
       console.error('Failed to remove task:', error);
@@ -928,14 +1111,38 @@ export default function MyWorkPage() {
     }
   }, []);
 
+  // ── Selection handlers ────────────────────────────
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleClearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  const handleBatchComplete = useCallback(async () => {
+    const ids = [...selectedIds];
+    await Promise.all(ids.map(id => handleMoveToSection(id, 'done')));
+    setSelectedIds(new Set());
+    await fetchWorkItems();
+  }, [selectedIds, handleMoveToSection, fetchWorkItems]);
+
+  const handleBatchMove = useCallback(async (section: SectionType) => {
+    const ids = [...selectedIds];
+    await Promise.all(ids.map(id => handleMoveToSection(id, section)));
+    setSelectedIds(new Set());
+  }, [selectedIds, handleMoveToSection]);
+
   if (isActive && currentWorkItem) {
     return <FocusMode item={currentWorkItem} onExit={deactivate} onRefresh={fetchWorkItems} />;
   }
 
-  const getItemsBySection = (section: 'now' | 'next' | 'later' | 'waiting') => {
+  const getItemsBySection = (section: SectionType) => {
     let filtered = items.filter(item => item.section === section);
-    
-    // Apply filters
+
     if (filters.status.length > 0) {
       filtered = filtered.filter(item => filters.status.includes(item.status));
     }
@@ -957,43 +1164,46 @@ export default function MyWorkPage() {
       endOfWeek.setDate(today.getDate() + 7);
       const endOfMonth = new Date(today);
       endOfMonth.setMonth(today.getMonth() + 1);
-      
+
       filtered = filtered.filter(item => {
         if (!item.due_date && filters.dueDate?.preset === 'none') return true;
         if (!item.due_date) return false;
-        
         const dueDate = new Date(item.due_date);
         dueDate.setHours(0, 0, 0, 0);
-        
         switch (filters.dueDate?.preset) {
-          case 'today':
-            return dueDate.getTime() === today.getTime();
-          case 'week':
-            return dueDate >= today && dueDate <= endOfWeek;
-          case 'month':
-            return dueDate >= today && dueDate <= endOfMonth;
-          case 'overdue':
-            return dueDate < today;
-          default:
-            return true;
+          case 'today': return dueDate.getTime() === today.getTime();
+          case 'week': return dueDate >= today && dueDate <= endOfWeek;
+          case 'month': return dueDate >= today && dueDate <= endOfMonth;
+          case 'overdue': return dueDate < today;
+          default: return true;
         }
       });
     }
-    
+
     return filtered;
   };
 
-  const completedToday = items.filter(i => i.status === 'done').length; // This is a simplification
-  const totalToday = items.length;
-  const alignedItems = items.filter((i) => inferGoal(i) !== null).length;
-  const g1Items = items.filter((i) => inferGoal(i) === 'G1').length;
-  const alignmentPct = totalToday > 0 ? Math.round((alignedItems / totalToday) * 100) : 0;
+  const openItems = items.filter(i => i.status !== 'done');
+  const blockedCount = items.filter(i => i.status === 'blocked').length;
 
+  // ── Loading skeleton ──────────────────────────────
   if (isLoading) {
     return (
       <PageShell maxWidth="4xl">
-        <PageHeader title="Execution Board" subtitle="Loading strategy-aligned tasks..." />
-        <div className="space-y-8">
+        <PageHeader title="Execution Board" subtitle="Loading tasks..." />
+        {/* Desktop: 5-column skeleton */}
+        <div className="hidden md:flex gap-4 mt-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex-1 min-w-[220px] space-y-3">
+              <div className="h-5 w-20 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded" />
+              {[...Array(3)].map((_, j) => (
+                <div key={j} className="h-16 w-full bg-zinc-50 dark:bg-zinc-900 animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ))}
+        </div>
+        {/* Mobile: vertical stack skeleton */}
+        <div className="md:hidden space-y-8 mt-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="space-y-4">
               <div className="h-6 w-24 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded" />
@@ -1010,10 +1220,10 @@ export default function MyWorkPage() {
   }
 
   return (
-    <PageShell maxWidth="4xl">
+    <PageShell>
       <PageHeader
         title="Execution Board"
-        subtitle={`${completedToday} of ${totalToday} completed • ${g1Items} linked to Goal 1`}
+        subtitle={`${openItems.length} open • ${getItemsBySection('done').length} completed`}
         primaryAction={
           <div className="flex items-center gap-2">
             <Select value={selectedProjectId} onValueChange={handleProjectChange}>
@@ -1026,11 +1236,8 @@ export default function MyWorkPage() {
                 ))}
               </SelectContent>
             </Select>
-            <TaskFilterPopover
-              filters={filters}
-              onFiltersChange={setFilters}
-            />
-            {totalToday > 0 && (
+            <TaskFilterPopover filters={filters} onFiltersChange={setFilters} />
+            {openItems.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -1045,43 +1252,102 @@ export default function MyWorkPage() {
         }
       />
 
-      <Card className="mb-6 p-4 border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
-            <h3 className="text-base font-semibold mt-1">If it doesn&apos;t support one of the 5 goals, it doesn&apos;t ship.</h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">
-              Goal 1 is dominant: prioritize tasks that get to 10 paying customers in 90 days.
-            </p>
-          </div>
-          <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10">
-            G1 Absolute Priority
-          </Badge>
-        </div>
-      </Card>
+      {/* Velocity strip */}
+      <div className="flex items-center gap-3 text-sm text-zinc-500 mb-4 px-1">
+        <span className="flex items-center gap-1.5">
+          <strong className="text-zinc-900 dark:text-zinc-100">
+            {velocityStats.completedThisWeek}
+          </strong>{' '}
+          this week
+          {velocityStats.completedThisWeek > velocityStats.lastWeek ? (
+            <span className="flex items-center gap-0.5 text-emerald-500 text-xs">
+              <TrendingUp className="h-3 w-3" />
+              {velocityStats.completedThisWeek - velocityStats.lastWeek}
+            </span>
+          ) : velocityStats.completedThisWeek < velocityStats.lastWeek ? (
+            <span className="flex items-center gap-0.5 text-rose-500 text-xs">
+              <TrendingDown className="h-3 w-3" />
+              {velocityStats.lastWeek - velocityStats.completedThisWeek}
+            </span>
+          ) : (
+            <span className="text-zinc-400 text-xs">→ same</span>
+          )}
+        </span>
+        <span className="text-zinc-300 dark:text-zinc-600">·</span>
+        <span className="flex items-center gap-1.5">
+          <strong className="text-zinc-900 dark:text-zinc-100">{blockedCount}</strong> blocked
+        </span>
+      </div>
 
-      <div className="mb-8 p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-zinc-500" />
-            Execution Health
-          </span>
-          <span className="text-sm text-zinc-500">
-            {totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0}% done today
-          </span>
-        </div>
-        <Progress value={totalToday > 0 ? (completedToday / totalToday) * 100 : 0} className="h-2" />
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <Badge variant="outline" className="border-zinc-300 text-zinc-700">{alignedItems}/{totalToday} mapped to strategy ({alignmentPct}%)</Badge>
-          <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-500/10">{g1Items} for Goal 1</Badge>
-          <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-500/10">Keep nav focused: build only what drives value</Badge>
+      {/* Desktop kanban layout — 5 columns */}
+      <div className="hidden md:block -mx-6 -mb-6 overflow-x-auto">
+        <div className="px-6 pb-6">
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex gap-4">
+              {(['now', 'next', 'later', 'waiting'] as const).map(section => (
+                <KanbanColumn
+                  key={section}
+                  section={section}
+                  items={getItemsBySection(section)}
+                  onStartFocus={handleStartFocus}
+                  onQuickAdd={handleQuickAdd}
+                  onMoveToSection={handleMoveToSection}
+                  onRemoveFromMyWork={handleRemoveFromMyWork}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                />
+              ))}
+              <DoneColumn
+                items={getItemsBySection('done')}
+                onStartFocus={handleStartFocus}
+                onMoveToSection={handleMoveToSection}
+                onRemoveFromMyWork={handleRemoveFromMyWork}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+              />
+            </div>
+          </DragDropContext>
         </div>
       </div>
 
-      <Section section="now" items={getItemsBySection('now')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
-      <Section section="next" items={getItemsBySection('next')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
-      <Section section="later" items={getItemsBySection('later')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
-      <Section section="waiting" items={getItemsBySection('waiting')} onStartFocus={handleStartFocus} onAddTask={handleAddTask} onQuickAdd={handleQuickAdd} onMoveToSection={handleMoveToSection} onRemoveFromMyWork={handleRemoveFromMyWork} />
+      {/* Mobile stacked layout */}
+      <div className="md:hidden space-y-6">
+        {(['now', 'next', 'later', 'waiting', 'done'] as SectionType[]).map(section => {
+          const sectionItems = getItemsBySection(section);
+          const config = sectionConfig[section];
+          return (
+            <div key={section}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className={cn('h-2.5 w-2.5 rounded-full', config.badgeColor)} />
+                <h3 className="font-semibold text-sm">{config.label}</h3>
+                <Badge variant="secondary" className="text-xs ml-auto">{sectionItems.length}</Badge>
+              </div>
+              <div className="space-y-2">
+                {sectionItems.map(item => (
+                  <WorkItemCard
+                    key={item.id}
+                    item={item}
+                    onStartFocus={handleStartFocus}
+                    onMoveToSection={handleMoveToSection}
+                    onRemoveFromMyWork={handleRemoveFromMyWork}
+                    isReadOnly={section === 'done'}
+                    isSelected={selectedIds.has(item.id)}
+                    onToggleSelect={handleToggleSelect}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Batch toolbar */}
+      <BatchToolbar
+        selectedIds={selectedIds}
+        onClear={handleClearSelection}
+        onBatchComplete={handleBatchComplete}
+        onBatchMove={handleBatchMove}
+      />
     </PageShell>
   );
 }

@@ -64,3 +64,4 @@ pids/
 
 # Claude Code local session data
 .claude/
+.env.local

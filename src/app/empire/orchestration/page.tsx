@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Orchestration | Empire OS',
-  description: 'm2c1 12-Phase Workflow Engine - Manage AI orchestration workflows',
+  description: '12-Phase Workflow Engine - Manage AI orchestration workflows',
 };
 
 async function getProjects() {
@@ -37,7 +37,7 @@ export default async function OrchestrationPage() {
     <PageShell maxWidth="7xl">
       <PageHeader
         title="Orchestration"
-        subtitle="m2c1 12-Phase Workflow Engine"
+        subtitle="12-Phase Workflow Engine"
       />
       <Suspense fallback={<OrchestrationSkeleton />}>
         <WorkflowOrchestrator projects={projects} />

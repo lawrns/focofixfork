@@ -34,10 +34,9 @@ export default function Header() {
   const router = useRouter()
   const { user } = useAuth()
   const { t } = useTranslation()
+  const PRIMARY_ACCOUNT_EMAIL = user?.email || ''
 
-  // Use actual user or null - no fallback to prevent confusion
-  const displayUser = user
-  const avatarText = displayUser?.email?.charAt(0).toUpperCase() || '?'
+  const avatarText = PRIMARY_ACCOUNT_EMAIL.charAt(0).toUpperCase()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -193,9 +192,9 @@ export default function Header() {
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-xs font-medium text-zinc-900">{displayUser?.email}</p>
+                <p className="text-xs font-medium text-zinc-900">{PRIMARY_ACCOUNT_EMAIL}</p>
                 <p className="text-[11px] text-zinc-500">
-                  {displayUser?.user_metadata?.full_name || 'User'}
+                  {PRIMARY_ACCOUNT_EMAIL}
                 </p>
               </div>
             </DropdownMenuLabel>

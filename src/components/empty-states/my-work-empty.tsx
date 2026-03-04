@@ -1,7 +1,6 @@
 'use client'
 
-import { BaseEmptyState } from './base-empty-state'
-import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 
 type MyWorkSection = 'now' | 'next' | 'later' | 'waiting'
 
@@ -12,32 +11,22 @@ interface MyWorkEmptyProps {
 
 const sectionConfig: Record<MyWorkSection, {
   title: string
-  description: string
-  imageSrc: string
   buttonLabel: string
 }> = {
   now: {
-    title: 'No urgent tasks',
-    description: 'You\'re all caught up! Focus time is available for deep work, or add a new task to tackle now.',
-    imageSrc: '/images/empty-states/my-work-now.png',
+    title: 'No tasks in Now',
     buttonLabel: 'Add Task'
   },
   next: {
-    title: 'Nothing queued up',
-    description: 'Plan ahead by adding tasks you\'ll work on next. Stay organized and keep your momentum going.',
-    imageSrc: '/images/empty-states/my-work-next.png',
+    title: 'No tasks in Next',
     buttonLabel: 'Add Task'
   },
   later: {
-    title: 'No backlog items',
-    description: 'Your backlog is clear! Add future tasks or ideas here to keep track of what\'s coming down the line.',
-    imageSrc: '/images/empty-states/my-work-later.png',
+    title: 'No tasks in Later',
     buttonLabel: 'Add Task'
   },
   waiting: {
-    title: 'Nothing on hold',
-    description: 'Great! No tasks are blocked or waiting on others. Keep things moving forward.',
-    imageSrc: '/images/empty-states/my-work-waiting.png',
+    title: 'No tasks in Waiting',
     buttonLabel: 'Add Task'
   }
 }
@@ -45,29 +34,14 @@ const sectionConfig: Record<MyWorkSection, {
 export function MyWorkEmpty({ section, onAddTask }: MyWorkEmptyProps) {
   const config = sectionConfig[section]
 
-  const illustration = (
-    <div className="relative w-full h-full">
-      <Image
-        src={config.imageSrc}
-        alt={`${section} section empty state`}
-        width={192}
-        height={192}
-        className="mx-auto dark:opacity-90"
-        priority
-      />
-    </div>
-  )
-
   return (
-    <BaseEmptyState
-      title={config.title}
-      description={config.description}
-      illustration={illustration}
-      primaryAction={{
-        label: config.buttonLabel,
-        onClick: onAddTask,
-        variant: 'default'
-      }}
-    />
+    <div className="rounded-md border border-dashed border-zinc-300 dark:border-zinc-700 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">{config.title}</p>
+        <Button size="sm" variant="outline" onClick={onAddTask}>
+          {config.buttonLabel}
+        </Button>
+      </div>
+    </div>
   )
 }

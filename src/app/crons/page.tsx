@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Clock,
   Play,
@@ -20,6 +21,7 @@ import {
   Users,
   Activity,
   AlertTriangle,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -128,6 +130,10 @@ function describeCron(expr: string): string {
   return ''
 }
 
+function isValidCronExpression(expr: string): boolean {
+  return expr.trim().split(/\s+/).length === 5
+}
+
 function relativeTime(iso: string | null): string {
   if (!iso) return 'never'
   const diff = Date.now() - new Date(iso).getTime()
@@ -183,10 +189,16 @@ function CreateCronDialog({
   const [schedule, setSchedule] = useState('0 * * * *')
   const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !schedule.trim()) return
+    if (!isValidCronExpression(schedule)) {
+      setScheduleError('Cron expression must have 5 fields (e.g. "0 * * * *").')
+      return
+    }
+    setScheduleError(null)
     setSaving(true)
     try {
       const res = await fetch('/api/crons', {
@@ -238,13 +250,18 @@ function CreateCronDialog({
               id="cron-schedule"
               placeholder="0 * * * *"
               value={schedule}
-              onChange={(e) => setSchedule(e.target.value)}
+              onChange={(e) => {
+                setSchedule(e.target.value)
+                if (scheduleError) setScheduleError(null)
+              }}
               required
               className="font-mono"
             />
-            {describeCron(schedule) && (
+            {scheduleError ? (
+              <p className="text-xs text-rose-600 dark:text-rose-400">{scheduleError}</p>
+            ) : describeCron(schedule) ? (
               <p className="text-xs text-muted-foreground mt-1">{describeCron(schedule)}</p>
-            )}
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cron-desc">Description (optional)</Label>
@@ -265,6 +282,151 @@ function CreateCronDialog({
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Edit Cron Dialog ─────────────────────────────────────────────────────────
+
+function EditCronDialog({
+  cron,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  cron: Cron | null
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  onSaved: (cron: Cron) => void
+}) {
+  const [name, setName] = useState('')
+  const [schedule, setSchedule] = useState('')
+  const [description, setDescription] = useState('')
+  const [handler, setHandler] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!cron || !open) return
+    setName(cron.name ?? '')
+    setSchedule(cron.schedule ?? '')
+    setDescription(cron.description ?? '')
+    setHandler(cron.handler ?? '')
+    setScheduleError(null)
+  }, [cron, open])
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!cron || cron.native) return
+
+    const nextSchedule = schedule.trim()
+    if (!isValidCronExpression(nextSchedule)) {
+      setScheduleError('Cron expression must have 5 fields (e.g. "0 * * * *").')
+      return
+    }
+
+    setScheduleError(null)
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/crons/${cron.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          schedule: nextSchedule,
+          description: description.trim() || null,
+          handler: handler.trim() || null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        toast.error(json.error ?? 'Failed to update cron')
+        return
+      }
+      toast.success(`Cron "${name.trim()}" updated`)
+      onSaved(json.data)
+      onOpenChange(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!cron) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Cron</DialogTitle>
+        </DialogHeader>
+        {cron.native ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This cron is managed by ClawdBot and is read-only in this UI.
+            </p>
+            <DialogFooter>
+              <Button onClick={() => onOpenChange(false)}>Close</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cron-name">Name</Label>
+              <Input
+                id="edit-cron-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cron-schedule">Schedule (cron expression)</Label>
+              <Input
+                id="edit-cron-schedule"
+                value={schedule}
+                onChange={(e) => {
+                  setSchedule(e.target.value)
+                  if (scheduleError) setScheduleError(null)
+                }}
+                required
+                className="font-mono"
+              />
+              {scheduleError ? (
+                <p className="text-xs text-rose-600 dark:text-rose-400">{scheduleError}</p>
+              ) : describeCron(schedule) ? (
+                <p className="text-xs text-muted-foreground">{describeCron(schedule)}</p>
+              ) : null}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cron-desc">Description (optional)</Label>
+              <Textarea
+                id="edit-cron-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cron-handler">Handler (optional)</Label>
+              <Input
+                id="edit-cron-handler"
+                value={handler}
+                onChange={(e) => setHandler(e.target.value)}
+                placeholder="leave empty to keep backend default"
+                className="font-mono"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -526,14 +688,17 @@ function DeleteCronDialog({
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CronsPage() {
+  const searchParams = useSearchParams()
   const { user, loading } = useAuth()
   const [crons, setCrons] = useState<Cron[]>([])
   const [health, setHealth] = useState<HealthData | null>(null)
   const [fetching, setFetching] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [runsDialogOpen, setRunsDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedCron, setSelectedCron] = useState<Cron | null>(null)
+  const [pendingCronId, setPendingCronId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setFetching(true)
@@ -559,24 +724,38 @@ export default function CronsPage() {
 
   async function toggle(cron: Cron) {
     if (cron.native) return // Prevent toggling native crons from UI
-    const res = await fetch(`/api/crons/${cron.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: !cron.enabled }),
-    })
-    if (res.ok) {
-      setCrons((c) => c.map((x) => (x.id === cron.id ? { ...x, enabled: !x.enabled } : x)))
-      toast.success(`Cron ${!cron.enabled ? 'enabled' : 'disabled'}`)
+    setPendingCronId(cron.id)
+    try {
+      const res = await fetch(`/api/crons/${cron.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !cron.enabled }),
+      })
+      if (res.ok) {
+        setCrons((c) => c.map((x) => (x.id === cron.id ? { ...x, enabled: !x.enabled } : x)))
+        toast.success(`Cron ${!cron.enabled ? 'enabled' : 'disabled'}`)
+      } else {
+        const json = await res.json().catch(() => ({}))
+        toast.error(json.error ?? 'Failed to update cron')
+      }
+    } finally {
+      setPendingCronId(null)
     }
   }
 
   async function testRun(cron: Cron) {
-    const res = await fetch(`/api/crons/${cron.id}/test-run`, { method: 'POST' })
-    if (res.ok) {
-      toast.success(`Test run queued for "${cron.name}"`)
-      setTimeout(load, 2000)
-    } else {
-      toast.error('Failed to queue test run')
+    setPendingCronId(cron.id)
+    try {
+      const res = await fetch(`/api/crons/${cron.id}/test-run`, { method: 'POST' })
+      if (res.ok) {
+        toast.success(`Test run queued for "${cron.name}"`)
+        setTimeout(load, 2000)
+      } else {
+        const json = await res.json().catch(() => ({}))
+        toast.error(json.error ?? 'Failed to queue test run')
+      }
+    } finally {
+      setPendingCronId(null)
     }
   }
 
@@ -590,9 +769,32 @@ export default function CronsPage() {
     setDeleteDialogOpen(true)
   }
 
+  function openEdit(cron: Cron) {
+    setSelectedCron(cron)
+    setEditDialogOpen(true)
+  }
+
   useEffect(() => {
     if (user) load()
   }, [user, load])
+
+  useEffect(() => {
+    if (!user) return
+    if (searchParams.get('create') === 'true') {
+      setDialogOpen(true)
+    }
+  }, [searchParams, user])
+
+  useEffect(() => {
+    if (!user || crons.length === 0) return
+    const editId = searchParams.get('edit')
+    if (!editId) return
+    const match = crons.find((c) => c.id === editId)
+    if (match) {
+      setSelectedCron(match)
+      setEditDialogOpen(true)
+    }
+  }, [searchParams, crons, user])
 
   if (loading)
     return (
@@ -622,6 +824,16 @@ export default function CronsPage() {
         onOpenChange={setDialogOpen}
         onCreated={(cron) => {
           setCrons((c) => [cron, ...c])
+          load()
+        }}
+      />
+
+      <EditCronDialog
+        cron={selectedCron}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSaved={(updated) => {
+          setCrons((c) => c.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)))
           load()
         }}
       />
@@ -706,6 +918,11 @@ export default function CronsPage() {
                       {cron.description}
                     </p>
                   )}
+                  {cron.native && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Read-only in this UI. Managed by ClawdBot.
+                    </p>
+                  )}
 
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-muted-foreground">
                     <span className="font-mono">{cron.handler}</span>
@@ -731,7 +948,13 @@ export default function CronsPage() {
                     Runs
                   </Button>
                   {!cron.native && (
-                    <Button variant="ghost" size="sm" onClick={() => testRun(cron)}>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(cron)} disabled={pendingCronId === cron.id}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                  {!cron.native && (
+                    <Button variant="ghost" size="sm" onClick={() => testRun(cron)} disabled={pendingCronId === cron.id}>
                       <Play className="h-3.5 w-3.5 mr-1" />
                       Test
                     </Button>
@@ -749,14 +972,14 @@ export default function CronsPage() {
                     </Tooltip>
                   ) : (
                     <>
-                      <Button variant="ghost" size="icon" onClick={() => toggle(cron)}>
+                      <Button variant="ghost" size="icon" onClick={() => toggle(cron)} disabled={pendingCronId === cron.id}>
                         {cron.enabled ? (
                           <ToggleRight className="h-5 w-5 text-[color:var(--foco-teal)]" />
                         ) : (
                           <ToggleLeft className="h-5 w-5 text-muted-foreground" />
                         )}
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openDelete(cron)}>
+                      <Button variant="ghost" size="icon" onClick={() => openDelete(cron)} disabled={pendingCronId === cron.id}>
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-rose-500" />
                       </Button>
                     </>

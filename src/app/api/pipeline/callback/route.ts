@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { appendHandbookLearnings } from '@/lib/pipeline/handbook-sync'
 import { indexFromPipelineRun } from '@/features/memory'
 import { sendTelegramAlert } from '@/lib/services/telegram'
+import { authorizeAgentCallback } from '@/lib/security/agent-callback-auth'
 import type { PlanResult, ExecutionResult, ReviewReport } from '@/lib/pipeline/types'
 
 export const dynamic = 'force-dynamic'
@@ -19,10 +20,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'DB not available' }, { status: 500 })
     }
 
-    const body = await req.json()
+    const rawBody = await req.text()
+    if (!authorizeAgentCallback(req, rawBody)) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    let body: any = {}
+    try {
+      body = rawBody ? JSON.parse(rawBody) : {}
+    } catch {
+      return NextResponse.json({ ok: false, error: 'Invalid JSON payload' }, { status: 400 })
+    }
     // ClawdBot sends: run_id (external), status, output, task_id, tokens_in, tokens_out, cost_usd, model, completed_at
     // task_id format: pipeline:{pipeline_run_id}:{phase}
-    const { task_id, status, output, tokens_in, tokens_out, cost_usd, model, completed_at } = body
+    const { task_id, run_id, status, output, tokens_in, tokens_out, cost_usd, model, completed_at } = body
 
     if (!task_id) {
       return NextResponse.json({ ok: false, error: 'Missing task_id' }, { status: 400 })
@@ -52,6 +63,26 @@ export async function POST(req: NextRequest) {
     if (fetchError || !run) {
       console.error('[Pipeline:callback] run not found:', pipelineRunId, fetchError)
       return NextResponse.json({ ok: false, error: 'Pipeline run not found' }, { status: 404 })
+    }
+
+    const expectedRunId = phase === 'plan'
+      ? run.planner_run_id
+      : phase === 'execute'
+        ? run.executor_run_id
+        : run.reviewer_run_id
+
+    if (run_id && expectedRunId && run_id !== expectedRunId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Callback run_id does not match the active run for this phase',
+        },
+        { status: 409 }
+      )
+    }
+
+    if ((phase === 'plan' && run.plan_result) || (phase === 'execute' && run.execution_result) || (phase === 'review' && run.review_result)) {
+      return NextResponse.json({ ok: true, deduplicated: true })
     }
 
     if (status === 'failed' || status === 'error') {
@@ -93,6 +124,10 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', pipelineRunId)
     } else if (phase === 'execute') {
+      if (!run.plan_result) {
+        return NextResponse.json({ ok: false, error: 'Plan phase not completed yet' }, { status: 409 })
+      }
+
       const executionResult = parsed as ExecutionResult
       const filesChanged = executionResult.patches?.map((p) => p.file) ?? []
       // Heuristic: db_changes if any patch targets a migration file
@@ -118,6 +153,10 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', pipelineRunId)
     } else if (phase === 'review') {
+      if (!run.plan_result || !run.execution_result) {
+        return NextResponse.json({ ok: false, error: 'Plan/execute phases not completed yet' }, { status: 409 })
+      }
+
       const reviewResult = parsed as ReviewReport
       const updates: Record<string, unknown> = {
         review_result: reviewResult,

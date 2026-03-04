@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { completePhaseTask } from '@/features/orchestration/services/orchestration-engine';
+import { authorizeAgentCallback } from '@/lib/security/agent-callback-auth'
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +17,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'DB not available' }, { status: 500 });
     }
 
-    const body = await req.json();
+    const rawBody = await req.text()
+    if (!authorizeAgentCallback(req, rawBody)) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    let body: any = {}
+    try {
+      body = rawBody ? JSON.parse(rawBody) : {}
+    } catch {
+      return NextResponse.json({ ok: false, error: 'Invalid JSON payload' }, { status: 400 })
+    }
     // ClawdBot sends: run_id (external), status, output, task_id, tokens_in, tokens_out, cost_usd, model, completed_at
     // task_id format: m2c1:{workflow_id}:{phase_idx} or m2c1:{workflow_id}:{phase_idx}:{shard_idx}
     const { 
+      run_id,
       task_id, 
       status, 
       output, 
@@ -103,50 +115,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find the task (either by external_run_id or find/create one)
-    // First, try to find by matching phase and running status
-    let { data: task } = await supabaseAdmin
-      .from('phase_tasks')
-      .select('id')
-      .eq('phase_id', phase.id)
-      .eq('status', 'running')
-      .maybeSingle();
-
-    // If no running task found and this is a shard, look for pending tasks
-    if (!task && shardIdx !== undefined) {
-      const { data: shardTask } = await supabaseAdmin
+    // Correlate callback to a known task.
+    let task: { id: string; status: string } | null = null
+    if (typeof run_id === 'string' && run_id.length > 0) {
+      const { data: byRunId } = await supabaseAdmin
         .from('phase_tasks')
-        .select('id')
+        .select('id, status')
         .eq('phase_id', phase.id)
-        .eq('shard_idx', shardIdx)
-        .maybeSingle();
-      
-      if (shardTask) {
-        task = shardTask;
-      }
+        .eq('external_run_id', run_id)
+        .maybeSingle()
+      task = byRunId
     }
 
-    // If still no task, create one
-    if (!task) {
-      const { data: newTask } = await supabaseAdmin
+    if (!task && shardIdx !== undefined) {
+      const { data: byShard } = await supabaseAdmin
         .from('phase_tasks')
-        .insert({
-          phase_id: phase.id,
-          shard_idx: shardIdx ?? 0,
-          title: `Phase ${phaseIdx} execution`,
-          status: 'running',
-        })
-        .select('id')
-        .single();
-      
-      task = newTask;
+        .select('id, status')
+        .eq('phase_id', phase.id)
+        .eq('shard_idx', shardIdx)
+        .maybeSingle()
+      task = byShard
+    }
+
+    if (!task && !run_id) {
+      const { data: runningTask } = await supabaseAdmin
+        .from('phase_tasks')
+        .select('id, status')
+        .eq('phase_id', phase.id)
+        .eq('status', 'running')
+        .maybeSingle()
+      task = runningTask
     }
 
     if (!task) {
       return NextResponse.json(
-        { ok: false, error: 'Could not find or create task' },
-        { status: 500 }
+        { ok: false, error: 'Could not correlate callback to phase task' },
+        { status: 404 }
       );
+    }
+
+    if (task.status === 'complete' || task.status === 'failed') {
+      return NextResponse.json({ ok: true, deduplicated: true });
     }
 
     // Complete the phase task

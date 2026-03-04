@@ -13,6 +13,12 @@ function buildSessionSummary(objective?: string): string {
   return `Autonomous co-founder session: ${objective.trim().slice(0, 180)}`
 }
 
+function parseWorkspaceId(body: Record<string, unknown>): string | null {
+  return typeof body.workspace_id === 'string' && body.workspace_id.length > 0
+    ? body.workspace_id
+    : null
+}
+
 export async function POST(req: NextRequest) {
   let authResponse: NextResponse | undefined
   try {
@@ -22,8 +28,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
     const objective = typeof body.objective === 'string' ? body.objective : undefined
+    const workspaceId = parseWorkspaceId(body)
 
-    const policy = await getUserCoFounderPolicy(supabase, user.id)
+    const policy = await getUserCoFounderPolicy(supabase, user.id, workspaceId)
     if (policy.mode === 'off') {
       return mergeAuthResponse(validationFailedResponse('Co-founder autonomy is disabled in settings'), authResponse)
     }
@@ -53,6 +60,7 @@ export async function POST(req: NextRequest) {
       .insert({
         user_id: user.id,
         run_id: runRow.id,
+        workspace_id: workspaceId,
         objective: objective ?? null,
         mode: policy.mode,
         profile: policy.profile,

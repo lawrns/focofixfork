@@ -48,4 +48,20 @@ describe('autonomy policy', () => {
     expect(inWindow).toBe(true)
     expect(outWindow).toBe(false)
   })
+
+  it('evaluates overnight window using configured timezone', () => {
+    const policy = resolveCoFounderPolicy({
+      cofounder: {
+        overnightWindow: {
+          enabled: true,
+          timezone: 'UTC',
+          start: '22:00',
+          end: '07:00',
+        },
+      },
+    })
+
+    expect(isInOvernightWindow(policy, new Date('2026-03-03T23:30:00Z'))).toBe(true)
+    expect(isInOvernightWindow(policy, new Date('2026-03-03T14:00:00Z'))).toBe(false)
+  })
 })

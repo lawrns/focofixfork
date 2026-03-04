@@ -58,7 +58,7 @@ export function AppShell({ children }: AppShellProps) {
   // Gate sidebar collapse on isMounted
   const sidebarCollapsedAfterMount = isMounted && sidebarCollapsed;
 
-  const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-60';
+  const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-56 lg:pl-60';
 
   return (
     <SwarmProvider>
@@ -104,7 +104,7 @@ export function AppShell({ children }: AppShellProps) {
           isAppPage && mainPaddingLeft,
         )}
       >
-        <div className="px-3 py-3 md:px-4 md:py-6 w-full">
+        <div className="w-full px-2 py-3 sm:px-3 md:px-5 md:py-5 lg:px-6 lg:py-6">
           {children}
         </div>
       </main>

@@ -282,8 +282,7 @@ export async function shardPhase(
 
         // Dispatch to ClawdBot for each shard
         const taskId = `m2c1:${workflow.id}:${phase.phase_idx}:${i}`;
-        
-        await dispatchToClawdBot({
+        const dispatchResult = await dispatchToClawdBot({
           taskId,
           title: shard.title,
           description: shard.description,
@@ -298,6 +297,25 @@ export async function shardPhase(
           agentId: 'orchestrator',
           callbackUrl: CALLBACK_URL,
         });
+
+        if (!dispatchResult.success) {
+          await supabaseAdmin
+            .from('phase_tasks')
+            .update({ status: 'failed' })
+            .eq('id', task.id);
+          return {
+            success: false,
+            error: dispatchResult.error || `Failed to dispatch shard ${i + 1}`,
+          };
+        }
+
+        await supabaseAdmin
+          .from('phase_tasks')
+          .update({
+            status: 'running',
+            external_run_id: dispatchResult.externalRunId ?? null,
+          })
+          .eq('id', task.id);
       }
     }
 

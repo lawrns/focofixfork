@@ -37,7 +37,7 @@ export function Breadcrumbs({ projectName, taskTitle, className }: BreadcrumbsPr
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <span className="max-w-[70vw] truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
           {currentBreadcrumb.truncated || currentBreadcrumb.label}
         </span>
       </nav>
@@ -47,7 +47,7 @@ export function Breadcrumbs({ projectName, taskTitle, className }: BreadcrumbsPr
   // Desktop: show full breadcrumb path
   return (
     <nav
-      className={cn('flex items-center gap-1 text-sm', className)}
+      className={cn('flex items-center gap-1 text-sm min-w-0 overflow-hidden', className)}
       aria-label="Breadcrumb"
       data-testid="breadcrumbs-full"
     >
@@ -68,7 +68,7 @@ export function Breadcrumbs({ projectName, taskTitle, className }: BreadcrumbsPr
           {breadcrumb.href ? (
             <Link
               href={breadcrumb.href}
-              className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+              className="max-w-[10rem] lg:max-w-[14rem] xl:max-w-[18rem] truncate text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
               aria-label={`Navigate to ${breadcrumb.label}`}
             >
               {breadcrumb.truncated || breadcrumb.label}
@@ -76,7 +76,7 @@ export function Breadcrumbs({ projectName, taskTitle, className }: BreadcrumbsPr
           ) : (
             <span
               className={cn(
-                'text-zinc-900 dark:text-zinc-100',
+                'max-w-[11rem] lg:max-w-[16rem] xl:max-w-[20rem] truncate text-zinc-900 dark:text-zinc-100',
                 breadcrumb.isCurrent && 'font-bold'
               )}
             >

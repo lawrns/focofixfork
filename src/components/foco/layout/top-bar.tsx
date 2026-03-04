@@ -127,21 +127,21 @@ export function TopBar({ className }: TopBarProps) {
     <header
       className={cn(
         'fixed top-0 right-0 z-40 bg-background border-b border-border',
-        'flex items-center gap-2 md:gap-4',
+        'flex items-center gap-1.5 sm:gap-2 md:gap-3',
         'transition-all duration-200',
-        'left-0 md:left-60',
+        'left-0 md:left-56 lg:left-60',
         sidebarCollapsed && 'md:left-[52px]',
-        'h-12 md:h-14 px-2 md:px-4',
+        'h-12 md:h-14 pl-14 pr-2 sm:pl-16 sm:pr-3 md:px-4',
         className
       )}
     >
       {/* Breadcrumbs - Hidden on mobile */}
-      <div className="hidden md:flex md:flex-1 md:min-w-0">
+      <div className="hidden md:flex md:flex-1 md:min-w-0 md:max-w-[min(44vw,40rem)]">
         <Breadcrumbs className="text-xs" />
       </div>
 
       {/* Search Bar - Icon button on mobile, full search on desktop */}
-      <div className="flex items-center gap-2 flex-1 md:flex-none md:max-w-xs">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0 md:flex-none md:max-w-xs">
         {/* Mobile: Search icon button */}
         <Button
           variant="ghost"
@@ -168,7 +168,7 @@ export function TopBar({ className }: TopBarProps) {
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-1 md:gap-2 ml-auto">
+      <div className="ml-auto flex min-w-0 items-center gap-1 md:gap-1.5">
         {user && (
           <TooltipProvider>
             <Tooltip>
@@ -182,7 +182,7 @@ export function TopBar({ className }: TopBarProps) {
                   aria-label={fleetPaused ? 'Resume autonomous mode' : 'Pause autonomous mode'}
                 >
                   {fleetPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
-                  <span className="hidden md:inline">{fleetPaused ? 'Autonomy Off' : 'Autonomy On'}</span>
+                  <span className="hidden lg:inline">{fleetPaused ? 'Autonomy Off' : 'Autonomy On'}</span>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -208,8 +208,8 @@ export function TopBar({ className }: TopBarProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="default" size="sm" className="h-9 min-h-[44px] px-2 md:px-3">
               <Plus className="h-4 w-4" />
-              <span className="hidden md:inline">New Action</span>
-              <ChevronDown className="h-3 w-3 opacity-60 hidden md:inline" />
+              <span className="hidden lg:inline">New Action</span>
+              <ChevronDown className="h-3 w-3 opacity-60 hidden lg:inline" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -233,7 +233,7 @@ export function TopBar({ className }: TopBarProps) {
         </DropdownMenu>
 
         {/* Search Link */}
-        <Link href="/search">
+        <Link href="/search" className="hidden lg:inline-flex">
           <Button variant="ghost" size="icon" className="h-9 w-9 min-h-[44px] min-w-[44px]" aria-label="Go to search page">
             <Search className="h-4 w-4" />
           </Button>
@@ -246,7 +246,7 @@ export function TopBar({ className }: TopBarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 min-h-[44px] min-w-[44px]"
+                className="hidden lg:inline-flex h-9 w-9 min-h-[44px] min-w-[44px]"
                 onClick={openPromptOptimizer}
                 aria-label="Optimize prompt"
               >

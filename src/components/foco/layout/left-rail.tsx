@@ -113,7 +113,7 @@ export function LeftRail() {
         href={item.href}
         className={cn(
           'relative flex items-center gap-3 rounded-md text-[13px] font-medium transition-all duration-150',
-          sidebarCollapsed ? 'px-3 py-2.5 justify-center' : 'px-3 py-2',
+          sidebarCollapsed ? 'px-3 py-2.5 justify-center' : 'px-3 py-2.5',
           isActive
             ? [
                 'text-[color:var(--foco-teal)]',
@@ -177,7 +177,7 @@ export function LeftRail() {
         'hidden md:flex',
         'border-r border-[var(--foco-rail-border)]',
         'bg-[var(--foco-rail-bg)]',
-        sidebarCollapsed ? 'w-[52px]' : 'w-60',
+        sidebarCollapsed ? 'w-[52px]' : 'w-56 lg:w-60',
       )}
     >
       {/* Logo */}
@@ -204,7 +204,7 @@ export function LeftRail() {
       </div>
 
       {/* Navigation */}
-      <nav ref={navRef} className="relative flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-hide">
+      <nav ref={navRef} className="relative flex-1 overflow-y-auto py-4 px-2.5 space-y-1 scrollbar-hide">
 
         {/* Dispatch button */}
         {sidebarCollapsed ? (
@@ -213,7 +213,7 @@ export function LeftRail() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-full h-9 mb-3 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
+                className="w-full h-9 mb-4 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
                 onClick={() => router.push('/empire/command')}
               >
                 <Send className="h-4 w-4" />
@@ -224,7 +224,7 @@ export function LeftRail() {
         ) : (
           <Button
             variant="ghost"
-            className="w-full justify-start mb-3 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
+            className="w-full justify-start mb-4 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
             onClick={() => router.push('/empire/command')}
           >
             <Send className="h-4 w-4 mr-2" />
@@ -238,11 +238,11 @@ export function LeftRail() {
         ))}
 
         {/* Divider */}
-        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+        <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
         {/* Empire section label */}
         {!sidebarCollapsed && (
-          <div className="px-3 mb-1">
+          <div className="px-3 pb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
               Empire
             </span>
@@ -253,11 +253,11 @@ export function LeftRail() {
         {empireNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Divider */}
-        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+        <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
         {/* Projects section label */}
         {!sidebarCollapsed && (
-          <div className="px-3 mb-1">
+          <div className="px-3 pb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
               Projects
             </span>
@@ -268,11 +268,11 @@ export function LeftRail() {
         {projectsNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Divider */}
-        <div className="my-3 h-px bg-[var(--foco-rail-border)]" />
+        <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
         {/* Manage section label */}
         {!sidebarCollapsed && (
-          <div className="px-3 mb-1">
+          <div className="px-3 pb-1">
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
               Manage
             </span>

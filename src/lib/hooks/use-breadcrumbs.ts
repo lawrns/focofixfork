@@ -29,6 +29,26 @@ const SEGMENT_LABELS: Record<string, string> = {
   'policies': 'Fleet Policies',
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function formatGenericSegment(segment: string): { label: string; truncated?: string } {
+  const normalized = decodeURIComponent(segment)
+  const label = SEGMENT_LABELS[normalized] ?? (normalized.charAt(0).toUpperCase() + normalized.slice(1))
+
+  if (UUID_RE.test(normalized)) {
+    return {
+      label: normalized,
+      truncated: `${normalized.slice(0, 8)}...${normalized.slice(-4)}`,
+    }
+  }
+
+  const truncated = truncateText(label, 28)
+  return {
+    label,
+    truncated: truncated !== label ? truncated : undefined,
+  }
+}
+
 export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadcrumb[] {
   const pathname = usePathname();
 
@@ -108,10 +128,11 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 0) {
       const lastSegment = segments[segments.length - 1];
-      const label = SEGMENT_LABELS[lastSegment] ?? (lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1));
+      const formatted = formatGenericSegment(lastSegment)
       breadcrumbs.push({
-        label,
+        label: formatted.label,
         isCurrent: true,
+        truncated: formatted.truncated,
       });
     }
 

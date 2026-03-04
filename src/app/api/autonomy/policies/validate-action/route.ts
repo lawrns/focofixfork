@@ -31,6 +31,13 @@ function parseSessionId(body: Record<string, unknown>): string | null {
   return null
 }
 
+function parseWorkspaceId(body: Record<string, unknown>): string | null {
+  if (typeof body.workspace_id === 'string' && body.workspace_id.length > 0) {
+    return body.workspace_id
+  }
+  return null
+}
+
 export async function POST(req: NextRequest) {
   let authResponse: NextResponse | undefined
   try {
@@ -41,11 +48,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
     const actionInput = parseValidationInput(body)
     const sessionId = parseSessionId(body)
+    const workspaceId = parseWorkspaceId(body)
     if (!actionInput) {
       return mergeAuthResponse(validationFailedResponse('actionType and domain are required'), authResponse)
     }
 
-    const policy = await getUserCoFounderPolicy(supabase, user.id)
+    const policy = await getUserCoFounderPolicy(supabase, user.id, workspaceId)
     const result = evaluateActionAgainstPolicy(policy, actionInput)
 
     if (!isInOvernightWindow(policy)) {

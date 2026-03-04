@@ -106,9 +106,30 @@ function toMinutes(value: string): number {
   return (h * 60) + m
 }
 
+function getMinutesInTimezone(now: Date, timezone: string): number {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const parts = formatter.formatToParts(now)
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? NaN)
+    const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? NaN)
+    if (Number.isFinite(hour) && Number.isFinite(minute)) {
+      return (hour * 60) + minute
+    }
+  } catch {
+    // Fall back to server-local time when timezone is invalid.
+  }
+
+  return now.getHours() * 60 + now.getMinutes()
+}
+
 export function isInOvernightWindow(policy: CoFounderPolicy, now: Date = new Date()): boolean {
   if (!policy.overnightWindow.enabled) return true
-  const mins = now.getHours() * 60 + now.getMinutes()
+  const mins = getMinutesInTimezone(now, policy.overnightWindow.timezone)
   const start = toMinutes(policy.overnightWindow.start)
   const end = toMinutes(policy.overnightWindow.end)
   if (start <= end) return mins >= start && mins < end

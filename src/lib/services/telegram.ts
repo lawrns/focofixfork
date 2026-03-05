@@ -25,6 +25,12 @@ export interface TelegramResult {
   quietHoursSuppressed?: boolean
 }
 
+export interface TelegramPivotalPayload {
+  question: string
+  workspaceId?: string | null
+  priority?: 'low' | 'medium' | 'high' | 'critical'
+}
+
 export async function sendTelegramAlert(
   message: string,
   opts?: TelegramSendOptions
@@ -80,4 +86,24 @@ export async function sendTelegramAlert(
     console.error('[Telegram] Send failed:', msg)
     return { success: false, error: msg }
   }
+}
+
+export async function sendPivotalTelegramAlert(
+  payload: TelegramPivotalPayload,
+  opts?: Omit<TelegramSendOptions, 'severity'>
+): Promise<TelegramResult> {
+  const priority = (payload.priority ?? 'medium').toUpperCase()
+  const workspace = payload.workspaceId ?? 'global'
+  const message = [
+    '<b>Co-Founder Pivotal Question</b>',
+    `Priority: <b>${priority}</b>`,
+    `Workspace: <code>${workspace}</code>`,
+    '',
+    payload.question,
+  ].join('\n')
+
+  return sendTelegramAlert(message, {
+    ...opts,
+    severity: payload.priority === 'critical' ? 'P0' : 'P1',
+  })
 }

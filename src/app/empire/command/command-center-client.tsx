@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { MetricTile } from '@/components/ui/metric-tile'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,6 +55,16 @@ interface ServiceStatus {
   url: string
 }
 
+interface CoFounderInsightItem {
+  id: string
+  eventType: string
+  severity: string
+  title: string
+  detail?: string | null
+  createdAt: string
+  payload?: Record<string, unknown>
+}
+
 const AGENT_POLL_INTERVAL = 10_000
 const DECISIONS_POLL_INTERVAL = 15_000
 
@@ -65,6 +76,10 @@ export function CommandCenterClient() {
   const [services, setServices] = useState<ServiceStatus[]>([])
   const [healthLoading, setHealthLoading] = useState(true)
   const [globalSearch, setGlobalSearch] = useState('')
+  const [cofounderInsights, setCofounderInsights] = useState<CoFounderInsightItem[]>([])
+  const [cofounderLoading, setCofounderLoading] = useState(true)
+  const [cofounderMode, setCofounderMode] = useState<string>('unknown')
+  const [cofounderTrustScore, setCofounderTrustScore] = useState<number | null>(null)
 
   // ── Agent polling ────────────────────────────────────────────────────────────
   const { setAgents, setMissions, setError, setDecisions, approveDecision } = store
@@ -171,6 +186,35 @@ export function CommandCenterClient() {
         // ignore
       } finally {
         setHealthLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  useEffect(() => {
+    const load = async () => {
+      setCofounderLoading(true)
+      try {
+        const [feedRes, stateRes] = await Promise.all([
+          fetch('/api/cofounder/insights/feed?window=24h'),
+          fetch('/api/cofounder/runtime/state'),
+        ])
+        if (!feedRes.ok) return
+        const feedJson = await feedRes.json()
+        const items = ((feedJson?.data?.items ?? []) as CoFounderInsightItem[]).slice(0, 6)
+        setCofounderInsights(items)
+
+        if (stateRes.ok) {
+          const stateJson = await stateRes.json()
+          const mode = stateJson?.data?.mode
+          const trustScore = stateJson?.data?.trustScore
+          if (typeof mode === 'string') setCofounderMode(mode)
+          setCofounderTrustScore(typeof trustScore === 'number' ? trustScore : null)
+        }
+      } catch {
+        // keep empty state
+      } finally {
+        setCofounderLoading(false)
       }
     }
     load()
@@ -371,6 +415,60 @@ export function CommandCenterClient() {
           />
         </Tip>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm">Co-Founder Insights</CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">
+                mode: {cofounderMode}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                trust: {cofounderTrustScore === null ? '--' : cofounderTrustScore.toFixed(2)}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {cofounderLoading ? 'Loading' : `${cofounderInsights.length} events`}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {cofounderLoading ? (
+            <p className="text-xs text-muted-foreground">Loading co-founder insight timeline...</p>
+          ) : cofounderInsights.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No co-founder events in the selected window.</p>
+          ) : (
+            cofounderInsights.map((item) => (
+              <div key={item.id} className="rounded border p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium truncate">{item.title}</p>
+                  <Badge
+                    variant={item.severity === 'error' ? 'destructive' : 'secondary'}
+                    className="text-[10px]"
+                  >
+                    {item.severity}
+                  </Badge>
+                </div>
+                {item.detail ? (
+                  <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{item.detail}</p>
+                ) : null}
+                {item.payload ? (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[10px] text-muted-foreground">Explain decision</summary>
+                    <pre className="mt-1 max-h-24 overflow-auto rounded bg-muted p-2 text-[10px]">
+                      {JSON.stringify(item.payload, null, 2)}
+                    </pre>
+                  </details>
+                ) : null}
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {new Date(item.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       {/* NEW: Main 2-col grid (System Pulse + Decisions) */}
       <div className="grid gap-4">
@@ -630,4 +728,3 @@ function GatewayStatusCard() {
     </div>
   )
 }
-

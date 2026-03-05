@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse, successResponse, validationFailedResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
-import { getUserCoFounderPolicy } from '@/lib/autonomy/settings'
-import { evaluateActionAgainstPolicy, isInOvernightWindow } from '@/lib/autonomy/policy'
 import type { CoFounderValidateActionInput } from '@/lib/autonomy/types'
+import { validateCoFounderAction } from '@/lib/cofounder-mode/validate-action'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,14 +52,7 @@ export async function POST(req: NextRequest) {
       return mergeAuthResponse(validationFailedResponse('actionType and domain are required'), authResponse)
     }
 
-    const policy = await getUserCoFounderPolicy(supabase, user.id, workspaceId)
-    const result = evaluateActionAgainstPolicy(policy, actionInput)
-
-    if (!isInOvernightWindow(policy)) {
-      result.allowed = false
-      result.violatedRules = [...result.violatedRules, 'outside_overnight_window']
-      result.reasons = [...result.reasons, 'Action is outside configured overnight window']
-    }
+    const result = await validateCoFounderAction(supabase, user.id, actionInput, workspaceId, sessionId)
 
     await supabase.from('autonomy_action_logs').insert({
       session_id: sessionId,
@@ -68,9 +60,9 @@ export async function POST(req: NextRequest) {
       action_type: actionInput.actionType,
       domain: actionInput.domain,
       input: actionInput as unknown as Record<string, unknown>,
-      decision: result as unknown as Record<string, unknown>,
-      allowed: result.allowed,
-      requires_approval: result.requiresApproval,
+      decision: result.decision as unknown as Record<string, unknown>,
+      allowed: result.decision.allowed,
+      requires_approval: result.decision.requiresApproval,
     })
 
     await supabase.from('ledger_events').insert({
@@ -80,16 +72,18 @@ export async function POST(req: NextRequest) {
       payload: {
         sessionId,
         ...actionInput,
-        ...result,
-        mode: policy.mode,
-        profile: policy.profile,
+        ...result.decision,
+        mode: result.legacyPolicy.mode,
+        profile: result.legacyPolicy.profile,
       },
       timestamp: new Date().toISOString(),
     })
 
     return mergeAuthResponse(successResponse({
-      policy,
-      decision: result,
+      policy: result.legacyPolicy,
+      decision: result.decision,
+      configSource: result.configSource,
+      issues: result.issues,
     }), authResponse)
   } catch (error: unknown) {
     return mergeAuthResponse(databaseErrorResponse('Failed to validate action against policy', error), authResponse)

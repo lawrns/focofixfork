@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foco.mx/schemas/cofounder-mode-config.v1.json",
+  "title": "CoFounderModeConfigV1",
+  "type": "object",
+  "required": [
+    "version",
+    "mode",
+    "profile",
+    "overnightWindow",
+    "hardLimits",
+    "actionPolicies",
+    "trustGates",
+    "agents",
+    "decisionEngine",
+    "pivotalQuestions",
+    "initiatives",
+    "proactiveScanning",
+    "riskSynthesis",
+    "learningRoi",
+    "integrations",
+    "auditArtifacts"
+  ],
+  "properties": {
+    "version": {
+      "const": "v1"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["off", "advisor", "bounded", "near_full", "full_auto"]
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["advisor_first", "bounded_operator", "revenue_only", "near_full", "full_auto"]
+    },
+    "overnightWindow": {
+      "type": "object",
+      "required": ["enabled", "timezone", "start", "end"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "timezone": { "type": "string", "minLength": 1 },
+        "start": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" },
+        "end": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+      },
+      "additionalProperties": false
+    },
+    "hardLimits": {
+      "type": "object",
+      "required": [
+        "spendCapUsdPerWindow",
+        "maxExternalMessages",
+        "maxLiveExperiments",
+        "allowProductionDeploys"
+      ],
+      "properties": {
+        "spendCapUsdPerWindow": { "type": "number", "minimum": 0 },
+        "maxExternalMessages": { "type": "integer", "minimum": 0 },
+        "maxLiveExperiments": { "type": "integer", "minimum": 0 },
+        "allowProductionDeploys": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "actionPolicies": {
+      "type": "object",
+      "required": ["allowedDomains", "blockedActionTypes", "requireApprovalActionTypes"],
+      "properties": {
+        "allowedDomains": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "blockedActionTypes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requireApprovalActionTypes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "trustGates": {
+      "type": "object",
+      "required": ["minConfidenceToExecute", "minTrustScoreToRaiseAutonomy"],
+      "properties": {
+        "minConfidenceToExecute": { "type": "number", "minimum": 0, "maximum": 1 },
+        "minTrustScoreToRaiseAutonomy": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "weight", "enabled"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "weight": { "type": "number", "minimum": 0 },
+          "enabled": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "decisionEngine": {
+      "type": "object",
+      "required": ["divergenceThreshold", "tieBreaker", "strategicPriorityOrder", "irreversibleActionTypes"],
+      "properties": {
+        "divergenceThreshold": { "type": "number", "minimum": 0, "maximum": 1 },
+        "tieBreaker": {
+          "type": "string",
+          "enum": ["strategic_priority", "highest_confidence"]
+        },
+        "strategicPriorityOrder": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["revenue", "growth", "ops", "risk", "brand"]
+          }
+        },
+        "irreversibleActionTypes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "pivotalQuestions": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "cooldownMinutes",
+        "maxPivotalQuestionsPerDay",
+        "maxNotificationsPerHour",
+        "silentModeQueue",
+        "triggerRules"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cooldownMinutes": { "type": "integer", "minimum": 0 },
+        "maxPivotalQuestionsPerDay": { "type": "integer", "minimum": 0 },
+        "maxNotificationsPerHour": { "type": "integer", "minimum": 0 },
+        "silentModeQueue": { "type": "boolean" },
+        "triggerRules": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "initiatives": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "maxActive",
+        "staleThresholdHours",
+        "wipLimits",
+        "dailyCheckpointHourLocal",
+        "weeklyTriageDayLocal"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "maxActive": { "type": "integer", "minimum": 1 },
+        "staleThresholdHours": { "type": "integer", "minimum": 1 },
+        "wipLimits": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 1 }
+        },
+        "dailyCheckpointHourLocal": { "type": "integer", "minimum": 0, "maximum": 23 },
+        "weeklyTriageDayLocal": { "type": "integer", "minimum": 0, "maximum": 6 }
+      },
+      "additionalProperties": false
+    },
+    "proactiveScanning": {
+      "type": "object",
+      "required": ["enabled", "cadences", "rankingFactors"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cadences": {
+          "type": "object",
+          "required": ["trends", "opportunities", "experiments"],
+          "properties": {
+            "trends": { "type": "string", "enum": ["daily", "weekly"] },
+            "opportunities": { "type": "string", "enum": ["weekly", "biweekly"] },
+            "experiments": { "type": "string", "enum": ["monthly", "quarterly"] }
+          },
+          "additionalProperties": false
+        },
+        "rankingFactors": {
+          "type": "object",
+          "required": ["impactWeight", "confidenceWeight", "effortWeight", "urgencyWeight"],
+          "properties": {
+            "impactWeight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "confidenceWeight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "effortWeight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "urgencyWeight": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "riskSynthesis": {
+      "type": "object",
+      "required": ["enabled", "correlationWeight", "thresholds"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "correlationWeight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "thresholds": {
+          "type": "object",
+          "required": ["low", "medium", "high", "critical"],
+          "properties": {
+            "low": { "type": "number", "minimum": 0, "maximum": 1 },
+            "medium": { "type": "number", "minimum": 0, "maximum": 1 },
+            "high": { "type": "number", "minimum": 0, "maximum": 1 },
+            "critical": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "learningRoi": {
+      "type": "object",
+      "required": ["enabled", "monthlyRollupDay"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "monthlyRollupDay": { "type": "integer", "minimum": 1, "maximum": 28 }
+      },
+      "additionalProperties": false
+    },
+    "integrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "access", "allowReads", "allowWrites", "requiresApprovalForWrites"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "access": { "type": "string", "enum": ["read_only", "read_write", "approval_required"] },
+          "allowReads": { "type": "boolean" },
+          "allowWrites": { "type": "boolean" },
+          "requiresApprovalForWrites": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "auditArtifacts": {
+      "type": "object",
+      "required": ["decisionAudit", "errorAudit", "decisionsHistory", "runtimeState", "redactFields"],
+      "properties": {
+        "decisionAudit": { "type": "boolean" },
+        "errorAudit": { "type": "boolean" },
+        "decisionsHistory": { "type": "boolean" },
+        "runtimeState": { "type": "boolean" },
+        "redactFields": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

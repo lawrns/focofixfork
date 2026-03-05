@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { resolveCoFounderPolicy } from '@/lib/autonomy/policy'
 import type { CoFounderPolicy } from '@/lib/autonomy/types'
-
-interface SettingsRow {
-  settings: Record<string, unknown> | null
-}
+import {
+  buildLegacyPolicyFromConfig,
+  resolveEffectiveCoFounderModeConfig,
+} from '@/lib/cofounder-mode/config-resolver'
 
 function toRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -20,33 +20,29 @@ export function resolveEffectiveCoFounderPolicy(
   const userPolicyRecord = toRecord(userAiPolicy)
   const workspacePolicyRecord = toRecord(workspaceAiPolicy)
 
-  const userCofounder = toRecord(userPolicyRecord.cofounder)
-  const workspaceCofounder = toRecord(workspacePolicyRecord.cofounder)
-  const mergedCofounder = {
-    ...userCofounder,
-    ...workspaceCofounder,
-    overnightWindow: {
-      ...toRecord(userCofounder.overnightWindow),
-      ...toRecord(workspaceCofounder.overnightWindow),
-    },
-    hardLimits: {
-      ...toRecord(userCofounder.hardLimits),
-      ...toRecord(workspaceCofounder.hardLimits),
-    },
-    actionPolicies: {
-      ...toRecord(userCofounder.actionPolicies),
-      ...toRecord(workspaceCofounder.actionPolicies),
-    },
-    trustGates: {
-      ...toRecord(userCofounder.trustGates),
-      ...toRecord(workspaceCofounder.trustGates),
-    },
-  }
-
   const merged = {
     ...userPolicyRecord,
     ...workspacePolicyRecord,
-    cofounder: mergedCofounder,
+    cofounder: {
+      ...toRecord(userPolicyRecord.cofounder),
+      ...toRecord(workspacePolicyRecord.cofounder),
+      overnightWindow: {
+        ...toRecord(toRecord(userPolicyRecord.cofounder).overnightWindow),
+        ...toRecord(toRecord(workspacePolicyRecord.cofounder).overnightWindow),
+      },
+      hardLimits: {
+        ...toRecord(toRecord(userPolicyRecord.cofounder).hardLimits),
+        ...toRecord(toRecord(workspacePolicyRecord.cofounder).hardLimits),
+      },
+      actionPolicies: {
+        ...toRecord(toRecord(userPolicyRecord.cofounder).actionPolicies),
+        ...toRecord(toRecord(workspacePolicyRecord.cofounder).actionPolicies),
+      },
+      trustGates: {
+        ...toRecord(toRecord(userPolicyRecord.cofounder).trustGates),
+        ...toRecord(toRecord(workspacePolicyRecord.cofounder).trustGates),
+      },
+    },
   }
 
   return resolveCoFounderPolicy(merged)
@@ -57,35 +53,6 @@ export async function getUserCoFounderPolicy(
   userId: string,
   workspaceId?: string | null
 ): Promise<CoFounderPolicy> {
-  const { data: profileData } = await supabase
-    .from('user_profiles')
-    .select('settings')
-    .eq('id', userId)
-    .maybeSingle<SettingsRow>()
-
-  const settings = (profileData?.settings ?? {}) as Record<string, unknown>
-  const userAiPolicy = settings.aiPolicy
-
-  if (!workspaceId) {
-    return resolveEffectiveCoFounderPolicy(userAiPolicy)
-  }
-
-  const { data: membership } = await supabase
-    .from('foco_workspace_members')
-    .select('workspace_id')
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', userId)
-    .maybeSingle<{ workspace_id: string }>()
-
-  if (!membership) {
-    return resolveEffectiveCoFounderPolicy(userAiPolicy)
-  }
-
-  const { data: workspace } = await supabase
-    .from('foco_workspaces')
-    .select('ai_policy')
-    .eq('id', workspaceId)
-    .maybeSingle<{ ai_policy: Record<string, unknown> | null }>()
-
-  return resolveEffectiveCoFounderPolicy(userAiPolicy, workspace?.ai_policy ?? undefined)
+  const resolved = await resolveEffectiveCoFounderModeConfig(supabase, userId, workspaceId)
+  return buildLegacyPolicyFromConfig(resolved.config)
 }

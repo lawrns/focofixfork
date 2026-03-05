@@ -106,7 +106,7 @@ export function LeftRail() {
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive =
       pathname === item.href ||
-      (item.href !== '/dashboard' && pathname.startsWith(item.href));
+      (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 
     const inner = (
       <Link

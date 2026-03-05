@@ -68,7 +68,7 @@ export function useRouteTransition() {
   useEffect(() => {
     if (previousPathname && previousPathname !== pathname) {
       // Determine direction based on route hierarchy
-      const currentDepth = pathname.split('/').length
+      const currentDepth = (pathname ?? '').split('/').length
       const previousDepth = previousPathname.split('/').length
       
       if (currentDepth > previousDepth) {
@@ -80,7 +80,7 @@ export function useRouteTransition() {
       }
     }
     
-    setPreviousPathname(pathname)
+    setPreviousPathname(pathname ?? null)
   }, [pathname, previousPathname])
 
   return {

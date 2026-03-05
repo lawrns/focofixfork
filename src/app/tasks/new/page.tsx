@@ -50,7 +50,7 @@ function NewTaskForm() {
   const [projectId, setProjectId] = useState('');
   const [assigneeId, setAssigneeId] = useState('unassigned');
   const [priority, setPriority] = useState('medium');
-  const [status, setStatus] = useState(searchParams.get('section') || 'backlog');
+  const [status, setStatus] = useState(searchParams?.get('section') || 'backlog');
   const [dueDate, setDueDate] = useState('');
 
   useEffect(() => {

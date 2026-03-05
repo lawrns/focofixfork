@@ -311,7 +311,7 @@ export function CommandCenterClient() {
 
   useEffect(() => {
     if (agentParamHandled.current) return
-    const agentParam = searchParams.get('agent')
+    const agentParam = searchParams?.get('agent')
     if (!agentParam || store.agents.length === 0) return
     const match = store.agents.find((a) => a.id === agentParam || a.nativeId === agentParam)
     if (match) {

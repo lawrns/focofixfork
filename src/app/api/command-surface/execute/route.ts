@@ -7,10 +7,10 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-import { resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 import { isLane } from '@/lib/agent-ops/lane-policy'
 import { createCommandStreamJob, publishCommandStreamEvent, setJobRunId } from '@/lib/command-surface/stream-broker'
+import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -44,6 +44,8 @@ type RunnerArgs = {
   jobId: string
   origin: string
   cookieHeader: string | null
+  supabase: any
+  workspaceId: string | null
   userId: string
   userEmail: string | null
   prompt: string
@@ -51,6 +53,11 @@ type RunnerArgs = {
   projectId: string | null
   lane: string | null
   taskId: string | null
+  selectedAgents: unknown
+  planningContext: unknown
+  planningGoal: string | null
+  constraints: unknown
+  limits: unknown
 }
 
 async function runPipelineForJob(args: RunnerArgs): Promise<void> {
@@ -58,6 +65,8 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
     jobId,
     origin,
     cookieHeader,
+    supabase,
+    workspaceId,
     userId,
     userEmail,
     prompt,
@@ -65,6 +74,11 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
     projectId,
     lane,
     taskId,
+    selectedAgents,
+    planningContext,
+    planningGoal,
+    constraints,
+    limits,
   } = args
 
   const timestamp = () => new Date().toISOString()
@@ -127,10 +141,31 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
   pushStatus('executing', 'Dispatching command pipeline')
 
   try {
-    const routing = await resolveClawdRoutingProfile('strict_clawd_only')
-    const plannerModel = routing.plan_model
-    const executorModel = routing.execute_model
-    const reviewerModel = routing.review_model
+    const cookieWorkspaceMatch = cookieHeader?.match(/workspace_id=([^;]+)/)
+    const resolvedWorkspaceId = workspaceId ?? (cookieWorkspaceMatch?.[1] ? decodeURIComponent(cookieWorkspaceMatch[1]) : null)
+    const [{ profile: planProfile }, { profile: executeProfile }, { profile: reviewProfile }] = await Promise.all([
+      resolveAIExecutionProfileFromWorkspace({
+        supabase,
+        userId,
+        workspaceId: resolvedWorkspaceId,
+        useCase: 'command_surface_plan',
+      }),
+      resolveAIExecutionProfileFromWorkspace({
+        supabase,
+        userId,
+        workspaceId: resolvedWorkspaceId,
+        useCase: 'command_surface_execute',
+      }),
+      resolveAIExecutionProfileFromWorkspace({
+        supabase,
+        userId,
+        workspaceId: resolvedWorkspaceId,
+        useCase: 'command_surface_review',
+      }),
+    ])
+    const plannerModel = planProfile.model
+    const executorModel = executeProfile.model
+    const reviewerModel = reviewProfile.model
     const normalizedLane = isLane(lane) ? lane : null
 
     const pipelineRes = await fetch(`${origin}/api/pipeline/stream`, {
@@ -145,7 +180,7 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
           `Mode: ${mode}\n` +
           `User: ${userEmail ?? userId}\n\n` +
           `${prompt.trim()}`,
-        routing_profile_id: routing.profile_id,
+        routing_profile_id: planProfile.routing_profile_id,
         planner_model: plannerModel,
         executor_model: executorModel,
         reviewer_model: reviewerModel,
@@ -154,6 +189,11 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
         project_id: projectId,
         task_id: taskId,
         lane: normalizedLane,
+        selected_agents: selectedAgents,
+        context: planningContext,
+        planning_goal: planningGoal,
+        constraints,
+        limits,
       }),
       signal: AbortSignal.timeout(300_000),
     })
@@ -237,12 +277,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null)
-  const { prompt, mode, project_id, lane, task_id } = body as {
+  const { prompt, mode, project_id, workspace_id, lane, task_id, selected_agents, context, planning_goal, constraints, limits } = body as {
     prompt?: string
     mode?: string
     project_id?: string | null
+    workspace_id?: string | null
     lane?: string | null
     task_id?: string | null
+    selected_agents?: unknown
+    context?: unknown
+    planning_goal?: string | null
+    constraints?: unknown
+    limits?: unknown
   }
 
   if (!prompt?.trim()) {
@@ -282,6 +328,8 @@ export async function POST(req: NextRequest) {
     jobId,
     origin: req.nextUrl.origin,
     cookieHeader: req.headers.get('cookie'),
+    supabase,
+    workspaceId: workspace_id ?? null,
     userId: user.id,
     userEmail: user.email ?? null,
     prompt,
@@ -289,6 +337,11 @@ export async function POST(req: NextRequest) {
     projectId: project_id ?? null,
     lane: lane ?? null,
     taskId: task_id ?? null,
+    selectedAgents: selected_agents ?? null,
+    planningContext: context ?? null,
+    planningGoal: planning_goal ?? null,
+    constraints: constraints ?? null,
+    limits: limits ?? null,
   })
 
   return mergeAuthResponse(

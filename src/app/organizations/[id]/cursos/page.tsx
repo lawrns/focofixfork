@@ -66,7 +66,7 @@ export default function CursosPage() {
 function CursosContent() {
   const router = useRouter()
   const params = useParams()
-  const workspaceId = params.id as string
+  const workspaceId = typeof params?.id === 'string' ? params.id : ''
   const { user } = useAuth()
 
   const [courses, setCourses] = useState<Course[]>([])

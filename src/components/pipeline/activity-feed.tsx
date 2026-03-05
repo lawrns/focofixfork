@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { listItem } from '@/lib/motion/variants'
 
 export interface FeedEntry {
   id: string
@@ -65,10 +66,10 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
           {entries.map((entry) => (
             <motion.div
               key={entry.id}
-              initial={{ opacity: 0, x: -12, height: 0 }}
-              animate={{ opacity: 1, x: 0, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
+              variants={listItem}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
               className="flex items-baseline gap-3 py-1 text-[12px] font-mono overflow-hidden"
             >
               <span className="text-muted-foreground tabular-nums w-16 flex-shrink-0">

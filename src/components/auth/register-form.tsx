@@ -47,7 +47,7 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
   })
 
   useEffect(() => {
-    const token = searchParams.get('invitation')
+    const token = searchParams?.get('invitation')
     if (token) {
       setInvitationToken(token)
       validateInvitation(token)
@@ -390,4 +390,3 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
     </div>
   )
 }
-

@@ -6,16 +6,105 @@
 import { dispatchToClawdBot } from '@/lib/delegation/dispatchers'
 
 export const PIPELINE_PROMPTS = {
-  plan: `You are a senior software architect. Analyze the engineering task and produce a detailed plan.
+  plan: `You are the orchestration layer for a multi-agent reasoning, debate, and planning system.
+Coordinate the selected agents around the request. Agents may be technical specialists, skill specialists, lane-specific operators, or persona advisors.
+Preserve meaningful disagreement, synthesize the best direction, and produce an execution-ready plan.
+
+Rules:
+- Preserve agent identity. Do not collapse every view into one generic voice.
+- Agents should challenge assumptions, reveal missing data, and surface tradeoffs.
+- Be globally useful: optimize for clarity, transferability, and practical execution across different teams and installations.
+- Do not invent certainty. Call out assumptions, unresolved disagreements, and validation needs.
+- Keep the output concise and structured for downstream execution.
+- In addition to the rich orchestration output, keep the legacy execution fields populated so implementation can proceed immediately.
+
 Output ONLY valid JSON matching this exact schema (no markdown, no explanation outside the JSON):
 {
-  "summary": "one-sentence summary",
-  "steps": ["step 1", "step 2"],
+  "summary": "one-sentence summary of the recommended path",
+  "steps": ["implementation step 1", "implementation step 2"],
   "files_to_modify": ["src/app/..."],
   "risks": ["risk 1"],
   "db_implications": ["implication or empty array"],
   "validation_strategy": "how to verify this works",
-  "estimated_complexity": "low|medium|high"
+  "estimated_complexity": "low|medium|high",
+  "problem_frame": {
+    "user_request": "string",
+    "decision_to_make": "string",
+    "desired_outcome": "string",
+    "constraints": ["string"],
+    "assumptions": ["string"]
+  },
+  "selected_agents": [
+    {
+      "id": "string",
+      "kind": "system|custom|persona|lane",
+      "name": "string",
+      "role": "string",
+      "expertise": ["string"],
+      "incentives": ["string"],
+      "risk_model": "string",
+      "description": "string"
+    }
+  ],
+  "agent_perspectives": [
+    {
+      "agent_name": "string",
+      "role": "string",
+      "perspective": "string",
+      "recommendation": "string",
+      "reasoning": ["string"],
+      "concerns": ["string"],
+      "confidence": "low|medium|high"
+    }
+  ],
+  "agent_debate": {
+    "challenges": [
+      {
+        "from_agent": "string",
+        "to_agent": "string",
+        "challenge": "string",
+        "why_it_matters": "string"
+      }
+    ],
+    "revisions": [
+      {
+        "agent_name": "string",
+        "revision": "string"
+      }
+    ],
+    "unresolved_disagreements": ["string"]
+  },
+  "consolidated_answer": {
+    "recommendation": "string",
+    "why_this_path_wins": ["string"],
+    "points_of_agreement": ["string"],
+    "remaining_disagreements": ["string"],
+    "uncertainties": ["string"],
+    "validation_needed": ["string"]
+  },
+  "execution_plan": {
+    "objective": "string",
+    "recommended_approach": "string",
+    "steps": [
+      {
+        "order": 1,
+        "action": "string",
+        "owner": "string",
+        "dependencies": ["string"],
+        "output": "string"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "string",
+        "impact": "low|medium|high",
+        "mitigation": "string"
+      }
+    ],
+    "open_questions": ["string"],
+    "success_criteria": ["string"],
+    "immediate_next_actions": ["string"]
+  }
 }`,
 
   execute: `You are an expert software engineer. Given the plan and task, produce concrete code patches.

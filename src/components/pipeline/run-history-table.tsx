@@ -135,11 +135,27 @@ export function RunHistoryTable({
                 <StatusBadge status={run.status} />
               </TableCell>
               <TableCell>
-                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                  {modelLabel(run.planner_model)} →{' '}
-                  {modelLabel(run.executor_model)}
-                  {run.reviewer_model && ` → ${modelLabel(run.reviewer_model)}`}
-                </span>
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                    {modelLabel(run.planner_model)} →{' '}
+                    {modelLabel(run.executor_model)}
+                    {run.reviewer_model && ` → ${modelLabel(run.reviewer_model)}`}
+                  </span>
+                  {(run.routing_profile_id || (run.provider_chain?.length ?? 0) > 0) && (
+                    <div className="flex flex-wrap gap-1">
+                      {run.routing_profile_id && (
+                        <Badge variant="outline" className="text-[10px]">
+                          {run.routing_profile_id}
+                        </Badge>
+                      )}
+                      {(run.provider_chain?.length ?? 0) > 0 && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {run.provider_chain!.length} fallback{run.provider_chain!.length === 1 ? '' : 's'}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-center">
                 <span className="text-xs text-muted-foreground">

@@ -147,7 +147,7 @@ export function PhaseCard({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       suppressHydrationWarning
       className={cn(
-        'rounded-xl border-2 transition-colors bg-card',
+        'relative rounded-xl border-2 transition-colors bg-card',
         status === 'active' &&
           'border-[color:var(--foco-teal)] shadow-[0_0_12px_rgba(0,200,170,0.15)]',
         status === 'done' && 'border-emerald-500/60',
@@ -155,6 +155,18 @@ export function PhaseCard({
         status === 'idle' && 'border-border opacity-60',
       )}
     >
+      {status === 'active' && (
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-xl"
+          initial={{ opacity: 0.2 }}
+          animate={{ opacity: [0.18, 0.28, 0.18] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            background: 'linear-gradient(120deg, rgba(0,196,154,0.08), rgba(255,255,255,0), rgba(0,196,154,0.12))',
+          }}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
         <div className="flex items-center gap-3">
@@ -205,6 +217,29 @@ export function PhaseCard({
         {result && isPlanResult(result) && (
           <div className="space-y-2">
             <p className="text-sm text-foreground/80">{result.summary}</p>
+            {result.consolidated_answer?.recommendation && (
+              <div className="rounded-md border border-border/60 bg-muted/20 p-2">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Consolidated Recommendation
+                </p>
+                <p className="text-xs text-foreground/80">{result.consolidated_answer.recommendation}</p>
+              </div>
+            )}
+            {result.agent_perspectives && result.agent_perspectives.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Agent Perspectives
+                </p>
+                <div className="space-y-1">
+                  {result.agent_perspectives.slice(0, 4).map((agent) => (
+                    <div key={`${agent.agent_name}-${agent.role}`} className="text-xs text-foreground/70">
+                      <span className="font-medium text-foreground/85">{agent.agent_name}</span>
+                      {` · ${agent.role} · ${agent.recommendation}`}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {result.steps?.length > 0 && (
               <ol className="space-y-1 pl-1">
                 {result.steps.map((s: string, i: number) => (
@@ -214,6 +249,14 @@ export function PhaseCard({
                   </li>
                 ))}
               </ol>
+            )}
+            {result.execution_plan?.immediate_next_actions && result.execution_plan.immediate_next_actions.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Next Actions</p>
+                {result.execution_plan.immediate_next_actions.slice(0, 3).map((action, i) => (
+                  <p key={i} className="text-xs text-foreground/70">· {action}</p>
+                ))}
+              </div>
             )}
             {result.risks?.length > 0 && (
               <div>

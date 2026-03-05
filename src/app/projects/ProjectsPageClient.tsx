@@ -98,7 +98,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
   // Handle query parameters from command palette
   useEffect(() => {
-    const createParam = searchParams.get('create');
+    const createParam = searchParams?.get('create');
     if (createParam === 'true') {
       setCreateDialogOpen(true);
       router.replace(pathname || '/empire/missions');

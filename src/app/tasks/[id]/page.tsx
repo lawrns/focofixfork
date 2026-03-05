@@ -22,11 +22,13 @@ import { AIPanel } from './components/ai-panel';
 import { TaskActivity } from './components/task-activity';
 import { TaskDeleteDialog } from './components/task-delete-dialog';
 import { TaskMobileStatusBar } from './components/task-mobile-status-bar';
+import { TaskVerificationPanel } from './components/task-verification-panel';
 import { statusOptions, priorityOptions } from './components/task-constants';
 
 export default function WorkItemPage() {
   const params = useParams();
   const router = useRouter();
+  const taskId = typeof params?.id === 'string' ? params.id : '';
   const { activate } = useFocusModeStore();
   const { addItem } = useRecentItems();
   const isMobile = useMobile();
@@ -49,15 +51,25 @@ export default function WorkItemPage() {
   } | null>(null);
 
   const fetchTask = useCallback(async () => {
+    if (!taskId) {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/tasks/${params.id}`);
+      const response = await fetch(`/api/tasks/${taskId}`);
       const data = await response.json();
       const taskData = data.data || data;
       if ((data.ok || data.success) && taskData) {
         setWorkItem(taskData);
+        setActivityLog(taskData.execution_events || []);
         setIsCompleted(taskData.status === 'done');
         addItem({ type: 'task', id: taskData.id, name: taskData.title });
+        const commentsResponse = await fetch(`/api/tasks/${taskId}/comments`);
+        const commentsPayload = await commentsResponse.json();
+        if (commentsResponse.ok) {
+          setComments(commentsPayload.data || commentsPayload || []);
+        }
         if (taskData.workspace_id) {
           const membersResponse = await fetch(`/api/workspaces/${taskData.workspace_id}/members`);
           const membersData = await membersResponse.json();
@@ -75,9 +87,9 @@ export default function WorkItemPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [params.id, addItem]);
+  }, [taskId, addItem]);
 
-  useEffect(() => { if (params.id) fetchTask(); }, [params.id, fetchTask]);
+  useEffect(() => { if (taskId) fetchTask(); }, [taskId, fetchTask]);
 
   const handleTaskUpdate = useCallback(async (updates: Partial<WorkItem>) => {
     if (!workItem) return;
@@ -280,6 +292,12 @@ export default function WorkItemPage() {
           <div className="mb-8">
             <AIPanel taskId={workItem.id} workspaceId={workItem.workspace_id} aiLoading={aiLoading} onAction={handleAiAction} />
           </div>
+
+          <TaskVerificationPanel
+            taskId={workItem.id}
+            verifications={workItem.verifications || []}
+            onCreated={fetchTask}
+          />
 
           <AiPreviewModal
             open={aiPreview !== null} action={aiPreview?.action || null}

@@ -57,7 +57,7 @@ function RunsPageContent() {
   const [stats, setStats] = useState<RunStats | null>(null)
   const [fetching, setFetching] = useState(false)
   const [filter, setFilter] = useState(() => {
-    const raw = searchParams.get('status')
+    const raw = searchParams?.get('status')
     return raw && ['pending', 'running', 'completed', 'failed'].includes(raw) ? raw : 'all'
   })
   const [runActionId, setRunActionId] = useState<string | null>(null)
@@ -82,14 +82,14 @@ function RunsPageContent() {
   useEffect(() => { if (user) load() }, [user, load])
 
   useEffect(() => {
-    const raw = searchParams.get('status')
+    const raw = searchParams?.get('status')
     const normalized = raw && ['pending', 'running', 'completed', 'failed'].includes(raw) ? raw : 'all'
     if (normalized !== filter) setFilter(normalized)
   }, [searchParams, filter])
 
   const handleFilterChange = useCallback((next: string) => {
     setFilter(next)
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() ?? '')
     if (next === 'all') params.delete('status')
     else params.set('status', next)
     const query = params.toString()

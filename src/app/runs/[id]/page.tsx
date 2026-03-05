@@ -56,7 +56,7 @@ function statusTone(status?: TimelineEvent['status']): string {
 export default function RunDetailPage() {
   const { user, loading } = useAuth()
   const params = useParams()
-  const id = params.id as string
+  const id = typeof params?.id === 'string' ? params.id : ''
 
   const [run, setRun] = useState<Run | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])

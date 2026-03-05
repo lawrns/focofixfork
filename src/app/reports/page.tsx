@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -168,7 +168,7 @@ function WeeklyStatusReport({ projectStatus, onExport, onShare, onShowSources }:
   );
 }
 
-export default function ReportsPage() {
+function ReportsPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [timeRange, setTimeRange] = useState('week');
@@ -178,8 +178,8 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reportScopeLabel, setReportScopeLabel] = useState<string | null>(null);
 
-  const projectSlug = searchParams.get('project_slug');
-  const generateStatus = searchParams.get('generate') === 'status';
+  const projectSlug = searchParams?.get('project_slug') ?? null;
+  const generateStatus = searchParams?.get('generate') === 'status';
 
   const fetchReportData = useCallback(async () => {
     if (!user) return;
@@ -381,5 +381,13 @@ export default function ReportsPage() {
         </div>
       </div>
     </PageShell>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<PageShell><div>Loading reports...</div></PageShell>}>
+      <ReportsPageContent />
+    </Suspense>
   );
 }

@@ -19,7 +19,7 @@ interface InvitationData {
 export default function InviteAcceptPage() {
   const params = useParams()
   const router = useRouter()
-  const token = params.token as string
+  const token = typeof params?.token === 'string' ? params.token : ''
 
   const [invitation, setInvitation] = useState<InvitationData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -45,6 +45,11 @@ export default function InviteAcceptPage() {
   }, [token])
 
   useEffect(() => {
+    if (!token) {
+      setError('Invitation token is missing')
+      setLoading(false)
+      return
+    }
     validateInvitation()
   }, [token, validateInvitation])
 
@@ -170,5 +175,4 @@ export default function InviteAcceptPage() {
     </div>
   )
 }
-
 

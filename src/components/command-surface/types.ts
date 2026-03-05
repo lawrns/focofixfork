@@ -1,3 +1,5 @@
+import type { PlanningAgentDescriptor } from '@/lib/pipeline/agent-planning'
+
 export type CommandMode = 'cto' | 'coo' | 'auto' | 'intake';
 
 export type AgentExecutionStatus = 'queued' | 'executing' | 'completed' | 'error';
@@ -118,6 +120,13 @@ export type CommandSurfaceProps = {
   onExecutionComplete?: (execution: CommandExecution) => void;
   className?: string;
 };
+
+export type CommandExecutionOptions = {
+  historyId?: string
+  existingRunId?: string
+  projectId?: string | null
+  selectedAgents?: PlanningAgentDescriptor[]
+}
 
 export type CTODecision = {
   id: string;

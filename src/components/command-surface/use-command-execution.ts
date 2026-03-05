@@ -10,6 +10,7 @@ import type {
   COODecision,
   CommandHistoryItem,
   AgentExecutionEvent,
+  CommandExecutionOptions,
 } from './types';
 import { summarizeOutput } from './pipeline-utils';
 import { detectIntent, determineMode } from './intent-detection';
@@ -42,6 +43,17 @@ type StreamStatus = 'queued' | 'executing' | 'completed' | 'error'
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+async function fetchCurrentWorkspaceId(): Promise<string | null> {
+  try {
+    const workspaceRes = await fetch('/api/user/workspace')
+    if (!workspaceRes.ok) return null
+    const workspaceJson = await workspaceRes.json()
+    return workspaceJson?.data?.workspace_id ?? workspaceJson?.workspace_id ?? null
+  } catch {
+    return null
+  }
 }
 
 function normalizeStreamEvent(raw: Record<string, unknown>): AgentExecutionEvent | null {
@@ -147,7 +159,7 @@ export function useExecuteCommand(deps: ExecutionDeps) {
     mode: CommandMode,
     plan: CommandPlan,
     decision?: CTODecision | COODecision,
-    options?: { historyId?: string; existingRunId?: string; projectId?: string | null }
+    options?: CommandExecutionOptions
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
     setStreamingText('');
@@ -307,6 +319,7 @@ export function useExecuteCommand(deps: ExecutionDeps) {
     mode: CommandMode,
     projectId?: string | null,
     decision?: CTODecision | COODecision,
+    options?: { selectedAgents?: CommandExecutionOptions['selectedAgents'] },
   ): Promise<CommandExecution> => {
     setIsProcessing(true);
     setStreamingText('');
@@ -369,11 +382,18 @@ export function useExecuteCommand(deps: ExecutionDeps) {
     try {
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      const workspaceId = await fetchCurrentWorkspaceId();
 
       const executeRes = await fetch('/api/command-surface/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, mode, project_id: projectId ?? null }),
+        body: JSON.stringify({
+          prompt,
+          mode,
+          project_id: projectId ?? null,
+          workspace_id: workspaceId,
+          selected_agents: options?.selectedAgents ?? null,
+        }),
         signal: controller.signal,
       });
 
@@ -395,6 +415,7 @@ export function useExecuteCommand(deps: ExecutionDeps) {
               historyId,
               existingRunId: runId,
               projectId,
+              selectedAgents: options?.selectedAgents,
             });
             if (fallback.status === 'failed') {
               fallback.error = `Agent stream unavailable: ${errorMsg}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
@@ -423,6 +444,7 @@ export function useExecuteCommand(deps: ExecutionDeps) {
             historyId,
             existingRunId: runId,
             projectId,
+            selectedAgents: options?.selectedAgents,
           });
           if (fallback.status === 'failed') {
             fallback.error = `${errorText}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;

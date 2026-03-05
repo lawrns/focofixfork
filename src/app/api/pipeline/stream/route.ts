@@ -16,7 +16,7 @@ import { PIPELINE_PROMPTS } from '@/lib/pipeline/dispatcher'
 import { buildPlanContext, buildExecuteContext, buildReviewContext } from '@/lib/pipeline/context-builder'
 import { listHandbooks } from '@/lib/handbook/handbook-loader'
 import type { PlanResult, ExecutionResult, ReviewReport, PipelinePhase } from '@/lib/pipeline/types'
-import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
+import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min max for streaming
@@ -31,7 +31,7 @@ function getCallbackUrl(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error } = await getAuthUser(req)
+  const { user, supabase, error } = await getAuthUser(req)
   if (error || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
   }
@@ -42,10 +42,15 @@ export async function POST(req: NextRequest) {
     planner_model: requested_planner_model = null,
     executor_model: requested_executor_model = null,
     reviewer_model: requested_reviewer_model = null,
-    routing_profile_id = null,
     auto_review = false,
     handbook_slug = 'general',
     project_id = null,
+    workspace_id = null,
+    selected_agents = null,
+    context = null,
+    planning_goal = null,
+    constraints = null,
+    limits = null,
   } = body
 
   if (!task_description?.trim()) {
@@ -56,10 +61,33 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: 'DB not available' }), { status: 500 })
   }
 
-  const routing = await resolveClawdRoutingProfile(routing_profile_id)
-  const planner_model = pickPreferredModel(routing, 'plan', requested_planner_model)
-  const executor_model = pickPreferredModel(routing, 'execute', requested_executor_model)
-  const reviewer_model = pickPreferredModel(routing, 'review', requested_reviewer_model)
+  const workspaceId = workspace_id ?? null
+  const [{ profile: plannerProfile }, { profile: executorProfile }, { profile: reviewerProfile }] = await Promise.all([
+    resolveAIExecutionProfileFromWorkspace({
+      supabase,
+      userId: user.id,
+      workspaceId,
+      useCase: 'pipeline_plan',
+      requestedModel: requested_planner_model,
+    }),
+    resolveAIExecutionProfileFromWorkspace({
+      supabase,
+      userId: user.id,
+      workspaceId,
+      useCase: 'pipeline_execute',
+      requestedModel: requested_executor_model,
+    }),
+    resolveAIExecutionProfileFromWorkspace({
+      supabase,
+      userId: user.id,
+      workspaceId,
+      useCase: 'pipeline_review',
+      requestedModel: requested_reviewer_model,
+    }),
+  ])
+  const planner_model = plannerProfile.model
+  const executor_model = executorProfile.model
+  const reviewer_model = reviewerProfile.model
 
   // Create pipeline run in DB
   const startedAt = new Date().toISOString()
@@ -67,12 +95,17 @@ export async function POST(req: NextRequest) {
     .from('pipeline_runs')
     .insert({
       user_id: user.id,
+      workspace_id: workspaceId,
       task_description: task_description.trim(),
       planner_model,
       executor_model,
       reviewer_model,
-      routing_profile_id: routing.profile_id,
-      provider_chain: routing.fallback_chain,
+      routing_profile_id: plannerProfile.routing_profile_id,
+      provider_chain: Array.from(new Set([
+        ...plannerProfile.fallback_chain,
+        ...executorProfile.fallback_chain,
+        ...reviewerProfile.fallback_chain,
+      ])),
       status: 'planning',
       auto_reviewed: auto_review,
       handbook_ref: handbook_slug || null,
@@ -106,7 +139,7 @@ export async function POST(req: NextRequest) {
       emit({
         type: 'activity',
         phase: 'system',
-        message: `Routing profile ${routing.profile_id}: ${planner_model} -> ${executor_model} -> ${reviewer_model}`,
+        message: `Routing profile ${plannerProfile.routing_profile_id ?? 'env'}: ${planner_model} -> ${executor_model} -> ${reviewer_model}`,
       })
       emit({ type: 'activity', phase: 'system', message: 'Pipeline started' })
 
@@ -114,7 +147,13 @@ export async function POST(req: NextRequest) {
       emit({ type: 'phase_start', phase: 'plan', model: planner_model })
       emit({ type: 'activity', phase: 'plan', message: `Dispatching to ${planner_model}` })
 
-      const planContext = buildPlanContext(task_description)
+      const planContext = buildPlanContext(task_description, {
+        selected_agents,
+        context,
+        planning_goal,
+        constraints,
+        limits,
+      })
       const planTaskId = `pipeline:${runId}:plan`
       const planSystemPrompt = `${PIPELINE_PROMPTS.plan}\n\n# Preferred Model\n${planner_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nplan`
 
@@ -289,6 +328,8 @@ export async function POST(req: NextRequest) {
           db_implications: [],
           validation_strategy: '',
           estimated_complexity: 'medium',
+          selected_agents: [],
+          agent_perspectives: [],
         }
       }
 
@@ -676,7 +717,7 @@ export async function POST(req: NextRequest) {
         run_id: runId,
         total_elapsed_ms: totalElapsedMs,
         hierarchy: {
-          routing_profile_id: routing.profile_id,
+          routing_profile_id: plannerProfile.routing_profile_id,
           plan: planner_model,
           execute: executor_model,
           review: reviewer_model,

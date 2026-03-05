@@ -101,7 +101,7 @@ export default function RunDetailPage() {
 
   if (loading || (fetching && !notFound)) {
     return (
-      <UnifiedPageShell className="space-y-6 px-0 sm:px-0 lg:px-0 md:space-y-8" maxWidth="6xl">
+      <UnifiedPageShell className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8" maxWidth="6xl">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
@@ -113,12 +113,12 @@ export default function RunDetailPage() {
 
   if (notFound || !run) {
     return (
-      <UnifiedPageShell className="space-y-6 px-0 sm:px-0 lg:px-0 md:space-y-8" maxWidth="6xl">
-        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
+      <UnifiedPageShell className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8" maxWidth="6xl">
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 sm:gap-5 text-center">
           <p className="text-sm font-medium">Run not found</p>
           <Link
             href="/runs"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
           >
             <ArrowLeft className="h-3 w-3" />
             Back to Runs
@@ -131,34 +131,34 @@ export default function RunDetailPage() {
   const artifacts = run.artifacts ?? []
 
   return (
-    <UnifiedPageShell className="space-y-6 px-0 sm:px-0 lg:px-0 md:space-y-8" maxWidth="6xl">
-      <div className="flex items-center gap-2">
+    <UnifiedPageShell className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8" maxWidth="6xl">
+      <div className="flex items-center gap-2 px-1 py-2 -mx-1">
         <Link
           href="/runs"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
         >
-          <ArrowLeft className="h-3 w-3" />
-          Runs
+          <ArrowLeft className="h-3 w-3 shrink-0" />
+          <span>Runs</span>
         </Link>
       </div>
 
-      <div className="flex flex-col gap-4 sm:gap-5">
+      <div className="flex flex-col gap-5 sm:gap-6">
         <div className="min-w-0">
-          <h1 className="max-w-[72ch] text-xl font-semibold leading-tight text-foreground whitespace-normal break-all sm:break-words md:text-2xl">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-semibold leading-relaxed text-foreground break-words">
             {run.summary ?? run.id}
           </h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2.5 text-sm text-muted-foreground">
+          <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
             <StatusBadge status={run.status} />
-            <span className="inline-flex items-center rounded bg-muted px-2 py-1 font-mono text-xs sm:text-sm">{run.runner}</span>
-            {duration && <span className="inline-flex items-center rounded bg-muted/60 px-2 py-1 text-xs sm:text-sm">Duration: {duration}</span>}
-            <span className="inline-flex items-center rounded bg-muted/60 px-2 py-1 text-xs sm:text-sm">Events: {timeline.length}</span>
+            <span className="inline-flex items-center rounded bg-muted px-2 sm:px-2.5 py-1 font-mono text-xs whitespace-nowrap">{run.runner}</span>
+            {duration && <span className="inline-flex items-center rounded bg-muted/60 px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap">Duration: {duration}</span>}
+            <span className="inline-flex items-center rounded bg-muted/60 px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap">Events: {timeline.length}</span>
           </div>
         </div>
       </div>
 
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <Workflow className="h-4 w-4 text-muted-foreground" />
+      <section className="space-y-5 sm:space-y-6">
+        <div className="flex items-center gap-3">
+          <Workflow className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Execution Timeline
           </span>
@@ -171,26 +171,26 @@ export default function RunDetailPage() {
             </p>
           </UnifiedCard>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 sm:space-y-4">
             {executionEvents.map((evt) => (
-              <UnifiedCard key={evt.id} animate={false} className="flex items-start gap-4 p-4 sm:p-5">
-                <div className="mt-1 shrink-0">
+              <UnifiedCard key={evt.id} animate={false} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 md:p-5">
+                <div className="mt-1 shrink-0 flex-none">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-sm font-medium">{evt.title}</span>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="text-sm sm:text-base font-medium">{evt.title}</span>
                     {evt.status && (
-                      <span className={`inline-flex items-center rounded bg-muted/60 px-2 py-0.5 text-xs font-medium ${statusTone(evt.status)}`}>
+                      <span className={`inline-flex items-center rounded bg-muted/60 px-1.5 sm:px-2 py-0.5 text-xs font-medium ${statusTone(evt.status)} whitespace-nowrap`}>
                         {evt.status}
                       </span>
                     )}
-                    <span className="inline-flex items-center rounded bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">{evt.source}</span>
+                    <span className="inline-flex items-center rounded bg-muted/40 px-1.5 sm:px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">{evt.source}</span>
                   </div>
                   {evt.description && (
-                    <p className="mt-1.5 text-sm text-muted-foreground break-words">{evt.description}</p>
+                    <p className="mt-2 sm:mt-2.5 text-sm text-muted-foreground break-words">{evt.description}</p>
                   )}
-                  <p className="mt-2 text-xs text-muted-foreground">
+                  <p className="mt-2.5 sm:mt-3 text-xs text-muted-foreground">
                     {new Date(evt.timestamp).toLocaleString()}
                   </p>
                 </div>
@@ -200,9 +200,9 @@ export default function RunDetailPage() {
         )}
       </section>
 
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+      <section className="space-y-5 sm:space-y-6">
+        <div className="flex items-center gap-3">
+          <ShieldAlert className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Policy And Audit Events
           </span>
@@ -217,15 +217,15 @@ export default function RunDetailPage() {
             </p>
           </UnifiedCard>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 sm:space-y-4">
             {auditEvents.map((evt) => (
-              <UnifiedCard key={evt.id} animate={false} className="p-4 sm:p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{evt.title}</p>
-                    {evt.description && <p className="text-sm text-muted-foreground mt-1.5 break-words">{evt.description}</p>}
+              <UnifiedCard key={evt.id} animate={false} className="p-3 sm:p-4 md:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm sm:text-base font-medium">{evt.title}</p>
+                    {evt.description && <p className="text-sm text-muted-foreground mt-2 sm:mt-2.5 break-words">{evt.description}</p>}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 sm:text-right">
                     {new Date(evt.timestamp).toLocaleString()}
                   </span>
                 </div>
@@ -236,18 +236,18 @@ export default function RunDetailPage() {
       </section>
 
       {artifacts.length > 0 && (
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <FileJson className="h-4 w-4 text-muted-foreground" />
+        <section className="space-y-5 sm:space-y-6">
+          <div className="flex items-center gap-3">
+            <FileJson className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Artifacts
             </span>
             <div className="flex-1 h-px bg-border" />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3 sm:space-y-4">
             {artifacts.map((artifact, i) => (
-              <UnifiedCard key={`${artifact.uri}-${i}`} animate={false} className="flex items-center gap-3 p-4 sm:p-5">
-                <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
+              <UnifiedCard key={`${artifact.uri}-${i}`} animate={false} className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 md:p-5">
+                <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0 whitespace-nowrap">
                   {artifact.type}
                 </span>
                 <a

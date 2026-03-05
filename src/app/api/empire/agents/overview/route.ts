@@ -13,6 +13,7 @@ import { fetchBosunAgents } from '@/lib/command-center/adapters/bosun-adapter'
 import { fetchOpenClawAgents } from '@/lib/command-center/adapters/openclaw-adapter'
 import type { UnifiedAgent } from '@/lib/command-center/types'
 import { AGENT_LANES, type AgentLane, type CustomAgentProfileRow } from '@/lib/agent-ops/types'
+import { getAgentAvatar, SPECIALIST_ADVISORS } from '@/lib/agent-avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,6 +105,7 @@ function mapSystemAgent(agent: UnifiedAgent) {
     model: normalizeModel(agent.model),
     last_active_at: agent.lastActiveAt ?? null,
     error_message: agent.errorMessage ?? null,
+    avatar_url: agent.avatarUrl || getAgentAvatar({ name: agent.name, nativeId: agent.nativeId, backend: agent.backend }),
   }
 }
 
@@ -183,6 +185,18 @@ export async function GET(req: NextRequest) {
       return true
     })
     .map(mapSystemAgent)
+
+  const advisors = SPECIALIST_ADVISORS.map((advisor, index) => ({
+    id: advisor.id,
+    native_id: advisor.nativeId,
+    backend: advisor.backend,
+    name: advisor.name,
+    role: advisor.role,
+    model: normalizeModel(advisor.model),
+    status: advisor.status,
+    avatar_url: advisor.avatarUrl,
+    featured_order: index,
+  }))
 
   let customQuery = supabase
     .from('custom_agent_profiles')
@@ -303,6 +317,7 @@ export async function GET(req: NextRequest) {
     source_errors: sourceErrors,
     backend_health: backendHealth,
     system_agents: systemAgents,
+    advisors,
     custom_agents: customProfiles,
     lane_stats: AGENT_LANES.map((lane) => laneStats[lane]),
     recent: {
@@ -313,6 +328,7 @@ export async function GET(req: NextRequest) {
     },
     totals: {
       system_agents: systemAgents.length,
+      advisors: advisors.length,
       custom_agents: customProfiles.length,
       tasks: (tasks ?? []).length,
       messages: (messages ?? []).length,

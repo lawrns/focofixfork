@@ -219,7 +219,7 @@ function CreateEmailDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">None</SelectItem>
-                {projects.map((p) => (
+                {Array.isArray(projects) && projects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2">
                       <div
@@ -423,17 +423,42 @@ export default function EmailsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
 
   async function load() {
-    const [deliveriesRes, templatesRes, projectsRes] = await Promise.all([
-      fetch('/api/emails/deliveries'),
-      fetch('/api/emails/templates'),
-      fetch('/api/projects'),
-    ])
-    const deliveriesJson = await deliveriesRes.json()
-    const templatesJson = await templatesRes.json()
-    const projectsJson = await projectsRes.json()
-    setOutbox(deliveriesJson.data || [])
-    setTemplates(templatesJson.data || [])
-    setProjects(projectsJson.data || [])
+    try {
+      const [deliveriesRes, templatesRes, projectsRes] = await Promise.all([
+        fetch('/api/emails/deliveries'),
+        fetch('/api/emails/templates'),
+        fetch('/api/projects'),
+      ])
+
+      if (!deliveriesRes.ok) {
+        console.error('Failed to fetch emails:', await deliveriesRes.text())
+        setOutbox([])
+      } else {
+        const deliveriesJson = await deliveriesRes.json()
+        setOutbox(deliveriesJson.data || [])
+      }
+
+      if (!templatesRes.ok) {
+        console.error('Failed to fetch templates:', await templatesRes.text())
+        setTemplates([])
+      } else {
+        const templatesJson = await templatesRes.json()
+        setTemplates(templatesJson.data || [])
+      }
+
+      if (!projectsRes.ok) {
+        console.error('Failed to fetch projects:', await projectsRes.text())
+        setProjects([])
+      } else {
+        const projectsJson = await projectsRes.json()
+        setProjects(Array.isArray(projectsJson.projects) ? projectsJson.projects : [])
+      }
+    } catch (err) {
+      console.error('Error loading email data:', err)
+      setOutbox([])
+      setTemplates([])
+      setProjects([])
+    }
   }
 
   async function cancelEmail(id: string) {

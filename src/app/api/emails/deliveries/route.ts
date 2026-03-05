@@ -41,11 +41,14 @@ export async function GET(req: NextRequest) {
 
   if (workspaceId) {
     query = query.eq('workspace_id', workspaceId)
-  } else {
+  } else if (accessibleWorkspaceIds.length > 0) {
     // Filter by accessible workspaces
     query = query.or(
       `workspace_id.in.(${accessibleWorkspaceIds.join(',')}),workspace_id.is.null`
     )
+  } else {
+    // No workspace access, return empty
+    return NextResponse.json({ data: [] })
   }
 
   if (projectId) query = query.eq('project_id', projectId)

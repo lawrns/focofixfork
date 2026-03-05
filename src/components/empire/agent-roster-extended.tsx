@@ -21,6 +21,8 @@ import {
   XCircle,
   RotateCcw,
 } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/data-display/avatar'
+import { getAgentAvatar } from '@/lib/agent-avatars'
 import { AgentStatusBadge, type EmpireAgentStatus } from '@/components/empire/agent-status-badge'
 import { AgentDetailSheet, type AgentDetailData } from '@/components/empire/agent-detail-sheet'
 import { CustomAgentModal } from '@/components/agent-ops/custom-agent-modal'
@@ -566,6 +568,10 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
                       <td className="px-3 py-2 align-top">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
+                            <Avatar size="xs" className="flex-shrink-0">
+                              <AvatarImage src={getAgentAvatar({ name: agent.name, nativeId: agent.nativeId, backend: agent.backend })} alt={agent.name} />
+                              <AvatarFallback className="text-[9px]">{agent.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
                             <span className="font-medium">{agent.name}</span>
                             {agent.model && <Badge variant="outline" className="text-[10px]">{agent.model}</Badge>}
                             <AgentStatusBadge

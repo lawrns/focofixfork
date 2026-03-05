@@ -10,7 +10,7 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 import { isLane } from '@/lib/agent-ops/lane-policy'
-import { createCommandStreamJob, publishCommandStreamEvent } from '@/lib/command-surface/stream-broker'
+import { createCommandStreamJob, publishCommandStreamEvent, setJobRunId } from '@/lib/command-surface/stream-broker'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -192,6 +192,10 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
           if (type === 'activity' && typeof event.message === 'string') {
             pushReasoning(event.message, phase)
             continue
+          }
+
+          if (type === 'run_start' && typeof event.run_id === 'string') {
+            void setJobRunId(jobId, event.run_id)
           }
 
           if (type === 'phase_start') {

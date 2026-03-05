@@ -4,19 +4,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function DashboardFallback() {
   return (
-    <div className="w-full py-6">
-      <div className="mb-8">
+    <div className="w-full py-6 space-y-3">
+      <div className="mb-4">
         <Skeleton className="h-10 w-64 mb-2" />
         <Skeleton className="h-4 w-96" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-xl" />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Skeleton className="h-96 rounded-xl" />
-        <Skeleton className="h-96 rounded-xl" />
+      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-14 w-full rounded-xl" />
+      <Skeleton className="h-10 w-full rounded-xl" />
+      <Skeleton className="h-10 w-full rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-9 w-full rounded-lg" />
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     </div>
   );

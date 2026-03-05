@@ -1,6 +1,6 @@
 import type { AgentSurface } from '@/features/agent-surfaces/types'
 
-export type AgentBackend = 'crico' | 'clawdbot' | 'bosun' | 'openclaw'
+export type AgentBackend = 'crico' | 'clawdbot' | 'bosun' | 'openclaw' | 'advisor'
 
 export type AgentNodeStatus = 'idle' | 'working' | 'blocked' | 'done' | 'error' | 'paused'
 
@@ -15,6 +15,7 @@ export interface UnifiedAgent {
   currentMissionId?: string
   lastActiveAt?: string
   errorMessage?: string
+  avatarUrl?: string
   surfaces?: AgentSurface[]  // Agent multi-surface execution capabilities
   raw: Record<string, unknown>
 }
@@ -86,6 +87,7 @@ export const BACKEND_LABELS: Record<AgentBackend, string> = {
   clawdbot: 'ClawdBot',
   bosun:    'Bosun',
   openclaw: 'OpenClaw',
+  advisor:  'Advisor',
 }
 
 // ── Decision types (for decision queue) ──────────────────────────────────────

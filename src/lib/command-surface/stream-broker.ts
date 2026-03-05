@@ -6,6 +6,7 @@ interface CommandStreamJob {
   userId: string
   createdAt: number
   done: boolean
+  runId?: string
   events: AgentExecutionEvent[]
   subscribers: Set<(event: AgentExecutionEvent) => void>
   gcTimer?: NodeJS.Timeout
@@ -33,6 +34,10 @@ function getStore(): Map<string, CommandStreamJob> {
   }
 
   return globalStore.__commandSurfaceStreamJobs
+}
+
+function runToJobKey(runId: string): string {
+  return `command_surface:run_to_job:${runId}`
 }
 
 function metaKey(jobId: string): string {
@@ -249,6 +254,45 @@ export function publishCommandStreamEvent(jobId: string, event: AgentExecutionEv
   }
 
   void persistEvent(jobId, event)
+}
+
+// In-memory reverse map: runId → jobId
+function getRunToJobMap(): Map<string, string> {
+  const g = globalThis as unknown as { __runToJobMap?: Map<string, string> }
+  if (!g.__runToJobMap) g.__runToJobMap = new Map()
+  return g.__runToJobMap
+}
+
+export async function setJobRunId(jobId: string, runId: string): Promise<void> {
+  const store = getStore()
+  const job = store.get(jobId)
+  if (job) job.runId = runId
+
+  getRunToJobMap().set(runId, jobId)
+
+  const redis = await getRedisClient()
+  if (!redis) return
+  try {
+    await redis.hSet(metaKey(jobId), { runId })
+    await redis.set(runToJobKey(runId), jobId, { EX: JOB_TTL_SEC })
+  } catch {
+    // Non-fatal
+  }
+}
+
+export async function getJobIdByRunId(runId: string): Promise<string | null> {
+  // Check in-memory first
+  const memResult = getRunToJobMap().get(runId)
+  if (memResult) return memResult
+
+  const redis = await getRedisClient()
+  if (!redis) return null
+
+  try {
+    return await redis.get(runToJobKey(runId))
+  } catch {
+    return null
+  }
 }
 
 export function subscribeCommandStream(

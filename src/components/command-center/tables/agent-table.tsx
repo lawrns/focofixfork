@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Eye, FileText, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/data-display/avatar'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import { AGENT_STATUS_COLORS, AGENT_STATUS_DOT, BACKEND_LABELS } from '@/lib/command-center/types'
 import type { AgentBackend, AgentNodeStatus } from '@/lib/command-center/types'
@@ -102,10 +103,14 @@ export function AgentTable() {
               <tr key={agent.id} className="bg-card hover:bg-accent/30 transition-colors">
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
+                    <Avatar size="xs" className="flex-shrink-0">
+                      {agent.avatarUrl && <AvatarImage src={agent.avatarUrl} alt={agent.name} />}
+                      <AvatarFallback className="text-[9px]">{agent.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
                     <span className={cn('h-1.5 w-1.5 rounded-full flex-shrink-0', AGENT_STATUS_DOT[agent.status])} />
                     <span className="font-medium truncate max-w-[140px]">{agent.name}</span>
                   </div>
-                  <span className="text-[11px] text-muted-foreground pl-3.5">{agent.role}</span>
+                  <span className="text-[11px] text-muted-foreground pl-10">{agent.role}</span>
                 </td>
                 <td className="px-3 py-2 hidden sm:table-cell">
                   <Badge variant="outline" className="text-[10px]">{BACKEND_LABELS[agent.backend]}</Badge>

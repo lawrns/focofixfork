@@ -41,6 +41,33 @@ export const scaleIn: Variants = {
   },
 }
 
+export const runCardEntry: Variants = {
+  hidden: { opacity: 0, y: -16, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: MOTION_SPRINGS.panel,
+  },
+  exit: {
+    opacity: 0,
+    y: 8,
+    scale: 0.96,
+    transition: {
+      duration: 0.3,
+      ease: MOTION_EASINGS.exit,
+    },
+  },
+}
+
+export const dispatchFlash: Variants = {
+  idle: { scale: 1 },
+  flash: {
+    scale: [1, 0.98, 1],
+    transition: { duration: 0.15, ease: 'easeInOut' },
+  },
+}
+
 export const listItem: Variants = {
   hidden: { opacity: 0, y: 6 },
   visible: {

@@ -18,6 +18,8 @@ import {
   invalidUUIDResponse
 } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { normalizeWorkspaceAIPolicy } from '@/lib/ai/policy'
+import { resolveAIExecutionProfile } from '@/lib/ai/resolver'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,14 +94,19 @@ export async function POST(request: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse(workspaceResult.error.message), authResponse)
     }
 
-    const policy = workspaceResult.data.ai_policy || {}
+    const policy = normalizeWorkspaceAIPolicy(workspaceResult.data.ai_policy)
+    const profile = await resolveAIExecutionProfile({
+      useCase: 'task_action',
+      policy,
+    })
 
     // Generate preview using TaskActionService
-    const taskActionService = new TaskActionService(supabase)
+    const taskActionService = new TaskActionService(supabase, profile)
     const preview = await taskActionService.generatePreview(
       { action, task_id, workspace_id },
       policy,
-      user.id
+      user.id,
+      profile
     )
 
     return mergeAuthResponse(

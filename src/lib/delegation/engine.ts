@@ -13,6 +13,7 @@ import { loadHandbook as loadAdvancedHandbook, formatHandbookForAgent } from '@/
 import { dispatchToClawdBot, buildSystemPrompt, type DispatchPayload } from './dispatchers'
 import { sendTelegramAlert } from '@/lib/services/telegram'
 import { assembleProjectContext } from '@/features/memory'
+import { createTaskExecutionEvent } from '@/features/task-intake'
 
 export interface DelegationTickResult {
   processed: number
@@ -52,7 +53,7 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
   const { data: items, error: itemsError } = await supabaseAdmin
     .from('work_items')
     .select(`
-      id, title, description, priority, created_at, approval_required, approved_by, handbook_ref,
+      id, workspace_id, title, description, priority, created_at, approval_required, approved_by, handbook_ref,
       foco_projects!project_id (
         id, name, slug, assigned_agent_pool, delegation_settings, local_path
       )
@@ -188,6 +189,20 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
         updated_at: new Date().toISOString(),
       })
       .eq('id', item.id)
+
+    await createTaskExecutionEvent({
+      workItemId: item.id,
+      workspaceId: item.workspace_id,
+      projectId: project.id,
+      actorType: 'agent',
+      actorId: agentId,
+      eventType: 'delegated',
+      summary: `Task delegated to ${agentId}.`,
+      details: {
+        run_id: run.id,
+        external_run_id: dispatchResult.externalRunId ?? null,
+      },
+    })
 
     const runUpdate: Record<string, unknown> = {}
     if (dispatchResult.externalRunId) runUpdate.external_run_id = dispatchResult.externalRunId

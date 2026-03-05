@@ -4,6 +4,7 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { TaskRepository } from '@/lib/repositories/task-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { createTaskExecutionEvent } from '@/features/task-intake'
 import {
   successResponse,
   authRequiredResponse,
@@ -11,6 +12,7 @@ import {
   internalErrorResponse,
   databaseErrorResponse,
   forbiddenResponse,
+  badRequestResponse,
 } from '@/lib/api/response-helpers'
 
 export const dynamic = 'force-dynamic'
@@ -85,11 +87,43 @@ export async function GET(
       reporter = reporterProfile
     }
 
+    const { data: executionEvents } = await supabaseAdmin
+      .from('task_execution_events')
+      .select('id, actor_type, actor_id, event_type, summary, details, created_at')
+      .eq('work_item_id', id)
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    const { data: verifications } = await supabaseAdmin
+      .from('task_verifications')
+      .select('id, verification_type, status, command, summary, details, created_at')
+      .eq('work_item_id', id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    const metadata = typeof task.metadata === 'object' && task.metadata !== null
+      ? task.metadata as Record<string, unknown>
+      : {}
+
+    const verificationSummary = metadata.verification_summary as Record<string, unknown> | undefined
+    const executionState = metadata.execution_state as Record<string, unknown> | undefined
+
     const successRes = successResponse({
       ...task,
       project,
       assignee,
       reporter,
+      execution_events: executionEvents ?? [],
+      verifications: verifications ?? [],
+      orchestration_summary: {
+        source: typeof metadata.source === 'string' ? metadata.source : null,
+        recommended_execution: typeof metadata.recommended_execution === 'string' ? metadata.recommended_execution : null,
+        recommended_agent: typeof metadata.recommended_agent === 'string' ? metadata.recommended_agent : null,
+        latest_execution_summary: typeof executionState?.summary === 'string' ? executionState.summary : null,
+        verification_required: Boolean(verificationSummary?.required),
+        latest_verification_status: typeof verificationSummary?.latest_status === 'string' ? verificationSummary.latest_status : null,
+        latest_verification_summary: typeof verificationSummary?.latest_summary === 'string' ? verificationSummary.latest_summary : null,
+      },
     })
     return mergeAuthResponse(successRes, authResponse)
   } catch (err: unknown) {
@@ -115,7 +149,7 @@ export async function PATCH(
     // Verify task exists and user has access
     const { data: task } = await supabaseAdmin
       .from('work_items')
-      .select('id, workspace_id')
+      .select('id, workspace_id, project_id, status, metadata')
       .eq('id', id)
       .maybeSingle()
 
@@ -135,8 +169,32 @@ export async function PATCH(
       return forbiddenResponse('You do not have access to this task')
     }
 
+    const { data: project } = await supabaseAdmin
+      .from('foco_projects')
+      .select('delegation_settings')
+      .eq('id', task.project_id)
+      .maybeSingle()
+
+    const delegationSettings = ((project?.delegation_settings ?? {}) as Record<string, unknown>)
+    const verificationRequired = delegationSettings.verification_required_before_done === true
+
+    if (body.status === 'done' && verificationRequired) {
+      const metadata = typeof task.metadata === 'object' && task.metadata !== null
+        ? task.metadata as Record<string, unknown>
+        : {}
+      const verificationSummary = metadata.verification_summary as Record<string, unknown> | undefined
+      const latestVerificationStatus = verificationSummary?.latest_status
+
+      if (latestVerificationStatus !== 'passed') {
+        return mergeAuthResponse(
+          badRequestResponse('A passing verification record is required before this task can move to done'),
+          authResponse
+        )
+      }
+    }
+
     // Build update object with only provided fields
-    const updateData: Record<string, string | number | null> = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     }
 
@@ -166,6 +224,22 @@ export async function PATCH(
     if (updateError) {
       const errorRes = databaseErrorResponse('Failed to update task', updateError)
       return mergeAuthResponse(errorRes, authResponse)
+    }
+
+    if (body.status && body.status !== task.status) {
+      await createTaskExecutionEvent({
+        workItemId: id,
+        workspaceId: task.workspace_id,
+        projectId: task.project_id,
+        actorType: 'user',
+        actorId: user.id,
+        eventType: 'status_changed',
+        summary: `Task moved from ${task.status} to ${body.status}.`,
+        details: {
+          from: task.status,
+          to: body.status,
+        },
+      })
     }
 
     return mergeAuthResponse(successResponse(updated), authResponse)

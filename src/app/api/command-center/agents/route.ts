@@ -4,7 +4,7 @@ import { fetchCricoAgents } from '@/lib/command-center/adapters/crico-adapter'
 import { fetchClawdbotAgents } from '@/lib/command-center/adapters/clawdbot-adapter'
 import { fetchBosunAgents } from '@/lib/command-center/adapters/bosun-adapter'
 import { fetchOpenClawAgents } from '@/lib/command-center/adapters/openclaw-adapter'
-import { getAgentAvatar, SPECIALIST_ADVISORS } from '@/lib/agent-avatars'
+import { getAgentAvatar, SPECIALIST_ADVISORS, buildSpecialistAdvisorRecord } from '@/lib/agent-avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
   // Append specialist advisor agents
   for (const advisor of SPECIALIST_ADVISORS) {
     if (!seen.has(advisor.id)) {
+      const resolvedAdvisor = await buildSpecialistAdvisorRecord(advisor)
       agents.push({
         id: advisor.id,
         backend: advisor.backend,
@@ -62,8 +63,13 @@ export async function GET(req: NextRequest) {
         role: advisor.role,
         status: advisor.status,
         model: advisor.model,
-        avatarUrl: advisor.avatarUrl,
-        raw: { type: 'specialist_advisor' },
+        avatarUrl: resolvedAdvisor.avatarUrl,
+        raw: {
+          type: 'specialist_advisor',
+          description: advisor.description,
+          persona_tags: advisor.personaTags,
+          system_prompt: advisor.systemPrompt,
+        },
       })
     }
   }

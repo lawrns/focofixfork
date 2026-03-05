@@ -4,32 +4,13 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { WorkspaceAIPolicy } from './policy'
 
 /**
  * Workspace AI Policy
  * Controls which AI tools and actions are allowed in a workspace
  */
-export interface WorkspaceAIPolicy {
-  allowed_tools: string[]
-  allowed_actions: string[]
-  auto_apply: boolean
-  confidence_threshold: number
-  execution_mode?: 'auto' | 'semi_auto'
-  approval_thresholds?: {
-    confidence_min_for_auto?: number
-  }
-  data_sources: string[]
-  audit_visible: boolean
-  constraints?: {
-    allow_task_creation?: boolean
-    allow_task_updates?: boolean
-    allow_task_deletion?: boolean
-    allow_project_access?: boolean
-    allow_team_access?: boolean
-    require_approval_for_changes?: boolean
-    max_tasks_per_operation?: number
-  }
-}
+export type { WorkspaceAIPolicy } from './policy'
 
 /**
  * Tool Call Context

@@ -10,9 +10,13 @@ import type { TaskActionType } from '@/lib/services/task-action-service';
 
 interface ActivityEntry {
   id: string;
-  user: string;
-  action: string;
-  time: string;
+  actor_type?: string;
+  actor_id?: string | null;
+  summary?: string;
+  created_at?: string;
+  user?: string;
+  action?: string;
+  time?: string;
 }
 
 interface TaskActivityProps {
@@ -109,10 +113,14 @@ export function TaskActivity({
         <div className="space-y-2">
           {activityLog.map((activity) => (
             <div key={activity.id} className="flex items-center gap-2 text-sm text-zinc-500">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">{activity.user}</span>
-              <span>{activity.action}</span>
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                {activity.user || activity.actor_type || 'system'}
+              </span>
+              <span>{activity.action || activity.summary}</span>
               <span className="text-zinc-400">•</span>
-              <span className="text-zinc-400">{activity.time}</span>
+              <span className="text-zinc-400">
+                {activity.time || (activity.created_at ? new Date(activity.created_at).toLocaleString() : '')}
+              </span>
             </div>
           ))}
         </div>

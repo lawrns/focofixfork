@@ -29,6 +29,9 @@ export interface Task {
   blocked_reason: string | null
   blocked_by_id: string | null
   closure_note: string | null
+  delegation_status?: 'pending' | 'delegated' | 'running' | 'completed' | 'failed' | 'cancelled' | null
+  assigned_agent?: string | null
+  run_id?: string | null
   ai_context_sources: unknown[]
   metadata: Record<string, unknown>
   created_at: string
@@ -117,7 +120,12 @@ export class TaskRepository extends BaseRepository<Task> {
         assignee_id,
         reporter_id,
         due_date,
+        completed_at,
         position,
+        delegation_status,
+        assigned_agent,
+        run_id,
+        metadata,
         created_at,
         updated_at
       `, { count: 'exact' })

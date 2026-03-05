@@ -10,8 +10,7 @@
  */
 
 import OpenAI from 'openai';
-
-export type AIProvider = 'openai' | 'deepseek' | 'glm';
+import type { AIExecutionProfile, AIProvider } from '@/lib/ai/policy';
 
 interface AIConfig {
   provider: AIProvider;
@@ -48,10 +47,12 @@ export class AIService {
   private client: OpenAI | null;
   private config: AIConfig;
   private isGLM: boolean;
+  private executionOverrides: Pick<AIExecutionProfile, 'temperature' | 'max_tokens'> | null;
 
-  constructor(provider?: AIProvider) {
+  constructor(providerOrProfile?: AIProvider | Pick<AIExecutionProfile, 'provider' | 'model' | 'temperature' | 'max_tokens'>) {
     // Determine provider and configuration
-    const aiProvider = provider || (process.env.AI_PROVIDER as AIProvider) || 'glm';
+    const profile = providerOrProfile && typeof providerOrProfile === 'object' ? providerOrProfile : null
+    const aiProvider = (typeof providerOrProfile === 'string' ? providerOrProfile : profile?.provider) || (process.env.AI_PROVIDER as AIProvider) || 'glm';
 
     console.log('[AIService] Constructor called with provider:', aiProvider)
     console.log('[AIService] Environment variables:', {
@@ -62,13 +63,17 @@ export class AIService {
     })
 
     this.isGLM = aiProvider === 'glm';
+    this.executionOverrides = profile ? {
+      temperature: profile.temperature,
+      max_tokens: profile.max_tokens,
+    } : null
 
     if (aiProvider === 'glm') {
       this.config = {
         provider: 'glm',
         apiKey: process.env.Z_AI_API_KEY || process.env.GLM_API_KEY || '',
         baseURL: 'https://api.z.ai/api/coding/paas/v4/',
-        model: process.env.GLM_MODEL || 'glm-5'
+        model: profile?.model || process.env.GLM_MODEL || 'glm-5'
       };
       console.log('[AIService] Using GLM (Z.ai) CODING endpoint with model:', this.config.model)
     } else if (aiProvider === 'deepseek') {
@@ -76,14 +81,14 @@ export class AIService {
         provider: 'deepseek',
         apiKey: process.env.DEEPSEEK_API_KEY || '',
         baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-        model: 'deepseek-chat'
+        model: profile?.model || process.env.DEEPSEEK_MODEL || 'deepseek-chat'
       };
       console.log('[AIService] Using DeepSeek provider with model:', this.config.model)
     } else {
       this.config = {
         provider: 'openai',
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
+        model: profile?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
       };
       console.log('[AIService] Using OpenAI provider with model:', this.config.model)
     }
@@ -118,7 +123,10 @@ export class AIService {
   /**
    * Generate chat completion
    */
-  async chatCompletion(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>) {
+  async chatCompletion(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    options?: { temperature?: number; maxTokens?: number }
+  ) {
     console.log('[AIService] chatCompletion called with', messages.length, 'messages')
     console.log('[AIService] Current provider:', this.config.provider, 'model:', this.config.model)
 
@@ -137,8 +145,8 @@ export class AIService {
       const response = await this.client.chat.completions.create({
         model: this.config.model,
         messages,
-        temperature: 0.7,
-        max_tokens: 2000
+        temperature: options?.temperature ?? this.executionOverrides?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? this.executionOverrides?.max_tokens ?? 2000
       });
 
       console.log('[AIService] API response received')
@@ -178,7 +186,10 @@ export class AIService {
 
     messages.push({ role: 'user', content: request.prompt });
 
-    const content = await this.chatCompletion(messages);
+    const content = await this.chatCompletion(messages, {
+      temperature: request.temperature,
+      maxTokens: request.maxTokens,
+    });
 
     return {
       content,

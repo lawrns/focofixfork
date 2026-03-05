@@ -7,6 +7,8 @@ export type TaskClassification = 'human' | 'ai' | 'hybrid' | 'unclear';
 
 export type TaskIntakeStatus = 'pending' | 'parsed' | 'classified' | 'dispatched' | 'completed' | 'discarded';
 
+export type ExecutionMode = 'human' | 'agent' | 'hybrid';
+
 export interface ParsedTaskResult {
   title: string;
   description?: string;
@@ -15,6 +17,30 @@ export interface ParsedTaskResult {
   tags?: string[];
   estimated_hours?: number;
   due_date?: string;
+}
+
+export interface DraftPlanTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  status: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done';
+  recommended_execution: ExecutionMode;
+  recommended_agent?: string | null;
+  estimated_hours?: number | null;
+  acceptance_criteria: string[];
+  verification_steps: string[];
+  dependencies: string[];
+}
+
+export interface DraftPlanResult {
+  title: string;
+  summary: string;
+  goals: string[];
+  constraints: string[];
+  milestones: Array<{ id: string; title: string; goal: string }>;
+  tasks: DraftPlanTask[];
+  confidence_score: number;
 }
 
 export interface TaskIntakeItem {
@@ -34,6 +60,7 @@ export interface TaskIntakeItem {
     completeness?: number;
   };
   confidence_score: number;
+  draft_plan?: DraftPlanResult;
   created_at: string;
   updated_at: string;
   processed_at?: string;

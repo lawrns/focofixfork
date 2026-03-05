@@ -218,23 +218,39 @@ export async function autoCompleteIntake(
   // Get intake to find project_id
   const { data: intake } = await supabaseAdmin
     .from('task_intake_queue')
-    .select('project_id, user_id')
+    .select('project_id, user_id, foco_projects!project_id(workspace_id)')
     .eq('id', intakeId)
     .single();
 
   if (!intake) return null;
 
+  const workspaceId = (intake as any)?.foco_projects?.workspace_id;
+  if (!workspaceId) return null;
+
   // Create the task
   const { data: task, error: taskError } = await supabaseAdmin
     .from('work_items')
     .insert({
+      workspace_id: workspaceId,
       title: parsed.title,
       description: parsed.description,
       priority: parsed.priority,
       status: 'backlog',
       project_id: intake.project_id,
       delegation_status: 'pending',
-      created_by: intake.user_id,
+      reporter_id: intake.user_id,
+      metadata: {
+        source: 'intake',
+        execution_state: {
+          summary: null,
+          latest_event: 'created_from_intake',
+        },
+        verification_summary: {
+          required: false,
+          latest_status: null,
+          latest_summary: null,
+        },
+      },
     })
     .select()
     .single();

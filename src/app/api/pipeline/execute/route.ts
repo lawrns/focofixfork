@@ -11,14 +11,14 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { buildExecuteContext } from '@/lib/pipeline/context-builder'
 import type { PlanResult } from '@/lib/pipeline/types'
-import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
+import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   let authResponse: NextResponse | undefined
   try {
-    const { user, error, response } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
     authResponse = response
 
     if (error || !user) {
@@ -59,8 +59,14 @@ export async function POST(req: NextRequest) {
       run.task_description,
       run.plan_result as PlanResult
     )
-    const routing = await resolveClawdRoutingProfile(run.routing_profile_id ?? null)
-    const executor_model = pickPreferredModel(routing, 'execute', requested_executor_model)
+    const { profile } = await resolveAIExecutionProfileFromWorkspace({
+      supabase,
+      userId: user.id,
+      workspaceId: run.workspace_id ?? null,
+      useCase: 'pipeline_execute',
+      requestedModel: requested_executor_model,
+    })
+    const executor_model = profile.model
 
     let executorRunId: string | null = null
     try {
@@ -80,7 +86,8 @@ export async function POST(req: NextRequest) {
       .update({
         executor_run_id: executorRunId,
         executor_model,
-        routing_profile_id: run.routing_profile_id ?? routing.profile_id,
+        routing_profile_id: profile.routing_profile_id ?? run.routing_profile_id,
+        provider_chain: profile.fallback_chain,
         status: 'executing',
       })
       .eq('id', run.id)

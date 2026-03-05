@@ -36,7 +36,10 @@ interface AdvisorEntry {
   role: string
   model: 'OPUS' | 'SONNET' | 'KIMI' | 'GLM-5' | 'UNKNOWN'
   status: 'idle' | 'working' | 'blocked' | 'done' | 'error' | 'paused'
-  avatar_url: string
+  avatar_url?: string | null
+  description: string
+  system_prompt: string
+  persona_tags: string[]
   featured_order: number
 }
 
@@ -421,7 +424,9 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
           role: advisor.role,
           model: advisor.model,
           status: advisor.status,
-          description: `${advisor.name} is configured as a named executive advisor.`,
+          description: advisor.description,
+          systemPrompt: advisor.system_prompt,
+          personaTags: advisor.persona_tags,
           commandHref: `/empire/command?agent=${encodeURIComponent(advisor.id)}`,
         },
         logAgent: {

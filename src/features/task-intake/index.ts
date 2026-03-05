@@ -9,3 +9,4 @@
 
 export * from './types';
 export * from './services/intake-processor';
+export * from './services/project-brief-planner';

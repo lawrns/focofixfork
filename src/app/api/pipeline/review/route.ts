@@ -12,14 +12,14 @@ import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { buildReviewContext } from '@/lib/pipeline/context-builder'
 import { listHandbooks } from '@/lib/handbook/handbook-loader'
 import type { PlanResult, ExecutionResult } from '@/lib/pipeline/types'
-import { pickPreferredModel, resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
+import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   let authResponse: NextResponse | undefined
   try {
-    const { user, error, response } = await getAuthUser(req)
+    const { user, supabase, error, response } = await getAuthUser(req)
     authResponse = response
 
     if (error || !user) {
@@ -55,8 +55,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const routing = await resolveClawdRoutingProfile(run.routing_profile_id ?? null)
-    const reviewer_model = pickPreferredModel(routing, 'review', requested_reviewer_model)
+    const { profile } = await resolveAIExecutionProfileFromWorkspace({
+      supabase,
+      userId: user.id,
+      workspaceId: run.workspace_id ?? null,
+      useCase: 'pipeline_review',
+      requestedModel: requested_reviewer_model,
+    })
+    const reviewer_model = profile.model
 
     const migrationFiles = await listHandbooks()
 
@@ -85,7 +91,8 @@ export async function POST(req: NextRequest) {
       .update({
         reviewer_run_id: reviewerRunId,
         reviewer_model,
-        routing_profile_id: run.routing_profile_id ?? routing.profile_id,
+        routing_profile_id: profile.routing_profile_id ?? run.routing_profile_id,
+        provider_chain: profile.fallback_chain,
         status: 'reviewing',
         ...(handbook_slug ? { handbook_ref: handbook_slug } : {}),
       })

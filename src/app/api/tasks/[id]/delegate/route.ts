@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { createTaskExecutionEvent } from '@/features/task-intake'
 import {
   successResponse,
   authRequiredResponse,
@@ -27,7 +28,7 @@ export async function POST(
     // Fetch the task
     const { data: task, error: taskError } = await supabaseAdmin
       .from('work_items')
-      .select('id, workspace_id, delegation_status')
+      .select('id, workspace_id, project_id, delegation_status')
       .eq('id', id)
       .maybeSingle()
 
@@ -62,6 +63,17 @@ export async function POST(
     if (updateError) {
       return databaseErrorResponse('Failed to queue task for delegation', updateError)
     }
+
+    await createTaskExecutionEvent({
+      workItemId: id,
+      workspaceId: task.workspace_id,
+      projectId: task.project_id,
+      actorType: 'user',
+      actorId: user.id,
+      eventType: 'queued_for_delegation',
+      summary: 'Task queued for agent delegation.',
+      details: {},
+    })
 
     return mergeAuthResponse(successResponse(updated), authResponse)
   } catch (err: unknown) {

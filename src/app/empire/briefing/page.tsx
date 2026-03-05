@@ -41,7 +41,7 @@ export default function EmpireBriefingPage() {
           </Button>
         }
       />
-      <div className="max-w-2xl">
+      <div className="w-full">
         <BriefingCard data={data} loading={loading} error={error} />
       </div>
     </PageShell>

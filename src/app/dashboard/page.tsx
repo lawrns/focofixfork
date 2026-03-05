@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function DashboardFallback() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full py-6">
       <div className="mb-8">
         <Skeleton className="h-10 w-64 mb-2" />
         <Skeleton className="h-4 w-96" />

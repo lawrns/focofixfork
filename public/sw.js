@@ -1,9 +1,9 @@
 // Service Worker for Foco PWA
-// Version 1.0.2
+// Version 1.0.3
 
-const CACHE_NAME = 'foco-v1.0.2'
-const STATIC_CACHE = 'foco-static-v1.0.2'
-const DYNAMIC_CACHE = 'foco-dynamic-v1.0.2'
+const CACHE_NAME = 'foco-v1.0.3'
+const STATIC_CACHE = 'foco-static-v1.0.3'
+const DYNAMIC_CACHE = 'foco-dynamic-v1.0.3'
 
 // Critical resources to cache immediately
 const CRITICAL_RESOURCES = [

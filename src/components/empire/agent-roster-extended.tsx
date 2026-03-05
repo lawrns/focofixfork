@@ -202,7 +202,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-slide-up">
         <p className="text-[11px] text-muted-foreground">Last synced {lastSyncLabel}</p>
         <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => void loadOverview()}>
           <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
@@ -210,7 +210,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 animate-slide-up-delay">
         <Card>
           <CardContent className="pt-4">
             <p className="text-[11px] font-mono-display text-muted-foreground uppercase tracking-widest">System Agents</p>
@@ -253,7 +253,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
         </Card>
       )}
 
-      <Card>
+      <Card className="animate-slide-up-delay">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Lane Operations</CardTitle>
         </CardHeader>
@@ -275,7 +275,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="animate-slide-up-delay">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Live System Agents</CardTitle>
         </CardHeader>
@@ -289,7 +289,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="animate-slide-up-delay-2">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Custom Lane Agents</CardTitle>
         </CardHeader>
@@ -303,7 +303,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 animate-slide-up-delay-2">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">

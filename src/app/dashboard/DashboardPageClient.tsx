@@ -184,7 +184,7 @@ export default function DashboardPageClient() {
 
   return (
     <ErrorBoundary>
-      <PageShell>
+      <PageShell className="space-y-5">
         <PageHeader
           title="Execution Dashboard"
           subtitle="Goal 1 first: track work that gets to 10 paying customers"
@@ -204,7 +204,7 @@ export default function DashboardPageClient() {
         />
 
         {/* Command Surface - Elevated and Prominent */}
-        <div className="mb-6">
+        <div className="mb-6 animate-slide-up">
           <CommandSurface
             context="dashboard"
             className="border-0 shadow-none"
@@ -217,7 +217,7 @@ export default function DashboardPageClient() {
 
         {/* Strategic Banner - Collapsible/Dismissible */}
         {showStrategicBanner && (
-          <div className="mb-6 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-card p-4 relative">
+          <div className="mb-6 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-card/90 backdrop-blur-sm p-4 relative animate-slide-up-delay">
             <button
               onClick={() => setShowStrategicBanner(false)}
               className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
@@ -242,7 +242,7 @@ export default function DashboardPageClient() {
         )}
 
         {/* Orchestration Health */}
-        <div className="mb-6">
+        <div className="mb-6 animate-slide-up-delay">
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
@@ -252,7 +252,8 @@ export default function DashboardPageClient() {
               <Badge variant="destructive" className="text-[10px] ml-1">Fleet Paused</Badge>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-3 sm:p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             <MetricTile
               label="Running"
               value={activeRuns.filter(r => r.status === 'running').length}
@@ -295,6 +296,7 @@ export default function DashboardPageClient() {
               subtitle="runs tagged by revenue intent"
               onClick={() => router.push('/runs')}
             />
+            </div>
           </div>
         </div>
 
@@ -306,7 +308,7 @@ export default function DashboardPageClient() {
         />
 
         {/* Fleet Status Cards - Consolidated to 3 key cards */}
-        <div className="mb-6">
+        <div className="mb-6 animate-slide-up-delay-2">
           <div className="flex items-center gap-2 mb-3">
             <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
@@ -315,7 +317,7 @@ export default function DashboardPageClient() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* System Health - Combined Gateway + Auth + Sessions */}
-            <div className="rounded-lg border border-border bg-card p-4">
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Cpu className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-medium">System Health</span>
@@ -355,7 +357,7 @@ export default function DashboardPageClient() {
             </div>
 
             {/* Workload Status - Combined Active Runs + Fleet State */}
-            <div className="rounded-lg border border-border bg-card p-4">
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Activity className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-medium">Workload Status</span>
@@ -384,7 +386,7 @@ export default function DashboardPageClient() {
             </div>
 
             {/* Performance Snapshot */}
-            <div className="rounded-lg border border-border bg-card p-4">
+            <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-medium">Performance</span>
@@ -426,10 +428,10 @@ export default function DashboardPageClient() {
         </ErrorBoundary>
 
         {/* Recent Events / Execution Summary - Two column layout */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <div className="grid md:grid-cols-2 gap-6 mb-6 animate-slide-up-delay-2">
 
           {/* Quick Stats / Info Panel */}
-          <div className="rounded-lg border border-border bg-card">
+          <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <h3 className="text-sm font-semibold">Execution Summary</h3>
               <Button variant="ghost" size="sm" onClick={() => router.push('/runs')}>
@@ -464,7 +466,7 @@ export default function DashboardPageClient() {
           </div>
 
           {/* Recent Ledger Events */}
-          <div className="rounded-lg border border-border bg-card">
+          <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <h3 className="text-sm font-semibold">Recent Events</h3>
               <Button variant="ghost" size="sm" onClick={() => router.push('/ledger')}>

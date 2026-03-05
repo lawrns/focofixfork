@@ -10,22 +10,24 @@ interface PageShellProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl' | '7xl' | 'full';
 }
 
+const FULL_WIDTH_CLASS = 'max-w-full'
+
 const maxWidthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '4xl': 'max-w-4xl',
-  '6xl': 'max-w-6xl',
-  '7xl': 'max-w-7xl',
-  full: 'max-w-full',
+  sm: FULL_WIDTH_CLASS,
+  md: FULL_WIDTH_CLASS,
+  lg: FULL_WIDTH_CLASS,
+  xl: FULL_WIDTH_CLASS,
+  '2xl': FULL_WIDTH_CLASS,
+  '4xl': FULL_WIDTH_CLASS,
+  '6xl': FULL_WIDTH_CLASS,
+  '7xl': FULL_WIDTH_CLASS,
+  full: FULL_WIDTH_CLASS,
 };
 
 export function PageShell({
   children,
   className,
-  maxWidth = '7xl',
+  maxWidth = 'full',
 }: PageShellProps) {
   const { density } = useUIPreferencesStore();
   const [isMounted, setIsMounted] = useState(false);
@@ -43,15 +45,21 @@ export function PageShell({
   };
 
   return (
-    <div
-      className={cn(
-        'mx-auto w-full',
-        maxWidthClasses[maxWidth],
-        densityPadding[effectiveDensity],
-        className
-      )}
-    >
-      {children}
+    <div className="relative w-full">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-24 sm:h-28 bg-[radial-gradient(80%_120%_at_50%_0%,rgba(var(--foco-teal-rgb),0.16),transparent)]"
+      />
+      <div
+        className={cn(
+          'mx-auto w-full animate-fade-in',
+          maxWidthClasses[maxWidth],
+          densityPadding[effectiveDensity],
+          className
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }

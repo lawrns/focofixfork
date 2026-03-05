@@ -13,6 +13,7 @@ import {
   Plug,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PageShell } from '@/components/layout/page-shell';
+import { PageHeader } from '@/components/layout/page-header';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { WorkspaceSettings } from './components/WorkspaceSettings';
 import { MembersSettings } from './components/MembersSettings';
@@ -96,67 +98,71 @@ export default function SettingsPage() {
   };
 
   return (
-    <PageShell maxWidth="6xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">
-          Settings
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage your workspace preferences
-        </p>
-      </div>
+    <PageShell className="space-y-5">
+      <PageHeader
+        title="Settings"
+        subtitle="Manage workspace policy, memberships, appearance, integrations, and security in one place."
+      />
 
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-        {isMobile ? (
-          <Select value={activeSection} onValueChange={setActiveSection}>
-            <SelectTrigger className="w-full">
-              <SelectValue>
-                {(() => {
-                  const section = settingsSections.find(s => s.id === activeSection);
-                  return section ? (
+      <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-3 sm:p-4 animate-slide-up">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Badge variant="outline" className="text-[10px]">Workspace Control Plane</Badge>
+          <Badge variant="secondary" className="text-[10px]">Responsive Layout</Badge>
+          <Badge variant="outline" className="text-[10px]">Section: {settingsSections.find(s => s.id === activeSection)?.label}</Badge>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4 lg:gap-5">
+          {isMobile ? (
+            <Select value={activeSection} onValueChange={setActiveSection}>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {(() => {
+                    const section = settingsSections.find(s => s.id === activeSection);
+                    return section ? (
+                      <span className="flex items-center gap-2">
+                        <section.icon className="h-4 w-4" />
+                        {section.label}
+                      </span>
+                    ) : null;
+                  })()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {settingsSections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
                     <span className="flex items-center gap-2">
                       <section.icon className="h-4 w-4" />
                       {section.label}
                     </span>
-                  ) : null;
-                })()}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {settingsSections.map((section) => (
-                <SelectItem key={section.id} value={section.id}>
-                  <span className="flex items-center gap-2">
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <nav className="w-full shrink-0 lg:sticky lg:top-16 self-start">
+              <div className="rounded-lg border bg-background/80 p-2 space-y-1">
+                {settingsSections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                      activeSection === section.id
+                        ? 'bg-secondary text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
+                    )}
+                  >
                     <section.icon className="h-4 w-4" />
                     {section.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <nav className="w-52 shrink-0">
-            <div className="space-y-1">
-              {settingsSections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                    activeSection === section.id
-                      ? 'bg-secondary text-foreground'
-                      : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
-                  )}
-                >
-                  <section.icon className="h-4 w-4" />
-                  {section.label}
-                </button>
-              ))}
-            </div>
-          </nav>
-        )}
+                  </button>
+                ))}
+              </div>
+            </nav>
+          )}
 
-        <div className="flex-1 min-w-0">
-          {renderContent()}
+          <div className="flex-1 min-w-0 animate-slide-up-delay">
+            {renderContent()}
+          </div>
         </div>
       </div>
     </PageShell>

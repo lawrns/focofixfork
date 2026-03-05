@@ -11,16 +11,18 @@ interface UnifiedPageShellProps {
   animate?: boolean
 }
 
+const FULL_WIDTH_CLASS = 'max-w-full'
+
 const maxWidthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '4xl': 'max-w-4xl',
-  '6xl': 'max-w-6xl',
-  '7xl': 'max-w-7xl',
-  full: 'max-w-full',
+  sm: FULL_WIDTH_CLASS,
+  md: FULL_WIDTH_CLASS,
+  lg: FULL_WIDTH_CLASS,
+  xl: FULL_WIDTH_CLASS,
+  '2xl': FULL_WIDTH_CLASS,
+  '4xl': FULL_WIDTH_CLASS,
+  '6xl': FULL_WIDTH_CLASS,
+  '7xl': FULL_WIDTH_CLASS,
+  full: FULL_WIDTH_CLASS,
 }
 
 const pageTransition = {
@@ -32,12 +34,12 @@ const pageTransition = {
 export function UnifiedPageShell({
   children,
   className,
-  maxWidth = '7xl',
+  maxWidth = 'full',
   animate = true,
 }: UnifiedPageShellProps) {
   if (!animate) {
     return (
-      <div className={cn('mx-auto w-full px-4 sm:px-6 lg:px-8 py-6', maxWidthClasses[maxWidth], className)}>
+      <div className={cn('mx-auto w-full py-4 sm:py-5 lg:py-6 animate-fade-in', maxWidthClasses[maxWidth], className)}>
         {children}
       </div>
     )
@@ -49,7 +51,7 @@ export function UnifiedPageShell({
       initial="initial"
       animate="animate"
       exit="exit"
-      className={cn('mx-auto w-full px-4 sm:px-6 lg:px-8 py-6', maxWidthClasses[maxWidth], className)}
+      className={cn('mx-auto w-full py-4 sm:py-5 lg:py-6', maxWidthClasses[maxWidth], className)}
     >
       {children}
     </motion.div>

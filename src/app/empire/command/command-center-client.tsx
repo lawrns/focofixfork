@@ -262,7 +262,7 @@ export function CommandCenterClient() {
 
   return (
     <TooltipProvider delayDuration={200}>
-    <PageShell>
+    <PageShell className="space-y-5">
       <PageHeader
         title="Execution Command Center"
         subtitle="Live agent orchestration and system health"
@@ -313,7 +313,7 @@ export function CommandCenterClient() {
       <EmpireHealthGrid services={services} loading={healthLoading} />
 
       {/* NEW: Mode + Search + Controls TopBar */}
-      <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border bg-card">
+      <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border bg-card/80 backdrop-blur-sm animate-slide-up">
         {/* Mode button group */}
         <div className="inline-flex h-8 items-center rounded-md bg-muted/30 p-1 gap-1 shrink-0">
           {(['Reactive', 'Predictive', 'Guarded'] as const).map((mode) => (
@@ -378,14 +378,14 @@ export function CommandCenterClient() {
         </DropdownMenu>
       </div>
 
-            {/* Gateway Status & Dispatch Task */}
-      <div className="grid lg:grid-cols-12 gap-4">
+      {/* Gateway Status & Dispatch Task */}
+      <div className="grid lg:grid-cols-12 gap-4 animate-slide-up-delay">
         <div className="lg:col-span-4"><GatewayStatusCard /></div>
         <div className="lg:col-span-8"><DispatchTaskCard /></div>
       </div>
 
-{/* NEW: KPI strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* NEW: KPI strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 animate-slide-up-delay">
         <Tip label="Agents currently executing tasks">
           <MetricTile
             label="Active agents"
@@ -425,7 +425,7 @@ export function CommandCenterClient() {
         </Tip>
       </div>
 
-      <Card>
+      <Card className="bg-card/80 backdrop-blur-sm animate-slide-up-delay">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-sm">Co-Founder Insights</CardTitle>
@@ -485,7 +485,7 @@ export function CommandCenterClient() {
       </Card>
 
       {/* NEW: Main 2-col grid (System Pulse + Decisions) */}
-      <div className="grid gap-4">
+      <div className="grid gap-4 lg:grid-cols-12 animate-slide-up-delay-2">
         <div className="lg:col-span-7 space-y-4">
           <SystemPulseChart />
           <QuickActionsCard services={services} />
@@ -528,9 +528,9 @@ export function CommandCenterClient() {
       </div>
 
       {/* NEW: Agent rows + System log 2-col grid */}
-      <div className="grid gap-4">
-        <div >
-          <div id="active-agents-section" className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="grid gap-4 lg:grid-cols-12 animate-slide-up-delay-2">
+        <div className="lg:col-span-12">
+          <div id="active-agents-section" className="rounded-xl border bg-card/80 backdrop-blur-sm p-4 space-y-3">
             <h3 className="text-sm font-semibold">Active Agents</h3>
             {filteredAgents.length > 0 ? (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -552,8 +552,8 @@ export function CommandCenterClient() {
       </div>
 
       {/* Swarm topology — hidden on mobile */}
-      <div className="hidden md:block">
-        <div className="rounded-lg border overflow-hidden" style={{ minHeight: '260px' }}>
+      <div className="hidden md:block animate-slide-up-delay-2">
+        <div className="rounded-xl border overflow-hidden bg-card/80 backdrop-blur-sm" style={{ minHeight: '260px' }}>
           <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
             <Cpu className="h-4 w-4 text-muted-foreground" />
             <span className="text-[12px] font-mono uppercase tracking-wide text-muted-foreground">

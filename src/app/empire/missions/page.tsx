@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 function MissionsFallback() {
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full py-6">
       <div className="flex items-center justify-between mb-8">
         <div>
           <Skeleton className="h-10 w-48 mb-2" />
@@ -30,7 +30,7 @@ function MissionsFallback() {
 export default function MissionBoardsPage() {
   return (
     <div className="space-y-4">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full">
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
           Mission board uses your shared projects workspace. Manage Night Mode in{' '}
           <Link href="/settings" className="font-medium underline">

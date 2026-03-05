@@ -132,7 +132,7 @@ function RunsPageContent() {
   if (!user) return null
 
   return (
-    <PageShell>
+    <PageShell className="space-y-5">
       <PageHeader
         title="Runs"
         subtitle="Agent execution history"
@@ -144,42 +144,44 @@ function RunsPageContent() {
         }
       />
 
-      {/* Summary bar */}
-      {stats && (
-        <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card text-[12px] text-muted-foreground mb-2">
-          <span>
-            <span className="font-semibold text-yellow-600 dark:text-yellow-400">{stats.pending}</span> pending
-            {stats.pending > 0 && stats.avg_pending_wait_seconds > 0 && (
-              <span className="ml-1">— avg wait {formatWait(stats.avg_pending_wait_seconds)}</span>
+      <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-3 sm:p-4 space-y-3 animate-slide-up">
+        {/* Summary bar */}
+        {stats && (
+          <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-background text-[12px] text-muted-foreground">
+            <span>
+              <span className="font-semibold text-yellow-600 dark:text-yellow-400">{stats.pending}</span> pending
+              {stats.pending > 0 && stats.avg_pending_wait_seconds > 0 && (
+                <span className="ml-1">— avg wait {formatWait(stats.avg_pending_wait_seconds)}</span>
+              )}
+            </span>
+            <span className="text-border hidden sm:inline">|</span>
+            <span>
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.running}</span> running
+            </span>
+            <span className="text-border hidden sm:inline">|</span>
+            <span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span> completed today
+            </span>
+            {stats.total_cost_today > 0 && (
+              <>
+                <span className="text-border hidden sm:inline">|</span>
+                <span className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  Total today: <span className="font-semibold">${stats.total_cost_today.toFixed(4)}</span>
+                </span>
+              </>
             )}
-          </span>
-          <span className="text-border">|</span>
-          <span>
-            <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.running}</span> running
-          </span>
-          <span className="text-border">|</span>
-          <span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span> completed today
-          </span>
-          {stats.total_cost_today > 0 && (
-            <>
-              <span className="text-border">|</span>
-              <span className="flex items-center gap-1">
-                <DollarSign className="h-3 w-3" />
-                Total today: <span className="font-semibold">${stats.total_cost_today.toFixed(4)}</span>
-              </span>
-            </>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      <Tabs value={filter} onValueChange={handleFilterChange}>
-        <TabsList>
-          {['all','pending','running','completed','failed'].map(s => (
-            <TabsTrigger key={s} value={s} className="capitalize">{s}</TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+        <Tabs value={filter} onValueChange={handleFilterChange}>
+          <TabsList className="w-full flex flex-wrap">
+            {['all','pending','running','completed','failed'].map(s => (
+              <TabsTrigger key={s} value={s} className="capitalize flex-1 min-w-[90px]">{s}</TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
 
       {runs.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
@@ -205,14 +207,14 @@ function RunsPageContent() {
           )}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-slide-up-delay">
           {runs.map(run => {
             const wait = queueTime(run)
             return (
               <Link
                 key={run.id}
                 href={`/runs/${run.id}`}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors cursor-pointer"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/40 hover:shadow-sm transition-all cursor-pointer"
               >
                 <div className="flex-shrink-0 h-8 w-8 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
                   <Activity className="h-4 w-4 text-[color:var(--foco-teal)]" />

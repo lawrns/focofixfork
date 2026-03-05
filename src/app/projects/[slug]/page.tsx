@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
-import { Plus, Zap, AlertTriangle, FileText } from 'lucide-react';
+import { Plus, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import type { WorkItem, WorkItemStatus } from '@/types/foco';
@@ -14,7 +14,6 @@ import { useCreateTaskModal } from '@/features/tasks';
 import { toast } from 'sonner';
 import { ProjectInsightsPanel } from '@/components/crico/project-insights-panel';
 import type { Project } from './components/types';
-import { AISuggestionStrip } from './components/AISuggestionStrip';
 import { BoardView } from './components/BoardView';
 import { OverviewTab } from './components/OverviewTab';
 import { FleetTab } from './components/FleetTab';
@@ -37,7 +36,6 @@ export default function ProjectPage() {
   } = useProjectData(user, slug);
 
   const [activeTab, setActiveTab] = useState('board');
-  const [groupBy, setGroupBy] = useState<'status' | 'assignee' | 'priority' | 'none'>('status');
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
   const { openTaskModal } = useCreateTaskModal();
 
@@ -222,13 +220,6 @@ export default function ProjectPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <ProjectTabsHeader
           activeRuns={activeRuns}
-          groupBy={groupBy}
-          onGroupChange={(g) => { setGroupBy(g); toast.success(`Grouped by ${g === 'none' ? 'nothing' : g}`); }}
-        />
-
-        <AISuggestionStrip
-          onApply={() => toast.success('AI suggestion applied')}
-          onDismiss={() => toast.info('AI suggestion dismissed')}
         />
 
         <TabsContent value="board" className="mt-0">
@@ -253,14 +244,6 @@ export default function ProjectPage() {
 
         <TabsContent value="timeline">
           <TimelineView tasks={tasks} />
-        </TabsContent>
-
-        <TabsContent value="docs">
-          <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700">
-            <FileText className="h-8 w-8 text-zinc-400 mx-auto mb-3" />
-            <p className="text-zinc-500 font-medium">Documentation Coming Soon</p>
-            <p className="text-sm text-zinc-400 mt-1">Project docs and wikis will be available here</p>
-          </div>
         </TabsContent>
 
         <TabsContent value="people">

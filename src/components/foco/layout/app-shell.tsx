@@ -14,6 +14,7 @@ import { UndoToast } from '../ui/undo-toast';
 import { Send } from 'lucide-react';
 import { BossBar } from '@/components/critter/boss-bar';
 import { SwarmProvider } from '@/components/critter/swarm-context';
+import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 
 interface AppShellProps {
   children: ReactNode;
@@ -61,11 +62,13 @@ export function AppShell({ children }: AppShellProps) {
   const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-56 lg:pl-60';
 
   return (
-    <SwarmProvider>
-    <div
-      suppressHydrationWarning
-      className="min-h-screen bg-background text-foreground"
-    >
+    <MotionConfig reducedMotion="user">
+      <LazyMotion features={domAnimation}>
+        <SwarmProvider>
+          <div
+            suppressHydrationWarning
+            className="min-h-screen bg-background text-foreground"
+          >
       {/* Command palette + shortcuts always available */}
       <CommandPalette />
       <KeyboardShortcutsModal />
@@ -80,7 +83,7 @@ export function AppShell({ children }: AppShellProps) {
         <>
           <MobileMenu />
           <LeftRail />
-          <TopBar />
+          <TopBar sidebarCollapsed={sidebarCollapsedAfterMount} />
         </>
       )}
 
@@ -125,8 +128,10 @@ export function AppShell({ children }: AppShellProps) {
       <UndoToast />
 
       {/* BossBar — fleet status strip for app pages only */}
-      {isMounted && isAppPage && <BossBar />}
-    </div>
-    </SwarmProvider>
+      {isMounted && isAppPage && <BossBar sidebarCollapsed={sidebarCollapsedAfterMount} />}
+          </div>
+        </SwarmProvider>
+      </LazyMotion>
+    </MotionConfig>
   );
 }

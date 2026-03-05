@@ -16,6 +16,7 @@ import { useCommandPipeline } from './use-command-pipeline';
 import { DecisionPreview } from './decision-preview';
 import { extractOutcome } from './execution-result';
 import { CustomAgentModal } from '@/components/agent-ops/custom-agent-modal';
+import { ExecutionLogPanel } from './execution-log-panel';
 
 function normalizeError(err: unknown): string {
   if (!err) return 'Unknown error'
@@ -216,7 +217,7 @@ export function CommandSurface({
   const [projectRequiredError, setProjectRequiredError] = useState<string | null>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(true);
 
-  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history, deleteHistoryEvent } = useCommandPipeline();
+  const { execution, isProcessing, streamingText, executionEvents, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history, deleteHistoryEvent } = useCommandPipeline();
 
   const [runningCount, setRunningCount] = useState(0)
   const refreshRunningCount = useCallback(async () => {
@@ -805,6 +806,11 @@ export function CommandSurface({
                 <div className="h-full bg-teal-500 animate-pulse w-full" />
               </div>
             )}
+
+            <ExecutionLogPanel
+              events={executionEvents}
+              running={execution.status === 'executing'}
+            />
           </div>
         )}
 

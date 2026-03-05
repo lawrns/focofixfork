@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
@@ -11,24 +11,10 @@ vi.mock('next/navigation', () => ({
     replace: vi.fn(),
     prefetch: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/empire/missions',
   useParams: () => ({}),
-}));
-
-// Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-  Plus: () => 'Plus',
-  Search: () => 'Search',
-  Filter: () => 'Filter',
-  Grid3X3: () => 'Grid3X3',
-  List: () => 'List',
-  MoreHorizontal: () => 'MoreHorizontal',
-  Star: () => 'Star',
-  StarOff: () => 'StarOff',
-  Users: () => 'Users',
-  Calendar: () => 'Calendar',
-  AlertTriangle: () => 'AlertTriangle',
-  FolderKanban: () => 'FolderKanban',
-  ArrowUpDown: () => 'ArrowUpDown',
+  redirect: vi.fn(),
 }));
 
 // Mock sonner toast
@@ -41,10 +27,11 @@ vi.mock('sonner', () => ({
 }));
 
 // Mock auth hook
+const mockAuthUser = { id: 'test-user-id', email: 'test@example.com' };
 vi.mock('@/lib/hooks/use-auth', () => ({
   useAuth: () => ({
-    user: { id: 'test-user-id', email: 'test@example.com' },
-    isLoading: false,
+    user: mockAuthUser,
+    loading: false,
   }),
 }));
 
@@ -52,6 +39,15 @@ vi.mock('@/lib/hooks/use-auth', () => ({
 global.fetch = vi.fn();
 
 describe('Project Dropdown Menu Items', () => {
+  const getProjectActionsButton = () => {
+    const projectName = screen.getByText('Test Project');
+    const projectLink = projectName.closest('a');
+    const buttons = projectLink?.querySelectorAll('button');
+    const menuButton = buttons?.[buttons.length - 1];
+    if (!menuButton) throw new Error('Could not find project actions button');
+    return menuButton;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockPush.mockClear();
@@ -62,9 +58,9 @@ describe('Project Dropdown Menu Items', () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
       json: async () => ({
-        success: true,
+        ok: true,
         data: {
-          data: [
+          projects: [
             {
               id: 'project-1',
               name: 'Test Project',
@@ -78,8 +74,7 @@ describe('Project Dropdown Menu Items', () => {
               tasks_completed: 5,
               total_tasks: 10,
               risk: 'low',
-              owner: { name: 'Test Owner' },
-              team_size: 3,
+              owner_name: 'Test Owner',
               updated_at: '2 days ago',
             },
           ],
@@ -90,7 +85,7 @@ describe('Project Dropdown Menu Items', () => {
 
   it('should call handleEditProject when Edit project is clicked', async () => {
     const user = userEvent.setup();
-    const ProjectsPage = (await import('../page')).default;
+    const ProjectsPage = (await import('../ProjectsPageClient')).default;
 
     render(<ProjectsPage />);
 
@@ -99,22 +94,10 @@ describe('Project Dropdown Menu Items', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
 
-    // Find and click the dropdown trigger (MoreHorizontal button)
-    const dropdownTriggers = screen.getAllByRole('button');
-    const moreButton = dropdownTriggers.find(btn =>
-      btn.querySelector('svg') || btn.textContent === 'MoreHorizontal'
-    );
-
-    expect(moreButton).toBeDefined();
-    await user.click(moreButton!);
+    await user.click(getProjectActionsButton());
 
     // Wait for dropdown menu to appear and click Edit project
-    await waitFor(() => {
-      const editButton = screen.getByText('Edit project');
-      expect(editButton).toBeInTheDocument();
-    });
-
-    const editButton = screen.getByText('Edit project');
+    const editButton = await screen.findByRole('menuitem', { name: 'Edit project' });
     await user.click(editButton);
 
     // Should open an edit dialog (we'll check for dialog presence)
@@ -125,7 +108,7 @@ describe('Project Dropdown Menu Items', () => {
 
   it('should call handleDuplicateProject when Duplicate is clicked', async () => {
     const user = userEvent.setup();
-    const ProjectsPage = (await import('../page')).default;
+    const ProjectsPage = (await import('../ProjectsPageClient')).default;
 
     // Mock POST for duplicate
     (global.fetch as any).mockImplementation((url: string, options?: any) => {
@@ -133,7 +116,7 @@ describe('Project Dropdown Menu Items', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
-            success: true,
+            ok: true,
             data: {
               id: 'project-2',
               name: 'Test Project (Copy)',
@@ -146,9 +129,9 @@ describe('Project Dropdown Menu Items', () => {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          success: true,
+          ok: true,
           data: {
-            data: [
+            projects: [
               {
                 id: 'project-1',
                 name: 'Test Project',
@@ -162,8 +145,7 @@ describe('Project Dropdown Menu Items', () => {
                 tasks_completed: 5,
                 total_tasks: 10,
                 risk: 'low',
-                owner: { name: 'Test Owner' },
-                team_size: 3,
+                owner_name: 'Test Owner',
                 updated_at: '2 days ago',
               },
             ],
@@ -178,19 +160,9 @@ describe('Project Dropdown Menu Items', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
 
-    const dropdownTriggers = screen.getAllByRole('button');
-    const moreButton = dropdownTriggers.find(btn =>
-      btn.querySelector('svg') || btn.textContent === 'MoreHorizontal'
-    );
+    await user.click(getProjectActionsButton());
 
-    await user.click(moreButton!);
-
-    await waitFor(() => {
-      const duplicateButton = screen.getByText('Duplicate');
-      expect(duplicateButton).toBeInTheDocument();
-    });
-
-    const duplicateButton = screen.getByText('Duplicate');
+    const duplicateButton = await screen.findByRole('menuitem', { name: 'Duplicate' });
     await user.click(duplicateButton);
 
     // Should POST to /api/projects with copy data
@@ -215,7 +187,7 @@ describe('Project Dropdown Menu Items', () => {
 
   it('should call handleGenerateStatus when Generate status update is clicked', async () => {
     const user = userEvent.setup();
-    const ProjectsPage = (await import('../page')).default;
+    const ProjectsPage = (await import('../ProjectsPageClient')).default;
 
     render(<ProjectsPage />);
 
@@ -223,30 +195,20 @@ describe('Project Dropdown Menu Items', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
 
-    const dropdownTriggers = screen.getAllByRole('button');
-    const moreButton = dropdownTriggers.find(btn =>
-      btn.querySelector('svg') || btn.textContent === 'MoreHorizontal'
-    );
+    await user.click(getProjectActionsButton());
 
-    await user.click(moreButton!);
-
-    await waitFor(() => {
-      const generateButton = screen.getByText('Generate status update');
-      expect(generateButton).toBeInTheDocument();
-    });
-
-    const generateButton = screen.getByText('Generate status update');
+    const generateButton = await screen.findByRole('menuitem', { name: 'Generate status update' });
     await user.click(generateButton);
 
-    // Should navigate to /projects/{slug}/status-update
+    // Should navigate to reports status flow with project context
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/projects/test-project/status-update');
+      expect(mockPush).toHaveBeenCalledWith('/reports?generate=status&project_slug=test-project');
     });
   });
 
   it('should call handleArchiveProject when Archive is clicked', async () => {
     const user = userEvent.setup();
-    const ProjectsPage = (await import('../page')).default;
+    const ProjectsPage = (await import('../ProjectsPageClient')).default;
 
     // Mock PATCH for archive
     (global.fetch as any).mockImplementation((url: string, options?: any) => {
@@ -254,7 +216,7 @@ describe('Project Dropdown Menu Items', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
-            success: true,
+            ok: true,
             data: {
               id: 'project-1',
               status: 'archived',
@@ -266,9 +228,9 @@ describe('Project Dropdown Menu Items', () => {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          success: true,
+          ok: true,
           data: {
-            data: [
+            projects: [
               {
                 id: 'project-1',
                 name: 'Test Project',
@@ -282,8 +244,7 @@ describe('Project Dropdown Menu Items', () => {
                 tasks_completed: 5,
                 total_tasks: 10,
                 risk: 'low',
-                owner: { name: 'Test Owner' },
-                team_size: 3,
+                owner_name: 'Test Owner',
                 updated_at: '2 days ago',
               },
             ],
@@ -298,19 +259,9 @@ describe('Project Dropdown Menu Items', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
 
-    const dropdownTriggers = screen.getAllByRole('button');
-    const moreButton = dropdownTriggers.find(btn =>
-      btn.querySelector('svg') || btn.textContent === 'MoreHorizontal'
-    );
+    await user.click(getProjectActionsButton());
 
-    await user.click(moreButton!);
-
-    await waitFor(() => {
-      const archiveButton = screen.getByText('Archive');
-      expect(archiveButton).toBeInTheDocument();
-    });
-
-    const archiveButton = screen.getByText('Archive');
+    const archiveButton = await screen.findByRole('menuitem', { name: 'Archive' });
     await user.click(archiveButton);
 
     // Should PATCH to /api/projects/{id} with status: archived

@@ -4,11 +4,12 @@ import { useState, useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Eye, Search } from 'lucide-react'
+import { Eye, FileText, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import { AGENT_STATUS_COLORS, AGENT_STATUS_DOT, BACKEND_LABELS } from '@/lib/command-center/types'
 import type { AgentBackend, AgentNodeStatus } from '@/lib/command-center/types'
+import { AgentLogViewer } from '@/components/empire/agent-log-viewer'
 
 function modelBadgeClass(model?: string) {
   if (!model) return 'text-muted-foreground'
@@ -24,6 +25,13 @@ export function AgentTable() {
   const [search, setSearch] = useState('')
   const [filterBackend, setFilterBackend] = useState<AgentBackend | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<AgentNodeStatus | 'all'>('all')
+  const [logViewerOpen, setLogViewerOpen] = useState(false)
+  const [selectedLogAgent, setSelectedLogAgent] = useState<{
+    id: string
+    name: string
+    backend: string
+    nativeId?: string
+  } | null>(null)
 
   const filtered = useMemo(() => {
     return store.agents.filter(a => {
@@ -117,21 +125,46 @@ export function AgentTable() {
                   {agent.lastActiveAt ? new Date(agent.lastActiveAt).toLocaleString() : '—'}
                 </td>
                 <td className="px-3 py-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => store.selectAgent(agent.id)}
-                    title="Inspect agent"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => {
+                        setSelectedLogAgent({
+                          id: agent.id,
+                          name: agent.name,
+                          backend: agent.backend,
+                          nativeId: agent.nativeId,
+                        })
+                        setLogViewerOpen(true)
+                      }}
+                      title="View logs"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => store.selectAgent(agent.id)}
+                      title="Inspect agent"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <AgentLogViewer
+        open={logViewerOpen}
+        onOpenChange={setLogViewerOpen}
+        agent={selectedLogAgent}
+      />
     </div>
   )
 }

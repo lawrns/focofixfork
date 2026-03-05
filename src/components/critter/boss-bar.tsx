@@ -21,9 +21,10 @@ interface OpenClawStatus {
 
 interface BossBarProps {
   className?: string
+  sidebarCollapsed?: boolean
 }
 
-export function BossBar({ className }: BossBarProps) {
+export function BossBar({ className, sidebarCollapsed = false }: BossBarProps) {
   const [recentEvents, setRecentEvents] = useState<LedgerEvent[]>([])
   const [paused, setPaused] = useState(false)
   const [relayConnected, setRelayConnected] = useState(false)
@@ -130,6 +131,8 @@ export function BossBar({ className }: BossBarProps) {
     <div
       className={cn(
         'fixed bottom-0 left-0 right-0 z-30 h-9',
+        'md:pl-56 lg:pl-60',
+        sidebarCollapsed && 'md:pl-[52px]',
         'flex items-center gap-3 px-4',
         'border-t border-[var(--foco-rail-border)]',
         'bg-background/95 backdrop-blur-sm',

@@ -18,6 +18,7 @@ import {
   FileText,
   Server,
   ChevronDown,
+  ArrowRight,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -249,8 +251,16 @@ export default function EmpirePage() {
 
         {/* Panel 4: Agent Roster */}
         <section>
-          <SectionLabel icon={Bot} label="Agent Roster" />
-          <AgentRosterExtended />
+          <div className="flex items-center justify-between mb-3">
+            <SectionLabel icon={Bot} label="Agent Roster Preview" className="mb-0" />
+            <Button asChild variant="outline" size="sm" className="h-8">
+              <Link href="/empire/agents">
+                Manage Agents
+                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          <AgentRosterExtended preview />
         </section>
       </div>
     </PageShell>
@@ -260,12 +270,14 @@ export default function EmpirePage() {
 function SectionLabel({
   icon: Icon,
   label,
+  className,
 }: {
   icon: React.ElementType
   label: string
+  className?: string
 }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
+    <div className={cn('flex items-center gap-2 mb-3', className)}>
       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
       <span className="text-[11px] font-mono-display text-muted-foreground uppercase tracking-widest">
         {label}

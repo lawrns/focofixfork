@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { FolderKanban, Plus, ArrowRight, Bot, CheckCircle2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getProjectListHref } from '@/lib/routes/project-routes'
 
 interface ProjectEmptyStateProps {
   workspaceId: string
@@ -25,7 +26,7 @@ export function ProjectEmptyState({ workspaceId, hasProjects = false }: ProjectE
 
       <div className="grid gap-6 md:grid-cols-3">
         {[
-          { id: 'create-project', title: '1. Create a Project', description: 'Set up your first project to organize work', icon: FolderKanban, action: 'Create Project', href: '/projects?create=true', color: 'bg-blue-500', enabled: true },
+          { id: 'create-project', title: '1. Create a Project', description: 'Set up your first project to organize work', icon: FolderKanban, action: 'Create Project', href: getProjectListHref({ create: true }), color: 'bg-blue-500', enabled: true },
           { id: 'create-task', title: '2. Add Tasks', description: 'Break down your project into actionable tasks', icon: CheckCircle2, action: 'Add Tasks', href: '#', color: 'bg-green-500', enabled: false },
           { id: 'delegate', title: '3. Delegate to AI', description: 'Assign tasks to AI agents for execution', icon: Bot, action: 'Delegate', href: '#', color: 'bg-purple-500', enabled: false }
         ].map((step) => {

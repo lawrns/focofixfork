@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { AgentRosterExtended } from '@/components/empire/agent-roster-extended'
-import { CustomAgentModal } from '@/components/agent-ops/custom-agent-modal'
 import { Card, CardContent } from '@/components/ui/card'
 
 const MODEL_LEGEND = [
@@ -24,7 +23,6 @@ function EmpireAgentsContent() {
       <PageHeader
         title="Agent Roster"
         subtitle="System agents, lane-constrained custom agents, and live Agent Ops telemetry"
-        primaryAction={<CustomAgentModal workspaceId={workspaceId} />}
       />
 
       <div className="space-y-6 w-full">

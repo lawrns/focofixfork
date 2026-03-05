@@ -7,10 +7,10 @@ describe('Command Palette Routing', () => {
       // and opens the create project dialog when present
 
       // This test documents the expected behavior:
-      // 1. Command palette navigates to /projects?create=true
+      // 1. Command palette navigates to /empire/missions?create=true
       // 2. Projects page detects the parameter using useSearchParams
       // 3. Page opens create dialog automatically
-      // 4. Page clears parameter using router.replace('/projects')
+      // 4. Page clears parameter using router.replace('/empire/missions')
 
       // Implementation will add:
       // - useSearchParams() hook in projects/page.tsx

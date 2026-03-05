@@ -5,7 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { FileText, TrendingUp, Brain, Code2, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { FileText, TrendingUp, Brain, Code2, Loader2, AlertCircle, ChevronDown, ChevronUp, Antenna } from 'lucide-react'
+import Link from 'next/link'
+
+interface SocialInsight {
+  summary: string
+  platform: string
+  source_name: string
+  relevance: number
+  tags: string[]
+}
+
+interface SocialIntelligence {
+  item_count: number
+  platforms: string[]
+  top_insights: SocialInsight[]
+  themes: string[]
+}
 
 interface BriefingData {
   stub?: boolean
@@ -24,6 +40,7 @@ interface BriefingData {
     }>
     recommendations?: string[]
   }
+  social_intelligence?: SocialIntelligence
   model?: string
   briefingId?: string
   timestamp?: string
@@ -172,6 +189,52 @@ export function BriefingCard({ data, loading, error }: BriefingCardProps) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Social Intelligence */}
+        {data.social_intelligence && data.social_intelligence.top_insights.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Antenna className="h-3.5 w-3.5 text-[color:var(--foco-teal)]" />
+              <span className="text-[11px] font-mono-display text-muted-foreground uppercase tracking-wide">
+                Social Intelligence
+              </span>
+              <div className="flex gap-1 ml-auto">
+                {data.social_intelligence.platforms.map((p) => (
+                  <Badge key={p} variant="outline" className="text-[10px] px-1.5 py-0">
+                    {p === 'twitter' ? '𝕏' : p === 'instagram' ? '📷' : p === 'youtube' ? '▶' : p}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {data.social_intelligence.top_insights.slice(0, 3).map((insight, i) => (
+                <li key={i} className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
+                  <p className="text-[12px] text-foreground leading-relaxed">{insight.summary}</p>
+                  {insight.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {insight.tags.slice(0, 3).map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {data.social_intelligence.themes.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {data.social_intelligence.themes.map((theme) => (
+                  <Badge key={theme} variant="outline" className="text-[10px]">{theme}</Badge>
+                ))}
+              </div>
+            )}
+            <Link
+              href="/empire/hive"
+              className="inline-block mt-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all in Social Intel →
+            </Link>
           </div>
         )}
 

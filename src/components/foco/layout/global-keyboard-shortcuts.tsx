@@ -220,6 +220,7 @@ export function GlobalKeyboardShortcuts() {
           case 'e': router.push('/emails'); break;
           case 'f': router.push('/reports'); break;
           case 'q': router.push('/proposals'); break;
+          case 'x': router.push('/empire/hive'); break;
           case 'y': router.push('/policies'); break;
           case 's': router.push('/settings'); break;
         }

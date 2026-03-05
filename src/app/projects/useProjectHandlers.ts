@@ -3,7 +3,8 @@
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ProjectData } from './ProjectCardTypes';
+import { ProjectData, mapApiProjectRow } from './ProjectCardTypes';
+import { getProjectStatusReportHref } from '@/lib/routes/project-routes';
 
 interface UseProjectHandlersParams {
   currentWorkspaceId: string | null;
@@ -50,6 +51,28 @@ export function useProjectHandlers({
 }: UseProjectHandlersParams) {
   const router = useRouter();
 
+  const parseErrorMessage = (payload: any, fallback: string) => {
+    const nested = payload?.error;
+    if (typeof nested === 'string' && nested) return nested;
+    if (typeof nested?.message === 'string' && nested.message) return nested.message;
+    return fallback;
+  };
+
+  const fetchProjectsAndHydrate = useCallback(async () => {
+    const refreshResponse = await fetch('/api/projects', { credentials: 'include' });
+    if (!refreshResponse.ok) throw new Error('Failed to refresh projects list');
+
+    const refreshData = await refreshResponse.json();
+    if (!refreshData?.ok) throw new Error(parseErrorMessage(refreshData, 'Failed to refresh projects list'));
+
+    const projectsData = Array.isArray(refreshData.data?.projects) ? refreshData.data.projects : [];
+    const fallbackOwnerName =
+      user?.user_metadata?.name
+      || user?.user_metadata?.full_name
+      || 'Unknown';
+    setProjects(projectsData.map((p: any) => mapApiProjectRow(p, fallbackOwnerName)));
+  }, [setProjects, user?.user_metadata?.full_name, user?.user_metadata?.name]);
+
   const handleCreateProject = useCallback(async () => {
     if (!newProjectName.trim() || !currentWorkspaceId) {
       toast.error('Please enter a project name');
@@ -73,19 +96,21 @@ export function useProjectHandlers({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         console.error('Create project error:', errorData);
-        toast.error(errorData.error || 'Failed to create project');
+        toast.error(parseErrorMessage(errorData, 'Failed to create project'));
         return;
       }
 
       const data = await response.json();
-      if ((data.success || data.ok) && data.data) {
+      if (data?.ok && data.data) {
         toast.success('Project created successfully');
         setNewProjectName('');
         setNewProjectDescription('');
         setCreateDialogOpen(false);
         router.push(`/projects/${data.data.slug}`);
+      } else {
+        toast.error(parseErrorMessage(data, 'Failed to create project'));
       }
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -93,7 +118,7 @@ export function useProjectHandlers({
     } finally {
       setIsCreatingProject(false);
     }
-  }, [newProjectName, newProjectDescription, currentWorkspaceId, router, setIsCreatingProject, setNewProjectName, setNewProjectDescription, setCreateDialogOpen]);
+  }, [currentWorkspaceId, newProjectDescription, newProjectName, router, setCreateDialogOpen, setIsCreatingProject, setNewProjectDescription, setNewProjectName]);
 
   const handleDuplicateProject = useCallback(async (project: ProjectData) => {
     try {
@@ -112,50 +137,25 @@ export function useProjectHandlers({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         console.error('Duplicate project API error:', { status: response.status, error: errorData.error });
-        toast.error(errorData.error || 'Failed to duplicate project');
+        toast.error(parseErrorMessage(errorData, 'Failed to duplicate project'));
         return;
       }
 
       const data = await response.json();
 
-      if (data.success) {
+      if (data?.ok && data?.data) {
         toast.success('Project duplicated successfully');
-        const refreshResponse = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`, { credentials: 'include' });
-
-        if (!refreshResponse.ok) { console.error('Failed to refresh projects list'); return; }
-
-        const refreshData = await refreshResponse.json();
-        if (refreshData.success) {
-          const projectsData = refreshData.data?.data || refreshData.data || [];
-          setProjects(projectsData.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            slug: p.slug || p.id,
-            description: p.description,
-            color: p.color || '#6366F1',
-            icon: p.icon || 'folder',
-            status: p.status || 'active',
-            isPinned: p.is_pinned || false,
-            progress: p.progress || 0,
-            tasksCompleted: p.tasks_completed || 0,
-            totalTasks: p.total_tasks || 0,
-            risk: p.risk || 'none',
-            nextMilestone: p.next_milestone,
-            owner: p.owner || { name: 'Unknown' },
-            teamSize: p.team_size || 0,
-            updatedAt: p.updated_at || new Date().toISOString(),
-          })));
-        }
+        await fetchProjectsAndHydrate();
       } else {
-        toast.error(data.error || 'Failed to duplicate project');
+        toast.error(parseErrorMessage(data, 'Failed to duplicate project'));
       }
     } catch (error) {
       console.error('Duplicate project error:', error);
       toast.error('Failed to duplicate project');
     }
-  }, [currentWorkspaceId, setProjects]);
+  }, [currentWorkspaceId, fetchProjectsAndHydrate]);
 
   const handleEditProject = useCallback((project: ProjectData) => {
     setEditingProject(project);
@@ -204,7 +204,7 @@ export function useProjectHandlers({
   }, [editingProject, editProjectName, editProjectDescription, editDelegationEnabled, setProjects, setEditDialogOpen, setIsSavingProject]);
 
   const handleGenerateStatus = useCallback((project: ProjectData) => {
-    router.push(`/projects/${project.slug}/status-update`);
+    router.push(getProjectStatusReportHref(project.slug));
   }, [router]);
 
   const handleToggleDelegation = useCallback(async (project: ProjectData) => {
@@ -238,18 +238,18 @@ export function useProjectHandlers({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         console.error('Archive project API error:', { status: response.status, error: errorData.error });
-        toast.error(errorData.error || 'Failed to archive project');
+        toast.error(parseErrorMessage(errorData, 'Failed to archive project'));
         return;
       }
 
       const data = await response.json();
-      if (data.success) {
+      if (data?.ok) {
         toast.success('Project archived successfully');
         setProjects(prev => prev.filter(p => p.id !== project.id));
       } else {
-        toast.error(data.error || 'Failed to archive project');
+        toast.error(parseErrorMessage(data, 'Failed to archive project'));
       }
     } catch (error) {
       console.error('Archive project error:', error);

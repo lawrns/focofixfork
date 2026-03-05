@@ -1,43 +1,26 @@
 /**
  * POST /api/command-surface/execute
  *
- * Runs the full 3-phase hierarchy via pipeline streaming:
- *  - plan: claude-opus-4-6
- *  - execute: kimi-k2-standard (K2.5)
- *  - review: codex-standard
- *
- * Returns command-surface-compatible SSE events:
- *  text_delta / done / error
+ * Asynchronously dispatches the command pipeline and immediately returns
+ * a stream handle `{ job_id, stream_url }` for live client updates.
  */
 
-import { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 import { isLane } from '@/lib/agent-ops/lane-policy'
+import { createCommandStreamJob, publishCommandStreamEvent } from '@/lib/command-surface/stream-broker'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-function sseResponse(events: string[], status = 200): Response {
-  return new Response(events.join(''), {
-    status,
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  })
-}
-
 function safeString(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
-async function readClawdbotError(res: Response): Promise<string | null> {
+async function readUpstreamError(res: Response): Promise<string | null> {
   try {
     const text = await res.text()
     if (!text) return null
@@ -54,6 +37,192 @@ async function readClawdbotError(res: Response): Promise<string | null> {
     }
   } catch {
     return null
+  }
+}
+
+type RunnerArgs = {
+  jobId: string
+  origin: string
+  cookieHeader: string | null
+  userId: string
+  userEmail: string | null
+  prompt: string
+  mode: string
+  projectId: string | null
+  lane: string | null
+  taskId: string | null
+}
+
+async function runPipelineForJob(args: RunnerArgs): Promise<void> {
+  const {
+    jobId,
+    origin,
+    cookieHeader,
+    userId,
+    userEmail,
+    prompt,
+    mode,
+    projectId,
+    lane,
+    taskId,
+  } = args
+
+  const timestamp = () => new Date().toISOString()
+
+  const pushStatus = (status: 'queued' | 'executing' | 'completed' | 'error', message?: string, phase?: string) => {
+    publishCommandStreamEvent(jobId, {
+      type: 'status_update',
+      status,
+      message,
+      phase,
+      timestamp: timestamp(),
+    })
+  }
+
+  const pushReasoning = (text: string, phase?: string) => {
+    publishCommandStreamEvent(jobId, {
+      type: 'reasoning',
+      text,
+      phase,
+      timestamp: timestamp(),
+    })
+  }
+
+  const pushOutput = (text: string, phase?: string) => {
+    publishCommandStreamEvent(jobId, {
+      type: 'output_chunk',
+      text,
+      phase,
+      timestamp: timestamp(),
+    })
+  }
+
+  let doneSent = false
+
+  const finish = (exitCode: number, summary?: string) => {
+    if (doneSent) return
+    doneSent = true
+    if (exitCode === 0) {
+      pushStatus('completed', summary ?? 'Execution complete')
+    } else {
+      pushStatus('error', summary ?? 'Execution failed')
+    }
+    publishCommandStreamEvent(jobId, {
+      type: 'done',
+      exitCode,
+      summary,
+      timestamp: timestamp(),
+    })
+  }
+
+  const fail = (message: string) => {
+    publishCommandStreamEvent(jobId, {
+      type: 'error',
+      message,
+      timestamp: timestamp(),
+    })
+    finish(1, message)
+  }
+
+  pushStatus('executing', 'Dispatching command pipeline')
+
+  try {
+    const routing = await resolveClawdRoutingProfile('strict_clawd_only')
+    const plannerModel = routing.plan_model
+    const executorModel = routing.execute_model
+    const reviewerModel = routing.review_model
+    const normalizedLane = isLane(lane) ? lane : null
+
+    const pipelineRes = await fetch(`${origin}/api/pipeline/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cookieHeader ? { cookie: cookieHeader } : {}),
+      },
+      body: JSON.stringify({
+        task_description:
+          `Command Surface request\n` +
+          `Mode: ${mode}\n` +
+          `User: ${userEmail ?? userId}\n\n` +
+          `${prompt.trim()}`,
+        routing_profile_id: routing.profile_id,
+        planner_model: plannerModel,
+        executor_model: executorModel,
+        reviewer_model: reviewerModel,
+        auto_review: true,
+        handbook_slug: 'general',
+        project_id: projectId,
+        task_id: taskId,
+        lane: normalizedLane,
+      }),
+      signal: AbortSignal.timeout(300_000),
+    })
+
+    if (!pipelineRes.ok || !pipelineRes.body) {
+      const upstreamDetail = await readUpstreamError(pipelineRes)
+      const detail = upstreamDetail ? `: ${upstreamDetail}` : ''
+      fail(`Agent service returned HTTP ${pipelineRes.status}${detail}`)
+      return
+    }
+
+    const reader = pipelineRes.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        try {
+          const event = JSON.parse(line.slice(6)) as Record<string, unknown>
+          const type = typeof event.type === 'string' ? event.type : ''
+          const phase = typeof event.phase === 'string' ? event.phase : undefined
+
+          if (type === 'text_delta' && typeof event.text === 'string') {
+            pushOutput(event.text, phase)
+            continue
+          }
+
+          if (type === 'activity' && typeof event.message === 'string') {
+            pushReasoning(event.message, phase)
+            continue
+          }
+
+          if (type === 'phase_start') {
+            pushStatus('executing', `Phase started: ${phase ?? 'unknown'}`, phase)
+            continue
+          }
+
+          if (type === 'phase_complete') {
+            pushStatus('executing', `Phase complete: ${phase ?? 'unknown'}`, phase)
+            continue
+          }
+
+          if (type === 'phase_error' || type === 'pipeline_error') {
+            const message = typeof event.message === 'string' ? event.message : 'Pipeline execution failed'
+            fail(message)
+            return
+          }
+
+          if (type === 'pipeline_complete') {
+            finish(0, 'Pipeline complete')
+            return
+          }
+        } catch {
+          // Ignore malformed SSE lines from upstream pipeline.
+        }
+      }
+    }
+
+    finish(0, 'Pipeline stream closed')
+  } catch (err) {
+    fail(`Execution error: ${safeString(err)}`)
   }
 }
 
@@ -79,13 +248,15 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const encoder = new TextEncoder()
+  const normalizedMode = typeof mode === 'string' && mode.trim() ? mode : 'auto'
+  const jobId = createCommandStreamJob(user.id)
 
-  const routing = await resolveClawdRoutingProfile('strict_clawd_only')
-  const plannerModel = routing.plan_model
-  const executorModel = routing.execute_model
-  const reviewerModel = routing.review_model
-  const normalizedLane = isLane(lane) ? lane : null
+  publishCommandStreamEvent(jobId, {
+    type: 'status_update',
+    status: 'queued',
+    message: 'Queued for dispatch',
+    timestamp: new Date().toISOString(),
+  })
 
   try {
     await logClawdActionVisibility(supabase, {
@@ -94,141 +265,34 @@ export async function POST(req: NextRequest) {
       title: 'Command surface execution dispatched',
       detail: prompt.trim().slice(0, 180),
       payload: {
-        mode: mode ?? 'auto',
-        lane: normalizedLane,
+        mode: normalizedMode,
+        lane: isLane(lane) ? lane : null,
         task_id: task_id ?? null,
-        routingProfileId: routing.profile_id,
-        plannerModel,
-        executorModel,
-        reviewerModel,
       },
     })
-
-    const pipelineRes = await fetch(`${req.nextUrl.origin}/api/pipeline/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(req.headers.get('cookie') ? { cookie: req.headers.get('cookie')! } : {}),
-      },
-      body: JSON.stringify({
-        task_description:
-          `Command Surface request\n` +
-          `Mode: ${mode ?? 'auto'}\n` +
-          `User: ${user.email}\n\n` +
-          `${prompt.trim()}`,
-        routing_profile_id: routing.profile_id,
-        planner_model: plannerModel,
-        executor_model: executorModel,
-        reviewer_model: reviewerModel,
-        auto_review: true,
-        handbook_slug: 'general',
-        project_id: project_id ?? null,
-        task_id: task_id ?? null,
-        lane: normalizedLane,
-      }),
-      signal: AbortSignal.timeout(300_000),
-    })
-
-    if (!pipelineRes.ok || !pipelineRes.body) {
-      const upstreamDetail = await readClawdbotError(pipelineRes)
-      const fallbackText =
-        pipelineRes.status >= 500
-          ? `Agent service unavailable (HTTP ${pipelineRes.status}). Pipeline failed to start right now.`
-          : `Agent request rejected (HTTP ${pipelineRes.status})${upstreamDetail ? `: ${upstreamDetail}` : ''}.`
-      return sseResponse([
-        `data: ${JSON.stringify({ type: 'text_delta', text: fallbackText })}\n\n`,
-        `data: ${JSON.stringify({ type: 'done', output: fallbackText, degraded: true, status: pipelineRes.status, retryable: pipelineRes.status >= 500 })}\n\n`,
-      ])
-    }
-
-    // Convert pipeline SSE protocol -> command-surface SSE protocol
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = pipelineRes.body!.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-        let accumulated = ''
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            buffer += decoder.decode(value, { stream: true })
-
-            const lines = buffer.split('\n')
-            buffer = lines.pop() ?? ''
-
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue
-              try {
-                const event = JSON.parse(line.slice(6)) as Record<string, unknown>
-                const type = typeof event.type === 'string' ? event.type : ''
-
-                if (type === 'text_delta' && typeof event.text === 'string') {
-                  accumulated += event.text
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text_delta', text: event.text })}\n\n`))
-                  continue
-                }
-
-                if (type === 'activity' && typeof event.message === 'string') {
-                  const phasePrefix = typeof event.phase === 'string' ? `[${event.phase}] ` : ''
-                  const text = `\n${phasePrefix}${event.message}\n`
-                  accumulated += text
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text_delta', text })}\n\n`))
-                  continue
-                }
-
-                if (type === 'pipeline_error' || type === 'phase_error') {
-                  const message = typeof event.message === 'string' ? event.message : 'Pipeline error'
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', message })}\n\n`))
-                  return
-                }
-
-                if (type === 'pipeline_complete') {
-                  const hierarchy =
-                    (event.hierarchy && typeof event.hierarchy === 'object')
-                      ? event.hierarchy
-                      : { plan: plannerModel, execute: executorModel, review: reviewerModel }
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ type: 'done', output: accumulated, hierarchy })}\n\n`)
-                  )
-                  return
-                }
-              } catch {
-                // ignore malformed pipeline event lines
-              }
-            }
-          }
-
-          // stream ended without explicit pipeline_complete
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'done', output: accumulated, hierarchy: { plan: plannerModel, execute: executorModel, review: reviewerModel, routing_profile_id: routing.profile_id } })}\n\n`)
-          )
-        } catch (e) {
-          // Emit an error event so the client knows something went wrong mid-stream
-          const errEvent = `data: ${JSON.stringify({ type: 'error', message: String(e) })}\n\n`
-          controller.enqueue(encoder.encode(errEvent))
-        } finally {
-          controller.close()
-        }
-      },
-    })
-
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-        'X-Accel-Buffering': 'no',
-      },
-    })
-  } catch (err) {
-    const message = safeString(err)
-    const fallbackText =
-      `Agent unavailable: ${message}. ` +
-      'ClawdBot is not reachable right now. Check clawdbot-api.service.'
-    return sseResponse([
-      `data: ${JSON.stringify({ type: 'text_delta', text: fallbackText })}\n\n`,
-      `data: ${JSON.stringify({ type: 'done', output: fallbackText, degraded: true })}\n\n`,
-    ])
+  } catch {
+    // Visibility telemetry is non-blocking.
   }
+
+  void runPipelineForJob({
+    jobId,
+    origin: req.nextUrl.origin,
+    cookieHeader: req.headers.get('cookie'),
+    userId: user.id,
+    userEmail: user.email ?? null,
+    prompt,
+    mode: normalizedMode,
+    projectId: project_id ?? null,
+    lane: lane ?? null,
+    taskId: task_id ?? null,
+  })
+
+  return mergeAuthResponse(
+    NextResponse.json({
+      ok: true,
+      job_id: jobId,
+      stream_url: `/api/command-surface/stream/${jobId}`,
+    }),
+    authResponse
+  )
 }

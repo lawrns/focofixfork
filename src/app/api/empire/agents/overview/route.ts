@@ -60,6 +60,18 @@ interface LaneStat {
   task_counts: Record<string, number>
 }
 
+type BackendKey = 'crico' | 'clawdbot' | 'bosun' | 'openclaw'
+
+interface BackendHealthRow {
+  backend: BackendKey
+  status: 'up' | 'down'
+  agent_count: number
+  error: string | null
+  last_checked_at: string
+}
+
+const BACKEND_KEYS: BackendKey[] = ['crico', 'clawdbot', 'bosun', 'openclaw']
+
 function emptyTaskCounts(): Record<string, number> {
   return {
     draft: 0,
@@ -95,11 +107,23 @@ function mapSystemAgent(agent: UnifiedAgent) {
   }
 }
 
+function parseBackends(raw: string | null): BackendKey[] {
+  if (!raw) return [...BACKEND_KEYS]
+  const parsed = raw
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter((value): value is BackendKey => BACKEND_KEYS.includes(value as BackendKey))
+  if (parsed.length === 0) return [...BACKEND_KEYS]
+  return [...new Set(parsed)]
+}
+
 export async function GET(req: NextRequest) {
   const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  const workspaceId = new URL(req.url).searchParams.get('workspace_id')
+  const url = new URL(req.url)
+  const workspaceId = url.searchParams.get('workspace_id')
+  const requestedBackends = parseBackends(url.searchParams.get('backends'))
   if (workspaceId) {
     const isMember = await verifyWorkspaceMembership(supabase, user.id, workspaceId)
     if (!isMember) {
@@ -111,22 +135,43 @@ export async function GET(req: NextRequest) {
   const openclawToken = process.env.OPENCLAW_SERVICE_TOKEN
   const bosunToken = process.env.BOSUN_SERVICE_TOKEN
 
-  const agentResults = await Promise.allSettled([
-    fetchCricoAgents(baseUrl, openclawToken),
-    fetchClawdbotAgents(baseUrl, openclawToken),
-    fetchBosunAgents(baseUrl, bosunToken),
-    fetchOpenClawAgents(baseUrl),
-  ])
+  const backendFetchers: Array<{ backend: BackendKey; fetch: () => Promise<UnifiedAgent[]> }> = [
+    { backend: 'crico', fetch: () => fetchCricoAgents(baseUrl, openclawToken) },
+    { backend: 'clawdbot', fetch: () => fetchClawdbotAgents(baseUrl, openclawToken) },
+    { backend: 'bosun', fetch: () => fetchBosunAgents(baseUrl, bosunToken) },
+    { backend: 'openclaw', fetch: () => fetchOpenClawAgents(baseUrl) },
+  ]
 
-  const sourceLabels = ['crico', 'clawdbot', 'bosun', 'openclaw']
+  const selectedFetchers = backendFetchers.filter((item) => requestedBackends.includes(item.backend))
+  const agentResults = await Promise.allSettled(selectedFetchers.map((item) => item.fetch()))
+
+  const checkedAt = new Date().toISOString()
   const sourceErrors: string[] = []
+  const backendHealth: BackendHealthRow[] = []
   const allAgents: UnifiedAgent[] = []
   for (let i = 0; i < agentResults.length; i += 1) {
     const result = agentResults[i]
+    const backend = selectedFetchers[i]?.backend ?? 'openclaw'
     if (result.status === 'fulfilled') {
-      allAgents.push(...result.value)
+      const agents = result.value ?? []
+      allAgents.push(...agents)
+      backendHealth.push({
+        backend,
+        status: 'up',
+        agent_count: agents.length,
+        error: null,
+        last_checked_at: checkedAt,
+      })
     } else {
-      sourceErrors.push(`${sourceLabels[i]}: ${result.reason?.message ?? 'unknown error'}`)
+      const reason = result.reason?.message ?? 'unknown error'
+      sourceErrors.push(`${backend}: ${reason}`)
+      backendHealth.push({
+        backend,
+        status: 'down',
+        agent_count: 0,
+        error: reason,
+        last_checked_at: checkedAt,
+      })
     }
   }
 
@@ -256,6 +301,7 @@ export async function GET(req: NextRequest) {
   return mergeAuthResponse(successResponse({
     timestamp: new Date().toISOString(),
     source_errors: sourceErrors,
+    backend_health: backendHealth,
     system_agents: systemAgents,
     custom_agents: customProfiles,
     lane_stats: AGENT_LANES.map((lane) => laneStats[lane]),

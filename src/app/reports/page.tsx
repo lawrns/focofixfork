@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -169,33 +170,40 @@ function WeeklyStatusReport({ projectStatus, onExport, onShare, onShowSources }:
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [timeRange, setTimeRange] = useState('week');
   const [metrics, setMetrics] = useState<MetricCard[]>([]);
   const [projectStatus, setProjectStatus] = useState<ProjectStatus[]>([]);
   const [recentReports, setRecentReports] = useState<ReportItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [reportScopeLabel, setReportScopeLabel] = useState<string | null>(null);
+
+  const projectSlug = searchParams.get('project_slug');
+  const generateStatus = searchParams.get('generate') === 'status';
 
   const fetchReportData = useCallback(async () => {
     if (!user) return;
     
     try {
       setIsLoading(true);
-      // In a real app, these would be separate or a combined analytics endpoint
-      const response = await fetch(`/api/reports?timeRange=${timeRange}`, { credentials: 'include' });
+      const query = new URLSearchParams({ timeRange });
+      if (projectSlug) query.set('project_slug', projectSlug);
+      if (generateStatus) query.set('generate', 'status');
+
+      const response = await fetch(`/api/reports?${query.toString()}`, { credentials: 'include' });
       const data = await response.json();
       
-      if (data.success && data.data) {
+      if (data.ok && data.data) {
         setMetrics(data.data.metrics || []);
         setProjectStatus(data.data.projectStatus || []);
         setRecentReports(data.data.recentReports || []);
+        setReportScopeLabel(typeof data.data.reportScope === 'string' ? data.data.reportScope : null);
       } else {
-        // Fallback or empty states if no data
-        setMetrics([
-          { label: 'Tasks Completed', value: 0, change: 0, trend: 'up', positive: true },
-          { label: 'Cycle Time', value: '0 days', change: 0, trend: 'stable', positive: true },
-          { label: 'Blocked Items', value: 0, change: 0, trend: 'stable', positive: true },
-          { label: 'On-Time Delivery', value: '0%', change: 0, trend: 'stable', positive: true },
-        ]);
+        setMetrics([]);
+        setProjectStatus([]);
+        setRecentReports([]);
+        setReportScopeLabel(null);
+        toast.error(data?.error?.message || 'Failed to load report data');
       }
     } catch (error) {
       console.error('Failed to fetch reports:', error);
@@ -203,11 +211,20 @@ export default function ReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, timeRange]);
+  }, [generateStatus, projectSlug, timeRange, user]);
 
   useEffect(() => {
     fetchReportData();
   }, [fetchReportData]);
+
+  useEffect(() => {
+    if (!generateStatus) return;
+    toast.success(
+      projectSlug
+        ? `Generated status update for ${projectSlug}`
+        : 'Generated workspace status update'
+    );
+  }, [generateStatus, projectSlug]);
 
   const handleExportReport = useCallback(() => {
     // Generate a simple CSV export of project status
@@ -252,8 +269,7 @@ export default function ReportsPage() {
   }, [fetchReportData]);
 
   const handleReportClick = useCallback((reportId: string) => {
-    toast.info(`Opening report ${reportId}...`);
-    // In a full implementation, this would navigate to the report detail page
+    toast.info(`Report ${reportId} is selected.`);
   }, []);
 
   if (isLoading) {
@@ -280,7 +296,9 @@ export default function ReportsPage() {
     <PageShell>
       <PageHeader
         title="Reports"
-        subtitle="Insights and analytics for your workspace"
+        subtitle={projectSlug
+          ? `Status update for ${projectSlug}`
+          : 'Insights and analytics for your workspace'}
         primaryAction={
           <div className="flex items-center gap-2">
             <Select value={timeRange} onValueChange={setTimeRange}>
@@ -305,6 +323,12 @@ export default function ReportsPage() {
           </div>
         }
       />
+
+      {reportScopeLabel === 'project' && (
+        <div className="mb-4 text-xs text-muted-foreground">
+          Scoped to selected project.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {metrics.map((metric) => (

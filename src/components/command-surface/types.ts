@@ -1,5 +1,39 @@
 export type CommandMode = 'cto' | 'coo' | 'auto' | 'intake';
 
+export type AgentExecutionStatus = 'queued' | 'executing' | 'completed' | 'error';
+
+export type AgentExecutionEvent =
+  | {
+      type: 'status_update';
+      status: AgentExecutionStatus;
+      message?: string;
+      phase?: string;
+      timestamp: string;
+    }
+  | {
+      type: 'output_chunk';
+      text: string;
+      phase?: string;
+      timestamp: string;
+    }
+  | {
+      type: 'reasoning';
+      text: string;
+      phase?: string;
+      timestamp: string;
+    }
+  | {
+      type: 'error';
+      message: string;
+      timestamp: string;
+    }
+  | {
+      type: 'done';
+      exitCode: number;
+      summary?: string;
+      timestamp: string;
+    };
+
 export type IntentType = 
   | 'create_project'
   | 'create_task' 

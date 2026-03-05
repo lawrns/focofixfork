@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCommandPaletteStore } from '@/lib/stores/foco-store';
 // import { useCreateTaskModal } from '@/features/tasks';
 import { cn } from '@/lib/utils';
+import { getProjectDetailHref } from '@/lib/routes/project-routes';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import {
   Dialog,
@@ -259,7 +260,11 @@ export function CommandPalette() {
                     <button
                       key={project.id}
                       className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
-                      onClick={() => { close(); router.push(`/empire/missions/${project.id}`); }}
+                      onClick={() => {
+                        const target = project.slug || project.id;
+                        close();
+                        router.push(getProjectDetailHref(target));
+                      }}
                     >
                       <FolderOpen className="h-4 w-4 text-zinc-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">

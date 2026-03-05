@@ -5,7 +5,6 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   Plus,
   Search,
-  Filter,
   Grid3X3,
   List,
   AlertTriangle,
@@ -30,7 +29,6 @@ import { buttons } from '@/lib/copy';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 import { ProjectCard } from './ProjectCard';
 import { ProjectRow } from './ProjectRow';
 import { EditProjectDialog, CreateProjectDialog } from './ProjectsDialogs';
@@ -103,7 +101,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
     const createParam = searchParams.get('create');
     if (createParam === 'true') {
       setCreateDialogOpen(true);
-      router.replace(pathname || '/projects');
+      router.replace(pathname || '/empire/missions');
     }
   }, [searchParams, router, pathname]);
 
@@ -163,7 +161,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
   return (
     <PageShell maxWidth="6xl">
       <PageHeader
-        title="Projects"
+        title={pageTitle}
         subtitle={`${projects.length} active projects`}
         primaryAction={
           <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
@@ -198,10 +196,6 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
               <SelectItem value="risk">Risk level</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button variant="outline" size="icon" className="shrink-0" onClick={() => toast.info('Project filtering coming soon')}>
-            <Filter className="h-4 w-4" />
-          </Button>
 
           <Tabs value={view} onValueChange={(v) => setView(v as 'grid' | 'list')} className="w-auto">
             <TabsList>

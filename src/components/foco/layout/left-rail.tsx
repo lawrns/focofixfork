@@ -30,6 +30,7 @@ import {
   Radio,
   Crosshair,
   History,
+  Antenna,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -62,8 +63,7 @@ const empireNavItems: NavItem[] = [
 const projectsNavItems: NavItem[] = [
   { label: 'Daily Briefing',     href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
   { label: 'Projects',           href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
-  
-  
+  { label: 'Social Intel',       href: '/empire/hive',      icon: Antenna,   shortcut: 'G X' },
   { label: 'Notifications',      href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
   { label: 'Milestone Timeline', href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
 ];

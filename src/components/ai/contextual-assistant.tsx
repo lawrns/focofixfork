@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getProjectListHref } from '@/lib/routes/project-routes'
 import { useAuth } from '@/lib/contexts/auth-context'
 
 interface ContextualAssistantProps {
@@ -168,7 +169,7 @@ export function ContextualAssistant({ className }: ContextualAssistantProps) {
     // Handle quick actions
     switch (action) {
       case 'create_project':
-        window.location.href = '/projects?create=true'
+        window.location.href = getProjectListHref({ create: true })
         break
       case 'add_task':
         window.location.href = '/tasks/new'

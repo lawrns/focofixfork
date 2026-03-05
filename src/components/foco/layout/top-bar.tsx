@@ -46,6 +46,7 @@ import {
 import { useTheme } from '@/components/providers/theme-provider';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useCreateTaskModal } from '@/features/tasks';
+import { getProjectListHref } from '@/lib/routes/project-routes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -53,9 +54,10 @@ import { toast } from 'sonner';
 
 interface TopBarProps {
   className?: string;
+  sidebarCollapsed?: boolean;
 }
 
-export function TopBar({ className }: TopBarProps) {
+export function TopBar({ className, sidebarCollapsed: sidebarCollapsedProp }: TopBarProps) {
   const { open: openCommandPalette } = useCommandPaletteStore();
   const { open: openPromptOptimizer } = usePromptOptimizerStore();
   const { openTaskModal } = useCreateTaskModal();
@@ -74,7 +76,7 @@ export function TopBar({ className }: TopBarProps) {
   // differs from SSR default. Prevents className mismatch on left-position.
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
-  const sidebarCollapsed = isMounted ? sidebarCollapsedRaw : false;
+  const sidebarCollapsed = isMounted ? (sidebarCollapsedProp ?? sidebarCollapsedRaw) : false;
 
   useEffect(() => {
     if (!user) return;
@@ -217,7 +219,7 @@ export function TopBar({ className }: TopBarProps) {
               <span>Execution Task</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">C</kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/projects?create=true')}>
+            <DropdownMenuItem onClick={() => router.push(getProjectListHref({ create: true }))}>
               <span>Initiative</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">P</kbd>
             </DropdownMenuItem>
@@ -226,7 +228,7 @@ export function TopBar({ className }: TopBarProps) {
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">D</kbd>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/projects?import=true')}>
+            <DropdownMenuItem onClick={() => router.push(getProjectListHref({ import: true }))}>
               <span>Import Data...</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

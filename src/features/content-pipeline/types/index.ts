@@ -16,6 +16,7 @@ export interface ContentSource {
   error_count: number;
   created_at: string;
   updated_at: string;
+  platform?: string;
 }
 
 export interface ContentItem {

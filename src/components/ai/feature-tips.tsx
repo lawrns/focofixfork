@@ -17,6 +17,7 @@ import {
   List
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getProjectListHref } from '@/lib/routes/project-routes'
 import { suggestionEngine } from '@/lib/ai/suggestion-engine'
 
 interface FeatureTipProps {
@@ -214,7 +215,7 @@ export function FeatureTipsManager({ className }: FeatureTipsManagerProps) {
         window.dispatchEvent(new CustomEvent('start-product-tour'))
         break
       case 'create_project':
-        window.location.href = '/projects?create=true'
+        window.location.href = getProjectListHref({ create: true })
         break
       case 'add_tasks':
         window.location.href = '/tasks/new'
@@ -232,7 +233,7 @@ export function FeatureTipsManager({ className }: FeatureTipsManagerProps) {
         window.location.href = '/my-work?filter=no-deadline'
         break
       case 'organize_projects':
-        window.location.href = '/projects?organize=true'
+        window.location.href = getProjectListHref({ organize: true })
         break
       case 'learn_shortcuts':
         window.dispatchEvent(new CustomEvent('show-keyboard-shortcuts'))

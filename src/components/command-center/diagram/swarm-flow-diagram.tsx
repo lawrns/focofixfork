@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 import { Bot } from 'lucide-react'
 import type { FlowLane, FlowMove, UnifiedAgent, AgentNodeStatus } from '@/lib/command-center/types'
 import { AGENT_STATUS_DOT, BACKEND_LABELS } from '@/lib/command-center/types'
+import { fadeInUp, listItem } from '@/lib/motion/variants'
+import { motionPresets } from '@/lib/motion/presets'
 
 // ── Status dot ────────────────────────────────────────────────────────────────
 
@@ -41,10 +43,12 @@ const AgentNodeCard = memo(
       <motion.div
         ref={ref}
         layout
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.2 }}
+        variants={listItem}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        whileHover={{ y: -1, scale: 1.01 }}
+        transition={motionPresets.listReorder}
         onClick={onClick}
         onContextMenu={onContextMenu}
         className={cn(
@@ -120,8 +124,9 @@ function LaneColumn({ lane, selectedAgentId, onNodeClick, onNodeContextMenu }: L
         {lane.agents.length === 0 ? (
           <motion.div
             key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
             className="rounded-md border border-dashed border-border px-3 py-4 text-center text-[11px] text-muted-foreground"
           >
             No agents
@@ -161,26 +166,49 @@ export const SwarmFlowDiagram = memo(function SwarmFlowDiagram({
   onNodeContextMenu,
   className,
 }: SwarmFlowDiagramProps) {
+  const laneIndexById = new Map<string, number>()
+  lanes.forEach((lane, laneIndex) => {
+    laneIndexById.set(lane.id, laneIndex)
+    laneIndexById.set(lane.backend, laneIndex)
+    lane.agents.forEach((agent) => {
+      laneIndexById.set(agent.id, laneIndex)
+      laneIndexById.set(agent.nativeId, laneIndex)
+    })
+  })
+
+  const resolveLanePercent = (nodeId: string, fallbackIndex: number) => {
+    const laneIndex = laneIndexById.get(nodeId)
+    const index = laneIndex ?? fallbackIndex
+    const laneCount = Math.max(lanes.length, 1)
+    return ((index + 0.4) / laneCount) * 100
+  }
+
   return (
     <div className={cn('relative overflow-x-auto', className)}>
-      {/* Packet animations overlay — decorative dots travelling horizontally */}
+      {/* Packet animations overlay — lane-aware dispersions */}
       <AnimatePresence>
-        {moves.slice(-8).map(move => (
+        {moves.slice(-12).map((move, idx) => {
+          const fallbackIndex = idx % Math.max(lanes.length, 1)
+          const fromX = resolveLanePercent(move.from, fallbackIndex)
+          const toX = resolveLanePercent(move.to, Math.min(fallbackIndex + 1, Math.max(lanes.length - 1, 0)))
+          const top = 24 + (idx % 5) * 14
+          return (
           <motion.div
             key={`${move.from}-${move.to}-${move.ts}`}
             className={cn(
-              'absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full pointer-events-none z-10',
+              'absolute h-2 w-2 rounded-full pointer-events-none z-10',
               move.type === 'complete' && 'bg-emerald-400',
               move.type === 'block'    && 'bg-amber-400',
               move.type === 'progress' && 'bg-teal-400',
               move.type === 'spawn'    && 'bg-purple-400',
             )}
-            initial={{ x: '0%', opacity: 1 }}
-            animate={{ x: '100%', opacity: 0 }}
+            initial={{ left: `${fromX}%`, top: `${top}%`, opacity: 0, scale: 0.6 }}
+            animate={{ left: `${toX}%`, top: `${top}%`, opacity: [0, 1, 1, 0], scale: [0.6, 1, 1, 0.8] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeIn' }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           />
-        ))}
+          )
+        })}
       </AnimatePresence>
 
       {/* Lanes */}

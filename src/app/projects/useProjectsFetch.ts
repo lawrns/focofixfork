@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ProjectData, FetchFailureReason, deriveProjectRisk } from './ProjectCardTypes';
+import { ProjectData, FetchFailureReason, mapApiProjectRow } from './ProjectCardTypes';
 
 interface UseProjectsFetchResult {
   projects: ProjectData[];
@@ -71,37 +71,13 @@ export function useProjectsFetch(
             return;
           }
 
-          const transformedProjects = rawProjects.map((project: any) => ({
-            id: project.id,
-            name: project.name,
-            slug: project.slug,
-            description: project.description,
-            color: project.color || '#6366F1',
-            icon: project.icon || 'folder',
-            status: project.status || 'active',
-            isPinned: project.is_pinned || false,
-            progress: (project.total_tasks ?? 0) > 0
-              ? Math.round(((project.tasks_completed ?? 0) / (project.total_tasks ?? 1)) * 100) : 0,
-            tasksCompleted: project.tasks_completed ?? 0,
-            totalTasks: project.total_tasks ?? 0,
-            risk: deriveProjectRisk(project.total_tasks, project.tasks_completed, project.status),
-            owner: {
-              name: project.owner_name || user?.user_metadata?.name || user?.user_metadata?.full_name || 'Unknown',
-              avatar: project.owner_avatar || user?.user_metadata?.avatar_url
-            },
-            updatedAt: project.updated_at,
-            agentPool: project.assigned_agent_pool ?? [],
-            delegationCounts: {
-              pending:   project.delegation_counts?.pending ?? 0,
-              delegated: project.delegation_counts?.delegated ?? 0,
-              running:   project.delegation_counts?.running ?? 0,
-              completed: project.delegation_counts?.completed ?? 0,
-              failed:    project.delegation_counts?.failed ?? 0,
-            },
-            activeRuns: project.active_run_count ?? 0,
-            delegationEnabled: project.delegation_settings?.enabled ?? false,
-            localPath: project.local_path ?? null,
-          }));
+          const fallbackOwnerName =
+            user?.user_metadata?.name
+            || user?.user_metadata?.full_name
+            || 'Unknown';
+          const transformedProjects = rawProjects.map((project: any) => (
+            mapApiProjectRow(project, fallbackOwnerName)
+          ));
 
           setProjects(transformedProjects);
           setFetchFailed(false);

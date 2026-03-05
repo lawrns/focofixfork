@@ -22,6 +22,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const timeRange = searchParams.get('timeRange') || 'week'
+    const projectSlug = searchParams.get('project_slug')
+    const projectId = searchParams.get('project_id')
+    const generateMode = searchParams.get('generate')
 
     // Use admin client to bypass RLS recursion on foco_workspace_members
     const adminClient = supabaseAdmin || supabase
@@ -58,36 +61,71 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch projects for status (include null-status projects; neq alone excludes NULLs in PG)
-    const { data: projects, error: projectsError } = await supabase
+    let projectQuery = supabase
       .from('foco_projects')
-      .select('id, name, status, color')
+      .select('id, slug, name, status, color')
       .in('workspace_id', workspaceIds)
       .or('status.neq.archived,status.is.null')
+    if (projectSlug) projectQuery = projectQuery.eq('slug', projectSlug)
+    if (projectId) projectQuery = projectQuery.eq('id', projectId)
+    const { data: projects, error: projectsError } = await projectQuery
 
-    // Silently handle project fetch errors - continue with empty array
+    if (projectsError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to fetch report projects', projectsError), authResponse)
+    }
 
     // Fetch work items for metrics
     const { data: workItems, error: workItemsError } = await supabase
       .from('work_items')
-      .select('id, status, completed_at, created_at')
+      .select('id, project_id, status, completed_at, created_at')
       .in('workspace_id', workspaceIds)
       .gte('created_at', startDate.toISOString())
 
-    // Silently handle work items fetch errors - continue with empty array
+    if (workItemsError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to fetch report work items', workItemsError), authResponse)
+    }
 
     // Calculate metrics
     const completedTasks = (workItems || []).filter(w => w.status === 'done').length
     const totalTasks = (workItems || []).length
     const blockedTasks = (workItems || []).filter(w => w.status === 'blocked').length
 
+    const projectStats = new Map<string, { total: number; completed: number; blocked: number }>()
+    for (const item of workItems || []) {
+      const key = item.project_id
+      if (!key) continue
+      if (!projectStats.has(key)) {
+        projectStats.set(key, { total: 0, completed: 0, blocked: 0 })
+      }
+      const stats = projectStats.get(key)!
+      stats.total += 1
+      if (item.status === 'done') stats.completed += 1
+      if (item.status === 'blocked') stats.blocked += 1
+    }
+
     // Build project status
-    const projectStatus = (projects || []).map(p => ({
-      name: p.name,
-      status: p.status === 'active' ? 'on_track' : p.status === 'at_risk' ? 'at_risk' : 'on_track',
-      progress: 0, // Would need to calculate from work items
-      tasksCompleted: 0,
-      totalTasks: 0
-    }))
+    const projectStatus = (projects || []).map((project) => {
+      const stats = projectStats.get(project.id) ?? { total: 0, completed: 0, blocked: 0 }
+      const progress = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
+      const derivedStatus =
+        project.status === 'on_hold'
+          ? 'at_risk'
+          : stats.blocked > 0
+            ? 'at_risk'
+            : progress < 35 && stats.total > 0
+              ? 'behind'
+              : 'on_track'
+
+      return {
+        id: project.id,
+        slug: project.slug,
+        name: project.name,
+        status: derivedStatus,
+        progress,
+        tasksCompleted: stats.completed,
+        totalTasks: stats.total,
+      }
+    })
 
     // Build metrics
     const metrics = [
@@ -132,6 +170,8 @@ export async function GET(req: NextRequest) {
     return mergeAuthResponse(successResponse({
       metrics,
       projectStatus,
+      reportScope: projectSlug || projectId ? 'project' : 'workspace',
+      generated: generateMode === 'status',
       recentReports: (recentReports || []).map(r => ({
         id: r.id,
         title: r.title,

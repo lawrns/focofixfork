@@ -41,7 +41,8 @@ import {
   Cpu,
   Zap as Bolt,
   Rss,
-  Wand2
+  Wand2,
+  Antenna,
 } from 'lucide-react';
 
 type ShortcutCategory = 'Global' | 'Navigation' | 'Quick Actions' | 'Views';
@@ -283,6 +284,13 @@ const shortcuts: Shortcut[] = [
     description: 'Go to Daily Briefing',
     category: 'Navigation',
     icon: Bolt,
+  },
+  {
+    id: 'nav-social-intel',
+    keys: ['G', 'X'],
+    description: 'Go to Social Intel',
+    category: 'Navigation',
+    icon: Antenna,
   },
 ];
 

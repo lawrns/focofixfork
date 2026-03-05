@@ -74,7 +74,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
       });
     }
 
-    // Projects page: /empire/missions (canonical)
+    // Projects page: /empire/missions (canonical list)
     if (pathname === '/empire/missions') {
       breadcrumbs.push({
         label: 'Projects',
@@ -83,7 +83,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
       return breadcrumbs;
     }
 
-    // Project detail page: /projects/[slug] or /projects/[slug]/... (legacy) or /empire/missions/[slug]
+    // Project detail page: /projects/[slug] (canonical detail) or /empire/missions/[slug] (legacy alias)
     if (pathname.includes('/projects/') || pathname.includes('/empire/missions/')) {
       breadcrumbs.push({
         label: 'Projects',

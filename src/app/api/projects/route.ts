@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error: dbError } = await supabaseAdmin
     .from('foco_projects')
-    .select('id, name, slug, status, description, color, icon, is_pinned, updated_at, local_path, git_remote')
+    .select('id, workspace_id, owner_id, name, slug, status, description, color, icon, is_pinned, updated_at, local_path, git_remote, delegation_settings, assigned_agent_pool')
     .eq('workspace_id', workspaceId)
     .order('name', { ascending: true })
     .limit(limit)
@@ -60,8 +60,107 @@ export async function GET(req: NextRequest) {
     return mergeAuthResponse(internalErrorResponse(dbError.message), authResponse)
   }
 
+  const projects = data ?? []
+  if (projects.length === 0) {
+    return mergeAuthResponse(
+      successResponse({ projects: [], workspaceId }),
+      authResponse
+    )
+  }
+
+  const projectIds = projects.map((project: any) => project.id)
+  const ownerIds = [...new Set(projects.map((project: any) => project.owner_id).filter(Boolean))]
+
+  const [workItemsResult, runsResult, ownersResult] = await Promise.all([
+    supabaseAdmin
+      .from('work_items')
+      .select('project_id, status, delegation_status')
+      .in('project_id', projectIds),
+    supabaseAdmin
+      .from('runs')
+      .select('project_id, status')
+      .in('project_id', projectIds)
+      .in('status', ['pending', 'running']),
+    ownerIds.length > 0
+      ? supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', ownerIds)
+      : Promise.resolve({ data: [], error: null } as const),
+  ])
+
+  if (workItemsResult.error) {
+    return mergeAuthResponse(internalErrorResponse(workItemsResult.error.message), authResponse)
+  }
+  if (runsResult.error) {
+    return mergeAuthResponse(internalErrorResponse(runsResult.error.message), authResponse)
+  }
+  if (ownersResult.error) {
+    return mergeAuthResponse(internalErrorResponse(ownersResult.error.message), authResponse)
+  }
+
+  const taskCountsByProject = new Map<string, { total: number; completed: number }>()
+  const delegationCountsByProject = new Map<string, { pending: number; delegated: number; running: number; completed: number; failed: number }>()
+  for (const item of workItemsResult.data ?? []) {
+    const key = item.project_id as string
+    if (!taskCountsByProject.has(key)) {
+      taskCountsByProject.set(key, { total: 0, completed: 0 })
+    }
+    if (!delegationCountsByProject.has(key)) {
+      delegationCountsByProject.set(key, { pending: 0, delegated: 0, running: 0, completed: 0, failed: 0 })
+    }
+    const task = taskCountsByProject.get(key)!
+    task.total += 1
+    if (item.status === 'done') task.completed += 1
+
+    const delegation = delegationCountsByProject.get(key)!
+    if (item.delegation_status === 'pending') delegation.pending += 1
+    if (item.delegation_status === 'delegated') delegation.delegated += 1
+    if (item.delegation_status === 'running') delegation.running += 1
+    if (item.delegation_status === 'completed') delegation.completed += 1
+    if (item.delegation_status === 'failed') delegation.failed += 1
+  }
+
+  const activeRunCountByProject = new Map<string, number>()
+  for (const run of runsResult.data ?? []) {
+    const key = run.project_id as string
+    activeRunCountByProject.set(key, (activeRunCountByProject.get(key) ?? 0) + 1)
+  }
+
+  const ownerProfileById = new Map<string, { full_name: string | null; avatar_url: string | null }>()
+  for (const owner of ownersResult.data ?? []) {
+    ownerProfileById.set(owner.id as string, {
+      full_name: owner.full_name ?? null,
+      avatar_url: owner.avatar_url ?? null,
+    })
+  }
+
+  const enrichedProjects = projects.map((project: any) => {
+    const taskCounts = taskCountsByProject.get(project.id) ?? { total: 0, completed: 0 }
+    const delegationCounts = delegationCountsByProject.get(project.id) ?? { pending: 0, delegated: 0, running: 0, completed: 0, failed: 0 }
+    const activeRuns = activeRunCountByProject.get(project.id) ?? 0
+    const ownerProfile = ownerProfileById.get(project.owner_id ?? '')
+    const risk =
+      project.status === 'on_hold'
+        ? 'high'
+        : taskCounts.total > 5 && taskCounts.completed === 0
+          ? 'medium'
+          : 'none'
+
+    return {
+      ...project,
+      tasks_completed: taskCounts.completed,
+      total_tasks: taskCounts.total,
+      risk,
+      owner_name: ownerProfile?.full_name ?? null,
+      owner_avatar: ownerProfile?.avatar_url ?? null,
+      delegation_counts: delegationCounts,
+      active_run_count: activeRuns,
+    }
+  })
+
   return mergeAuthResponse(
-    successResponse({ projects: data ?? [], workspaceId }),
+    successResponse({ projects: enrichedProjects, workspaceId }),
     authResponse
   )
 }

@@ -6,6 +6,7 @@ import type {
   CommandMode,
   CommandPlan,
   CommandExecution,
+  AgentExecutionEvent,
   AgentTrackerState,
   CTODecision,
   COODecision,
@@ -22,6 +23,7 @@ export function useCommandPipeline() {
   const [execution, setExecution] = useState<CommandExecution | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+  const [executionEvents, setExecutionEvents] = useState<AgentExecutionEvent[]>([]);
   const [history, setHistory] = useState<CommandHistoryItem[]>([]);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
@@ -173,6 +175,7 @@ export function useCommandPipeline() {
     if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
     setExecution(null);
     setStreamingText('');
+    setExecutionEvents([]);
   }, []);
 
   const cancelExecution = useCallback(() => {
@@ -181,6 +184,11 @@ export function useCommandPipeline() {
     setIsProcessing(false);
     setExecution(prev => prev ? { ...prev, status: 'failed', error: 'Cancelled by user', updatedAt: new Date() } : prev);
     setStreamingText(prev => prev ? `${prev}\n\n[Stopped by user]` : '[Stopped by user]');
+    setExecutionEvents(prev => ([
+      ...prev,
+      { type: 'error', message: 'Cancelled by user', timestamp: new Date().toISOString() },
+      { type: 'done', exitCode: 1, summary: 'Cancelled by user', timestamp: new Date().toISOString() },
+    ]));
   }, []);
 
   useEffect(() => {
@@ -224,6 +232,7 @@ export function useCommandPipeline() {
   const { executeCommand, submitPrompt } = useExecuteCommand({
     setIsProcessing,
     setStreamingText,
+    setExecutionEvents,
     setExecution: setExecution as any,
     upsertHistoryItem,
     logHistoryEvent,
@@ -322,6 +331,7 @@ export function useCommandPipeline() {
 
   return {
     execution, isProcessing, streamingText,
+    executionEvents,
     analyzePrompt, executeCommand, submitPrompt,
     clearExecution, cancelExecution, history, deleteHistoryEvent,
   };

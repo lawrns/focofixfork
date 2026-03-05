@@ -92,7 +92,7 @@ describe('TopBar Create Dropdown', () => {
 
     const item = await screen.findByText('Initiative');
     await user.click(item);
-    expect(mockPush).toHaveBeenCalledWith('/projects?create=true');
+    expect(mockPush).toHaveBeenCalledWith('/empire/missions?create=true');
   });
 
   it('routes to create playbook note when Playbook Note is clicked', async () => {
@@ -116,7 +116,7 @@ describe('TopBar Create Dropdown', () => {
 
     const item = await screen.findByText('Import Data...');
     await user.click(item);
-    expect(mockPush).toHaveBeenCalledWith('/projects?import=true');
+    expect(mockPush).toHaveBeenCalledWith('/empire/missions?import=true');
   });
 
   it('opens task modal when Execution Task is clicked', async () => {

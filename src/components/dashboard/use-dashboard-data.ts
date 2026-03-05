@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 
+const DASHBOARD_PROJECT_STORAGE_KEY = 'dashboard_selected_project_id'
+
 export type Run = {
   id: string
   runner: string
@@ -59,6 +61,23 @@ export function useDashboardData(user: { id: string } | null) {
     [projectOptions, selectedProjectId]
   )
   const selectedProjectSlug = selectedProject?.slug ?? ''
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(DASHBOARD_PROJECT_STORAGE_KEY)
+    if (stored) {
+      setSelectedProjectId(stored)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!selectedProjectId) {
+      window.localStorage.removeItem(DASHBOARD_PROJECT_STORAGE_KEY)
+      return
+    }
+    window.localStorage.setItem(DASHBOARD_PROJECT_STORAGE_KEY, selectedProjectId)
+  }, [selectedProjectId])
 
   const runningCount = allRuns.filter((run) => run.status === 'running').length
   const pendingCount = allRuns.filter((run) => run.status === 'pending').length
@@ -121,7 +140,9 @@ export function useDashboardData(user: { id: string } | null) {
         const data = await projectsRes.value.json()
         const projects = (data?.data?.projects ?? []) as ProjectOption[]
         setProjectOptions(projects)
-        if (!selectedProjectId && projects[0]?.id) {
+        if (selectedProjectId && !projects.some((project) => project.id === selectedProjectId)) {
+          setSelectedProjectId(projects[0]?.id ?? '')
+        } else if (!selectedProjectId && projects[0]?.id) {
           setSelectedProjectId(projects[0].id)
         }
       }

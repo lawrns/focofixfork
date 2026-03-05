@@ -57,7 +57,6 @@ export function CommandInput({
   ribbon,
   dispatchFlash,
 }: CommandInputProps) {
-  const [commandExpanded, setCommandExpanded] = useState(false)
   const [persona, setPersona] = useState<'cto' | 'coo' | 'auto' | 'intake'>('auto')
   const [agentId, setAgentId] = useState('')
   const [task, setTask] = useState('')
@@ -72,11 +71,9 @@ export function CommandInput({
     const result = await onDispatch({ task, persona, agentId: agentId.trim() || personaLabel, personaLabel })
     if (!result.ok) {
       setErrorMessage(result.error ?? 'Dispatch failed')
-      setCommandExpanded(true)
       return
     }
     setTask('')
-    setCommandExpanded(false)
   }
 
   return (
@@ -149,10 +146,6 @@ export function CommandInput({
             <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
               <Input
                 value={task}
-                onFocus={() => setCommandExpanded(true)}
-                onBlur={() => {
-                  if (!task.trim()) setCommandExpanded(false)
-                }}
                 onChange={(event) => {
                   setTask(event.target.value)
                   if (errorMessage) setErrorMessage(null)
@@ -180,34 +173,29 @@ export function CommandInput({
             </p>
           ) : null}
 
-          <AnimatePresence initial={false}>
-            {commandExpanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={SHARED_SPRING}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                  <div className="bg-muted/50 rounded-md px-3 py-1.5 text-[11px] font-mono text-muted-foreground flex-1">
-                    routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · mode <span className="text-foreground/70">auto</span>
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={SHARED_SPRING}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <div className="bg-muted/50 rounded-md px-3 py-1.5 text-[11px] font-mono text-muted-foreground flex-1">
+                routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · mode <span className="text-foreground/70">gateway</span>
+              </div>
 
-                  <select
-                    className="h-8 rounded-md border bg-background px-2 text-xs"
-                    value={selectedProjectId}
-                    onChange={(event) => onProjectChange(event.target.value)}
-                  >
-                    <option value="">Workspace default</option>
-                    {projectOptions.map((project) => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              <select
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+                value={selectedProjectId}
+                onChange={(event) => onProjectChange(event.target.value)}
+              >
+                <option value="">Workspace default</option>
+                {projectOptions.map((project) => (
+                  <option key={project.id} value={project.id}>{project.name}</option>
+                ))}
+              </select>
+            </div>
+          </motion.div>
         </div>
       </motion.div>
 

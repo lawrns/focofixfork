@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Download, FileJson, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -75,8 +75,8 @@ function parseStatus(value: string | null | undefined): LogStatus {
   return 'unknown'
 }
 
-function matchesAgentText(value: string | null | undefined, tokens: string[]): boolean {
-  if (!value) return false
+function matchesAgentText(value: unknown, tokens: string[]): boolean {
+  if (typeof value !== 'string') return false
   const lower = value.toLowerCase()
   return tokens.some((token) => lower.includes(token))
 }
@@ -229,6 +229,9 @@ export function AgentLogViewer({ open, onOpenChange, agent }: AgentLogViewerProp
               <span className="truncate">{agent?.name ?? 'Agent'} Logs</span>
               {agent?.backend && <Badge variant="outline" className="text-[10px]">{agent.backend}</Badge>}
             </SheetTitle>
+            <SheetDescription>
+              Recent runs and command-surface history for the selected agent.
+            </SheetDescription>
           </SheetHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-4">

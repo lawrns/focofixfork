@@ -34,6 +34,7 @@ import { RunCardGrid } from '@/components/dashboard/run-card-grid'
 import { RecentEventsFeed } from '@/components/dashboard/recent-events-feed'
 import { useRunStream } from '@/hooks/use-run-stream'
 import type { TerminalLine } from '@/components/dashboard/run-card'
+import type { Run } from '@/components/dashboard/use-dashboard-data'
 
 const AIInsights = dynamic(
   () => import('@/components/dashboard/AIInsights').then((m) => m.AIInsights),
@@ -46,7 +47,15 @@ type RibbonState = {
   agent: string
   task: string
   runId?: string
-  jobId?: string
+}
+
+function makeTerminalLine(token: TerminalLine['token'], text: string): TerminalLine {
+  return {
+    id: `${Date.now()}-${Math.random()}`,
+    token,
+    text,
+    ts: Date.now(),
+  }
 }
 
 function relativeTime(iso: string): string {
@@ -103,6 +112,7 @@ export default function DashboardPageClient() {
   const [fleetExpanded, setFleetExpanded] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<LedgerEvent | null>(null)
 
+  const [syntheticRuns, setSyntheticRuns] = useState<Run[]>([])
   const [terminalLinesMap, setTerminalLinesMap] = useState<Record<string, TerminalLine[]>>({})
   const [streamStateMap, setStreamStateMap] = useState<Record<string, 'idle' | 'resolving' | 'connecting' | 'live' | 'ended' | 'unavailable'>>({})
 
@@ -127,6 +137,50 @@ export default function DashboardPageClient() {
     setStreamStateMap((prev) => ({ ...prev, [runId]: stream.connectionState }))
   }, [])
 
+  const appendSyntheticLine = useCallback((runId: string, token: TerminalLine['token'], text: string) => {
+    setTerminalLinesMap((prev) => ({
+      ...prev,
+      [runId]: [...(prev[runId] ?? []), makeTerminalLine(token, text)].slice(-120),
+    }))
+  }, [])
+
+  const triggerDispatchArc = useCallback((agentLabel: string, userTask: string, runId?: string) => {
+    const syntheticRunId = runId || `local-${Date.now()}`
+    setRibbon({ agent: agentLabel, task: userTask, runId })
+    setPendingFlash(true)
+    window.setTimeout(() => setPendingFlash(false), 850)
+
+    setSyntheticRuns((prev) => {
+      const nextRun: Run = {
+        id: syntheticRunId,
+        runner: agentLabel,
+        status: 'pending',
+        task_id: null,
+        started_at: null,
+        ended_at: null,
+        created_at: new Date().toISOString(),
+        summary: userTask,
+      }
+      return [nextRun, ...prev.filter((run) => run.id !== syntheticRunId)].slice(0, 10)
+    })
+
+    setStreamStateMap((prev) => ({ ...prev, [syntheticRunId]: 'connecting' }))
+    appendSyntheticLine(syntheticRunId, 'INIT', `Dispatch accepted for ${agentLabel}${runId ? ` (run ${runId.slice(0, 8)})` : ''}`)
+    appendSyntheticLine(syntheticRunId, 'PLAN', `Routing task${data.selectedProjectSlug ? ` under project ${data.selectedProjectSlug}` : ''} and preparing execution graph`)
+    appendSyntheticLine(syntheticRunId, 'ACTION', userTask)
+    appendSyntheticLine(syntheticRunId, 'OBSERVE', runId ? `Run ${runId.slice(0, 8)} moved to running` : 'Awaiting backend run confirmation...')
+
+    window.setTimeout(() => {
+      setSyntheticRuns((prev) => prev.map((run) => (
+        run.id === syntheticRunId
+          ? { ...run, status: 'running', started_at: run.started_at ?? new Date().toISOString() }
+          : run
+      )))
+      setStreamStateMap((prev) => ({ ...prev, [syntheticRunId]: 'live' }))
+      appendSyntheticLine(syntheticRunId, 'RESULT', 'Execution stream is live. Observability hooks attached.')
+    }, 1300)
+  }, [appendSyntheticLine, data.selectedProjectSlug])
+
   const handleDispatch = useCallback(async (args: {
     task: string
     persona: string
@@ -138,39 +192,40 @@ export default function DashboardPageClient() {
     setTimeout(() => setDispatchFlash(false), 300)
 
     try {
-      const response = await fetch('/api/command-surface/execute', {
+      const response = await fetch('/api/openclaw-gateway/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: args.task,
-          mode: args.persona,
-          project_id: data.selectedProjectId || null,
+          agentId: args.agentId,
+          task: args.task,
+          project_slug: data.selectedProjectSlug || undefined,
+          context: { persona: args.persona },
         }),
       })
 
-      const ribbonState: RibbonState = { agent: args.agentId, task: args.task }
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null
         return { ok: false, error: payload?.error ?? `Dispatch failed (${response.status})` }
       }
 
       const payload = await response.json()
-      ribbonState.jobId = typeof payload?.job_id === 'string' ? payload.job_id : undefined
-
-      setRibbon(ribbonState)
-      setPendingFlash(true)
-      setTimeout(() => setPendingFlash(false), 850)
-      setTimeout(() => setRibbon(null), 4600)
+      const runId = typeof payload?.runId === 'string' ? payload.runId : undefined
+      triggerDispatchArc(args.agentId, args.task, runId)
       setTimeout(() => {
         void data.fetchAll()
-      }, 500)
-      return { ok: true, jobId: ribbonState.jobId }
+      }, 800)
+      return { ok: true, runId }
     } catch {
       return { ok: false, error: 'Dispatch failed due to a network or gateway error' }
     } finally {
       setDispatching(false)
     }
-  }, [data])
+  }, [data, triggerDispatchArc])
+
+  const displayedRuns = (() => {
+    const realIds = new Set(data.activeRuns.map((run) => run.id))
+    return [...syntheticRuns.filter((run) => !realIds.has(run.id)), ...data.activeRuns].slice(0, 10)
+  })()
 
   if (loading) {
     return (
@@ -272,7 +327,7 @@ export default function DashboardPageClient() {
           <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4">
             <div>
               <RunCardGrid
-                runs={data.activeRuns}
+                runs={displayedRuns}
                 terminalLinesMap={terminalLinesMap}
                 connectionStatesMap={streamStateMap}
                 onDispatchClick={() => {

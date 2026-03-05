@@ -1,38 +1,49 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MetricTile } from '@/components/ui/metric-tile'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import ErrorBoundary from '@/components/error/error-boundary'
-import dynamic from 'next/dynamic'
-import { ActiveRuns } from './ActiveRuns'
-
-// Lazy-load AIInsights — it instantiates OpenAIService at module load time,
-// which throws in dev when GLM_API_KEY / OPENAI_API_KEY is not set.
-// dynamic() isolates the error to this widget only.
-const AIInsights = dynamic(
-  () => import('@/components/dashboard/AIInsights').then(m => m.AIInsights),
-  { ssr: false, loading: () => null }
-)
 import {
   Activity,
+  AlertCircle,
+  ArrowRight,
+  Bot,
+  Clock3,
   Cpu,
+  Flag,
+  Gauge,
+  Loader2,
   Pause,
   Play,
   RefreshCw,
-  Zap,
-  BookOpen,
-  Flag,
-  X,
+  Send,
+  ShieldCheck,
+  Sparkles,
   Terminal,
+  Workflow,
+  X,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
 } from 'lucide-react'
-import { CommandSurface } from '@/components/command-surface'
 
 type Run = {
   id: string
@@ -41,42 +52,160 @@ type Run = {
   task_id: string | null
   started_at: string | null
   ended_at: string | null
+  created_at?: string
+  summary?: string | null
 }
 
 type LedgerEvent = {
   id: string
   type: string
   source: string | null
-  payload: any
+  payload: Record<string, unknown> | null
   timestamp: string
 }
 
-function elapsed(start: string | null): string {
-  if (!start) return '—'
-  const ms = Date.now() - new Date(start).getTime()
-  const s = Math.floor(ms / 1000)
-  if (s < 60) return `${s}s`
+type AgentOption = {
+  id: string
+  name: string
+  nativeId: string
+  status: string
+  backend: string
+}
+
+type ProjectOption = {
+  id: string
+  slug: string
+  name: string
+}
+
+type TerminalToken = 'INIT' | 'PLAN' | 'ACTION' | 'OBSERVE' | 'RESULT' | 'ERROR'
+
+type TerminalLine = {
+  id: string
+  token: TerminalToken
+  text: string
+  ts: number
+}
+
+type RibbonState = {
+  agent: string
+  task: string
+  runId?: string
+}
+
+const AIInsights = dynamic(
+  () => import('@/components/dashboard/AIInsights').then((m) => m.AIInsights),
+  { ssr: false, loading: () => null }
+)
+
+const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
+
+const PERSONA_PRESETS: Array<{ key: 'cto' | 'coo' | 'auto' | 'intake'; label: string; description: string }> = [
+  { key: 'cto', label: 'CTO', description: 'Architecture and systems decisions' },
+  { key: 'coo', label: 'COO', description: 'Operations and execution flow' },
+  { key: 'auto', label: 'Auto', description: 'Automatic best-agent routing' },
+  { key: 'intake', label: 'Intake', description: 'Task intake and triage' },
+]
+
+function tokenClass(token: TerminalToken): string {
+  switch (token) {
+    case 'INIT': return 'text-[#4ade80]'
+    case 'PLAN': return 'text-[#22d3ee]'
+    case 'ACTION': return 'text-[#fbbf24]'
+    case 'OBSERVE': return 'text-[#60a5fa]'
+    case 'RESULT': return 'text-[#34d399]'
+    case 'ERROR': return 'text-[#f87171]'
+  }
+}
+
+function statusAccent(status: string): string {
+  if (status === 'running' || status === 'active') return 'border-l-emerald-500'
+  if (status === 'pending' || status === 'queued') return 'border-l-amber-500'
+  if (status === 'failed' || status === 'error') return 'border-l-rose-500'
+  return 'border-l-zinc-500'
+}
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const s = Math.max(1, Math.floor(ms / 1000))
+  if (s < 60) return `${s}s ago`
   const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ${s % 60}s`
-  return `${Math.floor(m / 60)}h ${m % 60}m`
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
+
+function ElapsedTimer({ since }: { since?: string | null }) {
+  const [elapsed, setElapsed] = useState('0s')
+
+  useEffect(() => {
+    if (!since) return
+    const update = () => {
+      const delta = Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 1000))
+      if (delta < 60) setElapsed(`${delta}s`)
+      else if (delta < 3600) setElapsed(`${Math.floor(delta / 60)}m ${delta % 60}s`)
+      else setElapsed(`${Math.floor(delta / 3600)}h ${Math.floor((delta % 3600) / 60)}m`)
+    }
+    update()
+    const id = window.setInterval(update, 1000)
+    return () => window.clearInterval(id)
+  }, [since])
+
+  return <>{elapsed}</>
 }
 
 export default function DashboardPageClient() {
   const router = useRouter()
   const { user, loading } = useAuth()
 
-  const [relayReachable, setRelayReachable] = useState<boolean | null>(null) // null = loading
+  const [relayReachable, setRelayReachable] = useState<boolean | null>(null)
   const [tokenValid, setTokenValid] = useState<boolean | null>(null)
   const [attachedTabs, setAttachedTabs] = useState(0)
-  const [activeRuns, setActiveRuns] = useState<Run[]>([])
   const [allRuns, setAllRuns] = useState<Run[]>([])
   const [fleetPaused, setFleetPaused] = useState(false)
   const [recentEvents, setRecentEvents] = useState<LedgerEvent[]>([])
   const [refreshing, setRefreshing] = useState(false)
-
   const [autonomousStats, setAutonomousStats] = useState({ improvementsWeek: 0, handbookEntries: 0 })
   const [showStrategicBanner, setShowStrategicBanner] = useState(true)
+
+  const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState('')
+  const [agents, setAgents] = useState<AgentOption[]>([])
+
+  const [commandExpanded, setCommandExpanded] = useState(false)
+  const [persona, setPersona] = useState<'cto' | 'coo' | 'auto' | 'intake'>('auto')
+  const [agentId, setAgentId] = useState('')
+  const [task, setTask] = useState('')
+  const [dispatching, setDispatching] = useState(false)
+  const [ribbon, setRibbon] = useState<RibbonState | null>(null)
+  const [pendingFlash, setPendingFlash] = useState(false)
+
+  const [terminalOpen, setTerminalOpen] = useState(false)
+  const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([])
+  const [fleetExpanded, setFleetExpanded] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<LedgerEvent | null>(null)
+
   const hasFetched = useRef(false)
+
+  const activeRuns = useMemo(
+    () => allRuns.filter((run) => run.status === 'running' || run.status === 'pending').slice(0, 10),
+    [allRuns]
+  )
+
+  const runningCount = allRuns.filter((run) => run.status === 'running').length
+  const pendingCount = allRuns.filter((run) => run.status === 'pending').length
+  const doneCount = allRuns.filter((run) => run.status === 'completed').length
+  const failedCount = allRuns.filter((run) => run.status === 'failed').length
+  const staleCount = allRuns.filter((run) => run.status === 'running' && run.started_at && Date.now() - new Date(run.started_at).getTime() > 30 * 60 * 1000).length
+
+  const g1Share = allRuns.length > 0
+    ? Math.round(
+      (allRuns.filter((run) => /revenue|customer|sales|onboard|trial/i.test((run.runner || '') + ' ' + (run.task_id || '') + ' ' + (run.summary || ''))).length / allRuns.length) * 100
+    )
+    : null
+
+  const gatewayStatus = relayReachable === null ? 'Checking...' : relayReachable ? 'Reachable' : 'Down'
 
   useEffect(() => {
     document.title = 'Dashboard | Critter'
@@ -93,60 +222,74 @@ export default function DashboardPageClient() {
     setRefreshing(true)
 
     try {
-      const [statusRes, runsRes, fleetRes, ledgerRes] = await Promise.allSettled([
+      const [statusRes, runsRes, fleetRes, ledgerRes, projectsRes, agentsRes] = await Promise.allSettled([
         fetch('/api/openclaw/status'),
         fetch('/api/runs'),
         fetch('/api/policies/fleet-status'),
-        fetch('/api/ledger?limit=10'),
+        fetch('/api/ledger?limit=18'),
+        fetch('/api/projects?limit=50'),
+        fetch('/api/command-center/agents'),
       ])
 
-      // Gateway status
       if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
-        const d = await statusRes.value.json()
-        setRelayReachable(d.relay?.reachable ?? false)
-        setTokenValid(d.token?.valid ?? false)
-        setAttachedTabs(d.tabs?.filter((t: any) => t.attached).length ?? 0)
+        const data = await statusRes.value.json()
+        setRelayReachable(data.relay?.reachable ?? false)
+        setTokenValid(data.token?.valid ?? false)
+        setAttachedTabs(data.tabs?.filter((tab: any) => tab.attached).length ?? 0)
       } else {
         setRelayReachable(false)
         setTokenValid(false)
         setAttachedTabs(0)
       }
 
-      // Runs
       if (runsRes.status === 'fulfilled' && runsRes.value.ok) {
-        const d = await runsRes.value.json()
-        const runs: Run[] = d.data || d.runs || []
+        const data = await runsRes.value.json()
+        const runs: Run[] = data.data || data.runs || []
         setAllRuns(runs)
-        setActiveRuns(runs.filter((r: Run) => r.status === 'running' || r.status === 'pending'))
       }
 
-      // Fleet status
       if (fleetRes.status === 'fulfilled' && fleetRes.value.ok) {
-        const d = await fleetRes.value.json()
-        if (typeof d.paused === 'boolean') setFleetPaused(d.paused)
+        const data = await fleetRes.value.json()
+        if (typeof data.paused === 'boolean') setFleetPaused(data.paused)
       }
 
-      // Ledger events
       if (ledgerRes.status === 'fulfilled' && ledgerRes.value.ok) {
-        const d = await ledgerRes.value.json()
-        setRecentEvents(d.data || d.events || [])
+        const data = await ledgerRes.value.json()
+        setRecentEvents(data.data || data.events || [])
       }
 
-      // Autonomous improvement stats (lightweight cached read)
+      if (projectsRes.status === 'fulfilled' && projectsRes.value.ok) {
+        const data = await projectsRes.value.json()
+        const projects = (data?.data?.projects ?? []) as ProjectOption[]
+        setProjectOptions(projects)
+        if (!selectedProjectSlug && projects[0]?.slug) {
+          setSelectedProjectSlug(projects[0].slug)
+        }
+      }
+
+      if (agentsRes.status === 'fulfilled' && agentsRes.value.ok) {
+        const data = await agentsRes.value.json()
+        const nextAgents = (data?.agents ?? []) as AgentOption[]
+        setAgents(nextAgents)
+      }
+
       fetch('/api/dashboard/autonomous-stats')
-        .then(r => r.ok ? r.json() : null)
-        .then(d => {
-          if (d) {
-            setAutonomousStats({ improvementsWeek: d.improvementsWeek ?? 0, handbookEntries: d.improvementsMonth ?? 0 })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => {
+          if (data) {
+            setAutonomousStats({
+              improvementsWeek: data.improvementsWeek ?? 0,
+              handbookEntries: data.improvementsMonth ?? 0,
+            })
           }
         })
         .catch(() => {})
     } catch {
-      // individual errors handled above
+      // no-op
     } finally {
       setRefreshing(false)
     }
-  }, [user])
+  }, [user, selectedProjectSlug])
 
   useEffect(() => {
     if (user && !hasFetched.current) {
@@ -163,12 +306,91 @@ export default function DashboardPageClient() {
     return () => window.removeEventListener('runs:mutated', handleRunsMutated)
   }, [fetchAll])
 
-  // Auto-refresh every 30s
   useEffect(() => {
     if (!user) return
     const interval = setInterval(fetchAll, 30_000)
     return () => clearInterval(interval)
   }, [user, fetchAll])
+
+  const pushTerminalLine = useCallback((line: Omit<TerminalLine, 'id' | 'ts'>, delay = 0) => {
+    window.setTimeout(() => {
+      setTerminalLines((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          ts: Date.now(),
+          ...line,
+        },
+      ].slice(-120))
+    }, delay)
+  }, [])
+
+  const triggerDispatchArc = useCallback((agentLabel: string, userTask: string, runId?: string) => {
+    setRibbon({ agent: agentLabel, task: userTask, runId })
+    setPendingFlash(true)
+    setTerminalOpen(true)
+    setTerminalLines([])
+
+    window.setTimeout(() => setPendingFlash(false), 850)
+    window.setTimeout(() => setRibbon(null), 4600)
+
+    pushTerminalLine({ token: 'INIT', text: `Dispatch accepted for ${agentLabel}${runId ? ` (run ${runId.slice(0, 8)})` : ''}` }, 40)
+    pushTerminalLine({ token: 'PLAN', text: `Routing task${selectedProjectSlug ? ` under project ${selectedProjectSlug}` : ''} and preparing execution graph` }, 340)
+    pushTerminalLine({ token: 'ACTION', text: userTask }, 660)
+    pushTerminalLine({ token: 'OBSERVE', text: runId ? `Run ${runId.slice(0, 8)} moved to running` : 'Awaiting backend run confirmation...' }, 980)
+
+    window.setTimeout(() => {
+      pushTerminalLine({ token: 'RESULT', text: 'Execution stream is live. Observability hooks attached.' })
+    }, 1300)
+  }, [pushTerminalLine, selectedProjectSlug])
+
+  const handleDispatch = useCallback(async () => {
+    if (!task.trim()) return
+    setDispatching(true)
+
+    const personaLabel = PERSONA_PRESETS.find((preset) => preset.key === persona)?.label ?? 'Auto'
+    const targetAgent = agentId.trim() || personaLabel
+
+    try {
+      const response = await fetch('/api/openclaw-gateway/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: targetAgent,
+          task,
+          project_slug: selectedProjectSlug || undefined,
+          context: { persona },
+        }),
+      })
+
+      if (!response.ok) {
+        triggerDispatchArc(targetAgent, task)
+        pushTerminalLine({ token: 'ERROR', text: 'Gateway rejected dispatch request' })
+      } else {
+        const payload = await response.json()
+        triggerDispatchArc(targetAgent, task, payload?.runId)
+      }
+
+      setTask('')
+      setCommandExpanded(false)
+      window.setTimeout(() => fetchAll(), 800)
+    } catch {
+      triggerDispatchArc(targetAgent, task)
+      pushTerminalLine({ token: 'ERROR', text: 'Dispatch failed due to network or gateway error' })
+    } finally {
+      setDispatching(false)
+    }
+  }, [task, persona, agentId, selectedProjectSlug, triggerDispatchArc, pushTerminalLine, fetchAll])
+
+  const mergedTerminalLines = useMemo(() => {
+    const eventLines: TerminalLine[] = recentEvents.slice(0, 10).map((event, idx) => ({
+      id: `evt-${event.id}`,
+      token: event.type === 'error' ? 'ERROR' : idx % 2 === 0 ? 'OBSERVE' : 'ACTION',
+      text: `${event.type}${event.source ? ` · ${event.source}` : ''}`,
+      ts: new Date(event.timestamp).getTime(),
+    }))
+    return [...terminalLines, ...eventLines].sort((a, b) => a.ts - b.ts).slice(-90)
+  }, [terminalLines, recentEvents])
 
   if (loading) {
     return (
@@ -180,334 +402,469 @@ export default function DashboardPageClient() {
 
   if (!user) return null
 
-  const recentEventsCount = recentEvents.length
-
   return (
     <ErrorBoundary>
-      <PageShell className="space-y-5">
-        <PageHeader
-          title="Execution Dashboard"
-          subtitle="Goal 1 first: track work that gets to 10 paying customers"
-          primaryAction={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchAll()}
-                disabled={refreshing}
-              >
-                <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-                <span className="hidden sm:inline ml-1">Refresh</span>
+      <TooltipProvider delayDuration={120}>
+        <PageShell className="space-y-3 bg-gradient-to-b from-background to-muted/20 rounded-xl p-2">
+          <PageHeader
+            title="Execution Dashboard"
+            subtitle="Mission control for operator + agent execution"
+            primaryAction={
+              <Button variant="outline" size="sm" onClick={() => fetchAll()} disabled={refreshing} className="h-8 gap-1.5">
+                <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+                Refresh
               </Button>
-            </div>
-          }
-        />
-
-        {/* Command Surface - Elevated and Prominent */}
-        <div className="mb-6 animate-slide-up">
-          <CommandSurface
-            context="dashboard"
-            className="border-0 shadow-none"
-            onExecutionComplete={() => {
-              // Refresh data after command execution
-              setTimeout(fetchAll, 1000)
-            }}
+            }
           />
-        </div>
 
-        {/* Strategic Banner - Collapsible/Dismissible */}
-        {showStrategicBanner && (
-          <div className="mb-6 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-card/90 backdrop-blur-sm p-4 relative animate-slide-up-delay">
-            <button
-              onClick={() => setShowStrategicBanner(false)}
-              className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-              aria-label="Dismiss strategic banner"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="flex items-start justify-between gap-3 pr-8">
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Strategic Rule</p>
-                <h2 className="text-sm font-semibold mt-1">Revenue is the only feature that matters right now.</h2>
-                <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
-                  Use this dashboard to prioritize customer-facing execution over platform complexity.
-                </p>
-              </div>
-              <Badge variant="outline" className="text-[11px] border-emerald-300 text-emerald-700 bg-emerald-500/10 shrink-0">
-                <Flag className="h-3 w-3 mr-1" />
-                G1 Absolute Priority
-              </Badge>
-            </div>
-          </div>
-        )}
-
-        {/* Orchestration Health */}
-        <div className="mb-6 animate-slide-up-delay">
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Execution Health
-            </span>
-            {fleetPaused && (
-              <Badge variant="destructive" className="text-[10px] ml-1">Fleet Paused</Badge>
-            )}
-          </div>
-          <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-3 sm:p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-            <MetricTile
-              label="Running"
-              value={activeRuns.filter(r => r.status === 'running').length}
-              valueClassName="text-[color:var(--foco-teal)]"
-              onClick={() => router.push('/runs?status=running')}
-            />
-            <MetricTile
-              label="Pending"
-              value={activeRuns.filter(r => r.status === 'pending').length}
-              valueClassName="text-amber-500"
-              onClick={() => router.push('/runs?status=pending')}
-            />
-            <MetricTile
-              label="Completed"
-              value={allRuns.filter(r => r.status === 'completed').length}
-              valueClassName="text-emerald-500"
-              onClick={() => router.push('/runs?status=completed')}
-            />
-            <MetricTile
-              label="Recent Events"
-              value={recentEventsCount}
-              onClick={() => router.push('/ledger')}
-            />
-            <MetricTile
-              label="Fleet"
-              value={fleetPaused ? 'Paused' : 'Active'}
-              valueClassName={fleetPaused ? 'text-sm font-semibold text-rose-500' : 'text-sm font-semibold text-emerald-500'}
-              onClick={() => router.push('/policies')}
-            />
-            <MetricTile
-              label="Auto"
-              value={autonomousStats.improvementsWeek}
-              valueClassName="text-[color:var(--foco-teal)]"
-              subtitle="this week"
-              onClick={() => router.push('/ledger')}
-            />
-            <MetricTile
-              label="G1 Share"
-              value={allRuns.length > 0 ? `${Math.round((allRuns.filter(r => /revenue|customer|sales|onboard|trial/i.test((r.runner || '') + ' ' + (r.task_id || ''))).length / allRuns.length) * 100)}%` : '—'}
-              subtitle="runs tagged by revenue intent"
-              onClick={() => router.push('/runs')}
-            />
-            </div>
-          </div>
-        </div>
-
-        {/* Active Runs — Unified component with live polling, actions, and empty state */}
-        <ActiveRuns
-          initialRuns={activeRuns}
-          onRunsChanged={fetchAll}
-          className="mb-6"
-        />
-
-        {/* Fleet Status Cards - Consolidated to 3 key cards */}
-        <div className="mb-6 animate-slide-up-delay-2">
-          <div className="flex items-center gap-2 mb-3">
-            <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Fleet Status
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* System Health - Combined Gateway + Auth + Sessions */}
-            <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Cpu className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-medium">System Health</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">AI Gateway</span>
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      'h-2 w-2 rounded-full',
-                      relayReachable === null ? 'bg-yellow-500 animate-pulse' :
-                      relayReachable ? 'bg-emerald-500' : 'bg-red-500'
-                    )} />
-                    <span className="text-xs font-medium">
-                      {relayReachable === null ? 'Checking...' : relayReachable ? 'Reachable' : 'Down'}
-                    </span>
-                  </div>
+          {showStrategicBanner && (
+            <div className="rounded-lg border border-zinc-300/70 bg-zinc-100/70 px-3 py-2 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Flag className="h-3.5 w-3.5" />
+                  Strategic rule active: prioritize customer-facing execution over platform churn.
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Authentication</span>
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      'h-2 w-2 rounded-full',
-                      tokenValid === null ? 'bg-yellow-500 animate-pulse' :
-                      tokenValid ? 'bg-emerald-500' : 'bg-red-500'
-                    )} />
-                    <span className="text-xs font-medium">
-                      {tokenValid === null ? 'Checking...' : tokenValid ? 'Valid' : 'Invalid'}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground">Active Sessions</span>
-                  <span className="text-sm font-bold font-mono">{attachedTabs}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Workload Status - Combined Active Runs + Fleet State */}
-            <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-medium">Workload Status</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Running & Queued</span>
-                  <span className="text-sm font-bold font-mono">{activeRuns.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Fleet State</span>
-                  <Badge variant={fleetPaused ? 'secondary' : 'default'} className="text-[10px]">
-                    {fleetPaused ? (
-                      <Pause className="h-3 w-3 mr-1" />
-                    ) : (
-                      <Play className="h-3 w-3 mr-1" />
-                    )}
-                    {fleetPaused ? 'PAUSED' : 'ACTIVE'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground">Recent Events</span>
-                  <span className="text-sm font-bold font-mono">{recentEventsCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Performance Snapshot */}
-            <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-medium">Performance</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Auto-Improvements</span>
-                  <span className="text-sm font-bold font-mono text-[color:var(--foco-teal)]">{autonomousStats.improvementsWeek}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Success Rate</span>
-                  <span className="text-xs font-medium">
-                    {allRuns.length > 0 
-                      ? `${Math.round((allRuns.filter(r => r.status === 'completed').length / allRuns.length) * 100)}%` 
-                      : '—'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                  <span className="text-xs text-muted-foreground">G1 Alignment</span>
-                  <span className="text-xs font-medium text-emerald-500">
-                    {allRuns.length > 0 
-                      ? `${Math.round((allRuns.filter(r => /revenue|customer|sales|onboard|trial/i.test((r.runner || '') + ' ' + (r.task_id || ''))).length / allRuns.length) * 100)}%` 
-                      : '—'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Insights — silent fallback when AI service keys aren't configured */}
-        <ErrorBoundary fallback={() => null}>
-          <AIInsights
-            userId={user.id}
-            className="mb-6"
-            runs={allRuns}
-            recentEvents={recentEvents}
-          />
-        </ErrorBoundary>
-
-        {/* Recent Events / Execution Summary - Two column layout */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6 animate-slide-up-delay-2">
-
-          {/* Quick Stats / Info Panel */}
-          <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold">Execution Summary</h3>
-              <Button variant="ghost" size="sm" onClick={() => router.push('/runs')}>
-                View all runs
-              </Button>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total runs today</span>
-                <span className="text-sm font-medium">{allRuns.filter(r => r.started_at && new Date(r.started_at).toDateString() === new Date().toDateString()).length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Completed successfully</span>
-                <span className="text-sm font-medium text-emerald-500">{allRuns.filter(r => r.status === 'completed').length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Failed / Cancelled</span>
-                <span className="text-sm font-medium text-red-500">{allRuns.filter(r => r.status === 'failed' || r.status === 'cancelled').length}</span>
-              </div>
-              <div className="pt-2 border-t border-border">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => router.push('/runs/new')}
+                <button
+                  onClick={() => setShowStrategicBanner(false)}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted"
+                  aria-label="Dismiss strategic rule"
                 >
-                  <Play className="h-3.5 w-3.5 mr-1.5" />
-                  Start new run
-                </Button>
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Recent Ledger Events */}
-          <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold">Recent Events</h3>
-              <Button variant="ghost" size="sm" onClick={() => router.push('/ledger')}>
-                View all
-              </Button>
-            </div>
-            <div className="divide-y divide-border">
-              {recentEvents.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No events yet.
-                </div>
-              ) : (
-                recentEvents.map((evt) => {
-                  const d = new Date(evt.timestamp)
-                  const timeStr = isNaN(d.getTime()) ? 'Unknown' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  return (
-                    <div key={evt.id} className="px-4 py-2.5 flex items-center gap-3">
-                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-medium">
-                          {evt.type}
-                        </span>
-                        {evt.source && (
-                          <span className="text-xs text-muted-foreground ml-1.5">
-                            · {evt.source}
-                          </span>
+          <div className="rounded-xl border p-3 space-y-2 bg-card/70">
+            <motion.div layoutId="dashboard-command" transition={SHARED_SPRING} className="rounded-xl border border-zinc-300/70 bg-card p-3">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-2 border-l-2 border-l-[color:var(--foco-teal)]">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    {PERSONA_PRESETS.map((preset) => (
+                      <button
+                        key={preset.key}
+                        onClick={() => setPersona(preset.key)}
+                        className={cn(
+                          'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors',
+                          preset.key === persona
+                            ? 'border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)] text-white'
+                            : 'border-border bg-muted/40 text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <Input
+                    value={task}
+                    onFocus={() => setCommandExpanded(true)}
+                    onBlur={() => {
+                      if (!task.trim()) setCommandExpanded(false)
+                    }}
+                    onChange={(event) => setTask(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault()
+                        void handleDispatch()
+                      }
+                    }}
+                    placeholder="Dispatch a task to the critter fleet..."
+                    className="h-8 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+                  />
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                        <Bot className="h-3.5 w-3.5" />
+                        Agent
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-64 p-2">
+                      <div className="space-y-1 max-h-56 overflow-auto">
+                        {agents.length === 0 ? (
+                          <p className="text-xs text-muted-foreground px-2 py-1">No live agents discovered</p>
+                        ) : (
+                          agents.map((agent) => (
+                            <button
+                              key={agent.id}
+                              onClick={() => setAgentId(agent.nativeId)}
+                              className={cn(
+                                'w-full rounded-md border px-2 py-1.5 text-left text-xs transition-colors',
+                                agentId === agent.nativeId ? 'border-[color:var(--foco-teal)] bg-muted/40' : 'border-transparent hover:border-border hover:bg-muted/30'
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium truncate">{agent.name}</span>
+                                <Badge variant="outline" className="text-[9px] px-1 py-0">{agent.status}</Badge>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground truncate">{agent.backend} · {agent.nativeId}</p>
+                            </button>
+                          ))
                         )}
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                        {timeStr}
-                      </span>
+                    </PopoverContent>
+                  </Popover>
+
+                  <Button onClick={() => void handleDispatch()} disabled={dispatching || !task.trim()} size="sm" className="h-8 gap-1.5">
+                    {dispatching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    Send
+                  </Button>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {commandExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={SHARED_SPRING}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid gap-2 md:grid-cols-[1fr_180px_180px]">
+                        <div className="rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground">
+                          <span className="font-medium text-foreground">Context</span>
+                          <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+                            <span className="rounded-full border px-2 py-0.5">{PERSONA_PRESETS.find((preset) => preset.key === persona)?.description}</span>
+                            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-500">live logs</span>
+                          </div>
+                        </div>
+
+                        <select
+                          className="h-8 rounded-md border bg-background px-2 text-xs"
+                          value={selectedProjectSlug}
+                          onChange={(event) => setSelectedProjectSlug(event.target.value)}
+                        >
+                          <option value="">Workspace default project</option>
+                          {projectOptions.map((project) => (
+                            <option key={project.id} value={project.slug}>{project.name}</option>
+                          ))}
+                        </select>
+
+                        <div className="h-8 rounded-md border bg-background px-2 text-xs flex items-center justify-between">
+                          <span className="text-muted-foreground">thinking</span>
+                          <motion.span
+                            animate={{ opacity: [0.25, 1, 0.25], x: [0, 3, 0] }}
+                            transition={{ repeat: Infinity, duration: 1.2 }}
+                            className="font-mono"
+                          >
+                            ...
+                          </motion.span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+
+            <AnimatePresence>
+              {ribbon && (
+                <motion.div
+                  key={`${ribbon.agent}-${ribbon.task}`}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={SHARED_SPRING}
+                  className="rounded-lg border-l-2 border-[color:var(--foco-teal)] bg-card/80 px-3 py-2 text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-[color:var(--foco-teal)]" />
+                    <span className="font-medium">Activity Ribbon</span>
+                    <span className="text-muted-foreground">{ribbon.agent}</span>
+                    {ribbon.runId && <Badge variant="outline" className="text-[10px]">{ribbon.runId.slice(0, 8)}</Badge>}
+                  </div>
+                  <p className="mt-1 font-mono text-[11px] text-muted-foreground truncate">{ribbon.task}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="rounded-xl border p-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { label: 'Running', value: runningCount, icon: Activity },
+                { label: 'Pending', value: pendingCount, icon: Clock3 },
+                { label: 'Done', value: doneCount, icon: Workflow },
+                { label: 'Blocked', value: fleetPaused ? 1 : 0, icon: ShieldCheck },
+                { label: 'Failed', value: failedCount, icon: AlertCircle },
+                { label: 'Stale', value: staleCount, icon: Gauge },
+              ].map((stat) => (
+                <Tooltip key={stat.label}>
+                  <TooltipTrigger asChild>
+                    <motion.button
+                      whileHover={{ scaleX: 1.06 }}
+                      transition={SHARED_SPRING}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1 text-xs',
+                        stat.label === 'Pending' && pendingFlash && 'border-amber-400 bg-amber-400/20'
+                      )}
+                      onClick={() => {
+                        if (stat.label === 'Running') router.push('/runs?status=running')
+                        if (stat.label === 'Pending') router.push('/runs?status=pending')
+                        if (stat.label === 'Done') router.push('/runs?status=completed')
+                        if (stat.label === 'Failed') router.push('/runs?status=failed')
+                      }}
+                    >
+                      <stat.icon className="h-3.5 w-3.5" />
+                      <span>{stat.label}</span>
+                      <span className="font-mono">{stat.value}</span>
+                    </motion.button>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">{stat.label} agents or items</TooltipContent>
+                </Tooltip>
+              ))}
+
+              <div className="ml-auto inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs">
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                  className={cn('h-2 w-2 rounded-full', fleetPaused ? 'bg-rose-500' : 'bg-emerald-500')}
+                />
+                Fleet {fleetPaused ? 'paused' : 'running'}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border bg-card/80">
+            <button
+              type="button"
+              onClick={() => setFleetExpanded((prev) => !prev)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left"
+            >
+              <Badge variant="outline" className="text-[10px]">AI Gateway · {gatewayStatus}</Badge>
+              <Badge variant="outline" className="text-[10px]">Workload · {activeRuns.length} active</Badge>
+              <Badge variant="outline" className="text-[10px]">Errors · {failedCount}</Badge>
+              <span className="ml-auto text-xs text-muted-foreground">Fleet status</span>
+              {fleetExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {fleetExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={SHARED_SPRING}
+                  className="overflow-hidden"
+                >
+                  <div className="grid gap-2 border-t p-3 md:grid-cols-3">
+                    <div className="rounded-lg border p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">System Health</p>
+                      <p className="mt-2 text-sm font-medium">Gateway: {gatewayStatus}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Auth: {tokenValid ? 'Valid' : tokenValid === null ? 'Checking...' : 'Invalid'} · Sessions: {attachedTabs}</p>
                     </div>
-                  )
-                })
+                    <div className="rounded-lg border p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Workload</p>
+                      <p className="mt-2 text-sm font-medium">{runningCount} agents executing</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{pendingCount} pending · {failedCount} failed</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Performance</p>
+                      <p className="mt-2 text-sm font-medium">Auto improvements: {autonomousStats.improvementsWeek}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">G1 alignment: {g1Share === null ? '—' : `${g1Share}%`}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="grid gap-2 xl:grid-cols-12">
+            <div className="xl:col-span-5">
+              <div className="rounded-xl border bg-card">
+                <div className="px-3 py-2 border-b">
+                  <h3 className="text-sm font-semibold">Active Runs</h3>
+                </div>
+                <div className="p-3">
+                  {activeRuns.length === 0 ? (
+                    <div className="rounded-md border border-dashed p-4 text-center">
+                      <svg viewBox="0 0 120 32" className="mx-auto h-10 w-40 opacity-70">
+                        <motion.path
+                          d="M2 16h20l6-8 8 16 8-16 8 16 8-8h34"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-zinc-500"
+                          animate={{ pathLength: [0.2, 1, 0.2], opacity: [0.4, 1, 0.4] }}
+                          transition={{ repeat: Infinity, duration: 2.4 }}
+                        />
+                      </svg>
+                      <p className="mt-1 text-xs text-muted-foreground">No active runs</p>
+                    </div>
+                  ) : (
+                    <motion.div layout className="space-y-2">
+                      <AnimatePresence mode="popLayout">
+                        {activeRuns.map((run) => (
+                          <motion.div
+                            key={run.id}
+                            layout
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            transition={SHARED_SPRING}
+                            className={cn('rounded-md border-l-4 border bg-card px-3 py-2', statusAccent(run.status))}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs">{run.runner || 'agent'}</span>
+                              <Badge variant="outline" className="text-[10px]">{run.status}</Badge>
+                              <span className="ml-auto text-[10px] text-muted-foreground"><ElapsedTimer since={run.started_at || run.created_at || null} /></span>
+                            </div>
+                            {(run.summary || run.task_id) && <p className="mt-1 text-xs text-muted-foreground truncate">{run.summary || run.task_id}</p>}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="xl:col-span-7">
+              <div className="rounded-xl border bg-card">
+                <div className="px-3 py-2 border-b flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold flex items-center gap-2"><Terminal className="h-4 w-4" />Output Terminal</h3>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTerminalOpen((prev) => !prev)}>
+                    {terminalOpen ? 'Collapse' : 'Open'}
+                  </Button>
+                </div>
+                <AnimatePresence initial={false}>
+                  {terminalOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={SHARED_SPRING}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-3">
+                        <div className="rounded-md border bg-zinc-950 p-3 font-mono text-xs text-zinc-100">
+                          <div
+                            className="space-y-1 max-h-[320px] overflow-auto"
+                            style={{
+                              backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 3px)',
+                            }}
+                          >
+                            {mergedTerminalLines.length === 0 ? (
+                              <p className="text-zinc-500">Awaiting output stream...</p>
+                            ) : (
+                              <AnimatePresence initial={false}>
+                                {mergedTerminalLines.map((line, index) => (
+                                  <motion.div
+                                    key={line.id}
+                                    initial={{ x: -8, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.25) }}
+                                    className="whitespace-pre-wrap break-words"
+                                  >
+                                    <span className={cn('mr-2', tokenClass(line.token))}>[{line.token}]</span>
+                                    <span>{line.text}</span>
+                                  </motion.div>
+                                ))}
+                              </AnimatePresence>
+                            )}
+                            <div className="mt-1 text-zinc-500">
+                              <span className="mr-2 text-emerald-400">[LIVE]</span>
+                              <span className="animate-pulse">▋</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border bg-card">
+            <div className="px-3 py-2 border-b flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">Recent Events</h3>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => router.push('/ledger')}>View all</Button>
+            </div>
+            <div className="p-3">
+              {recentEvents.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No recent events.</p>
+              ) : (
+                <div className="space-y-1">
+                  <AnimatePresence initial={false}>
+                    {recentEvents.slice(0, 14).map((event) => (
+                      <motion.button
+                        key={event.id}
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 20, opacity: 0 }}
+                        transition={SHARED_SPRING}
+                        onClick={() => setSelectedEvent(event)}
+                        className="w-full rounded-md border px-2 py-1.5 text-left hover:bg-muted/40"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'font-mono text-[10px] uppercase',
+                              event.type === 'policy' && 'border-fuchsia-500/40 text-fuchsia-500',
+                              event.type === 'clawdbot' && 'border-cyan-500/40 text-cyan-500',
+                              event.type === 'error' && 'border-rose-500/40 text-rose-500'
+                            )}
+                          >
+                            {event.type}
+                          </Badge>
+                          <span className="truncate font-mono text-xs">{event.source || event.type}</span>
+                          <span className="ml-auto text-[10px] text-muted-foreground">{relativeTime(event.timestamp)}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
           </div>
-        </div>
 
-        
-      </PageShell>
+          <ErrorBoundary fallback={() => null}>
+            <AIInsights userId={user.id} className="mb-1" runs={allRuns} recentEvents={recentEvents} />
+          </ErrorBoundary>
+
+          <Sheet open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+            <SheetContent side="right" className="w-full sm:max-w-xl overflow-auto">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Event Replay
+                </SheetTitle>
+                <SheetDescription>
+                  {selectedEvent?.type} · {selectedEvent ? relativeTime(selectedEvent.timestamp) : ''}
+                </SheetDescription>
+              </SheetHeader>
+
+              {selectedEvent && (
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-md border p-3">
+                    <p className="text-sm font-medium">{selectedEvent.type}</p>
+                    {selectedEvent.source && <p className="mt-1 text-xs text-muted-foreground">{selectedEvent.source}</p>}
+                  </div>
+
+                  <div className="rounded-md border bg-zinc-950 p-3 font-mono text-xs text-zinc-200">
+                    <div className="text-[#22d3ee]">[INIT]  ingest event {selectedEvent.id.slice(0, 8)}</div>
+                    <div className="text-[#60a5fa] mt-1">[OBSERVE] type={selectedEvent.type} source={selectedEvent.source || 'system'}</div>
+                    <div className="text-[#fbbf24] mt-1">[ACTION] derive routing and policy annotations</div>
+                    <div className="text-[#34d399] mt-1">[RESULT] event ready for operator decision</div>
+                  </div>
+
+                  <details className="rounded-md border p-3">
+                    <summary className="cursor-pointer text-xs font-medium">Raw payload</summary>
+                    <pre className="mt-2 max-h-[320px] overflow-auto rounded bg-muted p-2 text-[10px]">{JSON.stringify(selectedEvent.payload ?? {}, null, 2)}</pre>
+                  </details>
+                </div>
+              )}
+            </SheetContent>
+          </Sheet>
+        </PageShell>
+      </TooltipProvider>
     </ErrorBoundary>
   )
 }

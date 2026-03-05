@@ -7,6 +7,7 @@ import {
 } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
+import { getSourcePlatform } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,15 +42,14 @@ export async function GET(req: NextRequest) {
 
     const { data: sources, error: sourceError } = await supabaseAdmin
       .from('content_sources')
-      .select('id, name, platform, url')
+      .select('*')
       .in('project_id', projectIds)
-      .not('platform', 'is', null)
 
     if (sourceError) {
       return mergeAuthResponse(databaseErrorResponse('Failed to fetch social sources', sourceError), authResponse)
     }
 
-    const safeSources = sources ?? []
+    const safeSources = (sources ?? []).filter((source: any) => Boolean(getSourcePlatform(source)))
     const sourceIds = safeSources.map((source: any) => source.id)
 
     if (sourceIds.length === 0) {
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     for (const source of safeSources) {
       sourceById.set(source.id as string, {
         name: source.name ?? null,
-        platform: source.platform ?? null,
+        platform: getSourcePlatform(source),
         url: source.url ?? null,
       })
     }

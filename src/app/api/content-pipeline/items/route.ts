@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { resolveWorkspaceScope, scopeProjectIds, hasProjectAccess } from '@/features/content-pipeline/server/workspace-scope'
+import { getSourceHeaders, getSourcePlatform } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
 
     const { data: scopedSources, error: sourcesError } = await supabaseAdmin
       .from('content_sources')
-      .select('id, project_id, name, type, platform, url')
+      .select('*')
       .in('project_id', scopedProjectIds)
 
     if (sourcesError) {
@@ -113,7 +114,16 @@ export async function GET(req: NextRequest) {
 
     const enrichedItems = (items ?? []).map((item: any) => ({
       ...item,
-      content_sources: sourceById.get(item.source_id) ?? null,
+      content_sources: sourceById.has(item.source_id)
+        ? (() => {
+            const source = sourceById.get(item.source_id);
+            return {
+              ...source,
+              headers: getSourceHeaders(source),
+              platform: getSourcePlatform(source),
+            };
+          })()
+        : null,
     }))
 
     const meta = createPaginationMeta(count || 0, limit, offset)

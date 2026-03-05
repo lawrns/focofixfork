@@ -11,6 +11,7 @@ import {
 import { supabaseAdmin } from '@/lib/supabase-server'
 import type { ContentSource } from '@/features/content-pipeline/types'
 import { hasProjectAccess, resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
+import { getSourceHeaders, getSourcePlatform, getSourceProviderConfig, getSourceWebhookSecret, mergeSourceHeaders } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,7 +57,13 @@ export async function GET(req: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse('Failed to fetch content sources', sourcesError), authResponse)
     }
 
-    return mergeAuthResponse(successResponse(sources || []), authResponse)
+    return mergeAuthResponse(successResponse((sources || []).map((source: any) => ({
+      ...source,
+      headers: getSourceHeaders(source),
+      platform: getSourcePlatform(source),
+      provider_config: getSourceProviderConfig(source),
+      webhook_secret: getSourceWebhookSecret(source),
+    }))), authResponse)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to fetch content sources', message)
@@ -122,9 +129,11 @@ export async function POST(req: NextRequest) {
         url: body.url || 'https://api.apify.com',
         type: body.type,
         poll_interval_minutes: body.poll_interval_minutes || 60,
-        headers: body.headers || {},
-        provider_config: body.provider_config || {},
-        webhook_secret: body.webhook_secret || null,
+        headers: mergeSourceHeaders(body.headers || {}, {
+          platform: typeof body.platform === 'string' ? body.platform : null,
+          providerConfig: body.provider_config || null,
+          webhookSecret: typeof body.webhook_secret === 'string' ? body.webhook_secret : null,
+        }),
         status: body.status || 'active',
       })
       .select()
@@ -134,7 +143,13 @@ export async function POST(req: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse('Failed to create content source', createError), authResponse)
     }
 
-    return mergeAuthResponse(successResponse(source, undefined, 201), authResponse)
+    return mergeAuthResponse(successResponse({
+      ...source,
+      headers: getSourceHeaders(source),
+      platform: getSourcePlatform(source),
+      provider_config: getSourceProviderConfig(source),
+      webhook_secret: getSourceWebhookSecret(source),
+    }, undefined, 201), authResponse)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to create content source', message)
@@ -175,7 +190,7 @@ export async function PUT(req: NextRequest) {
 
     const { data: existingSource, error: sourceError } = await supabaseAdmin
       .from('content_sources')
-      .select('id, project_id')
+      .select('*')
       .eq('id', body.id)
       .in('project_id', projectIds)
       .maybeSingle()
@@ -196,9 +211,14 @@ export async function PUT(req: NextRequest) {
     if (body.url !== undefined) updateData.url = body.url
     if (body.type !== undefined) updateData.type = body.type
     if (body.poll_interval_minutes !== undefined) updateData.poll_interval_minutes = body.poll_interval_minutes
-    if (body.headers !== undefined) updateData.headers = body.headers
-    if (body.provider_config !== undefined) (updateData as any).provider_config = body.provider_config
-    if (body.webhook_secret !== undefined) (updateData as any).webhook_secret = body.webhook_secret
+    const existingHeaders = existingSource && 'headers' in existingSource ? (existingSource as any).headers : undefined
+    if (body.headers !== undefined || body.provider_config !== undefined || body.webhook_secret !== undefined || body.platform !== undefined) {
+      updateData.headers = mergeSourceHeaders(body.headers !== undefined ? body.headers : existingHeaders, {
+        platform: body.platform !== undefined ? (typeof body.platform === 'string' ? body.platform : null) : getSourcePlatform({ headers: existingHeaders }),
+        providerConfig: body.provider_config !== undefined ? body.provider_config : getSourceProviderConfig({ headers: existingHeaders }),
+        webhookSecret: body.webhook_secret !== undefined ? body.webhook_secret : getSourceWebhookSecret({ headers: existingHeaders }),
+      }) as Record<string, string>
+    }
     if (body.status !== undefined) updateData.status = body.status
     if (body.last_error !== undefined) updateData.last_error = body.last_error
     if (body.error_count !== undefined) updateData.error_count = body.error_count
@@ -214,7 +234,13 @@ export async function PUT(req: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse('Failed to update content source', updateError), authResponse)
     }
 
-    return mergeAuthResponse(successResponse(source), authResponse)
+    return mergeAuthResponse(successResponse({
+      ...source,
+      headers: getSourceHeaders(source),
+      platform: getSourcePlatform(source),
+      provider_config: getSourceProviderConfig(source),
+      webhook_secret: getSourceWebhookSecret(source),
+    }), authResponse)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to update content source', message)

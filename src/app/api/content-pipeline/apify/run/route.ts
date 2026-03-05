@@ -11,6 +11,7 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { getDatasetItems, mapApifyItemsToRawContent, startApifyRun } from '@/features/content-pipeline/services/apify-client'
 import { SourcePoller } from '@/features/content-pipeline/services/source-poller'
 import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
+import { getSourceProviderConfig } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const run = await startApifyRun(source.provider_config || {}, {
+    const run = await startApifyRun(getSourceProviderConfig(source), {
       waitForFinishSeconds: waitForFinish ? 120 : 0,
     })
 

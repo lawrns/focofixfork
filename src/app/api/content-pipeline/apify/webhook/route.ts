@@ -4,6 +4,7 @@ import { badRequestResponse, successResponse } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { getDatasetItems, mapApifyItemsToRawContent } from '@/features/content-pipeline/services/apify-client'
 import { SourcePoller } from '@/features/content-pipeline/services/source-poller'
+import { getSourceWebhookSecret } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
     return successResponse({ ignored: true, reason: 'source_not_found' })
   }
 
-  if (source.webhook_secret && !verifyWebhookSecret(req, source.webhook_secret)) {
+  const webhookSecret = getSourceWebhookSecret(source)
+  if (webhookSecret && !verifyWebhookSecret(req, webhookSecret)) {
     return badRequestResponse('Invalid webhook secret')
   }
 
@@ -83,4 +85,3 @@ export async function POST(req: NextRequest) {
 
   return successResponse({ acknowledged: true, ingested: ingest })
 }
-

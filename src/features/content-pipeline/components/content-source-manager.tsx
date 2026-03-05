@@ -23,6 +23,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { normalizeApiError } from '@/lib/utils/normalize-api-error';
 import type { ContentSource, ContentSourceType } from '../types';
 import { ContentSourceCard } from './content-source-card';
 
@@ -57,6 +58,7 @@ export function ContentSourceManager({
   const [type, setType] = useState<ContentSourceType>('rss');
   const [pollInterval, setPollInterval] = useState(60);
   const [headersText, setHeadersText] = useState('{}');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const resetForm = useCallback(() => {
     setName('');
@@ -64,6 +66,7 @@ export function ContentSourceManager({
     setType('rss');
     setPollInterval(60);
     setHeadersText('{}');
+    setFormError(null);
     setEditingSource(null);
   }, []);
 
@@ -90,6 +93,7 @@ export function ContentSourceManager({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
 
     try {
       // Parse headers
@@ -97,7 +101,7 @@ export function ContentSourceManager({
       try {
         headers = JSON.parse(headersText);
       } catch {
-        alert('Invalid JSON in headers field');
+        setFormError('Invalid JSON in headers field');
         setIsSubmitting(false);
         return;
       }
@@ -120,8 +124,8 @@ export function ContentSourceManager({
         });
 
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error?.message || 'Failed to update source');
+          const error = await res.json().catch(() => ({}));
+          throw new Error(normalizeApiError(error, 'Failed to update source'));
         }
       } else {
         // Create new
@@ -132,8 +136,8 @@ export function ContentSourceManager({
         });
 
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error?.message || 'Failed to create source');
+          const error = await res.json().catch(() => ({}));
+          throw new Error(normalizeApiError(error, 'Failed to create source'));
         }
       }
 
@@ -141,7 +145,7 @@ export function ContentSourceManager({
       onSourcesChange();
     } catch (error) {
       console.error('Error saving source:', error);
-      alert(error instanceof Error ? error.message : 'Failed to save source');
+      setFormError(normalizeApiError(error, 'Failed to save source'));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,12 +160,14 @@ export function ContentSourceManager({
       });
 
       if (!res.ok) {
-        throw new Error('Failed to update source status');
+        const error = await res.json().catch(() => ({}));
+        throw new Error(normalizeApiError(error, 'Failed to update source status'));
       }
 
       onSourcesChange();
     } catch (error) {
       console.error('Error toggling status:', error);
+      alert(normalizeApiError(error, 'Failed to update source status'));
     }
   };
 
@@ -176,12 +182,14 @@ export function ContentSourceManager({
       });
 
       if (!res.ok) {
-        throw new Error('Failed to delete source');
+        const error = await res.json().catch(() => ({}));
+        throw new Error(normalizeApiError(error, 'Failed to delete source'));
       }
 
       onSourcesChange();
     } catch (error) {
       console.error('Error deleting source:', error);
+      alert(normalizeApiError(error, 'Failed to delete source'));
     }
   };
 
@@ -199,7 +207,8 @@ export function ContentSourceManager({
           });
 
       if (!res.ok) {
-        throw new Error('Failed to poll source');
+        const error = await res.json().catch(() => ({}));
+        throw new Error(normalizeApiError(error, 'Failed to poll source'));
       }
 
       const data = await res.json();
@@ -207,7 +216,7 @@ export function ContentSourceManager({
       onSourcesChange();
     } catch (error) {
       console.error('Error polling source:', error);
-      alert('Failed to poll source');
+      alert(normalizeApiError(error, 'Failed to poll source'));
     }
   };
 
@@ -247,7 +256,16 @@ export function ContentSourceManager({
         </ScrollArea>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            setIsDialogOpen(true);
+            return;
+          }
+          handleCloseDialog();
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
@@ -326,6 +344,10 @@ export function ContentSourceManager({
                 How often to check for new content
               </p>
             </div>
+
+            {formError && (
+              <p className="text-sm text-destructive">{formError}</p>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>

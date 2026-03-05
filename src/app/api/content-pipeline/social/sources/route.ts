@@ -15,6 +15,7 @@ import {
   resolveWorkspaceScope,
   scopeProjectIds,
 } from '@/features/content-pipeline/server/workspace-scope';
+import { getSourcePlatform, mergeSourceHeaders } from '@/features/content-pipeline/server/source-record';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,18 +44,20 @@ export async function GET(req: NextRequest) {
       .from('content_sources')
       .select('*, content_items(count)')
       .in('project_id', projectIds)
-      .not('platform', 'is', null)
       .order('created_at', { ascending: false });
 
     if (dbError) {
       return databaseErrorResponse('Failed to fetch social sources', dbError);
     }
 
-    const result = (sources || []).map((source: any) => ({
-      ...source,
-      item_count: source.content_items?.[0]?.count ?? 0,
-      content_items: undefined,
-    }));
+    const result = (sources || [])
+      .filter((source: any) => Boolean(getSourcePlatform(source)))
+      .map((source: any) => ({
+        ...source,
+        platform: getSourcePlatform(source),
+        item_count: source.content_items?.[0]?.count ?? 0,
+        content_items: undefined,
+      }));
 
     return mergeAuthResponse(successResponse(result), authResponse);
   } catch (err: unknown) {
@@ -125,10 +128,11 @@ export async function POST(req: NextRequest) {
         name: sourceName,
         url: sourceUrl,
         type: 'apify',
-        platform,
         poll_interval_minutes: poll_interval_minutes || 120,
-        headers: {},
-        provider_config: apifyConfig,
+        headers: mergeSourceHeaders({}, {
+          platform,
+          providerConfig: apifyConfig as unknown as Record<string, unknown>,
+        }),
         status: 'active',
       })
       .select()

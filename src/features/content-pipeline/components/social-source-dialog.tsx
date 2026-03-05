@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { platformMeta, type SocialPlatform } from '../services/social-config';
+import { normalizeApiError } from '@/lib/utils/normalize-api-error';
 
 interface SocialSourceDialogProps {
   open: boolean;
@@ -46,6 +47,21 @@ export function SocialSourceDialog({ open, onOpenChange, projectId, onCreated }:
 
   const meta = platformMeta[platform];
 
+  const resetForm = () => {
+    setPlatform('twitter');
+    setHandle('');
+    setName('');
+    setPollInterval(120);
+    setError(null);
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetForm();
+    }
+    onOpenChange(nextOpen);
+  };
+
   const handleSubmit = async () => {
     if (!handle.trim()) {
       setError('Handle is required');
@@ -68,29 +84,26 @@ export function SocialSourceDialog({ open, onOpenChange, projectId, onCreated }:
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error || 'Failed to add channel');
+        setError(normalizeApiError((data as { error?: unknown }).error ?? data, 'Failed to add channel'));
         return;
       }
 
       // Reset and close
-      setPlatform('twitter');
-      setHandle('');
-      setName('');
-      setPollInterval(120);
+      resetForm();
       onOpenChange(false);
       onCreated();
-    } catch {
-      setError('Network error');
+    } catch (err) {
+      setError(normalizeApiError(err, 'Network error'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add Social Channel</DialogTitle>
@@ -161,7 +174,7 @@ export function SocialSourceDialog({ open, onOpenChange, projectId, onCreated }:
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>

@@ -7,6 +7,7 @@ import type { ContentSource, RawContentItem, PollResult } from '../types';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 import { getDatasetItems, mapApifyItemsToRawContent, startApifyRun } from './apify-client';
+import { getSourceHeaders, getSourceProviderConfig } from '@/features/content-pipeline/server/source-record';
 
 // Simple XML parser for RSS feeds
 // Uses regex-based parsing for lightweight operation without external deps
@@ -119,8 +120,7 @@ export class SourcePoller {
    * Poll an Apify actor and map resulting dataset items.
    */
   private static async pollApify(source: ContentSource): Promise<RawContentItem[]> {
-    const config = (source.provider_config || {}) as Record<string, unknown>;
-    const run = await startApifyRun(config, { waitForFinishSeconds: 120 });
+    const run = await startApifyRun(getSourceProviderConfig(source), { waitForFinishSeconds: 120 });
 
     if (!supabaseAdmin) {
       throw new Error('supabaseAdmin is not available');
@@ -152,7 +152,7 @@ export class SourcePoller {
     const response = await fetch(source.url, {
       headers: {
         'User-Agent': 'FocoContentBot/1.0',
-        ...source.headers,
+        ...getSourceHeaders(source),
       },
     });
 
@@ -181,7 +181,7 @@ export class SourcePoller {
     const response = await fetch(source.url, {
       headers: {
         'Accept': 'application/json',
-        ...source.headers,
+        ...getSourceHeaders(source),
       },
     });
 

@@ -173,7 +173,7 @@ function NewTaskForm() {
         subtitle="Add a new task to your workspace"
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+      <form onSubmit={handleSubmit} className="space-y-6 w-full">
         <div className="space-y-2">
           <Label htmlFor="title">Title *</Label>
           <Input

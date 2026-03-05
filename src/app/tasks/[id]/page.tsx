@@ -248,7 +248,7 @@ export default function WorkItemPage() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       <div className="flex-1 overflow-y-auto">
-        <div className={cn("mx-auto p-6", isMobile ? "pb-24" : "max-w-3xl")}>
+        <div className={cn("p-6 w-full", isMobile ? "pb-24" : "")}>
           <TaskHeader
             workItem={workItem}
             isMobile={isMobile}

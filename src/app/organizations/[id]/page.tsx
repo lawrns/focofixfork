@@ -205,7 +205,7 @@ export default function WorkspaceDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="w-full space-y-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-64"></div>
             <div className="h-32 bg-muted rounded"></div>
@@ -238,7 +238,7 @@ export default function WorkspaceDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="w-full p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">

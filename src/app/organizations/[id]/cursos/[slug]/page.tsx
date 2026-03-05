@@ -198,7 +198,7 @@ function CoursePlayerContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -210,7 +210,7 @@ function CoursePlayerContent() {
   if (error || !course) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <Alert variant="destructive" className="max-w-md mx-auto mt-8">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error || 'Curso no encontrado'}</AlertDescription>

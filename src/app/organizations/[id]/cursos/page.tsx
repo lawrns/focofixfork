@@ -144,7 +144,7 @@ function CursosContent() {
   if (isCheckingAccess) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="w-full">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -156,7 +156,7 @@ function CursosContent() {
   if (accessError) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="w-full">
           <Alert variant="destructive" className="max-w-md mx-auto mt-8">
             <Lock className="h-4 w-4" />
             <AlertDescription>{accessError}</AlertDescription>
@@ -169,7 +169,7 @@ function CursosContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="w-full">
           <PageLoadingSkeleton />
         </div>
       </div>
@@ -178,7 +178,7 @@ function CursosContent() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="w-full space-y-8">
         {/* Header */}
         <motion.div
           initial={false}

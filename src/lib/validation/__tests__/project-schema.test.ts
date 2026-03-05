@@ -12,8 +12,11 @@ describe('Project Validation Schemas', () => {
     description: 'A test project description',
     status: 'active' as const,
     priority: 'medium' as const,
-    organization_id: '550e8400-e29b-41d4-a716-446655440001',
-    created_by: '550e8400-e29b-41d4-a716-446655440002',
+    workspace_id: '550e8400-e29b-41d4-a716-446655440001',
+    start_date: null,
+    due_date: null,
+    progress_percentage: 50,
+    owner_id: '550e8400-e29b-41d4-a716-446655440002',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -23,7 +26,7 @@ describe('Project Validation Schemas', () => {
       const createData = {
         name: 'New Project',
         description: 'Project description',
-        organization_id: '550e8400-e29b-41d4-a716-446655440001',
+        workspace_id: '550e8400-e29b-41d4-a716-446655440001',
       }
       const result = validateCreateProject(createData)
       expect(result.success).toBe(true)
@@ -75,4 +78,3 @@ describe('Project Validation Schemas', () => {
     })
   })
 })
-

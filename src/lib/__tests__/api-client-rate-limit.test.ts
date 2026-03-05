@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { apiClient } from '../api-client'
+import { apiCache } from '../api-cache'
 
 describe('API Client Rate Limit Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    apiCache.clear()
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    apiCache.clear()
   })
 
   describe('429 Rate Limit Response Handling', () => {
@@ -307,7 +310,7 @@ describe('API Client Rate Limit Handling', () => {
         } as Response)
       })
 
-      const response = await apiClient.get('/api/test', { cache: true })
+      const response = await apiClient.get('/api/test', { cache: true, retries: 0 })
 
       // Should not be successful, so cache should not be set
       expect(response.success).toBe(false)

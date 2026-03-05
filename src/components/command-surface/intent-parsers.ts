@@ -58,6 +58,9 @@ export function parseEmailIntent(prompt: string): { to: string[]; subject: strin
 }
 
 export function parseTaskIntent(prompt: string): { title: string; description: string; priority: 'urgent' | 'high' | 'medium' | 'low'; type: string } | null {
+  const isTaskLikePrompt = /\b(create|add|new|fix|implement|build|solve|debug|refactor|resolve)\b/i.test(prompt)
+  if (!isTaskLikePrompt) return null
+
   let title = prompt;
   let description = '';
   let priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium';

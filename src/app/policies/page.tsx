@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PauseCircle, PlayCircle, Plus, Shield, Trash2 } from 'lucide-react'
+import { PauseCircle, PlayCircle, Plus, Shield, Trash2, Pencil, Power } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -68,7 +68,16 @@ export default function PoliciesPage() {
   const [policiesLoading, setPoliciesLoading] = useState(true)
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [savingPolicyId, setSavingPolicyId] = useState<string | null>(null)
+  const [editingPolicy, setEditingPolicy] = useState<FleetPolicy | null>(null)
+  const [deletingPolicy, setDeletingPolicy] = useState<FleetPolicy | null>(null)
   const [newPolicy, setNewPolicy] = useState({
+    name: '',
+    scope: 'global',
+    trigger_condition: '',
+    action: '',
+  })
+  const [editPolicy, setEditPolicy] = useState({
     name: '',
     scope: 'global',
     trigger_condition: '',
@@ -148,6 +157,75 @@ export default function PoliciesPage() {
       }
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function togglePolicy(policy: FleetPolicy) {
+    setSavingPolicyId(policy.id)
+    try {
+      const res = await fetch(`/api/policies/${policy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ enabled: !policy.enabled }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to update policy')
+        return
+      }
+      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? data.data : p)))
+      toast.success(`Policy ${data.data.enabled ? 'enabled' : 'disabled'}`)
+    } finally {
+      setSavingPolicyId(null)
+    }
+  }
+
+  async function handleUpdatePolicy() {
+    if (!editingPolicy) return
+    if (!editPolicy.name || !editPolicy.trigger_condition || !editPolicy.action) {
+      toast.error('Name, trigger condition, and action are required')
+      return
+    }
+    setSavingPolicyId(editingPolicy.id)
+    try {
+      const res = await fetch(`/api/policies/${editingPolicy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(editPolicy),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to update policy')
+        return
+      }
+      setPolicies((prev) => prev.map((p) => (p.id === editingPolicy.id ? data.data : p)))
+      setEditingPolicy(null)
+      toast.success('Policy updated')
+    } finally {
+      setSavingPolicyId(null)
+    }
+  }
+
+  async function handleDeletePolicy() {
+    if (!deletingPolicy) return
+    setSavingPolicyId(deletingPolicy.id)
+    try {
+      const res = await fetch(`/api/policies/${deletingPolicy.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to delete policy')
+        return
+      }
+      setPolicies((prev) => prev.filter((p) => p.id !== deletingPolicy.id))
+      setDeletingPolicy(null)
+      toast.success('Policy deleted')
+    } finally {
+      setSavingPolicyId(null)
     }
   }
 
@@ -233,6 +311,46 @@ export default function PoliciesPage() {
                       Created {new Date(policy.created_at).toLocaleDateString()}
                     </p>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      title={policy.enabled ? 'Disable policy' : 'Enable policy'}
+                      disabled={savingPolicyId === policy.id}
+                      onClick={() => togglePolicy(policy)}
+                    >
+                      <Power className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      title="Edit policy"
+                      disabled={savingPolicyId === policy.id}
+                      onClick={() => {
+                        setEditingPolicy(policy)
+                        setEditPolicy({
+                          name: policy.name,
+                          scope: policy.scope,
+                          trigger_condition: policy.trigger_condition,
+                          action: policy.action,
+                        })
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-red-600 hover:text-red-700"
+                      title="Delete policy"
+                      disabled={savingPolicyId === policy.id}
+                      onClick={() => setDeletingPolicy(policy)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -312,6 +430,97 @@ export default function PoliciesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editingPolicy} onOpenChange={(open) => !open && setEditingPolicy(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Fleet Policy</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="policy-edit-name">Name</Label>
+              <Input
+                id="policy-edit-name"
+                value={editPolicy.name}
+                onChange={e => setEditPolicy(p => ({ ...p, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Scope</Label>
+              <Select
+                value={editPolicy.scope}
+                onValueChange={v => setEditPolicy(p => ({ ...p, scope: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="global">Global (all projects)</SelectItem>
+                  <SelectItem value="project">Project-specific</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Trigger Condition</Label>
+              <Select
+                value={editPolicy.trigger_condition}
+                onValueChange={v => setEditPolicy(p => ({ ...p, trigger_condition: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIGGER_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Action</Label>
+              <Select
+                value={editPolicy.action}
+                onValueChange={v => setEditPolicy(p => ({ ...p, action: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTION_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPolicy(null)}>Cancel</Button>
+            <Button onClick={handleUpdatePolicy} disabled={savingPolicyId === editingPolicy?.id}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deletingPolicy} onOpenChange={(open) => !open && setDeletingPolicy(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete policy?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove policy &quot;{deletingPolicy?.name ?? ''}&quot;.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeletePolicy}
+            >
+              Delete Policy
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Pause Fleet Confirmation Dialog */}
       <AlertDialog open={confirmPauseOpen} onOpenChange={setConfirmPauseOpen}>

@@ -211,7 +211,9 @@ export default function RunDetailPage() {
         {auditEvents.length === 0 ? (
           <UnifiedCard>
             <p className="text-sm text-muted-foreground">
-              No policy or governance events were recorded for this run.
+              {run.runner === 'command-surface'
+                ? 'No policy events were recorded. Command-surface executions currently do not enforce autonomy policy checks unless they route through the autonomy endpoints.'
+                : 'No policy or governance events were recorded for this run.'}
             </p>
           </UnifiedCard>
         ) : (

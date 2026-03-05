@@ -62,16 +62,16 @@ describe('MobileMenu', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: /close menu/i })).not.toBeInTheDocument())
   })
 
-  it('renders updated strategy-first labels', async () => {
+  it('renders current navigation labels', async () => {
     render(<MobileMenu />)
     fireEvent.click(screen.getByRole('button', { name: /open menu/i }))
 
     await waitFor(() => {
-      expect(screen.getByText('Revenue Dashboard')).toBeInTheDocument()
-      expect(screen.getByText('Execution Board')).toBeInTheDocument()
-      expect(screen.getByText('Command Surface')).toBeInTheDocument()
-      expect(screen.getByText('Revenue Initiatives')).toBeInTheDocument()
-      expect(screen.getByText('Guardrails')).toBeInTheDocument()
+      expect(screen.getByText('Dashboard')).toBeInTheDocument()
+      expect(screen.getByText('My Tasks')).toBeInTheDocument()
+      expect(screen.getByText('Command Center')).toBeInTheDocument()
+      expect(screen.getAllByText('Projects').length).toBeGreaterThan(0)
+      expect(screen.getByText('Policies')).toBeInTheDocument()
     })
   })
 
@@ -80,11 +80,11 @@ describe('MobileMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: /open menu/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /revenue dashboard/i })).toHaveAttribute('href', '/dashboard')
-      expect(screen.getByRole('link', { name: /execution board/i })).toHaveAttribute('href', '/my-work')
-      expect(screen.getByRole('link', { name: /command surface/i })).toHaveAttribute('href', '/empire/command')
-      expect(screen.getByRole('link', { name: /revenue initiatives/i })).toHaveAttribute('href', '/empire/missions')
-      expect(screen.getByRole('link', { name: /guardrails/i })).toHaveAttribute('href', '/policies')
+      expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')
+      expect(screen.getByRole('link', { name: /my tasks/i })).toHaveAttribute('href', '/my-work')
+      expect(screen.getByRole('link', { name: /command center/i })).toHaveAttribute('href', '/empire/command')
+      expect(screen.getByRole('link', { name: /^projects$/i })).toHaveAttribute('href', '/empire/missions')
+      expect(screen.getByRole('link', { name: /policies/i })).toHaveAttribute('href', '/policies')
     })
   })
 

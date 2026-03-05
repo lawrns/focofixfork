@@ -1,18 +1,26 @@
 /**
  * GET /api/cron/sync-git-projects
  *
- * Periodically scans PROJECTS_BASE_DIR for git repos and upserts them
+ * Periodically scans one or more directories for git repos and upserts them
  * into foco_projects. Designed to be called by:
  *   - systemd timer  (recommended — add to empire-stack or as standalone)
  *   - external cron (curl http://localhost:4000/api/cron/sync-git-projects)
  *   - next.config.js cron routes (Vercel)
  *
  * Authorization: Bearer $CRON_SECRET  (skipped if CRON_SECRET is unset)
+ *
+ * Env vars:
+ *   PROJECTS_BASE_DIRS  comma-separated list of directories to scan (preferred)
+ *   PROJECTS_BASE_DIR   single directory fallback (legacy)
+ *   Default: /home/laurence
+ *
+ * ~/.openclaw/workspace is always appended if it exists on disk.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as os from 'os'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +52,26 @@ function readGitBranch(repoPath: string): string | null {
   }
 }
 
+function getScanDirs(): string[] {
+  const home = os.homedir()
+
+  // Build list from env vars
+  const fromEnv = process.env.PROJECTS_BASE_DIRS
+    ? process.env.PROJECTS_BASE_DIRS.split(',').map(d => d.trim()).filter(Boolean)
+    : process.env.PROJECTS_BASE_DIR
+    ? [process.env.PROJECTS_BASE_DIR.trim()]
+    : [home]
+
+  // Always include ~/.openclaw/workspace if it exists
+  const openclawWorkspace = path.join(home, '.openclaw', 'workspace')
+  const dirs = new Set(fromEnv)
+  if (fs.existsSync(openclawWorkspace)) {
+    dirs.add(openclawWorkspace)
+  }
+
+  return Array.from(dirs)
+}
+
 async function runSync() {
   if (!supabaseAdmin) throw new Error('supabaseAdmin not available — SUPABASE_SERVICE_ROLE_KEY missing')
 
@@ -57,7 +85,7 @@ async function runSync() {
 
   if (!workspace) throw new Error('No workspace found')
 
-  // Get the workspace owner from members table (foco_workspaces has no owner_id column)
+  // Get the workspace owner from members table
   const { data: ownerMember } = await supabaseAdmin
     .from('foco_workspace_members')
     .select('user_id')
@@ -67,50 +95,60 @@ async function runSync() {
 
   const ownerId = ownerMember?.user_id ?? null
 
-  const baseDir = process.env.PROJECTS_BASE_DIR ?? '/home/laurence'
-  const entries = fs.readdirSync(baseDir, { withFileTypes: true })
-
+  const scanDirs = getScanDirs()
   const synced: string[] = []
   const errors: string[] = []
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    const repoPath = path.join(baseDir, entry.name)
-    if (!fs.existsSync(path.join(repoPath, '.git'))) continue
+  for (const baseDir of scanDirs) {
+    let entries: fs.Dirent[]
+    try {
+      entries = fs.readdirSync(baseDir, { withFileTypes: true })
+    } catch {
+      errors.push(`Cannot read dir ${baseDir}`)
+      continue
+    }
 
-    const name = entry.name
-    const slug = toSlug(name)
-    const origin = readGitOrigin(repoPath)
-    const branch = readGitBranch(repoPath)
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const repoPath = path.join(baseDir, entry.name)
+      if (!fs.existsSync(path.join(repoPath, '.git'))) continue
 
-    const description = [
-      'source:git',
-      origin ? `origin:${origin}` : null,
-      branch ? `branch:${branch}` : null,
-    ].filter(Boolean).join(' | ')
+      const name = entry.name
+      const slug = toSlug(name)
+      const origin = readGitOrigin(repoPath)
+      const branch = readGitBranch(repoPath)
 
-    const { error: upsertErr } = await supabaseAdmin
-      .from('foco_projects')
-      .upsert(
-        {
-          workspace_id: workspace.id,
-          name,
-          slug,
-          description,
-          owner_id: ownerId,
-          status: 'active',
-        },
-        { onConflict: 'workspace_id,slug', ignoreDuplicates: false }
-      )
+      const description = [
+        'source:git',
+        origin ? `origin:${origin}` : null,
+        branch ? `branch:${branch}` : null,
+      ].filter(Boolean).join(' | ')
 
-    if (upsertErr) {
-      errors.push(`${name}: ${upsertErr.message}`)
-    } else {
-      synced.push(name)
+      const { error: upsertErr } = await supabaseAdmin
+        .from('foco_projects')
+        .upsert(
+          {
+            workspace_id: workspace.id,
+            name,
+            slug,
+            description,
+            local_path: repoPath,
+            git_remote: origin ?? null,
+            owner_id: ownerId,
+            status: 'active',
+          },
+          { onConflict: 'workspace_id,slug', ignoreDuplicates: false }
+        )
+
+      if (upsertErr) {
+        errors.push(`${name}: ${upsertErr.message}`)
+      } else {
+        synced.push(name)
+      }
     }
   }
 
-  return { synced, errors, base_dir: baseDir }
+  return { synced, errors, scan_dirs: scanDirs }
 }
 
 export async function GET(request: NextRequest) {

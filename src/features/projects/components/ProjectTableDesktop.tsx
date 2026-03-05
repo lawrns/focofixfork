@@ -125,6 +125,12 @@ export function ProjectTableDesktop({
               >
                 <div className="inline-flex items-center gap-1">Priority {sortIcon('priority')}</div>
               </TableHead>
+              <TableHead
+                style={{ width: '180px', display: 'table-cell !important' }}
+                className="px-3 py-3 text-slate-500 dark:text-slate-400 hidden xl:table-cell"
+              >
+                Path
+              </TableHead>
               <TableHead style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-3 text-right">
                 Actions
               </TableHead>
@@ -152,6 +158,9 @@ export function ProjectTableDesktop({
                   <TableCell className="px-3 py-3">
                     <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
                   </TableCell>
+                  <TableCell className="px-3 py-3 hidden xl:table-cell">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-36"></div>
+                  </TableCell>
                   <TableCell className="px-3 py-3">
                     <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-8 ml-auto"></div>
                   </TableCell>
@@ -159,7 +168,7 @@ export function ProjectTableDesktop({
               ))
             ) : projects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-12">
+                <TableCell colSpan={8} className="px-3 py-12">
                   <ProjectsEmpty
                     onCreateProject={onCreateProject || (() => {})}
                     onImportProjects={onImportProjects || (() => {})}
@@ -208,6 +217,13 @@ export function ProjectTableDesktop({
                   </TableCell>
                   <TableCell style={{ width: '100px', display: 'table-cell !important' }} className="px-3 py-3">
                     {getPriorityBadge(project.priority)}
+                  </TableCell>
+                  <TableCell style={{ width: '180px', display: 'table-cell !important' }} className="px-3 py-3 hidden xl:table-cell" title={project.local_path ?? undefined}>
+                    {project.local_path ? (
+                      <span className="block truncate text-xs font-mono text-muted-foreground/70">
+                        {project.local_path.replace(/^\/home\/[^/]+/, '~')}
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell style={{ width: '90px', display: 'table-cell !important' }} className="px-3 py-3 text-right">
                     <div onClick={(e) => e.stopPropagation()}>

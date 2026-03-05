@@ -1,13 +1,21 @@
 /**
  * POST /api/projects/sync-git
  *
- * Scans PROJECTS_BASE_DIR (default: /home/laurence) for git repos,
- * then upserts each as a foco_project with source='git'.
+ * Scans one or more directories for git repos,
+ * then upserts each as a foco_project with local_path and git_remote populated.
+ *
+ * Env vars:
+ *   PROJECTS_BASE_DIRS  comma-separated list of directories to scan (preferred)
+ *   PROJECTS_BASE_DIR   single directory fallback (legacy)
+ *   Default: /home/laurence
+ *
+ * ~/.openclaw/workspace is always appended if it exists on disk.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as os from 'os'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
@@ -22,7 +30,6 @@ function readGitOrigin(repoPath: string): string | null {
   try {
     const configPath = path.join(repoPath, '.git', 'config')
     const config = fs.readFileSync(configPath, 'utf-8')
-    // Find the [remote "origin"] section and extract url
     const sectionIdx = config.indexOf('[remote "origin"]')
     if (sectionIdx === -1) return null
     const after = config.slice(sectionIdx)
@@ -48,6 +55,24 @@ function readGitBranch(repoPath: string): string | null {
   } catch {
     return null
   }
+}
+
+function getScanDirs(): string[] {
+  const home = os.homedir()
+
+  const fromEnv = process.env.PROJECTS_BASE_DIRS
+    ? process.env.PROJECTS_BASE_DIRS.split(',').map(d => d.trim()).filter(Boolean)
+    : process.env.PROJECTS_BASE_DIR
+    ? [process.env.PROJECTS_BASE_DIR.trim()]
+    : [home]
+
+  const openclawWorkspace = path.join(home, '.openclaw', 'workspace')
+  const dirs = new Set(fromEnv)
+  if (fs.existsSync(openclawWorkspace)) {
+    dirs.add(openclawWorkspace)
+  }
+
+  return Array.from(dirs)
 }
 
 export async function POST(req: NextRequest) {
@@ -78,67 +103,74 @@ export async function POST(req: NextRequest) {
   }
 
   const workspaceId = memberRow.workspace_id as string
-  const baseDir = process.env.PROJECTS_BASE_DIR ?? '/home/laurence'
+  const scanDirs = getScanDirs()
 
-  let entries: fs.Dirent[]
-  try {
-    entries = fs.readdirSync(baseDir, { withFileTypes: true })
-  } catch (e) {
-    return mergeAuthResponse(
-      NextResponse.json({ error: `Cannot read base dir: ${e}` }, { status: 500 }),
-      authResponse
-    )
-  }
-
-  const synced: { name: string; slug: string; id?: string }[] = []
+  const synced: { name: string; slug: string; id?: string; local_path: string }[] = []
   const errors: string[] = []
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    const repoPath = path.join(baseDir, entry.name)
-    const gitDir = path.join(repoPath, '.git')
-    if (!fs.existsSync(gitDir)) continue
-
-    const name = entry.name
-    const slug = toSlug(name)
-    const origin = readGitOrigin(repoPath)
-    const branch = readGitBranch(repoPath)
-
-    const description = [
-      'source:git',
-      origin ? `origin:${origin}` : null,
-      branch ? `branch:${branch}` : null,
-    ].filter(Boolean).join(' | ')
-
+  for (const baseDir of scanDirs) {
+    let entries: fs.Dirent[]
     try {
-      const { data, error: upsertErr } = await supabaseAdmin
-        .from('foco_projects')
-        .upsert(
-          {
-            workspace_id: workspaceId,
-            name,
-            slug,
-            description,
-            owner_id: user.id,
-            status: 'active',
-          },
-          { onConflict: 'workspace_id,slug', ignoreDuplicates: false }
-        )
-        .select('id, name, slug')
-        .single()
-
-      if (upsertErr) {
-        errors.push(`${name}: ${upsertErr.message}`)
-      } else if (data) {
-        synced.push({ name: data.name as string, slug: data.slug as string, id: data.id as string })
-      }
+      entries = fs.readdirSync(baseDir, { withFileTypes: true })
     } catch (e) {
-      errors.push(`${name}: ${String(e)}`)
+      errors.push(`Cannot read dir ${baseDir}: ${e}`)
+      continue
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const repoPath = path.join(baseDir, entry.name)
+      const gitDir = path.join(repoPath, '.git')
+      if (!fs.existsSync(gitDir)) continue
+
+      const name = entry.name
+      const slug = toSlug(name)
+      const origin = readGitOrigin(repoPath)
+      const branch = readGitBranch(repoPath)
+
+      const description = [
+        'source:git',
+        origin ? `origin:${origin}` : null,
+        branch ? `branch:${branch}` : null,
+      ].filter(Boolean).join(' | ')
+
+      try {
+        const { data, error: upsertErr } = await supabaseAdmin
+          .from('foco_projects')
+          .upsert(
+            {
+              workspace_id: workspaceId,
+              name,
+              slug,
+              description,
+              local_path: repoPath,
+              git_remote: origin ?? null,
+              owner_id: user.id,
+              status: 'active',
+            },
+            { onConflict: 'workspace_id,slug', ignoreDuplicates: false }
+          )
+          .select('id, name, slug, local_path')
+          .single()
+
+        if (upsertErr) {
+          errors.push(`${name}: ${upsertErr.message}`)
+        } else if (data) {
+          synced.push({
+            name: data.name as string,
+            slug: data.slug as string,
+            id: data.id as string,
+            local_path: data.local_path as string,
+          })
+        }
+      } catch (e) {
+        errors.push(`${name}: ${String(e)}`)
+      }
     }
   }
 
   return mergeAuthResponse(
-    NextResponse.json({ synced, errors, base_dir: baseDir }),
+    NextResponse.json({ synced, errors, scan_dirs: scanDirs }),
     authResponse
   )
 }

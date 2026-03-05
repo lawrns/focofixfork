@@ -25,101 +25,51 @@ export function useProjectsFetch(
   const [fetchFailureMessage, setFetchFailureMessage] = useState<string | null>(null);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
 
-  // Get user's workspace first
   useEffect(() => {
-    const getUserWorkspace = async () => {
-      if (!user) {
-        if (!authLoading) {
-          setIsLoading(false);
-          setFetchFailed(true);
-          setFetchFailureReason('unauthenticated');
-          setFetchFailureMessage('Session required to load projects.');
-        }
-        return;
-      }
+    if (authLoading) return;
 
-      try {
-        const response = await fetch('/api/workspaces', { credentials: 'include' });
+    if (!user) {
+      setIsLoading(false);
+      setFetchFailed(true);
+      setFetchFailureReason('unauthenticated');
+      setFetchFailureMessage('Session required to load projects.');
+      return;
+    }
 
-        if (!response.ok) {
-          console.error('Failed to fetch workspaces');
-          setFetchFailed(true);
-          if (response.status === 401) {
-            setFetchFailureReason('unauthenticated');
-            setFetchFailureMessage('Session expired. Please sign in again.');
-          } else if (response.status === 403) {
-            setFetchFailureReason('forbidden');
-            setFetchFailureMessage('You do not have access to workspace data.');
-          } else {
-            setFetchFailureReason('server');
-            setFetchFailureMessage('Workspace lookup failed. Please retry.');
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-        const workspaces = data.data?.workspaces || data.data || [];
-        if (data.ok && workspaces.length > 0) {
-          setCurrentWorkspaceId(workspaces[0].id);
-          setFetchFailureReason('none');
-          setFetchFailureMessage(null);
-        } else {
-          console.error('No workspaces found for user');
-          setFetchFailed(true);
-          setFetchFailureReason('workspace-missing');
-          setFetchFailureMessage('No workspace membership found for your account.');
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user workspace:', error);
-        setFetchFailed(true);
-        setFetchFailureReason('network');
-        setFetchFailureMessage('Could not reach workspace service.');
-        setIsLoading(false);
-      }
-    };
-
-    getUserWorkspace();
-  }, [user, authLoading]);
-
-  // Fetch projects once workspace is known
-  useEffect(() => {
     const fetchProjects = async () => {
-      if (!user || !currentWorkspaceId) return;
-
       try {
-        const response = await fetch(`/api/projects?workspace_id=${currentWorkspaceId}`, { credentials: 'include' });
+        const response = await fetch('/api/projects', { credentials: 'include' });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Projects API error:', { status: response.status, error: errorData.error });
-
+          const errorData = await response.json().catch(() => ({}));
           if (response.status === 401) {
-            toast.error('Session expired. Please sign in again.');
             setFetchFailureReason('unauthenticated');
             setFetchFailureMessage('Session expired. Please sign in again.');
           } else if (response.status === 403) {
-            toast.error('You do not have permission to access projects.');
             setFetchFailureReason('forbidden');
-            setFetchFailureMessage('You do not have permission to access this workspace.');
+            setFetchFailureMessage('You do not have permission to access projects.');
           } else {
-            toast.error('Failed to load projects');
             setFetchFailureReason('server');
-            setFetchFailureMessage('Projects service returned an unexpected error.');
+            setFetchFailureMessage(errorData?.error?.message || 'Projects service returned an unexpected error.');
           }
-
           setFetchFailed(true);
           return;
         }
 
         const data = await response.json();
-        console.log('Projects API response:', data);
 
-        if ((data.success || data.ok) && data.data) {
-          const rawProjects = Array.isArray(data.data)
-            ? data.data
-            : Array.isArray(data.data?.projects) ? data.data.projects : [];
+        if (data.ok && data.data) {
+          const { projects: rawProjects, workspaceId } = data.data;
+
+          setCurrentWorkspaceId(workspaceId ?? null);
+
+          if (!Array.isArray(rawProjects) || rawProjects.length === 0) {
+            setProjects([]);
+            setFetchFailed(false);
+            setFetchFailureReason('none');
+            setFetchFailureMessage(null);
+            return;
+          }
 
           const transformedProjects = rawProjects.map((project: any) => ({
             id: project.id,
@@ -150,6 +100,7 @@ export function useProjectsFetch(
             },
             activeRuns: project.active_run_count ?? 0,
             delegationEnabled: project.delegation_settings?.enabled ?? false,
+            localPath: project.local_path ?? null,
           }));
 
           setProjects(transformedProjects);
@@ -175,8 +126,8 @@ export function useProjectsFetch(
       }
     };
 
-    if (currentWorkspaceId) fetchProjects();
-  }, [user, currentWorkspaceId]);
+    fetchProjects();
+  }, [user, authLoading]);
 
   return {
     projects,

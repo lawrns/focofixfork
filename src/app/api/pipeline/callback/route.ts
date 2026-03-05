@@ -65,6 +65,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Pipeline run not found' }, { status: 404 })
     }
 
+    // User-cancelled runs are terminal; ignore late callbacks.
+    if (run.status === 'cancelled') {
+      return NextResponse.json({ ok: true, skipped_cancelled: true })
+    }
+
     const expectedRunId = phase === 'plan'
       ? run.planner_run_id
       : phase === 'execute'

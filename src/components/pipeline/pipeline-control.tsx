@@ -32,6 +32,7 @@ import { TelemetryBar } from './telemetry-bar'
 import { PhaseCard, type PhaseCardStatus } from './phase-card'
 import { ActivityFeed, type FeedEntry } from './activity-feed'
 import { TerminalSidebar } from './terminal-sidebar'
+import { toast } from 'sonner'
 
 // Complexity heuristics
 const COMPLEXITY_KEYWORDS = [
@@ -74,7 +75,7 @@ function phaseCardStatus(
   phase: 'plan' | 'execute' | 'review',
   s: PipelineStatus,
 ): PhaseCardStatus {
-  if (s === 'failed') return 'failed'
+  if (s === 'failed' || s === 'cancelled') return 'failed'
   const doneSets: Record<string, PipelineStatus[]> = {
     plan: ['executing', 'reviewing', 'complete'],
     execute: ['reviewing', 'complete'],
@@ -130,6 +131,7 @@ export function PipelineControl() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [terminalOpen, setTerminalOpen] = useState(false)
+  const [runActionId, setRunActionId] = useState<string | null>(null)
 
   // Mission control state
   const [feedEntries, setFeedEntries] = useState<FeedEntry[]>([])
@@ -462,7 +464,7 @@ export function PipelineControl() {
             setHasLiveTokens(true)
           }
 
-          if (['complete', 'failed'].includes(run.status)) {
+          if (['complete', 'failed', 'cancelled'].includes(run.status)) {
             if (pollRef.current) clearInterval(pollRef.current)
             setLoading(false)
             fetchHistory()
@@ -540,11 +542,62 @@ export function PipelineControl() {
       pollRef.current = null
     }
     setLoading(false)
-    setPipelineStatus('failed')
+    setPipelineStatus('cancelled')
     addFeed('system', 'Pipeline cancelled by user')
+    if (currentRun?.id) {
+      void fetch(`/api/pipeline/${currentRun.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      })
+    }
   }
 
-  const isRunning = pipelineStatus != null && !['complete', 'failed'].includes(pipelineStatus)
+  async function stopRun(run: PipelineRun) {
+    setRunActionId(run.id)
+    try {
+      const res = await fetch(`/api/pipeline/${run.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? 'Failed to stop run')
+
+      setRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, status: 'cancelled' } : r)))
+      if (currentRun?.id === run.id) {
+        setCurrentRun((prev) => (prev ? { ...prev, status: 'cancelled' } : prev))
+        setPipelineStatus('cancelled')
+      }
+      toast.success('Pipeline run stopped')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not stop pipeline run')
+    } finally {
+      setRunActionId(null)
+    }
+  }
+
+  async function deleteRun(run: PipelineRun) {
+    setRunActionId(run.id)
+    try {
+      const res = await fetch(`/api/pipeline/${run.id}`, { method: 'DELETE' })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? 'Failed to delete run')
+
+      setRuns((prev) => prev.filter((r) => r.id !== run.id))
+      if (currentRun?.id === run.id) {
+        setCurrentRun(null)
+        setPipelineStatus(null)
+      }
+      toast.success('Pipeline run deleted')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete pipeline run')
+    } finally {
+      setRunActionId(null)
+    }
+  }
+
+  const isRunning = pipelineStatus != null && !['complete', 'failed', 'cancelled'].includes(pipelineStatus)
   const canExecute =
     currentRun?.status === 'executing' && !!currentRun.plan_result && !currentRun.execution_result
   const canReview =
@@ -724,18 +777,24 @@ export function PipelineControl() {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <RunHistoryTable runs={runs} onSelect={(run) => {
-          setCurrentRun(run)
-          setPipelineStatus(run.status)
-          const total = (run.planner_tokens_in + run.planner_tokens_out) +
-            (run.executor_tokens_in + run.executor_tokens_out) +
-            (run.reviewer_tokens_in + run.reviewer_tokens_out)
-          if (total > 0) {
-            setTotalTokens(total)
-            setTotalCostUsd(run.total_cost_usd ?? 0)
-            setHasLiveTokens(true)
-          }
-        }} />
+        <RunHistoryTable
+          runs={runs}
+          onSelect={(run) => {
+            setCurrentRun(run)
+            setPipelineStatus(run.status)
+            const total = (run.planner_tokens_in + run.planner_tokens_out) +
+              (run.executor_tokens_in + run.executor_tokens_out) +
+              (run.reviewer_tokens_in + run.reviewer_tokens_out)
+            if (total > 0) {
+              setTotalTokens(total)
+              setTotalCostUsd(run.total_cost_usd ?? 0)
+              setHasLiveTokens(true)
+            }
+          }}
+          onStop={stopRun}
+          onDelete={deleteRun}
+          runActionId={runActionId}
+        />
       </CardContent>
     </Card>
   )

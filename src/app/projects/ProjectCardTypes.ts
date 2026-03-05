@@ -19,6 +19,7 @@ export interface ProjectData {
   delegationCounts: { pending: number; delegated: number; running: number; completed: number; failed: number };
   activeRuns: number;
   delegationEnabled: boolean;
+  localPath?: string | null;
 }
 
 export type FetchFailureReason =

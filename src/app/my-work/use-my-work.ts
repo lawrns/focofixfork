@@ -105,9 +105,10 @@ export function useMyWork() {
     fetch('/api/projects', { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
-        if (data.success && Array.isArray(data.data)) {
-          setProjects(data.data.map((p: any) => ({ id: p.id, name: p.name })));
-        }
+        const list = data.ok && Array.isArray(data.data?.projects)
+          ? data.data.projects
+          : [];
+        setProjects(list.map((p: any) => ({ id: p.id, name: p.name })));
       })
       .catch(() => {});
   }, [user]);

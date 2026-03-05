@@ -513,7 +513,7 @@ export function CommandSurface({
     <div className={cn(
       'relative overflow-hidden rounded-2xl',
       'bg-gradient-to-br from-background via-background to-muted/30',
-      'border border-border/50 shadow-xl shadow-black/5',
+      'border border-l-0 border-border/50 shadow-xl shadow-black/5',
       'transition-all duration-300 ease-out',
       'hover:shadow-2xl hover:shadow-black/8',
       className

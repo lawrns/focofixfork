@@ -4,6 +4,7 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import {
   successResponse,
   authRequiredResponse,
+  badRequestResponse,
   databaseErrorResponse,
 } from '@/lib/api/response-helpers'
 
@@ -89,5 +90,64 @@ export async function GET(req: NextRequest) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return mergeAuthResponse(databaseErrorResponse('Failed to fetch milestones', message), authResponse)
+  }
+}
+
+export async function POST(req: NextRequest) {
+  let authResponse: NextResponse | undefined
+  try {
+    const { user, supabase, error, response } = await getAuthUser(req)
+    authResponse = response
+
+    if (error || !user) {
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
+    }
+
+    const body = await req.json()
+    const title = typeof body?.title === 'string' ? body.title.trim() : ''
+    if (!title) {
+      return mergeAuthResponse(badRequestResponse('title is required'), authResponse)
+    }
+
+    const { data: memberRow, error: memberError } = await supabase
+      .from('foco_workspace_members')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (memberError || !memberRow?.workspace_id) {
+      return mergeAuthResponse(
+        databaseErrorResponse('Failed to resolve workspace membership', memberError),
+        authResponse
+      )
+    }
+
+    const insertData = {
+      title,
+      description: typeof body?.description === 'string' ? body.description : null,
+      status: typeof body?.status === 'string' ? body.status : 'planned',
+      priority: typeof body?.priority === 'string' ? body.priority : 'medium',
+      start_date: typeof body?.start_date === 'string' ? body.start_date : null,
+      due_date: typeof body?.due_date === 'string' ? body.due_date : null,
+      project_id: typeof body?.project_id === 'string' ? body.project_id : null,
+      workspace_id: memberRow.workspace_id,
+      created_by: user.id,
+    }
+
+    const { data, error: dbError } = await supabase
+      .from('milestones')
+      .insert(insertData)
+      .select('*')
+      .single()
+
+    if (dbError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to create milestone', dbError), authResponse)
+    }
+
+    return mergeAuthResponse(successResponse(data, undefined, 201), authResponse)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return mergeAuthResponse(databaseErrorResponse('Failed to create milestone', message), authResponse)
   }
 }

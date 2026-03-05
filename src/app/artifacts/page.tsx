@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Archive, Camera, Terminal, FileText, File, ExternalLink, Download } from 'lucide-react'
+import { Archive, Camera, Terminal, FileText, File, ExternalLink, Download, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
@@ -37,6 +37,7 @@ export default function ArtifactsPage() {
   const { user, loading } = useAuth()
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [filter, setFilter] = useState('all')
+  const [actionId, setActionId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -45,6 +46,17 @@ export default function ArtifactsPage() {
       .then(r => r.json())
       .then(d => setArtifacts(d.data ?? []))
   }, [user, filter])
+
+  async function deleteArtifact(artifactId: string) {
+    setActionId(artifactId)
+    try {
+      const res = await fetch(`/api/artifacts/${artifactId}`, { method: 'DELETE' })
+      if (!res.ok) return
+      setArtifacts((prev) => prev.filter((a) => a.id !== artifactId))
+    } finally {
+      setActionId(null)
+    }
+  }
 
   if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" /></div>
   if (!user) return null
@@ -78,13 +90,9 @@ export default function ArtifactsPage() {
             const href = isExternal ? artifact.uri : `/api/artifacts/${artifact.id}/download`
 
             return (
-              <a
+              <div
                 key={artifact.id}
-                href={href}
-                target={isExternal ? '_blank' : undefined}
-                rel={isExternal ? 'noopener noreferrer' : undefined}
-                download={!isExternal && !isImage ? '' : undefined}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors cursor-pointer group"
+                className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary/40 transition-colors group"
               >
                 <div className="h-8 w-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
                   {isImage ? (
@@ -96,16 +104,33 @@ export default function ArtifactsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Badge variant="outline" className="text-[10px]">{artifact.type}</Badge>
-                    {isExternal ? (
-                      <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    ) : (
-                      <Download className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
+                    <a
+                      href={href}
+                      target={isExternal ? '_blank' : undefined}
+                      rel={isExternal ? 'noopener noreferrer' : undefined}
+                      download={!isExternal && !isImage ? '' : undefined}
+                      className="inline-flex items-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      {isExternal ? (
+                        <ExternalLink className="h-3 w-3" />
+                      ) : (
+                        <Download className="h-3 w-3" />
+                      )}
+                    </a>
                   </div>
                   <p className="text-[12px] text-muted-foreground font-mono-display truncate">{artifact.uri}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{new Date(artifact.created_at).toLocaleString()}</p>
                 </div>
-              </a>
+                <button
+                  type="button"
+                  className="h-7 w-7 inline-flex items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-secondary disabled:opacity-40"
+                  title="Delete artifact"
+                  disabled={actionId === artifact.id}
+                  onClick={() => void deleteArtifact(artifact.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )
           })}
         </div>

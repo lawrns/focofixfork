@@ -78,6 +78,9 @@ export async function executeStep(
     case 'create_task':
       if (decision && 'tasks' in decision && decision.tasks.length > 0) {
         const task = decision.tasks[0];
+        if (!projectId) {
+          return { success: false, error: 'No project selected — pick a project before creating tasks' };
+        }
         try {
           const res = await fetch('/api/tasks', {
             method: 'POST',
@@ -86,7 +89,8 @@ export async function executeStep(
               title: task.title,
               description: task.description,
               priority: task.priority,
-              status: 'backlog'
+              status: 'backlog',
+              project_id: projectId,
             })
           });
           const data = await res.json();

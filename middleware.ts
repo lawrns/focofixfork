@@ -3,6 +3,27 @@ import { NextResponse, NextRequest } from 'next/server'
 import { nanoid } from 'nanoid'
 import { userSetupMiddleware, redirectToSetupIfNeeded } from '@/lib/middleware/user-setup'
 
+const SETUP_CACHE_COOKIE = 'foco_setup_ok'
+const SETUP_CACHE_TTL_MS = 60_000
+
+function hasFreshSetupCache(req: NextRequest): boolean {
+  const raw = req.cookies.get(SETUP_CACHE_COOKIE)?.value
+  if (!raw) return false
+  const ts = Number.parseInt(raw, 10)
+  if (!Number.isFinite(ts)) return false
+  return Date.now() - ts < SETUP_CACHE_TTL_MS
+}
+
+function setSetupCacheCookie(res: NextResponse) {
+  res.cookies.set(SETUP_CACHE_COOKIE, String(Date.now()), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: Math.floor(SETUP_CACHE_TTL_MS / 1000),
+  })
+}
+
 export async function middleware(req: NextRequest) {
   // Generate correlation ID
   const correlationId = req.headers.get('x-correlation-id') ?? nanoid()
@@ -126,19 +147,31 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
-    const setupResult = await userSetupMiddleware(req)
-    if (setupResult.error) {
-      return setupResult.error
-    }
+    const setupCached = hasFreshSetupCache(req)
+    if (!setupCached) {
+      const setupResult = await userSetupMiddleware(req)
+      if (setupResult.error) {
+        return setupResult.error
+      }
 
-    const redirectResponse = redirectToSetupIfNeeded(req, setupResult.completed)
-    if (redirectResponse) {
-      return redirectResponse
+      const redirectResponse = redirectToSetupIfNeeded(req, setupResult.completed)
+      if (redirectResponse) {
+        return redirectResponse
+      }
+      if (setupResult.completed) setSetupCacheCookie(res)
     }
   }
 
   // Handle auth routes
   if (isAuthRoute && session) {
+    const setupCached = hasFreshSetupCache(req)
+    if (setupCached) {
+      const redirectTo = req.nextUrl.searchParams.get('redirect') || '/dashboard'
+      const redirectRes = NextResponse.redirect(new URL(redirectTo, req.url))
+      setSetupCacheCookie(redirectRes)
+      return redirectRes
+    }
+
     const setupResult = await userSetupMiddleware(req)
     if (setupResult.error) {
       return setupResult.error
@@ -146,10 +179,11 @@ export async function middleware(req: NextRequest) {
 
     if (setupResult.completed) {
       const redirectTo = req.nextUrl.searchParams.get('redirect') || '/dashboard'
-      return NextResponse.redirect(new URL(redirectTo, req.url))
-    } else {
-      return NextResponse.redirect(new URL('/organization-setup', req.url))
+      const redirectRes = NextResponse.redirect(new URL(redirectTo, req.url))
+      setSetupCacheCookie(redirectRes)
+      return redirectRes
     }
+    return NextResponse.redirect(new URL('/organization-setup', req.url))
   }
 
   // API route handling - NO MORE x-user-id HEADERS
@@ -202,26 +236,42 @@ export async function middleware(req: NextRequest) {
       )
     }
 
-    // Check organization setup completion
-    const setupResult = await userSetupMiddleware(req)
-    if (setupResult.error) {
-      return setupResult.error
+    // Fast-path for read-only APIs that don't need workspace setup state.
+    const setupOptionalApiPrefixes = [
+      '/api/runs',
+      '/api/ledger',
+      '/api/openclaw/status',
+      '/api/policies/fleet-status',
+      '/api/dashboard/autonomous-stats',
+    ]
+    if (setupOptionalApiPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      return res
     }
 
-    if (!setupResult.completed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'SETUP_REQUIRED',
-            message: 'Organization setup required'
+    // Check organization setup completion
+    const setupCached = hasFreshSetupCache(req)
+    if (!setupCached) {
+      const setupResult = await userSetupMiddleware(req)
+      if (setupResult.error) {
+        return setupResult.error
+      }
+
+      if (!setupResult.completed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'SETUP_REQUIRED',
+              message: 'Organization setup required'
+            }
+          },
+          {
+            status: 403,
+            headers: { 'x-correlation-id': correlationId }
           }
-        },
-        {
-          status: 403,
-          headers: { 'x-correlation-id': correlationId }
-        }
-      )
+        )
+      }
+      setSetupCacheCookie(res)
     }
 
     // Continue to route handler (which will use requireAuth() to get user from session)

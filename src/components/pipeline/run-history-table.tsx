@@ -9,13 +9,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { BookOpen, CheckCircle2, XCircle, Loader2, Clock } from 'lucide-react'
+import { BookOpen, CheckCircle2, XCircle, Loader2, Clock, Square, Trash2 } from 'lucide-react'
 import type { PipelineRun } from '@/lib/pipeline/types'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 interface RunHistoryTableProps {
   runs: PipelineRun[]
   onSelect?: (run: PipelineRun) => void
+  onStop?: (run: PipelineRun) => void
+  onDelete?: (run: PipelineRun) => void
+  runActionId?: string | null
 }
 
 function StatusBadge({ status }: { status: PipelineRun['status'] }) {
@@ -45,6 +49,11 @@ function StatusBadge({ status }: { status: PipelineRun['status'] }) {
       icon: <XCircle className="h-3 w-3" />,
       className: 'text-destructive border-destructive/30',
     },
+    cancelled: {
+      label: 'Cancelled',
+      icon: <XCircle className="h-3 w-3" />,
+      className: 'text-zinc-500 border-zinc-500/30',
+    },
   }
   const cfg = map[status] ?? map.planning
   return (
@@ -72,7 +81,13 @@ function modelLabel(m: string) {
   return map[m] ?? m
 }
 
-export function RunHistoryTable({ runs, onSelect }: RunHistoryTableProps) {
+export function RunHistoryTable({
+  runs,
+  onSelect,
+  onStop,
+  onDelete,
+  runActionId,
+}: RunHistoryTableProps) {
   if (!runs.length) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
@@ -92,6 +107,7 @@ export function RunHistoryTable({ runs, onSelect }: RunHistoryTableProps) {
             <TableHead className="w-[160px]">Models</TableHead>
             <TableHead className="w-[56px] text-center">Files</TableHead>
             <TableHead className="w-[90px]">Date</TableHead>
+            <TableHead className="w-[80px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -134,6 +150,40 @@ export function RunHistoryTable({ runs, onSelect }: RunHistoryTableProps) {
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(run.created_at).toLocaleDateString()}
                 </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="inline-flex items-center gap-1">
+                  {onStop && (run.status === 'planning' || run.status === 'executing' || run.status === 'reviewing') && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      title="Stop run"
+                      disabled={runActionId === run.id}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onStop(run)
+                      }}
+                    >
+                      <Square className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-red-600 hover:text-red-700"
+                      title="Delete run"
+                      disabled={runActionId === run.id}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete(run)
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

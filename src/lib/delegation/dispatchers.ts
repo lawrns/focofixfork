@@ -16,6 +16,7 @@ export interface DispatchPayload {
   systemPrompt: string
   agentId: string
   callbackUrl?: string
+  workingDirectory?: string | null
 }
 
 export interface DispatchResult {
@@ -60,6 +61,7 @@ export async function dispatchToClawdBot(payload: DispatchPayload): Promise<Disp
         description: payload.description,
         system_prompt: payload.systemPrompt,
         ...(payload.callbackUrl ? { callback_url: payload.callbackUrl } : {}),
+        ...(payload.workingDirectory ? { working_directory: payload.workingDirectory } : {}),
       }),
       signal: AbortSignal.timeout(10_000),
     })

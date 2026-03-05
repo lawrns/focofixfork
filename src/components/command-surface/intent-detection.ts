@@ -3,7 +3,16 @@ import type { CommandMode, IntentType } from './types';
 export const INTENT_PATTERNS: Record<IntentType, RegExp[]> = {
   create_project: [/create project/i, /new project/i, /start project/i, /project called/i, /launch project/i],
   create_task: [/create task/i, /add task/i, /new task/i, /fix.*bug/i, /implement/i],
-  create_cron: [/schedule/i, /cron/i, /daily.*email/i, /weekly.*report/i, /every.*day/i, /every.*hour/i],
+  create_cron: [
+    /schedule/i,
+    /cron/i,
+    /daily.*email/i,
+    /daily.*summary/i,
+    /weekly.*report/i,
+    /every.*day/i,
+    /every.*hour/i,
+    /\bdaily\b.*\bat\s*\d{1,2}(?::\d{2})?\s*(am|pm)?/i,
+  ],
   send_email: [/send email/i, /email.*to/i, /notify/i, /remind.*me/i],
   fix_issue: [/fix/i, /debug/i, /solve/i, /resolve/i, /error/i, /bug/i, /hydration/i],
   architect_feature: [/architect/i, /design/i, /plan.*feature/i, /build.*system/i],

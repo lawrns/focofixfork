@@ -42,7 +42,6 @@ export async function PATCH(
       ...(typeof summary === 'string' ? { summary } : {}),
       ...(startedAt ? { started_at: startedAt } : {}),
       ...(endedAt ? { ended_at: endedAt } : {}),
-      updated_at: now,
     })
     .eq('id', params.id)
     .select()

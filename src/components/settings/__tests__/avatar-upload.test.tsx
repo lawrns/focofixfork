@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AvatarUpload } from '../avatar-upload';
 
@@ -65,16 +65,16 @@ describe('AvatarUpload Component', () => {
   });
 
   it('should validate image file type', async () => {
-    const user = userEvent.setup();
-    render(<AvatarUpload onUploadComplete={vi.fn()} />);
+    const onError = vi.fn()
+    render(<AvatarUpload onUploadComplete={vi.fn()} onError={onError} />);
 
     const input = screen.getByLabelText(/upload avatar/i) as HTMLInputElement;
     const file = new File(['dummy content'], 'document.pdf', { type: 'application/pdf' });
 
-    await user.upload(input, file);
+    fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/must be an image/i)).toBeInTheDocument();
+      expect(onError).toHaveBeenCalledWith(expect.stringMatching(/image/i))
     });
   });
 
@@ -96,12 +96,13 @@ describe('AvatarUpload Component', () => {
 
   it('should show loading state during upload', async () => {
     const user = userEvent.setup();
+    let resolveFetch: ((value: any) => void) | null = null;
 
     (global.fetch as any).mockImplementation(
       () =>
-        new Promise((resolve) =>
-          setTimeout(() => resolve({ ok: true, json: async () => ({ url: 'new-avatar.jpg' }) }), 100)
-        )
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
     );
 
     render(<AvatarUpload onUploadComplete={vi.fn()} />);
@@ -126,9 +127,11 @@ describe('AvatarUpload Component', () => {
         expect(uploadButton).toBeDisabled();
       });
 
+      resolveFetch?.({ ok: true, json: async () => ({ url: 'new-avatar.jpg' }) })
+
       // Wait for upload to complete
       await waitFor(() => {
-        expect(uploadButton).not.toBeDisabled();
+        expect(screen.queryByRole('button', { name: /upload/i })).not.toBeInTheDocument();
       }, { timeout: 3000 });
     }
   });

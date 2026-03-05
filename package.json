@@ -12,9 +12,9 @@
     "public/"
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 4000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 4000",
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -47,10 +47,10 @@
     "format:check": "prettier --check .",
     "db:migrate:test": "supabase db push --schema test",
     "db:seed:test": "supabase db seed --schema test",
-    "start:test": "NODE_ENV=test next start",
+    "start:test": "NODE_ENV=test next start --port 4000",
     "build:test": "NODE_ENV=test next build",
     "type-check": "tsc --noEmit",
-    "preview": "next build && next start",
+    "preview": "next build && next start --port 4000",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {

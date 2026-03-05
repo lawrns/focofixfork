@@ -54,7 +54,7 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
     .select(`
       id, title, description, priority, created_at, approval_required, approved_by, handbook_ref,
       foco_projects!project_id (
-        id, name, slug, assigned_agent_pool, delegation_settings
+        id, name, slug, assigned_agent_pool, delegation_settings, local_path
       )
     `)
     .eq('delegation_status', 'pending')
@@ -163,6 +163,7 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
       featureContext,
       systemPrompt,
       agentId,
+      workingDirectory: project.local_path ?? undefined,
     }
 
     const dispatchResult = await dispatchToClawdBot(payload)

@@ -14,6 +14,7 @@ vi.mock('next/navigation', () => ({
 describe('Command Palette - Simple Navigation Tests', () => {
   let mockRouter: any;
   let mockPush: any;
+  let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
     mockPush = vi.fn();
@@ -21,6 +22,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
       push: mockPush,
     };
     (useRouter as any).mockReturnValue(mockRouter);
+    user = userEvent.setup({ pointerEventsCheck: 0 });
     useCommandPaletteStore.setState({
       isOpen: false,
       mode: 'search',
@@ -29,24 +31,24 @@ describe('Command Palette - Simple Navigation Tests', () => {
     vi.clearAllMocks();
   });
 
-  it('should call router.push with correct path when clicking "Go to Home"', async () => {
+  it('should call router.push with correct path when clicking "Go to Dashboard"', async () => {
     useCommandPaletteStore.getState().open('search');
     render(<CommandPalette />);
 
-    const homeButton = screen.getByRole('option', { name: /go to home/i });
-    await userEvent.click(homeButton);
+    const dashboardButton = screen.getByRole('option', { name: /go to dashboard/i });
+    await user.click(dashboardButton);
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('should call router.push with correct path when clicking "Go to Inbox"', async () => {
+  it('should call router.push with correct path when clicking "Go to Dispatch"', async () => {
     useCommandPaletteStore.getState().open('search');
     render(<CommandPalette />);
 
-    const inboxButton = screen.getByRole('option', { name: /go to inbox/i });
-    await userEvent.click(inboxButton);
+    const dispatchButton = screen.getByRole('option', { name: /go to dispatch/i });
+    await user.click(dispatchButton);
 
-    expect(mockPush).toHaveBeenCalledWith('/inbox');
+    expect(mockPush).toHaveBeenCalledWith('/empire/command');
   });
 
   it('should close modal after navigation', async () => {
@@ -55,8 +57,8 @@ describe('Command Palette - Simple Navigation Tests', () => {
 
     render(<CommandPalette />);
 
-    const homeButton = screen.getByRole('option', { name: /go to home/i });
-    await userEvent.click(homeButton);
+    const dashboardButton = screen.getByRole('option', { name: /go to dashboard/i });
+    await user.click(dashboardButton);
 
     await waitFor(() => {
       expect(useCommandPaletteStore.getState().isOpen).toBe(false);
@@ -67,8 +69,8 @@ describe('Command Palette - Simple Navigation Tests', () => {
     useCommandPaletteStore.getState().open('search');
     render(<CommandPalette />);
 
-    const homeButton = screen.getByRole('option', { name: /go to home/i });
-    await userEvent.click(homeButton);
+    const dashboardButton = screen.getByRole('option', { name: /go to dashboard/i });
+    await user.click(dashboardButton);
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard');
 
@@ -83,8 +85,8 @@ describe('Command Palette - Simple Navigation Tests', () => {
 
     // Type Enter to select the first command (Go to Home)
     const input = screen.getByPlaceholderText(/type a command/i);
-    await userEvent.click(input);
-    await userEvent.keyboard('{Enter}');
+    await user.click(input);
+    await user.keyboard('{Enter}');
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard');
   });
@@ -95,7 +97,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
 
     expect(useCommandPaletteStore.getState().isOpen).toBe(true);
 
-    await userEvent.keyboard('{Escape}');
+    await user.keyboard('{Escape}');
 
     await waitFor(() => {
       expect(useCommandPaletteStore.getState().isOpen).toBe(false);

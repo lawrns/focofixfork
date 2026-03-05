@@ -18,6 +18,7 @@ export interface ProjectWithOrg extends Project {
   organizations?: {
     name: string
   }
+  local_path?: string | null
 }
 
 export interface ProjectTableProps {

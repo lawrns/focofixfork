@@ -21,6 +21,7 @@ function getNodeStates(status: PipelineStatus | null): [NodeState, NodeState, No
     case 'reviewing': return ['done',   'done',    'active']
     case 'complete':  return ['done',   'done',    'done']
     case 'failed':    return ['failed', 'failed',  'failed']
+    case 'cancelled': return ['failed', 'failed',  'failed']
     default:          return ['idle',   'idle',    'idle']
   }
 }

@@ -92,7 +92,7 @@ describe('/api/projects Contract Tests', () => {
   })
 
   describe('POST /api/projects', () => {
-    it('returns canonical success response with created project', async () => {
+    it('returns 405 METHOD_NOT_ALLOWED because this endpoint is read-only', async () => {
       const newProject = {
         name: 'Test Project',
         workspace_id: 'test-workspace-id',
@@ -108,24 +108,10 @@ describe('/api/projects Contract Tests', () => {
         body: JSON.stringify(newProject),
       })
 
-      const json = await response.json()
-
-      // Validate response shape
-      expect(json).toHaveProperty('ok')
-      expect(json).toHaveProperty('data')
-      expect(json).toHaveProperty('error')
-
-      if (response.status === 201) {
-        expect(json.ok).toBe(true)
-        expect(json.data).toBeDefined()
-        expect(json.data).toHaveProperty('id')
-        expect(json.data).toHaveProperty('name')
-        expect(json.data.name).toBe(newProject.name)
-        expect(json.error).toBeNull()
-      }
+      expect(response.status).toBe(405)
     })
 
-    it('returns 400 with MISSING_REQUIRED_FIELD when name is missing', async () => {
+    it('returns 405 when required fields are missing', async () => {
       const response = await fetch(`${baseUrl}/api/projects`, {
         method: 'POST',
         headers: {
@@ -135,16 +121,10 @@ describe('/api/projects Contract Tests', () => {
         body: JSON.stringify({ workspace_id: 'test' }),
       })
 
-      expect(response.status).toBe(400)
-
-      const json = await response.json()
-      expect(json.ok).toBe(false)
-      expect(json.data).toBeNull()
-      expect(json.error.code).toBe('MISSING_REQUIRED_FIELD')
-      expect(json.error.message).toContain('name')
+      expect(response.status).toBe(405)
     })
 
-    it('returns 400 with MISSING_REQUIRED_FIELD when workspace_id is missing', async () => {
+    it('returns 405 when workspace_id is missing', async () => {
       const response = await fetch(`${baseUrl}/api/projects`, {
         method: 'POST',
         headers: {
@@ -154,12 +134,7 @@ describe('/api/projects Contract Tests', () => {
         body: JSON.stringify({ name: 'Test' }),
       })
 
-      expect(response.status).toBe(400)
-
-      const json = await response.json()
-      expect(json.ok).toBe(false)
-      expect(json.error.code).toBe('MISSING_REQUIRED_FIELD')
-      expect(json.error.message).toContain('workspace_id')
+      expect(response.status).toBe(405)
     })
 
     it('returns 409 with DUPLICATE_SLUG when slug already exists', async () => {

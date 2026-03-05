@@ -43,12 +43,12 @@ function RouteProgressHandler() {
 
   useEffect(() => {
     NProgress.start();
-
-    const timer = setTimeout(() => {
-      NProgress.done();
-    }, 500);
+    const done = () => NProgress.done();
+    const raf = requestAnimationFrame(done);
+    const timer = setTimeout(done, 150);
 
     return () => {
+      cancelAnimationFrame(raf);
       clearTimeout(timer);
     };
   }, [pathname]);

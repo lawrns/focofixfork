@@ -29,7 +29,7 @@ export interface ReviewReport {
   confidence_score: number // 0–100
 }
 
-export type PipelineStatus = 'planning' | 'executing' | 'reviewing' | 'complete' | 'failed'
+export type PipelineStatus = 'planning' | 'executing' | 'reviewing' | 'complete' | 'failed' | 'cancelled'
 
 export interface PipelineRun {
   id: string

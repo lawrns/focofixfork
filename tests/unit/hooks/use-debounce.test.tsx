@@ -44,7 +44,7 @@ describe('useDebounce Hook', () => {
       expect(onChangeMock).toHaveBeenCalledWith('test')
     })
 
-    it('should debounce API calls only after 300ms of no typing for search fields', async () => {
+    it('should debounce API calls only after 300ms of no typing for search fields', () => {
       const searchFn = vi.fn().mockResolvedValue([])
       const { rerender } = renderHook(
         ({ value }: any) => useDebounce(value, searchFn, 300),
@@ -68,10 +68,8 @@ describe('useDebounce Hook', () => {
         vi.advanceTimersByTime(300)
       })
 
-      await waitFor(() => {
-        expect(searchFn).toHaveBeenCalledTimes(1)
-        expect(searchFn).toHaveBeenCalledWith('project')
-      })
+      expect(searchFn).toHaveBeenCalledTimes(1)
+      expect(searchFn).toHaveBeenCalledWith('project')
     })
 
     it('should cancel pending debounce on unmount', () => {
@@ -135,7 +133,7 @@ describe('useDebounce Hook', () => {
       expect(onChangeMock).toHaveBeenCalledWith('search query')
     })
 
-    it('should handle multiple rapid changes resulting in single API call', async () => {
+    it('should handle multiple rapid changes resulting in single API call', () => {
       const apiCall = vi.fn().mockResolvedValue({ results: [] })
       const { rerender } = renderHook(
         ({ value }: any) => useDebounce(value, apiCall, 300),
@@ -157,11 +155,9 @@ describe('useDebounce Hook', () => {
         vi.advanceTimersByTime(300)
       })
 
-      await waitFor(() => {
-        // Only one API call should be made with final value
-        expect(apiCall).toHaveBeenCalledTimes(1)
-        expect(apiCall).toHaveBeenCalledWith('abcde')
-      })
+      // Only one API call should be made with final value
+      expect(apiCall).toHaveBeenCalledTimes(1)
+      expect(apiCall).toHaveBeenCalledWith('abcde')
     })
   })
 

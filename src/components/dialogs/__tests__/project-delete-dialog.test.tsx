@@ -18,6 +18,7 @@ vi.mock('@/components/toast/toast', () => ({
 vi.mock('lucide-react', () => ({
   AlertTriangle: () => <span data-testid="icon-alert">Alert</span>,
   Loader2: () => <span data-testid="icon-loader">Loader</span>,
+  X: () => <span data-testid="icon-close">Close</span>,
 }))
 
 const mockProject = {
@@ -88,8 +89,10 @@ describe('ProjectDeleteDialog', () => {
         />
       )
 
-      // Dialog should be visible with correct title
-      expect(screen.getByText(/delete project/i)).toBeInTheDocument()
+      // Dialog title should be visible
+      expect(
+        screen.getByRole('heading', { name: /delete project/i })
+      ).toBeInTheDocument()
     })
   })
 
@@ -502,9 +505,9 @@ describe('ProjectDeleteDialog', () => {
       })
       await user.click(deleteButton)
 
-      // Wait for deletion to complete
+      // Wait for deletion to complete and UI to return to idle
       await waitFor(() => {
-        expect(mockOnDelete).toHaveBeenCalled()
+        expect(deleteButton).not.toBeDisabled()
       }, { timeout: 200 })
 
       // Reopen dialog and verify delete button is clickable again

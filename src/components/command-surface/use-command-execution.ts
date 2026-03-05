@@ -79,6 +79,14 @@ export function useExecuteCommand(deps: ExecutionDeps) {
         return exec;
       }
       const step = plan.steps[i];
+      if (step.type === 'create_run' && bootstrapRunId) {
+        // Reuse already-created command run to avoid duplicate runs and stale "running" records.
+        step.status = 'completed';
+        step.result = { runId: bootstrapRunId };
+        setExecution({ ...exec });
+        continue;
+      }
+
       exec.currentStepIndex = i;
       step.status = 'in_progress';
       setExecution({ ...exec });
@@ -246,7 +254,11 @@ export function useExecuteCommand(deps: ExecutionDeps) {
 
       if (degradedStatus !== null && degradedStatus >= 400) {
         setStreamingText(`Agent stream degraded (HTTP ${degradedStatus}). Running local fallback workflow...`);
-        const fallback = await executeCommand(prompt, resolvedMode, plan, decision, { historyId, existingRunId: runId });
+        const fallback = await executeCommand(prompt, resolvedMode, plan, decision, {
+          historyId,
+          existingRunId: runId,
+          projectId,
+        });
         if (fallback.status === 'failed') {
           fallback.error = `Agent stream degraded: HTTP ${degradedStatus}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
         }

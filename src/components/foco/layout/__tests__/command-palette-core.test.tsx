@@ -14,6 +14,7 @@ vi.mock('next/navigation', () => ({
 describe('Command Palette - Core Navigation', () => {
   let mockRouter: any;
   let mockPush: any;
+  let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
     mockPush = vi.fn();
@@ -21,6 +22,7 @@ describe('Command Palette - Core Navigation', () => {
       push: mockPush,
     };
     (useRouter as any).mockReturnValue(mockRouter);
+    user = userEvent.setup({ pointerEventsCheck: 0 });
     useCommandPaletteStore.setState({
       isOpen: false,
       mode: 'search',
@@ -30,58 +32,49 @@ describe('Command Palette - Core Navigation', () => {
   });
 
   describe('Click Navigation', () => {
-    it('should navigate when clicking first command (Go to Home)', async () => {
+    it('should navigate when clicking first command (Go to Dashboard)', async () => {
       useCommandPaletteStore.getState().open('search');
-      const { container } = render(<CommandPalette />);
-
-      // Get all buttons in the command list
-      const buttons = container.querySelectorAll('[role="option"]');
-      const firstButton = buttons[0] as HTMLElement;
+      render(<CommandPalette />);
+      const firstButton = screen.getByRole('option', { name: /go to dashboard/i });
 
       // Click first button
-      await userEvent.click(firstButton);
+      await user.click(firstButton);
 
       // Should call router.push with dashboard path
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
 
-    it('should navigate to inbox when clicking second command', async () => {
+    it('should navigate to dispatch when clicking second command', async () => {
       useCommandPaletteStore.getState().open('search');
-      const { container } = render(<CommandPalette />);
+      render(<CommandPalette />);
+      const secondButton = screen.getByRole('option', { name: /go to dispatch/i });
 
-      const buttons = container.querySelectorAll('[role="option"]');
-      const secondButton = buttons[1] as HTMLElement;
+      await user.click(secondButton);
 
-      await userEvent.click(secondButton);
-
-      expect(mockPush).toHaveBeenCalledWith('/inbox');
+      expect(mockPush).toHaveBeenCalledWith('/empire/command');
     });
 
-    it('should navigate to projects when clicking projects button', async () => {
+    it('should navigate to runs when clicking runs button', async () => {
       useCommandPaletteStore.getState().open('search');
-      const { container } = render(<CommandPalette />);
+      render(<CommandPalette />);
+      const runsButton = screen.getByRole('option', { name: /go to runs/i });
 
-      const buttons = container.querySelectorAll('[role="option"]');
-      // "Go to Projects" is the 4th button in Navigation group
-      const projectsButton = buttons[3] as HTMLElement;
+      await user.click(runsButton);
 
-      await userEvent.click(projectsButton);
-
-      expect(mockPush).toHaveBeenCalledWith('/projects');
+      expect(mockPush).toHaveBeenCalledWith('/runs');
     });
   });
 
   describe('Modal Closes After Navigation', () => {
     it('should close modal when clicking a command', async () => {
-      const store = useCommandPaletteStore.getState();
-      store.open('search');
-      expect(store.isOpen).toBe(true);
+      useCommandPaletteStore.getState().open('search');
+      expect(useCommandPaletteStore.getState().isOpen).toBe(true);
 
       const { container } = render(<CommandPalette />);
       const buttons = container.querySelectorAll('[role="option"]');
       const firstButton = buttons[0] as HTMLElement;
 
-      await userEvent.click(firstButton);
+      await user.click(firstButton);
 
       await waitFor(() => {
         expect(useCommandPaletteStore.getState().isOpen).toBe(false);
@@ -97,7 +90,7 @@ describe('Command Palette - Core Navigation', () => {
       const buttons = container.querySelectorAll('[role="option"]');
       const firstButton = buttons[0] as HTMLElement;
 
-      await userEvent.click(firstButton);
+      await user.click(firstButton);
 
       await waitFor(() => {
         expect(useCommandPaletteStore.getState().query).toBe('');
@@ -112,7 +105,7 @@ describe('Command Palette - Core Navigation', () => {
 
       expect(useCommandPaletteStore.getState().isOpen).toBe(true);
 
-      await userEvent.keyboard('{Escape}');
+      await user.keyboard('{Escape}');
 
       await waitFor(() => {
         expect(useCommandPaletteStore.getState().isOpen).toBe(false);
@@ -126,7 +119,7 @@ describe('Command Palette - Core Navigation', () => {
       render(<CommandPalette />);
 
       // Press Enter to select the first command (should navigate to dashboard)
-      await userEvent.keyboard('{Enter}');
+      await user.keyboard('{Enter}');
 
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith('/dashboard');
@@ -149,8 +142,9 @@ describe('Command Palette - Core Navigation', () => {
       });
 
       if (createProjectBtn) {
-        await userEvent.click(createProjectBtn);
-        expect(mockPush).toHaveBeenCalledWith('/projects?create=true');
+        await user.click(createProjectBtn);
+        // Current app routes "Create Project" actions to Empire missions.
+        expect(mockPush).toHaveBeenCalledWith('/empire/missions?new=1');
       }
     });
   });

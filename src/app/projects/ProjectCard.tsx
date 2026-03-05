@@ -11,6 +11,7 @@ import {
   Calendar,
   AlertTriangle,
   FolderKanban,
+  FolderOpen,
   CheckSquare,
   Bot,
 } from 'lucide-react';
@@ -121,6 +122,13 @@ export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, on
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {project.description}
         </p>
+      )}
+
+      {project.localPath && (
+        <div className="flex items-center gap-1 mb-3 text-[10px] font-mono text-muted-foreground/70 truncate" title={project.localPath}>
+          <FolderOpen className="h-3 w-3 shrink-0" />
+          <span className="truncate">{project.localPath.replace(/^\/home\/[^/]+/, '~')}</span>
+        </div>
       )}
 
       <div className="mb-4">

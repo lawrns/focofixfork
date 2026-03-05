@@ -104,7 +104,9 @@ describe('Button Component', () => {
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-disabled', 'true');
-      expect(screen.getByTestId('loader2-icon')).toBeInTheDocument();
+      const spinner = button.querySelector('svg.lucide-loader-circle');
+      expect(spinner).toBeInTheDocument();
+      expect(spinner).toHaveClass('animate-spin');
     });
 
     it('handles keyboard events', async () => {
@@ -145,7 +147,8 @@ describe('Button Component', () => {
 
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
-      expect(screen.getByTestId('loader2-icon')).toBeInTheDocument();
+      expect(button).toHaveAccessibleName('Submit');
+      expect(button.querySelector('svg.lucide-loader-circle')).toBeInTheDocument();
     });
 
     it('passes accessibility checks', async () => {

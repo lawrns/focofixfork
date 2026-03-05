@@ -16,6 +16,12 @@ interface BriefingData {
     financial?: string
     intelligence?: string
     codebase?: string
+    top_repos?: Array<{
+      name?: string
+      score?: number
+      verdict?: string
+      description?: string
+    }>
     recommendations?: string[]
   }
   model?: string
@@ -32,6 +38,7 @@ interface BriefingCardProps {
 
 export function BriefingCard({ data, loading, error }: BriefingCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [reposExpanded, setReposExpanded] = useState(false)
   if (loading) {
     return (
       <Card>
@@ -107,16 +114,48 @@ export function BriefingCard({ data, loading, error }: BriefingCardProps) {
         )}
 
         {/* Summary */}
-        {data.summary && (
-          <p className="text-[13px] text-foreground leading-relaxed">{data.summary}</p>
-        )}
+        {data.summary && <ExpandableText text={data.summary} clampClassName="line-clamp-5" />}
 
         {/* Sections */}
         {data.sections?.intelligence && (
-          <SectionBlock icon={Brain} title="Intelligence" text={data.sections.intelligence} />
+          <SectionBlock icon={Brain} title="Intelligence" text={data.sections.intelligence} expandable />
         )}
         {data.sections?.codebase && (
-          <SectionBlock icon={Code2} title="Codebase" text={data.sections.codebase} />
+          <SectionBlock icon={Code2} title="Codebase" text={data.sections.codebase} expandable />
+        )}
+        {data.sections?.top_repos && data.sections.top_repos.length > 0 && (
+          <div>
+            <div className="mb-2 text-[11px] font-mono-display uppercase tracking-wide text-muted-foreground">
+              Top Repos
+            </div>
+            <ul className="space-y-2">
+              {(reposExpanded ? data.sections.top_repos : data.sections.top_repos.slice(0, 3)).map((repo, i) => (
+                <li key={`${repo.name ?? 'repo'}-${i}`} className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[12px] font-medium text-foreground">{repo.name ?? 'Unnamed repo'}</span>
+                    {typeof repo.score === 'number' && (
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{repo.score.toFixed(1)}</span>
+                    )}
+                  </div>
+                  {repo.description && <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">{repo.description}</p>}
+                </li>
+              ))}
+            </ul>
+            {data.sections.top_repos.length > 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1 h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                onClick={() => setReposExpanded((v) => !v)}
+              >
+                {reposExpanded ? (
+                  <><ChevronUp className="h-3 w-3 mr-1" />Show fewer repos</>
+                ) : (
+                  <><ChevronDown className="h-3 w-3 mr-1" />Show all repos</>
+                )}
+              </Button>
+            )}
+          </div>
         )}
 
         {/* Recommendations */}
@@ -170,10 +209,12 @@ function SectionBlock({
   icon: Icon,
   title,
   text,
+  expandable = false,
 }: {
   icon: React.ElementType
   title: string
   text: string
+  expandable?: boolean
 }) {
   return (
     <div>
@@ -183,7 +224,43 @@ function SectionBlock({
           {title}
         </span>
       </div>
-      <p className="text-[12px] text-foreground leading-relaxed">{text}</p>
+      {expandable ? (
+        <ExpandableText text={text} clampClassName="line-clamp-4" />
+      ) : (
+        <p className="text-[12px] text-foreground leading-relaxed">{text}</p>
+      )}
+    </div>
+  )
+}
+
+function ExpandableText({ text, clampClassName }: { text: string; clampClassName: string }) {
+  const [open, setOpen] = useState(false)
+  const isLong = text.length > 260
+
+  return (
+    <div>
+      <p
+        className={cn(
+          'whitespace-pre-wrap text-[12px] leading-relaxed text-foreground',
+          !open && isLong && clampClassName
+        )}
+      >
+        {text}
+      </p>
+      {isLong && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-1 h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? (
+            <><ChevronUp className="h-3 w-3 mr-1" />Show less</>
+          ) : (
+            <><ChevronDown className="h-3 w-3 mr-1" />Read more</>
+          )}
+        </Button>
+      )}
     </div>
   )
 }

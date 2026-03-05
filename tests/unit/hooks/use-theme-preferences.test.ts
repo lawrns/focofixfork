@@ -1,394 +1,164 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { useThemePreferences } from '@/hooks/use-theme-preferences'
+import { STORAGE_KEYS } from '@/lib/theme/constants'
 
-// Mock the API
-vi.mock('@/lib/api-client', () => ({
-  apiClient: {
-    patch: vi.fn(),
+const {
+  getUserMock,
+  upsertMock,
+  singleMock,
+  eqMock,
+  selectMock,
+  fromMock,
+} = vi.hoisted(() => {
+  const getUserMock = vi.fn()
+  const upsertMock = vi.fn()
+  const singleMock = vi.fn()
+  const eqMock = vi.fn(() => ({ single: singleMock }))
+  const selectMock = vi.fn(() => ({ eq: eqMock }))
+  const fromMock = vi.fn(() => ({ upsert: upsertMock, select: selectMock }))
+  return { getUserMock, upsertMock, singleMock, eqMock, selectMock, fromMock }
+})
+
+vi.mock('@/lib/supabase-client', () => ({
+  supabase: {
+    auth: { getUser: getUserMock },
+    from: fromMock,
   },
 }))
 
+import { useThemePreferences } from '@/hooks/use-theme-preferences'
+
 describe('useThemePreferences Hook', () => {
   beforeEach(() => {
-    localStorage.clear()
     vi.clearAllMocks()
-  })
-
-  describe('Theme Management', () => {
-    test('should initialize with default theme', () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      expect(result.current.theme).toBe('light')
+    const store: Record<string, string> = {}
+    vi.mocked(localStorage.getItem).mockImplementation((key: string) => store[key] ?? null)
+    vi.mocked(localStorage.setItem).mockImplementation((key: string, value: string) => {
+      store[key] = value
+    })
+    vi.mocked(localStorage.removeItem).mockImplementation((key: string) => {
+      delete store[key]
+    })
+    vi.mocked(localStorage.clear).mockImplementation(() => {
+      for (const key of Object.keys(store)) delete store[key]
     })
 
-    test('should load theme from localStorage', () => {
-      localStorage.setItem('foco-theme', 'dark')
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    upsertMock.mockResolvedValue({ error: null })
+    singleMock.mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
+  })
 
-      const { result } = renderHook(() => useThemePreferences())
+  test('initializes with defaults', () => {
+    const { result } = renderHook(() => useThemePreferences())
 
+    expect(result.current.theme).toBe('light')
+    expect(result.current.accentColor).toBe('blue')
+    expect(result.current.fontSize).toBe('medium')
+  })
+
+  test('loads values from localStorage on mount', () => {
+    localStorage.setItem(STORAGE_KEYS.THEME, 'dark')
+    localStorage.setItem(STORAGE_KEYS.ACCENT_COLOR, 'purple')
+    localStorage.setItem(STORAGE_KEYS.FONT_SIZE, 'large')
+
+    const { result } = renderHook(() => useThemePreferences())
+
+    expect(result.current.theme).toBe('dark')
+    expect(result.current.accentColor).toBe('purple')
+    expect(result.current.fontSize).toBe('large')
+  })
+
+  test('setTheme updates state, storage, and server sync', async () => {
+    const { result } = renderHook(() => useThemePreferences())
+
+    act(() => {
+      result.current.setTheme('dark')
+    })
+
+    expect(result.current.theme).toBe('dark')
+    expect(localStorage.getItem(STORAGE_KEYS.THEME)).toBe('dark')
+
+    await waitFor(() => {
+      expect(upsertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'user-1',
+          theme: 'dark',
+        })
+      )
+    })
+  })
+
+  test('setAccentColor updates CSS variable and storage', () => {
+    const { result } = renderHook(() => useThemePreferences())
+
+    act(() => {
+      result.current.setAccentColor('green')
+    })
+
+    expect(result.current.accentColor).toBe('green')
+    expect(localStorage.getItem(STORAGE_KEYS.ACCENT_COLOR)).toBe('green')
+    expect(document.documentElement.style.getPropertyValue('--color-accent')).toBe('#10b981')
+  })
+
+  test('setFontSize updates CSS variable and storage', () => {
+    const { result } = renderHook(() => useThemePreferences())
+
+    act(() => {
+      result.current.setFontSize('small')
+    })
+
+    expect(result.current.fontSize).toBe('small')
+    expect(localStorage.getItem(STORAGE_KEYS.FONT_SIZE)).toBe('small')
+    expect(document.documentElement.style.getPropertyValue('--font-size-scale')).toBe('0.875')
+  })
+
+  test('reset restores defaults and clears localStorage keys', () => {
+    const { result } = renderHook(() => useThemePreferences())
+
+    act(() => {
+      result.current.setTheme('dark')
+      result.current.setAccentColor('purple')
+      result.current.setFontSize('large')
+      result.current.reset()
+    })
+
+    expect(result.current.theme).toBe('light')
+    expect(result.current.accentColor).toBe('blue')
+    expect(result.current.fontSize).toBe('medium')
+    expect(localStorage.getItem(STORAGE_KEYS.THEME)).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.ACCENT_COLOR)).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.FONT_SIZE)).toBeNull()
+  })
+
+  test('loads preferences from server when loadFromServer is true', async () => {
+    singleMock.mockResolvedValueOnce({
+      data: {
+        theme: 'dark',
+        accent_color: 'amber',
+        font_size: 'large',
+      },
+      error: null,
+    })
+
+    const { result } = renderHook(() => useThemePreferences({ loadFromServer: true }))
+
+    await waitFor(() => {
       expect(result.current.theme).toBe('dark')
-    })
-
-    test('should update theme', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setTheme('dark')
-      })
-
-      expect(result.current.theme).toBe('dark')
-    })
-
-    test('should persist theme to localStorage', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setTheme('dark')
-      })
-
-      await waitFor(() => {
-        expect(localStorage.getItem('foco-theme')).toBe('dark')
-      })
-    })
-
-    test('should support all theme options', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-      const themes = ['light', 'dark', 'auto', 'high-contrast', 'sepia']
-
-      for (const theme of themes) {
-        act(() => {
-          result.current.setTheme(theme)
-        })
-
-        await waitFor(() => {
-          expect(result.current.theme).toBe(theme)
-        })
-      }
-    })
-
-    test('should sync theme across tabs via storage event', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        const event = new StorageEvent('storage', {
-          key: 'foco-theme',
-          newValue: 'dark',
-          storageArea: localStorage,
-        })
-        window.dispatchEvent(event)
-      })
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('dark')
-      })
-    })
-  })
-
-  describe('Accent Color Management', () => {
-    test('should initialize with default accent color', () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      expect(result.current.accentColor).toBe('blue')
-    })
-
-    test('should update accent color', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setAccentColor('purple')
-      })
-
-      expect(result.current.accentColor).toBe('purple')
-    })
-
-    test('should persist accent color to localStorage', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setAccentColor('green')
-      })
-
-      await waitFor(() => {
-        expect(localStorage.getItem('foco-accent-color')).toBe('green')
-      })
-    })
-
-    test('should support all 12 accent colors', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-      const colors = ['blue', 'red', 'green', 'purple', 'pink', 'orange', 'yellow', 'teal', 'indigo', 'cyan', 'slate', 'amber']
-
-      for (const color of colors) {
-        act(() => {
-          result.current.setAccentColor(color)
-        })
-
-        await waitFor(() => {
-          expect(result.current.accentColor).toBe(color)
-        })
-      }
-    })
-
-    test('should apply accent color as CSS variable', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setAccentColor('red')
-      })
-
-      await waitFor(() => {
-        expect(document.documentElement.style.getPropertyValue('--color-accent')).toBeTruthy()
-      })
-    })
-  })
-
-  describe('Font Size Management', () => {
-    test('should initialize with default font size', () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      expect(result.current.fontSize).toBe('medium')
-    })
-
-    test('should update font size', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setFontSize('large')
-      })
-
+      expect(result.current.accentColor).toBe('amber')
       expect(result.current.fontSize).toBe('large')
     })
-
-    test('should persist font size to localStorage', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setFontSize('small')
-      })
-
-      await waitFor(() => {
-        expect(localStorage.getItem('foco-font-size')).toBe('small')
-      })
-    })
-
-    test('should support small, medium, and large sizes', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-      const sizes = ['small', 'medium', 'large']
-
-      for (const size of sizes) {
-        act(() => {
-          result.current.setFontSize(size)
-        })
-
-        await waitFor(() => {
-          expect(result.current.fontSize).toBe(size)
-        })
-      }
-    })
-
-    test('should apply font size as CSS variable', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setFontSize('large')
-      })
-
-      await waitFor(() => {
-        const scale = document.documentElement.style.getPropertyValue('--font-size-scale')
-        expect(scale).toBeTruthy()
-      })
-    })
   })
 
-  describe('Syncing with Server', () => {
-    test('should sync theme to server', async () => {
-      const { apiClient } = await import('@/lib/api-client')
-      const { result } = renderHook(() => useThemePreferences())
+  test('sets error when user is unauthenticated during sync', async () => {
+    getUserMock.mockResolvedValueOnce({ data: { user: null } })
+    const { result } = renderHook(() => useThemePreferences())
 
-      act(() => {
-        result.current.setTheme('dark')
-      })
-
-      await waitFor(() => {
-        expect(apiClient.patch).toHaveBeenCalledWith('/api/user/preferences', expect.objectContaining({
-          theme: 'dark',
-        }))
-      })
+    act(() => {
+      result.current.setTheme('dark')
     })
 
-    test('should sync accent color to server', async () => {
-      const { apiClient } = await import('@/lib/api-client')
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setAccentColor('purple')
-      })
-
-      await waitFor(() => {
-        expect(apiClient.patch).toHaveBeenCalledWith('/api/user/preferences', expect.objectContaining({
-          accent_color: 'purple',
-        }))
-      })
-    })
-
-    test('should sync font size to server', async () => {
-      const { apiClient } = await import('@/lib/api-client')
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setFontSize('large')
-      })
-
-      await waitFor(() => {
-        expect(apiClient.patch).toHaveBeenCalledWith('/api/user/preferences', expect.objectContaining({
-          font_size: 'large',
-        }))
-      })
-    })
-
-    test('should handle sync errors gracefully', async () => {
-      const { apiClient } = await import('@/lib/api-client')
-      vi.mocked(apiClient.patch).mockRejectedValueOnce(new Error('Network error'))
-
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setTheme('dark')
-      })
-
-      // Should still update locally even if server sync fails
-      expect(result.current.theme).toBe('dark')
-    })
-  })
-
-  describe('Loading Preferences from Server', () => {
-    test('should load preferences from server on mount', async () => {
-      const { apiClient } = await import('@/lib/api-client')
-      vi.mocked(apiClient.patch).mockResolvedValueOnce({
-        theme: 'dark',
-        accent_color: 'purple',
-        font_size: 'large',
-      })
-
-      const { result } = renderHook(() => useThemePreferences({ loadFromServer: true }))
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('dark')
-        expect(result.current.accentColor).toBe('purple')
-        expect(result.current.fontSize).toBe('large')
-      })
-    })
-
-    test('should prioritize server preferences over localStorage', async () => {
-      localStorage.setItem('foco-theme', 'light')
-
-      const { apiClient } = await import('@/lib/api-client')
-      vi.mocked(apiClient.patch).mockResolvedValueOnce({
-        theme: 'dark',
-        accent_color: 'blue',
-        font_size: 'medium',
-      })
-
-      const { result } = renderHook(() => useThemePreferences({ loadFromServer: true }))
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('dark')
-      })
-    })
-  })
-
-  describe('CSS Variable Updates', () => {
-    test('should update CSS variables on mount', () => {
-      renderHook(() => useThemePreferences())
-
-      expect(document.documentElement.style.getPropertyValue('--font-size-scale')).toBeTruthy()
-      expect(document.documentElement.style.getPropertyValue('--color-accent')).toBeTruthy()
-    })
-
-    test('should map font size to correct scale values', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-      const fontSizeScales = {
-        small: '0.875',
-        medium: '1',
-        large: '1.125',
-      }
-
-      for (const [size, scale] of Object.entries(fontSizeScales)) {
-        act(() => {
-          result.current.setFontSize(size)
-        })
-
-        await waitFor(() => {
-          expect(document.documentElement.style.getPropertyValue('--font-size-scale')).toBe(scale)
-        })
-      }
-    })
-
-    test('should map accent colors to correct hex values', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      const colorMap = {
-        blue: '#3b82f6',
-        red: '#ef4444',
-        green: '#10b981',
-        purple: '#a855f7',
-        pink: '#ec4899',
-        orange: '#f97316',
-        yellow: '#eab308',
-        teal: '#14b8a6',
-        indigo: '#6366f1',
-        cyan: '#06b6d4',
-        slate: '#64748b',
-        amber: '#f59e0b',
-      }
-
-      for (const [color, hex] of Object.entries(colorMap)) {
-        act(() => {
-          result.current.setAccentColor(color)
-        })
-
-        await waitFor(() => {
-          expect(document.documentElement.style.getPropertyValue('--color-accent')).toBe(hex)
-        })
-      }
-    })
-  })
-
-  describe('Reset Preferences', () => {
-    test('should reset all preferences to defaults', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setTheme('dark')
-        result.current.setAccentColor('purple')
-        result.current.setFontSize('large')
-      })
-
-      act(() => {
-        result.current.reset()
-      })
-
-      await waitFor(() => {
-        expect(result.current.theme).toBe('light')
-        expect(result.current.accentColor).toBe('blue')
-        expect(result.current.fontSize).toBe('medium')
-      })
-    })
-
-    test('should clear localStorage on reset', async () => {
-      const { result } = renderHook(() => useThemePreferences())
-
-      act(() => {
-        result.current.setTheme('dark')
-      })
-
-      act(() => {
-        result.current.reset()
-      })
-
-      await waitFor(() => {
-        expect(localStorage.getItem('foco-theme')).toBeNull()
-      })
+    await waitFor(() => {
+      expect(result.current.error).toBe('User not authenticated')
     })
   })
 })

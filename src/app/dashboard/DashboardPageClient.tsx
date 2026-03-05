@@ -204,7 +204,7 @@ export default function DashboardPageClient() {
         />
 
         {/* Command Surface - Elevated and Prominent */}
-        <div className="mb-6 shadow-lg border-l-4 border-l-[color:var(--foco-teal)] rounded-lg overflow-hidden">
+        <div className="mb-6">
           <CommandSurface
             context="dashboard"
             className="border-0 shadow-none"

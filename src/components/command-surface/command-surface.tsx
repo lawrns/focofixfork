@@ -15,6 +15,7 @@ import { QuickCapture } from '@/features/task-intake/components/quick-capture';
 import { useCommandPipeline } from './use-command-pipeline';
 import { DecisionPreview } from './decision-preview';
 import { extractOutcome } from './execution-result';
+import { CustomAgentModal } from '@/components/agent-ops/custom-agent-modal';
 
 function normalizeError(err: unknown): string {
   if (!err) return 'Unknown error'
@@ -334,6 +335,44 @@ export function CommandSurface({
     if (!text.trim() || isProcessing) return;
 
     clearExecution();
+    const goMatch = text.trim().match(/^\/go\s+([0-9a-f-]{36})$/i)
+    if (goMatch) {
+      try {
+        const res = await fetch('/api/agent-ops/go', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: goMatch[1] }),
+        })
+        const json = await res.json()
+        if (!res.ok || !json?.ok) {
+          const msg = json?.error?.message ?? json?.error ?? 'Failed to trigger /go'
+          toast.error(typeof msg === 'string' ? msg : 'Failed to trigger /go')
+          return
+        }
+
+        const body = json?.data?.next_action?.body as Record<string, unknown> | undefined
+        const goPrompt = typeof body?.prompt === 'string' ? body.prompt : ''
+        const goProjectId = typeof body?.project_id === 'string' ? body.project_id : null
+
+        if (!goPrompt) {
+          toast.error('No prompt generated for /go')
+          return
+        }
+
+        const result = await submitPrompt(goPrompt, 'auto', goProjectId)
+        if (result.status === 'failed') {
+          toast.error(normalizeError(result.error) || 'Command failed')
+        } else {
+          toast.success('Human-gated /go dispatched')
+        }
+        onExecutionComplete?.(result)
+        setPrompt('')
+        return
+      } catch {
+        toast.error('Failed to trigger /go')
+        return
+      }
+    }
 
     // Check for injection / generate decision preview before streaming
     const analysis = analyzePrompt(text, mode);
@@ -609,6 +648,7 @@ export function CommandSurface({
                   <GitBranch className="h-4 w-4" />
                 )}
               </Button>
+              <CustomAgentModal />
             </div>
           </div>
 

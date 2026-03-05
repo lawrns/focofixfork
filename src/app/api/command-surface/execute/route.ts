@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
 import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
+import { isLane } from '@/lib/agent-ops/lane-policy'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -63,7 +64,13 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null)
-  const { prompt, mode, project_id } = body as { prompt?: string; mode?: string; project_id?: string | null }
+  const { prompt, mode, project_id, lane, task_id } = body as {
+    prompt?: string
+    mode?: string
+    project_id?: string | null
+    lane?: string | null
+    task_id?: string | null
+  }
 
   if (!prompt?.trim()) {
     return mergeAuthResponse(
@@ -78,6 +85,7 @@ export async function POST(req: NextRequest) {
   const plannerModel = routing.plan_model
   const executorModel = routing.execute_model
   const reviewerModel = routing.review_model
+  const normalizedLane = isLane(lane) ? lane : null
 
   try {
     await logClawdActionVisibility(supabase, {
@@ -87,6 +95,8 @@ export async function POST(req: NextRequest) {
       detail: prompt.trim().slice(0, 180),
       payload: {
         mode: mode ?? 'auto',
+        lane: normalizedLane,
+        task_id: task_id ?? null,
         routingProfileId: routing.profile_id,
         plannerModel,
         executorModel,
@@ -113,6 +123,8 @@ export async function POST(req: NextRequest) {
         auto_review: true,
         handbook_slug: 'general',
         project_id: project_id ?? null,
+        task_id: task_id ?? null,
+        lane: normalizedLane,
       }),
       signal: AbortSignal.timeout(300_000),
     })

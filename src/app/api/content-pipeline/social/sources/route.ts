@@ -16,6 +16,7 @@ import {
   scopeProjectIds,
 } from '@/features/content-pipeline/server/workspace-scope';
 import { getSourcePlatform, mergeSourceHeaders } from '@/features/content-pipeline/server/source-record';
+import { isMissingContentPipelineSchema } from '@/features/content-pipeline/server/schema-availability';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,25 +43,51 @@ export async function GET(req: NextRequest) {
 
     const { data: sources, error: dbError } = await supabaseAdmin
       .from('content_sources')
-      .select('*, content_items(count)')
+      .select('*')
       .in('project_id', projectIds)
       .order('created_at', { ascending: false });
 
     if (dbError) {
+      if (isMissingContentPipelineSchema(dbError)) {
+        return mergeAuthResponse(successResponse([]), authResponse);
+      }
       return databaseErrorResponse('Failed to fetch social sources', dbError);
     }
 
-    const result = (sources || [])
+    const socialSources = (sources || [])
       .filter((source: any) => Boolean(getSourcePlatform(source)))
-      .map((source: any) => ({
-        ...source,
-        platform: getSourcePlatform(source),
-        item_count: source.content_items?.[0]?.count ?? 0,
-        content_items: undefined,
-      }));
+    const counts = await Promise.all(
+      socialSources.map(async (source: any) => {
+        const { count, error } = await supabaseAdmin
+          .from('content_items')
+          .select('id', { count: 'exact', head: true })
+          .eq('source_id', source.id)
+
+        if (error) {
+          if (isMissingContentPipelineSchema(error)) {
+            return [source.id, 0] as const
+          }
+          throw error
+        }
+
+        return [source.id, count ?? 0] as const
+      })
+    )
+
+    const countBySourceId = new Map<string, number>(counts)
+
+    const result = socialSources.map((source: any) => ({
+      ...source,
+      platform: getSourcePlatform(source),
+      item_count: countBySourceId.get(source.id) ?? 0,
+    }));
 
     return mergeAuthResponse(successResponse(result), authResponse);
   } catch (err: unknown) {
+    if (isMissingContentPipelineSchema(err)) {
+      const { response: authResponse } = await getAuthUser(req);
+      return mergeAuthResponse(successResponse([]), authResponse);
+    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     return databaseErrorResponse('Failed to fetch social sources', message);
   }
@@ -139,11 +166,24 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (createError) {
+      if (isMissingContentPipelineSchema(createError)) {
+        return mergeAuthResponse(
+          badRequestResponse('Content pipeline schema is not installed in this environment yet. Apply the content pipeline migrations first.'),
+          authResponse
+        );
+      }
       return databaseErrorResponse('Failed to create social source', createError);
     }
 
     return mergeAuthResponse(successResponse(source, undefined, 201), authResponse);
   } catch (err: unknown) {
+    if (isMissingContentPipelineSchema(err)) {
+      const { response: authResponse } = await getAuthUser(req);
+      return mergeAuthResponse(
+        badRequestResponse('Content pipeline schema is not installed in this environment yet. Apply the content pipeline migrations first.'),
+        authResponse
+      );
+    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     return databaseErrorResponse('Failed to create social source', message);
   }

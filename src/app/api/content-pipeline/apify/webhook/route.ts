@@ -2,11 +2,13 @@ import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 import { badRequestResponse, successResponse } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { getDatasetItems, mapApifyItemsToRawContent } from '@/features/content-pipeline/services/apify-client'
+import { getDatasetItems } from '@/features/content-pipeline/services/apify-client'
+import { prepareApifyItemsForSource } from '@/features/content-pipeline/services/social-ingestion'
 import { SourcePoller } from '@/features/content-pipeline/services/source-poller'
 import { getSourceWebhookSecret } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 function verifyWebhookSecret(req: NextRequest, secret: string): boolean {
   const candidate = req.headers.get('x-apify-webhook-secret') ?? req.nextUrl.searchParams.get('secret') ?? ''
@@ -70,8 +72,16 @@ export async function POST(req: NextRequest) {
   }
 
   const items = await getDatasetItems(datasetId)
-  const mapped = mapApifyItemsToRawContent(items)
-  const ingest = await SourcePoller.processNewItems(source, mapped)
+  const prepared = await prepareApifyItemsForSource(source, items)
+  const persisted = await SourcePoller.processNewItems(source, prepared.items)
+  const ingest = {
+    ...persisted,
+    videoItemsDetected: prepared.videoItemsDetected,
+    videosDownloaded: prepared.videosDownloaded,
+    transcriptsCompleted: prepared.transcriptsCompleted,
+    transcriptsFailed: prepared.transcriptsFailed,
+    warnings: prepared.warnings,
+  }
 
   await supabaseAdmin
     .from('apify_runs')
@@ -79,6 +89,11 @@ export async function POST(req: NextRequest) {
       metrics: {
         items_processed: ingest.itemsProcessed,
         items_new: ingest.itemsNew,
+        video_items_detected: ingest.videoItemsDetected,
+        videos_downloaded: ingest.videosDownloaded,
+        transcripts_completed: ingest.transcriptsCompleted,
+        transcripts_failed: ingest.transcriptsFailed,
+        warnings: ingest.warnings,
       },
     })
     .eq('id', runRow.id)

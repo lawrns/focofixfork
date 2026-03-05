@@ -7,7 +7,7 @@ export interface ContentSource {
   url: string;
   type: ContentSourceType;
   poll_interval_minutes: number;
-  headers: Record<string, string>;
+  headers: Record<string, unknown>;
   provider_config?: Record<string, unknown>;
   webhook_secret?: string;
   status: 'active' | 'paused' | 'error';
@@ -25,6 +25,19 @@ export interface ContentItem {
   external_id: string;
   title?: string;
   raw_content: string;
+  content_type?: string;
+  caption_text?: string;
+  transcript_text?: string;
+  analysis_text?: string;
+  post_url?: string;
+  video_url?: string;
+  media_urls?: string[];
+  thumbnail_url?: string;
+  author_name?: string;
+  engagement?: Record<string, unknown>;
+  provider_payload?: Record<string, unknown>;
+  download_status?: 'pending' | 'complete' | 'failed' | 'not_applicable';
+  transcript_status?: 'pending' | 'complete' | 'failed' | 'not_applicable';
   ai_summary?: string;
   ai_tags?: string[];
   relevance_score: number;
@@ -39,12 +52,30 @@ export interface RawContentItem {
   title?: string;
   content: string;
   published_at?: string;
+  content_type?: string;
+  caption_text?: string;
+  transcript_text?: string;
+  analysis_text?: string;
+  post_url?: string;
+  video_url?: string;
+  media_urls?: string[];
+  thumbnail_url?: string;
+  author_name?: string;
+  engagement?: Record<string, unknown>;
+  provider_payload?: Record<string, unknown>;
+  download_status?: 'pending' | 'complete' | 'failed' | 'not_applicable';
+  transcript_status?: 'pending' | 'complete' | 'failed' | 'not_applicable';
 }
 
 export interface PollResult {
   success: boolean;
   itemsProcessed: number;
   itemsNew: number;
+  videoItemsDetected?: number;
+  videosDownloaded?: number;
+  transcriptsCompleted?: number;
+  transcriptsFailed?: number;
+  warnings?: string[];
   error?: string;
 }
 

@@ -87,7 +87,7 @@ export function validateHandle(platform: SocialPlatform, input: string): { valid
   }
 }
 
-export function buildApifyConfig(platform: SocialPlatform, handle: string, maxItems = 20): ApifyConfig {
+export function buildApifyConfig(platform: SocialPlatform, handle: string, maxItems = platform === 'youtube' ? 20 : 5): ApifyConfig {
   const actorId = APIFY_ACTORS[platform];
 
   switch (platform) {

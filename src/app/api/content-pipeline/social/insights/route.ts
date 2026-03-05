@@ -8,8 +8,19 @@ import {
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
 import { getSourcePlatform } from '@/features/content-pipeline/server/source-record'
+import { isMissingContentPipelineSchema } from '@/features/content-pipeline/server/schema-availability'
 
 export const dynamic = 'force-dynamic'
+
+function emptyInsightsPayload() {
+  return {
+    top_insights: [],
+    themes: [],
+    platform_counts: {},
+    total_items: 0,
+    analyzed_count: 0,
+  }
+}
 
 /**
  * GET /api/content-pipeline/social/insights
@@ -29,13 +40,7 @@ export async function GET(req: NextRequest) {
 
     const projectIds = scopeProjectIds(scope)
     if (projectIds.length === 0) {
-      return mergeAuthResponse(successResponse({
-        top_insights: [],
-        themes: [],
-        platform_counts: {},
-        total_items: 0,
-        analyzed_count: 0,
-      }), authResponse)
+      return mergeAuthResponse(successResponse(emptyInsightsPayload()), authResponse)
     }
 
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
@@ -46,6 +51,9 @@ export async function GET(req: NextRequest) {
       .in('project_id', projectIds)
 
     if (sourceError) {
+      if (isMissingContentPipelineSchema(sourceError)) {
+        return mergeAuthResponse(successResponse(emptyInsightsPayload()), authResponse)
+      }
       return mergeAuthResponse(databaseErrorResponse('Failed to fetch social sources', sourceError), authResponse)
     }
 
@@ -53,13 +61,7 @@ export async function GET(req: NextRequest) {
     const sourceIds = safeSources.map((source: any) => source.id)
 
     if (sourceIds.length === 0) {
-      return mergeAuthResponse(successResponse({
-        top_insights: [],
-        themes: [],
-        platform_counts: {},
-        total_items: 0,
-        analyzed_count: 0,
-      }), authResponse)
+      return mergeAuthResponse(successResponse(emptyInsightsPayload()), authResponse)
     }
 
     const sourceById = new Map<string, { name: string | null; platform: string | null; url: string | null }>()
@@ -81,6 +83,9 @@ export async function GET(req: NextRequest) {
       .limit(50)
 
     if (dbError) {
+      if (isMissingContentPipelineSchema(dbError)) {
+        return mergeAuthResponse(successResponse(emptyInsightsPayload()), authResponse)
+      }
       return mergeAuthResponse(databaseErrorResponse('Failed to fetch social insights', dbError), authResponse)
     }
 
@@ -127,6 +132,9 @@ export async function GET(req: NextRequest) {
       .gte('created_at', cutoff)
 
     if (totalCountError) {
+      if (isMissingContentPipelineSchema(totalCountError)) {
+        return mergeAuthResponse(successResponse(emptyInsightsPayload()), authResponse)
+      }
       return mergeAuthResponse(databaseErrorResponse('Failed to count social items', totalCountError), authResponse)
     }
 
@@ -141,6 +149,10 @@ export async function GET(req: NextRequest) {
       authResponse
     )
   } catch (err: unknown) {
+    if (isMissingContentPipelineSchema(err)) {
+      const { response: authResponse } = await getAuthUser(req)
+      return mergeAuthResponse(successResponse(emptyInsightsPayload()), authResponse)
+    }
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to fetch social insights', message)
   }

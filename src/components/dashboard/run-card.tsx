@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -74,7 +74,10 @@ type RunCardProps = {
   onStop?: (id: string) => void
 }
 
-export function RunCard({ run, terminalLines, connectionState = 'idle', onStop }: RunCardProps) {
+export const RunCard = forwardRef<HTMLDivElement, RunCardProps>(function RunCard(
+  { run, terminalLines, connectionState = 'idle', onStop }: RunCardProps,
+  ref
+) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
@@ -100,6 +103,7 @@ export function RunCard({ run, terminalLines, connectionState = 'idle', onStop }
 
   return (
     <motion.div
+      ref={ref}
       layout
       variants={runCardEntry}
       initial="hidden"
@@ -189,4 +193,4 @@ export function RunCard({ run, terminalLines, connectionState = 'idle', onStop }
       </div>
     </motion.div>
   )
-}
+})

@@ -32,7 +32,7 @@ export class ContentAnalyzer {
       const result = await dispatchToClawdBot({
         taskId: `content-analysis-${item.id}`,
         title: `Analyze Content: ${item.title || 'Untitled'}`,
-        description: item.raw_content.substring(0, 8000), // Limit content length
+        description: (item.analysis_text || item.transcript_text || item.raw_content).substring(0, 8000), // Limit content length
         projectContext: 'Content Pipeline Analysis',
         featureContext: 'Analyzing incoming content from RSS feeds and APIs to extract summaries, tags, and relevance scores',
         systemPrompt: ANALYSIS_SYSTEM_PROMPT,

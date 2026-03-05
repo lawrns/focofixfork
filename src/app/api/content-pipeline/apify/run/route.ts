@@ -8,12 +8,14 @@ import {
   successResponse,
 } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { getDatasetItems, mapApifyItemsToRawContent, startApifyRun } from '@/features/content-pipeline/services/apify-client'
+import { getDatasetItems, startApifyRun } from '@/features/content-pipeline/services/apify-client'
+import { prepareApifyItemsForSource } from '@/features/content-pipeline/services/social-ingestion'
 import { SourcePoller } from '@/features/content-pipeline/services/source-poller'
 import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
 import { getSourceProviderConfig } from '@/features/content-pipeline/server/source-record'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   const { user, error, response: authResponse } = await getAuthUser(req)
@@ -79,11 +81,27 @@ export async function POST(req: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse('Failed to persist Apify run', runErr), authResponse)
     }
 
-    let ingest = { itemsProcessed: 0, itemsNew: 0 }
+    let ingest = {
+      itemsProcessed: 0,
+      itemsNew: 0,
+      videoItemsDetected: 0,
+      videosDownloaded: 0,
+      transcriptsCompleted: 0,
+      transcriptsFailed: 0,
+      warnings: [] as string[],
+    }
     if (run.status === 'succeeded' && run.defaultDatasetId) {
       const datasetItems = await getDatasetItems(run.defaultDatasetId)
-      const mapped = mapApifyItemsToRawContent(datasetItems)
-      ingest = await SourcePoller.processNewItems(source, mapped)
+      const prepared = await prepareApifyItemsForSource(source, datasetItems)
+      const persisted = await SourcePoller.processNewItems(source, prepared.items)
+      ingest = {
+        ...persisted,
+        videoItemsDetected: prepared.videoItemsDetected,
+        videosDownloaded: prepared.videosDownloaded,
+        transcriptsCompleted: prepared.transcriptsCompleted,
+        transcriptsFailed: prepared.transcriptsFailed,
+        warnings: prepared.warnings,
+      }
 
       await supabaseAdmin
         .from('apify_runs')
@@ -92,6 +110,11 @@ export async function POST(req: NextRequest) {
           metrics: {
             items_processed: ingest.itemsProcessed,
             items_new: ingest.itemsNew,
+            video_items_detected: ingest.videoItemsDetected,
+            videos_downloaded: ingest.videosDownloaded,
+            transcripts_completed: ingest.transcriptsCompleted,
+            transcripts_failed: ingest.transcriptsFailed,
+            warnings: ingest.warnings,
           },
           completed_at: new Date().toISOString(),
         })

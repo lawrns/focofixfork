@@ -6,7 +6,8 @@
 import type { ContentSource, RawContentItem, PollResult } from '../types';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
-import { getDatasetItems, mapApifyItemsToRawContent, startApifyRun } from './apify-client';
+import { getDatasetItems, startApifyRun } from './apify-client';
+import { prepareApifyItemsForSource } from './social-ingestion';
 import { getSourceHeaders, getSourceProviderConfig } from '@/features/content-pipeline/server/source-record';
 
 // Simple XML parser for RSS feeds
@@ -142,7 +143,11 @@ export class SourcePoller {
     }
 
     const datasetItems = await getDatasetItems(run.defaultDatasetId);
-    return mapApifyItemsToRawContent(datasetItems);
+    const prepared = await prepareApifyItemsForSource(source, datasetItems);
+    if (prepared.warnings.length > 0) {
+      logger.warn(`Apify ingest warnings for source ${source.id}: ${prepared.warnings.join(' | ')}`);
+    }
+    return prepared.items;
   }
 
   /**
@@ -248,6 +253,19 @@ export class SourcePoller {
           external_id: item.external_id,
           title: item.title,
           raw_content: item.content,
+          content_type: item.content_type ?? null,
+          caption_text: item.caption_text ?? null,
+          transcript_text: item.transcript_text ?? null,
+          analysis_text: item.analysis_text ?? null,
+          post_url: item.post_url ?? null,
+          video_url: item.video_url ?? null,
+          media_urls: item.media_urls ?? [],
+          thumbnail_url: item.thumbnail_url ?? null,
+          author_name: item.author_name ?? null,
+          engagement: item.engagement ?? {},
+          provider_payload: item.provider_payload ?? {},
+          download_status: item.download_status ?? 'not_applicable',
+          transcript_status: item.transcript_status ?? 'not_applicable',
           published_at: item.published_at,
           status: 'unread',
         });

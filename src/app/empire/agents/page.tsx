@@ -26,7 +26,7 @@ export default function EmpireAgentsPage() {
         primaryAction={<CustomAgentModal workspaceId={workspaceId} />}
       />
 
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-7xl">
         {/* Model tier legend */}
         <Card>
           <CardContent className="pt-4">

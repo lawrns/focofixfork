@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Bot, Clock, AlertCircle, Zap, RefreshCw, Inbox, ClipboardList, Waypoints, ScrollText } from 'lucide-react'
 
@@ -146,8 +147,8 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadOverview = useCallback(async () => {
-    setLoading(true)
+  const loadOverview = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoading(true)
     setError(null)
     try {
       const search = new URLSearchParams()
@@ -163,7 +164,7 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load agent roster')
     } finally {
-      setLoading(false)
+      if (!options?.silent) setLoading(false)
     }
   }, [workspaceId])
 
@@ -171,11 +172,22 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
     void loadOverview()
   }, [loadOverview])
 
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      void loadOverview({ silent: true })
+    }, 15_000)
+    return () => clearInterval(intervalId)
+  }, [loadOverview])
+
   const sourceErrors = useMemo(() => overview?.source_errors ?? [], [overview])
   const systemAgents = useMemo(() => overview?.system_agents ?? [], [overview])
   const customAgents = useMemo(() => overview?.custom_agents ?? [], [overview])
   const laneStats = useMemo(() => overview?.lane_stats ?? [], [overview])
   const recent = useMemo(() => overview?.recent, [overview])
+  const lastSyncLabel = useMemo(
+    () => (overview?.timestamp ? formatRelativeTime(overview.timestamp) : 'never'),
+    [overview?.timestamp]
+  )
 
   if (!overview && loading) {
     return (
@@ -190,6 +202,14 @@ export function AgentRosterExtended({ workspaceId }: AgentRosterExtendedProps) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] text-muted-foreground">Last synced {lastSyncLabel}</p>
+        <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => void loadOverview()}>
+          <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+          Refresh
+        </Button>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Card>
           <CardContent className="pt-4">

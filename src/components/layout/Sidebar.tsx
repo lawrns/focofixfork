@@ -274,7 +274,7 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="/dashboard/settings"
+            href="/settings"
             className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
           >
             <Settings className="h-4 w-4" />

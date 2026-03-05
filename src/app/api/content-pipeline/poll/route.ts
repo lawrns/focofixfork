@@ -9,6 +9,7 @@ import {
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { SourcePoller } from '@/features/content-pipeline/services/source-poller';
 import { logger } from '@/lib/logger';
+import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
     const isCron = cronSecret && CRON_SECRET && cronSecret === CRON_SECRET;
 
     let userId: string | null = null;
+    let allowedProjectIds: string[] = [];
 
     if (!isCron) {
       // Must be authenticated
@@ -40,6 +42,12 @@ export async function POST(req: NextRequest) {
       }
 
       userId = user.id;
+
+      const { scope, error: scopeError } = await resolveWorkspaceScope(user.id);
+      if (scopeError) {
+        return databaseErrorResponse('Failed to resolve workspace scope', scopeError);
+      }
+      allowedProjectIds = scopeProjectIds(scope);
     }
 
     const { searchParams } = new URL(req.url);
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
     // Build query for sources to poll
     let query = supabaseAdmin
       .from('content_sources')
-      .select('*, foco_projects!inner(owner_id)')
+      .select('*')
       .eq('status', 'active');
 
     // Apply filters
@@ -63,7 +71,13 @@ export async function POST(req: NextRequest) {
 
     // If not cron, restrict to user's projects
     if (!isCron && userId) {
-      query = query.eq('foco_projects.owner_id', userId);
+      if (allowedProjectIds.length === 0) {
+        return successResponse({
+          message: 'No accessible projects found to poll',
+          results: [],
+        });
+      }
+      query = query.in('project_id', allowedProjectIds);
     }
 
     const { data: sources, error: sourcesError } = await query;

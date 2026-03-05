@@ -116,7 +116,7 @@ export function AppShell({ children }: AppShellProps) {
       {isMounted && isAppPage && !isFocusMode && (
         <div className="fixed bottom-6 right-6 z-40 md:hidden">
           <button
-            onClick={() => router.push('/openclaw')}
+            onClick={() => router.push('/empire/command')}
             className="w-14 h-14 bg-[color:var(--foco-teal)] text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 active:shadow-inner hover:opacity-90"
             aria-label="Dispatch agent"
           >

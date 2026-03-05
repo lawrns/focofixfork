@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 interface TimelineItem {
   id: string;
   title: string;
-  project: { name: string; color: string };
+  project: { id?: string; slug?: string | null; name: string; color: string };
   type: 'milestone' | 'task';
   startDate: string;
   endDate: string;
@@ -135,10 +135,7 @@ export function TimelinePageCore({ pageTitle = 'Timeline' }: { pageTitle?: strin
       if (!user) return;
 
       try {
-        const [milestonesRes, projectsRes] = await Promise.all([
-          fetch('/api/milestones', { credentials: 'include' }),
-          fetch('/api/projects', { credentials: 'include' })
-        ]);
+        const milestonesRes = await fetch('/api/milestones', { credentials: 'include' });
 
         const items: TimelineItem[] = [];
 
@@ -150,7 +147,12 @@ export function TimelinePageCore({ pageTitle = 'Timeline' }: { pageTitle?: strin
               items.push({
                 id: m.id,
                 title: m.title,
-                project: { name: m.project?.name || 'Unknown', color: m.project?.color || '#6366F1' },
+                project: {
+                  id: m.project?.id,
+                  slug: m.project?.slug ?? null,
+                  name: m.project?.name || 'Unknown',
+                  color: m.project?.color || '#6366F1',
+                },
                 type: 'milestone',
                 startDate: m.start_date,
                 endDate: m.end_date,
@@ -175,11 +177,16 @@ export function TimelinePageCore({ pageTitle = 'Timeline' }: { pageTitle?: strin
   const groupedItems = timelineItems.reduce((acc, item) => {
     const projectName = item.project.name;
     if (!acc[projectName]) {
-      acc[projectName] = { color: item.project.color, items: [] };
+      acc[projectName] = {
+        color: item.project.color,
+        projectId: item.project.id,
+        projectSlug: item.project.slug ?? null,
+        items: [],
+      };
     }
     acc[projectName].items.push(item);
     return acc;
-  }, {} as Record<string, { color: string; items: TimelineItem[] }>);
+  }, {} as Record<string, { color: string; projectId?: string; projectSlug?: string | null; items: TimelineItem[] }>);
 
   const handlePrevMonth = () => {
     if (currentMonthIndex > 0) {
@@ -317,12 +324,12 @@ export function TimelinePageCore({ pageTitle = 'Timeline' }: { pageTitle?: strin
           </div>
         </div>
 
-        {Object.entries(groupedItems).map(([projectName, { color, items }]) => (
+        {Object.entries(groupedItems).map(([projectName, { color, projectId, projectSlug, items }]) => (
           <div key={projectName}>
             <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
               <div className="w-48 shrink-0 p-3 border-r border-zinc-200 dark:border-zinc-800">
                 <Link
-                  href="/projects/website-redesign"
+                  href={projectSlug ? `/projects/${encodeURIComponent(projectSlug)}` : (projectId ? `/projects/${encodeURIComponent(projectId)}` : '/empire/missions')}
                   className="flex items-center gap-2 font-medium text-sm hover:text-[color:var(--foco-teal)] transition-colors"
                 >
                   <div className="h-3 w-3 rounded" style={{ backgroundColor: color }} />

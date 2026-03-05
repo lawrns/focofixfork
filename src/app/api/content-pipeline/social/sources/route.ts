@@ -4,16 +4,23 @@ import {
   successResponse,
   authRequiredResponse,
   databaseErrorResponse,
+  badRequestResponse,
 } from '@/lib/api/response-helpers';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { buildApifyConfig, validateHandle, platformMeta } from '@/features/content-pipeline/services/social-config';
 import type { SocialPlatform } from '@/features/content-pipeline/services/social-config';
+import {
+  ensureWorkspaceRootProject,
+  hasProjectAccess,
+  resolveWorkspaceScope,
+  scopeProjectIds,
+} from '@/features/content-pipeline/server/workspace-scope';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/content-pipeline/social/sources
- * List social content sources (where platform IS NOT NULL)
+ * List social content sources for all projects user can access.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -22,9 +29,20 @@ export async function GET(req: NextRequest) {
       return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
 
+    const { scope, error: scopeError } = await resolveWorkspaceScope(user.id);
+    if (scopeError) {
+      return databaseErrorResponse('Failed to resolve workspace scope', scopeError);
+    }
+
+    const projectIds = scopeProjectIds(scope);
+    if (projectIds.length === 0) {
+      return mergeAuthResponse(successResponse([]), authResponse);
+    }
+
     const { data: sources, error: dbError } = await supabaseAdmin
       .from('content_sources')
       .select('*, content_items(count)')
+      .in('project_id', projectIds)
       .not('platform', 'is', null)
       .order('created_at', { ascending: false });
 
@@ -32,10 +50,9 @@ export async function GET(req: NextRequest) {
       return databaseErrorResponse('Failed to fetch social sources', dbError);
     }
 
-    // Flatten the count
-    const result = (sources || []).map((s: any) => ({
-      ...s,
-      item_count: s.content_items?.[0]?.count ?? 0,
+    const result = (sources || []).map((source: any) => ({
+      ...source,
+      item_count: source.content_items?.[0]?.count ?? 0,
       content_items: undefined,
     }));
 
@@ -48,11 +65,11 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/content-pipeline/social/sources
- * Create a social content source from platform + handle
+ * Create a social content source from platform + handle.
  */
 export async function POST(req: NextRequest) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
+    const { user, error, response: authResponse } = await getAuthUser(req);
     if (error || !user) {
       return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
@@ -60,47 +77,40 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { platform, handle: rawHandle, name, poll_interval_minutes, project_id } = body;
 
-    // Validate platform
     const validPlatforms: SocialPlatform[] = ['twitter', 'instagram', 'youtube'];
     if (!platform || !validPlatforms.includes(platform)) {
-      return NextResponse.json(
-        { error: `Invalid platform. Must be one of: ${validPlatforms.join(', ')}` },
-        { status: 400 }
-      );
+      return badRequestResponse(`Invalid platform. Must be one of: ${validPlatforms.join(', ')}`);
     }
 
-    // Validate handle
     if (!rawHandle) {
-      return NextResponse.json({ error: 'handle is required' }, { status: 400 });
+      return badRequestResponse('handle is required');
     }
 
     const validation = validateHandle(platform, rawHandle);
     if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
+      return badRequestResponse(validation.error || 'Invalid handle');
     }
 
-    // If project_id provided, verify ownership. Otherwise use first owned project.
-    let resolvedProjectId = project_id;
+    const { scope, error: scopeError } = await resolveWorkspaceScope(user.id);
+    if (scopeError) {
+      return databaseErrorResponse('Failed to resolve workspace scope', scopeError);
+    }
+
+    if (scope.workspaceIds.length === 0) {
+      return badRequestResponse('No workspace membership found. Join or create a workspace first.');
+    }
+
+    let resolvedProjectId = typeof project_id === 'string' ? project_id : '';
+
     if (resolvedProjectId) {
-      const { data: project } = await supabase
-        .from('foco_projects')
-        .select('id')
-        .eq('id', resolvedProjectId)
-        .eq('owner_id', user.id)
-        .maybeSingle();
-      if (!project) {
-        return NextResponse.json({ error: 'Project not found or not owned by you' }, { status: 404 });
+      if (!hasProjectAccess(scope, resolvedProjectId)) {
+        return NextResponse.json({ error: 'Project not found or not accessible in your workspace' }, { status: 404 });
       }
+    } else if (scope.projects.length > 0) {
+      resolvedProjectId = scope.projects[0].id;
     } else {
-      const { data: projects } = await supabase
-        .from('foco_projects')
-        .select('id')
-        .eq('owner_id', user.id)
-        .limit(1);
-      resolvedProjectId = projects?.[0]?.id;
-      if (!resolvedProjectId) {
-        return NextResponse.json({ error: 'No projects available. Create a project first.' }, { status: 400 });
-      }
+      const createdRoot = await ensureWorkspaceRootProject(scope.workspaceIds[0], user.id);
+      resolvedProjectId = createdRoot.id;
     }
 
     const meta = platformMeta[platform as SocialPlatform];
@@ -137,11 +147,11 @@ export async function POST(req: NextRequest) {
 
 /**
  * DELETE /api/content-pipeline/social/sources
- * Delete a social source by ID
+ * Delete a social source by ID.
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
+    const { user, error, response: authResponse } = await getAuthUser(req);
     if (error || !user) {
       return mergeAuthResponse(authRequiredResponse(), authResponse);
     }
@@ -149,17 +159,31 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+      return badRequestResponse('id is required');
     }
 
-    // Verify ownership via project
-    const { data: source } = await supabaseAdmin
+    const { scope, error: scopeError } = await resolveWorkspaceScope(user.id);
+    if (scopeError) {
+      return databaseErrorResponse('Failed to resolve workspace scope', scopeError);
+    }
+
+    const projectIds = scopeProjectIds(scope);
+    if (projectIds.length === 0) {
+      return NextResponse.json({ error: 'Source not found' }, { status: 404 });
+    }
+
+    const { data: source, error: sourceError } = await supabaseAdmin
       .from('content_sources')
-      .select('id, project_id, foco_projects!inner(owner_id)')
+      .select('id, project_id')
       .eq('id', id)
+      .in('project_id', projectIds)
       .maybeSingle();
 
-    if (!source || (source as any).foco_projects?.owner_id !== user.id) {
+    if (sourceError) {
+      return databaseErrorResponse('Failed to verify source access', sourceError);
+    }
+
+    if (!source) {
       return NextResponse.json({ error: 'Source not found' }, { status: 404 });
     }
 

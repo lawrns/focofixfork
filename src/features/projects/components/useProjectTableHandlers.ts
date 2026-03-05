@@ -356,7 +356,7 @@ export function useProjectTableHandlers({
       return
     }
     toast({ variant: 'info', title: 'Bulk Team Management', description: `Managing team for ${selectedProjects.size} projects. Opening team management interface...` })
-    window.location.href = '/dashboard/settings?tab=members'
+    window.location.href = '/settings?tab=members'
   }
 
   return {

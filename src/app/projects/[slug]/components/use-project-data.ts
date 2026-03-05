@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRecentItems } from '@/hooks/useRecentItems';
-import { supabase } from '@/lib/supabase/client';
 import type { WorkItem } from '@/types/foco';
 import type { Project, TeamMember } from './types';
+
+function parseApiData<T>(payload: any, fallback: T): T {
+  if (!payload || typeof payload !== 'object') return fallback;
+  if ('data' in payload && payload.data !== undefined) return payload.data as T;
+  return fallback;
+}
 
 export function useProjectData(user: any, slug: string) {
   const { addItem } = useRecentItems();
@@ -18,97 +23,82 @@ export function useProjectData(user: any, slug: string) {
   const [agentPool, setAgentPool] = useState<string[]>([]);
 
   useEffect(() => {
-    async function fetchProjectData() {
+    async function fetchProjectData(signal: AbortSignal) {
       if (!user || !slug) return;
 
       try {
         setLoading(true);
         setError(null);
 
-        const { data: projectData, error: projectError } = (await supabase
-          .from('foco_projects')
-          .select('id, workspace_id, name, slug, description, brief, color, icon, status, owner_id, default_status, settings, is_pinned, archived_at, created_at, updated_at')
-          .eq('slug', slug)) as { data: Project[] | null; error: any };
+        const projectRes = await fetch(`/api/projects?slug=${encodeURIComponent(slug)}&limit=1`, {
+          credentials: 'include',
+          signal,
+        });
 
-        if (projectError) throw projectError;
-        if (!projectData || projectData.length === 0) throw new Error('Project not found');
-        if (projectData.length > 1) throw new Error('Multiple projects found with this slug');
+        if (!projectRes.ok) {
+          if (projectRes.status === 404) throw new Error('Project not found');
+          const errJson = await projectRes.json().catch(() => ({}));
+          throw new Error(errJson?.error?.message || 'Failed to load project');
+        }
 
-        const proj = projectData[0];
+        const projectJson = await projectRes.json();
+        const projectPayload = parseApiData<any>(projectJson, {} as any);
+        const proj = (projectPayload.project || projectPayload.projects?.[0]) as Project | undefined;
+
+        if (!proj) {
+          throw new Error('Project not found');
+        }
+
         setProject(proj);
-
-        const [projectFullResult, activeRunsResult] = await Promise.all([
-          supabase
-            .from('foco_projects')
-            .select('delegation_settings, assigned_agent_pool')
-            .eq('id', proj.id)
-            .maybeSingle(),
-          (supabase as any)
-            .from('runs')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', proj.id)
-            .in('status', ['pending', 'running']),
-        ]);
-        setDelegationEnabled((projectFullResult.data as any)?.delegation_settings?.enabled ?? false);
-        setAgentPool((projectFullResult.data as any)?.assigned_agent_pool ?? []);
-        setActiveRuns(activeRunsResult.count ?? 0);
+        setDelegationEnabled((proj as any)?.delegation_settings?.enabled ?? false);
+        setAgentPool(((proj as any)?.assigned_agent_pool ?? []) as string[]);
+        setActiveRuns((proj as any)?.active_run_count ?? 0);
 
         addItem({ type: 'project', id: proj.id, name: proj.name });
 
-        const { data: tasksData, error: tasksError } = (await supabase
-          .from('work_items')
-          .select('id, project_id, title, description, type, status, priority, assignee_id, due_date, blocked_reason, created_at, updated_at, delegation_status, assigned_agent')
-          .eq('project_id', proj.id)
-          .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
+        const [tasksRes, teamRes] = await Promise.all([
+          fetch(`/api/tasks?project_id=${proj.id}&limit=400`, { credentials: 'include', signal }),
+          fetch(`/api/projects/${proj.id}/team`, { credentials: 'include', signal }),
+        ]);
 
-        if (tasksError) throw tasksError;
-
-        const assigneeIds = [...new Set((tasksData || []).map((t: any) => t.assignee_id).filter(Boolean))];
-        let assigneeMap: Record<string, any> = {};
-
-        if (assigneeIds.length > 0) {
-          const { data: assigneesData } = (await supabase
-            .from('user_profiles')
-            .select('id, email, full_name')
-            .in('id', assigneeIds)) as { data: any[] | null; error: any };
-
-          if (assigneesData) {
-            assigneeMap = Object.fromEntries(assigneesData.map((a: any) => [a.id, a]));
-          }
+        if (!tasksRes.ok) {
+          const errJson = await tasksRes.json().catch(() => ({}));
+          throw new Error(errJson?.error?.message || 'Failed to load project tasks');
         }
 
-        setTasks((tasksData || []).map((task: any) => ({
+        if (!teamRes.ok) {
+          const errJson = await teamRes.json().catch(() => ({}));
+          throw new Error(errJson?.error?.message || 'Failed to load project team');
+        }
+
+        const tasksJson = await tasksRes.json();
+        const rawTasksEnvelope = parseApiData<any>(tasksJson, {});
+        const rawTasks = Array.isArray(rawTasksEnvelope?.data)
+          ? rawTasksEnvelope.data
+          : Array.isArray(rawTasksEnvelope)
+            ? rawTasksEnvelope
+            : [];
+
+        const normalizedTasks: WorkItem[] = rawTasks.map((task: any) => ({
           ...task,
-          assignee: task.assignee_id ? assigneeMap[task.assignee_id] : undefined
-        })));
+          blocked_reason: task.blocked_reason ?? null,
+          delegation_status: task.delegation_status ?? null,
+          assigned_agent: task.assigned_agent ?? null,
+          assignee: undefined,
+        }));
+        setTasks(normalizedTasks);
 
-        const { data: membersData, error: membersError } = (await supabase
-          .from('foco_project_members')
-          .select('id, project_id, user_id, role, created_at')
-          .eq('project_id', proj.id)) as { data: any[] | null; error: any };
-
-        if (membersError) throw membersError;
-
-        const memberUserIds = (membersData || []).map((m: any) => m.user_id);
-        let memberProfilesMap: Record<string, any> = {};
-
-        if (memberUserIds.length > 0) {
-          const { data: profilesData } = (await supabase
-            .from('user_profiles')
-            .select('id, email, full_name')
-            .in('id', memberUserIds)) as { data: any[] | null; error: any };
-
-          if (profilesData) {
-            memberProfilesMap = Object.fromEntries(profilesData.map((p: any) => [p.id, p]));
-          }
-        }
-
-        setTeamMembers((membersData || []).map((member: any) => ({
+        const teamJson = await teamRes.json();
+        const rawMembers = parseApiData<any[]>(teamJson, []);
+        const normalizedMembers = rawMembers.map((member: any) => ({
           ...member,
-          user_profiles: memberProfilesMap[member.user_id]
-        })));
-
+          user_profiles: Array.isArray(member.user_profiles)
+            ? member.user_profiles[0]
+            : member.user_profiles,
+        }));
+        setTeamMembers(normalizedMembers);
       } catch (err: any) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         console.error('Error fetching project data:', err);
         setError(err.message || 'Failed to load project');
       } finally {
@@ -116,7 +106,9 @@ export function useProjectData(user: any, slug: string) {
       }
     }
 
-    fetchProjectData();
+    const controller = new AbortController();
+    fetchProjectData(controller.signal);
+    return () => controller.abort();
   }, [user, slug, addItem]);
 
   return {

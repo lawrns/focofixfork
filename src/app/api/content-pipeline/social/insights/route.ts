@@ -1,91 +1,134 @@
-import { NextRequest } from 'next/server';
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
+import { NextRequest } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import {
   successResponse,
   authRequiredResponse,
   databaseErrorResponse,
-} from '@/lib/api/response-helpers';
-import { supabaseAdmin } from '@/lib/supabase-server';
+} from '@/lib/api/response-helpers'
+import { supabaseAdmin } from '@/lib/supabase-server'
+import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/content-pipeline/social/insights
- * Aggregated social intelligence: top items, themes, platform counts
+ * Aggregated social intelligence for the caller's workspace scope.
  */
 export async function GET(req: NextRequest) {
   try {
-    const { user, error, response: authResponse } = await getAuthUser(req);
+    const { user, error, response: authResponse } = await getAuthUser(req)
     if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse);
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { scope, error: scopeError } = await resolveWorkspaceScope(user.id)
+    if (scopeError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to resolve workspace scope', scopeError), authResponse)
+    }
 
-    // Fetch analyzed social items from last 48h
+    const projectIds = scopeProjectIds(scope)
+    if (projectIds.length === 0) {
+      return mergeAuthResponse(successResponse({
+        top_insights: [],
+        themes: [],
+        platform_counts: {},
+        total_items: 0,
+        analyzed_count: 0,
+      }), authResponse)
+    }
+
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+
+    const { data: sources, error: sourceError } = await supabaseAdmin
+      .from('content_sources')
+      .select('id, name, platform, url')
+      .in('project_id', projectIds)
+      .not('platform', 'is', null)
+
+    if (sourceError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to fetch social sources', sourceError), authResponse)
+    }
+
+    const safeSources = sources ?? []
+    const sourceIds = safeSources.map((source: any) => source.id)
+
+    if (sourceIds.length === 0) {
+      return mergeAuthResponse(successResponse({
+        top_insights: [],
+        themes: [],
+        platform_counts: {},
+        total_items: 0,
+        analyzed_count: 0,
+      }), authResponse)
+    }
+
+    const sourceById = new Map<string, { name: string | null; platform: string | null; url: string | null }>()
+    for (const source of safeSources) {
+      sourceById.set(source.id as string, {
+        name: source.name ?? null,
+        platform: source.platform ?? null,
+        url: source.url ?? null,
+      })
+    }
+
     const { data: items, error: dbError } = await supabaseAdmin
       .from('content_items')
-      .select(`
-        id,
-        title,
-        ai_summary,
-        ai_tags,
-        relevance_score,
-        published_at,
-        created_at,
-        source_id,
-        content_sources!inner(name, platform, url)
-      `)
-      .not('content_sources.platform', 'is', null)
+      .select('id, title, ai_summary, ai_tags, relevance_score, published_at, created_at, source_id')
+      .in('source_id', sourceIds)
       .not('ai_summary', 'is', null)
       .gte('created_at', cutoff)
       .order('relevance_score', { ascending: false })
-      .limit(50);
+      .limit(50)
 
     if (dbError) {
-      return databaseErrorResponse('Failed to fetch social insights', dbError);
+      return mergeAuthResponse(databaseErrorResponse('Failed to fetch social insights', dbError), authResponse)
     }
 
-    const safeItems = items || [];
+    const safeItems = items ?? []
 
-    // Build top insights (top 20)
-    const topInsights = safeItems.slice(0, 20).map((item: any) => ({
-      id: item.id,
-      summary: item.ai_summary,
-      tags: item.ai_tags || [],
-      relevance: item.relevance_score,
-      platform: item.content_sources?.platform,
-      source_name: item.content_sources?.name,
-      source_url: item.content_sources?.url,
-      published_at: item.published_at || item.created_at,
-    }));
+    const topInsights = safeItems.slice(0, 20).map((item: any) => {
+      const source = sourceById.get(item.source_id)
+      return {
+        id: item.id,
+        summary: item.ai_summary,
+        tags: item.ai_tags || [],
+        relevance: item.relevance_score,
+        platform: source?.platform ?? null,
+        source_name: source?.name ?? null,
+        source_url: source?.url ?? null,
+        published_at: item.published_at || item.created_at,
+      }
+    })
 
-    // Aggregate themes (most common tags)
-    const tagCounts: Record<string, number> = {};
+    const tagCounts: Record<string, number> = {}
     for (const item of safeItems) {
-      const tags = (item as any).ai_tags || [];
+      const tags = (item as any).ai_tags || []
       for (const tag of tags) {
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1
       }
     }
+
     const themes = Object.entries(tagCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
-      .map(([tag, count]) => ({ tag, count }));
+      .map(([tag, count]) => ({ tag, count }))
 
-    // Platform counts
-    const platformCounts: Record<string, number> = {};
+    const platformCounts: Record<string, number> = {}
     for (const item of safeItems) {
-      const p = (item as any).content_sources?.platform;
-      if (p) platformCounts[p] = (platformCounts[p] || 0) + 1;
+      const source = sourceById.get((item as any).source_id)
+      const platform = source?.platform
+      if (platform) platformCounts[platform] = (platformCounts[platform] || 0) + 1
     }
 
-    // Total social items (including unanalyzed)
-    const { count: totalItems } = await supabaseAdmin
+    const { count: totalItems, error: totalCountError } = await supabaseAdmin
       .from('content_items')
       .select('id', { count: 'exact', head: true })
-      .not('content_sources.platform', 'is', null)
-      .gte('created_at', cutoff);
+      .in('source_id', sourceIds)
+      .gte('created_at', cutoff)
+
+    if (totalCountError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to count social items', totalCountError), authResponse)
+    }
 
     return mergeAuthResponse(
       successResponse({
@@ -96,9 +139,9 @@ export async function GET(req: NextRequest) {
         analyzed_count: safeItems.length,
       }),
       authResponse
-    );
+    )
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return databaseErrorResponse('Failed to fetch social insights', message);
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch social insights', message)
   }
 }

@@ -104,7 +104,7 @@ describe('TopBar Create Dropdown', () => {
 
     const item = await screen.findByText('Playbook Note');
     await user.click(item);
-    expect(mockPush).toHaveBeenCalledWith('/docs?create=true');
+    expect(mockPush).toHaveBeenCalledWith('/artifacts?create=true');
   });
 
   it('routes to import when Import Data is clicked', async () => {

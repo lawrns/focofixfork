@@ -5,6 +5,7 @@ import {
   successResponse,
   badRequestResponse,
   internalErrorResponse,
+  projectNotFoundResponse,
 } from '@/lib/api/response-helpers'
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
@@ -31,28 +32,42 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const limit = parseInt(searchParams.get('limit') || '100')
+  const slug = searchParams.get('slug')?.trim() || null
 
-  // Get user's workspace
-  const { data: memberRow } = await supabaseAdmin
+  // Get all workspace memberships for this user (admin client bypasses recursive RLS pitfalls).
+  const { data: membershipRows, error: membershipError } = await supabaseAdmin
     .from('foco_workspace_members')
     .select('workspace_id')
     .eq('user_id', user.id)
-    .maybeSingle()
+  if (membershipError) {
+    return mergeAuthResponse(internalErrorResponse(membershipError.message), authResponse)
+  }
 
-  const workspaceId = memberRow?.workspace_id as string | undefined
+  const workspaceIds = Array.from(
+    new Set((membershipRows ?? []).map((row: any) => row.workspace_id).filter(Boolean))
+  ) as string[]
+  const primaryWorkspaceId = workspaceIds[0] ?? null
 
   // No workspace membership → return empty list (not an error, not a data leak)
-  if (!workspaceId) {
+  if (workspaceIds.length === 0) {
     return mergeAuthResponse(
-      successResponse({ projects: [], workspaceId: null }),
+      successResponse({ projects: [], workspaceId: null, workspaceIds: [] }),
       authResponse
     )
   }
 
-  const { data, error: dbError } = await supabaseAdmin
+  let projectsQuery = supabaseAdmin
     .from('foco_projects')
     .select('id, workspace_id, owner_id, name, slug, status, description, color, icon, is_pinned, updated_at, local_path, git_remote, delegation_settings, assigned_agent_pool')
-    .eq('workspace_id', workspaceId)
+    .in('workspace_id', workspaceIds)
+    .is('archived_at', null)
+
+  if (slug) {
+    projectsQuery = projectsQuery.eq('slug', slug)
+  }
+
+  const { data, error: dbError } = await projectsQuery
+    .order('updated_at', { ascending: false })
     .order('name', { ascending: true })
     .limit(limit)
 
@@ -62,8 +77,11 @@ export async function GET(req: NextRequest) {
 
   const projects = data ?? []
   if (projects.length === 0) {
+    if (slug) {
+      return mergeAuthResponse(projectNotFoundResponse(slug), authResponse)
+    }
     return mergeAuthResponse(
-      successResponse({ projects: [], workspaceId }),
+      successResponse({ projects: [], workspaceId: primaryWorkspaceId, workspaceIds }),
       authResponse
     )
   }
@@ -159,8 +177,19 @@ export async function GET(req: NextRequest) {
     }
   })
 
+  if (slug) {
+    return mergeAuthResponse(
+      successResponse({
+        project: enrichedProjects[0],
+        workspaceId: enrichedProjects[0]?.workspace_id ?? primaryWorkspaceId,
+        workspaceIds,
+      }),
+      authResponse
+    )
+  }
+
   return mergeAuthResponse(
-    successResponse({ projects: enrichedProjects, workspaceId }),
+    successResponse({ projects: enrichedProjects, workspaceId: primaryWorkspaceId, workspaceIds }),
     authResponse
   )
 }

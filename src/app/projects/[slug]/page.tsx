@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { supabase } from '@/lib/supabase/client';
 import { Plus, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -22,6 +21,7 @@ import { useProjectData } from './components/use-project-data';
 
 export default function ProjectPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const slug = params.slug as string;
 
@@ -130,36 +130,50 @@ export default function ProjectPage() {
 
   const handleSaveSettings = async (updates: Partial<Project>) => {
     if (!project?.id) throw new Error('Project not loaded');
-    const { error } = await supabase.from('foco_projects').update(updates).eq('id', project.id);
-    if (error) throw error;
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload?.error?.message || 'Failed to save project settings');
+    }
     setProject(prev => prev ? { ...prev, ...updates } : prev);
   };
 
   const handleArchiveProject = async () => {
     if (!project?.id) throw new Error('Project not loaded');
-    const { error } = await supabase.from('foco_projects').update({ archived_at: new Date().toISOString() }).eq('id', project.id);
-    if (error) throw error;
-    window.location.href = '/empire/missions';
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ archived_at: new Date().toISOString() }),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload?.error?.message || 'Failed to archive project');
+    }
+    router.push('/empire/missions');
   };
 
   const handleDeleteProject = async () => {
     if (!project?.id) throw new Error('Project not loaded');
-    const { error } = await supabase.from('foco_projects').delete().eq('id', project.id);
-    if (error) throw error;
-    window.location.href = '/empire/missions';
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload?.error?.message || 'Failed to delete project');
+    }
+    router.push('/empire/missions');
   };
 
   const handleGenerateStatus = async () => {
-    if (!project?.id) return;
-    toast.info('Generating project status report...');
-    try {
-      const res = await fetch('/api/ai/task-actions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'summarize_thread', task_id: tasks[0]?.id || project.id, workspace_id: project.workspace_id })
-      });
-      const data = await res.json();
-      data.success ? toast.success('Status report generated! Check the AI panel for details.') : toast.error('Failed to generate status report');
-    } catch { toast.error('Failed to connect to AI service'); }
+    if (!project?.slug) return;
+    router.push(`/reports?generate=status&project_slug=${encodeURIComponent(project.slug)}`);
   };
 
   if (loading) {

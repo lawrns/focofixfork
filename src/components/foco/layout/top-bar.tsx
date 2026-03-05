@@ -223,7 +223,7 @@ export function TopBar({ className, sidebarCollapsed: sidebarCollapsedProp }: To
               <span>Initiative</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">P</kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/docs?create=true')}>
+            <DropdownMenuItem onClick={() => router.push('/artifacts?create=true')}>
               <span>Playbook Note</span>
               <kbd className="ml-auto text-[10px] font-mono text-zinc-400">D</kbd>
             </DropdownMenuItem>

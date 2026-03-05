@@ -47,12 +47,8 @@ export function SimpleModeToggle({ className, variant = 'button' }: SimpleModeTo
 
     // Wait for animation
     setTimeout(() => {
-      // Navigate to appropriate dashboard
-      if (newMode) {
-        router.push('/dashboard-simple')
-      } else {
-        router.push('/dashboard')
-      }
+      // Simple/advanced rendering is controlled by state on the shared dashboard route.
+      router.push('/dashboard')
       setIsChanging(false)
     }, 300)
   }

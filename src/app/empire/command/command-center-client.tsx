@@ -1,51 +1,59 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
-import { MetricTile } from '@/components/ui/metric-tile'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { EmpireHealthGrid } from '@/components/empire/empire-health-grid'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DiagramContainer } from '@/components/command-center/diagram/diagram-container'
 import { AgentDetailSheet } from '@/components/command-center/panels/agent-detail-sheet'
 import { CreateMissionDialog } from '@/components/command-center/dialogs/create-mission-dialog'
 import { AgentTable } from '@/components/command-center/tables/agent-table'
 import { MissionTable } from '@/components/command-center/tables/mission-table'
 import { RunsTable } from '@/components/command-center/tables/runs-table'
-import { LogsPanel } from '@/components/command-center/tables/logs-panel'
 import { MobileCommandView } from '@/components/command-center/mobile/mobile-command-view'
-import { SystemPulseChart } from '@/components/command-center/orchestrator/system-pulse-chart'
-import { DecisionRow } from '@/components/command-center/orchestrator/decision-row'
-import { AgentResourceRow } from '@/components/command-center/orchestrator/agent-resource-row'
-import { QuickActionsCard } from '@/components/command-center/orchestrator/quick-actions-card'
-import { GuardrailsCard } from '@/components/command-center/orchestrator/guardrails-card'
-import { NightAutonomyCard } from '@/components/command-center/orchestrator/night-autonomy-card'
+import { useOpenClawLogs } from '@/lib/hooks/use-openclaw-logs'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
-import { RefreshCw, Plus, Cpu, AlertCircle, Pause, Play, Settings, Flag, Target, Send, Wifi } from 'lucide-react'
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
-import { AnimatePresence } from 'framer-motion'
-
-function Tip({ children, label }: { children: React.ReactNode; label: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent className="text-xs max-w-[220px]">{label}</TooltipContent>
-    </Tooltip>
-  )
-}
+import type { UnifiedAgent } from '@/lib/command-center/types'
+import type { Run } from '@/lib/types/runs'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  RefreshCw,
+  Plus,
+  Cpu,
+  AlertCircle,
+  Pause,
+  Play,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Loader2,
+  Activity,
+  Clock3,
+  Radio,
+  Bot,
+  Terminal,
+  ArrowRight,
+  ShieldCheck,
+  Gauge,
+  Workflow,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ServiceStatus {
   name: string
@@ -65,13 +73,82 @@ interface CoFounderInsightItem {
   payload?: Record<string, unknown>
 }
 
+interface RibbonState {
+  agent: string
+  task: string
+  runId?: string
+}
+
+interface TerminalLine {
+  id: string
+  token: 'INIT' | 'PLAN' | 'ACTION' | 'OBSERVE' | 'RESULT' | 'ERROR'
+  text: string
+  ts: number
+}
+
+interface ProjectOption {
+  id: string
+  slug: string
+  name: string
+}
+
 const AGENT_POLL_INTERVAL = 10_000
 const DECISIONS_POLL_INTERVAL = 15_000
 const COFOUNDER_POLL_INTERVAL = 20_000
+const RUNS_POLL_INTERVAL = 15_000
+const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
+
+const PERSONA_PRESETS: Array<{ key: 'cto' | 'coo' | 'auto' | 'intake'; label: string; description: string }> = [
+  { key: 'cto', label: 'CTO', description: 'Architecture and systems decisions' },
+  { key: 'coo', label: 'COO', description: 'Operations and execution flow' },
+  { key: 'auto', label: 'Auto', description: 'Automatic best-agent routing' },
+  { key: 'intake', label: 'Intake', description: 'Task intake and triage' },
+]
+
+function inferSoapToken(message: string): TerminalLine['token'] {
+  const lower = message.toLowerCase()
+  if (lower.includes('error') || lower.includes('failed') || lower.includes('denied')) return 'ERROR'
+  if (lower.includes('plan') || lower.includes('route')) return 'PLAN'
+  if (lower.includes('observ') || lower.includes('heartbeat')) return 'OBSERVE'
+  if (lower.includes('result') || lower.includes('done') || lower.includes('completed')) return 'RESULT'
+  if (lower.includes('init') || lower.includes('dispatch')) return 'INIT'
+  return 'ACTION'
+}
+
+function tokenClass(token: TerminalLine['token']): string {
+  switch (token) {
+    case 'INIT': return 'text-[#4ade80]'
+    case 'PLAN': return 'text-[#22d3ee]'
+    case 'ACTION': return 'text-[#fbbf24]'
+    case 'OBSERVE': return 'text-[#60a5fa]'
+    case 'RESULT': return 'text-[#34d399]'
+    case 'ERROR': return 'text-[#f87171]'
+  }
+}
+
+function statusAccent(status: string): string {
+  if (status === 'running' || status === 'active') return 'border-l-emerald-500'
+  if (status === 'pending' || status === 'queued') return 'border-l-amber-500'
+  if (status === 'failed' || status === 'error') return 'border-l-rose-500'
+  return 'border-l-zinc-500'
+}
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const s = Math.max(1, Math.floor(ms / 1000))
+  if (s < 60) return `${s}s ago`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
 
 export function CommandCenterClient() {
   const store = useCommandCenterStore()
   const searchParams = useSearchParams()
+  const { logs, connected } = useOpenClawLogs(200)
+
   const agentParamHandled = useRef(false)
   const [missionDialogOpen, setMissionDialogOpen] = useState(false)
   const [services, setServices] = useState<ServiceStatus[]>([])
@@ -79,11 +156,25 @@ export function CommandCenterClient() {
   const [globalSearch, setGlobalSearch] = useState('')
   const [cofounderInsights, setCofounderInsights] = useState<CoFounderInsightItem[]>([])
   const [cofounderLoading, setCofounderLoading] = useState(true)
-  const [cofounderMode, setCofounderMode] = useState<string>('unknown')
-  const [cofounderTrustScore, setCofounderTrustScore] = useState<number | null>(null)
 
-  // ── Agent polling ────────────────────────────────────────────────────────────
+  const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState('')
+  const [commandExpanded, setCommandExpanded] = useState(false)
+  const [persona, setPersona] = useState<'cto' | 'coo' | 'auto' | 'intake'>('auto')
+  const [agentId, setAgentId] = useState(process.env.EMPIRE_EXECUTION_MODEL || '')
+  const [task, setTask] = useState('')
+  const [dispatching, setDispatching] = useState(false)
+  const [ribbon, setRibbon] = useState<RibbonState | null>(null)
+  const [pendingFlash, setPendingFlash] = useState(false)
+  const [terminalOpen, setTerminalOpen] = useState(false)
+  const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([])
+  const [activeRuns, setActiveRuns] = useState<Run[]>([])
+  const [runsLoading, setRunsLoading] = useState(true)
+  const [fleetExpanded, setFleetExpanded] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<CoFounderInsightItem | null>(null)
+
   const { setAgents, setMissions, setError, setDecisions, approveDecision } = store
+
   const fetchAgents = useCallback(async (signal?: AbortSignal) => {
     try {
       const [agentRes, missionRes] = await Promise.allSettled([
@@ -108,7 +199,6 @@ export function CommandCenterClient() {
     }
   }, [setAgents, setMissions, setError])
 
-  // ── Decisions polling ─────────────────────────────────────────────────────────
   const fetchDecisions = useCallback(async (signal?: AbortSignal) => {
     try {
       const res = await fetch('/api/command-center/decisions', { signal })
@@ -121,25 +211,29 @@ export function CommandCenterClient() {
     }
   }, [setDecisions])
 
+  const fetchRuns = useCallback(async (signal?: AbortSignal) => {
+    setRunsLoading(true)
+    try {
+      const res = await fetch('/api/runs?limit=20', { signal })
+      if (!res.ok) return
+      const json = await res.json()
+      const runs = (json.data ?? []) as Run[]
+      setActiveRuns(runs.filter((run) => ['running', 'pending', 'active'].includes(run.status)).slice(0, 8))
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+    } finally {
+      setRunsLoading(false)
+    }
+  }, [])
+
   const loadCofounderInsights = useCallback(async (signal?: AbortSignal, initialLoad = false) => {
     if (initialLoad) setCofounderLoading(true)
     try {
-      const [feedRes, stateRes] = await Promise.all([
-        fetch('/api/cofounder/insights/feed?window=7d&limit=200', { signal }),
-        fetch('/api/cofounder/runtime/state', { signal }),
-      ])
+      const feedRes = await fetch('/api/cofounder/insights/feed?window=24h&limit=80', { signal })
       if (!feedRes.ok) return
       const feedJson = await feedRes.json()
       const items = (feedJson?.data?.items ?? []) as CoFounderInsightItem[]
       setCofounderInsights(items)
-
-      if (stateRes.ok) {
-        const stateJson = await stateRes.json()
-        const mode = stateJson?.data?.mode
-        const trustScore = stateJson?.data?.trustScore
-        if (typeof mode === 'string') setCofounderMode(mode)
-        setCofounderTrustScore(typeof trustScore === 'number' ? trustScore : null)
-      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
     } finally {
@@ -163,43 +257,24 @@ export function CommandCenterClient() {
     return () => { controller.abort(); clearInterval(id) }
   }, [fetchDecisions, store.paused])
 
-  // ── Auto-open agent from ?agent= query param ─────────────────────────────────
   useEffect(() => {
-    if (agentParamHandled.current) return
-    const agentId = searchParams.get('agent')
-    if (!agentId || store.agents.length === 0) return
-    const match = store.agents.find(a => a.id === agentId || a.nativeId === agentId)
-    if (match) {
-      store.selectAgent(match.id)
-      agentParamHandled.current = true
-    }
-  }, [searchParams, store.agents, store])
+    if (store.paused) return
+    const controller = new AbortController()
+    fetchRuns(controller.signal)
+    const id = setInterval(() => fetchRuns(controller.signal), RUNS_POLL_INTERVAL)
+    return () => { controller.abort(); clearInterval(id) }
+  }, [fetchRuns, store.paused])
 
-  // ── Mode persistence ─────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch('/api/command-center/mode')
-      .then(r => r.json())
-      .then(data => { if (data.mode) store.setMode(data.mode) })
-      .catch(() => {})
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const handleModeChange = useCallback(async (mode: 'Reactive' | 'Predictive' | 'Guarded') => {
-    const prev = store.mode
-    store.setMode(mode)
-    try {
-      const res = await fetch('/api/command-center/mode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
-      })
-      if (!res.ok) store.setMode(prev)
-    } catch {
-      store.setMode(prev)
+    const controller = new AbortController()
+    loadCofounderInsights(controller.signal, true)
+    const id = setInterval(() => loadCofounderInsights(controller.signal), COFOUNDER_POLL_INTERVAL)
+    return () => {
+      controller.abort()
+      clearInterval(id)
     }
-  }, [store])
+  }, [loadCofounderInsights])
 
-  // ── Health tiles ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       setHealthLoading(true)
@@ -209,8 +284,6 @@ export function CommandCenterClient() {
           const json = await res.json()
           setServices(json.services ?? [])
         }
-      } catch {
-        // ignore
       } finally {
         setHealthLoading(false)
       }
@@ -219,526 +292,792 @@ export function CommandCenterClient() {
   }, [])
 
   useEffect(() => {
-    if (store.paused) return
-    const controller = new AbortController()
-    loadCofounderInsights(controller.signal, true)
-    const id = setInterval(() => loadCofounderInsights(controller.signal), COFOUNDER_POLL_INTERVAL)
-    return () => {
-      controller.abort()
-      clearInterval(id)
+    const loadProjects = async () => {
+      try {
+        const res = await fetch('/api/projects?limit=50')
+        if (!res.ok) return
+        const json = await res.json()
+        const projects = (json?.data?.projects ?? []) as Array<{ id: string; slug: string; name: string }>
+        setProjectOptions(projects)
+        if (!selectedProjectSlug && projects[0]?.slug) {
+          setSelectedProjectSlug(projects[0].slug)
+        }
+      } catch {
+        // noop
+      }
     }
-  }, [loadCofounderInsights, store.paused])
+    loadProjects()
+  }, [selectedProjectSlug])
 
-  // ── Metrics ──────────────────────────────────────────────────────────────────
-  const agentCount = store.agents.length
-  const workingCount = store.agents.filter(a => a.status === 'working').length
-  const blockedCount = store.agents.filter(a => a.status === 'blocked').length
-  const errorCount = store.agents.filter(a => a.status === 'error').length
-  const decisionsCount = store.decisions.length
+  useEffect(() => {
+    if (agentParamHandled.current) return
+    const agentParam = searchParams.get('agent')
+    if (!agentParam || store.agents.length === 0) return
+    const match = store.agents.find((a) => a.id === agentParam || a.nativeId === agentParam)
+    if (match) {
+      setAgentId(match.nativeId)
+      agentParamHandled.current = true
+    }
+  }, [searchParams, store.agents])
 
-  // Agents that are "working" but haven't reported progress in >30 min
-  const staleCount = store.agents.filter(a => {
-    if (a.status !== 'working' || !a.lastActiveAt) return false
-    const minsIdle = Math.floor((Date.now() - new Date(a.lastActiveAt).getTime()) / 60000)
-    return minsIdle >= 30
+  const pushTerminalLine = useCallback((line: Omit<TerminalLine, 'id' | 'ts'>, delay = 0) => {
+    window.setTimeout(() => {
+      setTerminalLines((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          ts: Date.now(),
+          ...line,
+        },
+      ].slice(-120))
+    }, delay)
+  }, [])
+
+  const triggerDispatchArc = useCallback((agentLabel: string, userTask: string, runId?: string) => {
+    setRibbon({ agent: agentLabel, task: userTask, runId })
+    setPendingFlash(true)
+    setTerminalOpen(true)
+    setTerminalLines([])
+
+    window.setTimeout(() => setPendingFlash(false), 850)
+    window.setTimeout(() => setRibbon(null), 4600)
+
+    pushTerminalLine({ token: 'INIT', text: `Dispatch accepted for ${agentLabel}${runId ? ` (run ${runId.slice(0, 8)})` : ''}` }, 40)
+    pushTerminalLine({ token: 'PLAN', text: `Routing task${selectedProjectSlug ? ` under project ${selectedProjectSlug}` : ''} and preparing execution graph` }, 340)
+    pushTerminalLine({ token: 'ACTION', text: userTask }, 660)
+
+    if (runId) {
+      pushTerminalLine({ token: 'OBSERVE', text: `Run ${runId.slice(0, 8)} moved to running` }, 980)
+    } else {
+      pushTerminalLine({ token: 'OBSERVE', text: 'Awaiting backend run confirmation...' }, 980)
+    }
+
+    setActiveRuns((prev) => {
+      const synthetic: Run = {
+        id: runId || `local-${Date.now()}`,
+        runner: agentLabel,
+        status: 'pending',
+        task_id: null,
+        created_at: new Date().toISOString(),
+        started_at: null,
+        ended_at: null,
+        summary: userTask,
+      }
+      return [synthetic, ...prev].slice(0, 8)
+    })
+
+    window.setTimeout(() => {
+      setActiveRuns((prev) => prev.map((run) =>
+        run.id === (runId || prev[0]?.id)
+          ? { ...run, status: 'running' as Run['status'], started_at: new Date().toISOString() }
+          : run
+      ))
+      pushTerminalLine({ token: 'RESULT', text: 'Execution stream is live. Observability hooks attached.' })
+    }, 1300)
+  }, [pushTerminalLine, selectedProjectSlug])
+
+  const handleDispatch = useCallback(async () => {
+    if (!task.trim()) return
+    setDispatching(true)
+
+    const personaLabel = PERSONA_PRESETS.find((preset) => preset.key === persona)?.label ?? 'Auto'
+    const targetAgent = agentId.trim() || personaLabel
+
+    try {
+      const res = await fetch('/api/openclaw-gateway/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: targetAgent,
+          task,
+          project_slug: selectedProjectSlug || undefined,
+          context: { persona },
+        }),
+      })
+
+      if (!res.ok) {
+        triggerDispatchArc(targetAgent, task)
+        pushTerminalLine({ token: 'ERROR', text: 'Gateway rejected dispatch request' })
+      } else {
+        const data = await res.json()
+        triggerDispatchArc(targetAgent, task, data?.runId)
+      }
+
+      setTask('')
+      setCommandExpanded(false)
+    } catch {
+      triggerDispatchArc(targetAgent, task)
+      pushTerminalLine({ token: 'ERROR', text: 'Dispatch failed due to network or gateway error' })
+    } finally {
+      setDispatching(false)
+    }
+  }, [task, persona, agentId, selectedProjectSlug, triggerDispatchArc, pushTerminalLine])
+
+  const staleCount = store.agents.filter((agent) => {
+    if (agent.status !== 'working' || !agent.lastActiveAt) return false
+    return Date.now() - new Date(agent.lastActiveAt).getTime() > 30 * 60 * 1000
   }).length
 
-  // ── Filtering ────────────────────────────────────────────────────────────────
-  const filteredAgents = globalSearch
-    ? store.agents.filter(a => a.name.toLowerCase().includes(globalSearch.toLowerCase()))
-    : store.agents
+  const runningCount = store.agents.filter((agent) => agent.status === 'working').length
+  const doneCount = store.agents.filter((agent) => agent.status === 'done').length
+  const failedCount = store.agents.filter((agent) => agent.status === 'error').length
+  const blockedCount = store.agents.filter((agent) => agent.status === 'blocked').length
+  const pendingCount = store.decisions.length
 
-  const filteredDecisions = store.decisions.filter(d => {
-    if ((store.quietMode || store.quietCategories.p3) && d.severity === 'P3') return false
-    if (globalSearch && !d.title.toLowerCase().includes(globalSearch.toLowerCase())) return false
-    return true
+  const avgLatency = useMemo(() => {
+    const latencies = services.map((service) => service.latencyMs).filter((value): value is number => typeof value === 'number')
+    if (latencies.length === 0) return null
+    return Math.round(latencies.reduce((sum, value) => sum + value, 0) / latencies.length)
+  }, [services])
+
+  const gatewayStatus = useMemo(() => {
+    const relay = services.find((service) => /gateway|openclaw|relay/i.test(service.name))
+    if (!relay) return 'Unknown'
+    return relay.status === 'up' ? 'Reachable' : relay.status === 'degraded' ? 'Degraded' : 'Offline'
+  }, [services])
+
+  const filteredInsights = cofounderInsights.filter((item) => {
+    if (!globalSearch) return true
+    const q = globalSearch.toLowerCase()
+    return item.title.toLowerCase().includes(q) || (item.detail ?? '').toLowerCase().includes(q)
   })
 
-  const MODE_TIPS: Record<string, string> = {
-    Reactive: 'Fast response, minimal guardrails',
-    Predictive: 'Balanced safety and performance',
-    Guarded: 'Maximum safety, all actions need approval',
-  }
+  const mergedTerminalLines = useMemo(() => {
+    const fromLogs: TerminalLine[] = logs.slice(-20).map((entry, idx) => ({
+      id: `log-${idx}-${entry.time ?? idx}`,
+      token: inferSoapToken(entry.message ?? ''),
+      text: entry.message ?? JSON.stringify(entry),
+      ts: entry.time ? new Date(entry.time).getTime() : Date.now() - (20 - idx),
+    }))
+    return [...terminalLines, ...fromLogs].sort((a, b) => a.ts - b.ts).slice(-90)
+  }, [logs, terminalLines])
 
   return (
-    <TooltipProvider delayDuration={200}>
-    <PageShell className="space-y-5">
-      <PageHeader
-        title="Execution Command Center"
-        subtitle="Live agent orchestration and system health"
-        primaryAction={
-          <div className="flex items-center gap-2">
-            {store.error && (
-              <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{store.error}</span>
-              </div>
-            )}
-            <Badge variant="outline" className="hidden sm:inline-flex gap-1 text-[11px]">
-              <span className={cn(
-                'h-1.5 w-1.5 rounded-full',
-                workingCount > 0 ? 'bg-teal-400' : 'bg-zinc-400'
-              )} />
-              {workingCount}/{agentCount} active
-            </Badge>
-            <Tip label="Fetch latest data">
+    <TooltipProvider delayDuration={120}>
+      <PageShell className="space-y-3">
+        <PageHeader
+          title="Critter Mission Control"
+          subtitle="Dense command-and-observe surface for live agent operations"
+          primaryAction={
+            <div className="flex items-center gap-2">
+              {store.error && (
+                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{store.error}</span>
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => fetchAgents()}
                 disabled={store.isLoading}
-                className="gap-1.5"
+                className="h-8 gap-1.5"
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', store.isLoading && 'animate-spin')} />
-                <span className="hidden sm:inline">Refresh</span>
+                Refresh
               </Button>
-            </Tip>
-            <Tip label="Create a new agent mission">
-              <Button
-                size="sm"
-                onClick={() => setMissionDialogOpen(true)}
-                className="gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90"
-              >
+              <Button size="sm" onClick={() => setMissionDialogOpen(true)} className="h-8 gap-1.5">
                 <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Mission</span>
+                Mission
               </Button>
-            </Tip>
-          </div>
-        }
-      />
-
-      
-
-      {/* Health tiles */}
-      <EmpireHealthGrid services={services} loading={healthLoading} />
-
-      {/* NEW: Mode + Search + Controls TopBar */}
-      <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border bg-card/80 backdrop-blur-sm animate-slide-up">
-        {/* Mode button group */}
-        <div className="inline-flex h-8 items-center rounded-md bg-muted/30 p-1 gap-1 shrink-0">
-          {(['Reactive', 'Predictive', 'Guarded'] as const).map((mode) => (
-            <Tip key={mode} label={MODE_TIPS[mode]}>
-              <Button
-                size="xs"
-                variant={store.mode === mode ? 'default' : 'ghost'}
-                className={cn('text-[11px] px-2 h-6', store.mode === mode && 'bg-background shadow-sm')}
-                onClick={() => handleModeChange(mode)}
-              >
-                {mode}
-              </Button>
-            </Tip>
-          ))}
-        </div>
-
-        {/* Search */}
-        <Input
-          placeholder="Search agents & decisions..."
-          value={globalSearch}
-          onChange={(e) => setGlobalSearch(e.target.value)}
-          className="h-8 max-w-xs text-[12px]"
+            </div>
+          }
         />
 
-        {/* Pause button */}
-        <Tip label={store.paused ? 'Resume agent operations' : 'Pause all agent operations'}>
-          <Button
-            size="xs"
-            variant={store.paused ? 'default' : 'outline'}
-            className={cn('h-8 gap-1', store.paused && 'bg-rose-600 hover:bg-rose-700')}
-            onClick={() => store.setPaused(!store.paused)}
-          >
-            {store.paused ? (
-              <>
-                <Play className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Resume</span>
-              </>
-            ) : (
-              <>
-                <Pause className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Pause</span>
-              </>
-            )}
-          </Button>
-        </Tip>
+        <div className="rounded-lg border border-zinc-300/70 bg-zinc-100/70 px-3 py-2 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200">
+          Strategic rule active: dispatches favor observable execution and guarded transitions.
+        </div>
 
-        {/* Controls dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="xs" variant="outline" className="h-8 w-8 p-0" title="Orchestration controls">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => store.setQuietMode(!store.quietMode)}>
-              {store.quietMode ? 'Disable' : 'Enable'} Quiet Mode
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => fetchAgents()}>
-              Refresh Now
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Gateway Status & Dispatch Task */}
-      <div className="grid lg:grid-cols-12 gap-4 animate-slide-up-delay">
-        <div className="lg:col-span-4"><GatewayStatusCard /></div>
-        <div className="lg:col-span-8"><DispatchTaskCard /></div>
-      </div>
-
-      {/* NEW: KPI strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 animate-slide-up-delay">
-        <Tip label="Agents currently executing tasks">
-          <MetricTile
-            label="Active agents"
-            value={workingCount}
-            onClick={() => document.getElementById('active-agents-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          />
-        </Tip>
-        <Tip label="Actions pending human approval">
-          <MetricTile
-            label="Needs decision"
-            value={decisionsCount}
-            valueClassName="text-amber-600 dark:text-amber-400"
-            onClick={() => document.getElementById('decision-queue-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          />
-        </Tip>
-        <Tip label="Agents blocked and unable to proceed">
-          <MetricTile
-            label="Stuck"
-            value={blockedCount}
-            valueClassName="text-orange-600 dark:text-orange-400"
-          />
-        </Tip>
-        <Tip label="Agents in error state">
-          <MetricTile
-            label="Failed"
-            value={errorCount}
-            valueClassName="text-rose-600 dark:text-rose-400"
-          />
-        </Tip>
-        <Tip label="Working agents with no progress update in 30+ minutes">
-          <MetricTile
-            label="Stale (>30m)"
-            value={staleCount}
-            valueClassName={staleCount > 0 ? 'text-amber-500' : 'text-foreground'}
-            className={cn(staleCount > 0 && 'border-amber-500/40')}
-          />
-        </Tip>
-      </div>
-
-      <Card className="bg-card/80 backdrop-blur-sm animate-slide-up-delay">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm">Co-Founder Insights</CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-[10px]">
-                mode: {cofounderMode}
-              </Badge>
-              <Badge variant="outline" className="text-[10px]">
-                trust: {cofounderTrustScore === null ? '--' : cofounderTrustScore.toFixed(2)}
-              </Badge>
-              <Badge variant="outline" className="text-[10px]">
-                {cofounderLoading ? 'Loading' : `${cofounderInsights.length} events`}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-          {cofounderLoading ? (
-            <p className="text-xs text-muted-foreground">Loading co-founder insight timeline...</p>
-          ) : cofounderInsights.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No co-founder events in the selected window.</p>
-          ) : (
-            cofounderInsights.map((item) => (
-              <div key={item.id} className="rounded border p-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium truncate">{item.title}</p>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="text-[10px]">
-                      {item.eventType}
-                    </Badge>
-                    <Badge
-                      variant={item.severity === 'error' ? 'destructive' : 'secondary'}
-                      className="text-[10px]"
+        <div className="bg-gradient-to-b from-background to-muted/20 rounded-xl border p-3 space-y-2">
+          <motion.div layoutId="command-surface" transition={SHARED_SPRING} className="rounded-xl border border-zinc-300/70 bg-card p-3">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-2">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {PERSONA_PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      onClick={() => setPersona(preset.key)}
+                      className={cn(
+                        'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors',
+                        preset.key === persona
+                          ? 'border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)] text-white'
+                          : 'border-border bg-muted/40 text-muted-foreground hover:text-foreground',
+                      )}
                     >
-                      {item.severity}
-                    </Badge>
-                  </div>
-                </div>
-                {item.detail ? (
-                  <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{item.detail}</p>
-                ) : null}
-                {item.payload ? (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-[10px] text-muted-foreground">Explain decision</summary>
-                    <pre className="mt-1 max-h-24 overflow-auto rounded bg-muted p-2 text-[10px]">
-                      {JSON.stringify(item.payload, null, 2)}
-                    </pre>
-                  </details>
-                ) : null}
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  {new Date(item.createdAt).toLocaleString()}
-                </p>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-
-      {/* NEW: Main 2-col grid (System Pulse + Decisions) */}
-      <div className="grid gap-4 lg:grid-cols-12 animate-slide-up-delay-2">
-        <div className="lg:col-span-7 space-y-4">
-          <SystemPulseChart />
-          <QuickActionsCard services={services} />
-          <NightAutonomyCard />
-        </div>
-        <div className="lg:col-span-5 space-y-4">
-          {/* Decision Queue */}
-          <div id="decision-queue-section" className="rounded-lg border bg-card p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Decision Queue</h3>
-              {decisionsCount > 0 && (
-                <Badge variant="outline" className="text-[10px]">{decisionsCount} pending</Badge>
-              )}
-            </div>
-
-            {filteredDecisions.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                <AnimatePresence mode="popLayout">
-                  {filteredDecisions.map(decision => (
-                    <DecisionRow
-                      key={decision.id}
-                      decision={decision}
-                      onApprove={() => approveDecision(decision.id, 'approve')}
-                      onReject={() => approveDecision(decision.id, 'reject')}
-                      onDefer={() => approveDecision(decision.id, 'defer')}
-                    />
+                      {preset.label}
+                    </button>
                   ))}
-                </AnimatePresence>
+                </div>
+
+                <Input
+                  value={task}
+                  onFocus={() => setCommandExpanded(true)}
+                  onBlur={() => {
+                    if (!task.trim()) setCommandExpanded(false)
+                  }}
+                  onChange={(e) => setTask(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleDispatch()
+                    }
+                  }}
+                  placeholder="Dispatch a task to the critter fleet..."
+                  className="h-8 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+                />
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                      <Bot className="h-3.5 w-3.5" />
+                      Agent
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-64 p-2">
+                    <div className="space-y-1 max-h-56 overflow-auto">
+                      {store.agents.length === 0 ? (
+                        <p className="text-xs text-muted-foreground px-2 py-1">No live agents discovered</p>
+                      ) : (
+                        store.agents.map((agent) => (
+                          <button
+                            key={agent.id}
+                            onClick={() => setAgentId(agent.nativeId)}
+                            className={cn(
+                              'w-full rounded-md border px-2 py-1.5 text-left text-xs transition-colors',
+                              agentId === agent.nativeId ? 'border-[color:var(--foco-teal)] bg-muted/40' : 'border-transparent hover:border-border hover:bg-muted/30',
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-medium truncate">{agent.name}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0">{agent.status}</Badge>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate">{agent.backend} · {agent.nativeId}</p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <Button onClick={handleDispatch} disabled={dispatching || !task.trim()} size="sm" className="h-8 gap-1.5">
+                  {dispatching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Send
+                </Button>
               </div>
-            ) : (
-              <div className="py-6 text-center text-[12px] text-muted-foreground">
-                No pending decisions
-              </div>
+
+              <AnimatePresence initial={false}>
+                {commandExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={SHARED_SPRING}
+                    className="overflow-hidden"
+                  >
+                    <div className="grid gap-2 md:grid-cols-[1fr_180px_180px]">
+                      <div className="rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground">
+                        <span className="font-medium text-foreground">Context</span>
+                        <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+                          <span className="rounded-full border px-2 py-0.5">{PERSONA_PRESETS.find((preset) => preset.key === persona)?.description}</span>
+                          {connected && <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-500">live logs</span>}
+                        </div>
+                      </div>
+
+                      <select
+                        className="h-8 rounded-md border bg-background px-2 text-xs"
+                        value={selectedProjectSlug}
+                        onChange={(e) => setSelectedProjectSlug(e.target.value)}
+                      >
+                        <option value="">Workspace default project</option>
+                        {projectOptions.map((project) => (
+                          <option key={project.id} value={project.slug}>{project.name}</option>
+                        ))}
+                      </select>
+
+                      <div className="h-8 rounded-md border bg-background px-2 text-xs flex items-center justify-between">
+                        <span className="text-muted-foreground">thinking</span>
+                        <motion.span
+                          animate={{ opacity: [0.25, 1, 0.25], x: [0, 3, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.2 }}
+                          className="font-mono"
+                        >
+                          ...
+                        </motion.span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          <AnimatePresence>
+            {ribbon && (
+              <motion.div
+                key={`${ribbon.agent}-${ribbon.task}`}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={SHARED_SPRING}
+                className="rounded-lg border-l-2 border-[color:var(--foco-teal)] bg-card/80 px-3 py-2 text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-[color:var(--foco-teal)]" />
+                  <span className="font-medium">Activity Ribbon</span>
+                  <span className="text-muted-foreground">{ribbon.agent}</span>
+                  {ribbon.runId && <Badge variant="outline" className="text-[10px]">{ribbon.runId.slice(0, 8)}</Badge>}
+                </div>
+                <p className="mt-1 font-mono text-[11px] text-muted-foreground truncate">{ribbon.task}</p>
+              </motion.div>
             )}
-          </div>
-
-          {/* Guardrails */}
-          <GuardrailsCard />
+          </AnimatePresence>
         </div>
-      </div>
 
-      {/* NEW: Agent rows + System log 2-col grid */}
-      <div className="grid gap-4 lg:grid-cols-12 animate-slide-up-delay-2">
-        <div className="lg:col-span-12">
-          <div id="active-agents-section" className="rounded-xl border bg-card/80 backdrop-blur-sm p-4 space-y-3">
-            <h3 className="text-sm font-semibold">Active Agents</h3>
-            {filteredAgents.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {filteredAgents.map(agent => (
-                  <AgentResourceRow
-                    key={agent.id}
-                    agent={agent}
-                    onKill={() => store.stopAgent(agent.backend, agent.nativeId)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-[12px] text-muted-foreground">
-                No active agents
-              </div>
-            )}
+        <ExecutionStatBar
+          running={runningCount}
+          pending={pendingCount}
+          done={doneCount}
+          blocked={blockedCount}
+          failed={failedCount}
+          stale={staleCount}
+          paused={store.paused}
+          flashPending={pendingFlash}
+        />
+
+        <FleetStatusPanel
+          expanded={fleetExpanded}
+          onToggle={() => setFleetExpanded((prev) => !prev)}
+          services={services}
+          loading={healthLoading}
+          gatewayStatus={gatewayStatus}
+          running={runningCount}
+          failed={failedCount}
+          avgLatency={avgLatency}
+        />
+
+        <div className="grid gap-2 xl:grid-cols-12">
+          <div className="xl:col-span-5">
+            <ActiveRunsBoard runs={activeRuns} loading={runsLoading} />
+          </div>
+          <div className="xl:col-span-7">
+            <SoapTerminal lines={mergedTerminalLines} open={terminalOpen} onOpenChange={setTerminalOpen} connected={connected} />
           </div>
         </div>
-      </div>
 
-      {/* Swarm topology — hidden on mobile */}
-      <div className="hidden md:block animate-slide-up-delay-2">
-        <div className="rounded-xl border overflow-hidden bg-card/80 backdrop-blur-sm" style={{ minHeight: '260px' }}>
-          <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
+        <LiveTickerFeed
+          loading={cofounderLoading}
+          events={filteredInsights}
+          onOpenEvent={(event) => setSelectedEvent(event)}
+        />
+
+        <div className="hidden md:block rounded-xl border overflow-hidden bg-card/80" style={{ minHeight: '220px' }}>
+          <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
             <Cpu className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[12px] font-mono uppercase tracking-wide text-muted-foreground">
-              Swarm topology
-            </span>
-            {store.isLoading && (
-              <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />
-            )}
+            <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">Swarm topology</span>
           </div>
-          <DiagramContainer className="min-h-[200px]" />
+          <DiagramContainer className="min-h-[180px]" />
         </div>
-      </div>
 
-      {/* Mobile swarm view */}
-      <div className="md:hidden">
-        <MobileCommandView />
-      </div>
+        <div className="md:hidden">
+          <MobileCommandView />
+        </div>
 
-      {/* Detail tabs */}
-      <Tabs defaultValue="agents">
-        <TabsList>
-          <TabsTrigger value="agents" title="All registered agents and their status">
-            Agents
-            {agentCount > 0 && (
-              <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0 h-4">{agentCount}</Badge>
+        <Tabs defaultValue="agents">
+          <TabsList>
+            <TabsTrigger value="agents">Agents</TabsTrigger>
+            <TabsTrigger value="missions">Missions</TabsTrigger>
+            <TabsTrigger value="runs">Runs</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="agents" className="mt-3">
+            <AgentTable />
+          </TabsContent>
+
+          <TabsContent value="missions" className="mt-3">
+            <MissionTable />
+          </TabsContent>
+
+          <TabsContent value="runs" className="mt-3">
+            <RunsTable />
+          </TabsContent>
+        </Tabs>
+
+        <AgentDetailSheet />
+        <CreateMissionDialog open={missionDialogOpen} onClose={() => setMissionDialogOpen(false)} />
+
+        <Sheet open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-xl overflow-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Terminal className="h-4 w-4" />
+                Event Replay
+              </SheetTitle>
+              <SheetDescription>
+                {selectedEvent?.eventType} · {selectedEvent ? relativeTime(selectedEvent.createdAt) : ''}
+              </SheetDescription>
+            </SheetHeader>
+
+            {selectedEvent && (
+              <div className="mt-4 space-y-3">
+                <div className="rounded-md border p-3">
+                  <p className="text-sm font-medium">{selectedEvent.title}</p>
+                  {selectedEvent.detail && <p className="mt-1 text-xs text-muted-foreground">{selectedEvent.detail}</p>}
+                </div>
+
+                <div className="rounded-md border bg-zinc-950 p-3 font-mono text-xs text-zinc-200">
+                  <div className="text-[#22d3ee]">[INIT]  ingest event {selectedEvent.id.slice(0, 8)}</div>
+                  <div className="text-[#60a5fa] mt-1">[OBSERVE] type={selectedEvent.eventType} severity={selectedEvent.severity}</div>
+                  <div className="text-[#fbbf24] mt-1">[ACTION] derive routing and policy annotations</div>
+                  <div className="text-[#34d399] mt-1">[RESULT] event ready for operator decision</div>
+                </div>
+
+                <details className="rounded-md border p-3">
+                  <summary className="cursor-pointer text-xs font-medium">Raw payload</summary>
+                  <pre className="mt-2 max-h-[320px] overflow-auto rounded bg-muted p-2 text-[10px]">{JSON.stringify(selectedEvent.payload ?? {}, null, 2)}</pre>
+                </details>
+              </div>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="missions" title="Active and completed missions">
-            Missions
-            {store.missions.length > 0 && (
-              <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0 h-4">{store.missions.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="runs" title="Execution history and run logs">Runs</TabsTrigger>
-          <TabsTrigger value="logs" title="Real-time system event stream">Logs</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="agents" className="mt-4">
-          <AgentTable />
-        </TabsContent>
-
-        <TabsContent value="missions" className="mt-4">
-          <MissionTable />
-        </TabsContent>
-
-        <TabsContent value="runs" className="mt-4">
-          <RunsTable />
-        </TabsContent>
-
-        <TabsContent value="logs" className="mt-4">
-          <LogsPanel />
-        </TabsContent>
-      </Tabs>
-
-      {/* Overlays */}
-      <AgentDetailSheet />
-      <CreateMissionDialog open={missionDialogOpen} onClose={() => setMissionDialogOpen(false)} />
-    </PageShell>
+          </SheetContent>
+        </Sheet>
+      </PageShell>
     </TooltipProvider>
-
-
   )
 }
 
-// ─── Dispatch Task Card Component ────────────────────────────────────────────
-function DispatchTaskCard() {
-  const [agentId, setAgentId] = useState(process.env.EMPIRE_EXECUTION_MODEL || '')
-  const [task, setTask] = useState('')
-  const [dispatching, setDispatching] = useState(false)
-  const [lastRun, setLastRun] = useState<{runId: string; status: string} | null>(null)
+function ExecutionStatBar({
+  running,
+  pending,
+  done,
+  blocked,
+  failed,
+  stale,
+  paused,
+  flashPending,
+}: {
+  running: number
+  pending: number
+  done: number
+  blocked: number
+  failed: number
+  stale: number
+  paused: boolean
+  flashPending: boolean
+}) {
+  const stats = [
+    { label: 'Running', value: running, icon: Activity },
+    { label: 'Pending', value: pending, icon: Clock3 },
+    { label: 'Done', value: done, icon: Workflow },
+    { label: 'Blocked', value: blocked, icon: ShieldCheck },
+    { label: 'Failed', value: failed, icon: AlertCircle },
+    { label: 'Stale', value: stale, icon: Gauge },
+  ]
 
-  const handleDispatch = async () => {
-    if (!task.trim() || !agentId.trim()) return
-    setDispatching(true)
-    try {
-      const res = await fetch('/api/openclaw-gateway/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, task }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setLastRun({ runId: data.runId, status: 'dispatched' })
-        setTask('')
-      } else {
-        setLastRun({ runId: 'Error', status: 'failed' })
-      }
-    } catch {
-      setLastRun({ runId: 'Error', status: 'failed' })
-    } finally {
-      setDispatching(false)
-    }
+  return (
+    <div className="rounded-xl border p-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {stats.map((stat) => (
+          <Tooltip key={stat.label}>
+            <TooltipTrigger asChild>
+              <motion.div
+                whileHover={{ scaleX: 1.06 }}
+                transition={SHARED_SPRING}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1 text-xs',
+                  stat.label === 'Pending' && flashPending && 'border-amber-400 bg-amber-400/20',
+                )}
+              >
+                <stat.icon className="h-3.5 w-3.5" />
+                <span>{stat.label}</span>
+                <span className="font-mono">{stat.value}</span>
+              </motion.div>
+            </TooltipTrigger>
+            <TooltipContent className="text-xs">{stat.label} agents or items</TooltipContent>
+          </Tooltip>
+        ))}
+
+        <div className="ml-auto inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs">
+          <motion.div
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ repeat: Infinity, duration: 1.2 }}
+            className={cn('h-2 w-2 rounded-full', paused ? 'bg-rose-500' : 'bg-emerald-500')}
+          />
+          Fleet {paused ? 'paused' : 'running'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FleetStatusPanel({
+  expanded,
+  onToggle,
+  services,
+  loading,
+  gatewayStatus,
+  running,
+  failed,
+  avgLatency,
+}: {
+  expanded: boolean
+  onToggle: () => void
+  services: ServiceStatus[]
+  loading: boolean
+  gatewayStatus: string
+  running: number
+  failed: number
+  avgLatency: number | null
+}) {
+  return (
+    <div className="rounded-xl border bg-card/80">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+      >
+        <Badge variant="outline" className="text-[10px]">AI Gateway · {loading ? 'Checking...' : gatewayStatus}</Badge>
+        <Badge variant="outline" className="text-[10px]">Workload · {running} active</Badge>
+        <Badge variant="outline" className="text-[10px]">Errors · {failed}</Badge>
+        <span className="ml-auto text-xs text-muted-foreground">Fleet status</span>
+        {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={SHARED_SPRING}
+            className="overflow-hidden"
+          >
+            <div className="grid gap-2 border-t p-3 md:grid-cols-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">System Health</p>
+                <p className="mt-2 text-sm font-medium">Gateway: {loading ? 'checking' : gatewayStatus}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{services.filter((service) => service.status === 'up').length}/{services.length} services healthy</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Workload</p>
+                <p className="mt-2 text-sm font-medium">{running} agents executing</p>
+                <p className="mt-1 text-xs text-muted-foreground">{failed} in error state</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Performance</p>
+                <p className="mt-2 text-sm font-medium">{avgLatency === null ? 'n/a' : `${avgLatency} ms avg`}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Latency from integrated health probes</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function ActiveRunsBoard({ runs, loading }: { runs: Run[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="py-3"><CardTitle className="text-sm">Active Runs</CardTitle></CardHeader>
+        <CardContent className="py-6 text-sm text-muted-foreground">Loading runs...</CardContent>
+      </Card>
+    )
   }
 
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <Send className="h-4 w-4 text-[color:var(--foco-teal)]" />
-        <h3 className="text-sm font-semibold">Dispatch Task</h3>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="sm:col-span-1">
-          <label className="text-[11px] text-muted-foreground mb-1 block">Agent ID</label>
-          <Input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="e.g., kimi-coding/k2p5" className="h-8 text-[12px] font-mono" />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="text-[11px] text-muted-foreground mb-1 block">Task</label>
-          <Textarea value={task} onChange={(e) => setTask(e.target.value)} placeholder="Describe what you want the agent to do..." rows={2} className="min-h-[60px] text-[12px] resize-none" />
-        </div>
-      </div>
-      <div className="flex items-center justify-between">
-        {lastRun && (
-          <Badge variant={lastRun.status === 'failed' ? 'destructive' : 'default'} className="text-[10px]">
-            {lastRun.status === 'failed' ? 'Failed' : `Dispatched: ${lastRun.runId.slice(0, 8)}`}
-          </Badge>
+    <Card>
+      <CardHeader className="py-3"><CardTitle className="text-sm">Active Runs</CardTitle></CardHeader>
+      <CardContent className="pt-0">
+        {runs.length === 0 ? (
+          <div className="rounded-md border border-dashed p-4 text-center">
+            <svg viewBox="0 0 120 32" className="mx-auto h-10 w-40 opacity-70">
+              <motion.path
+                d="M2 16h20l6-8 8 16 8-16 8 16 8-8h34"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-zinc-500"
+                animate={{ pathLength: [0.2, 1, 0.2], opacity: [0.4, 1, 0.4] }}
+                transition={{ repeat: Infinity, duration: 2.4 }}
+              />
+            </svg>
+            <p className="mt-1 text-xs text-muted-foreground">No active runs</p>
+          </div>
+        ) : (
+          <motion.div layout className="space-y-2">
+            <AnimatePresence mode="popLayout">
+              {runs.map((run) => (
+                <motion.div
+                  key={run.id}
+                  layout
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={SHARED_SPRING}
+                  className={cn('rounded-md border-l-4 border bg-card px-3 py-2', statusAccent(run.status))}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs">{run.runner}</span>
+                    <Badge variant="outline" className="text-[10px]">{run.status}</Badge>
+                    <span className="ml-auto text-[10px] text-muted-foreground"><ElapsedTimer since={run.started_at || run.created_at} /></span>
+                  </div>
+                  {run.summary && <p className="mt-1 text-xs text-muted-foreground truncate">{run.summary}</p>}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
-        <div className="ml-auto">
-          <Button size="sm" onClick={handleDispatch} disabled={dispatching || !task.trim() || !agentId.trim()} className="gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90">
-            {dispatching ? (
-              <><RefreshCw className="h-3.5 w-3.5 animate-spin" />Dispatching...</>
-            ) : (
-              <><Send className="h-3.5 w-3.5" />Dispatch</>
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
-// ─── Gateway Status Card Component ───────────────────────────────────────────
-function GatewayStatusCard() {
-  const [status, setStatus] = useState<{reachable: boolean; tokenValid: boolean; tabs: number}>({ reachable: false, tokenValid: false, tabs: 0 })
-  const [loading, setLoading] = useState(true)
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/openclaw/status')
-      if (res.ok) {
-        const data = await res.json()
-        setStatus({
-          reachable: data.relay?.reachable ?? false,
-          tokenValid: data.token?.valid ?? false,
-          tabs: data.tabs?.filter((t: any) => t.attached).length ?? 0
-        })
-      }
-    } catch {
-      setStatus({ reachable: false, tokenValid: false, tabs: 0 })
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+function ElapsedTimer({ since }: { since?: string | null }) {
+  const [elapsed, setElapsed] = useState('0s')
 
   useEffect(() => {
-    fetchStatus()
-    const id = setInterval(fetchStatus, 30000)
-    return () => clearInterval(id)
-  }, [fetchStatus])
+    if (!since) return
+    const update = () => {
+      const delta = Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 1000))
+      if (delta < 60) setElapsed(`${delta}s`)
+      else if (delta < 3600) setElapsed(`${Math.floor(delta / 60)}m ${delta % 60}s`)
+      else setElapsed(`${Math.floor(delta / 3600)}h ${Math.floor((delta % 3600) / 60)}m`)
+    }
+    update()
+    const id = window.setInterval(update, 1000)
+    return () => window.clearInterval(id)
+  }, [since])
 
+  return <>{elapsed}</>
+}
+
+function SoapTerminal({
+  lines,
+  open,
+  onOpenChange,
+  connected,
+}: {
+  lines: TerminalLine[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  connected: boolean
+}) {
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <Wifi className="h-4 w-4 text-[color:var(--foco-teal)]" />
-        <h3 className="text-sm font-semibold">Gateway Status</h3>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-[12px]">
-          <span className="text-muted-foreground">Relay</span>
-          <div className="flex items-center gap-1.5">
-            <div className={cn('h-1.5 w-1.5 rounded-full', loading ? 'bg-yellow-400 animate-pulse' : status.reachable ? 'bg-emerald-500' : 'bg-red-500')} />
-            <span>{loading ? 'Checking...' : status.reachable ? 'Reachable' : 'Down'}</span>
+    <Card>
+      <CardHeader className="py-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm flex items-center gap-2"><Terminal className="h-4 w-4" />Output Terminal</CardTitle>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onOpenChange(!open)}>
+            {open ? 'Collapse' : 'Open'}
+          </Button>
+        </div>
+      </CardHeader>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={SHARED_SPRING}
+            className="overflow-hidden"
+          >
+            <CardContent className="pt-0">
+              <div className="rounded-md border bg-zinc-950 p-3 font-mono text-xs text-zinc-100">
+                <div
+                  className="space-y-1 max-h-[340px] overflow-auto"
+                  style={{
+                    backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 3px)',
+                  }}
+                >
+                  {lines.length === 0 ? (
+                    <p className="text-zinc-500">Awaiting output stream...</p>
+                  ) : (
+                    <AnimatePresence initial={false}>
+                      {lines.map((line, index) => (
+                        <motion.div
+                          key={line.id}
+                          initial={{ x: -8, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.18, delay: Math.min(index * 0.03, 0.25) }}
+                          className="whitespace-pre-wrap break-words"
+                        >
+                          <span className={cn('mr-2', tokenClass(line.token))}>[{line.token}]</span>
+                          <span>{line.text}</span>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  )}
+                  <div className="mt-1 text-zinc-500">
+                    <span className={cn('mr-2', connected ? 'text-emerald-400' : 'text-rose-400')}>{connected ? '[LIVE]' : '[OFF]'}</span>
+                    <span className="animate-pulse">▋</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  )
+}
+
+function LiveTickerFeed({
+  loading,
+  events,
+  onOpenEvent,
+}: {
+  loading: boolean
+  events: CoFounderInsightItem[]
+  onOpenEvent: (event: CoFounderInsightItem) => void
+}) {
+  return (
+    <Card>
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm">Recent Events</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading events...</p>
+        ) : events.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No recent events.</p>
+        ) : (
+          <div className="space-y-1">
+            <AnimatePresence initial={false}>
+              {events.slice(0, 14).map((event) => (
+                <motion.button
+                  key={event.id}
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  transition={SHARED_SPRING}
+                  onClick={() => onOpenEvent(event)}
+                  className="w-full rounded-md border px-2 py-1.5 text-left hover:bg-muted/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'font-mono text-[10px] uppercase',
+                        event.eventType === 'policy' && 'border-fuchsia-500/40 text-fuchsia-500',
+                        event.eventType === 'clawdbot' && 'border-cyan-500/40 text-cyan-500',
+                        event.severity === 'error' && 'border-rose-500/40 text-rose-500',
+                      )}
+                    >
+                      {event.eventType}
+                    </Badge>
+                    <span className="truncate font-mono text-xs">{event.title}</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground">{relativeTime(event.createdAt)}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                </motion.button>
+              ))}
+            </AnimatePresence>
           </div>
-        </div>
-        <div className="flex items-center justify-between text-[12px]">
-          <span className="text-muted-foreground">Token</span>
-          <div className="flex items-center gap-1.5">
-            <div className={cn('h-1.5 w-1.5 rounded-full', loading ? 'bg-yellow-400 animate-pulse' : status.tokenValid ? 'bg-emerald-500' : 'bg-red-500')} />
-            <span>{loading ? 'Checking...' : status.tokenValid ? 'Valid' : 'Invalid'}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-[12px]">
-          <span className="text-muted-foreground">Active Tabs</span>
-          <span className="font-mono">{status.tabs}</span>
-        </div>
-      </div>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

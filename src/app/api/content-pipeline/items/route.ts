@@ -1,84 +1,126 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
-import { 
-  successResponse, 
-  authRequiredResponse, 
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import {
+  successResponse,
+  authRequiredResponse,
   databaseErrorResponse,
   missingFieldResponse,
   notFoundResponse,
   isValidUUID,
   createPaginationMeta,
-} from '@/lib/api/response-helpers';
-import { supabaseAdmin } from '@/lib/supabase-server';
+} from '@/lib/api/response-helpers'
+import { supabaseAdmin } from '@/lib/supabase-server'
+import { resolveWorkspaceScope, scopeProjectIds, hasProjectAccess } from '@/features/content-pipeline/server/workspace-scope'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/content-pipeline/items
- * List content items with optional filtering
+ * List content items with optional filtering.
  */
 export async function GET(req: NextRequest) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse);
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const { searchParams } = new URL(req.url);
-    const sourceId = searchParams.get('source_id');
-    const status = searchParams.get('status');
-    const projectId = searchParams.get('project_id');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const { scope, error: scopeError } = await resolveWorkspaceScope(user.id)
+    if (scopeError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to resolve workspace scope', scopeError), authResponse)
+    }
 
-    // Build query
-    let query = supabase
-      .from('content_items')
-      .select('*, content_sources!inner(project_id, name, type)', { count: 'exact' });
+    const projectIds = scopeProjectIds(scope)
+    if (projectIds.length === 0) {
+      const meta = createPaginationMeta(0, 50, 0)
+      return mergeAuthResponse(successResponse([], meta), authResponse)
+    }
 
-    // Apply filters
-    if (sourceId) {
-      if (!isValidUUID(sourceId)) {
-        return missingFieldResponse('Invalid source_id format');
-      }
-      query = query.eq('source_id', sourceId);
+    const { searchParams } = new URL(req.url)
+    const sourceId = searchParams.get('source_id')
+    const status = searchParams.get('status')
+    const projectId = searchParams.get('project_id')
+    const limit = Math.max(1, Math.min(parseInt(searchParams.get('limit') || '50', 10), 200))
+    const offset = Math.max(0, parseInt(searchParams.get('offset') || '0', 10))
+
+    if (sourceId && !isValidUUID(sourceId)) {
+      return missingFieldResponse('Invalid source_id format')
+    }
+
+    if (projectId && !isValidUUID(projectId)) {
+      return missingFieldResponse('Invalid project_id format')
+    }
+
+    if (projectId && !hasProjectAccess(scope, projectId)) {
+      return mergeAuthResponse(notFoundResponse('Project', projectId), authResponse)
     }
 
     if (status) {
-      const validStatuses = ['unread', 'read', 'archived', 'actioned'];
+      const validStatuses = ['unread', 'read', 'archived', 'actioned']
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
           { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
           { status: 400 }
-        );
+        )
       }
-      query = query.eq('status', status);
     }
 
-    if (projectId) {
-      if (!isValidUUID(projectId)) {
-        return missingFieldResponse('Invalid project_id format');
-      }
-      query = query.eq('content_sources.project_id', projectId);
+    const scopedProjectIds = projectId ? [projectId] : projectIds
+
+    const { data: scopedSources, error: sourcesError } = await supabaseAdmin
+      .from('content_sources')
+      .select('id, project_id, name, type, platform, url')
+      .in('project_id', scopedProjectIds)
+
+    if (sourcesError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to resolve source access', sourcesError), authResponse)
     }
 
-    // Add ordering and pagination
-    query = query
-      .order('published_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const sources = scopedSources ?? []
+    const sourceById = new Map<string, any>()
+    for (const source of sources) {
+      sourceById.set(source.id as string, source)
+    }
 
-    const { data: items, error: itemsError, count } = await query;
+    if (sourceId && !sourceById.has(sourceId)) {
+      return mergeAuthResponse(notFoundResponse('Content source', sourceId), authResponse)
+    }
+
+    const allowedSourceIds = sourceId ? [sourceId] : Array.from(sourceById.keys())
+    if (allowedSourceIds.length === 0) {
+      const meta = createPaginationMeta(0, limit, offset)
+      return mergeAuthResponse(successResponse([], meta), authResponse)
+    }
+
+    let query = supabaseAdmin
+      .from('content_items')
+      .select('*', { count: 'exact' })
+      .in('source_id', allowedSourceIds)
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data: items, error: itemsError, count } = await query
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (itemsError) {
-      return databaseErrorResponse('Failed to fetch content items', itemsError);
+      return mergeAuthResponse(databaseErrorResponse('Failed to fetch content items', itemsError), authResponse)
     }
 
-    const meta = createPaginationMeta(count || 0, limit, offset);
-    return mergeAuthResponse(successResponse(items || [], meta), authResponse);
+    const enrichedItems = (items ?? []).map((item: any) => ({
+      ...item,
+      content_sources: sourceById.get(item.source_id) ?? null,
+    }))
+
+    const meta = createPaginationMeta(count || 0, limit, offset)
+    return mergeAuthResponse(successResponse(enrichedItems, meta), authResponse)
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return databaseErrorResponse('Failed to fetch content items', message);
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to fetch content items', message)
   }
 }
 
@@ -88,51 +130,73 @@ export async function GET(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req);
+    const { user, error, response: authResponse } = await getAuthUser(req)
 
     if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse);
+      return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
-    const body = await req.json();
+    const body = await req.json()
 
     if (!body.id) {
-      return missingFieldResponse('id');
+      return missingFieldResponse('id')
     }
 
     if (!isValidUUID(body.id)) {
-      return missingFieldResponse('Invalid id format');
+      return missingFieldResponse('Invalid id format')
     }
 
     if (!body.status) {
-      return missingFieldResponse('status');
+      return missingFieldResponse('status')
     }
 
-    const validStatuses = ['unread', 'read', 'archived', 'actioned'];
+    const validStatuses = ['unread', 'read', 'archived', 'actioned']
     if (!validStatuses.includes(body.status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
         { status: 400 }
-      );
+      )
     }
 
-    // Verify user has access to this item (via source -> project ownership)
-    const { data: existingItem, error: itemError } = await supabase
+    const { scope, error: scopeError } = await resolveWorkspaceScope(user.id)
+    if (scopeError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to resolve workspace scope', scopeError), authResponse)
+    }
+
+    const projectIds = scopeProjectIds(scope)
+    if (projectIds.length === 0) {
+      return mergeAuthResponse(notFoundResponse('Content item', body.id), authResponse)
+    }
+
+    const { data: existingItem, error: itemError } = await supabaseAdmin
       .from('content_items')
-      .select('*, content_sources!inner(project_id, foco_projects!inner(owner_id))')
+      .select('id, source_id')
       .eq('id', body.id)
-      .eq('foco_projects.owner_id', user.id)
-      .maybeSingle();
+      .maybeSingle()
 
     if (itemError) {
-      return databaseErrorResponse('Failed to verify item access', itemError);
+      return mergeAuthResponse(databaseErrorResponse('Failed to verify item access', itemError), authResponse)
     }
 
-    if (!existingItem) {
-      return notFoundResponse('Content item', body.id);
+    if (!existingItem?.source_id) {
+      return mergeAuthResponse(notFoundResponse('Content item', body.id), authResponse)
     }
 
-    // Update item using admin client
+    const { data: source, error: sourceError } = await supabaseAdmin
+      .from('content_sources')
+      .select('id, project_id')
+      .eq('id', existingItem.source_id)
+      .in('project_id', projectIds)
+      .maybeSingle()
+
+    if (sourceError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to verify item source access', sourceError), authResponse)
+    }
+
+    if (!source) {
+      return mergeAuthResponse(notFoundResponse('Content item', body.id), authResponse)
+    }
+
     const { data: item, error: updateError } = await supabaseAdmin
       .from('content_items')
       .update({
@@ -140,15 +204,15 @@ export async function PATCH(req: NextRequest) {
       })
       .eq('id', body.id)
       .select()
-      .single();
+      .single()
 
     if (updateError) {
-      return databaseErrorResponse('Failed to update content item', updateError);
+      return mergeAuthResponse(databaseErrorResponse('Failed to update content item', updateError), authResponse)
     }
 
-    return mergeAuthResponse(successResponse(item), authResponse);
+    return mergeAuthResponse(successResponse(item), authResponse)
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return databaseErrorResponse('Failed to update content item', message);
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return databaseErrorResponse('Failed to update content item', message)
   }
 }

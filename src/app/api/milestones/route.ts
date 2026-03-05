@@ -64,19 +64,19 @@ export async function GET(req: NextRequest) {
     // Get project info for each milestone
     const projectIds = [...new Set((milestones || []).map(m => m.project_id).filter(Boolean))]
     
-    let projectMap: Record<string, { name: string; color: string }> = {}
+    let projectMap: Record<string, { id: string; name: string; color: string; slug: string | null }> = {}
     
     if (projectIds.length > 0) {
       const { data: projects } = await supabase
         .from('foco_projects')
-        .select('id, name, color')
+        .select('id, name, color, slug')
         .in('id', projectIds)
       
       if (projects) {
         projectMap = projects.reduce((acc, p) => {
-          acc[p.id] = { name: p.name, color: p.color || '#6366F1' }
+          acc[p.id] = { id: p.id, name: p.name, color: p.color || '#6366F1', slug: p.slug ?? null }
           return acc
-        }, {} as Record<string, { name: string; color: string }>)
+        }, {} as Record<string, { id: string; name: string; color: string; slug: string | null }>)
       }
     }
 

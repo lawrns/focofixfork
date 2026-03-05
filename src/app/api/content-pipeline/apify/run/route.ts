@@ -10,11 +10,12 @@ import {
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { getDatasetItems, mapApifyItemsToRawContent, startApifyRun } from '@/features/content-pipeline/services/apify-client'
 import { SourcePoller } from '@/features/content-pipeline/services/source-poller'
+import { resolveWorkspaceScope, scopeProjectIds } from '@/features/content-pipeline/server/workspace-scope'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
+  const { user, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const body = await req.json().catch(() => ({}))
@@ -25,11 +26,21 @@ export async function POST(req: NextRequest) {
     return mergeAuthResponse(badRequestResponse('source_id is required'), authResponse)
   }
 
-  const { data: source, error: sourceError } = await supabase
+  const { scope, error: scopeError } = await resolveWorkspaceScope(user.id)
+  if (scopeError) {
+    return mergeAuthResponse(databaseErrorResponse('Failed to resolve workspace scope', scopeError), authResponse)
+  }
+
+  const allowedProjectIds = scopeProjectIds(scope)
+  if (allowedProjectIds.length === 0) {
+    return mergeAuthResponse(notFoundResponse('Content source', sourceId), authResponse)
+  }
+
+  const { data: source, error: sourceError } = await supabaseAdmin
     .from('content_sources')
-    .select('*, foco_projects!inner(owner_id)')
+    .select('*')
     .eq('id', sourceId)
-    .eq('foco_projects.owner_id', user.id)
+    .in('project_id', allowedProjectIds)
     .maybeSingle()
 
   if (sourceError) {
@@ -96,4 +107,3 @@ export async function POST(req: NextRequest) {
     return mergeAuthResponse(databaseErrorResponse('Failed to run Apify actor', message), authResponse)
   }
 }
-

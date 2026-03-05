@@ -28,17 +28,22 @@ function sourceBorder(type: string): string {
 
 type RecentEventsFeedProps = {
   events: LedgerEvent[]
+  totalEvents?: number
   onSelect: (event: LedgerEvent) => void
 }
 
-export function RecentEventsFeed({ events, onSelect }: RecentEventsFeedProps) {
+export function RecentEventsFeed({ events, totalEvents, onSelect }: RecentEventsFeedProps) {
   const router = useRouter()
+  const visibleEvents = events.slice(0, 12)
 
   return (
     <div className="rounded-xl border bg-card">
       <div className="px-3 py-2 border-b flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Events</h3>
-        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => router.push('/ledger')}>View all</Button>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent Events</h3>
+          <p className="text-[11px] text-muted-foreground">{visibleEvents.length === 0 ? 'No recent ledger activity' : `${visibleEvents.length} visible${typeof totalEvents === 'number' ? ` of ${totalEvents}` : ''}`}</p>
+        </div>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => router.push('/ledger')}>{typeof totalEvents === 'number' && totalEvents > visibleEvents.length ? 'More' : 'View all'}</Button>
       </div>
       <div className="relative">
         <div className="overflow-auto max-h-[calc(100vh-12rem)]">
@@ -47,7 +52,7 @@ export function RecentEventsFeed({ events, onSelect }: RecentEventsFeedProps) {
           ) : (
             <div className="divide-y divide-border/50">
               <AnimatePresence initial={false}>
-                {events.slice(0, 14).map((event) => (
+                {visibleEvents.map((event) => (
                   <motion.button
                     key={event.id}
                     initial={{ y: -12, opacity: 0 }}

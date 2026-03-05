@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,13 +10,15 @@ import type { Run } from './use-dashboard-data'
 
 type RunCardGridProps = {
   runs: Run[]
+  totalRuns?: number
   terminalLinesMap: Record<string, TerminalLine[]>
   connectionStatesMap?: Record<string, 'idle' | 'resolving' | 'connecting' | 'live' | 'ended' | 'unavailable'>
   onStop?: (id: string) => void
   onDispatchClick?: () => void
 }
 
-export function RunCardGrid({ runs, terminalLinesMap, connectionStatesMap, onStop, onDispatchClick }: RunCardGridProps) {
+export function RunCardGrid({ runs, totalRuns, terminalLinesMap, connectionStatesMap, onStop, onDispatchClick }: RunCardGridProps) {
+  const router = useRouter()
   const gridCols =
     runs.length === 0
       ? ''
@@ -26,8 +29,21 @@ export function RunCardGrid({ runs, terminalLinesMap, connectionStatesMap, onSto
           : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
 
   return (
-    <div>
-      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Active Runs</h3>
+    <div className="rounded-xl border bg-card">
+      <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Runs</h3>
+          <p className="text-[11px] text-muted-foreground">{runs.length === 0 ? 'Fleet idle' : `${runs.length} visible${typeof totalRuns === 'number' ? ` of ${totalRuns}` : ''}`}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {typeof totalRuns === 'number' && totalRuns > runs.length ? (
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => router.push('/runs')}>
+              More
+            </Button>
+          ) : null}
+        </div>
+      </div>
+      <div className="p-3">
       <AnimatePresence mode="popLayout">
         {runs.length === 0 ? (
           <motion.div
@@ -70,6 +86,7 @@ export function RunCardGrid({ runs, terminalLinesMap, connectionStatesMap, onSto
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   )
 }

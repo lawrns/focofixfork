@@ -240,7 +240,7 @@ export default function DashboardPageClient() {
   return (
     <ErrorBoundary>
       <TooltipProvider delayDuration={120}>
-        <PageShell className="space-y-3 bg-gradient-to-b from-background to-muted/20 rounded-xl p-2">
+        <PageShell className="space-y-3 rounded-xl bg-gradient-to-b from-background to-muted/20 px-1 py-2 sm:px-2 lg:px-3">
           <PageHeader
             title="Execution Dashboard"
             subtitle="Mission control for operator + agent execution"
@@ -323,11 +323,11 @@ export default function DashboardPageClient() {
             </AnimatePresence>
           </div>
 
-          {/* Main 2-column layout: RunCards + Recent Events */}
-          <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4">
-            <div>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.95fr)_minmax(18rem,0.8fr)]">
+            <div className="space-y-4">
               <RunCardGrid
                 runs={displayedRuns}
+                totalRuns={data.activeRuns.length}
                 terminalLinesMap={terminalLinesMap}
                 connectionStatesMap={streamStateMap}
                 onDispatchClick={() => {
@@ -346,14 +346,16 @@ export default function DashboardPageClient() {
               ))}
             </div>
 
-            <div className="md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-6rem)] md:overflow-auto">
-              <RecentEventsFeed events={data.recentEvents} onSelect={setSelectedEvent} />
+            <div className="space-y-4">
+              <RecentEventsFeed events={data.recentEvents} totalEvents={data.recentEvents.length} onSelect={setSelectedEvent} />
+            </div>
+
+            <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
+              <ErrorBoundary fallback={() => null}>
+                <AIInsights userId={user.id} className="mb-0" runs={data.allRuns} recentEvents={data.recentEvents} />
+              </ErrorBoundary>
             </div>
           </div>
-
-          <ErrorBoundary fallback={() => null}>
-            <AIInsights userId={user.id} className="mb-1" runs={data.allRuns} recentEvents={data.recentEvents} />
-          </ErrorBoundary>
 
           <Sheet open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
             <SheetContent side="right" className="w-full sm:max-w-xl overflow-auto">

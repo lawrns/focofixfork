@@ -157,7 +157,7 @@ export function CommandInput({
                   }
                 }}
                 placeholder="Dispatch a task to the critter fleet..."
-                className="h-9 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+                className="h-9 border-0 bg-transparent pl-4 pr-1 text-sm shadow-none focus-visible:ring-0"
               />
 
               <Button onClick={() => void handleSubmit()} disabled={dispatching || !task.trim()} size="sm" className="h-8 gap-1.5 self-end md:self-auto">
@@ -168,7 +168,7 @@ export function CommandInput({
           </div>
 
           {errorMessage ? (
-            <p className="px-1 text-xs text-rose-500" role="status" aria-live="polite">
+            <p className="px-4 text-xs text-rose-500" role="status" aria-live="polite">
               {errorMessage}
             </p>
           ) : null}

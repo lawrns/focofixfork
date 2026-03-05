@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
@@ -14,7 +15,7 @@ const MODEL_LEGEND = [
   { badge: 'GLM-5',  color: 'text-amber-600',  desc: 'GLM-5 (Z.AI) — Fallback when Kimi is unavailable' },
 ]
 
-export default function EmpireAgentsPage() {
+function EmpireAgentsContent() {
   const searchParams = useSearchParams()
   const workspaceId = searchParams.get('workspace_id')
 
@@ -49,5 +50,13 @@ export default function EmpireAgentsPage() {
         <AgentRosterExtended workspaceId={workspaceId} />
       </div>
     </PageShell>
+  )
+}
+
+export default function EmpireAgentsPage() {
+  return (
+    <Suspense fallback={<PageShell><div>Loading...</div></PageShell>}>
+      <EmpireAgentsContent />
+    </Suspense>
   )
 }

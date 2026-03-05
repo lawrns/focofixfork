@@ -20,6 +20,14 @@ interface FeedRow {
   created_at: string
 }
 
+interface LedgerFeedRow {
+  id: string
+  type: string
+  source: string
+  payload: Record<string, unknown> | null
+  timestamp: string
+}
+
 function parseWindowHours(value: string | null): number {
   if (!value) return 24
   const match = value.match(/^(\d+)(h|d)$/)
@@ -27,6 +35,13 @@ function parseWindowHours(value: string | null): number {
   const amount = Math.max(1, Number(match[1]))
   if (match[2] === 'd') return amount * 24
   return amount
+}
+
+function parseLimit(value: string | null): number {
+  if (!value) return 200
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return 200
+  return Math.max(1, Math.min(500, Math.floor(parsed)))
 }
 
 export async function GET(req: NextRequest) {
@@ -43,6 +58,7 @@ export async function GET(req: NextRequest) {
     const workspaceId = searchParams.get('workspace_id')
     const windowValue = searchParams.get('window')
     const windowHours = parseWindowHours(windowValue)
+    const limit = parseLimit(searchParams.get('limit'))
 
     if (workspaceId) {
       const isMember = await verifyWorkspaceMembership(supabase, user.id, workspaceId)
@@ -57,45 +73,40 @@ export async function GET(req: NextRequest) {
       .eq('user_id', user.id)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
-      .limit(200)
+      .limit(limit)
 
     if (workspaceId) {
       query = query.eq('workspace_id', workspaceId)
     }
 
-    const { data, error } = await query.returns<FeedRow[]>()
+    let ledgerQuery = supabase
+      .from('ledger_events')
+      .select('id, type, source, payload, timestamp')
+      .eq('user_id', user.id)
+      .gte('timestamp', since)
+      .in('source', ['clawdbot', 'openclaw', 'foco_crons', 'telegram'])
+      .order('timestamp', { ascending: false })
+      .limit(limit)
 
-    if (error) {
-      const fallback = await supabase
-        .from('ledger_events')
-        .select('id, type, payload, timestamp')
-        .eq('source', 'cofounder')
-        .gte('timestamp', since)
-        .order('timestamp', { ascending: false })
-        .limit(100)
-
-      const fallbackItems = (fallback.data ?? []).map((row: Record<string, unknown>) => ({
-        id: row.id,
-        eventType: row.type,
-        severity: 'info',
-        title: typeof row.type === 'string' ? row.type : 'cofounder_event',
-        detail: '',
-        payload: row.payload ?? {},
-        createdAt: row.timestamp,
-      }))
-
-      return mergeAuthResponse(
-        successResponse({
-          windowHours,
-          source: 'ledger_fallback',
-          items: fallbackItems,
-        }),
-        authResponse
-      )
+    if (workspaceId) {
+      ledgerQuery = ledgerQuery.eq('workspace_id', workspaceId)
     }
 
-    const items = (data ?? []).map((row) => ({
-      id: row.id,
+    const [{ data, error }, { data: ledgerData, error: ledgerError }] = await Promise.all([
+      query.returns<FeedRow[]>(),
+      ledgerQuery.returns<LedgerFeedRow[]>(),
+    ])
+
+    if (error) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to load cofounder history feed', error), authResponse)
+    }
+
+    if (ledgerError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to load ledger feed', ledgerError), authResponse)
+    }
+
+    const historyItems = (data ?? []).map((row) => ({
+      id: `history:${row.id}`,
       eventType: row.event_type,
       severity: row.severity,
       title: row.title,
@@ -104,10 +115,24 @@ export async function GET(req: NextRequest) {
       createdAt: row.created_at,
     }))
 
+    const ledgerItems = (ledgerData ?? []).map((row) => ({
+      id: `ledger:${row.id}`,
+      eventType: row.type,
+      severity: 'info',
+      title: `[${row.source}] ${row.type}`,
+      detail: '',
+      payload: row.payload ?? {},
+      createdAt: row.timestamp,
+    }))
+
+    const items = [...historyItems, ...ledgerItems]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit)
+
     return mergeAuthResponse(
       successResponse({
         windowHours,
-        source: 'cofounder_decisions_history',
+        source: 'cofounder+ledger',
         items,
       }),
       authResponse

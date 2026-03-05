@@ -4,7 +4,8 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { UpdateProjectData } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
-import { authRequiredResponse, successResponse, databaseErrorResponse, projectNotFoundResponse, validateUUID } from '@/lib/api/response-helpers'
+import { authRequiredResponse, successResponse, databaseErrorResponse, projectNotFoundResponse, validateUUID, forbiddenResponse } from '@/lib/api/response-helpers'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,8 @@ export async function GET(
     }
 
     const { id } = await params
-    const repo = new ProjectRepository(supabase)
+    const accessClient = supabaseAdmin || supabase
+    const repo = new ProjectRepository(accessClient)
 
     // Try to find by ID first
     let result = await repo.findById(id)
@@ -41,6 +43,20 @@ export async function GET(
         return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
       }
       return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
+    }
+
+    const { data: membership, error: membershipError } = await accessClient
+      .from('foco_workspace_members')
+      .select('id')
+      .eq('workspace_id', result.data.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (membershipError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
+    }
+    if (!membership) {
+      return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
     }
 
     return mergeAuthResponse(successResponse(result.data), authResponse)
@@ -70,7 +86,30 @@ export async function PATCH(
     }
 
     const body = await req.json()
-    const repo = new ProjectRepository(supabase)
+    const accessClient = supabaseAdmin || supabase
+    const repo = new ProjectRepository(accessClient)
+
+    const existing = await repo.findById(id)
+    if (isError(existing)) {
+      if (existing.error.code === 'NOT_FOUND') {
+        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
+      }
+      return mergeAuthResponse(databaseErrorResponse(existing.error.message, existing.error.details), authResponse)
+    }
+
+    const { data: membership, error: membershipError } = await accessClient
+      .from('foco_workspace_members')
+      .select('id')
+      .eq('workspace_id', existing.data.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (membershipError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
+    }
+    if (!membership) {
+      return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
+    }
 
     // Build update object with only provided fields
     const updateData: UpdateProjectData = {}
@@ -124,7 +163,31 @@ export async function DELETE(
       return uuidError
     }
 
-    const repo = new ProjectRepository(supabase)
+    const accessClient = supabaseAdmin || supabase
+    const repo = new ProjectRepository(accessClient)
+
+    const existing = await repo.findById(id)
+    if (isError(existing)) {
+      if (existing.error.code === 'NOT_FOUND') {
+        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
+      }
+      return mergeAuthResponse(databaseErrorResponse(existing.error.message, existing.error.details), authResponse)
+    }
+
+    const { data: membership, error: membershipError } = await accessClient
+      .from('foco_workspace_members')
+      .select('id')
+      .eq('workspace_id', existing.data.workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (membershipError) {
+      return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
+    }
+    if (!membership) {
+      return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
+    }
+
     const result = await repo.delete(id)
 
     if (isError(result)) {

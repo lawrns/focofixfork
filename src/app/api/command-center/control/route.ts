@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import type { AgentBackend } from '@/lib/command-center/types'
+import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ interface ControlBody {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error: authError, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error: authError, response: authResponse } = await getAuthUser(req)
   if (authError || !user) {
     return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
   }
@@ -70,6 +71,21 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({ agentId: nativeId }),
             signal: AbortSignal.timeout(4000),
           })
+
+          if (res.ok) {
+            await logClawdActionVisibility(supabase, {
+              userId: user.id,
+              eventType: 'clawd_agent_stopped',
+              title: `Stopped Clawd agent ${nativeId}`,
+              contextId: nativeId,
+              payload: {
+                backend,
+                action,
+                nativeId,
+              },
+            })
+          }
+
           return NextResponse.json({ ok: res.ok, backend, action, nativeId })
         }
         return NextResponse.json({ supported: false, reason: 'ClawdBot only supports stop' })

@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { getClawdCrons, createClawdCron } from '@/lib/clawdbot/crons-client'
+import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
  * Creates a new cron on ClawdBot (writes crons.json + crontab entry).
  */
 export async function POST(req: NextRequest) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const body = await req.json()
@@ -81,6 +82,17 @@ export async function POST(req: NextRequest) {
       handler: handler || undefined,
       description: description || undefined,
       enabled: enabled !== false,
+    })
+
+    await logClawdActionVisibility(supabase, {
+      userId: user.id,
+      eventType: 'clawd_cron_created',
+      title: `Created cron: ${cron.name}`,
+      detail: cron.schedule,
+      contextId: cron.id,
+      payload: {
+        cron,
+      },
     })
 
     return NextResponse.json({ data: cron }, { status: 201 })

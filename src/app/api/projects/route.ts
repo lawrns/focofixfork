@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     return mergeAuthResponse(badRequestResponse('Invalid workspace for current user'), authResponse)
   }
 
-  const repo = new ProjectRepository(supabase)
+  const repo = new ProjectRepository(supabaseAdmin || supabase)
   const baseSlug = toSlug(name)
 
   let created: Awaited<ReturnType<typeof repo.createProject>> | null = null

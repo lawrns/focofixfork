@@ -5,8 +5,12 @@ import { useEffect } from 'react'
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      // Gate registration behind environment variable
-      if (process.env.NEXT_PUBLIC_SW_ENABLED !== 'false') {
+      // Service worker should be disabled in local dev to avoid stale Next.js chunks.
+      const swEnabled =
+        process.env.NODE_ENV === 'production' &&
+        process.env.NEXT_PUBLIC_SW_ENABLED !== 'false'
+
+      if (swEnabled) {
         registerServiceWorker()
       } else {
         // When disabled, unregister any existing service workers

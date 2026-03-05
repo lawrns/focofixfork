@@ -12,8 +12,10 @@ import {
   missingFieldResponse,
   projectNotFoundResponse,
   createPaginationMeta,
+  forbiddenResponse,
 } from '@/lib/api/response-helpers'
 import type { TaskFilters } from '@/lib/repositories/task-repository'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,7 +91,8 @@ export async function POST(req: NextRequest) {
 
   // Get workspace_id from project using ProjectRepository
   const { ProjectRepository } = await import('@/lib/repositories/project-repository')
-  const projectRepo = new ProjectRepository(supabase)
+  const accessClient = supabaseAdmin || supabase
+  const projectRepo = new ProjectRepository(accessClient)
   const projectResult = await projectRepo.findById(body.project_id)
 
   if (isError(projectResult)) {
@@ -101,8 +104,22 @@ export async function POST(req: NextRequest) {
 
   const project = projectResult.data
 
+  const { data: membership, error: membershipError } = await accessClient
+    .from('foco_workspace_members')
+    .select('id')
+    .eq('workspace_id', project.workspace_id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (membershipError) {
+    return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
+  }
+  if (!membership) {
+    return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
+  }
+
   // Create task using TaskRepository
-  const taskRepo = new TaskRepository(supabase)
+  const taskRepo = new TaskRepository(accessClient)
   const taskResult = await taskRepo.createTask({
     workspace_id: project.workspace_id,
     project_id: body.project_id,

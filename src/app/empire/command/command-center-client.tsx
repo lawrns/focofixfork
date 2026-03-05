@@ -67,6 +67,7 @@ interface CoFounderInsightItem {
 
 const AGENT_POLL_INTERVAL = 10_000
 const DECISIONS_POLL_INTERVAL = 15_000
+const COFOUNDER_POLL_INTERVAL = 20_000
 
 export function CommandCenterClient() {
   const store = useCommandCenterStore()
@@ -119,6 +120,32 @@ export function CommandCenterClient() {
       if (err instanceof DOMException && err.name === 'AbortError') return
     }
   }, [setDecisions])
+
+  const loadCofounderInsights = useCallback(async (signal?: AbortSignal, initialLoad = false) => {
+    if (initialLoad) setCofounderLoading(true)
+    try {
+      const [feedRes, stateRes] = await Promise.all([
+        fetch('/api/cofounder/insights/feed?window=7d&limit=200', { signal }),
+        fetch('/api/cofounder/runtime/state', { signal }),
+      ])
+      if (!feedRes.ok) return
+      const feedJson = await feedRes.json()
+      const items = (feedJson?.data?.items ?? []) as CoFounderInsightItem[]
+      setCofounderInsights(items)
+
+      if (stateRes.ok) {
+        const stateJson = await stateRes.json()
+        const mode = stateJson?.data?.mode
+        const trustScore = stateJson?.data?.trustScore
+        if (typeof mode === 'string') setCofounderMode(mode)
+        setCofounderTrustScore(typeof trustScore === 'number' ? trustScore : null)
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+    } finally {
+      if (initialLoad) setCofounderLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (store.paused) return
@@ -192,33 +219,15 @@ export function CommandCenterClient() {
   }, [])
 
   useEffect(() => {
-    const load = async () => {
-      setCofounderLoading(true)
-      try {
-        const [feedRes, stateRes] = await Promise.all([
-          fetch('/api/cofounder/insights/feed?window=24h'),
-          fetch('/api/cofounder/runtime/state'),
-        ])
-        if (!feedRes.ok) return
-        const feedJson = await feedRes.json()
-        const items = ((feedJson?.data?.items ?? []) as CoFounderInsightItem[]).slice(0, 6)
-        setCofounderInsights(items)
-
-        if (stateRes.ok) {
-          const stateJson = await stateRes.json()
-          const mode = stateJson?.data?.mode
-          const trustScore = stateJson?.data?.trustScore
-          if (typeof mode === 'string') setCofounderMode(mode)
-          setCofounderTrustScore(typeof trustScore === 'number' ? trustScore : null)
-        }
-      } catch {
-        // keep empty state
-      } finally {
-        setCofounderLoading(false)
-      }
+    if (store.paused) return
+    const controller = new AbortController()
+    loadCofounderInsights(controller.signal, true)
+    const id = setInterval(() => loadCofounderInsights(controller.signal), COFOUNDER_POLL_INTERVAL)
+    return () => {
+      controller.abort()
+      clearInterval(id)
     }
-    load()
-  }, [])
+  }, [loadCofounderInsights, store.paused])
 
   // ── Metrics ──────────────────────────────────────────────────────────────────
   const agentCount = store.agents.length
@@ -433,7 +442,7 @@ export function CommandCenterClient() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
           {cofounderLoading ? (
             <p className="text-xs text-muted-foreground">Loading co-founder insight timeline...</p>
           ) : cofounderInsights.length === 0 ? (
@@ -443,12 +452,17 @@ export function CommandCenterClient() {
               <div key={item.id} className="rounded border p-2">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium truncate">{item.title}</p>
-                  <Badge
-                    variant={item.severity === 'error' ? 'destructive' : 'secondary'}
-                    className="text-[10px]"
-                  >
-                    {item.severity}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="text-[10px]">
+                      {item.eventType}
+                    </Badge>
+                    <Badge
+                      variant={item.severity === 'error' ? 'destructive' : 'secondary'}
+                      className="text-[10px]"
+                    >
+                      {item.severity}
+                    </Badge>
+                  </div>
                 </div>
                 {item.detail ? (
                   <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{item.detail}</p>

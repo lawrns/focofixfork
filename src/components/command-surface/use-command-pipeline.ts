@@ -43,6 +43,22 @@ export function useCommandPipeline() {
     });
   }, [persistHistory]);
 
+  const removeHistoryItem = useCallback((id: string) => {
+    setHistory(prev => {
+      const next = prev.filter(item => item.id !== id);
+      persistHistory(next);
+      return next;
+    });
+  }, [persistHistory]);
+
+  const removeHistoryByRunId = useCallback((runId: string) => {
+    setHistory(prev => {
+      const next = prev.filter(item => item.runId !== runId);
+      persistHistory(next);
+      return next;
+    });
+  }, [persistHistory]);
+
   const logHistoryEvent = useCallback(async (item: CommandHistoryItem) => {
     try {
       await fetch('/api/command-surface/history', {
@@ -52,6 +68,25 @@ export function useCommandPipeline() {
       });
     } catch { /* telemetry is non-fatal */ }
   }, []);
+
+  const deleteHistoryEvent = useCallback(async (args: { historyId?: string; runId?: string }) => {
+    const params = new URLSearchParams();
+    if (args.historyId) params.set('history_id', args.historyId);
+    if (args.runId) params.set('run_id', args.runId);
+
+    const res = await fetch(`/api/command-surface/history?${params.toString()}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok && res.status !== 404) {
+      throw new Error('Failed to delete command history');
+    }
+
+    if (args.historyId) {
+      removeHistoryItem(args.historyId);
+    } else if (args.runId) {
+      removeHistoryByRunId(args.runId);
+    }
+  }, [removeHistoryByRunId, removeHistoryItem]);
 
   const createCommandRun = useCallback(async (prompt: string, mode: CommandMode, projectId?: string | null): Promise<string | undefined> => {
     try {
@@ -288,6 +323,6 @@ export function useCommandPipeline() {
   return {
     execution, isProcessing, streamingText,
     analyzePrompt, executeCommand, submitPrompt,
-    clearExecution, cancelExecution, history,
+    clearExecution, cancelExecution, history, deleteHistoryEvent,
   };
 }

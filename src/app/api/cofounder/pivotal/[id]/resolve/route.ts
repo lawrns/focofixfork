@@ -3,9 +3,12 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import {
   authRequiredResponse,
   databaseErrorResponse,
+  forbiddenResponse,
+  notFoundResponse,
   successResponse,
   validationFailedResponse,
 } from '@/lib/api/response-helpers'
+import { resolvePivotalQuestion, type PivotalResolutionDecision } from '@/lib/cofounder-mode/pivotal-resolution'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,50 +33,37 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
-    const resolution = typeof body.resolution === 'string' && body.resolution.trim().length > 0
-      ? body.resolution.trim()
-      : 'resolved'
+    const rawResolution = typeof body.resolution === 'string' ? body.resolution.trim().toLowerCase() : 'resolved'
+    const decision: PivotalResolutionDecision =
+      rawResolution === 'approve' || rawResolution === 'reject' || rawResolution === 'defer' || rawResolution === 'resolved'
+        ? rawResolution
+        : 'resolved'
 
-    const now = new Date().toISOString()
-
-    const { data, error } = await supabase
-      .from('cofounder_pivotal_queue')
-      .update({
-        status: 'resolved',
-        delivery_state: 'resolved',
-        resolution,
-        resolved_by: user.id,
-        resolved_at: now,
-      })
-      .eq('id', params.id)
-      .eq('user_id', user.id)
-      .select('id, status, delivery_state, resolution, resolved_at')
-      .single<{
-        id: string
-        status: string
-        delivery_state: string
-        resolution: string | null
-        resolved_at: string | null
-      }>()
-
-    if (error) {
-      return mergeAuthResponse(databaseErrorResponse('Failed to resolve pivotal question', error), authResponse)
-    }
-
-    await supabase.from('cofounder_decisions_history').insert({
-      user_id: user.id,
-      workspace_id: null,
-      event_type: 'pivotal_resolved',
-      severity: 'info',
-      title: `Pivotal ${params.id} resolved`,
-      detail: resolution,
-      payload: {
-        id: params.id,
-        resolution,
+    const result = await resolvePivotalQuestion(supabase, {
+      pivotalId: params.id,
+      decision,
+      resolverChannel: 'app',
+      resolverUserId: user.id,
+      expectedOwnerUserId: user.id,
+      resolverMeta: {
+        route: '/api/cofounder/pivotal/[id]/resolve',
       },
     })
 
-    return mergeAuthResponse(successResponse({ item: data }), authResponse)
+    if (!result.ok) {
+      if (result.code === 'not_found') {
+        return mergeAuthResponse(notFoundResponse('Pivotal question', params.id), authResponse)
+      }
+      if (result.code === 'forbidden') {
+        return mergeAuthResponse(forbiddenResponse('Pivotal question access denied'), authResponse)
+      }
+      if (result.code === 'invalid_state') {
+        return mergeAuthResponse(validationFailedResponse(result.message ?? 'Invalid pivotal state'), authResponse)
+      }
+      return mergeAuthResponse(databaseErrorResponse('Failed to resolve pivotal question', result.message), authResponse)
+    }
+
+    return mergeAuthResponse(successResponse({ item: result.item }), authResponse)
   } catch (error: unknown) {
     return mergeAuthResponse(databaseErrorResponse('Failed to resolve pivotal question', error), authResponse)
   }

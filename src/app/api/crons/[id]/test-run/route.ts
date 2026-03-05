@@ -3,6 +3,7 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { dispatchToClawdBot, buildSystemPrompt } from '@/lib/delegation/dispatchers'
 import { getClawdCrons } from '@/lib/clawdbot/crons-client'
+import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,6 +95,21 @@ export async function POST(
       run_id: run.id,
       external_run_id: dispatchResult.externalRunId ?? null,
       test: true,
+    },
+  })
+
+  await logClawdActionVisibility(supabase, {
+    userId: user.id,
+    eventType: 'clawd_cron_test_run',
+    title: `Triggered test run: ${cron.name}`,
+    detail: dispatchResult.success ? 'Dispatched to ClawdBot' : `Dispatch failed: ${dispatchResult.error ?? 'unknown'}`,
+    contextId: run.id,
+    payload: {
+      cronId: cron.id,
+      cronName: cron.name,
+      handler: cron.handler,
+      dispatched: dispatchResult.success,
+      externalRunId: dispatchResult.externalRunId ?? null,
     },
   })
 

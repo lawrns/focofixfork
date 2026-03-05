@@ -14,6 +14,9 @@ import { sendPivotalTelegramAlert } from '@/lib/services/telegram'
 export const dynamic = 'force-dynamic'
 
 type PivotalPriority = 'low' | 'medium' | 'high' | 'critical'
+interface UserNotificationSettings {
+  [key: string]: unknown
+}
 
 function parseInput(body: Record<string, unknown>) {
   if (typeof body.question !== 'string' || body.question.trim().length === 0) {
@@ -134,7 +137,7 @@ export async function POST(req: NextRequest) {
       dedupe_hash: evaluation.dedupeHash,
       trigger_codes: evaluation.matchedTriggers,
       status: evaluation.shouldQueue ? 'queued' : 'suppressed',
-      delivery_state: evaluation.deliveryState,
+      delivery_state: evaluation.shouldNotify ? 'queued' : evaluation.deliveryState,
       next_eligible_at: evaluation.reasonCodes.includes('cooldown_active')
         ? new Date(Date.now() + (resolved.config.pivotalQuestions.cooldownMinutes * 60000)).toISOString()
         : null,
@@ -150,16 +153,61 @@ export async function POST(req: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse('Failed to persist pivotal question', insertError), authResponse)
     }
 
-    let telegram = { success: false, skipped: true }
+    let resolvedRow = row
+    let telegram: { success: boolean; skipped: boolean; error?: string } = { success: false, skipped: true }
     if (evaluation.shouldNotify) {
-      const sent = await sendPivotalTelegramAlert({
-        question: input.question,
-        workspaceId: input.workspaceId,
-        priority: input.priority,
-      }, {
-        userId: user.id,
-      })
-      telegram = { success: sent.success, skipped: false }
+      const { data: notificationSettings } = await supabase
+        .from('user_notification_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle<UserNotificationSettings>()
+
+      const chatId = typeof notificationSettings?.telegram_chat_id === 'string'
+        ? notificationSettings.telegram_chat_id
+        : undefined
+
+      if (!chatId) {
+        telegram = { success: false, skipped: false, error: 'telegram_not_configured' }
+      } else {
+        const sent = await sendPivotalTelegramAlert({
+          pivotalId: row.id,
+          question: input.question,
+          workspaceId: input.workspaceId,
+          priority: input.priority,
+        }, {
+          userId: user.id,
+          chatId,
+        })
+
+        telegram = {
+          success: sent.success,
+          skipped: false,
+          ...(sent.error ? { error: sent.error } : {}),
+        }
+      }
+
+      const deliveryState = telegram.success ? 'notified' : 'queued'
+      const { data: updatedRow } = await supabase
+        .from('cofounder_pivotal_queue')
+        .update({
+          delivery_state: deliveryState,
+          context: {
+            priority: input.priority,
+            ...input.context,
+            telegram: {
+              attempted: true,
+              sent: telegram.success,
+              ...(telegram.error ? { error: telegram.error } : {}),
+            },
+          },
+        })
+        .eq('id', row.id)
+        .select('id, status, delivery_state, created_at')
+        .single<{ id: string; status: string; delivery_state: string; created_at: string }>()
+
+      if (updatedRow) {
+        resolvedRow = updatedRow
+      }
     }
 
     await supabase.from('cofounder_decisions_history').insert({
@@ -177,7 +225,7 @@ export async function POST(req: NextRequest) {
 
     return mergeAuthResponse(
       successResponse({
-        item: row,
+        item: resolvedRow,
         evaluation,
         telegram,
         configSource: resolved.source,

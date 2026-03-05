@@ -13,6 +13,13 @@ const OPERATOR_CHAT_ID = process.env.TELEGRAM_OPERATOR_CHAT_ID
 export interface TelegramSendOptions {
   chatId?: string
   parseMode?: 'HTML' | 'Markdown'
+  replyMarkup?: {
+    inline_keyboard: Array<Array<{
+      text: string
+      callback_data?: string
+      url?: string
+    }>>
+  }
   /** If provided, quiet hours are checked for this user. */
   userId?: string
   /** P0 alerts bypass quiet hours. */
@@ -26,20 +33,46 @@ export interface TelegramResult {
 }
 
 export interface TelegramPivotalPayload {
+  pivotalId?: string
   question: string
   workspaceId?: string | null
   priority?: 'low' | 'medium' | 'high' | 'critical'
+}
+
+async function callTelegramBotApi(method: string, payload: Record<string, unknown>): Promise<TelegramResult> {
+  if (!BOT_TOKEN) {
+    console.warn('[Telegram] BOT_TOKEN not configured, skipping alert')
+    return { success: false, error: 'BOT_TOKEN not configured' }
+  }
+
+  try {
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
+    assertEgressAllowed(url)
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error(`[Telegram] API error ${res.status}:`, body)
+      return { success: false, error: `HTTP ${res.status}` }
+    }
+
+    return { success: true }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    console.error('[Telegram] Send failed:', msg)
+    return { success: false, error: msg }
+  }
 }
 
 export async function sendTelegramAlert(
   message: string,
   opts?: TelegramSendOptions
 ): Promise<TelegramResult> {
-  if (!BOT_TOKEN) {
-    console.warn('[Telegram] BOT_TOKEN not configured, skipping alert')
-    return { success: false, error: 'BOT_TOKEN not configured' }
-  }
-
   const chatId = opts?.chatId ?? OPERATOR_CHAT_ID
   if (!chatId) {
     console.warn('[Telegram] No chat ID available, skipping alert')
@@ -60,32 +93,12 @@ export async function sendTelegramAlert(
     }
   }
 
-  try {
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
-    assertEgressAllowed(url)
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: opts?.parseMode ?? 'HTML',
-      }),
-      signal: AbortSignal.timeout(5000),
-    })
-
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      console.error(`[Telegram] API error ${res.status}:`, body)
-      return { success: false, error: `HTTP ${res.status}` }
-    }
-
-    return { success: true }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[Telegram] Send failed:', msg)
-    return { success: false, error: msg }
-  }
+  return callTelegramBotApi('sendMessage', {
+    chat_id: chatId,
+    text: message,
+    parse_mode: opts?.parseMode ?? 'HTML',
+    ...(opts?.replyMarkup ? { reply_markup: opts.replyMarkup } : {}),
+  })
 }
 
 export async function sendPivotalTelegramAlert(
@@ -96,14 +109,45 @@ export async function sendPivotalTelegramAlert(
   const workspace = payload.workspaceId ?? 'global'
   const message = [
     '<b>Co-Founder Pivotal Question</b>',
+    ...(payload.pivotalId ? [`ID: <code>${payload.pivotalId}</code>`] : []),
     `Priority: <b>${priority}</b>`,
     `Workspace: <code>${workspace}</code>`,
     '',
     payload.question,
   ].join('\n')
 
+  const replyMarkup = payload.pivotalId
+    ? {
+      inline_keyboard: [
+        [
+          { text: 'Approve', callback_data: `piv:${payload.pivotalId}:approve` },
+          { text: 'Reject', callback_data: `piv:${payload.pivotalId}:reject` },
+        ],
+        [
+          { text: 'Defer', callback_data: `piv:${payload.pivotalId}:defer` },
+        ],
+      ],
+    }
+    : undefined
+
   return sendTelegramAlert(message, {
     ...opts,
+    replyMarkup,
     severity: payload.priority === 'critical' ? 'P0' : 'P1',
+  })
+}
+
+export async function answerTelegramCallbackQuery(
+  callbackQueryId: string,
+  text: string
+): Promise<TelegramResult> {
+  if (!callbackQueryId) {
+    return { success: false, error: 'Missing callback query id' }
+  }
+
+  return callTelegramBotApi('answerCallbackQuery', {
+    callback_query_id: callbackQueryId,
+    text,
+    show_alert: false,
   })
 }

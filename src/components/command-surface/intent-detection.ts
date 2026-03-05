@@ -2,7 +2,15 @@ import type { CommandMode, IntentType } from './types';
 
 export const INTENT_PATTERNS: Record<IntentType, RegExp[]> = {
   create_project: [/create project/i, /new project/i, /start project/i, /project called/i, /launch project/i],
-  create_task: [/create task/i, /add task/i, /new task/i, /fix.*bug/i, /implement/i],
+  create_task: [
+    /create task/i,
+    /add task/i,
+    /new task/i,
+    /(?:create|add|open)\s+(?:a\s+)?(?:task|ticket|todo)\b/i,
+    /\b(?:task|ticket)\s+(?:for|to)\b/i,
+    /\bfix\b.*\bbug\b/i,
+    /^(?:\s*(?:can you|could you|please|let'?s|lets)\s+)?(?:fix|implement|build|solve|debug|refactor|resolve)\b/i,
+  ],
   create_cron: [
     /schedule/i,
     /cron/i,
@@ -47,7 +55,7 @@ export function detectIntent(prompt: string): { intent: IntentType; confidence: 
 }
 
 export function determineMode(intent: IntentType, prompt: string): CommandMode {
-  if (/\b(CTO|architect|implement|build|code|develop)\b/i.test(prompt)) return 'cto';
+  if (/\b(CTO|architect|build|code|develop)\b/i.test(prompt)) return 'cto';
   if (/\b(COO|schedule|email|notify|monitor|operate|run)\b/i.test(prompt)) return 'coo';
 
   switch (intent) {

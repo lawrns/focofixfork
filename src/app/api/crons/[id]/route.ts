@@ -2,8 +2,34 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse } from '@/lib/api/response-helpers'
 import { getClawdCrons, patchClawdCron, deleteClawdCron } from '@/lib/clawdbot/crons-client'
+import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * GET /api/crons/[id]
+ * Fetch a single cron from ClawdBot by id.
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { user, error, response: authResponse } = await getAuthUser(req)
+  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
+
+  try {
+    const { crons } = await getClawdCrons()
+    const cron = crons.find((item) => item.id === params.id)
+    if (!cron) return NextResponse.json({ error: 'Cron not found' }, { status: 404 })
+    return NextResponse.json({ data: cron })
+  } catch (err) {
+    console.error(`[crons] Get ${params.id} failed:`, err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to fetch cron' },
+      { status: 502 }
+    )
+  }
+}
 
 /**
  * PATCH /api/crons/[id]
@@ -13,7 +39,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   let body: Record<string, unknown>
@@ -64,6 +90,19 @@ export async function PATCH(
     }
 
     const cron = await patchClawdCron(params.id, patchBody)
+
+    await logClawdActionVisibility(supabase, {
+      userId: user.id,
+      eventType: 'clawd_cron_updated',
+      title: `Updated cron: ${cron.name}`,
+      detail: cron.schedule,
+      contextId: cron.id,
+      payload: {
+        patch: patchBody,
+        cron,
+      },
+    })
+
     return NextResponse.json({ data: cron })
   } catch (err) {
     console.error(`[crons] Patch ${params.id} failed:`, err instanceof Error ? err.message : err)
@@ -82,11 +121,22 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   try {
     await deleteClawdCron(params.id)
+
+    await logClawdActionVisibility(supabase, {
+      userId: user.id,
+      eventType: 'clawd_cron_deleted',
+      title: `Deleted cron: ${params.id}`,
+      contextId: params.id,
+      payload: {
+        cronId: params.id,
+      },
+    })
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error(`[crons] Delete ${params.id} failed:`, err instanceof Error ? err.message : err)

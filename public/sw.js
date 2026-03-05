@@ -1,9 +1,9 @@
 // Service Worker for Foco PWA
-// Version 1.0.1
+// Version 1.0.2
 
-const CACHE_NAME = 'foco-v1.0.1'
-const STATIC_CACHE = 'foco-static-v1.0.1'
-const DYNAMIC_CACHE = 'foco-dynamic-v1.0.1'
+const CACHE_NAME = 'foco-v1.0.2'
+const STATIC_CACHE = 'foco-static-v1.0.2'
+const DYNAMIC_CACHE = 'foco-dynamic-v1.0.2'
 
 // Critical resources to cache immediately
 const CRITICAL_RESOURCES = [
@@ -127,7 +127,11 @@ async function handleStaticRequest(request) {
   try {
     const networkResponse = await fetch(request)
     
-    if (networkResponse.ok) {
+    const contentType = (networkResponse.headers.get('content-type') || '').toLowerCase()
+    const isHtml = contentType.includes('text/html')
+
+    // Never cache HTML under static asset paths; this causes MIME mismatch crashes.
+    if (networkResponse.ok && !isHtml) {
       const cache = await caches.open(STATIC_CACHE)
       cache.put(request, networkResponse.clone())
     }

@@ -153,7 +153,8 @@ export class ProjectRepository extends BaseRepository<Project> {
       query = query.neq('id', excludeId)
     }
 
-    const { data, error } = await query.maybeSingle()
+    // Use limit(1) instead of maybeSingle() so legacy duplicate rows don't raise an exception.
+    const { data, error } = await query.limit(1)
 
     if (error) {
       return Err({
@@ -163,7 +164,7 @@ export class ProjectRepository extends BaseRepository<Project> {
       })
     }
 
-    return Ok(!data)
+    return Ok((data?.length ?? 0) === 0)
   }
 
   /**

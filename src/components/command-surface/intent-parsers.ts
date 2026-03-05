@@ -58,7 +58,10 @@ export function parseEmailIntent(prompt: string): { to: string[]; subject: strin
 }
 
 export function parseTaskIntent(prompt: string): { title: string; description: string; priority: 'urgent' | 'high' | 'medium' | 'low'; type: string } | null {
-  const isTaskLikePrompt = /\b(create|add|new|fix|implement|build|solve|debug|refactor|resolve)\b/i.test(prompt)
+  const normalized = prompt.trim()
+  const explicitTaskCommand = /^(?:\s*(?:can you|could you|please)\s+)?(?:create|add|new|open)\s+(?:a\s+)?(?:task|ticket|todo)\b/i.test(normalized)
+  const executionCommand = /^(?:\s*(?:can you|could you|please|let'?s|lets)\s+)?(?:fix|implement|build|solve|debug|refactor|resolve)\b/i.test(normalized)
+  const isTaskLikePrompt = explicitTaskCommand || executionCommand
   if (!isTaskLikePrompt) return null
 
   let title = prompt;
@@ -66,7 +69,9 @@ export function parseTaskIntent(prompt: string): { title: string; description: s
   let priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium';
   let type = 'feature';
 
-  const titleMatch = prompt.match(/(?:create task to|fix|implement|build|solve)\s+(.+?)(?:\.|$)/i);
+  const titleMatch = normalized.match(
+    /(?:create(?:\s+task)?(?:\s+to)?|add(?:\s+task)?(?:\s+to)?|new\s+task(?:\s+to)?|fix|implement|build|solve|debug|refactor|resolve)\s+(.+?)(?:\.|$)/i
+  );
   if (titleMatch) {
     title = titleMatch[1].trim();
     title = title.charAt(0).toUpperCase() + title.slice(1);

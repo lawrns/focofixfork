@@ -14,6 +14,7 @@ import { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { resolveClawdRoutingProfile } from '@/lib/clawdbot/routing'
+import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -56,7 +57,7 @@ async function readClawdbotError(res: Response): Promise<string | null> {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) {
     return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
   }
@@ -79,6 +80,20 @@ export async function POST(req: NextRequest) {
   const reviewerModel = routing.review_model
 
   try {
+    await logClawdActionVisibility(supabase, {
+      userId: user.id,
+      eventType: 'clawd_command_surface_dispatch',
+      title: 'Command surface execution dispatched',
+      detail: prompt.trim().slice(0, 180),
+      payload: {
+        mode: mode ?? 'auto',
+        routingProfileId: routing.profile_id,
+        plannerModel,
+        executorModel,
+        reviewerModel,
+      },
+    })
+
     const pipelineRes = await fetch(`${req.nextUrl.origin}/api/pipeline/stream`, {
       method: 'POST',
       headers: {

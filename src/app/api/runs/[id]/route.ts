@@ -68,12 +68,17 @@ export async function DELETE(
   const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  const { error: dbError } = await supabase
+  const { data, error: dbError } = await supabase
     .from('runs')
     .delete()
     .eq('id', params.id)
+    .select('id')
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
+  if (!data || data.length === 0) {
+    // Idempotent delete: already deleted should still be treated as success.
+    return NextResponse.json({ ok: true, deleted: 0, not_found: true })
+  }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, deleted: data.length })
 }

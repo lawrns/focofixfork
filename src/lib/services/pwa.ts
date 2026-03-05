@@ -38,6 +38,9 @@ export class PWAService {
   // Initialize PWA functionality
   static async initialize(): Promise<void> {
     if (typeof window === 'undefined') return;
+    const swEnabled =
+      process.env.NODE_ENV === 'production' &&
+      process.env.NEXT_PUBLIC_SW_ENABLED !== 'false';
 
     // CRITICAL: Ensure React hydration is complete before any SW activity
     // Wait for idle callback to ensure main thread is free
@@ -62,8 +65,17 @@ export class PWAService {
       console.error('[PWA] Failed to initialize IndexedDB:', e);
     }
 
-    // Register service worker
+    // Register service worker only in production to avoid stale dev chunk caching.
     if ('serviceWorker' in navigator) {
+      if (!swEnabled) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if (!swEnabled) {
+        return;
+      }
+
       try {
         this.registration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/',
@@ -468,4 +480,3 @@ export function usePWA() {
     refreshCapabilities: updateCapabilities,
   };
 }
-

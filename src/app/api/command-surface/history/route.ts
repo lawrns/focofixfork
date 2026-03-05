@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     .select('id, timestamp, payload')
     .eq('source', EVENT_SOURCE)
     .eq('type', EVENT_TYPE)
+    .contains('payload', { user_id: user.id })
     .order('timestamp', { ascending: false })
     .limit(limit)
 
@@ -26,7 +27,6 @@ export async function GET(req: NextRequest) {
 
   const items = (data ?? [])
     .map((row) => row.payload as Record<string, unknown>)
-    .filter((payload) => payload.user_id === user.id)
 
   return mergeAuthResponse(NextResponse.json({ data: items }), authResponse)
 }
@@ -83,4 +83,64 @@ export async function POST(req: NextRequest) {
   }
 
   return mergeAuthResponse(NextResponse.json({ success: true, id: data.id }), authResponse)
+}
+
+export async function DELETE(req: NextRequest) {
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
+  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
+
+  const { searchParams } = new URL(req.url)
+  let historyId = searchParams.get('history_id') ?? searchParams.get('id')
+  let runId = searchParams.get('run_id')
+
+  if (!historyId && !runId) {
+    const body = await req.json().catch(() => null)
+    if (body && typeof body === 'object') {
+      const payload = body as Record<string, unknown>
+      if (typeof payload.history_id === 'string' && payload.history_id.trim().length > 0) {
+        historyId = payload.history_id.trim()
+      } else if (typeof payload.id === 'string' && payload.id.trim().length > 0) {
+        historyId = payload.id.trim()
+      }
+      if (typeof payload.run_id === 'string' && payload.run_id.trim().length > 0) {
+        runId = payload.run_id.trim()
+      }
+    }
+  }
+
+  if (!historyId && !runId) {
+    return NextResponse.json({ error: 'history_id or run_id is required' }, { status: 400 })
+  }
+
+  let matchQuery = supabase
+    .from('ledger_events')
+    .select('id')
+    .eq('source', EVENT_SOURCE)
+    .eq('type', EVENT_TYPE)
+    .contains('payload', { user_id: user.id })
+
+  if (historyId) {
+    matchQuery = matchQuery.contains('payload', { id: historyId })
+  }
+  if (runId) {
+    matchQuery = matchQuery.eq('context_id', runId)
+  }
+
+  const { data: rows, error: lookupError } = await matchQuery
+  if (lookupError) return NextResponse.json({ error: lookupError.message }, { status: 500 })
+
+  const rowIds = (rows ?? []).map((row) => row.id).filter(Boolean)
+  if (rowIds.length === 0) {
+    // Idempotent delete: missing entries are already deleted.
+    return mergeAuthResponse(NextResponse.json({ success: true, deleted: 0, not_found: true }), authResponse)
+  }
+
+  const { error: deleteError } = await supabase
+    .from('ledger_events')
+    .delete()
+    .in('id', rowIds)
+
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
+
+  return mergeAuthResponse(NextResponse.json({ success: true, deleted: rowIds.length }), authResponse)
 }

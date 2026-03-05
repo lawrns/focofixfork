@@ -215,7 +215,7 @@ export function CommandSurface({
   const [projectRequiredError, setProjectRequiredError] = useState<string | null>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(true);
 
-  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history } = useCommandPipeline();
+  const { execution, isProcessing, streamingText, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history, deleteHistoryEvent } = useCommandPipeline();
 
   const [runningCount, setRunningCount] = useState(0)
   const refreshRunningCount = useCallback(async () => {
@@ -447,7 +447,7 @@ export function CommandSurface({
     setPendingDecision(null);
     setPendingPlan(null);
     setPrompt('');
-  }, [pendingDecision, pendingPlan, prompt, mode, executeCommand, onExecutionComplete]);
+  }, [pendingDecision, pendingPlan, prompt, mode, executeCommand, onExecutionComplete, router, selectedProjectId]);
 
   const handleReject = useCallback(() => {
     setPendingDecision(null);
@@ -494,20 +494,28 @@ export function CommandSurface({
     }
   }, [emitRunsMutated, refreshRunningCount]);
 
-  const deleteRun = useCallback(async (runId: string) => {
-    setActionRunId(runId);
+  const deleteRecentAction = useCallback(async (item: { id: string; runId?: string }) => {
+    const actionId = item.runId ?? item.id
+    setActionRunId(actionId);
     try {
-      const res = await fetch(`/api/runs/${runId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete run');
-      await refreshRunningCount()
-      emitRunsMutated()
-      toast.success('Run deleted');
+      if (item.runId) {
+        const res = await fetch(`/api/runs/${item.runId}`, { method: 'DELETE' });
+        if (!res.ok && res.status !== 404) throw new Error('Failed to delete run');
+      }
+
+      await deleteHistoryEvent({ historyId: item.id, runId: item.runId });
+
+      if (item.runId) {
+        await refreshRunningCount()
+        emitRunsMutated()
+      }
+      toast.success('Action deleted');
     } catch {
-      toast.error('Could not delete run');
+      toast.error('Could not delete action');
     } finally {
       setActionRunId(null);
     }
-  }, [emitRunsMutated, refreshRunningCount]);
+  }, [deleteHistoryEvent, emitRunsMutated, refreshRunningCount]);
 
   return (
     <div className={cn(
@@ -790,38 +798,38 @@ export function CommandSurface({
                       {normalizeError(item.outputPreview) || (item.status === 'running' ? 'Running...' : 'No output')}
                     </p>
                   </div>
-                  {item.runId && (
-                    <div className="flex items-center gap-1">
-                      {item.status === 'running' && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          disabled={actionRunId === item.runId}
-                          onClick={() => stopRun(item.runId!)}
-                          title="Stop run"
-                        >
-                          <Square className="h-3 w-3" />
-                        </Button>
-                      )}
+                  <div className="flex items-center gap-1">
+                    {item.runId && item.status === 'running' && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-6 w-6 text-red-600 hover:text-red-700"
-                        disabled={actionRunId === item.runId}
-                        onClick={() => deleteRun(item.runId!)}
-                        title="Delete run"
+                        className="h-6 w-6"
+                        disabled={actionRunId === (item.runId ?? item.id)}
+                        onClick={() => stopRun(item.runId!)}
+                        title="Stop run"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Square className="h-3 w-3" />
                       </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-red-600 hover:text-red-700"
+                      disabled={actionRunId === (item.runId ?? item.id)}
+                      onClick={() => deleteRecentAction(item)}
+                      title="Delete action"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                    {item.runId && (
                       <button
                         className="text-teal-400 hover:underline"
                         onClick={() => router.push(`/runs/${item.runId}`)}
                       >
                         Run
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

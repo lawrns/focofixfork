@@ -8,6 +8,7 @@ import {
   Settings,
   Zap,
   AlertTriangle,
+  Workflow,
 } from 'lucide-react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -46,6 +47,9 @@ export function ProjectTabsHeader({ activeRuns }: ProjectTabsHeaderProps) {
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
               </span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="workflows" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
+            <Workflow className="h-3.5 w-3.5 md:h-4 md:w-4" /><span>Workflows</span>
           </TabsTrigger>
           <TabsTrigger value="insights" className="gap-1 md:gap-2 px-2 md:px-3 whitespace-nowrap flex-shrink-0 min-h-[44px]">
             <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" /><span>Insights</span>

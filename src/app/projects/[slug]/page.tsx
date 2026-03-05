@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { Plus, Zap, AlertTriangle } from 'lucide-react';
+import { Plus, Zap, AlertTriangle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import type { WorkItem, WorkItemStatus } from '@/types/foco';
@@ -16,14 +16,16 @@ import type { Project } from './components/types';
 import { BoardView } from './components/BoardView';
 import { OverviewTab } from './components/OverviewTab';
 import { FleetTab } from './components/FleetTab';
+import { ProjectWorkflowsTab } from './components/ProjectWorkflowsTab';
 import { ProjectTabsHeader } from './components/ProjectTabsHeader';
 import { useProjectData } from './components/use-project-data';
+import { ProjectBriefPlannerDialog } from './components/ProjectBriefPlannerDialog';
 
 export default function ProjectPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const slug = params.slug as string;
+  const slug = typeof params?.slug === 'string' ? params.slug : '';
 
   const {
     project, setProject,
@@ -33,10 +35,12 @@ export default function ProjectPage() {
     activeRuns,
     delegationEnabled, setDelegationEnabled,
     agentPool,
+    refetch,
   } = useProjectData(user, slug);
 
   const [activeTab, setActiveTab] = useState('board');
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
+  const [briefDialogOpen, setBriefDialogOpen] = useState(false);
   const { openTaskModal } = useCreateTaskModal();
 
   const handleStatusChange = async (taskId: string, status: WorkItemStatus) => {
@@ -221,6 +225,9 @@ export default function ProjectPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]" onClick={() => setBriefDialogOpen(true)}>
+            <Sparkles className="h-4 w-4" /><span className="hidden md:inline">Plan Brief</span>
+          </Button>
           <Button variant="outline" size="sm" className="flex-1 md:flex-none min-h-[44px]" onClick={handleGenerateStatus}>
             <Zap className="h-4 w-4" /><span className="hidden md:inline">Generate Status</span>
           </Button>
@@ -277,6 +284,7 @@ export default function ProjectPage() {
         <TabsContent value="fleet">
           <FleetTab
             project={project}
+            setProject={setProject}
             tasks={tasks}
             activeRuns={activeRuns}
             delegationEnabled={delegationEnabled}
@@ -286,10 +294,24 @@ export default function ProjectPage() {
           />
         </TabsContent>
 
+        <TabsContent value="workflows">
+          <ProjectWorkflowsTab
+            project={project}
+            isReviewer={Boolean(user)}
+          />
+        </TabsContent>
+
         <TabsContent value="insights">
           <ProjectInsightsPanel projectId={project.id} />
         </TabsContent>
       </Tabs>
+
+      <ProjectBriefPlannerDialog
+        open={briefDialogOpen}
+        onOpenChange={setBriefDialogOpen}
+        projectId={project.id}
+        onTasksCreated={refetch}
+      />
     </div>
   );
 }

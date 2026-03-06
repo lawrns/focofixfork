@@ -99,7 +99,7 @@ export function buildApifyConfig(platform: SocialPlatform, handle: string, maxIt
     case 'instagram':
       return {
         actor_id: actorId,
-        actor_input: { usernames: [handle], resultsLimit: maxItems },
+        actor_input: { username: [handle], resultsLimit: maxItems },
       };
     case 'youtube':
       // If it looks like a channel ID, use channelUrls; otherwise use handle search

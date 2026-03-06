@@ -1,5 +1,3 @@
-import { createReadStream } from 'fs'
-import FormData from 'form-data'
 import { FeatureFlagsService, FeatureFlagContext } from '../feature-flags/feature-flags'
 import { EventBuilder } from '../events/event-envelope'
 import { ApiError } from '../errors/api-error'
@@ -63,6 +61,21 @@ export interface AudioFile {
   size: number
 }
 
+function toUint8Array(data: Buffer | ArrayBuffer): Uint8Array {
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data)
+  }
+
+  return new Uint8Array(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength))
+}
+
+function toBlobArrayBuffer(data: Buffer | ArrayBuffer): ArrayBuffer {
+  const bytes = toUint8Array(data)
+  const buffer = new Uint8Array(bytes.byteLength)
+  buffer.set(bytes)
+  return buffer.buffer
+}
+
 /**
  * OpenAI Whisper Service
  */
@@ -104,10 +117,11 @@ export class OpenAIWhisperService {
     try {
       // Create form data
       const formData = new FormData()
-      formData.append('file', audioFile.data, {
-        filename: audioFile.filename,
-        contentType: audioFile.mimeType
+      const fileBuffer = toBlobArrayBuffer(audioFile.data)
+      const fileBlob = new Blob([fileBuffer], {
+        type: audioFile.mimeType
       })
+      formData.append('file', fileBlob, audioFile.filename)
       formData.append('model', this.config.model!)
       formData.append('language', options.language || this.config.language!)
       formData.append('response_format', options.responseFormat || this.config.responseFormat!)
@@ -128,9 +142,8 @@ export class OpenAIWhisperService {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
-          ...formData.getHeaders()
         },
-        body: formData as any
+        body: formData
       })
 
       if (!response.ok) {
@@ -275,19 +288,19 @@ export class OpenAIWhisperService {
 
     try {
       const formData = new FormData()
-      formData.append('file', audioFile.data, {
-        filename: audioFile.filename,
-        contentType: audioFile.mimeType
+      const fileBuffer = toBlobArrayBuffer(audioFile.data)
+      const fileBlob = new Blob([fileBuffer], {
+        type: audioFile.mimeType
       })
+      formData.append('file', fileBlob, audioFile.filename)
       formData.append('model', this.config.model!)
 
       const response = await fetch(`${this.baseUrl}/audio/translations`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
-          ...formData.getHeaders()
         },
-        body: formData as any
+        body: formData
       })
 
       if (!response.ok) {

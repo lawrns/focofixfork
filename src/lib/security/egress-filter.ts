@@ -27,6 +27,14 @@ const BUILTIN_ALLOWED: string[] = [
   'api.zhipuai.cn',
   // Apify
   'api.apify.com',
+  // Social media media/CDN hosts required for Hive ingestion/transcription
+  'cdninstagram.com',
+  'fbcdn.net',
+  'twimg.com',
+  'twitter.com',
+  'x.com',
+  'googlevideo.com',
+  'ytimg.com',
   // ElevenLabs
   'api.elevenlabs.io',
 ]

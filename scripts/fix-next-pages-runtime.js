@@ -116,7 +116,7 @@ function signatureForAlias(alias) {
 }
 
 function ensureVendorChunkAliases() {
-  if (!fs.existsSync(chunksDir)) {
+  if (!fs.existsSync(chunksDir) && !fs.existsSync(vendorDir)) {
     return []
   }
 
@@ -134,10 +134,20 @@ function ensureVendorChunkAliases() {
     }
   }
 
-  const chunkFiles = fs
-    .readdirSync(chunksDir)
-    .filter((entry) => entry.endsWith('.js'))
-    .map((entry) => path.join(chunksDir, entry))
+  const chunkFiles = [
+    ...(fs.existsSync(chunksDir)
+      ? fs
+          .readdirSync(chunksDir)
+          .filter((entry) => entry.endsWith('.js'))
+          .map((entry) => path.join(chunksDir, entry))
+      : []),
+    ...(fs.existsSync(vendorDir)
+      ? fs
+          .readdirSync(vendorDir)
+          .filter((entry) => entry.endsWith('.js'))
+          .map((entry) => path.join(vendorDir, entry))
+      : []),
+  ]
 
   const chunkContents = chunkFiles.map((file) => ({
     file,
@@ -157,10 +167,6 @@ function ensureVendorChunkAliases() {
     const matchedChunks = chunkContents
       .filter(({ text }) => text.includes(signature))
       .map(({ file }) => file)
-
-    if (matchedChunks.length === 0) {
-      continue
-    }
 
     fs.mkdirSync(path.dirname(targetFile), { recursive: true })
     fs.writeFileSync(targetFile, buildVendorChunkSource(alias, matchedChunks))

@@ -75,11 +75,28 @@ export async function GET(req: NextRequest) {
     )
 
     const countBySourceId = new Map<string, number>(counts)
+    const latestRuns = await Promise.all(
+      socialSources.map(async (source: any) => {
+        const { data: run, error } = await supabaseAdmin
+          .from('apify_runs')
+          .select('id, status, metrics, started_at, completed_at, error')
+          .eq('source_id', source.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (error) throw error
+        return [source.id, run] as const
+      })
+    )
+
+    const latestRunBySourceId = new Map<string, any>(latestRuns)
 
     const result = socialSources.map((source: any) => ({
       ...source,
       platform: getSourcePlatform(source),
       item_count: countBySourceId.get(source.id) ?? 0,
+      latest_run: latestRunBySourceId.get(source.id) ?? null,
     }));
 
     return mergeAuthResponse(successResponse(result), authResponse);

@@ -12,49 +12,94 @@ async function fetchSocialIntelligence() {
     const { data: items } = await supabaseAdmin
       .from('content_items')
       .select(`
-        id, ai_summary, ai_tags, relevance_score, published_at, created_at,
-        content_sources!inner(name, platform)
+        id,
+        ai_summary,
+        ai_tags,
+        relevance_score,
+        signal_type,
+        signal_confidence,
+        signal_urgency,
+        upgrade_implication,
+        signal_payload,
+        transcript_status,
+        analysis_status,
+        content_sources!inner(name, platform, status)
       `)
       .not('content_sources.platform', 'is', null)
-      .not('ai_summary', 'is', null)
       .gte('created_at', cutoff)
       .order('relevance_score', { ascending: false })
-      .limit(20)
+      .limit(50)
 
     if (!items || items.length === 0) return null
 
-    const topInsights = items.slice(0, 5).map((item: any) => ({
+    const analyzed = items.filter((item: any) => item.ai_summary || item.analysis_status === 'complete')
+    const topInsights = analyzed.slice(0, 5).map((item: any) => ({
       summary: item.ai_summary,
       platform: item.content_sources?.platform,
       source_name: item.content_sources?.name,
       relevance: item.relevance_score,
       tags: item.ai_tags || [],
+      signal_type: item.signal_type ?? item.signal_payload?.signal_type ?? null,
+      urgency: item.signal_urgency ?? item.signal_payload?.urgency ?? null,
+      confidence: item.signal_confidence ?? item.signal_payload?.confidence ?? null,
+      upgrade_implication: item.upgrade_implication ?? item.signal_payload?.upgrade_implication ?? null,
     }))
 
-    // Aggregate themes
+    const grouped = new Map<string, { signal_type: string; tag: string; item_count: number; urgency: string; max_relevance: number }>()
+    for (const item of analyzed as any[]) {
+      const signalType = item.signal_type ?? item.signal_payload?.signal_type ?? 'demand-signal'
+      const leadTag = Array.isArray(item.ai_tags) && item.ai_tags.length > 0 ? item.ai_tags[0] : 'uncategorized'
+      const key = `${signalType}:${leadTag}`
+      const current = grouped.get(key) ?? {
+        signal_type: signalType,
+        tag: leadTag,
+        item_count: 0,
+        urgency: item.signal_urgency ?? item.signal_payload?.urgency ?? 'monitor',
+        max_relevance: 0,
+      }
+      current.item_count += 1
+      current.max_relevance = Math.max(current.max_relevance, item.relevance_score ?? 0)
+      if ((item.signal_urgency ?? item.signal_payload?.urgency) === 'urgent') current.urgency = 'urgent'
+      grouped.set(key, current)
+    }
+
     const tagCounts: Record<string, number> = {}
-    for (const item of items) {
+    for (const item of analyzed) {
       for (const tag of ((item as any).ai_tags || [])) {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1
       }
     }
-    const themes = Object.entries(tagCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([tag]) => tag)
 
-    // Platform breakdown
-    const platforms: string[] = []
-    for (const item of items) {
-      const p = (item as any).content_sources?.platform
-      if (p && !platforms.includes(p)) platforms.push(p)
-    }
+    const platforms = Array.from(new Set(items.map((item: any) => item.content_sources?.platform).filter(Boolean)))
 
     return {
       item_count: items.length,
+      analyzed_count: analyzed.length,
       platforms,
       top_insights: topInsights,
-      themes,
+      themes: Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([tag]) => tag),
+      grouped_signals: Array.from(grouped.values()).sort((a, b) => (b.item_count + b.max_relevance) - (a.item_count + a.max_relevance)).slice(0, 8),
+      transcript_coverage: {
+        total_video_items: items.filter((item: any) => item.transcript_status && item.transcript_status !== 'not_applicable').length,
+        completed: items.filter((item: any) => item.transcript_status === 'complete').length,
+        failed: items.filter((item: any) => item.transcript_status === 'failed').length,
+        pending: items.filter((item: any) => item.transcript_status === 'pending').length,
+      },
+      source_health: {
+        active: items.filter((item: any) => item.content_sources?.status === 'active').length,
+        error: items.filter((item: any) => item.content_sources?.status === 'error').length,
+        paused: items.filter((item: any) => item.content_sources?.status === 'paused').length,
+      },
+      unresolved_failures: items
+        .filter((item: any) => item.transcript_status === 'failed' || item.analysis_status === 'failed')
+        .slice(0, 8)
+        .map((item: any) => ({
+          id: item.id,
+          platform: item.content_sources?.platform,
+          source_name: item.content_sources?.name,
+          transcript_status: item.transcript_status,
+          analysis_status: item.analysis_status,
+        })),
     }
   } catch {
     return null

@@ -115,6 +115,19 @@ function signatureForAlias(alias) {
   return `/node_modules/${name}/`
 }
 
+function createExplicitAliasSpecs() {
+  return [
+    {
+      alias: 'vendor-chunks/tslib',
+      signatures: ['/node_modules/tslib/', '/node_modules/tslib/tslib.es6.mjs'],
+    },
+    {
+      alias: 'vendor-chunks/@swc',
+      signatures: ['/node_modules/@swc/', '/node_modules/@swc/helpers/'],
+    },
+  ]
+}
+
 function ensureVendorChunkAliases() {
   if (!fs.existsSync(chunksDir) && !fs.existsSync(vendorDir)) {
     return []
@@ -132,6 +145,10 @@ function ensureVendorChunkAliases() {
     for (const alias of extractVendorChunkIds(text)) {
       requestedAliases.add(alias)
     }
+  }
+
+  for (const spec of createExplicitAliasSpecs()) {
+    requestedAliases.add(spec.alias)
   }
 
   const chunkFiles = [
@@ -163,9 +180,10 @@ function ensureVendorChunkAliases() {
       continue
     }
 
-    const signature = signatureForAlias(alias)
+    const explicitSpec = createExplicitAliasSpecs().find((spec) => spec.alias === alias)
+    const signatures = explicitSpec?.signatures ?? [signatureForAlias(alias)]
     const matchedChunks = chunkContents
-      .filter(({ text }) => text.includes(signature))
+      .filter(({ text }) => signatures.some((signature) => text.includes(signature)))
       .map(({ file }) => file)
 
     fs.mkdirSync(path.dirname(targetFile), { recursive: true })

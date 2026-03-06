@@ -146,7 +146,7 @@ const shortcuts: Shortcut[] = [
   {
     id: 'nav-command-center',
     keys: ['G', 'C'],
-    description: 'Go to Command Center',
+    description: 'Go to Dispatch',
     category: 'Navigation',
     icon: Terminal,
   },
@@ -159,8 +159,8 @@ const shortcuts: Shortcut[] = [
   },
   {
     id: 'nav-my-work',
-    keys: ['G', 'M'],
-    description: 'Go to My Work',
+    keys: ['G', 'W'],
+    description: 'Go to Work Queue',
     category: 'Navigation',
     icon: CheckSquare,
   },
@@ -232,7 +232,7 @@ const shortcuts: Shortcut[] = [
   {
     id: 'nav-proposals',
     keys: ['G', 'Q'],
-    description: 'Go to Proposals',
+    description: 'Go to Proposal Queue',
     category: 'Navigation',
     icon: FileText,
   },
@@ -259,14 +259,14 @@ const shortcuts: Shortcut[] = [
   },
   {
     id: 'nav-policies',
-    keys: ['G', 'S'],
-    description: 'Go to Settings/Policies',
+    keys: ['G', 'Y'],
+    description: 'Go to Policies',
     category: 'Navigation',
     icon: Shield,
   },
   {
     id: 'nav-settings',
-    keys: ['G', '?'],
+    keys: ['G', 'S'],
     description: 'Go to Settings',
     category: 'Navigation',
     icon: Settings,

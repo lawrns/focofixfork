@@ -14,8 +14,10 @@ type StatPillsBarProps = {
   doneCount: number
   failedCount: number
   staleCount: number
+  blockedCount: number
   fleetPaused: boolean
   pendingFlash: boolean
+  onBlockedClick?: () => void
 }
 
 export function StatPillsBar({
@@ -24,8 +26,10 @@ export function StatPillsBar({
   doneCount,
   failedCount,
   staleCount,
+  blockedCount,
   fleetPaused,
   pendingFlash,
+  onBlockedClick,
 }: StatPillsBarProps) {
   const router = useRouter()
 
@@ -33,7 +37,7 @@ export function StatPillsBar({
     { label: 'Running', value: runningCount, icon: Activity, color: runningCount > 0 ? 'text-emerald-500' : undefined },
     { label: 'Pending', value: pendingCount, icon: Clock3, color: undefined },
     { label: 'Done', value: doneCount, icon: Workflow, color: undefined },
-    { label: 'Blocked', value: fleetPaused ? 1 : 0, icon: ShieldCheck, color: (fleetPaused ? 1 : 0) > 0 ? 'text-amber-500' : undefined },
+    { label: 'Blocked', value: blockedCount, icon: ShieldCheck, color: blockedCount > 0 ? 'text-amber-500' : undefined },
     { label: 'Failed', value: failedCount, icon: AlertCircle, color: failedCount > 0 ? 'text-rose-500' : undefined },
     { label: 'Stale', value: staleCount, icon: Gauge, color: undefined },
   ]
@@ -55,15 +59,27 @@ export function StatPillsBar({
                   if (stat.label === 'Running') router.push('/runs?status=running')
                   if (stat.label === 'Pending') router.push('/runs?status=pending')
                   if (stat.label === 'Done') router.push('/runs?status=completed')
+                  if (stat.label === 'Blocked' && onBlockedClick) onBlockedClick()
                   if (stat.label === 'Failed') router.push('/runs?status=failed')
                 }}
+                aria-label={
+                  stat.label === 'Blocked'
+                    ? `Blocked items: ${stat.value}. Open blocked details`
+                    : `${stat.label}: ${stat.value}`
+                }
               >
                 <stat.icon className="h-3.5 w-3.5" />
                 <span>{stat.label}</span>
                 <span className={cn('font-mono', stat.color)}>{stat.value}</span>
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent className="text-xs">{stat.label} agents or items</TooltipContent>
+            <TooltipContent className="text-xs">
+              {stat.label === 'Blocked'
+                ? fleetPaused
+                  ? 'Fleet pause or blocked work items need attention'
+                  : 'Blocked work items need attention'
+                : `${stat.label} agents or items`}
+            </TooltipContent>
           </Tooltip>
         ))}
 

@@ -12,6 +12,7 @@ import {
   UseCaseRoutingSection,
   WorkspaceDefaultsSection,
 } from '@/components/organizations/ai-settings/sections'
+import { ModelRouterCard } from '@/components/organizations/ai-settings/model-router-card'
 import { useAISettingsPolicy } from '@/components/organizations/ai-settings/use-ai-settings-policy'
 
 interface AISettingsTabProps {
@@ -73,6 +74,7 @@ export default function AISettingsTab({
 
       <div className="space-y-6">
         <WorkspaceDefaultsSection policy={policy} updatePolicy={updatePolicy} />
+        <ModelRouterCard policy={policy} updatePolicy={updatePolicy} />
         <CapabilityMatrixSection />
         <UseCaseRoutingSection
           title="Per-Use-Case Routing"

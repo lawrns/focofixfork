@@ -29,11 +29,30 @@ export async function PATCH(
   const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  const { status, summary, policy_decision } = await req.json()
+  const body = await req.json()
+  const { status, summary, policy_decision, trace } = body
+
+  const { data: existingRun, error: existingRunError } = await supabase
+    .from('runs')
+    .select('trace')
+    .eq('id', params.id)
+    .single()
+
+  if (existingRunError) return mergeAuthResponse(NextResponse.json({ error: existingRunError.message }, { status: 404 }), authResponse)
+
   const now = new Date().toISOString()
   const terminal = status === 'completed' || status === 'failed' || status === 'cancelled'
   const startedAt = status === 'running' ? now : undefined
   const endedAt = terminal ? now : undefined
+  const nextTrace =
+    trace && typeof trace === 'object' && !Array.isArray(trace)
+      ? {
+          ...((existingRun?.trace && typeof existingRun.trace === 'object' && !Array.isArray(existingRun.trace))
+            ? existingRun.trace
+            : {}),
+          ...trace,
+        }
+      : undefined
 
   const { data, error: dbError } = await supabase
     .from('runs')
@@ -42,12 +61,13 @@ export async function PATCH(
       ...(typeof summary === 'string' ? { summary } : {}),
       ...(startedAt ? { started_at: startedAt } : {}),
       ...(endedAt ? { ended_at: endedAt } : {}),
+      ...(nextTrace ? { trace: nextTrace } : {}),
     })
     .eq('id', params.id)
     .select()
     .single()
 
-  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
+  if (dbError) return mergeAuthResponse(NextResponse.json({ error: dbError.message }, { status: 500 }), authResponse)
 
   if (policy_decision) {
     await supabase.from('ledger_events').insert({
@@ -58,7 +78,7 @@ export async function PATCH(
     })
   }
 
-  return NextResponse.json({ data })
+  return mergeAuthResponse(NextResponse.json({ data }), authResponse)
 }
 
 export async function DELETE(

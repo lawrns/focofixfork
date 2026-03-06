@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 
-export type AIProviderType = 'openai' | 'glm' | 'deepseek'
+export type AIProviderType = 'openai' | 'glm' | 'deepseek' | 'anthropic'
 
 export interface AIConfig {
   provider: AIProviderType
@@ -44,6 +44,7 @@ export class OpenAIService {
   public config: AIConfig
   private client!: OpenAI
   private isProduction: boolean
+  private isAnthropic: boolean
 
   constructor(config?: Partial<AIConfig>) {
     this.isProduction = process.env.NODE_ENV === 'production' ||
@@ -53,8 +54,8 @@ export class OpenAIService {
     const provider = config?.provider || (process.env.AI_PROVIDER as AIProviderType) || 'glm'
     let apiKey = ''
     let baseURL: string | undefined
-    let model = 'gpt-4o-mini'
-    let chatModel = 'gpt-4o-mini'
+    let model = 'gpt-5.4-medium'
+    let chatModel = 'gpt-5.4-medium'
 
     if (provider === 'glm') {
       // Support both GLM_API_KEY and Z_AI_API_KEY (user preference)
@@ -71,10 +72,16 @@ export class OpenAIService {
       model = 'deepseek-chat'
       chatModel = 'deepseek-chat'
       console.log('[OpenAIService] Using DeepSeek provider')
+    } else if (provider === 'anthropic') {
+      apiKey = process.env.ANTHROPIC_API_KEY || ''
+      baseURL = 'https://api.anthropic.com/v1'
+      model = process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
+      chatModel = model
+      console.log('[OpenAIService] Using Anthropic provider')
     } else {
       apiKey = process.env.OPENAI_API_KEY || ''
-      model = process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
-      chatModel = process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || 'gpt-4o-mini'
+      model = process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
+      chatModel = process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || 'gpt-5.4-medium'
       console.log('[OpenAIService] Using OpenAI provider')
     }
 
@@ -103,6 +110,11 @@ export class OpenAIService {
     } else if (mergedConfig.provider === 'deepseek') {
       mergedConfig.baseURL = config?.baseURL || process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
       mergedConfig.apiKey = config?.apiKey || process.env.DEEPSEEK_API_KEY || mergedConfig.apiKey
+    } else if (mergedConfig.provider === 'anthropic') {
+      mergedConfig.baseURL = config?.baseURL || 'https://api.anthropic.com/v1'
+      mergedConfig.apiKey = config?.apiKey || process.env.ANTHROPIC_API_KEY || mergedConfig.apiKey
+      mergedConfig.model = config?.model || process.env.ANTHROPIC_MODEL || mergedConfig.model
+      mergedConfig.chatModel = config?.chatModel || mergedConfig.model
     } else if (mergedConfig.provider === 'glm') {
       mergedConfig.baseURL = config?.baseURL || 'https://api.z.ai/api/coding/paas/v4/'
       mergedConfig.apiKey = config?.apiKey || process.env.Z_AI_API_KEY || process.env.GLM_API_KEY || mergedConfig.apiKey
@@ -111,9 +123,10 @@ export class OpenAIService {
     }
 
     this.config = mergedConfig
+    this.isAnthropic = this.config.provider === 'anthropic'
 
     // Only create OpenAI client if we have an API key
-    if (this.config.apiKey) {
+    if (this.config.apiKey && !this.isAnthropic) {
       this.client = new OpenAI({
         apiKey: this.config.apiKey,
         baseURL: this.config.baseURL,
@@ -122,10 +135,104 @@ export class OpenAIService {
     }
   }
 
+  private async anthropicChatCompletion(params: {
+    model: string
+    messages: Array<{ role: 'user' | 'system' | 'assistant'; content: string }>
+    temperature?: number
+    maxTokens?: number
+  }): Promise<AIResponse> {
+    const systemMessages = params.messages.filter((message) => message.role === 'system').map((message) => message.content)
+    const conversation = params.messages
+      .filter((message) => message.role !== 'system')
+      .map((message) => ({
+        role: message.role,
+        content: [{ type: 'text', text: message.content }],
+      }))
+
+    if (conversation.length === 0) {
+      throw new Error('Anthropic requests require at least one non-system message')
+    }
+
+    const response = await fetch(`${this.config.baseURL}/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': this.config.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: params.model,
+        max_tokens: params.maxTokens ?? 2000,
+        temperature: params.temperature ?? 0.7,
+        system: systemMessages.length > 0 ? systemMessages.join('\n\n') : undefined,
+        messages: conversation,
+      }),
+    })
+
+    if (!response.ok) {
+      const body = await response.text()
+      throw new Error(`Anthropic API error ${response.status}: ${body}`)
+    }
+
+    const payload = await response.json() as {
+      content?: Array<{ type?: string; text?: string }>
+      usage?: {
+        input_tokens?: number
+        output_tokens?: number
+      }
+    }
+
+    const content = payload.content
+      ?.filter((entry) => entry.type === 'text' && typeof entry.text === 'string')
+      .map((entry) => entry.text)
+      .join('\n')
+      .trim() || ''
+
+    return {
+      content,
+      model: params.model,
+      usage: payload.usage ? {
+        prompt_tokens: payload.usage.input_tokens ?? 0,
+        completion_tokens: payload.usage.output_tokens ?? 0,
+        total_tokens: (payload.usage.input_tokens ?? 0) + (payload.usage.output_tokens ?? 0),
+      } : undefined,
+    }
+  }
+
   /**
    * Test connection to OpenAI API
    */
   async testConnection(): Promise<{ success: boolean; message: string; models?: string[] }> {
+    if (this.isAnthropic) {
+      if (!this.config.apiKey) {
+        return {
+          success: false,
+          message: 'Anthropic API key not configured'
+        }
+      }
+
+      try {
+        await this.anthropicChatCompletion({
+          model: this.config.model,
+          messages: [{ role: 'user', content: 'Reply with ok.' }],
+          maxTokens: 16,
+          temperature: 0,
+        })
+
+        return {
+          success: true,
+          message: 'Anthropic API is accessible',
+          models: [this.config.model]
+        }
+      } catch (error: any) {
+        console.error('Anthropic connection test failed:', error)
+        return {
+          success: false,
+          message: error.message || 'Failed to connect to Anthropic API'
+        }
+      }
+    }
+
     if (!this.client) {
       return {
         success: false,
@@ -156,7 +263,7 @@ export class OpenAIService {
    */
   async generate(request: AIRequest): Promise<AIResponse> {
     // Check if client is initialized (API key available)
-    if (!this.client) {
+    if (!this.client && !this.isAnthropic) {
       throw new Error('OpenAI client not initialized - API key not configured')
     }
 
@@ -181,6 +288,24 @@ export class OpenAIService {
         role: 'user',
         content: request.prompt
       })
+
+      if (this.isAnthropic) {
+        return await this.anthropicChatCompletion({
+          model: this.config.model,
+          messages: request.context
+            ? [
+                ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
+                { role: 'system' as const, content: `Context: ${request.context}` },
+                { role: 'user' as const, content: request.prompt },
+              ]
+            : [
+                ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
+                { role: 'user' as const, content: request.prompt },
+              ],
+          temperature: request.temperature ?? 0.7,
+          maxTokens: request.maxTokens ?? 2000,
+        })
+      }
 
       const completion = await this.client.chat.completions.create({
         model: this.config.model,
@@ -215,7 +340,7 @@ export class OpenAIService {
     userId: string
     correlationId?: string
   }): Promise<{ success: boolean; data?: any; error?: string }> {
-    if (!this.client) {
+    if (!this.client && !this.isAnthropic) {
       return {
         success: false,
         error: 'OpenAI client not initialized - API key not configured'
@@ -237,6 +362,25 @@ export class OpenAIService {
           role: 'system',
           content: systemPrompt
         })
+      }
+
+      if (this.isAnthropic) {
+        const response = await this.anthropicChatCompletion({
+          model: this.config.chatModel,
+          messages: params.messages,
+          temperature: 0.7,
+          maxTokens: 2000,
+        })
+
+        return {
+          success: true,
+          data: {
+            response: response.content,
+            model: response.model,
+            usage: response.usage,
+            threadId: params.threadId || `thread-${Date.now()}`
+          }
+        }
       }
 
       const completion = await this.client.chat.completions.create({
@@ -810,21 +954,30 @@ Guidelines:
 - Be concise and actionable`
 
     try {
-    if (!this.client) {
+    if (!this.client && !this.isAnthropic) {
       throw new Error('OpenAI client not initialized - API key not available')
     }
 
-    const completion = await this.client.chat.completions.create({
-      model: this.config.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Create a project structure for: ${description}` }
-      ],
-      temperature: 0.6,
-      max_tokens: 1500,
-    })
+      const content = this.isAnthropic
+        ? (await this.anthropicChatCompletion({
+            model: this.config.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Create a project structure for: ${description}` }
+            ],
+            temperature: 0.6,
+            maxTokens: 1500,
+          })).content
+        : (await this.client.chat.completions.create({
+            model: this.config.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Create a project structure for: ${description}` }
+            ],
+            temperature: 0.6,
+            max_tokens: 1500,
+          })).choices[0]?.message?.content
 
-      const content = completion.choices[0]?.message?.content
       if (!content) {
         throw new Error('No response from OpenAI')
       }

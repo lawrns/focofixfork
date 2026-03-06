@@ -19,6 +19,11 @@ interface AIConfig {
   model: string;
 }
 
+interface AnthropicMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
 /**
  * Custom fetch for GLM that properly handles the API key format
  * GLM API keys are in format: id.secret
@@ -47,6 +52,7 @@ export class AIService {
   private client: OpenAI | null;
   private config: AIConfig;
   private isGLM: boolean;
+  private isAnthropic: boolean;
   private executionOverrides: Pick<AIExecutionProfile, 'temperature' | 'max_tokens'> | null;
 
   constructor(providerOrProfile?: AIProvider | Pick<AIExecutionProfile, 'provider' | 'model' | 'temperature' | 'max_tokens'>) {
@@ -60,9 +66,11 @@ export class AIService {
       GLM_API_KEY: process.env.GLM_API_KEY ? '***' + process.env.GLM_API_KEY.slice(-4) : 'undefined',
       DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ? '***' + process.env.DEEPSEEK_API_KEY.slice(-4) : 'undefined',
       OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***' + process.env.OPENAI_API_KEY.slice(-4) : 'undefined',
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '***' + process.env.ANTHROPIC_API_KEY.slice(-4) : 'undefined',
     })
 
     this.isGLM = aiProvider === 'glm';
+    this.isAnthropic = aiProvider === 'anthropic';
     this.executionOverrides = profile ? {
       temperature: profile.temperature,
       max_tokens: profile.max_tokens,
@@ -84,11 +92,19 @@ export class AIService {
         model: profile?.model || process.env.DEEPSEEK_MODEL || 'deepseek-chat'
       };
       console.log('[AIService] Using DeepSeek provider with model:', this.config.model)
+    } else if (aiProvider === 'anthropic') {
+      this.config = {
+        provider: 'anthropic',
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        baseURL: 'https://api.anthropic.com/v1',
+        model: profile?.model || process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
+      };
+      console.log('[AIService] Using Anthropic provider with model:', this.config.model)
     } else {
       this.config = {
         provider: 'openai',
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: profile?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
+        model: profile?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
       };
       console.log('[AIService] Using OpenAI provider with model:', this.config.model)
     }
@@ -112,12 +128,65 @@ export class AIService {
         baseURL: this.config.baseURL,
         fetch: createGLMFetch(this.config.apiKey)
       });
+    } else if (this.isAnthropic) {
+      this.client = null;
     } else {
       this.client = new OpenAI({
         apiKey: this.config.apiKey,
         baseURL: this.config.baseURL,
       });
     }
+  }
+
+  private async anthropicChatCompletion(
+    messages: AnthropicMessage[],
+    options?: { temperature?: number; maxTokens?: number }
+  ) {
+    const systemMessages = messages.filter((message) => message.role === 'system').map((message) => message.content);
+    const conversation = messages
+      .filter((message) => message.role !== 'system')
+      .map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+
+    if (conversation.length === 0) {
+      throw new Error('Anthropic requests require at least one non-system message');
+    }
+
+    const response = await fetch(`${this.config.baseURL}/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': this.config.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: this.config.model,
+        max_tokens: options?.maxTokens ?? this.executionOverrides?.max_tokens ?? 2000,
+        temperature: options?.temperature ?? this.executionOverrides?.temperature ?? 0.7,
+        system: systemMessages.length > 0 ? systemMessages.join('\n\n') : undefined,
+        messages: conversation.map((message) => ({
+          role: message.role,
+          content: [{ type: 'text', text: message.content }],
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Anthropic API error ${response.status}: ${body}`);
+    }
+
+    const payload = await response.json() as {
+      content?: Array<{ type?: string; text?: string }>
+    };
+
+    return payload.content
+      ?.filter((entry) => entry.type === 'text' && typeof entry.text === 'string')
+      .map((entry) => entry.text)
+      .join('\n')
+      .trim() || '';
   }
 
   /**
@@ -135,14 +204,18 @@ export class AIService {
       throw new Error(`${this.config.provider} API key not configured`);
     }
 
-    if (!this.client) {
+    if (!this.client && !this.isAnthropic) {
       throw new Error('Client not initialized');
     }
 
     try {
       console.log('[AIService] Making API call to', this.config.baseURL, 'with model', this.config.model)
 
-      const response = await this.client.chat.completions.create({
+      if (this.isAnthropic) {
+        return await this.anthropicChatCompletion(messages, options)
+      }
+
+      const response = await this.client!.chat.completions.create({
         model: this.config.model,
         messages,
         temperature: options?.temperature ?? this.executionOverrides?.temperature ?? 0.7,

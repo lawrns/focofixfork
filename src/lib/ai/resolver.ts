@@ -17,6 +17,7 @@ interface ResolveProfileOptions {
   useCase: AIUseCase
   policy?: WorkspaceAIPolicy | null
   requestedModel?: string | null
+  requestedFallbackChain?: string[] | null
   customAgent?: Pick<CustomAgentProfileRow, 'id' | 'slug' | 'system_prompt' | 'tool_access'> | null
 }
 
@@ -26,16 +27,18 @@ interface ResolveProfileDbOptions {
   workspaceId?: string | null
   useCase: AIUseCase
   requestedModel?: string | null
+  requestedFallbackChain?: string[] | null
   customAgentId?: string | null
 }
 
 function getEnvProvider(): AIProvider {
   const provider = process.env.AI_PROVIDER
-  return provider === 'openai' || provider === 'deepseek' || provider === 'glm' ? provider : 'glm'
+  return provider === 'openai' || provider === 'deepseek' || provider === 'glm' || provider === 'anthropic' ? provider : 'glm'
 }
 
 function getEnvDefaultModel(provider: AIProvider): string {
-  if (provider === 'openai') return process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
+  if (provider === 'openai') return process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
+  if (provider === 'anthropic') return process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
   if (provider === 'deepseek') return process.env.DEEPSEEK_MODEL || 'deepseek-chat'
   return process.env.GLM_MODEL || 'glm-5'
 }
@@ -165,6 +168,8 @@ export async function resolveAIExecutionProfile(
     fallback_chain:
       options.requestedModel?.trim()
         ? []
+        : options.requestedFallbackChain?.length
+          ? options.requestedFallbackChain
         : agentOverride?.fallback_chain ??
           modelProfile.fallback_chain ??
           routingDefault.fallback_chain ??
@@ -219,6 +224,7 @@ export async function resolveAIExecutionProfileFromWorkspace(
     useCase: options.useCase,
     policy,
     requestedModel: options.requestedModel,
+    requestedFallbackChain: options.requestedFallbackChain,
     customAgent,
   })
 

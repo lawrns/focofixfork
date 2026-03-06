@@ -69,10 +69,12 @@ function StatusBadge({ status }: { status: PipelineRun['status'] }) {
 
 function modelLabel(m: string) {
   const map: Record<string, string> = {
+    'gpt-5.4-medium':  'GPT-5.4',
     'claude-opus-4-6':  'Opus 4.6',
     'kimi-k2-fast':     'Kimi Fast',
     'kimi-k2-standard': 'Kimi Std',
     'kimi-k2-max':      'Kimi Max',
+    'glm-5':            'GLM-5',
     'codex-lite':       'Codex Lite',
     'codex-standard':   'Codex',
     'codex-pro':        'Codex Pro',

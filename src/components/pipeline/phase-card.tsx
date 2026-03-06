@@ -35,10 +35,12 @@ const PHASE_LABELS: Record<PhaseCardProps['phase'], string> = {
 }
 
 const MODEL_SHORT: Record<string, string> = {
+  'gpt-5.4-medium': 'GPT-5.4 Medium',
   'claude-opus-4-6': 'Claude Opus 4.6',
   'kimi-k2-standard': 'Kimi K2.5 Standard',
   'kimi-k2-fast': 'Kimi K2.5 Fast',
   'kimi-k2-max': 'Kimi K2.5 Max',
+  'glm-5': 'GLM-5',
   'codex-standard': 'Codex Standard',
   'codex-mini': 'Codex Mini',
   'codex-fast': 'Codex Fast',

@@ -36,10 +36,12 @@ function getEdgeActive(status: PipelineStatus | null): [boolean, boolean] {
 
 // Clearer sublabels shown inside each node
 const MODEL_SUBLABEL: Record<string, string> = {
+  'gpt-5.4-medium': 'GPT 5.4',
   'claude-opus-4-6':  'Opus 4.6',
   'kimi-k2-standard': 'K2 Standard',
   'kimi-k2-fast':     'K2 Fast',
   'kimi-k2-max':      'K2 Max',
+  'glm-5':            'GLM-5',
   'codex-standard':   'Standard',
   'codex-mini':       'Mini',
   'codex-fast':       'Fast',

@@ -11,6 +11,7 @@ import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 import { isLane } from '@/lib/agent-ops/lane-policy'
 import { createCommandStreamJob, publishCommandStreamEvent, setJobRunId } from '@/lib/command-surface/stream-broker'
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
+import { redactSensitiveText } from '@/lib/security/redaction'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -53,11 +54,18 @@ type RunnerArgs = {
   projectId: string | null
   lane: string | null
   taskId: string | null
+  requestedModel: string | null
+  requestedPlannerModel: string | null
+  requestedExecutorModel: string | null
+  requestedReviewerModel: string | null
+  requestedFallbackChain: string[] | null
   selectedAgents: unknown
   planningContext: unknown
   planningGoal: string | null
   constraints: unknown
   limits: unknown
+  reportRequest: Record<string, unknown> | null
+  bootstrapRunId: string | null
 }
 
 async function runPipelineForJob(args: RunnerArgs): Promise<void> {
@@ -74,11 +82,18 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
     projectId,
     lane,
     taskId,
+    requestedModel,
+    requestedPlannerModel,
+    requestedExecutorModel,
+    requestedReviewerModel,
+    requestedFallbackChain,
     selectedAgents,
     planningContext,
     planningGoal,
     constraints,
     limits,
+    reportRequest,
+    bootstrapRunId,
   } = args
 
   const timestamp = () => new Date().toISOString()
@@ -149,24 +164,64 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
         userId,
         workspaceId: resolvedWorkspaceId,
         useCase: 'command_surface_plan',
+        requestedModel: requestedPlannerModel ?? requestedModel,
+        requestedFallbackChain,
       }),
       resolveAIExecutionProfileFromWorkspace({
         supabase,
         userId,
         workspaceId: resolvedWorkspaceId,
         useCase: 'command_surface_execute',
+        requestedModel: requestedExecutorModel ?? requestedModel,
+        requestedFallbackChain,
       }),
       resolveAIExecutionProfileFromWorkspace({
         supabase,
         userId,
         workspaceId: resolvedWorkspaceId,
         useCase: 'command_surface_review',
+        requestedModel: requestedReviewerModel ?? requestedModel,
+        requestedFallbackChain,
       }),
     ])
     const plannerModel = planProfile.model
     const executorModel = executeProfile.model
     const reviewerModel = reviewProfile.model
     const normalizedLane = isLane(lane) ? lane : null
+
+    if (bootstrapRunId) {
+      await supabase
+        .from('runs')
+        .update({
+          trace: {
+            ai_routing: {
+              requested: {
+                model: requestedModel,
+                planner_model: requestedPlannerModel,
+                executor_model: requestedExecutorModel,
+                reviewer_model: requestedReviewerModel,
+                fallback_chain: requestedFallbackChain ?? [],
+              },
+              actual: {
+                planner_model: plannerModel,
+                executor_model: executorModel,
+                reviewer_model: reviewerModel,
+                planner_provider: planProfile.provider,
+                executor_provider: executeProfile.provider,
+                reviewer_provider: reviewProfile.provider,
+                fallback_chain: executeProfile.fallback_chain,
+              },
+            },
+            command_surface: {
+              job_id: jobId,
+              workspace_id: resolvedWorkspaceId,
+              project_id: projectId,
+              lane: normalizedLane,
+            },
+          },
+        })
+        .eq('id', bootstrapRunId)
+    }
 
     const pipelineRes = await fetch(`${origin}/api/pipeline/stream`, {
       method: 'POST',
@@ -194,6 +249,7 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
         planning_goal: planningGoal,
         constraints,
         limits,
+        report_request: reportRequest,
       }),
       signal: AbortSignal.timeout(300_000),
     })
@@ -248,6 +304,11 @@ async function runPipelineForJob(args: RunnerArgs): Promise<void> {
             continue
           }
 
+          if (type === 'report_created' && typeof event.title === 'string') {
+            pushReasoning(`Report created: ${event.title}`, phase)
+            continue
+          }
+
           if (type === 'phase_error' || type === 'pipeline_error') {
             const message = typeof event.message === 'string' ? event.message : 'Pipeline execution failed'
             fail(message)
@@ -277,7 +338,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null)
-  const { prompt, mode, project_id, workspace_id, lane, task_id, selected_agents, context, planning_goal, constraints, limits } = body as {
+  const { prompt, mode, project_id, workspace_id, lane, task_id, selected_agents, context, planning_goal, constraints, limits, report_request, bootstrap_run_id, requested_model, requested_planner_model, requested_executor_model, requested_reviewer_model, requested_fallback_chain } = body as {
     prompt?: string
     mode?: string
     project_id?: string | null
@@ -289,6 +350,13 @@ export async function POST(req: NextRequest) {
     planning_goal?: string | null
     constraints?: unknown
     limits?: unknown
+    report_request?: Record<string, unknown> | null
+    bootstrap_run_id?: string | null
+    requested_model?: string | null
+    requested_planner_model?: string | null
+    requested_executor_model?: string | null
+    requested_reviewer_model?: string | null
+    requested_fallback_chain?: string[] | null
   }
 
   if (!prompt?.trim()) {
@@ -300,11 +368,16 @@ export async function POST(req: NextRequest) {
 
   const normalizedMode = typeof mode === 'string' && mode.trim() ? mode : 'auto'
   const jobId = createCommandStreamJob(user.id)
+  const bootstrapRunId = typeof bootstrap_run_id === 'string' && bootstrap_run_id.trim() ? bootstrap_run_id.trim() : null
+
+  if (bootstrapRunId) {
+    await setJobRunId(jobId, bootstrapRunId)
+  }
 
   publishCommandStreamEvent(jobId, {
     type: 'status_update',
     status: 'queued',
-    message: 'Queued for dispatch',
+    message: bootstrapRunId ? 'Queued for dispatch. Saved run is ready.' : 'Queued for dispatch',
     timestamp: new Date().toISOString(),
   })
 
@@ -313,11 +386,12 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       eventType: 'clawd_command_surface_dispatch',
       title: 'Command surface execution dispatched',
-      detail: prompt.trim().slice(0, 180),
+      detail: redactSensitiveText(prompt.trim()).slice(0, 180),
       payload: {
         mode: normalizedMode,
         lane: isLane(lane) ? lane : null,
         task_id: task_id ?? null,
+        bootstrap_run_id: bootstrapRunId,
       },
     })
   } catch {
@@ -337,11 +411,20 @@ export async function POST(req: NextRequest) {
     projectId: project_id ?? null,
     lane: lane ?? null,
     taskId: task_id ?? null,
+    requestedModel: requested_model ?? null,
+    requestedPlannerModel: requested_planner_model ?? null,
+    requestedExecutorModel: requested_executor_model ?? null,
+    requestedReviewerModel: requested_reviewer_model ?? null,
+    requestedFallbackChain: Array.isArray(requested_fallback_chain)
+      ? requested_fallback_chain.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : null,
     selectedAgents: selected_agents ?? null,
     planningContext: context ?? null,
     planningGoal: planning_goal ?? null,
     constraints: constraints ?? null,
     limits: limits ?? null,
+    reportRequest: report_request ?? null,
+    bootstrapRunId,
   })
 
   return mergeAuthResponse(

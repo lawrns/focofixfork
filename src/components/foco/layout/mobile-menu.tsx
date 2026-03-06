@@ -9,11 +9,9 @@ import {
   X,
   Home,
   Rss,
-  CheckSquare,
   Activity,
   BookOpen,
   Cpu,
-  Terminal,
   Bot,
   Workflow,
   Clock,
@@ -24,10 +22,11 @@ import {
   CalendarDays,
   Mail,
   FileBarChart,
-  GitBranch,
   Archive,
   Shield,
   Settings,
+  FolderOpen,
+  Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -42,13 +41,13 @@ interface NavItem {
 const navItems: NavItem[] = [
   // CORE
   { label: 'Dashboard',   href: '/dashboard', icon: Home },
-  { label: 'Intel Feed',  href: '/clawdbot',  icon: Rss },
-  { label: 'My Tasks',    href: '/my-work',   icon: CheckSquare },
+  { label: 'Projects',    href: '/projects',  icon: FolderOpen },
   { label: 'Runs',        href: '/runs',      icon: Activity },
   { label: 'Audit Log',   href: '/ledger',    icon: BookOpen },
+  { label: 'Reports',     href: '/reports',   icon: FileBarChart },
   // EMPIRE
   { label: 'Empire OS',      href: '/empire',           icon: Cpu,      section: 'Empire' },
-  { label: 'Command Center', href: '/empire/command',   icon: Terminal },
+  { label: 'Dispatch',       href: '/dashboard?view=dispatch', icon: Send },
   { label: 'Agents',         href: '/empire/agents',    icon: Bot },
   { label: 'Pipeline',       href: '/empire/pipeline',  icon: Workflow },
   { label: 'Crons',          href: '/crons',            icon: Clock },
@@ -58,9 +57,9 @@ const navItems: NavItem[] = [
   { label: 'Notifications',      href: '/empire/signals',   icon: Bell },
   { label: 'Milestone Timeline', href: '/empire/timeline',  icon: CalendarDays },
   // MANAGE
+  { label: 'Intel Feed',     href: '/clawdbot',    icon: Rss,          section: 'Manage' },
   { label: 'Emails',         href: '/emails',     icon: Mail,         section: 'Manage' },
-  { label: 'Reports',        href: '/reports',    icon: FileBarChart },
-  { label: 'Task Proposals', href: '/proposals',  icon: GitBranch },
+  { label: 'Proposal Queue', href: '/dashboard?view=proposals',  icon: Workflow },
   { label: 'Artifacts',      href: '/artifacts',  icon: Archive },
   { label: 'Policies',       href: '/policies',   icon: Shield },
   // SETTINGS

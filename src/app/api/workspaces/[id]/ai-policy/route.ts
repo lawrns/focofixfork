@@ -51,7 +51,7 @@ const WorkspaceAIPolicySchema = z.object({
     confidence_min_for_auto: 0.75,
   }),
   model_profiles: z.record(z.object({
-    provider: z.enum(['openai', 'deepseek', 'glm']).optional(),
+    provider: z.enum(['openai', 'deepseek', 'glm', 'anthropic']).optional(),
     model: z.string().min(1).max(200).optional(),
     temperature: z.number().min(0).max(2).optional(),
     max_tokens: z.number().min(1).max(32768).optional(),
@@ -67,7 +67,7 @@ const WorkspaceAIPolicySchema = z.object({
     handbook_slugs: z.array(z.string()).default([]),
   })).default({}),
   agent_profiles: z.record(z.object({
-    provider: z.enum(['openai', 'deepseek', 'glm']).optional(),
+    provider: z.enum(['openai', 'deepseek', 'glm', 'anthropic']).optional(),
     model: z.string().min(1).max(200).optional(),
     temperature: z.number().min(0).max(2).optional(),
     max_tokens: z.number().min(1).max(32768).optional(),

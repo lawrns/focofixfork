@@ -6,12 +6,16 @@ import {
   Wrench,
 } from 'lucide-react'
 import type { AIUseCase, ToolMode } from '@/lib/ai/policy'
+import { MODEL_CATALOG } from '@/lib/ai/model-catalog'
 
 export const PROVIDER_OPTIONS = [
   { value: 'glm', label: 'GLM / Z.AI' },
   { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic / Claude' },
   { value: 'deepseek', label: 'DeepSeek' },
 ] as const
+
+export { MODEL_CATALOG }
 
 export const TOOL_MODE_OPTIONS: Array<{ value: ToolMode; label: string; description: string }> = [
   { value: 'none', label: 'No tools', description: 'Pure text generation only.' },

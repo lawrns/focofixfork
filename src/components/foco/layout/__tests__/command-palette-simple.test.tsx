@@ -48,7 +48,7 @@ describe('Command Palette - Simple Navigation Tests', () => {
     const dispatchButton = screen.getByRole('option', { name: /go to dispatch/i });
     await user.click(dispatchButton);
 
-    expect(mockPush).toHaveBeenCalledWith('/empire/command');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard?view=dispatch');
   });
 
   it('should close modal after navigation', async () => {

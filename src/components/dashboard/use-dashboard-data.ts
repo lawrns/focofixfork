@@ -13,6 +13,7 @@ export type Run = {
   ended_at: string | null
   created_at?: string
   summary?: string | null
+  trace?: Record<string, unknown> | null
 }
 
 export type LedgerEvent = {
@@ -38,6 +39,36 @@ export type ProjectOption = {
   name: string
 }
 
+export type DashboardWorkItem = {
+  id: string
+  title: string
+  status: string
+  priority?: string | null
+  due_date?: string | null
+  project_id?: string | null
+  section?: string | null
+  project?: {
+    id: string
+    name: string
+    slug?: string
+    color?: string | null
+  } | null
+}
+
+export type DashboardProposal = {
+  id: string
+  title: string
+  status: string
+  description?: string | null
+  project_id?: string | null
+  created_at?: string
+  project?: {
+    id: string
+    name: string
+    slug?: string
+  } | null
+}
+
 export function useDashboardData(user: { id: string } | null) {
   const [relayReachable, setRelayReachable] = useState<boolean | null>(null)
   const [tokenValid, setTokenValid] = useState<boolean | null>(null)
@@ -51,6 +82,9 @@ export function useDashboardData(user: { id: string } | null) {
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [agents, setAgents] = useState<AgentOption[]>([])
+  const [workItems, setWorkItems] = useState<DashboardWorkItem[]>([])
+  const [workSummary, setWorkSummary] = useState({ total: 0, urgent: 0, blocked: 0 })
+  const [proposals, setProposals] = useState<DashboardProposal[]>([])
 
   const activeRuns = useMemo(
     () => allRuns.filter((run) => run.status === 'running' || run.status === 'pending').slice(0, 10),
@@ -61,6 +95,14 @@ export function useDashboardData(user: { id: string } | null) {
     [projectOptions, selectedProjectId]
   )
   const selectedProjectSlug = selectedProject?.slug ?? ''
+  const filteredWorkItems = useMemo(
+    () => workItems.filter((item) => !selectedProjectId || item.project_id === selectedProjectId),
+    [selectedProjectId, workItems]
+  )
+  const filteredProposals = useMemo(
+    () => proposals.filter((proposal) => !selectedProjectId || proposal.project_id === selectedProjectId),
+    [proposals, selectedProjectId]
+  )
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -100,13 +142,15 @@ export function useDashboardData(user: { id: string } | null) {
     setRefreshing(true)
 
     try {
-      const [statusRes, runsRes, fleetRes, ledgerRes, projectsRes, agentsRes] = await Promise.allSettled([
+      const [statusRes, runsRes, fleetRes, ledgerRes, projectsRes, agentsRes, workRes, proposalsRes] = await Promise.allSettled([
         fetch('/api/openclaw/status'),
         fetch('/api/runs'),
         fetch('/api/policies/fleet-status'),
         fetch('/api/ledger?limit=18'),
         fetch('/api/projects?limit=50'),
         fetch('/api/command-center/agents'),
+        fetch('/api/my-work/assigned?limit=8'),
+        fetch('/api/proposals?limit=8'),
       ])
 
       if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
@@ -153,6 +197,26 @@ export function useDashboardData(user: { id: string } | null) {
         setAgents(nextAgents)
       }
 
+      if (workRes.status === 'fulfilled' && workRes.value.ok) {
+        const data = await workRes.value.json()
+        setWorkItems((data?.data?.tasks ?? []) as DashboardWorkItem[])
+        setWorkSummary({
+          total: data?.data?.summary?.total ?? 0,
+          urgent: data?.data?.summary?.urgent ?? 0,
+          blocked: data?.data?.summary?.blocked ?? 0,
+        })
+      } else {
+        setWorkItems([])
+        setWorkSummary({ total: 0, urgent: 0, blocked: 0 })
+      }
+
+      if (proposalsRes.status === 'fulfilled' && proposalsRes.value.ok) {
+        const data = await proposalsRes.value.json()
+        setProposals((data?.data ?? []) as DashboardProposal[])
+      } else {
+        setProposals([])
+      }
+
       const statsResponse = await fetch('/api/dashboard/autonomous-stats').catch(() => null)
       if (statsResponse?.ok) {
         const data = await statsResponse.json()
@@ -175,6 +239,9 @@ export function useDashboardData(user: { id: string } | null) {
       setProjectOptions([])
       setSelectedProjectId('')
       setAgents([])
+      setWorkItems([])
+      setWorkSummary({ total: 0, urgent: 0, blocked: 0 })
+      setProposals([])
       return
     }
     void fetchAll()
@@ -210,6 +277,9 @@ export function useDashboardData(user: { id: string } | null) {
     setSelectedProjectId,
     selectedProjectSlug,
     agents,
+    workItems: filteredWorkItems,
+    workSummary,
+    proposals: filteredProposals,
     runningCount,
     pendingCount,
     doneCount,

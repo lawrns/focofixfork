@@ -102,6 +102,15 @@ export interface ReviewReport {
   confidence_score: number // 0–100
 }
 
+export interface ProjectReportRequest {
+  enabled: boolean
+  report_type: string
+  project_id: string
+  workspace_id?: string | null
+  selected_agent_id?: string | null
+  selected_agent_name?: string | null
+}
+
 export type PipelineStatus = 'planning' | 'executing' | 'reviewing' | 'complete' | 'failed' | 'cancelled'
 
 export interface PipelineRun {
@@ -156,24 +165,33 @@ export type PipelineSSEEvent =
   | { type: 'phase_error'; phase: PipelinePhase; message: string }
   | { type: 'activity'; phase: PipelinePhase | 'system'; message: string }
   | { type: 'pipeline_complete'; run_id: string; total_elapsed_ms: number }
+  | { type: 'report_created'; report_id: string; artifact_id: string; title: string }
   | { type: 'pipeline_error'; message: string }
 
 export type PipelinePhase = 'plan' | 'execute' | 'review'
 
 // Model hint names passed to ClawdBot routing
 export const PLANNER_MODELS = [
+  { label: 'GPT-5.4 Medium', value: 'gpt-5.4-medium' },
   { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+  { label: 'GLM-5', value: 'glm-5' },
 ] as const
 
 export const EXECUTOR_MODELS = [
+  { label: 'GPT-5.4 Medium', value: 'gpt-5.4-medium' },
   { label: 'Kimi K2.5 Standard', value: 'kimi-k2-standard' },
   { label: 'Kimi K2.5 Fast', value: 'kimi-k2-fast' },
   { label: 'Kimi K2.5 Max', value: 'kimi-k2-max' },
+  { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+  { label: 'GLM-5', value: 'glm-5' },
 ] as const
 
 export const REVIEWER_MODELS = [
+  { label: 'GPT-5.4 Medium', value: 'gpt-5.4-medium' },
   { label: 'Codex Standard', value: 'codex-standard' },
   { label: 'Codex Lite', value: 'codex-lite' },
   { label: 'Codex Pro', value: 'codex-pro' },
   { label: 'Codex Max', value: 'codex-max' },
+  { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+  { label: 'GLM-5', value: 'glm-5' },
 ] as const

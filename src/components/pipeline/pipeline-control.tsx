@@ -21,6 +21,7 @@ import { usePlanningAgents } from '@/components/planning-agents/use-planning-age
 import { PipelineConfigPanel } from './components/pipeline-config-panel'
 import { PipelinePhaseSection } from './components/pipeline-phase-section'
 import type { PhaseCardStatus } from './phase-card'
+import { useUserModelPreferences } from '@/lib/stores/user-model-preferences'
 
 const COMPLEXITY_KEYWORDS = [
   /\.(sql|migration|schema)/i,
@@ -98,10 +99,16 @@ const emptyPhaseStream = (): PhaseStreamState => ({
 })
 
 export function PipelineControl() {
+  const {
+    defaultModel,
+    plannerModel: preferredPlannerModel,
+    executorModel: preferredExecutorModel,
+    reviewerModel: preferredReviewerModel,
+  } = useUserModelPreferences()
   const [task, setTask] = useState('')
-  const [plannerModel, setPlannerModel] = useState('claude-opus-4-6')
-  const [executorModel, setExecutorModel] = useState('kimi-k2-standard')
-  const [reviewerModel, setReviewerModel] = useState('codex-standard')
+  const [plannerModel, setPlannerModel] = useState(preferredPlannerModel ?? defaultModel ?? 'gpt-5.4-medium')
+  const [executorModel, setExecutorModel] = useState(preferredExecutorModel ?? defaultModel ?? 'kimi-k2-standard')
+  const [reviewerModel, setReviewerModel] = useState(preferredReviewerModel ?? defaultModel ?? 'gpt-5.4-medium')
   const [autoReview, setAutoReview] = useState(false)
   const [handbookSlug, setHandbookSlug] = useState('general')
   const [agentPickerOpen, setAgentPickerOpen] = useState(false)
@@ -137,6 +144,21 @@ export function PipelineControl() {
 
   const complexHint = task.trim().length > 20 && detectComplexity(task)
   const triggerHint = detectTrigger(task)
+
+  useEffect(() => {
+    if (preferredPlannerModel) setPlannerModel(preferredPlannerModel)
+    else if (defaultModel) setPlannerModel(defaultModel)
+  }, [defaultModel, preferredPlannerModel])
+
+  useEffect(() => {
+    if (preferredExecutorModel) setExecutorModel(preferredExecutorModel)
+    else if (defaultModel) setExecutorModel(defaultModel)
+  }, [defaultModel, preferredExecutorModel])
+
+  useEffect(() => {
+    if (preferredReviewerModel) setReviewerModel(preferredReviewerModel)
+    else if (defaultModel) setReviewerModel(defaultModel)
+  }, [defaultModel, preferredReviewerModel])
 
   useEffect(() => {
     if (!serverStartMs || pipelineStatus === 'complete' || pipelineStatus === 'failed') return

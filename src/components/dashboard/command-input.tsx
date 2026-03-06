@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/data-display/avatar'
 import { Bot, Loader2, Send, Sparkles } from 'lucide-react'
 import type { AgentOption, ProjectOption } from './use-dashboard-data'
+import { containsSensitiveText, redactSensitiveText } from '@/lib/security/redaction'
 
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
 
@@ -64,6 +65,8 @@ export function CommandInput({
 
   const personaLabel = PERSONA_PRESETS.find((preset) => preset.key === persona)?.label ?? 'Auto'
   const selectedAgent = agents.find((agent) => agent.nativeId === agentId)
+  const redactedPreview = redactSensitiveText(task)
+  const sensitiveInput = task.trim().length > 0 && containsSensitiveText(task)
 
   const handleSubmit = async () => {
     if (!task.trim()) return
@@ -173,6 +176,12 @@ export function CommandInput({
             </p>
           ) : null}
 
+          {sensitiveInput ? (
+            <p className="px-4 text-xs text-amber-600 dark:text-amber-400" role="status" aria-live="polite">
+              Sensitive values detected. The dashboard will redact previews, but avoid pasting raw credentials unless they are required.
+            </p>
+          ) : null}
+
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,7 +190,7 @@ export function CommandInput({
           >
             <div className="flex flex-col gap-2 md:flex-row md:items-center">
               <div className="bg-muted/50 rounded-md px-3 py-1.5 text-[11px] font-mono text-muted-foreground flex-1">
-                routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · mode <span className="text-foreground/70">gateway</span>
+                routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · mode <span className="text-foreground/70">persisted pipeline</span>
               </div>
 
               <select
@@ -195,6 +204,10 @@ export function CommandInput({
                 ))}
               </select>
             </div>
+            <p className="mt-2 px-1 text-[11px] text-muted-foreground">
+              Every dispatch creates a saved run first. Live output only appears after a stream is actually attached.
+              {task.trim() ? ` Preview: ${redactedPreview.slice(0, 160)}` : ''}
+            </p>
           </motion.div>
         </div>
       </motion.div>

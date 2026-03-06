@@ -12,7 +12,6 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeft,
-  Send,
   Activity,
   Clock,
   Mail,
@@ -22,15 +21,15 @@ import {
   Radar,
   FileText,
   Bot,
-  ListTodo,
   GitBranch,
   BarChart2,
-  ClipboardList,
-  Terminal,
   Radio,
   Crosshair,
   History,
   Antenna,
+  FolderOpen,
+  LayoutGrid,
+  Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -46,15 +45,15 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { label: 'Dashboard',   href: '/dashboard', icon: Home,     shortcut: 'G H' },
-  { label: 'Intel Feed',  href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
-  { label: 'My Tasks',    href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
+  { label: 'Projects',    href: '/projects',  icon: FolderOpen, shortcut: 'G P' },
   { label: 'Runs',        href: '/runs',      icon: Activity, shortcut: 'G R' },
   { label: 'Audit Log',   href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
+  { label: 'Reports',     href: '/reports',   icon: BarChart2, shortcut: 'G F' },
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Empire OS',      href: '/empire',          icon: Activity,  shortcut: 'G M' },
-  { label: 'Command Center', href: '/empire/command',  icon: Terminal,  shortcut: 'G C' },
+  { label: 'Empire OS',      href: '/empire',          icon: LayoutGrid, shortcut: 'G M' },
+  { label: 'Dispatch',       href: '/dashboard?view=dispatch', icon: Send, shortcut: 'G C' },
   { label: 'Agents',         href: '/empire/agents',   icon: Bot,       shortcut: 'G J' },
   { label: 'Pipeline',       href: '/empire/pipeline', icon: GitBranch, shortcut: 'G V' },
   { label: 'Crons',          href: '/crons',           icon: Clock,     shortcut: 'G K' },
@@ -69,9 +68,9 @@ const projectsNavItems: NavItem[] = [
 ];
 
 const manageNavItems: NavItem[] = [
+  { label: 'Intel Feed',     href: '/clawdbot',    icon: Radar,        shortcut: 'G I' },
   { label: 'Emails',         href: '/emails',      icon: Mail,          shortcut: 'G E' },
-  { label: 'Reports',        href: '/reports',     icon: BarChart2,     shortcut: 'G F' },
-  { label: 'Task Proposals', href: '/proposals',   icon: ClipboardList, shortcut: 'G Q' },
+  { label: 'Proposal Queue', href: '/dashboard?view=proposals', icon: BookOpen, shortcut: 'G Q' },
   { label: 'Artifacts',      href: '/artifacts',   icon: Archive,       shortcut: 'G A' },
   { label: 'Policies',       href: '/policies',    icon: Shield,        shortcut: 'G Y' },
   
@@ -214,21 +213,21 @@ export function LeftRail() {
                 variant="ghost"
                 size="icon"
                 className="w-full h-9 mb-4 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-                onClick={() => router.push('/empire/command')}
+                onClick={() => router.push('/dashboard?view=dispatch')}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Run Command</TooltipContent>
+            <TooltipContent side="right">Dispatch</TooltipContent>
           </Tooltip>
         ) : (
           <Button
             variant="ghost"
             className="w-full justify-start mb-4 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-            onClick={() => router.push('/empire/command')}
+            onClick={() => router.push('/dashboard?view=dispatch')}
           >
             <Send className="h-4 w-4 mr-2" />
-            Run Command
+            Dispatch
           </Button>
         )}
 

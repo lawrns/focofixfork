@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { PLANNER_MODELS, EXECUTOR_MODELS, REVIEWER_MODELS } from '@/lib/pipeline/types'
 import { PlanningAgentsPicker } from '@/components/planning-agents/planning-agents-picker'
 import type { AvailablePlanningAgent } from '@/components/planning-agents/use-planning-agents'
+import { getModelRuntimeSourceLabel } from '@/lib/ai/model-catalog'
 
 export function PipelineConfigPanel({
   plannerModel,
@@ -82,6 +83,7 @@ export function PipelineConfigPanel({
                 <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Claude Opus 4.6" /></SelectTrigger>
                 <SelectContent>{PLANNER_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground">{getModelRuntimeSourceLabel(plannerModel) ?? 'Inherited'}</p>
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Executor</Label>
@@ -89,6 +91,7 @@ export function PipelineConfigPanel({
                 <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Kimi K2.5 Std" /></SelectTrigger>
                 <SelectContent>{EXECUTOR_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground">{getModelRuntimeSourceLabel(executorModel) ?? 'Inherited'}</p>
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Reviewer</Label>
@@ -96,6 +99,7 @@ export function PipelineConfigPanel({
                 <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Codex Std" /></SelectTrigger>
                 <SelectContent>{REVIEWER_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground">{getModelRuntimeSourceLabel(reviewerModel) ?? 'Inherited'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2.5">

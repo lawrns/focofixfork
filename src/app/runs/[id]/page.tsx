@@ -8,7 +8,9 @@ import { UnifiedPageShell } from '@/components/layout/unified-page-shell'
 import { UnifiedCard } from '@/components/ui/unified-card'
 import { StatusBadge } from '@/components/ui/unified-badge'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { getModelLabel, getModelRuntimeSourceLabel } from '@/lib/ai/model-catalog'
 
+type RunArtifact = { type: string; uri: string; name?: string; title?: string | null }
 type Run = {
   id: string
   runner: string
@@ -18,7 +20,27 @@ type Run = {
   ended_at: string | null
   summary: string | null
   created_at: string
-  artifacts?: Array<{ type: string; uri: string; name?: string }> | null
+  artifacts?: RunArtifact[] | null
+  trace?: Record<string, unknown> | null
+}
+
+type RoutingSnapshot = {
+  requested?: {
+    model?: string | null
+    planner_model?: string | null
+    executor_model?: string | null
+    reviewer_model?: string | null
+    fallback_chain?: string[] | null
+  } | null
+  actual?: {
+    planner_model?: string | null
+    executor_model?: string | null
+    reviewer_model?: string | null
+    planner_provider?: string | null
+    executor_provider?: string | null
+    reviewer_provider?: string | null
+    fallback_chain?: string[] | null
+  } | null
 }
 
 type TimelineEvent = {
@@ -62,6 +84,7 @@ export default function RunDetailPage() {
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [executionEvents, setExecutionEvents] = useState<TimelineEvent[]>([])
   const [auditEvents, setAuditEvents] = useState<TimelineEvent[]>([])
+  const [routing, setRouting] = useState<RoutingSnapshot | null>(null)
   const [fetching, setFetching] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -81,6 +104,7 @@ export default function RunDetailPage() {
         const runData = (json.data?.run ?? null) as Run | null
         const artifacts = (json.data?.artifacts ?? []) as Run['artifacts']
         setRun(runData ? { ...runData, artifacts } : null)
+        setRouting((json.data?.routing ?? null) as RoutingSnapshot | null)
         setTimeline((json.data?.timeline ?? []) as TimelineEvent[])
         setExecutionEvents((json.data?.execution_events ?? []) as TimelineEvent[])
         setAuditEvents((json.data?.audit_events ?? []) as TimelineEvent[])
@@ -155,6 +179,61 @@ export default function RunDetailPage() {
           </div>
         </div>
       </div>
+
+      <section className="space-y-5 sm:space-y-6">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            AI Routing
+          </span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        {!routing?.requested && !routing?.actual ? (
+          <UnifiedCard>
+            <p className="text-sm text-muted-foreground">
+              This run did not persist requested vs actual AI routing details.
+            </p>
+          </UnifiedCard>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <UnifiedCard>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Requested</p>
+              <div className="mt-3 space-y-2 text-sm">
+                <p>Default: {getModelLabel(routing?.requested?.model ?? null)}</p>
+                <p>Planner: {getModelLabel(routing?.requested?.planner_model ?? null)}</p>
+                <p>Executor: {getModelLabel(routing?.requested?.executor_model ?? null)}</p>
+                <p>Reviewer: {getModelLabel(routing?.requested?.reviewer_model ?? null)}</p>
+                <p>
+                  Fallbacks: {(routing?.requested?.fallback_chain?.length ?? 0) > 0
+                    ? routing?.requested?.fallback_chain?.map((item) => getModelLabel(item)).join(', ')
+                    : 'None'}
+                </p>
+              </div>
+            </UnifiedCard>
+            <UnifiedCard>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actual</p>
+              <div className="mt-3 space-y-2 text-sm">
+                <p>
+                  Planner: {getModelLabel(routing?.actual?.planner_model ?? null)}
+                  {routing?.actual?.planner_model ? ` · ${getModelRuntimeSourceLabel(routing.actual.planner_model) ?? 'Runtime unknown'}` : ''}
+                </p>
+                <p>
+                  Executor: {getModelLabel(routing?.actual?.executor_model ?? null)}
+                  {routing?.actual?.executor_model ? ` · ${getModelRuntimeSourceLabel(routing.actual.executor_model) ?? 'Runtime unknown'}` : ''}
+                </p>
+                <p>
+                  Reviewer: {getModelLabel(routing?.actual?.reviewer_model ?? null)}
+                  {routing?.actual?.reviewer_model ? ` · ${getModelRuntimeSourceLabel(routing.actual.reviewer_model) ?? 'Runtime unknown'}` : ''}
+                </p>
+                <p>
+                  Fallbacks: {(routing?.actual?.fallback_chain?.length ?? 0) > 0
+                    ? routing?.actual?.fallback_chain?.map((item) => getModelLabel(item)).join(', ')
+                    : 'None'}
+                </p>
+              </div>
+            </UnifiedCard>
+          </div>
+        )}
+      </section>
 
       <section className="space-y-5 sm:space-y-6">
         <div className="flex items-center gap-3">
@@ -256,7 +335,7 @@ export default function RunDetailPage() {
                   rel="noopener noreferrer"
                   className="text-sm text-primary hover:underline truncate"
                 >
-                  {artifact.name ?? artifact.uri}
+                  {artifact.title ?? artifact.name ?? artifact.uri}
                 </a>
               </UnifiedCard>
             ))}

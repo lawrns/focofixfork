@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { getModelLabel, getModelRuntimeSourceLabel } from '@/lib/ai/model-catalog'
+import { useAIHealth } from '@/lib/hooks/use-ai-health'
 
 type ExecutionPolicy = {
   mode: 'auto' | 'semi_auto'
@@ -26,6 +28,8 @@ export function RuntimeProfileCard({
   executionPolicy: ExecutionPolicy
   runtimeProfile: RuntimeProfileSummary
 }) {
+  const { getModelHealth } = useAIHealth()
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -50,9 +54,31 @@ export function RuntimeProfileCard({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="gap-1 bg-blue-500/10 text-blue-700 border-blue-500/20">Plan {runtimeProfile.planModel ?? 'Adaptive'}</Badge>
-          <Badge variant="secondary" className="gap-1 bg-emerald-500/10 text-emerald-700 border-emerald-500/20">Execute {runtimeProfile.executeModel ?? 'Adaptive'}</Badge>
-          <Badge variant="secondary" className="gap-1 bg-amber-500/10 text-amber-700 border-amber-500/20">Review {runtimeProfile.reviewModel ?? 'Adaptive'}</Badge>
+          {[{
+            label: 'Plan',
+            model: runtimeProfile.planModel,
+            className: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+          }, {
+            label: 'Execute',
+            model: runtimeProfile.executeModel,
+            className: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+          }, {
+            label: 'Review',
+            model: runtimeProfile.reviewModel,
+            className: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+          }].map((item) => {
+            const health = getModelHealth(item.model)
+            return (
+              <Badge
+                key={item.label}
+                variant="secondary"
+                className={`gap-1 ${health && !health.available ? 'border-rose-500/30 bg-rose-500/10 text-rose-700' : item.className}`}
+                title={item.model ? `${getModelRuntimeSourceLabel(item.model) ?? 'Adaptive'} · ${health?.reason ?? 'Health unavailable'}` : 'Adaptive routing'}
+              >
+                {item.label} {item.model ? getModelLabel(item.model) : 'Adaptive'}
+              </Badge>
+            )
+          })}
           {runtimeProfile.toolMode && <Badge variant="outline">{runtimeProfile.toolMode.replaceAll('_', ' ')}</Badge>}
           {runtimeProfile.customAgentOverrides > 0 && <Badge variant="outline">{runtimeProfile.customAgentOverrides} agent overrides</Badge>}
         </div>

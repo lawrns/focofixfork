@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
@@ -46,6 +47,23 @@ function statusBorderColor(status: string): string {
   if (status === 'failed' || status === 'error') return 'border-l-rose-500'
   if (status === 'completed') return 'border-l-emerald-500'
   return 'border-l-zinc-500'
+}
+
+function connectionLabel(connectionState: NonNullable<RunCardProps['connectionState']>): string {
+  switch (connectionState) {
+    case 'resolving':
+      return 'Resolving stream'
+    case 'connecting':
+      return 'Connecting stream'
+    case 'live':
+      return 'Live stream attached'
+    case 'ended':
+      return 'Stream ended'
+    case 'unavailable':
+      return 'No live stream'
+    default:
+      return 'Waiting for updates'
+  }
 }
 
 function ElapsedTimer({ since }: { since?: string | null }) {
@@ -132,10 +150,16 @@ export const RunCard = forwardRef<HTMLDivElement, RunCardProps>(function RunCard
         <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex-shrink-0">
           {run.runner || 'agent'}
         </Badge>
+        <Badge variant="secondary" className="hidden md:inline-flex text-[10px] px-1.5 py-0 flex-shrink-0">
+          {connectionLabel(connectionState)}
+        </Badge>
         <span className="text-xs text-muted-foreground truncate flex-1">
           {run.summary || run.task_id || 'Task'}
         </span>
         <ElapsedTimer since={run.started_at || run.created_at || null} />
+        <Link href={`/runs/${run.id}`} className="text-[10px] text-[color:var(--foco-teal)] hover:underline">
+          Details
+        </Link>
         {isRunning && onStop && (
           <Button
             variant="ghost"
@@ -159,8 +183,8 @@ export const RunCard = forwardRef<HTMLDivElement, RunCardProps>(function RunCard
               {connectionState === 'resolving' || connectionState === 'connecting'
                 ? 'Connecting to execution stream...'
                 : connectionState === 'unavailable'
-                  ? 'Stream unavailable for this run.'
-                  : 'Awaiting output...'}
+                  ? 'Run is saved, but no live stream is attached yet.'
+                  : 'Run is saved. Waiting for execution updates...'}
             </p>
           ) : (
             terminalLines.map((line) => (
@@ -172,10 +196,12 @@ export const RunCard = forwardRef<HTMLDivElement, RunCardProps>(function RunCard
               </div>
             ))
           )}
-          {isRunning && (
-            <div className="mt-1 text-zinc-500">
-              <span className="mr-2 text-emerald-400">[LIVE]</span>
-              <span className="animate-pulse">&#9647;</span>
+          {(isRunning || connectionState !== 'idle') && (
+            <div className="mt-2 border-t border-zinc-800 pt-2 text-[10px] text-zinc-500">
+              <span className={cn('mr-2', connectionState === 'live' ? 'text-emerald-400' : 'text-blue-400')}>
+                [{connectionState === 'live' ? 'STREAM' : 'STATE'}]
+              </span>
+              <span>{connectionLabel(connectionState)}</span>
             </div>
           )}
           <div ref={sentinelRef} />

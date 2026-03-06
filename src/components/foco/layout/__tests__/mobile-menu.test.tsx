@@ -68,8 +68,8 @@ describe('MobileMenu', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Dashboard')).toBeInTheDocument()
-      expect(screen.getByText('My Tasks')).toBeInTheDocument()
-      expect(screen.getByText('Command Center')).toBeInTheDocument()
+      expect(screen.getAllByText('Projects').length).toBeGreaterThan(0)
+      expect(screen.getByText('Dispatch')).toBeInTheDocument()
       expect(screen.getAllByText('Projects').length).toBeGreaterThan(0)
       expect(screen.getByText('Policies')).toBeInTheDocument()
     })
@@ -81,9 +81,8 @@ describe('MobileMenu', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')
-      expect(screen.getByRole('link', { name: /my tasks/i })).toHaveAttribute('href', '/my-work')
-      expect(screen.getByRole('link', { name: /command center/i })).toHaveAttribute('href', '/empire/command')
-      expect(screen.getByRole('link', { name: /^projects$/i })).toHaveAttribute('href', '/empire/missions')
+      expect(screen.getAllByRole('link', { name: /^projects$/i })[0]).toHaveAttribute('href', '/projects')
+      expect(screen.getByRole('link', { name: /dispatch/i })).toHaveAttribute('href', '/dashboard?view=dispatch')
       expect(screen.getByRole('link', { name: /policies/i })).toHaveAttribute('href', '/policies')
     })
   })

@@ -51,7 +51,7 @@ describe('Command Palette - Core Navigation', () => {
 
       await user.click(secondButton);
 
-      expect(mockPush).toHaveBeenCalledWith('/empire/command');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard?view=dispatch');
     });
 
     it('should navigate to runs when clicking runs button', async () => {

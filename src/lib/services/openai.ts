@@ -50,7 +50,7 @@ export class OpenAIService {
                        process.env.NEXT_PUBLIC_VERCEL_ENV === 'production'
 
     // Determine AI provider
-    const provider = (process.env.AI_PROVIDER as AIProviderType) || 'glm'
+    const provider = config?.provider || (process.env.AI_PROVIDER as AIProviderType) || 'glm'
     let apiKey = ''
     let baseURL: string | undefined
     let model = 'gpt-4o-mini'
@@ -84,7 +84,7 @@ export class OpenAIService {
       console.warn(`[OpenAIService] AI API key not configured for provider: ${provider} - using mock responses`)
     }
 
-    this.config = {
+    const mergedConfig: AIConfig = {
       provider,
       apiKey,
       model,
@@ -94,6 +94,23 @@ export class OpenAIService {
       baseURL,
       ...config
     }
+
+    if (mergedConfig.provider === 'openai') {
+      mergedConfig.baseURL = config?.baseURL
+      mergedConfig.apiKey = config?.apiKey || process.env.OPENAI_API_KEY || mergedConfig.apiKey
+      mergedConfig.model = config?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || mergedConfig.model
+      mergedConfig.chatModel = config?.chatModel || process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || mergedConfig.chatModel
+    } else if (mergedConfig.provider === 'deepseek') {
+      mergedConfig.baseURL = config?.baseURL || process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
+      mergedConfig.apiKey = config?.apiKey || process.env.DEEPSEEK_API_KEY || mergedConfig.apiKey
+    } else if (mergedConfig.provider === 'glm') {
+      mergedConfig.baseURL = config?.baseURL || 'https://api.z.ai/api/coding/paas/v4/'
+      mergedConfig.apiKey = config?.apiKey || process.env.Z_AI_API_KEY || process.env.GLM_API_KEY || mergedConfig.apiKey
+      mergedConfig.model = config?.model || process.env.GLM_MODEL || mergedConfig.model
+      mergedConfig.chatModel = config?.chatModel || mergedConfig.model
+    }
+
+    this.config = mergedConfig
 
     // Only create OpenAI client if we have an API key
     if (this.config.apiKey) {

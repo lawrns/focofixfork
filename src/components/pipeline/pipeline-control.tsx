@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -21,7 +22,42 @@ import { usePlanningAgents } from '@/components/planning-agents/use-planning-age
 import { PipelineConfigPanel } from './components/pipeline-config-panel'
 import { PipelinePhaseSection } from './components/pipeline-phase-section'
 import type { PhaseCardStatus } from './phase-card'
-import { useUserModelPreferences } from '@/lib/stores/user-model-preferences'
+import type { PipelineFallbackEvent, PipelineRunnerKind } from '@/lib/pipeline/types'
+
+type PhaseKey = 'plan' | 'execute' | 'review'
+
+type PhaseRuntimeMeta = {
+  requestedModel: string | null
+  resolvedModel: string | null
+  actualModel: string | null
+  runner: PipelineRunnerKind | null
+  error: string | null
+  fallbacks: PipelineFallbackEvent[]
+}
+
+type WorkspacePipelineDefaults = {
+  plan: string
+  execute: string
+  review: string
+  planFallback: string[]
+  executeFallback: string[]
+  reviewFallback: string[]
+}
+
+const DEFAULT_PIPELINE_DEFAULTS: WorkspacePipelineDefaults = {
+  plan: 'gpt-5.4-medium',
+  execute: 'kimi-k2-standard',
+  review: 'gpt-5.4-medium',
+  planFallback: [],
+  executeFallback: [],
+  reviewFallback: [],
+}
+
+const EMPTY_PHASE_META = (): Record<PhaseKey, PhaseRuntimeMeta> => ({
+  plan: { requestedModel: null, resolvedModel: null, actualModel: null, runner: null, error: null, fallbacks: [] },
+  execute: { requestedModel: null, resolvedModel: null, actualModel: null, runner: null, error: null, fallbacks: [] },
+  review: { requestedModel: null, resolvedModel: null, actualModel: null, runner: null, error: null, fallbacks: [] },
+})
 
 const COMPLEXITY_KEYWORDS = [
   /\.(sql|migration|schema)/i,
@@ -58,8 +94,10 @@ function estimateConfidence(run: PipelineRun): number {
   return 0
 }
 
-function phaseCardStatus(phase: 'plan' | 'execute' | 'review', s: PipelineStatus): PhaseCardStatus {
-  if (s === 'failed' || s === 'cancelled') return 'failed'
+function phaseCardStatus(phase: PhaseKey, s: PipelineStatus | null, phaseMeta: Record<PhaseKey, PhaseRuntimeMeta>): PhaseCardStatus {
+  if (phaseMeta[phase].error) return 'failed'
+  if (s === 'cancelled') return 'idle'
+  if (!s) return 'idle'
   const doneSets: Record<string, PipelineStatus[]> = {
     plan: ['executing', 'reviewing', 'complete'],
     execute: ['reviewing', 'complete'],
@@ -99,16 +137,11 @@ const emptyPhaseStream = (): PhaseStreamState => ({
 })
 
 export function PipelineControl() {
-  const {
-    defaultModel,
-    plannerModel: preferredPlannerModel,
-    executorModel: preferredExecutorModel,
-    reviewerModel: preferredReviewerModel,
-  } = useUserModelPreferences()
   const [task, setTask] = useState('')
-  const [plannerModel, setPlannerModel] = useState(preferredPlannerModel ?? defaultModel ?? 'gpt-5.4-medium')
-  const [executorModel, setExecutorModel] = useState(preferredExecutorModel ?? defaultModel ?? 'kimi-k2-standard')
-  const [reviewerModel, setReviewerModel] = useState(preferredReviewerModel ?? defaultModel ?? 'gpt-5.4-medium')
+  const [workspaceDefaults, setWorkspaceDefaults] = useState<WorkspacePipelineDefaults>(DEFAULT_PIPELINE_DEFAULTS)
+  const [plannerModel, setPlannerModel] = useState(DEFAULT_PIPELINE_DEFAULTS.plan)
+  const [executorModel, setExecutorModel] = useState(DEFAULT_PIPELINE_DEFAULTS.execute)
+  const [reviewerModel, setReviewerModel] = useState(DEFAULT_PIPELINE_DEFAULTS.review)
   const [autoReview, setAutoReview] = useState(false)
   const [handbookSlug, setHandbookSlug] = useState('general')
   const [agentPickerOpen, setAgentPickerOpen] = useState(false)
@@ -128,10 +161,14 @@ export function PipelineControl() {
   const [totalCostUsd, setTotalCostUsd] = useState(0)
   const [hasLiveTokens, setHasLiveTokens] = useState(false)
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null)
+  const [phaseMeta, setPhaseMeta] = useState<Record<PhaseKey, PhaseRuntimeMeta>>(EMPTY_PHASE_META)
+  const [workspacePolicyLoaded, setWorkspacePolicyLoaded] = useState(false)
 
   const abortRef = useRef<AbortController | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const preloadedRunIdRef = useRef<string | null>(null)
 
+  const searchParams = useSearchParams()
   const { workspaceId } = useCurrentWorkspace()
   const {
     agents: availableAgents,
@@ -144,21 +181,45 @@ export function PipelineControl() {
 
   const complexHint = task.trim().length > 20 && detectComplexity(task)
   const triggerHint = detectTrigger(task)
+  const plannerOverrideActive = workspacePolicyLoaded && plannerModel !== workspaceDefaults.plan
+  const executorOverrideActive = workspacePolicyLoaded && executorModel !== workspaceDefaults.execute
+  const reviewerOverrideActive = workspacePolicyLoaded && reviewerModel !== workspaceDefaults.review
 
   useEffect(() => {
-    if (preferredPlannerModel) setPlannerModel(preferredPlannerModel)
-    else if (defaultModel) setPlannerModel(defaultModel)
-  }, [defaultModel, preferredPlannerModel])
+    let cancelled = false
 
-  useEffect(() => {
-    if (preferredExecutorModel) setExecutorModel(preferredExecutorModel)
-    else if (defaultModel) setExecutorModel(defaultModel)
-  }, [defaultModel, preferredExecutorModel])
+    async function loadPolicy() {
+      if (!workspaceId) return
+      try {
+        const response = await fetch(`/api/workspaces/${workspaceId}/ai-policy`)
+        if (!response.ok) return
+        const json = await response.json()
+        const policy = json?.data ?? json
+        const nextDefaults: WorkspacePipelineDefaults = {
+          plan: policy?.model_profiles?.pipeline_plan?.model ?? DEFAULT_PIPELINE_DEFAULTS.plan,
+          execute: policy?.model_profiles?.pipeline_execute?.model ?? DEFAULT_PIPELINE_DEFAULTS.execute,
+          review: policy?.model_profiles?.pipeline_review?.model ?? DEFAULT_PIPELINE_DEFAULTS.review,
+          planFallback: policy?.model_profiles?.pipeline_plan?.fallback_chain ?? [],
+          executeFallback: policy?.model_profiles?.pipeline_execute?.fallback_chain ?? [],
+          reviewFallback: policy?.model_profiles?.pipeline_review?.fallback_chain ?? [],
+        }
+        if (!cancelled) {
+          setWorkspaceDefaults(nextDefaults)
+          setPlannerModel(nextDefaults.plan)
+          setExecutorModel(nextDefaults.execute)
+          setReviewerModel(nextDefaults.review)
+          setWorkspacePolicyLoaded(true)
+        }
+      } catch {
+        if (!cancelled) setWorkspacePolicyLoaded(true)
+      }
+    }
 
-  useEffect(() => {
-    if (preferredReviewerModel) setReviewerModel(preferredReviewerModel)
-    else if (defaultModel) setReviewerModel(defaultModel)
-  }, [defaultModel, preferredReviewerModel])
+    void loadPolicy()
+    return () => {
+      cancelled = true
+    }
+  }, [workspaceId])
 
   useEffect(() => {
     if (!serverStartMs || pipelineStatus === 'complete' || pipelineStatus === 'failed') return
@@ -190,6 +251,14 @@ export function PipelineControl() {
       case 'run_start':
         setServerStartMs(event.started_at)
         break
+      case 'run_profile':
+        setPhaseMeta((prev) => ({
+          ...prev,
+          plan: { ...prev.plan, requestedModel: event.requested.plan, resolvedModel: event.resolved.plan },
+          execute: { ...prev.execute, requestedModel: event.requested.execute, resolvedModel: event.resolved.execute },
+          review: { ...prev.review, requestedModel: event.requested.review, resolvedModel: event.resolved.review },
+        }))
+        break
       case 'phase_start': {
         const statusMap: Record<string, PipelineStatus> = {
           plan: 'planning',
@@ -199,8 +268,38 @@ export function PipelineControl() {
         setPipelineStatus(statusMap[event.phase] ?? 'planning')
         const setter = event.phase === 'plan' ? setPlanStream : event.phase === 'execute' ? setExecStream : setReviewStream
         setter({ ...emptyPhaseStream(), phaseStartMs: Date.now() })
+        setPhaseMeta((prev) => ({
+          ...prev,
+          [event.phase]: {
+            ...prev[event.phase],
+            error: null,
+            fallbacks: [],
+          },
+        }))
         break
       }
+      case 'phase_routing': {
+        setPhaseMeta((prev) => ({
+          ...prev,
+          [event.phase]: {
+            ...prev[event.phase],
+            requestedModel: event.requested_model,
+            resolvedModel: event.resolved_model,
+            actualModel: event.actual_model,
+            runner: event.runner,
+          },
+        }))
+        break
+      }
+      case 'phase_fallback':
+        setPhaseMeta((prev) => ({
+          ...prev,
+          [event.phase]: {
+            ...prev[event.phase],
+            fallbacks: [...prev[event.phase].fallbacks, event.fallback],
+          },
+        }))
+        break
       case 'text_delta': {
         const setter = event.phase === 'plan' ? setPlanStream : event.phase === 'execute' ? setExecStream : setReviewStream
         setter((prev) => ({ ...prev, text: prev.text + event.text, tokensOut: prev.tokensOut + 1 }))
@@ -215,6 +314,13 @@ export function PipelineControl() {
         setHasLiveTokens(true)
         const setter = event.phase === 'plan' ? setPlanStream : event.phase === 'execute' ? setExecStream : setReviewStream
         setter((prev) => ({ ...prev, tokensIn: event.input_tokens, tokensOut: event.output_tokens }))
+        setPhaseMeta((prev) => ({
+          ...prev,
+          [event.phase]: {
+            ...prev[event.phase],
+            actualModel: event.model,
+          },
+        }))
         setTotalTokens((prev) => prev + event.input_tokens + event.output_tokens)
         setTotalCostUsd((prev) => prev + event.cost_usd)
         break
@@ -242,6 +348,14 @@ export function PipelineControl() {
         break
       }
       case 'phase_error':
+        setPhaseMeta((prev) => ({
+          ...prev,
+          [event.phase]: {
+            ...prev[event.phase],
+            error: event.message,
+          },
+        }))
+        setPipelineStatus('failed')
         addFeed(event.phase as FeedEntry['phase'], `Error: ${event.message}`)
         break
       case 'activity':
@@ -270,6 +384,32 @@ export function PipelineControl() {
         const run = json.data.run as PipelineRun
         setCurrentRun(run)
         setPipelineStatus(run.status)
+        setPhaseMeta({
+          plan: {
+            requestedModel: run.planner_model,
+            resolvedModel: run.planner_model,
+            actualModel: run.plan_model_actual ?? null,
+            runner: null,
+            error: run.status === 'failed' && !run.plan_result ? 'Plan failed' : null,
+            fallbacks: run.fallbacks_triggered?.filter((item) => item.phase === 'plan') ?? [],
+          },
+          execute: {
+            requestedModel: run.executor_model,
+            resolvedModel: run.executor_model,
+            actualModel: run.execute_model_actual ?? null,
+            runner: null,
+            error: run.status === 'failed' && !!run.plan_result && !run.execution_result ? 'Execution failed' : null,
+            fallbacks: run.fallbacks_triggered?.filter((item) => item.phase === 'execute') ?? [],
+          },
+          review: {
+            requestedModel: run.reviewer_model,
+            resolvedModel: run.reviewer_model,
+            actualModel: run.review_model_actual ?? null,
+            runner: null,
+            error: run.status === 'failed' && !!run.execution_result && !run.review_result ? 'Review failed' : null,
+            fallbacks: run.fallbacks_triggered?.filter((item) => item.phase === 'review') ?? [],
+          },
+        })
 
         const total = (run.planner_tokens_in + run.planner_tokens_out) +
           (run.executor_tokens_in + run.executor_tokens_out) +
@@ -291,6 +431,13 @@ export function PipelineControl() {
     }
   }, [fetchHistory])
 
+  useEffect(() => {
+    const runId = searchParams?.get('run_id')
+    if (!runId || preloadedRunIdRef.current === runId) return
+    preloadedRunIdRef.current = runId
+    void fetchRun(runId)
+  }, [fetchRun, searchParams])
+
   const startPolling = useCallback((runId: string) => {
     if (pollRef.current) clearInterval(pollRef.current)
     pollRef.current = setInterval(() => void fetchRun(runId), 3000)
@@ -311,7 +458,8 @@ export function PipelineControl() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task_description: task,
-          planner_model: plannerModel,
+          planner_model: plannerOverrideActive ? plannerModel : null,
+          planner_fallback_chain: plannerOverrideActive ? workspaceDefaults.planFallback : undefined,
           selected_agents: selectedPlanningAgents,
         }),
       })
@@ -325,7 +473,7 @@ export function PipelineControl() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fallback failed too')
     }
-  }, [addFeed, plannerModel, selectedPlanningAgents, startPolling, task])
+  }, [addFeed, plannerModel, plannerOverrideActive, selectedPlanningAgents, startPolling, task, workspaceDefaults.planFallback])
 
   const startPipeline = useCallback(async () => {
     if (!task.trim()) return
@@ -340,6 +488,7 @@ export function PipelineControl() {
     setPlanStream(emptyPhaseStream())
     setExecStream(emptyPhaseStream())
     setReviewStream(emptyPhaseStream())
+    setPhaseMeta(EMPTY_PHASE_META())
     setTotalTokens(0)
     setTotalCostUsd(0)
     setHasLiveTokens(false)
@@ -389,9 +538,12 @@ export function PipelineControl() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task_description: task,
-          planner_model: plannerModel,
-          executor_model: executorModel,
-          reviewer_model: reviewerModel,
+          planner_model: plannerOverrideActive ? plannerModel : null,
+          planner_fallback_chain: plannerOverrideActive ? workspaceDefaults.planFallback : undefined,
+          executor_model: executorOverrideActive ? executorModel : null,
+          executor_fallback_chain: executorOverrideActive ? workspaceDefaults.executeFallback : undefined,
+          reviewer_model: reviewerOverrideActive ? reviewerModel : null,
+          reviewer_fallback_chain: reviewerOverrideActive ? workspaceDefaults.reviewFallback : undefined,
           auto_review: autoReview,
           handbook_slug: handbookSlug || 'general',
           selected_agents: selectedPlanningAgents,
@@ -454,6 +606,10 @@ export function PipelineControl() {
     handleSSEEvent,
     handbookSlug,
     plannerModel,
+    plannerOverrideActive,
+    executorOverrideActive,
+    reviewerOverrideActive,
+    workspaceDefaults,
     reviewerModel,
     selectedPlanningAgents,
     startPipelineFallback,
@@ -469,7 +625,11 @@ export function PipelineControl() {
       const res = await fetch('/api/pipeline/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ run_id: currentRun.id, executor_model: executorModel }),
+        body: JSON.stringify({
+          run_id: currentRun.id,
+          executor_model: executorOverrideActive ? executorModel : null,
+          executor_fallback_chain: executorOverrideActive ? workspaceDefaults.executeFallback : undefined,
+        }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error?.message ?? 'Execute failed')
@@ -477,7 +637,7 @@ export function PipelineControl() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     }
-  }, [addFeed, currentRun?.id, executorModel, startPolling])
+  }, [addFeed, currentRun?.id, executorModel, executorOverrideActive, startPolling, workspaceDefaults.executeFallback])
 
   const triggerReview = useCallback(async () => {
     if (!currentRun?.id) return
@@ -490,7 +650,8 @@ export function PipelineControl() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           run_id: currentRun.id,
-          reviewer_model: reviewerModel,
+          reviewer_model: reviewerOverrideActive ? reviewerModel : null,
+          reviewer_fallback_chain: reviewerOverrideActive ? workspaceDefaults.reviewFallback : undefined,
           handbook_slug: handbookSlug || 'general',
         }),
       })
@@ -500,7 +661,7 @@ export function PipelineControl() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     }
-  }, [addFeed, currentRun?.id, handbookSlug, reviewerModel, startPolling])
+  }, [addFeed, currentRun?.id, handbookSlug, reviewerModel, reviewerOverrideActive, startPolling, workspaceDefaults.reviewFallback])
 
   const cancelPipeline = useCallback(() => {
     if (abortRef.current) {
@@ -591,9 +752,9 @@ export function PipelineControl() {
   const graph = (
     <OrchestrationGraph
       status={pipelineStatus}
-      plannerModel={plannerModel}
-      executorModel={executorModel}
-      reviewerModel={reviewerModel}
+      plannerModel={phaseMeta.plan.actualModel ?? phaseMeta.plan.resolvedModel ?? plannerModel}
+      executorModel={phaseMeta.execute.actualModel ?? phaseMeta.execute.resolvedModel ?? executorModel}
+      reviewerModel={phaseMeta.review.actualModel ?? phaseMeta.review.resolvedModel ?? reviewerModel}
       hasTask={task.trim().length > 0}
     />
   )
@@ -611,6 +772,32 @@ export function PipelineControl() {
           onSelect={(run) => {
             setCurrentRun(run)
             setPipelineStatus(run.status)
+            setPhaseMeta({
+              plan: {
+                requestedModel: run.planner_model,
+                resolvedModel: run.planner_model,
+                actualModel: run.plan_model_actual ?? null,
+                runner: null,
+                error: run.status === 'failed' && !run.plan_result ? 'Plan failed' : null,
+                fallbacks: run.fallbacks_triggered?.filter((item) => item.phase === 'plan') ?? [],
+              },
+              execute: {
+                requestedModel: run.executor_model,
+                resolvedModel: run.executor_model,
+                actualModel: run.execute_model_actual ?? null,
+                runner: null,
+                error: run.status === 'failed' && !!run.plan_result && !run.execution_result ? 'Execution failed' : null,
+                fallbacks: run.fallbacks_triggered?.filter((item) => item.phase === 'execute') ?? [],
+              },
+              review: {
+                requestedModel: run.reviewer_model,
+                resolvedModel: run.reviewer_model,
+                actualModel: run.review_model_actual ?? null,
+                runner: null,
+                error: run.status === 'failed' && !!run.execution_result && !run.review_result ? 'Review failed' : null,
+                fallbacks: run.fallbacks_triggered?.filter((item) => item.phase === 'review') ?? [],
+              },
+            })
             const total = (run.planner_tokens_in + run.planner_tokens_out) +
               (run.executor_tokens_in + run.executor_tokens_out) +
               (run.reviewer_tokens_in + run.reviewer_tokens_out)
@@ -673,13 +860,13 @@ export function PipelineControl() {
           totalCostUsd={totalCostUsd}
           hasLiveTokens={hasLiveTokens}
           currentRun={currentRun}
-          plannerModel={plannerModel}
-          executorModel={executorModel}
-          reviewerModel={reviewerModel}
+          plannerModel={phaseMeta.plan.actualModel ?? phaseMeta.plan.resolvedModel ?? plannerModel}
+          executorModel={phaseMeta.execute.actualModel ?? phaseMeta.execute.resolvedModel ?? executorModel}
+          reviewerModel={phaseMeta.review.actualModel ?? phaseMeta.review.resolvedModel ?? reviewerModel}
           planStream={planStream}
           execStream={execStream}
           reviewStream={reviewStream}
-          phaseCardStatus={phaseCardStatus}
+          phaseCardStatus={(phase, status) => phaseCardStatus(phase, status, phaseMeta)}
           getPhaseThp={getPhaseThp}
           canExecute={canExecute}
           triggerExecute={() => void triggerExecute()}
@@ -688,6 +875,7 @@ export function PipelineControl() {
           handbookSlug={handbookSlug}
           setHandbookSlug={setHandbookSlug}
           feedEntries={feedEntries}
+          phaseMeta={phaseMeta}
         />
         <TerminalSidebar
           feedEntries={feedEntries}

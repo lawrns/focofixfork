@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DiagramContainer } from '@/components/command-center/diagram/diagram-container'
+import { NightAutonomyCard } from '@/components/command-center/orchestrator/night-autonomy-card'
 import { AgentDetailSheet } from '@/components/command-center/panels/agent-detail-sheet'
 import { CreateMissionDialog } from '@/components/command-center/dialogs/create-mission-dialog'
 import { AgentTable } from '@/components/command-center/tables/agent-table'
@@ -823,10 +824,11 @@ export function CommandCenterClient() {
           <MobileCommandView />
         </div>
 
-        <Tabs defaultValue="agents">
+        <Tabs defaultValue={searchParams?.get('tab') ?? 'agents'}>
           <TabsList>
             <TabsTrigger value="agents">Agents</TabsTrigger>
             <TabsTrigger value="missions">Missions</TabsTrigger>
+            <TabsTrigger value="morning">Morning</TabsTrigger>
             <TabsTrigger value="runs">Runs</TabsTrigger>
           </TabsList>
 
@@ -836,6 +838,10 @@ export function CommandCenterClient() {
 
           <TabsContent value="missions" className="mt-3">
             <MissionTable />
+          </TabsContent>
+
+          <TabsContent value="morning" className="mt-3">
+            <NightAutonomyCard />
           </TabsContent>
 
           <TabsContent value="runs" className="mt-3">

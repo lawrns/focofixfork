@@ -113,6 +113,19 @@ export interface ProjectReportRequest {
 
 export type PipelineStatus = 'planning' | 'executing' | 'reviewing' | 'complete' | 'failed' | 'cancelled'
 
+export type PipelineRunnerKind = 'clawdbot_stream' | 'clawdbot_async' | 'in_app_direct'
+
+export interface PipelineFallbackEvent {
+  phase: PipelinePhase
+  kind: 'runner_switch' | 'model_remap'
+  from: string
+  to: string
+  reason: string
+  at: string
+}
+
+export type PipelinePhaseStatus = 'idle' | 'active' | 'done' | 'failed' | 'skipped' | 'cancelled'
+
 export interface PipelineRun {
   id: string
   task_description: string
@@ -124,7 +137,7 @@ export interface PipelineRun {
   plan_model_actual?: string | null
   execute_model_actual?: string | null
   review_model_actual?: string | null
-  fallbacks_triggered?: unknown[]
+  fallbacks_triggered?: PipelineFallbackEvent[]
   status: PipelineStatus
   plan_result: PlanResult | null
   execution_result: ExecutionResult | null
@@ -157,7 +170,28 @@ export interface PipelineRun {
 
 export type PipelineSSEEvent =
   | { type: 'run_start'; run_id: string; started_at: number }
+  | {
+      type: 'run_profile'
+      requested: { plan: string | null; execute: string | null; review: string | null }
+      resolved: { plan: string; execute: string; review: string }
+      fallback_chain: { plan: string[]; execute: string[]; review: string[] }
+      provider_chain?: string[]
+      routing_profile_id?: string | null
+    }
   | { type: 'phase_start'; phase: PipelinePhase; model: string }
+  | {
+      type: 'phase_routing'
+      phase: PipelinePhase
+      requested_model: string | null
+      resolved_model: string
+      actual_model: string | null
+      runner: PipelineRunnerKind
+    }
+  | {
+      type: 'phase_fallback'
+      phase: PipelinePhase
+      fallback: PipelineFallbackEvent
+    }
   | { type: 'text_delta'; phase: PipelinePhase; text: string }
   | { type: 'ttft'; phase: PipelinePhase; ms: number }
   | { type: 'usage'; phase: PipelinePhase; input_tokens: number; output_tokens: number; cost_usd: number; model: string }

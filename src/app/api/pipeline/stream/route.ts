@@ -15,9 +15,10 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { PIPELINE_PROMPTS } from '@/lib/pipeline/dispatcher'
 import { buildPlanContext, buildExecuteContext, buildReviewContext } from '@/lib/pipeline/context-builder'
 import { listHandbooks } from '@/lib/handbook/handbook-loader'
-import type { PlanResult, ExecutionResult, ReviewReport, PipelinePhase, ProjectReportRequest } from '@/lib/pipeline/types'
+import type { PlanResult, ExecutionResult, ReviewReport, PipelineFallbackEvent, PipelinePhase, ProjectReportRequest } from '@/lib/pipeline/types'
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 import { persistProjectReport } from '@/lib/project-reports'
+import { runPhaseDirect, parsePlanResult, parseExecutionResult, parseReviewResult } from '@/lib/pipeline/runtime'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min max for streaming
@@ -53,8 +54,11 @@ export async function POST(req: NextRequest) {
   const {
     task_description,
     planner_model: requested_planner_model = null,
+    planner_fallback_chain: requested_planner_fallback_chain = null,
     executor_model: requested_executor_model = null,
+    executor_fallback_chain: requested_executor_fallback_chain = null,
     reviewer_model: requested_reviewer_model = null,
+    reviewer_fallback_chain: requested_reviewer_fallback_chain = null,
     auto_review = false,
     handbook_slug = 'general',
     project_id = null,
@@ -83,6 +87,7 @@ export async function POST(req: NextRequest) {
       workspaceId,
       useCase: 'pipeline_plan',
       requestedModel: requested_planner_model,
+      requestedFallbackChain: Array.isArray(requested_planner_fallback_chain) ? requested_planner_fallback_chain : undefined,
     }),
     resolveAIExecutionProfileFromWorkspace({
       supabase,
@@ -90,6 +95,7 @@ export async function POST(req: NextRequest) {
       workspaceId,
       useCase: 'pipeline_execute',
       requestedModel: requested_executor_model,
+      requestedFallbackChain: Array.isArray(requested_executor_fallback_chain) ? requested_executor_fallback_chain : undefined,
     }),
     resolveAIExecutionProfileFromWorkspace({
       supabase,
@@ -97,6 +103,7 @@ export async function POST(req: NextRequest) {
       workspaceId,
       useCase: 'pipeline_review',
       requestedModel: requested_reviewer_model,
+      requestedFallbackChain: Array.isArray(requested_reviewer_fallback_chain) ? requested_reviewer_fallback_chain : undefined,
     }),
   ])
   const planner_model = plannerProfile.model
@@ -154,6 +161,30 @@ export async function POST(req: NextRequest) {
       // ── Run Start ───────────────────────────────────────────────────────
       emit({ type: 'run_start', run_id: runId, started_at: pipelineStartMs })
       emit({
+        type: 'run_profile',
+        requested: {
+          plan: requested_planner_model,
+          execute: requested_executor_model,
+          review: requested_reviewer_model,
+        },
+        resolved: {
+          plan: planner_model,
+          execute: executor_model,
+          review: reviewer_model,
+        },
+        fallback_chain: {
+          plan: plannerProfile.fallback_chain,
+          execute: executorProfile.fallback_chain,
+          review: reviewerProfile.fallback_chain,
+        },
+        provider_chain: Array.from(new Set([
+          ...plannerProfile.fallback_chain,
+          ...executorProfile.fallback_chain,
+          ...reviewerProfile.fallback_chain,
+        ])),
+        routing_profile_id: plannerProfile.routing_profile_id ?? null,
+      })
+      emit({
         type: 'activity',
         phase: 'system',
         message: `Routing profile ${plannerProfile.routing_profile_id ?? 'env'}: ${planner_model} -> ${executor_model} -> ${reviewer_model}`,
@@ -162,6 +193,7 @@ export async function POST(req: NextRequest) {
 
       // ── Phase 1: Planning (streaming via ClawdBot) ──────────────────────
       emit({ type: 'phase_start', phase: 'plan', model: planner_model })
+      emit({ type: 'phase_routing', phase: 'plan', requested_model: requested_planner_model, resolved_model: planner_model, actual_model: planner_model, runner: 'clawdbot_stream' })
       emit({ type: 'activity', phase: 'plan', message: `Dispatching to ${planner_model}` })
 
       const planContext = buildPlanContext(task_description, {
@@ -189,6 +221,7 @@ export async function POST(req: NextRequest) {
       let planModelActual = planner_model
       let planSuccess = false
       let persistedReviewResult: ReviewReport | null = null
+      let planFallbackEvents: PipelineFallbackEvent[] = []
 
       try {
         // Try streaming endpoint first
@@ -243,7 +276,7 @@ export async function POST(req: NextRequest) {
               } else if (event.type === 'ttft') {
                 planTtftMs = event.ms
                 emit({ type: 'ttft', phase: 'plan', ms: event.ms })
-                emit({ type: 'activity', phase: 'plan', message: `Claude responded (TTFT: ${event.ms}ms)` })
+                emit({ type: 'activity', phase: 'plan', message: `${event.model ?? planner_model} responded (TTFT: ${event.ms}ms)` })
               } else if (event.type === 'usage') {
                 planTokensIn = event.input_tokens
                 planTokensOut = event.output_tokens
@@ -316,46 +349,67 @@ export async function POST(req: NextRequest) {
             }
           }
         } catch (fallbackErr) {
-          const msg = fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error'
-          emit({ type: 'phase_error', phase: 'plan', message: msg })
-          emit({ type: 'activity', phase: 'system', message: `Planning failed: ${msg}` })
-          await supabaseAdmin.from('pipeline_runs').update({ status: 'failed' }).eq('id', runId)
-          emit({ type: 'pipeline_error', message: msg })
-          controller.close()
-          return
+          const direct = await runPhaseDirect<PlanResult>({
+            phase: 'plan',
+            requestedModel: requested_planner_model ?? planner_model,
+            resolvedModel: planner_model,
+            fallbackChain: plannerProfile.fallback_chain,
+            taskDescription: task_description,
+            context: planContext,
+          })
+
+          planFallbackEvents = direct.fallbackEvents
+          for (const fallback of direct.fallbackEvents) {
+            emit({ type: 'phase_fallback', phase: 'plan', fallback })
+            emit({ type: 'activity', phase: 'plan', message: fallback.reason })
+          }
+
+          if (!direct.ok) {
+            const msg = direct.error ?? (fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error')
+            emit({ type: 'phase_error', phase: 'plan', message: msg })
+            emit({ type: 'activity', phase: 'system', message: `Planning failed: ${msg}` })
+            await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
+            emit({ type: 'pipeline_error', message: msg })
+            controller.close()
+            return
+          }
+
+          planOutput = direct.output ?? ''
+          planElapsedMs = direct.elapsedMs
+          planModelActual = direct.actualModel ?? planner_model
+          planSuccess = true
         }
       }
 
       if (!planSuccess) {
-        emit({ type: 'phase_error', phase: 'plan', message: 'No plan output received' })
-        await supabaseAdmin.from('pipeline_runs').update({ status: 'failed' }).eq('id', runId)
-        emit({ type: 'pipeline_error', message: 'Planning phase failed' })
-        controller.close()
-        return
+        const direct = await runPhaseDirect<PlanResult>({
+          phase: 'plan',
+          requestedModel: requested_planner_model ?? planner_model,
+          resolvedModel: planner_model,
+          fallbackChain: plannerProfile.fallback_chain,
+          taskDescription: task_description,
+          context: planContext,
+        })
+        planFallbackEvents = direct.fallbackEvents
+        for (const fallback of direct.fallbackEvents) {
+          emit({ type: 'phase_fallback', phase: 'plan', fallback })
+          emit({ type: 'activity', phase: 'plan', message: fallback.reason })
+        }
+        if (!direct.ok) {
+          emit({ type: 'phase_error', phase: 'plan', message: direct.error ?? 'No plan output received' })
+          await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
+          emit({ type: 'pipeline_error', message: direct.error ?? 'Planning phase failed' })
+          controller.close()
+          return
+        }
+        planOutput = direct.output ?? ''
+        planElapsedMs = direct.elapsedMs
+        planModelActual = direct.actualModel ?? planner_model
+        planSuccess = true
       }
 
       // Parse plan result
-      let planResult: PlanResult | null = null
-      try {
-        // Try to extract JSON from the output (may have markdown wrapping)
-        const jsonMatch = planOutput.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          planResult = JSON.parse(jsonMatch[0]) as PlanResult
-        }
-      } catch {
-        // If JSON parse fails, create a synthetic plan result
-        planResult = {
-          summary: planOutput.slice(0, 200),
-          steps: [],
-          files_to_modify: [],
-          risks: [],
-          db_implications: [],
-          validation_strategy: '',
-          estimated_complexity: 'medium',
-          selected_agents: [],
-          agent_perspectives: [],
-        }
-      }
+      const planResult: PlanResult | null = parsePlanResult(planOutput)
 
       emit({
         type: 'phase_complete',
@@ -381,11 +435,13 @@ export async function POST(req: NextRequest) {
           planner_elapsed_ms: planElapsedMs,
           total_cost_usd: planCostUsd,
           plan_model_actual: planModelActual,
+          fallbacks_triggered: planFallbackEvents,
         })
         .eq('id', runId)
 
       // ── Phase 2: Execution (dispatch + poll) ──────────────────────────────
       emit({ type: 'phase_start', phase: 'execute', model: executor_model })
+      emit({ type: 'phase_routing', phase: 'execute', requested_model: requested_executor_model, resolved_model: executor_model, actual_model: executor_model, runner: 'clawdbot_stream' })
       emit({ type: 'activity', phase: 'execute', message: `Dispatching to ${executor_model}` })
 
       const execContext = buildExecuteContext(task_description, planResult!)
@@ -399,6 +455,7 @@ export async function POST(req: NextRequest) {
       let execElapsedMs = 0
       let execModelActual = executor_model
       let execSuccess = false
+      let execFallbackEvents: PipelineFallbackEvent[] = []
 
       try {
         // Try streaming for execution too
@@ -509,30 +566,67 @@ export async function POST(req: NextRequest) {
             }
           }
         } catch (fbErr) {
-          const msg = fbErr instanceof Error ? fbErr.message : 'Unknown error'
-          emit({ type: 'phase_error', phase: 'execute', message: msg })
-          emit({ type: 'activity', phase: 'system', message: `Execution failed: ${msg}` })
-          await supabaseAdmin.from('pipeline_runs').update({ status: 'failed' }).eq('id', runId)
-          emit({ type: 'pipeline_error', message: msg })
-          controller.close()
-          return
+          const direct = await runPhaseDirect<ExecutionResult>({
+            phase: 'execute',
+            requestedModel: requested_executor_model ?? executor_model,
+            resolvedModel: executor_model,
+            fallbackChain: executorProfile.fallback_chain,
+            taskDescription: task_description,
+            context: execContext,
+          })
+
+          execFallbackEvents = direct.fallbackEvents
+          for (const fallback of direct.fallbackEvents) {
+            emit({ type: 'phase_fallback', phase: 'execute', fallback })
+            emit({ type: 'activity', phase: 'execute', message: fallback.reason })
+          }
+
+          if (!direct.ok) {
+            const msg = direct.error ?? (fbErr instanceof Error ? fbErr.message : 'Unknown error')
+            emit({ type: 'phase_error', phase: 'execute', message: msg })
+            emit({ type: 'activity', phase: 'system', message: `Execution failed: ${msg}` })
+            await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
+            emit({ type: 'pipeline_error', message: msg })
+            controller.close()
+            return
+          }
+
+          execOutput = direct.output ?? ''
+          execElapsedMs = direct.elapsedMs
+          execModelActual = direct.actualModel ?? executor_model
+          execSuccess = true
         }
       }
 
-      // Parse execution result
-      let execResult: ExecutionResult | null = null
-      try {
-        const jsonMatch = execOutput.match(/\{[\s\S]*\}/)
-        if (jsonMatch) execResult = JSON.parse(jsonMatch[0]) as ExecutionResult
-      } catch {
-        execResult = {
-          summary: execOutput.slice(0, 200),
-          patches: [],
-          commands_suggested: [],
-          warnings: [],
-          notes: '',
+      if (!execSuccess) {
+        const direct = await runPhaseDirect<ExecutionResult>({
+          phase: 'execute',
+          requestedModel: requested_executor_model ?? executor_model,
+          resolvedModel: executor_model,
+          fallbackChain: executorProfile.fallback_chain,
+          taskDescription: task_description,
+          context: execContext,
+        })
+        execFallbackEvents = direct.fallbackEvents
+        for (const fallback of direct.fallbackEvents) {
+          emit({ type: 'phase_fallback', phase: 'execute', fallback })
+          emit({ type: 'activity', phase: 'execute', message: fallback.reason })
         }
+        if (!direct.ok) {
+          emit({ type: 'phase_error', phase: 'execute', message: direct.error ?? 'No execution output received' })
+          await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
+          emit({ type: 'pipeline_error', message: direct.error ?? 'Execution phase failed' })
+          controller.close()
+          return
+        }
+        execOutput = direct.output ?? ''
+        execElapsedMs = direct.elapsedMs
+        execModelActual = direct.actualModel ?? executor_model
+        execSuccess = true
       }
+
+      // Parse execution result
+      const execResult: ExecutionResult | null = parseExecutionResult(execOutput)
 
       const filesChanged = execResult?.patches?.map((p) => p.file) ?? []
       const dbChanges = filesChanged.some((f) => f.includes('migration') || f.includes('.sql'))
@@ -562,12 +656,14 @@ export async function POST(req: NextRequest) {
           executor_elapsed_ms: execElapsedMs,
           total_cost_usd: planCostUsd + execCostUsd,
           execute_model_actual: execModelActual,
+          fallbacks_triggered: [...planFallbackEvents, ...execFallbackEvents],
         })
         .eq('id', runId)
 
       // ── Phase 3: Review (if auto-review enabled) ──────────────────────────
       if (auto_review && execResult) {
         emit({ type: 'phase_start', phase: 'review', model: reviewer_model })
+        emit({ type: 'phase_routing', phase: 'review', requested_model: requested_reviewer_model, resolved_model: reviewer_model, actual_model: reviewer_model, runner: 'clawdbot_stream' })
         emit({ type: 'activity', phase: 'review', message: `Dispatching to ${reviewer_model}` })
 
         const migrationFiles = await listHandbooks().catch(() => [] as string[])
@@ -582,6 +678,7 @@ export async function POST(req: NextRequest) {
         let reviewElapsedMs = 0
         let reviewModelActual = reviewer_model
         let reviewSuccess = false
+        let reviewFallbackEvents: PipelineFallbackEvent[] = []
 
         try {
           const reviewPhaseStart = Date.now()
@@ -686,20 +783,34 @@ export async function POST(req: NextRequest) {
               }
             }
           } catch (fbErr) {
-            const msg = fbErr instanceof Error ? fbErr.message : 'Unknown error'
-            emit({ type: 'phase_error', phase: 'review', message: msg })
-            emit({ type: 'activity', phase: 'system', message: `Review failed: ${msg}` })
+            const direct = await runPhaseDirect<ReviewReport>({
+              phase: 'review',
+              requestedModel: requested_reviewer_model ?? reviewer_model,
+              resolvedModel: reviewer_model,
+              fallbackChain: reviewerProfile.fallback_chain,
+              taskDescription: task_description,
+              context: reviewContext,
+            })
+            reviewFallbackEvents = direct.fallbackEvents
+            for (const fallback of direct.fallbackEvents) {
+              emit({ type: 'phase_fallback', phase: 'review', fallback })
+              emit({ type: 'activity', phase: 'review', message: fallback.reason })
+            }
+            if (!direct.ok) {
+              const msg = direct.error ?? (fbErr instanceof Error ? fbErr.message : 'Unknown error')
+              emit({ type: 'phase_error', phase: 'review', message: msg })
+              emit({ type: 'activity', phase: 'system', message: `Review failed: ${msg}` })
+            } else {
+              reviewOutput = direct.output ?? ''
+              reviewElapsedMs = direct.elapsedMs
+              reviewModelActual = direct.actualModel ?? reviewer_model
+              reviewSuccess = true
+            }
           }
         }
 
         if (reviewSuccess) {
-          let reviewResult: ReviewReport | null = null
-          try {
-            const jsonMatch = reviewOutput.match(/\{[\s\S]*\}/)
-            if (jsonMatch) reviewResult = JSON.parse(jsonMatch[0]) as ReviewReport
-          } catch {
-            reviewResult = null
-          }
+          const reviewResult: ReviewReport | null = parseReviewResult(reviewOutput)
           persistedReviewResult = reviewResult
 
           emit({
@@ -724,6 +835,7 @@ export async function POST(req: NextRequest) {
               reviewer_elapsed_ms: reviewElapsedMs,
               total_cost_usd: planCostUsd + execCostUsd + reviewCostUsd,
               review_model_actual: reviewModelActual,
+              fallbacks_triggered: [...planFallbackEvents, ...execFallbackEvents, ...reviewFallbackEvents],
             })
             .eq('id', runId)
         } else {

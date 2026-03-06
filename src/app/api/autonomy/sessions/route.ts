@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('autonomy_sessions')
-      .select('id, run_id, objective, mode, profile, status, timezone, window_start, window_end, created_at, updated_at, selected_agent, selected_project_ids, git_strategy, repo_preflight')
+      .select('id, run_id, objective, mode, profile, status, timezone, window_start, window_end, created_at, updated_at, selected_agent, selected_project_ids, git_strategy, repo_preflight, summary')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit)

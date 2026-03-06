@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'AI Pipeline | Empire OS',
-  description: 'Tri-model engineering pipeline: Claude plans · Kimi executes · Codex reviews',
+  description: 'Workspace-routed engineering pipeline with planning, execution, and review phases.',
 }
 
 export default function PipelinePage() {
@@ -15,7 +15,7 @@ export default function PipelinePage() {
     <PageShell maxWidth="4xl">
       <PageHeader
         title="AI Pipeline"
-        subtitle="Claude plans · Kimi executes · Codex reviews + learns"
+        subtitle="Workspace-routed planning, execution, and review with live fallback visibility"
       />
       <Suspense>
         <PipelineControl />

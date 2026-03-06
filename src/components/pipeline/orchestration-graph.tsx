@@ -1,6 +1,7 @@
 'use client'
 
 import { Brain, Cpu, ScanSearch } from 'lucide-react'
+import { getModelLabel } from '@/lib/ai/model-catalog'
 import type { PipelineStatus } from '@/lib/pipeline/types'
 
 interface OrchestrationGraphProps {
@@ -32,21 +33,6 @@ function getEdgeActive(status: PipelineStatus | null): [boolean, boolean] {
     ['executing', 'reviewing', 'complete'].includes(status),
     ['reviewing', 'complete'].includes(status),
   ]
-}
-
-// Clearer sublabels shown inside each node
-const MODEL_SUBLABEL: Record<string, string> = {
-  'gpt-5.4-medium': 'GPT 5.4',
-  'claude-opus-4-6':  'Opus 4.6',
-  'kimi-k2-standard': 'K2 Standard',
-  'kimi-k2-fast':     'K2 Fast',
-  'kimi-k2-max':      'K2 Max',
-  'glm-5':            'GLM-5',
-  'codex-standard':   'Standard',
-  'codex-mini':       'Mini',
-  'codex-fast':       'Fast',
-  'codex-pro':        'Pro',
-  'codex-max':        'Max',
 }
 
 interface AgentNodeProps {
@@ -354,8 +340,8 @@ export function OrchestrationGraph({
           {/* Agent nodes */}
           <AgentNode
             icon={<Brain className="h-4 w-4" />}
-            label="Claude"
-            sublabel={MODEL_SUBLABEL[plannerModel] ?? plannerModel}
+            label="Planner"
+            sublabel={getModelLabel(plannerModel)}
             state={plannerState}
             color="#6366f1"
             glowColor="rgba(99,102,241,0.35)"
@@ -363,8 +349,8 @@ export function OrchestrationGraph({
           />
           <AgentNode
             icon={<Cpu className="h-4 w-4" />}
-            label="Kimi"
-            sublabel={MODEL_SUBLABEL[executorModel] ?? executorModel}
+            label="Executor"
+            sublabel={getModelLabel(executorModel)}
             state={executorState}
             color="var(--foco-teal, #00c8aa)"
             glowColor="rgba(0,200,170,0.35)"
@@ -372,8 +358,8 @@ export function OrchestrationGraph({
           />
           <AgentNode
             icon={<ScanSearch className="h-4 w-4" />}
-            label="Codex"
-            sublabel={MODEL_SUBLABEL[reviewerModel] ?? reviewerModel}
+            label="Reviewer"
+            sublabel={getModelLabel(reviewerModel)}
             state={reviewerState}
             color="#f59e0b"
             glowColor="rgba(245,158,11,0.35)"

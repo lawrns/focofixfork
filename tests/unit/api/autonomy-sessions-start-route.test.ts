@@ -8,9 +8,16 @@ const {
   mockIsInOvernightWindow,
   mockLoadNightLaunchProjects,
   mockPreflightProjectRepo,
+  mockLoadFounderProfile,
   mockRunsInsert,
   mockAutonomyInsert,
   mockLedgerInsert,
+  mockCreateCommandStreamJob,
+  mockSetJobRunId,
+  mockRunPipelineStreamJob,
+  mockCreateAutonomySessionJobs,
+  mockReconcileAutonomySession,
+  mockUpdateAutonomySessionJob,
 } = vi.hoisted(() => ({
   mockGetAuthUser: vi.fn(),
   mockMergeAuthResponse: vi.fn((response: NextResponse) => response),
@@ -18,9 +25,16 @@ const {
   mockIsInOvernightWindow: vi.fn(),
   mockLoadNightLaunchProjects: vi.fn(),
   mockPreflightProjectRepo: vi.fn(),
+  mockLoadFounderProfile: vi.fn(),
   mockRunsInsert: vi.fn(),
   mockAutonomyInsert: vi.fn(),
   mockLedgerInsert: vi.fn(),
+  mockCreateCommandStreamJob: vi.fn(),
+  mockSetJobRunId: vi.fn(),
+  mockRunPipelineStreamJob: vi.fn(),
+  mockCreateAutonomySessionJobs: vi.fn(),
+  mockReconcileAutonomySession: vi.fn(),
+  mockUpdateAutonomySessionJob: vi.fn(),
 }))
 
 vi.mock('@/lib/api/auth-helper', () => ({
@@ -44,6 +58,25 @@ vi.mock('@/lib/autonomy/night-session', async () => {
     preflightProjectRepo: mockPreflightProjectRepo,
   }
 })
+
+vi.mock('@/lib/cofounder-mode/founder-profile', () => ({
+  loadFounderProfile: mockLoadFounderProfile,
+}))
+
+vi.mock('@/lib/command-surface/stream-broker', () => ({
+  createCommandStreamJob: mockCreateCommandStreamJob,
+  setJobRunId: mockSetJobRunId,
+}))
+
+vi.mock('@/lib/command-surface/pipeline-runner', () => ({
+  runPipelineStreamJob: mockRunPipelineStreamJob,
+}))
+
+vi.mock('@/lib/autonomy/session-jobs', () => ({
+  createAutonomySessionJobs: mockCreateAutonomySessionJobs,
+  reconcileAutonomySession: mockReconcileAutonomySession,
+  updateAutonomySessionJob: mockUpdateAutonomySessionJob,
+}))
 
 import { POST } from '@/app/api/autonomy/sessions/start/route'
 
@@ -124,6 +157,13 @@ describe('/api/autonomy/sessions/start route', () => {
       syncBeforeRun: true,
       allowPush: true,
     })
+    mockLoadFounderProfile.mockResolvedValue({
+      available: true,
+      stale: false,
+      excerpt: 'Optimize for safe, reviewable progress by morning.',
+      parsed: { strategic_priority_order: { product_quality: 6 } },
+      issues: [],
+    })
     mockRunsInsert.mockReturnValue({
       select: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
@@ -156,9 +196,34 @@ describe('/api/autonomy/sessions/start route', () => {
       }),
     })
     mockLedgerInsert.mockResolvedValue({ error: null })
+    mockCreateCommandStreamJob.mockReturnValue('job-1')
+    mockSetJobRunId.mockResolvedValue(undefined)
+    mockCreateAutonomySessionJobs.mockResolvedValue([
+      {
+        id: 'job-row-1',
+        session_id: 'session-1',
+        user_id: 'user-1',
+        workspace_id: '22222222-2222-2222-2222-222222222222',
+        project_id: '11111111-1111-1111-1111-111111111111',
+        project_name: 'Repo One',
+        project_slug: 'repo-one',
+        status: 'queued',
+        command_job_id: 'job-1',
+        pipeline_run_id: null,
+        report_id: null,
+        artifact_id: null,
+        summary: {},
+        error: null,
+        created_at: '2026-03-06T00:00:00.000Z',
+        updated_at: '2026-03-06T00:00:00.000Z',
+      },
+    ])
+    mockReconcileAutonomySession.mockResolvedValue({ status: 'running', summary: {}, jobs: [] })
+    mockUpdateAutonomySessionJob.mockResolvedValue(null)
+    mockRunPipelineStreamJob.mockResolvedValue(undefined)
 
     mockGetAuthUser.mockResolvedValue({
-      user: { id: 'user-1' },
+      user: { id: 'user-1', email: 'user@example.com' },
       supabase: createSupabase(),
       error: null,
       response: NextResponse.next(),
@@ -229,10 +294,10 @@ describe('/api/autonomy/sessions/start route', () => {
     expect(mockRunsInsert).not.toHaveBeenCalled()
   })
 
-  test('creates a session with selected agent and projects after successful preflight', async () => {
+  test('creates queued report jobs and starts report-only background dispatch', async () => {
     const req = new NextRequest('http://localhost:4000/api/autonomy/sessions/start', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', cookie: 'workspace_id=22222222-2222-2222-2222-222222222222' },
       body: JSON.stringify({
         workspace_id: '22222222-2222-2222-2222-222222222222',
         selected_agent: {
@@ -245,7 +310,7 @@ describe('/api/autonomy/sessions/start route', () => {
           risk_model: 'Avoid protected branches',
         },
         selected_project_ids: ['11111111-1111-1111-1111-111111111111'],
-        objective: 'Ship safe fixes',
+        objective: 'Leave a safe morning handoff',
         git_strategy: {
           syncBeforeRun: true,
           branchPrefix: 'autonomy',
@@ -261,8 +326,11 @@ describe('/api/autonomy/sessions/start route', () => {
     expect(res.status).toBe(200)
     expect(body.data.selectedAgent.name).toBe('Night Operator')
     expect(body.data.selectedProjectIds).toEqual(['11111111-1111-1111-1111-111111111111'])
+    expect(body.data.jobCount).toBe(1)
     expect(mockRunsInsert).toHaveBeenCalledTimes(1)
     expect(mockAutonomyInsert).toHaveBeenCalledTimes(1)
+    expect(mockCreateAutonomySessionJobs).toHaveBeenCalledTimes(1)
+    expect(mockRunPipelineStreamJob).toHaveBeenCalledTimes(1)
     expect(mockLedgerInsert).toHaveBeenCalledTimes(1)
   })
 })

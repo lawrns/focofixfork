@@ -80,7 +80,7 @@ export function PipelineConfigPanel({
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Planner</Label>
               <Select value={plannerModel} onValueChange={setPlannerModel}>
-                <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Claude Opus 4.6" /></SelectTrigger>
+                <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Planner model" /></SelectTrigger>
                 <SelectContent>{PLANNER_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">{getModelRuntimeSourceLabel(plannerModel) ?? 'Inherited'}</p>
@@ -88,7 +88,7 @@ export function PipelineConfigPanel({
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Executor</Label>
               <Select value={executorModel} onValueChange={setExecutorModel}>
-                <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Kimi K2.5 Std" /></SelectTrigger>
+                <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Executor model" /></SelectTrigger>
                 <SelectContent>{EXECUTOR_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">{getModelRuntimeSourceLabel(executorModel) ?? 'Inherited'}</p>
@@ -96,7 +96,7 @@ export function PipelineConfigPanel({
             <div className="space-y-1">
               <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Reviewer</Label>
               <Select value={reviewerModel} onValueChange={setReviewerModel}>
-                <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Codex Std" /></SelectTrigger>
+                <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Reviewer model" /></SelectTrigger>
                 <SelectContent>{REVIEWER_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">{getModelRuntimeSourceLabel(reviewerModel) ?? 'Inherited'}</p>
@@ -117,7 +117,7 @@ export function PipelineConfigPanel({
           {complexHint && (
             <div className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-              This task may benefit from Codex review.
+              This task may benefit from a dedicated review phase.
             </div>
           )}
           {triggerHint && (

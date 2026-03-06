@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import type { PipelineRun, PipelineStatus } from '@/lib/pipeline/types'
+import type { PipelineFallbackEvent, PipelineRun, PipelineRunnerKind, PipelineStatus } from '@/lib/pipeline/types'
 import { TelemetryBar } from '@/components/pipeline/telemetry-bar'
 import { PhaseCard, type PhaseCardStatus } from '@/components/pipeline/phase-card'
 import { ActivityFeed, type FeedEntry } from '@/components/pipeline/activity-feed'
@@ -15,6 +15,15 @@ type PhaseStreamState = {
   tokensOut: number
   elapsedMs: number
   phaseStartMs: number
+}
+
+type PhaseRuntimeMeta = {
+  requestedModel: string | null
+  resolvedModel: string | null
+  actualModel: string | null
+  runner: PipelineRunnerKind | null
+  error: string | null
+  fallbacks: PipelineFallbackEvent[]
 }
 
 export function PipelinePhaseSection({
@@ -41,6 +50,7 @@ export function PipelinePhaseSection({
   handbookSlug,
   setHandbookSlug,
   feedEntries,
+  phaseMeta,
 }: {
   pipelineStatus: PipelineStatus | null
   totalTokens: number
@@ -56,7 +66,7 @@ export function PipelinePhaseSection({
   planStream: PhaseStreamState
   execStream: PhaseStreamState
   reviewStream: PhaseStreamState
-  phaseCardStatus: (phase: 'plan' | 'execute' | 'review', status: PipelineStatus) => PhaseCardStatus
+  phaseCardStatus: (phase: 'plan' | 'execute' | 'review', status: PipelineStatus | null) => PhaseCardStatus
   getPhaseThp: (stream: PhaseStreamState) => number
   canExecute: boolean
   triggerExecute: () => void
@@ -65,6 +75,7 @@ export function PipelinePhaseSection({
   handbookSlug: string
   setHandbookSlug: (value: string) => void
   feedEntries: FeedEntry[]
+  phaseMeta: Record<'plan' | 'execute' | 'review', PhaseRuntimeMeta>
 }) {
   return (
     <>
@@ -89,6 +100,11 @@ export function PipelinePhaseSection({
             <PhaseCard
               phase="plan"
               model={currentRun?.planner_model ?? plannerModel}
+              requestedModel={phaseMeta.plan.requestedModel}
+              actualModel={phaseMeta.plan.actualModel}
+              runner={phaseMeta.plan.runner}
+              errorMessage={phaseMeta.plan.error}
+              fallbackEvents={phaseMeta.plan.fallbacks}
               status={phaseCardStatus('plan', pipelineStatus)}
               context={currentRun?.plan_result ? JSON.stringify(currentRun.plan_result, null, 2) : undefined}
               elapsedMs={phaseCardStatus('plan', pipelineStatus) === 'active' ? liveMs : planStream.elapsedMs || undefined}
@@ -103,6 +119,11 @@ export function PipelinePhaseSection({
             <PhaseCard
               phase="execute"
               model={currentRun?.executor_model ?? executorModel}
+              requestedModel={phaseMeta.execute.requestedModel}
+              actualModel={phaseMeta.execute.actualModel}
+              runner={phaseMeta.execute.runner}
+              errorMessage={phaseMeta.execute.error}
+              fallbackEvents={phaseMeta.execute.fallbacks}
               status={phaseCardStatus('execute', pipelineStatus)}
               context={currentRun?.execution_result ? JSON.stringify(currentRun.execution_result, null, 2) : undefined}
               elapsedMs={phaseCardStatus('execute', pipelineStatus) === 'active' ? (execStream.phaseStartMs ? Date.now() - execStream.phaseStartMs : liveMs) : execStream.elapsedMs || undefined}
@@ -113,12 +134,17 @@ export function PipelinePhaseSection({
               tokensOut={execStream.tokensOut}
               tokenThroughput={phaseCardStatus('execute', pipelineStatus) === 'active' ? getPhaseThp(execStream) : undefined}
             >
-              {canExecute && <Button size="sm" variant="outline" onClick={triggerExecute}>Execute with Kimi</Button>}
+              {canExecute && <Button size="sm" variant="outline" onClick={triggerExecute}>Run Execution</Button>}
             </PhaseCard>
 
             <PhaseCard
               phase="review"
               model={currentRun?.reviewer_model ?? reviewerModel}
+              requestedModel={phaseMeta.review.requestedModel}
+              actualModel={phaseMeta.review.actualModel}
+              runner={phaseMeta.review.runner}
+              errorMessage={phaseMeta.review.error}
+              fallbackEvents={phaseMeta.review.fallbacks}
               status={phaseCardStatus('review', pipelineStatus)}
               context={currentRun?.review_result ? JSON.stringify(currentRun.review_result, null, 2) : undefined}
               elapsedMs={phaseCardStatus('review', pipelineStatus) === 'active' ? (reviewStream.phaseStartMs ? Date.now() - reviewStream.phaseStartMs : liveMs) : reviewStream.elapsedMs || undefined}
@@ -132,7 +158,7 @@ export function PipelinePhaseSection({
             >
               {canReview && (
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button size="sm" variant="outline" onClick={triggerReview}>Run Codex Review</Button>
+                  <Button size="sm" variant="outline" onClick={triggerReview}>Run Review</Button>
                   <div className="flex items-center gap-2">
                     <Label className="text-xs text-muted-foreground">Handbook slug</Label>
                     <input

@@ -166,10 +166,10 @@ export async function resolveAIExecutionProfile(
       policy.constraints?.max_tokens_per_request ??
       2000,
     fallback_chain:
-      options.requestedModel?.trim()
-        ? []
-        : options.requestedFallbackChain?.length
-          ? options.requestedFallbackChain
+      options.requestedFallbackChain?.length
+        ? options.requestedFallbackChain
+        : options.requestedModel?.trim()
+          ? []
         : agentOverride?.fallback_chain ??
           modelProfile.fallback_chain ??
           routingDefault.fallback_chain ??

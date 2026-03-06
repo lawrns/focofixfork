@@ -122,4 +122,16 @@ describe('AI execution profile resolver', () => {
     expect(profile.source).toBe('override')
     expect(profile.fallback_chain).toEqual([])
   })
+
+  it('preserves an explicit fallback chain when requestedModel is overridden', async () => {
+    const profile = await resolveAIExecutionProfile({
+      useCase: 'pipeline_execute',
+      requestedModel: 'manual-model-2',
+      requestedFallbackChain: ['gpt-5.4-medium', 'glm-5'],
+    })
+
+    expect(profile.model).toBe('manual-model-2')
+    expect(profile.source).toBe('override')
+    expect(profile.fallback_chain).toEqual(['gpt-5.4-medium', 'glm-5'])
+  })
 })

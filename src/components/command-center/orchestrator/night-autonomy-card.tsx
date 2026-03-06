@@ -4,15 +4,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Moon, Play, Square, RefreshCw } from 'lucide-react'
+import { Moon, RefreshCw, Square } from 'lucide-react'
 import { toast } from 'sonner'
+import { NightAutonomyLaunchDialog } from '@/components/autonomy/night-autonomy-launch-dialog'
 
 interface AutonomySession {
   id: string
   status: string
   objective: string | null
   window_start: string
+  selected_agent?: { name?: string } | null
+  selected_project_ids?: string[] | null
 }
 
 interface MorningSummary {
@@ -25,7 +27,6 @@ interface MorningSummary {
 export function NightAutonomyCard() {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [objective, setObjective] = useState('')
   const [activeSession, setActiveSession] = useState<AutonomySession | null>(null)
   const [summary, setSummary] = useState<MorningSummary | null>(null)
 
@@ -57,26 +58,6 @@ export function NightAutonomyCard() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  const startNightMode = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch('/api/autonomy/sessions/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ objective: objective.trim() || undefined }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json?.error?.message ?? 'Failed to start night mode')
-      toast.success('Night co-founder mode started')
-      setObjective('')
-      await loadData()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to start night mode')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const stopNightMode = async () => {
     if (!activeSession) return
@@ -126,15 +107,6 @@ export function NightAutonomyCard() {
           </div>
         </div>
 
-        {!activeSession && (
-          <Input
-            placeholder="Overnight objective (optional)"
-            value={objective}
-            onChange={(e) => setObjective(e.target.value)}
-            className="h-8 text-[12px]"
-          />
-        )}
-
         <div className="flex items-center gap-2">
           {activeSession ? (
             <Button
@@ -148,15 +120,19 @@ export function NightAutonomyCard() {
               Stop Night Mode
             </Button>
           ) : (
-            <Button
-              size="sm"
-              className="h-8 text-[12px] gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90"
-              onClick={startNightMode}
-              disabled={loading}
-            >
-              <Play className="h-3.5 w-3.5" />
-              Start Night Mode
-            </Button>
+            <NightAutonomyLaunchDialog
+              onStarted={loadData}
+              onStopped={loadData}
+              trigger={(
+                <Button
+                  size="sm"
+                  className="h-8 text-[12px] gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90"
+                >
+                  <Moon className="h-3.5 w-3.5" />
+                  Configure Night Mode
+                </Button>
+              )}
+            />
           )}
           <Button
             size="sm"
@@ -172,7 +148,9 @@ export function NightAutonomyCard() {
 
         {activeSession && (
           <div className="text-[11px] text-muted-foreground">
-            Active session started {new Date(activeSession.window_start).toLocaleString()}.
+            Active session started {new Date(activeSession.window_start).toLocaleString()}
+            {activeSession.selected_agent?.name ? ` with ${activeSession.selected_agent.name}` : ''}
+            {activeSession.selected_project_ids?.length ? ` across ${activeSession.selected_project_ids.length} repos.` : '.'}
           </div>
         )}
       </CardContent>

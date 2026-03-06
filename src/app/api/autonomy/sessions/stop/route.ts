@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       type: 'autonomy_session_stopped',
       source: 'cofounder',
       context_id: sessionId,
-      payload: { run_id: sessionId, reason },
+      payload: { run_id: sessionRow.run_id, reason },
       timestamp: now,
     })
 

@@ -13,6 +13,12 @@ vi.mock('@/lib/stores/foco-store', () => ({
     density: 'comfortable',
     setDensity: vi.fn(),
   })),
+  useWorkspaceStore: vi.fn(() => ({
+    currentWorkspace: { id: 'ws-1', name: 'Workspace' },
+    workspaces: [],
+    setCurrentWorkspace: vi.fn(),
+    setWorkspaces: vi.fn(),
+  })),
 }));
 
 // Mock next-themes

@@ -14,6 +14,11 @@ import { dispatchToClawdBot, buildSystemPrompt, type DispatchPayload } from './d
 import { sendTelegramAlert } from '@/lib/services/telegram'
 import { assembleProjectContext } from '@/features/memory'
 import { createTaskExecutionEvent } from '@/features/task-intake'
+import {
+  buildDefaultClawdbotRuntimeProfile,
+  summarizeRuntimeProfile,
+  upsertClawdbotRuntimeProfile,
+} from '@/lib/clawdbot/runtime-profile'
 
 export interface DelegationTickResult {
   processed: number
@@ -55,7 +60,7 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
     .select(`
       id, workspace_id, title, description, priority, created_at, approval_required, approved_by, handbook_ref,
       foco_projects!project_id (
-        id, name, slug, assigned_agent_pool, delegation_settings, local_path
+        id, name, slug, assigned_agent_pool, delegation_settings, local_path, owner_id
       )
     `)
     .eq('delegation_status', 'pending')
@@ -112,13 +117,31 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
       : handbookContext
 
     // 5. Build system prompt
-    const systemPrompt = buildSystemPrompt(
+    const runtimeProfile = typeof project.owner_id === 'string' && project.owner_id.length > 0
+      ? await upsertClawdbotRuntimeProfile(supabaseAdmin, {
+          userId: project.owner_id,
+          workspaceId: item.workspace_id,
+          projectId: project.id,
+          agentKey: agentId,
+          metadata: {
+            last_activity_at: new Date().toISOString(),
+          },
+        })
+      : buildDefaultClawdbotRuntimeProfile({
+          userId: '00000000-0000-0000-0000-000000000000',
+          workspaceId: item.workspace_id,
+          projectId: project.id,
+          agentKey: agentId,
+        })
+
+    const runtimeSummary = summarizeRuntimeProfile(runtimeProfile)
+    const systemPrompt = `${buildSystemPrompt(
       project.name,
       projectContext,
       featureContext,
       item.title,
       item.description
-    )
+    )}\n\n---\n\n# Runtime Profile\n\n${JSON.stringify(runtimeSummary, null, 2)}`
 
     // 6. Optimistic lock: update delegation_status to 'delegated' BEFORE dispatching
     const { error: lockError } = await supabaseAdmin
@@ -165,6 +188,8 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
       systemPrompt,
       agentId,
       workingDirectory: project.local_path ?? undefined,
+      preferredModel: runtimeProfile.model_preference,
+      runtimeProfile: runtimeSummary,
     }
 
     const dispatchResult = await dispatchToClawdBot(payload)

@@ -92,9 +92,23 @@ interface ProjectOption {
   name: string
 }
 
+interface ClawdbotActivityItem {
+  id: string
+  agent_key: string
+  event_type: string
+  direction: string
+  session_key?: string | null
+  title: string
+  detail: string | null
+  payload?: Record<string, unknown>
+  project_id?: string | null
+  created_at: string
+}
+
 const AGENT_POLL_INTERVAL = 10_000
 const DECISIONS_POLL_INTERVAL = 15_000
 const COFOUNDER_POLL_INTERVAL = 20_000
+const CLAWDBOT_ACTIVITY_POLL_INTERVAL = 8_000
 const RUNS_POLL_INTERVAL = 15_000
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
 
@@ -156,6 +170,8 @@ export function CommandCenterClient() {
   const [globalSearch, setGlobalSearch] = useState('')
   const [cofounderInsights, setCofounderInsights] = useState<CoFounderInsightItem[]>([])
   const [cofounderLoading, setCofounderLoading] = useState(true)
+  const [clawdbotActivity, setClawdbotActivity] = useState<ClawdbotActivityItem[]>([])
+  const [clawdbotActivityLoading, setClawdbotActivityLoading] = useState(true)
 
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
   const [selectedProjectSlug, setSelectedProjectSlug] = useState('')
@@ -241,6 +257,21 @@ export function CommandCenterClient() {
     }
   }, [])
 
+  const loadClawdbotActivity = useCallback(async (signal?: AbortSignal, initialLoad = false) => {
+    if (initialLoad) setClawdbotActivityLoading(true)
+    try {
+      const params = new URLSearchParams({ limit: '16' })
+      const res = await fetch(`/api/agents/clawdbot/activity?${params.toString()}`, { signal })
+      if (!res.ok) return
+      const json = await res.json()
+      setClawdbotActivity((json?.data?.items ?? []) as ClawdbotActivityItem[])
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+    } finally {
+      if (initialLoad) setClawdbotActivityLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (store.paused) return
     const controller = new AbortController()
@@ -274,6 +305,16 @@ export function CommandCenterClient() {
       clearInterval(id)
     }
   }, [loadCofounderInsights])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    loadClawdbotActivity(controller.signal, true)
+    const id = setInterval(() => loadClawdbotActivity(controller.signal), CLAWDBOT_ACTIVITY_POLL_INTERVAL)
+    return () => {
+      controller.abort()
+      clearInterval(id)
+    }
+  }, [loadClawdbotActivity])
 
   useEffect(() => {
     const load = async () => {
@@ -663,6 +704,8 @@ export function CommandCenterClient() {
             <SoapTerminal lines={mergedTerminalLines} open={terminalOpen} onOpenChange={setTerminalOpen} connected={connected} />
           </div>
         </div>
+
+        <ClawdbotActivityFeed events={clawdbotActivity} loading={clawdbotActivityLoading} />
 
         <LiveTickerFeed
           loading={cofounderLoading}
@@ -1075,6 +1118,59 @@ function LiveTickerFeed({
                 </motion.button>
               ))}
             </AnimatePresence>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ClawdbotActivityFeed({
+  events,
+  loading,
+}: {
+  events: ClawdbotActivityItem[]
+  loading: boolean
+}) {
+  return (
+    <Card>
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm">Clawdbot Live Feed</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading live bridge events...</p>
+        ) : events.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No live bridge activity yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {events.slice(0, 8).map((event) => {
+              const model = typeof event.payload?.model_preference === 'string'
+                ? event.payload.model_preference
+                : typeof event.payload?.model === 'string'
+                  ? event.payload.model
+                  : null
+
+              return (
+                <div key={event.id} className="rounded-md border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="border-cyan-500/40 text-cyan-500">
+                      {event.event_type}
+                    </Badge>
+                    <span className="font-mono text-xs">{event.agent_key}</span>
+                    <span className="text-[10px] text-muted-foreground">{relativeTime(event.created_at)}</span>
+                    {model && <Badge variant="outline" className="ml-auto text-[10px]">{model}</Badge>}
+                  </div>
+                  <p className="mt-1 text-xs font-medium">{event.title}</p>
+                  {event.detail && <p className="mt-1 text-xs text-muted-foreground">{event.detail}</p>}
+                  <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span>{event.direction}</span>
+                    {event.project_id && <span className="font-mono">project:{event.project_id.slice(0, 8)}</span>}
+                    {typeof event.session_key === 'string' && <span className="font-mono">session:{event.session_key}</span>}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </CardContent>

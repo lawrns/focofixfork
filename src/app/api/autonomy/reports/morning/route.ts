@@ -14,6 +14,10 @@ interface SessionRow {
   window_start: string
   window_end: string | null
   created_at: string
+  selected_agent?: Record<string, unknown> | null
+  selected_project_ids?: string[] | null
+  git_strategy?: Record<string, unknown> | null
+  repo_preflight?: Record<string, unknown>[] | null
 }
 
 interface DecisionRow {
@@ -47,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     const { data: sessions, error: sessionsError } = await supabase
       .from('autonomy_sessions')
-      .select('id, run_id, objective, mode, profile, status, window_start, window_end, created_at')
+      .select('id, run_id, objective, mode, profile, status, window_start, window_end, created_at, selected_agent, selected_project_ids, git_strategy, repo_preflight')
       .eq('user_id', user.id)
       .gte('window_start', sinceDate)
       .order('window_start', { ascending: false })
@@ -92,6 +96,7 @@ export async function GET(req: NextRequest) {
         executedActions,
         blockedActions,
         pendingDecisions: (decisions ?? []).length,
+        reposTouched: (sessions ?? []).reduce((count, session: SessionRow) => count + (session.selected_project_ids?.length ?? 0), 0),
       },
       sessions: (sessions ?? []) as SessionRow[],
       decisions: (decisions ?? []) as DecisionRow[],

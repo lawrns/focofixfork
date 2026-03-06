@@ -35,7 +35,7 @@ export async function GET(
 
     const { data: sessionRow, error: sessionError } = await supabase
       .from('autonomy_sessions')
-      .select('id, run_id, objective, mode, profile, status, timezone, window_start, window_end, created_at, updated_at')
+      .select('id, run_id, objective, mode, profile, status, timezone, window_start, window_end, created_at, updated_at, selected_agent, selected_project_ids, git_strategy, repo_preflight')
       .eq('id', id)
       .eq('user_id', user.id)
       .maybeSingle()

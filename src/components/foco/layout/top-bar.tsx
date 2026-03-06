@@ -17,9 +17,9 @@ import {
   Monitor,
   Smartphone,
   LogIn,
-  Wand2,
   PauseCircle,
   PlayCircle,
+  Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -51,6 +51,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { toast } from 'sonner';
+import { NightAutonomyLaunchDialog } from '@/components/autonomy/night-autonomy-launch-dialog';
 
 interface TopBarProps {
   className?: string;
@@ -172,19 +173,17 @@ export function TopBar({ className, sidebarCollapsed: sidebarCollapsedProp }: To
       {/* Right Actions */}
       <div className="ml-auto flex min-w-0 items-center gap-1 md:gap-1.5">
         {user && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+          <>
+            <NightAutonomyLaunchDialog
+              trigger={(
                 <Button
-                  variant={fleetPaused ? 'destructive' : 'outline'}
+                  variant={fleetPaused ? 'secondary' : 'outline'}
                   size="sm"
                   className="h-9 px-2 md:px-3 gap-1.5"
-                  onClick={toggleFleet}
-                  disabled={fleetLoading}
-                  aria-label={fleetPaused ? 'Resume autonomous mode' : 'Pause autonomous mode'}
+                  aria-label="Open night autonomy settings"
                 >
-                  {fleetPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
-                  <span className="hidden lg:inline">{fleetPaused ? 'Autonomy Off' : 'Autonomy On'}</span>
+                  <Moon className="h-4 w-4" />
+                  <span className="hidden lg:inline">Night Autonomy</span>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -194,15 +193,32 @@ export function TopBar({ className, sidebarCollapsed: sidebarCollapsedProp }: To
                         : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                     )}
                   >
-                    {fleetPaused ? 'Paused' : 'Active'}
+                    {fleetPaused ? 'Paused' : 'Ready'}
                   </Badge>
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{fleetPaused ? 'Resume global autonomous execution' : 'Pause global autonomous execution'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              )}
+            />
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={fleetPaused ? 'destructive' : 'ghost'}
+                    size="icon"
+                    className="h-9 w-9 min-h-[44px] min-w-[44px]"
+                    onClick={toggleFleet}
+                    disabled={fleetLoading}
+                    aria-label={fleetPaused ? 'Resume autonomous mode' : 'Pause autonomous mode'}
+                  >
+                    {fleetPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{fleetPaused ? 'Resume global autonomous execution' : 'Pause global autonomous execution'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </>
         )}
 
         {/* Quick Create */}

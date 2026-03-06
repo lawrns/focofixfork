@@ -175,6 +175,7 @@ export function CommandCenterClient() {
 
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
   const [selectedProjectSlug, setSelectedProjectSlug] = useState('')
+  const [dispatchKind, setDispatchKind] = useState<'task' | 'report'>('task')
   const [commandExpanded, setCommandExpanded] = useState(false)
   const [persona, setPersona] = useState<'cto' | 'coo' | 'auto' | 'intake'>('auto')
   const [agentId, setAgentId] = useState(process.env.EMPIRE_EXECUTION_MODEL || '')
@@ -374,6 +375,45 @@ export function CommandCenterClient() {
     }, delay)
   }, [])
 
+  const streamCommandSurfaceJob = useCallback(async (streamUrl: string) => {
+    const streamRes = await fetch(streamUrl, {
+      headers: { Accept: 'text/event-stream' },
+    })
+    if (!streamRes.ok || !streamRes.body) throw new Error('Failed to connect to command stream')
+
+    const reader = streamRes.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        try {
+          const event = JSON.parse(line.slice(6)) as Record<string, unknown>
+          if (event.type === 'status_update' && typeof event.message === 'string') {
+            pushTerminalLine({ token: inferSoapToken(event.message), text: event.message })
+          } else if (event.type === 'reasoning' && typeof event.text === 'string') {
+            pushTerminalLine({ token: 'PLAN', text: event.text })
+          } else if (event.type === 'output_chunk' && typeof event.text === 'string') {
+            pushTerminalLine({ token: 'RESULT', text: event.text })
+          } else if (event.type === 'error' && typeof event.message === 'string') {
+            pushTerminalLine({ token: 'ERROR', text: event.message })
+          } else if (event.type === 'done' && typeof event.summary === 'string') {
+            pushTerminalLine({ token: 'RESULT', text: event.summary })
+          }
+        } catch {
+          // ignore malformed stream chunks
+        }
+      }
+    }
+  }, [pushTerminalLine])
+
   const triggerDispatchArc = useCallback((agentLabel: string, userTask: string, runId?: string) => {
     setRibbon({ agent: agentLabel, task: userTask, runId })
     setPendingFlash(true)
@@ -423,25 +463,68 @@ export function CommandCenterClient() {
 
     const personaLabel = PERSONA_PRESETS.find((preset) => preset.key === persona)?.label ?? 'Auto'
     const targetAgent = agentId.trim() || personaLabel
+    const selectedProject = projectOptions.find((project) => project.slug === selectedProjectSlug) ?? null
 
     try {
-      const res = await fetch('/api/openclaw-gateway/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: targetAgent,
-          task,
-          project_slug: selectedProjectSlug || undefined,
-          context: { persona },
-        }),
-      })
+      if (dispatchKind === 'report') {
+        if (!selectedProject) {
+          pushTerminalLine({ token: 'ERROR', text: 'Select a project before generating a report.' })
+          return
+        }
 
-      if (!res.ok) {
-        triggerDispatchArc(targetAgent, task)
-        pushTerminalLine({ token: 'ERROR', text: 'Gateway rejected dispatch request' })
+        const reportPrompt = `${task.trim()}\n\nFocus on codebase health, project direction, risks, next steps, and how to steer this project toward well-being.`
+        triggerDispatchArc(targetAgent, reportPrompt)
+        pushTerminalLine({ token: 'PLAN', text: `Report mode active for ${selectedProject.name}` })
+
+        const res = await fetch('/api/command-surface/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: reportPrompt,
+            mode: persona,
+            project_id: selectedProject.id,
+            planning_goal: `Generate a durable project steering report for ${selectedProject.name}`,
+            context: {
+              dispatch_kind: 'project_report',
+              selected_agent_id: targetAgent,
+              selected_agent_name: targetAgent,
+              project_slug: selectedProject.slug,
+            },
+            report_request: {
+              enabled: true,
+              report_type: 'project_health',
+              project_id: selectedProject.id,
+              selected_agent_id: targetAgent,
+              selected_agent_name: targetAgent,
+            },
+          }),
+        })
+
+        const payload = await res.json()
+        if (!res.ok || !payload?.stream_url) {
+          pushTerminalLine({ token: 'ERROR', text: payload?.error ?? 'Report dispatch failed' })
+        } else {
+          await streamCommandSurfaceJob(payload.stream_url as string)
+        }
       } else {
-        const data = await res.json()
-        triggerDispatchArc(targetAgent, task, data?.runId)
+        const res = await fetch('/api/openclaw-gateway/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentId: targetAgent,
+            task,
+            project_slug: selectedProjectSlug || undefined,
+            context: { persona },
+          }),
+        })
+
+        if (!res.ok) {
+          triggerDispatchArc(targetAgent, task)
+          pushTerminalLine({ token: 'ERROR', text: 'Gateway rejected dispatch request' })
+        } else {
+          const data = await res.json()
+          triggerDispatchArc(targetAgent, task, data?.runId)
+        }
       }
 
       setTask('')
@@ -452,7 +535,7 @@ export function CommandCenterClient() {
     } finally {
       setDispatching(false)
     }
-  }, [task, persona, agentId, selectedProjectSlug, triggerDispatchArc, pushTerminalLine])
+  }, [task, persona, agentId, selectedProjectSlug, triggerDispatchArc, pushTerminalLine, dispatchKind, projectOptions, streamCommandSurfaceJob])
 
   const staleCount = store.agents.filter((agent) => {
     if (agent.status !== 'working' || !agent.lastActiveAt) return false
@@ -534,6 +617,20 @@ export function CommandCenterClient() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {(['task', 'report'] as const).map((kind) => (
+                    <button
+                      key={kind}
+                      onClick={() => setDispatchKind(kind)}
+                      className={cn(
+                        'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors',
+                        kind === dispatchKind
+                          ? 'border-cyan-500 bg-cyan-500 text-white'
+                          : 'border-border bg-muted/40 text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      {kind === 'task' ? 'Task' : 'Report'}
+                    </button>
+                  ))}
                   {PERSONA_PRESETS.map((preset) => (
                     <button
                       key={preset.key}
@@ -620,6 +717,7 @@ export function CommandCenterClient() {
                         <span className="font-medium text-foreground">Context</span>
                         <div className="mt-1 flex items-center gap-1.5 text-[10px]">
                           <span className="rounded-full border px-2 py-0.5">{PERSONA_PRESETS.find((preset) => preset.key === persona)?.description}</span>
+                          <span className="rounded-full border px-2 py-0.5">{dispatchKind === 'report' ? 'durable report artifact' : 'live task dispatch'}</span>
                           {connected && <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-500">live logs</span>}
                         </div>
                       </div>

@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -268,10 +269,6 @@ function ReportsPageContent() {
     }
   }, [fetchReportData]);
 
-  const handleReportClick = useCallback((reportId: string) => {
-    toast.info(`Report ${reportId} is selected.`);
-  }, []);
-
   if (isLoading) {
     return (
       <PageShell>
@@ -354,13 +351,10 @@ function ReportsPageContent() {
             <CardContent className="space-y-2">
               {recentReports.length > 0 ? (
                 recentReports.map((report) => (
-                  <div
+                  <Link
                     key={report.id}
+                    href={`/reports/${report.id}`}
                     className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer group"
-                    onClick={() => handleReportClick(report.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleReportClick(report.id)}
                   >
                     <FileText className="h-4 w-4 text-zinc-400" />
                     <div className="flex-1 min-w-0">
@@ -371,7 +365,7 @@ function ReportsPageContent() {
                       <Zap className="h-3 w-3 text-[color:var(--foco-teal)]" />
                     )}
                     <ArrowRight className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100" />
-                  </div>
+                  </Link>
                 ))
               ) : (
                 <p className="text-sm text-zinc-500 py-4 text-center">No recent reports found.</p>

@@ -15,14 +15,27 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { PIPELINE_PROMPTS } from '@/lib/pipeline/dispatcher'
 import { buildPlanContext, buildExecuteContext, buildReviewContext } from '@/lib/pipeline/context-builder'
 import { listHandbooks } from '@/lib/handbook/handbook-loader'
-import type { PlanResult, ExecutionResult, ReviewReport, PipelinePhase } from '@/lib/pipeline/types'
+import type { PlanResult, ExecutionResult, ReviewReport, PipelinePhase, ProjectReportRequest } from '@/lib/pipeline/types'
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
+import { persistProjectReport } from '@/lib/project-reports'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min max for streaming
 
 const CLAWDBOT_BASE = process.env.CLAWDBOT_API_URL || 'http://127.0.0.1:18794'
 const CLAWDBOT_TOKEN = process.env.OPENCLAW_SERVICE_TOKEN ?? ''
+const REPORT_EXECUTE_PROMPT = `You are a senior technical strategy operator preparing a structured project health report.
+Do not produce code patches. Assess the project/codebase and output ONLY valid JSON:
+{
+  "summary": "one-sentence overall assessment",
+  "patches": [],
+  "commands_suggested": [],
+  "warnings": ["key risk or caveat"],
+  "notes": "Detailed assessment covering technical health, strategic direction, risks, next steps, and confidence."
+}`
+const REPORT_REVIEW_PROMPT = `You are a principal reviewer improving a project health report.
+Do not review code patches. Review the assessment for rigor, blind spots, and strategic usefulness.
+Output ONLY valid JSON matching the existing review schema. Put steering recommendations into "improvements" and key risks into "critical_issues" or "risks".`
 
 function getCallbackUrl(): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL ?? 'http://127.0.0.1:3000'
@@ -51,6 +64,7 @@ export async function POST(req: NextRequest) {
     planning_goal = null,
     constraints = null,
     limits = null,
+    report_request = null,
   } = body
 
   if (!task_description?.trim()) {
@@ -121,6 +135,9 @@ export async function POST(req: NextRequest) {
 
   const runId = run.id
   const pipelineStartMs = Date.now()
+  const normalizedReportRequest = report_request && typeof report_request === 'object'
+    ? report_request as ProjectReportRequest
+    : null
 
   // Create readable stream for SSE
   const encoder = new TextEncoder()
@@ -149,7 +166,13 @@ export async function POST(req: NextRequest) {
 
       const planContext = buildPlanContext(task_description, {
         selected_agents,
-        context,
+        context: normalizedReportRequest?.enabled
+          ? {
+              ...(context && typeof context === 'object' ? context as Record<string, unknown> : {}),
+              report_mode: true,
+              report_type: normalizedReportRequest.report_type,
+            }
+          : context,
         planning_goal,
         constraints,
         limits,
@@ -165,6 +188,7 @@ export async function POST(req: NextRequest) {
       let planTtftMs: number | null = null
       let planModelActual = planner_model
       let planSuccess = false
+      let persistedReviewResult: ReviewReport | null = null
 
       try {
         // Try streaming endpoint first
@@ -366,7 +390,7 @@ export async function POST(req: NextRequest) {
 
       const execContext = buildExecuteContext(task_description, planResult!)
       const execTaskId = `pipeline:${runId}:execute`
-      const execSystemPrompt = `${PIPELINE_PROMPTS.execute}\n\n# Preferred Model\n${executor_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nexecute`
+      const execSystemPrompt = `${normalizedReportRequest?.enabled ? REPORT_EXECUTE_PROMPT : PIPELINE_PROMPTS.execute}\n\n# Preferred Model\n${executor_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nexecute`
 
       let execOutput = ''
       let execTokensIn = 0
@@ -549,7 +573,7 @@ export async function POST(req: NextRequest) {
         const migrationFiles = await listHandbooks().catch(() => [] as string[])
         const reviewContext = buildReviewContext(task_description, planResult!, execResult, migrationFiles)
         const reviewTaskId = `pipeline:${runId}:review`
-        const reviewSystemPrompt = `${PIPELINE_PROMPTS.review}\n\n# Preferred Model\n${reviewer_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nreview`
+        const reviewSystemPrompt = `${normalizedReportRequest?.enabled ? REPORT_REVIEW_PROMPT : PIPELINE_PROMPTS.review}\n\n# Preferred Model\n${reviewer_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nreview`
 
         let reviewOutput = ''
         let reviewTokensIn = 0
@@ -676,6 +700,7 @@ export async function POST(req: NextRequest) {
           } catch {
             reviewResult = null
           }
+          persistedReviewResult = reviewResult
 
           emit({
             type: 'phase_complete',
@@ -711,6 +736,53 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Pipeline Complete ──────────────────────────────────────────────────
+      if (
+        normalizedReportRequest?.enabled &&
+        project_id &&
+        workspaceId
+      ) {
+        try {
+          const { data: project } = await supabaseAdmin
+            .from('foco_projects')
+            .select('name')
+            .eq('id', project_id)
+            .maybeSingle()
+
+          const persisted = await persistProjectReport(supabaseAdmin, {
+            projectId: project_id,
+            workspaceId,
+            userId: user.id,
+            runId,
+            taskDescription: task_description.trim(),
+            projectName: typeof project?.name === 'string' ? project.name : 'Project',
+            reportType: normalizedReportRequest.report_type,
+            selectedAgentId: normalizedReportRequest.selected_agent_id ?? null,
+            selectedAgentName: normalizedReportRequest.selected_agent_name ?? null,
+            planResult,
+            reviewResult: auto_review ? persistedReviewResult : null,
+          })
+
+          emit({
+            type: 'report_created',
+            report_id: persisted.reportId,
+            artifact_id: persisted.artifactId,
+            title: persisted.title,
+          })
+          emit({
+            type: 'activity',
+            phase: 'system',
+            message: `Project report created: ${persisted.title}`,
+          })
+        } catch (reportErr) {
+          const message = reportErr instanceof Error ? reportErr.message : 'Failed to persist project report'
+          emit({
+            type: 'activity',
+            phase: 'system',
+            message,
+          })
+        }
+      }
+
       const totalElapsedMs = Date.now() - pipelineStartMs
       emit({
         type: 'pipeline_complete',

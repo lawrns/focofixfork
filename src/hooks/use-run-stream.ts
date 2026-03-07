@@ -168,6 +168,18 @@ export function useRunStream(
               void connectToStream(data.jobId)
               return
             }
+          } else if (!res.ok) {
+            // If the server signals the run is too old to ever get a stream,
+            // stop retrying immediately instead of spamming 6 more requests.
+            try {
+              const body = await res.json() as { retryable?: boolean } | null
+              if (body?.retryable === false) {
+                setConnectionState('unavailable')
+                return
+              }
+            } catch {
+              // ignore parse failure — fall through to retry logic
+            }
           }
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return

@@ -86,10 +86,24 @@ export function useDashboardData(user: { id: string } | null) {
   const [workSummary, setWorkSummary] = useState({ total: 0, urgent: 0, blocked: 0 })
   const [proposals, setProposals] = useState<DashboardProposal[]>([])
 
-  const activeRuns = useMemo(
-    () => allRuns.filter((run) => run.status === 'running' || run.status === 'pending').slice(0, 10),
-    [allRuns]
-  )
+  const activeRuns = useMemo(() => {
+    const now = Date.now()
+    const RUNNING_STALE_MS = 60 * 60 * 1000  // 1 hour — running but never finished
+    const PENDING_STALE_MS = 30 * 60 * 1000  // 30 min — queued but never started
+    return allRuns
+      .filter((run) => {
+        if (run.status === 'running') {
+          const age = run.started_at ? now - new Date(run.started_at).getTime() : now - new Date(run.created_at).getTime()
+          return age < RUNNING_STALE_MS
+        }
+        if (run.status === 'pending') {
+          const age = now - new Date(run.created_at).getTime()
+          return age < PENDING_STALE_MS
+        }
+        return false
+      })
+      .slice(0, 10)
+  }, [allRuns])
   const selectedProject = useMemo(
     () => projectOptions.find((project) => project.id === selectedProjectId) ?? null,
     [projectOptions, selectedProjectId]

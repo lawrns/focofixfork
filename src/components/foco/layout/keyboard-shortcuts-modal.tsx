@@ -43,6 +43,7 @@ import {
   Rss,
   Wand2,
   Antenna,
+  RefreshCw,
 } from 'lucide-react';
 
 type ShortcutCategory = 'Global' | 'Navigation' | 'Quick Actions' | 'Views';
@@ -200,6 +201,13 @@ const shortcuts: Shortcut[] = [
     description: 'Go to Crons',
     category: 'Navigation',
     icon: Clock,
+  },
+  {
+    id: 'nav-loops',
+    keys: ['G', 'U'],
+    description: 'Go to Recurring Tasks',
+    category: 'Navigation',
+    icon: RefreshCw,
   },
   {
     id: 'nav-timeline',

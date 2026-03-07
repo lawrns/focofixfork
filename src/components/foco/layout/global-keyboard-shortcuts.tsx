@@ -216,6 +216,7 @@ export function GlobalKeyboardShortcuts() {
           case 'j': router.push('/empire/agents'); break;
           case 'v': router.push('/empire/pipeline'); break;
           case 'k': router.push('/crons'); break;
+          case 'u': router.push('/empire/loops'); break;
           case 'e': router.push('/emails'); break;
           case 'f': router.push('/reports'); break;
           case 'q': router.push('/dashboard?view=proposals'); break;

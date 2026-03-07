@@ -30,6 +30,7 @@ import {
   FolderOpen,
   LayoutGrid,
   Send,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -52,11 +53,12 @@ const mainNavItems: NavItem[] = [
 ];
 
 const empireNavItems: NavItem[] = [
-  { label: 'Empire OS',      href: '/empire',          icon: LayoutGrid, shortcut: 'G M' },
-  { label: 'Dispatch',       href: '/dashboard?view=dispatch', icon: Send, shortcut: 'G C' },
-  { label: 'Agents',         href: '/empire/agents',   icon: Bot,       shortcut: 'G J' },
-  { label: 'Pipeline',       href: '/empire/pipeline', icon: GitBranch, shortcut: 'G V' },
-  { label: 'Crons',          href: '/crons',           icon: Clock,     shortcut: 'G K' },
+  { label: 'Empire OS',        href: '/empire',            icon: LayoutGrid, shortcut: 'G M' },
+  { label: 'Dispatch',         href: '/dashboard?view=dispatch', icon: Send, shortcut: 'G C' },
+  { label: 'Agents',           href: '/empire/agents',     icon: Bot,        shortcut: 'G J' },
+  { label: 'Pipeline',         href: '/empire/pipeline',   icon: GitBranch,  shortcut: 'G V' },
+  { label: 'Crons',            href: '/crons',             icon: Clock,      shortcut: 'G K' },
+  { label: 'Recurring Tasks',  href: '/empire/loops',      icon: RefreshCw,  shortcut: 'G U' },
 ];
 
 const projectsNavItems: NavItem[] = [

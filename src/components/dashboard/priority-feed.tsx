@@ -49,7 +49,7 @@ export interface PriorityFeedProps {
     title: string
     status: string
     project?: { name: string } | null
-    created_at: string
+    created_at?: string
   }>
   workItems: Array<{
     id: string
@@ -63,8 +63,8 @@ export interface PriorityFeedProps {
     id: string
     runner: string
     status: string
-    summary: string | null
-    created_at: string
+    summary?: string | null
+    created_at?: string
     ended_at: string | null
   }>
   agents: Array<{
@@ -148,7 +148,7 @@ function buildPriorityItems(props: PriorityFeedProps): PriorityFeedItem[] {
         severity: 'P0',
         title: run.summary || `Run by ${run.runner}`,
         subtitle: run.runner,
-        timestamp: run.ended_at || run.created_at,
+        timestamp: run.ended_at || run.created_at || new Date().toISOString(),
         source: run.runner,
         actionLabel: 'Retry',
         onAction: props.onRetryRun ? () => props.onRetryRun!(run.id) : undefined,
@@ -164,7 +164,7 @@ function buildPriorityItems(props: PriorityFeedProps): PriorityFeedItem[] {
         severity: 'P3',
         title: run.summary || `Run by ${run.runner}`,
         subtitle: run.runner,
-        timestamp: run.ended_at || run.created_at,
+        timestamp: run.ended_at || run.created_at || new Date().toISOString(),
         source: run.runner,
       })
     }
@@ -200,7 +200,7 @@ function buildPriorityItems(props: PriorityFeedProps): PriorityFeedItem[] {
         severity: 'P1',
         title: p.title,
         subtitle: p.project?.name || undefined,
-        timestamp: p.created_at,
+        timestamp: p.created_at || new Date().toISOString(),
         source: p.project?.name || undefined,
         actionLabel: 'Approve',
         onAction: props.onApproveProposal

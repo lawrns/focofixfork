@@ -53,6 +53,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     NextResponse.json({
       jobId,
       stream_url: `/api/command-surface/stream/${jobId}`,
+      available: true,
     }),
     authResponse
   )

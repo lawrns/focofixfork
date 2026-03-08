@@ -49,6 +49,13 @@ function queueTime(run: Run): string {
   return ''
 }
 
+function runDetailText(run: Run): string | null {
+  if (run.summary) return run.summary
+  if (run.status === 'failed') return 'This run failed without a recorded summary. Open the run for detailed diagnostics.'
+  if (run.status === 'cancelled') return 'This run was cancelled before completion.'
+  return null
+}
+
 function RunsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -236,7 +243,18 @@ function RunsPageContent() {
                       </Badge>
                     )}
                   </div>
-                  {run.summary && <p className="text-[12px] text-muted-foreground truncate mt-0.5">{run.summary}</p>}
+                  {runDetailText(run) && (
+                    <p
+                      className={cn(
+                        'text-[12px] truncate mt-0.5',
+                        run.status === 'failed'
+                          ? 'text-red-600 dark:text-red-400 font-medium'
+                          : 'text-muted-foreground'
+                      )}
+                    >
+                      {runDetailText(run)}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {(run.status === 'running' || run.status === 'pending') && (

@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/auth-helpers'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
-export async function POST(request: Request) {
-  const { user, supabase, response } = await getAuthUser()
+export async function POST(request: NextRequest) {
+  const { user, supabase, response } = await getAuthUser(request)
   if (!user) {
     return NextResponse.json({ error: 'Auth required' }, { status: 401 })
   }

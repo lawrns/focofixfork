@@ -9,6 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cofounder_loops: {
+        Row: {
+          id: string
+          user_id: string
+          workspace_id: string
+          loop_type: 'morning_briefing' | 'pr_babysitter' | 'health_patrol' | 'codebase_gardening' | 'custom'
+          schedule_kind: 'preset' | 'cron'
+          schedule_value: string
+          timezone: string
+          requested_execution_mode: 'report_only' | 'bounded_execution'
+          effective_execution_mode: 'report_only' | 'bounded_execution'
+          execution_backend: 'clawdbot' | 'openclaw'
+          execution_target: Json
+          planning_agent: Json | null
+          selected_project_ids: string[]
+          git_strategy: Json
+          config: Json
+          policy_snapshot: Json
+          status: 'active' | 'paused' | 'completed' | 'cancelled' | 'expired'
+          expires_at: string | null
+          last_tick_at: string | null
+          next_tick_at: string | null
+          active_session_id: string | null
+          iteration_count: number
+          summary: Json
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          workspace_id: string
+          loop_type: 'morning_briefing' | 'pr_babysitter' | 'health_patrol' | 'codebase_gardening' | 'custom'
+          schedule_kind?: 'preset' | 'cron'
+          schedule_value: string
+          timezone?: string
+          requested_execution_mode?: 'report_only' | 'bounded_execution'
+          effective_execution_mode?: 'report_only' | 'bounded_execution'
+          execution_backend?: 'clawdbot' | 'openclaw'
+          execution_target?: Json
+          planning_agent?: Json | null
+          selected_project_ids?: string[]
+          git_strategy?: Json
+          config?: Json
+          policy_snapshot?: Json
+          status?: 'active' | 'paused' | 'completed' | 'cancelled' | 'expired'
+          expires_at?: string | null
+          last_tick_at?: string | null
+          next_tick_at?: string | null
+          active_session_id?: string | null
+          iteration_count?: number
+          summary?: Json
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          workspace_id?: string
+          loop_type?: 'morning_briefing' | 'pr_babysitter' | 'health_patrol' | 'codebase_gardening' | 'custom'
+          schedule_kind?: 'preset' | 'cron'
+          schedule_value?: string
+          timezone?: string
+          requested_execution_mode?: 'report_only' | 'bounded_execution'
+          effective_execution_mode?: 'report_only' | 'bounded_execution'
+          execution_backend?: 'clawdbot' | 'openclaw'
+          execution_target?: Json
+          planning_agent?: Json | null
+          selected_project_ids?: string[]
+          git_strategy?: Json
+          config?: Json
+          policy_snapshot?: Json
+          status?: 'active' | 'paused' | 'completed' | 'cancelled' | 'expired'
+          expires_at?: string | null
+          last_tick_at?: string | null
+          next_tick_at?: string | null
+          active_session_id?: string | null
+          iteration_count?: number
+          summary?: Json
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           id: string

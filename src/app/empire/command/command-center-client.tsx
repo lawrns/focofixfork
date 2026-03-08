@@ -22,6 +22,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DiagramContainer } from '@/components/command-center/diagram/diagram-container'
 import { NightAutonomyCard } from '@/components/command-center/orchestrator/night-autonomy-card'
+import { LoopsSummaryCard } from '@/components/autonomy/loops-summary-card'
 import { AgentDetailSheet } from '@/components/command-center/panels/agent-detail-sheet'
 import { CreateMissionDialog } from '@/components/command-center/dialogs/create-mission-dialog'
 import { AgentTable } from '@/components/command-center/tables/agent-table'
@@ -53,6 +54,7 @@ import {
   ShieldCheck,
   Gauge,
   Workflow,
+  RotateCw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -189,7 +191,10 @@ export function CommandCenterClient() {
   const [activeRuns, setActiveRuns] = useState<Run[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
   const [fleetExpanded, setFleetExpanded] = useState(false)
+  const [ruleExpanded, setRuleExpanded] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CoFounderInsightItem | null>(null)
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
+  const [activeLoopCount, setActiveLoopCount] = useState(0)
 
   const { setAgents, setMissions, setError, setDecisions, approveDecision } = store
 
@@ -332,6 +337,26 @@ export function CommandCenterClient() {
       }
     }
     load()
+  }, [])
+
+  useEffect(() => {
+    const wsId = searchParams?.get('workspace_id') ?? null
+    setWorkspaceId(wsId)
+  }, [searchParams])
+
+  useEffect(() => {
+    const fetchActiveLoops = async () => {
+      try {
+        const res = await fetch('/api/autonomy/loops?status=active&limit=1')
+        if (res.ok) {
+          const json = await res.json()
+          setActiveLoopCount(json?.data?.count ?? json?.count ?? 0)
+        }
+      } catch {
+        // noop — loop count is non-critical
+      }
+    }
+    void fetchActiveLoops()
   }, [])
 
   useEffect(() => {
@@ -581,8 +606,8 @@ export function CommandCenterClient() {
     <TooltipProvider delayDuration={120}>
       <PageShell className="space-y-3">
         <PageHeader
-          title="Critter Mission Control"
-          subtitle="Dense command-and-observe surface for live agent operations"
+          title="Command Center"
+          subtitle="Live agent operations and decision review."
           primaryAction={
             <div className="flex items-center gap-2">
               {store.error && (
@@ -609,11 +634,43 @@ export function CommandCenterClient() {
           }
         />
 
-        <div className="rounded-lg border border-zinc-300/70 bg-zinc-100/70 px-3 py-2 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200">
-          Strategic rule active: dispatches favor observable execution and guarded transitions.
+        <div className="rounded-lg border border-zinc-300/70 bg-zinc-100/70 dark:border-zinc-700 dark:bg-zinc-900/60">
+          <button
+            type="button"
+            onClick={() => setRuleExpanded((prev) => !prev)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-zinc-700 dark:text-zinc-200 font-medium">Strategic rule active</span>
+            <span className="text-xs text-muted-foreground truncate">dispatches favor observable execution and guarded transitions</span>
+            <span className="ml-auto shrink-0">
+              {ruleExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+            </span>
+          </button>
+          <AnimatePresence initial={false}>
+            {ruleExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={SHARED_SPRING}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-zinc-300/70 dark:border-zinc-700 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-300 space-y-1">
+                  <p>All dispatches route through observable execution paths. Guarded transitions are enforced — no silent state mutations allowed. Escalations require operator acknowledgement before proceeding to irreversible actions.</p>
+                  <p className="text-muted-foreground">Mode: Reactive · Policy: Guarded · Escalation ladder: warn → hold → abort</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
+        {/* Zone 1: Command */}
         <div className="bg-gradient-to-b from-background to-muted/20 rounded-xl border p-3 space-y-2">
+          <div className="flex items-center gap-2 px-0.5">
+            <Send className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Command</span>
+          </div>
           <motion.div layoutId="command-surface" transition={SHARED_SPRING} className="rounded-xl border border-zinc-300/70 bg-card p-3">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-2">
@@ -782,6 +839,7 @@ export function CommandCenterClient() {
           stale={staleCount}
           paused={store.paused}
           flashPending={pendingFlash}
+          activeLoops={activeLoopCount}
         />
 
         <FleetStatusPanel
@@ -795,13 +853,9 @@ export function CommandCenterClient() {
           avgLatency={avgLatency}
         />
 
-        <div className="grid gap-2 xl:grid-cols-12">
-          <div className="xl:col-span-5">
-            <ActiveRunsBoard runs={activeRuns} loading={runsLoading} />
-          </div>
-          <div className="xl:col-span-7">
-            <SoapTerminal lines={mergedTerminalLines} open={terminalOpen} onOpenChange={setTerminalOpen} connected={connected} />
-          </div>
+        {/* Zone 2: Live Status Strip — compact KPI pills + expandable fleet detail */}
+        <div className="space-y-2">
+          <ActiveRunsBoard runs={activeRuns} loading={runsLoading} />
         </div>
 
         <ClawdbotActivityFeed events={clawdbotActivity} loading={clawdbotActivityLoading} />
@@ -812,6 +866,67 @@ export function CommandCenterClient() {
           onOpenEvent={(event) => setSelectedEvent(event)}
         />
 
+        {/* Zone 3: Attention Required */}
+        {(() => {
+          const pendingDecisions = store.decisions
+          const problemRuns = activeRuns.filter((run) => run.status === 'failed' || run.status === 'cancelled')
+          const hasAttention = pendingDecisions.length > 0 || problemRuns.length > 0
+          return (
+            <div className="rounded-xl border">
+              <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/20">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Attention Required</span>
+                {hasAttention && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-500">
+                    {pendingDecisions.length + problemRuns.length}
+                  </Badge>
+                )}
+              </div>
+              <div className="p-3">
+                {!hasAttention ? (
+                  <div className="flex items-center gap-2 text-sm text-emerald-500">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>All clear — no pending decisions or failed runs.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingDecisions.map((decision) => (
+                      <div key={decision.id} className="rounded-lg border border-dashed bg-amber-500/5 border-amber-500/30 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <Badge className="text-[10px] mb-1" variant="outline">{decision.severity}</Badge>
+                            <p className="text-sm font-medium">{decision.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{decision.actionHint}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => approveDecision(decision.id, 'approve')}>Approve</Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => approveDecision(decision.id, 'reject')}>Reject</Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {problemRuns.map((run) => (
+                      <div key={run.id} className="rounded-lg border border-dashed bg-rose-500/5 border-rose-500/30 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <Badge className="text-[10px] mb-1 border-rose-500/40 text-rose-500" variant="outline">{run.status}</Badge>
+                            <p className="text-sm font-medium font-mono">{run.runner}</p>
+                            {run.summary && <p className="text-xs text-muted-foreground mt-0.5 truncate">{run.summary}</p>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            <ElapsedTimer since={run.started_at || run.created_at} />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Zone 4: Deep Inspection */}
         <div className="hidden md:block rounded-xl border overflow-hidden bg-card/80" style={{ minHeight: '220px' }}>
           <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
             <Cpu className="h-4 w-4 text-muted-foreground" />
@@ -824,30 +939,44 @@ export function CommandCenterClient() {
           <MobileCommandView />
         </div>
 
-        <Tabs defaultValue={searchParams?.get('tab') ?? 'agents'}>
-          <TabsList>
-            <TabsTrigger value="agents">Agents</TabsTrigger>
-            <TabsTrigger value="missions">Missions</TabsTrigger>
-            <TabsTrigger value="morning">Morning</TabsTrigger>
-            <TabsTrigger value="runs">Runs</TabsTrigger>
-          </TabsList>
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Deep Inspection</span>
+          </div>
+          <Tabs defaultValue={searchParams?.get('tab') ?? 'agents'}>
+            <TabsList>
+              <TabsTrigger value="agents">Agents</TabsTrigger>
+              <TabsTrigger value="missions">Missions</TabsTrigger>
+              <TabsTrigger value="autonomy">Autonomy</TabsTrigger>
+              <TabsTrigger value="runs">Runs</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="agents" className="mt-3">
-            <AgentTable />
-          </TabsContent>
+            <TabsContent value="agents" className="mt-3">
+              <AgentTable />
+            </TabsContent>
 
-          <TabsContent value="missions" className="mt-3">
-            <MissionTable />
-          </TabsContent>
+            <TabsContent value="missions" className="mt-3">
+              <MissionTable />
+            </TabsContent>
 
-          <TabsContent value="morning" className="mt-3">
-            <NightAutonomyCard />
-          </TabsContent>
+            <TabsContent value="autonomy" className="mt-3">
+              <div className="grid gap-4 md:grid-cols-2">
+                <NightAutonomyCard />
+                <LoopsSummaryCard workspaceId={workspaceId ?? null} />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="runs" className="mt-3">
-            <RunsTable />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="runs" className="mt-3">
+              <RunsTable />
+            </TabsContent>
+
+            <TabsContent value="logs" className="mt-3">
+              <SoapTerminal lines={mergedTerminalLines} open={true} onOpenChange={setTerminalOpen} connected={connected} />
+            </TabsContent>
+          </Tabs>
+        </div>
 
         <AgentDetailSheet />
         <CreateMissionDialog open={missionDialogOpen} onClose={() => setMissionDialogOpen(false)} />
@@ -900,6 +1029,7 @@ function ExecutionStatBar({
   stale,
   paused,
   flashPending,
+  activeLoops,
 }: {
   running: number
   pending: number
@@ -909,14 +1039,16 @@ function ExecutionStatBar({
   stale: number
   paused: boolean
   flashPending: boolean
+  activeLoops: number
 }) {
   const stats = [
-    { label: 'Running', value: running, icon: Activity },
-    { label: 'Pending', value: pending, icon: Clock3 },
-    { label: 'Done', value: done, icon: Workflow },
-    { label: 'Blocked', value: blocked, icon: ShieldCheck },
-    { label: 'Failed', value: failed, icon: AlertCircle },
-    { label: 'Stale', value: stale, icon: Gauge },
+    { label: 'Running', value: running, icon: Activity, teal: false },
+    { label: 'Pending', value: pending, icon: Clock3, teal: false },
+    { label: 'Done', value: done, icon: Workflow, teal: false },
+    { label: 'Blocked', value: blocked, icon: ShieldCheck, teal: false },
+    { label: 'Failed', value: failed, icon: AlertCircle, teal: false },
+    { label: 'Stale', value: stale, icon: Gauge, teal: false },
+    { label: 'Active Loops', value: activeLoops, icon: RotateCw, teal: true },
   ]
 
   return (
@@ -931,11 +1063,12 @@ function ExecutionStatBar({
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1 text-xs',
                   stat.label === 'Pending' && flashPending && 'border-amber-400 bg-amber-400/20',
+                  stat.teal && 'border-[color:var(--foco-teal)]/30 bg-[color:var(--foco-teal)]/10',
                 )}
               >
-                <stat.icon className="h-3.5 w-3.5" />
+                <stat.icon className={cn('h-3.5 w-3.5', stat.teal && 'text-[color:var(--foco-teal)]')} />
                 <span>{stat.label}</span>
-                <span className="font-mono">{stat.value}</span>
+                <span className={cn('font-mono', stat.teal && 'text-[color:var(--foco-teal)]')}>{stat.value}</span>
               </motion.div>
             </TooltipTrigger>
             <TooltipContent className="text-xs">{stat.label} agents or items</TooltipContent>

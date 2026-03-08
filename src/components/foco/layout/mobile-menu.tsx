@@ -8,25 +8,18 @@ import {
   Menu,
   X,
   Home,
-  Rss,
   Activity,
+  BarChart2,
   BookOpen,
-  Cpu,
   Bot,
-  Workflow,
-  Clock,
+  GitBranch,
+  RefreshCw,
   Sun,
   FolderKanban,
-  Users,
   Bell,
-  CalendarDays,
-  Mail,
   FileBarChart,
-  Archive,
-  Shield,
   Settings,
-  FolderOpen,
-  Send,
+  Terminal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -39,31 +32,21 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // CORE
-  { label: 'Dashboard',   href: '/dashboard', icon: Home },
-  { label: 'Projects',    href: '/projects',  icon: FolderOpen },
-  { label: 'Runs',        href: '/runs',      icon: Activity },
-  { label: 'Audit Log',   href: '/ledger',    icon: BookOpen },
-  { label: 'Reports',     href: '/reports',   icon: FileBarChart },
-  // EMPIRE
-  { label: 'Empire OS',      href: '/empire',           icon: Cpu,      section: 'Empire' },
-  { label: 'Dispatch',       href: '/dashboard?view=dispatch', icon: Send },
-  { label: 'Agents',         href: '/empire/agents',    icon: Bot },
-  { label: 'Pipeline',       href: '/empire/pipeline',  icon: Workflow },
-  { label: 'Crons',          href: '/crons',            icon: Clock },
-  // PROJECTS
-  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: Sun,          section: 'Projects' },
-  { label: 'Projects',           href: '/empire/missions',  icon: FolderKanban },
-  { label: 'Notifications',      href: '/empire/signals',   icon: Bell },
-  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: CalendarDays },
-  // MANAGE
-  { label: 'Intel Feed',     href: '/clawdbot',    icon: Rss,          section: 'Manage' },
-  { label: 'Emails',         href: '/emails',     icon: Mail,         section: 'Manage' },
-  { label: 'Proposal Queue', href: '/dashboard?view=proposals',  icon: Workflow },
-  { label: 'Artifacts',      href: '/artifacts',  icon: Archive },
-  { label: 'Policies',       href: '/policies',   icon: Shield },
-  // SETTINGS
-  { label: 'Settings',  href: '/settings',  icon: Settings, section: 'Settings' },
+  // OPERATE
+  { label: 'Overview',   href: '/dashboard',       icon: Home },
+  { label: 'Projects',   href: '/empire/missions', icon: FolderKanban },
+  { label: 'Runs',       href: '/runs',            icon: Activity },
+  { label: 'Audit Log',  href: '/ledger',          icon: BarChart2 },
+  // BUILD
+  { label: 'Command Center',  href: '/empire/command',  icon: Terminal,  section: 'Build' },
+  { label: 'Agents',          href: '/empire/agents',   icon: Bot },
+  { label: 'Pipeline',        href: '/empire/pipeline', icon: GitBranch },
+  { label: 'Recurring Tasks', href: '/empire/loops',    icon: RefreshCw },
+  // INFORM
+  { label: 'Daily Briefing', href: '/empire/briefing', icon: Sun,         section: 'Inform' },
+  { label: 'Notifications',  href: '/empire/signals',  icon: Bell },
+  { label: 'Reports',        href: '/reports',         icon: FileBarChart },
+  { label: 'Settings',       href: '/settings',        icon: Settings },
 ]
 
 export function MobileMenu() {

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+import { AutonomySummaryBar } from '@/components/autonomy/autonomy-summary-bar'
 import { useDashboardData, type LedgerEvent } from '@/components/dashboard/use-dashboard-data'
 import { StrategicBanner } from '@/components/dashboard/strategic-banner'
 import { CommandInput, type DispatchResult } from '@/components/dashboard/command-input'
@@ -374,8 +375,8 @@ export default function DashboardPageClient() {
       <TooltipProvider delayDuration={120}>
         <PageShell className="space-y-3 rounded-xl bg-gradient-to-b from-background to-muted/20 px-1 py-2 sm:px-2 lg:px-3">
           <PageHeader
-            title="Execution Dashboard"
-            subtitle="Dispatch, work review, proposal triage, and execution visibility"
+            title="Overview"
+            subtitle="What happened, what needs attention, and what the cofounder is doing now."
             primaryAction={
               <Button variant="outline" size="sm" onClick={() => data.fetchAll()} disabled={data.refreshing} className="h-8 gap-1.5">
                 <RefreshCw className={cn('h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
@@ -384,13 +385,37 @@ export default function DashboardPageClient() {
             }
           />
 
+          <AutonomySummaryBar />
+
+          {/* While you slept strip — only shown when there is non-zero data */}
+          {(data.doneCount > 0 || (data.autonomousStats?.improvementsWeek ?? 0) > 0 || data.proposals.filter((p) => p.status === 'pending_review').length > 0) && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/70">Last 24h:</span>
+              {data.doneCount > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-emerald-500 border-emerald-500/30">
+                  {data.doneCount} runs completed
+                </Badge>
+              )}
+              {(data.autonomousStats?.improvementsWeek ?? 0) > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-[color:var(--foco-teal)] border-[color:var(--foco-teal)]/30">
+                  {data.autonomousStats.improvementsWeek} improvements
+                </Badge>
+              )}
+              {data.proposals.filter((p) => p.status === 'pending_review').length > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-amber-500 border-amber-500/30">
+                  {data.proposals.filter((p) => p.status === 'pending_review').length} proposals waiting
+                </Badge>
+              )}
+            </div>
+          )}
+
           <StrategicBanner visible={showStrategicBanner} onDismiss={() => setShowStrategicBanner(false)} />
 
           <div className="flex flex-wrap gap-2">
             {[
+              { id: 'proposals', label: 'Proposals', icon: ClipboardList },
               { id: 'dispatch', label: 'Dispatch', icon: Send },
               { id: 'work', label: 'Work', icon: FolderKanban },
-              { id: 'proposals', label: 'Proposals', icon: ClipboardList },
               { id: 'runs', label: 'Runs', icon: RefreshCw },
               { id: 'activity', label: 'Activity', icon: BookOpen },
             ].map((item) => {
@@ -414,20 +439,6 @@ export default function DashboardPageClient() {
             })}
           </div>
 
-          <div ref={dispatchRef} id="dispatch" className="scroll-mt-24">
-            <CommandInput
-              agents={data.agents}
-              projectOptions={data.projectOptions}
-              selectedProjectId={data.selectedProjectId}
-              selectedProjectSlug={data.selectedProjectSlug}
-              onProjectChange={data.setSelectedProjectId}
-              onDispatch={handleDispatch}
-              dispatching={dispatching}
-              ribbon={ribbon}
-              dispatchFlash={dispatchFlash}
-            />
-          </div>
-
           <StatPillsBar
             runningCount={data.runningCount}
             pendingCount={data.pendingCount}
@@ -441,6 +452,57 @@ export default function DashboardPageClient() {
           />
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <section
+              ref={proposalsRef}
+              id="proposals"
+              className={cn(
+                'scroll-mt-24 rounded-xl border border-dashed bg-muted/30 p-4 transition-colors',
+                activeView === 'proposals' && 'ring-2 ring-[color:var(--foco-teal)]/40 border-[color:var(--foco-teal)]'
+              )}
+              aria-label="Proposals section"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Proposals</p>
+                  <h2 className="mt-1 text-lg font-semibold">Review queue</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {data.proposals.filter((proposal) => proposal.status === 'pending_review').length} pending review · {data.proposals.length} visible
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigateToView('proposals')}>
+                  Review
+                </Button>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {data.proposals.length > 0 ? data.proposals.slice(0, 6).map((proposal) => (
+                  <div key={proposal.id} className="rounded-lg border border-dashed bg-muted/20 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mb-1">Agent proposal</p>
+                        <p className="truncate text-sm font-medium">{proposal.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {proposal.project?.name ?? 'No project'}{proposal.created_at ? ` · ${relativeTime(proposal.created_at)}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge variant={proposal.status === 'pending_review' ? 'default' : 'outline'} className="capitalize">
+                          {proposal.status.replace(/_/g, ' ')}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                          Confidence —
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    No proposals are waiting for review.
+                  </div>
+                )}
+              </div>
+            </section>
+
             <section
               ref={workRef}
               id="work"
@@ -485,51 +547,20 @@ export default function DashboardPageClient() {
                 )}
               </div>
             </section>
+          </div>
 
-            <section
-              ref={proposalsRef}
-              id="proposals"
-              className={cn(
-                'scroll-mt-24 rounded-xl border bg-card/80 p-4 transition-colors',
-                activeView === 'proposals' && 'ring-2 ring-[color:var(--foco-teal)]/40 border-[color:var(--foco-teal)]'
-              )}
-              aria-label="Proposals section"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Proposals</p>
-                  <h2 className="mt-1 text-lg font-semibold">Review queue</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {data.proposals.filter((proposal) => proposal.status === 'pending_review').length} pending review · {data.proposals.length} visible
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigateToView('proposals')}>
-                  Review
-                </Button>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {data.proposals.length > 0 ? data.proposals.slice(0, 6).map((proposal) => (
-                  <div key={proposal.id} className="rounded-lg border bg-background/70 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{proposal.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {proposal.project?.name ?? 'No project'}{proposal.created_at ? ` · ${relativeTime(proposal.created_at)}` : ''}
-                        </p>
-                      </div>
-                      <Badge variant={proposal.status === 'pending_review' ? 'default' : 'outline'} className="capitalize">
-                        {proposal.status.replace(/_/g, ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                    No proposals are waiting for review.
-                  </div>
-                )}
-              </div>
-            </section>
+          <div ref={dispatchRef} id="dispatch" className="scroll-mt-24">
+            <CommandInput
+              agents={data.agents}
+              projectOptions={data.projectOptions}
+              selectedProjectId={data.selectedProjectId}
+              selectedProjectSlug={data.selectedProjectSlug}
+              onProjectChange={data.setSelectedProjectId}
+              onDispatch={handleDispatch}
+              dispatching={dispatching}
+              ribbon={ribbon}
+              dispatchFlash={dispatchFlash}
+            />
           </div>
 
           {/* Fleet Status Accordion */}

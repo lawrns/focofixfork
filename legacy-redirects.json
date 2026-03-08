@@ -7,5 +7,14 @@
   { "source": "/dashboard/settings", "destination": "/settings", "permanent": false },
   { "source": "/dashboard/profile", "destination": "/profile", "permanent": false },
   { "source": "/dashboard-simple", "destination": "/dashboard", "permanent": false },
-  { "source": "/tasks", "destination": "/my-work", "permanent": false }
+  { "source": "/tasks", "destination": "/my-work", "permanent": false },
+  { "source": "/projects", "destination": "/empire/missions", "permanent": false },
+  { "source": "/projects/:path*", "destination": "/empire/missions/:path*", "permanent": false },
+  { "source": "/empire", "destination": "/empire/command", "permanent": false },
+  { "source": "/crons", "destination": "/empire/loops", "permanent": false },
+  { "source": "/clawdbot", "destination": "/empire/briefing", "permanent": false },
+  { "source": "/policies", "destination": "/settings", "permanent": false },
+  { "source": "/timeline", "destination": "/empire/missions", "permanent": false },
+  { "source": "/inbox", "destination": "/empire/signals", "permanent": false },
+  { "source": "/people", "destination": "/empire/missions", "permanent": false }
 ]

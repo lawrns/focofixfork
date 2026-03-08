@@ -93,11 +93,11 @@ export function useDashboardData(user: { id: string } | null) {
     return allRuns
       .filter((run) => {
         if (run.status === 'running') {
-          const age = run.started_at ? now - new Date(run.started_at).getTime() : now - new Date(run.created_at).getTime()
+          const age = run.started_at ? now - new Date(run.started_at).getTime() : now - new Date(run.created_at ?? Date.now()).getTime()
           return age < RUNNING_STALE_MS
         }
         if (run.status === 'pending') {
-          const age = now - new Date(run.created_at).getTime()
+          const age = now - new Date(run.created_at ?? Date.now()).getTime()
           return age < PENDING_STALE_MS
         }
         return false

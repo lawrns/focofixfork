@@ -91,8 +91,8 @@ export function LoopsSummaryCard({ workspaceId }: LoopSummaryCardProps) {
         setError(json?.error ?? 'Failed to load loops')
         return
       }
-      setLoops((json?.data ?? []) as CofounderLoop[])
-      setCount(json?.count ?? 0)
+      setLoops((json?.data?.data ?? json?.data ?? []) as CofounderLoop[])
+      setCount(json?.data?.count ?? json?.count ?? 0)
     } catch {
       setError('Service unreachable')
     } finally {

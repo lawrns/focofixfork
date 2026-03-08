@@ -1,13 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { BriefingCard } from '@/components/empire/briefing-card'
+import { LoopsSummaryCard } from '@/components/autonomy/loops-summary-card'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 
-export default function EmpireBriefingPage() {
+function BriefingPageInner() {
+  const searchParams = useSearchParams()
+  const workspaceId = searchParams?.get('workspace_id') ?? null
+
   const [data, setData]     = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]   = useState<string | null>(null)
@@ -44,6 +49,17 @@ export default function EmpireBriefingPage() {
       <div className="w-full">
         <BriefingCard data={data} loading={loading} error={error} />
       </div>
+      <div className="w-full mt-4">
+        <LoopsSummaryCard workspaceId={workspaceId} />
+      </div>
     </PageShell>
+  )
+}
+
+export default function EmpireBriefingPage() {
+  return (
+    <Suspense>
+      <BriefingPageInner />
+    </Suspense>
   )
 }

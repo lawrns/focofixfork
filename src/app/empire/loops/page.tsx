@@ -148,7 +148,7 @@ export default function LoopsPage() {
     try {
       const res = await fetch('/api/autonomy/loops?limit=50')
       const json = await res.json()
-      setLoops((json?.data ?? []) as CofounderLoop[])
+      setLoops((json?.data?.data ?? json?.data ?? []) as CofounderLoop[])
     } catch {
       // silent
     } finally {

@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import { MODEL_CATALOG } from '@/lib/ai/model-catalog';
 import { AIRoutingHelp } from './AIRoutingHelp';
+import { toSelectValueWithNone, fromSelectValue } from '@/lib/ui/select-validation';
 
 const MODES = [
   { value: 'off', label: 'Off', description: 'No actions' },
@@ -225,12 +226,12 @@ export function AIPolicySettings() {
                 </SelectContent>
               </Select>
               <Label className="text-xs text-muted-foreground">Fallback</Label>
-              <Select value={planFallback} onValueChange={setPlanFallback}>
+              <Select value={toSelectValueWithNone(planFallback, '__none__')} onValueChange={(v) => setPlanFallback(fromSelectValue(v, '__none__') ?? '')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {MODEL_CATALOG.map((m) => (
                     <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                   ))}
@@ -252,12 +253,12 @@ export function AIPolicySettings() {
                 </SelectContent>
               </Select>
               <Label className="text-xs text-muted-foreground">Fallback</Label>
-              <Select value={executeFallback} onValueChange={setExecuteFallback}>
+              <Select value={toSelectValueWithNone(executeFallback, '__none__')} onValueChange={(v) => setExecuteFallback(fromSelectValue(v, '__none__') ?? '')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {MODEL_CATALOG.map((m) => (
                     <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                   ))}
@@ -279,12 +280,12 @@ export function AIPolicySettings() {
                 </SelectContent>
               </Select>
               <Label className="text-xs text-muted-foreground">Fallback</Label>
-              <Select value={reviewFallback} onValueChange={setReviewFallback}>
+              <Select value={toSelectValueWithNone(reviewFallback, '__none__')} onValueChange={(v) => setReviewFallback(fromSelectValue(v, '__none__') ?? '')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {MODEL_CATALOG.map((m) => (
                     <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                   ))}

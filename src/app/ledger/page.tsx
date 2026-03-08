@@ -2,14 +2,33 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { BookOpen, RefreshCw, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import { BookOpen, RefreshCw, ChevronDown, ChevronRight, ExternalLink, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
+
+const SOURCE_COLORS: Record<string, string> = {
+  policy: 'border-purple-500/40 text-purple-600 dark:text-purple-400 bg-purple-500/10',
+  clawdbot: 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 bg-cyan-500/10',
+  fleet: 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10',
+  system: 'border-zinc-500/40 text-zinc-600 dark:text-zinc-400 bg-zinc-500/10',
+  cofounder_loop: 'border-indigo-500/40 text-indigo-600 dark:text-indigo-400 bg-indigo-500/10',
+}
+
+function getSourceBadgeClass(source: string): string {
+  return SOURCE_COLORS[source] ?? ''
+}
+
+function getTypeBadgeClass(type: string): string {
+  if (/error|fail/i.test(type)) return 'border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-500/10'
+  if (/warn/i.test(type)) return 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10'
+  return ''
+}
 
 type LedgerEvent = {
   id: string
@@ -26,6 +45,9 @@ export default function LedgerPage() {
   const [events, setEvents] = useState<LedgerEvent[]>([])
   const [fetching, setFetching] = useState(false)
   const [typeFilter, setTypeFilter] = useState('')
+  const [sourceFilter, setSourceFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
@@ -33,13 +55,37 @@ export default function LedgerPage() {
     try {
       const params = new URLSearchParams({ limit: '100' })
       if (typeFilter) params.set('type', typeFilter)
+      if (sourceFilter) params.set('source', sourceFilter)
+      if (dateFrom) params.set('from', new Date(dateFrom).toISOString())
+      if (dateTo) params.set('to', new Date(dateTo + 'T23:59:59').toISOString())
       const res = await fetch(`/api/ledger?${params}`)
       const json = await res.json()
       setEvents(json.data ?? [])
     } finally {
       setFetching(false)
     }
-  }, [typeFilter])
+  }, [typeFilter, sourceFilter, dateFrom, dateTo])
+
+  const exportCsv = useCallback(() => {
+    if (events.length === 0) return
+    const headers = ['id', 'type', 'source', 'context_id', 'timestamp', 'payload']
+    const rows = events.map(e => [
+      e.id,
+      e.type,
+      e.source,
+      e.context_id ?? '',
+      e.timestamp,
+      JSON.stringify(e.payload),
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [events])
 
   useEffect(() => { if (user) load() }, [user, load])
 
@@ -73,14 +119,58 @@ export default function LedgerPage() {
         }
       />
 
-      <div className="flex gap-2">
-        <Input
-          placeholder="Filter by type..."
-          value={typeFilter}
-          onChange={e => setTypeFilter(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && load()}
-          className="max-w-xs text-sm"
-        />
+      <div className="flex flex-wrap gap-2 items-end">
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">Type</label>
+          <Input
+            placeholder="Filter by type..."
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && load()}
+            className="w-40 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">Source</label>
+          <Select value={sourceFilter || '_all_'} onValueChange={v => setSourceFilter(v === '_all_' ? '' : v)}>
+            <SelectTrigger className="w-40 text-sm">
+              <SelectValue placeholder="All sources" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">All sources</SelectItem>
+              <SelectItem value="clawdbot">clawdbot</SelectItem>
+              <SelectItem value="policy">policy</SelectItem>
+              <SelectItem value="cofounder_loop">cofounder_loop</SelectItem>
+              <SelectItem value="system">system</SelectItem>
+              <SelectItem value="fleet">fleet</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">From</label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="w-36 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">To</label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="w-36 text-sm"
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={load} disabled={fetching} className="h-9">
+          Apply
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportCsv} disabled={events.length === 0} className="h-9 gap-1.5">
+          <Download className="h-3.5 w-3.5" />
+          Export CSV
+        </Button>
       </div>
 
       {events.length === 0 ? (
@@ -104,8 +194,8 @@ export default function LedgerPage() {
                   {isOpen
                     ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                     : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />}
-                  <Badge variant="outline" className="font-mono text-[10px] flex-shrink-0">{event.type}</Badge>
-                  <span className="text-[12px] text-muted-foreground">{event.source}</span>
+                  <Badge variant="outline" className={cn("font-mono text-[10px] flex-shrink-0", getTypeBadgeClass(event.type))}>{event.type}</Badge>
+                  <Badge variant="outline" className={cn("text-[10px] flex-shrink-0", getSourceBadgeClass(event.source))}>{event.source}</Badge>
                   {event.context_id && (
                     <span className="text-[11px] text-muted-foreground font-mono-display truncate">{event.context_id}</span>
                   )}

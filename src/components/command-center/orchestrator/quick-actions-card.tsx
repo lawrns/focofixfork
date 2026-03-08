@@ -158,7 +158,7 @@ export function QuickActionsCard({ services = [] }: QuickActionsCardProps) {
             </svg>
           </div>
           </TooltipTrigger>
-          <TooltipContent className="text-xs">Backend service health — inner to outer: ClawdBot, Bosun, Critter</TooltipContent>
+          <TooltipContent className="text-xs">Backend service health — inner to outer: AI Engine, Scheduler, Browser Agent</TooltipContent>
           </Tooltip>
           <div className="flex-1 space-y-1">
             {(() => {

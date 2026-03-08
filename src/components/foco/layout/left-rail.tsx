@@ -18,8 +18,9 @@ import {
   BarChart2,
   Radio,
   RefreshCw,
-  Terminal,
+  Monitor,
   FolderKanban,
+  CheckSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -33,28 +34,28 @@ interface NavItem {
   shortcut?: string;
 }
 
-// OPERATE — daily work
-const operateNavItems: NavItem[] = [
-  { label: 'Overview',   href: '/dashboard',       icon: Home,        shortcut: 'G H' },
-  { label: 'Projects',   href: '/empire/missions', icon: FolderKanban, shortcut: 'G P' },
-  { label: 'Runs',       href: '/runs',            icon: Activity,    shortcut: 'G R' },
-  { label: 'Audit Log',  href: '/ledger',          icon: BarChart2,   shortcut: 'G L' },
+// WORK — daily work
+const workNavItems: NavItem[] = [
+  { label: 'Overview',   href: '/dashboard',  icon: Home,         shortcut: 'G H' },
+  { label: 'Projects',   href: '/projects',   icon: FolderKanban, shortcut: 'G P' },
+  { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare,  shortcut: 'G W' },
+  { label: 'Runs',       href: '/runs',       icon: Activity,     shortcut: 'G R' },
+  { label: 'Audit Log',  href: '/ledger',     icon: BarChart2,    shortcut: 'G L' },
 ];
 
-// BUILD — agent operations
-const buildNavItems: NavItem[] = [
-  { label: 'Command Center',   href: '/empire/command', icon: Terminal,  shortcut: 'G C' },
-  { label: 'Agents',           href: '/empire/agents',  icon: Bot,       shortcut: 'G J' },
-  { label: 'Pipeline',         href: '/empire/pipeline', icon: GitBranch, shortcut: 'G V' },
-  { label: 'Recurring Tasks',  href: '/empire/loops',   icon: RefreshCw, shortcut: 'G U' },
+// AUTOMATION — agent operations
+const automationNavItems: NavItem[] = [
+  { label: 'Agents',         href: '/agents',    icon: Bot,       shortcut: 'G J' },
+  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch, shortcut: 'G V' },
+  { label: 'Recurring',      href: '/recurring', icon: RefreshCw, shortcut: 'G U' },
+  { label: 'System Status',  href: '/system',    icon: Monitor,   shortcut: 'G M' },
+  { label: 'Briefing',       href: '/briefing',  icon: FileText,  shortcut: 'G B' },
 ];
 
-// INFORM — intelligence & alerts
-const informNavItems: NavItem[] = [
-  { label: 'Daily Briefing', href: '/empire/briefing', icon: FileText, shortcut: 'G B' },
-  { label: 'Notifications',  href: '/empire/signals',  icon: Radio,    shortcut: 'G N' },
-  { label: 'Reports',        href: '/reports',         icon: BarChart2, shortcut: 'G F' },
-  { label: 'Settings',       href: '/settings',        icon: Settings, shortcut: 'G S' },
+// BOTTOM — utility items
+const bottomNavItems: NavItem[] = [
+  { label: 'Notifications', href: '/notifications', icon: Radio,    shortcut: 'G N' },
+  { label: 'Settings',      href: '/settings',      icon: Settings, shortcut: 'G S' },
 ];
 
 export function LeftRail() {
@@ -184,33 +185,28 @@ export function LeftRail() {
       {/* Navigation */}
       <nav ref={navRef} className="relative flex-1 overflow-y-auto py-4 px-2.5 space-y-1 scrollbar-hide">
 
-        {/* OPERATE */}
+        {/* WORK */}
         {!sidebarCollapsed && (
           <div className="px-3 pb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Operate</span>
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Work</span>
           </div>
         )}
-        {operateNavItems.map(item => <NavLink key={item.href} item={item} />)}
+        {workNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* BUILD */}
+        {/* AUTOMATION */}
         {!sidebarCollapsed && (
           <div className="px-3 pb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Build</span>
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Automation</span>
           </div>
         )}
-        {buildNavItems.map(item => <NavLink key={item.href} item={item} />)}
+        {automationNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* INFORM */}
-        {!sidebarCollapsed && (
-          <div className="px-3 pb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Inform</span>
-          </div>
-        )}
-        {informNavItems.map(item => <NavLink key={item.href} item={item} />)}
+        {/* BOTTOM NAV */}
+        {bottomNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         {/* Scroll fade */}
         {navOverflows && (

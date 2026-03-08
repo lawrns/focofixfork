@@ -83,10 +83,10 @@ export const AGENT_STATUS_DOT: Record<AgentNodeStatus, string> = {
 }
 
 export const BACKEND_LABELS: Record<AgentBackend, string> = {
-  crico:    'CRICO',
-  clawdbot: 'ClawdBot',
-  bosun:    'Bosun',
-  openclaw: 'OpenClaw',
+  crico:    'Intelligence',
+  clawdbot: 'AI Engine',
+  bosun:    'Scheduler',
+  openclaw: 'Browser Agent',
   advisor:  'Advisor',
 }
 

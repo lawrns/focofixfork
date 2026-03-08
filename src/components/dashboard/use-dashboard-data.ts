@@ -151,6 +151,17 @@ export function useDashboardData(user: { id: string } | null) {
 
   const gatewayStatus = relayReachable === null ? 'Checking...' : relayReachable ? 'Reachable' : 'Down'
 
+  const attentionCount = useMemo(() => {
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+    const recentFailedRuns = allRuns.filter(
+      (run) => run.status === 'failed' && run.created_at && new Date(run.created_at).getTime() > oneDayAgo
+    ).length
+    const blockedItems = workItems.filter((item) => item.status === 'blocked').length
+    const pendingProposals = proposals.filter((p) => p.status === 'pending_review').length
+    const errorAgents = agents.filter((a) => a.status === 'error').length
+    return recentFailedRuns + blockedItems + pendingProposals + errorAgents
+  }, [allRuns, workItems, proposals, agents])
+
   const fetchAll = useCallback(async () => {
     if (!user) return
     setRefreshing(true)
@@ -301,6 +312,7 @@ export function useDashboardData(user: { id: string } | null) {
     staleCount,
     g1Share,
     gatewayStatus,
+    attentionCount,
     fetchAll,
   }
 }

@@ -177,7 +177,7 @@ export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, on
         <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
           {project.activeRuns > 0 && (
             <Link
-              href="/empire/command"
+              href="/system"
               onClick={e => e.stopPropagation()}
               className="flex items-center gap-1 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
             >

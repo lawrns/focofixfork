@@ -153,7 +153,7 @@ export function LoopsSummaryCard({ workspaceId }: LoopSummaryCardProps) {
                 New
               </Button>
               <Link
-                href="/empire/loops"
+                href="/recurring"
                 className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1"
               >
                 View all

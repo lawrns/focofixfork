@@ -145,7 +145,7 @@ const shortcuts: Shortcut[] = [
     icon: LayoutDashboard,
   },
   {
-    id: 'nav-command-center',
+    id: 'nav-dispatch',
     keys: ['G', 'C'],
     description: 'Go to Dispatch',
     category: 'Navigation',
@@ -161,7 +161,7 @@ const shortcuts: Shortcut[] = [
   {
     id: 'nav-my-work',
     keys: ['G', 'W'],
-    description: 'Go to Work Queue',
+    description: 'Go to My Tasks',
     category: 'Navigation',
     icon: CheckSquare,
   },
@@ -196,9 +196,9 @@ const shortcuts: Shortcut[] = [
     icon: FolderOpen,
   },
   {
-    id: 'nav-crons',
+    id: 'nav-recurring',
     keys: ['G', 'K'],
-    description: 'Go to Crons',
+    description: 'Go to Recurring',
     category: 'Navigation',
     icon: Clock,
   },
@@ -280,9 +280,9 @@ const shortcuts: Shortcut[] = [
     icon: Settings,
   },
   {
-    id: 'nav-empire',
+    id: 'nav-system',
     keys: ['G', 'M'],
-    description: 'Go to Empire OS',
+    description: 'Go to System Status',
     category: 'Navigation',
     icon: Cpu,
   },

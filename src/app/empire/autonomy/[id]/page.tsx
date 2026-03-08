@@ -98,7 +98,7 @@ export default function AutonomySessionDetailPage() {
 
   return (
     <PageShell className="space-y-6">
-      <Link href="/empire/command?tab=morning" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+      <Link href="/system?tab=morning" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3 w-3" />
         Back to Morning Handoff
       </Link>

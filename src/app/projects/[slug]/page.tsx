@@ -201,7 +201,7 @@ export default function ProjectPage() {
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-2">{error || 'Project not found'}</h2>
             <p className="text-sm text-zinc-500 mb-4">The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
-            <Button asChild><Link href="/empire/missions">Back to Projects</Link></Button>
+            <Button asChild><Link href="/projects">Back to Projects</Link></Button>
           </div>
         </div>
       </div>

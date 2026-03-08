@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, FileJson, ShieldAlert, Workflow } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Clock, DollarSign, FileJson, Hash, RotateCcw, ShieldAlert, Workflow, Zap } from 'lucide-react'
 import { UnifiedPageShell } from '@/components/layout/unified-page-shell'
 import { UnifiedCard } from '@/components/ui/unified-card'
 import { StatusBadge } from '@/components/ui/unified-badge'
@@ -22,6 +22,9 @@ type Run = {
   created_at: string
   artifacts?: RunArtifact[] | null
   trace?: Record<string, unknown> | null
+  tokens_in?: number | null
+  tokens_out?: number | null
+  cost_usd?: number | null
 }
 
 type RoutingSnapshot = {
@@ -75,12 +78,57 @@ function statusTone(status?: TimelineEvent['status']): string {
   return 'text-muted-foreground'
 }
 
+function diagnoseError(
+  errorText: string,
+  allEvents: TimelineEvent[] = [],
+  routing: RoutingSnapshot | null = null,
+): { suggestion: string; retryHint?: Record<string, unknown> } {
+  // Aggregate all error texts from failed events
+  const allErrorTexts = [
+    errorText,
+    ...allEvents
+      .filter(e => e.status === 'failed')
+      .map(e => [e.description, e.title, e.payload ? JSON.stringify(e.payload) : ''].filter(Boolean).join(' ')),
+  ].join(' ')
+  const lower = allErrorTexts.toLowerCase()
+
+  const fallbackModel = routing?.requested?.fallback_chain?.[0]
+  const fallbackLabel = fallbackModel ? getModelLabel(fallbackModel) : null
+
+  if (/model.*not.?found|model.*does not exist/.test(lower)) {
+    if (fallbackLabel && fallbackModel) {
+      return { suggestion: `Model unavailable. Fallback: ${fallbackLabel}`, retryHint: { model_override: fallbackModel } }
+    }
+    return { suggestion: 'The requested model is unavailable. Try switching to Claude or a different provider.' }
+  }
+  if (/429|rate.?limit/.test(lower)) return { suggestion: 'Rate limited — switch provider or wait before retrying.' }
+  if (/500|502|503|504/.test(lower)) {
+    const code = lower.match(/\b(500|502|503|504)\b/)?.[0] ?? 'unknown'
+    return { suggestion: `Backend error ${code} — check System Status for service health.` }
+  }
+  if (/ECONNREFUSED|fetch failed|ENOTFOUND/i.test(allErrorTexts)) return { suggestion: 'Service unreachable — verify the backend is running and accessible.' }
+  if (/context.?length|token.?limit|max.?tokens/i.test(allErrorTexts)) return { suggestion: 'Context length exceeded — use a larger model or split the task into smaller parts.' }
+  if (/timeout/.test(lower)) return { suggestion: 'The operation timed out. Consider breaking the task into smaller steps.' }
+  if (/401|403|unauthorized/.test(lower)) return { suggestion: 'Authentication failed. Check the API key configuration in Settings.' }
+  return { suggestion: 'Review the execution trace above for details.' }
+}
+
+function formatPayloadDuration(payload: Record<string, unknown>): string | null {
+  const s = payload.started_at
+  const e = payload.ended_at
+  if (typeof s === 'string' && typeof e === 'string') return formatDuration(s, e)
+  return null
+}
+
 export default function RunDetailPage() {
   const { user, loading } = useAuth()
+  const router = useRouter()
   const params = useParams()
   const id = typeof params?.id === 'string' ? params.id : ''
 
   const [run, setRun] = useState<Run | null>(null)
+  const [retrying, setRetrying] = useState(false)
+  const [expandedPayloads, setExpandedPayloads] = useState<Set<string>>(new Set())
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [executionEvents, setExecutionEvents] = useState<TimelineEvent[]>([])
   const [auditEvents, setAuditEvents] = useState<TimelineEvent[]>([])
@@ -123,6 +171,57 @@ export default function RunDetailPage() {
     return formatDuration(run.started_at, run.ended_at)
   }, [run])
 
+  const totalTokens = useMemo(() => {
+    const tIn = run?.tokens_in ?? (run?.trace?.token_summary as Record<string, number> | undefined)?.tokens_in ?? 0
+    const tOut = run?.tokens_out ?? (run?.trace?.token_summary as Record<string, number> | undefined)?.tokens_out ?? 0
+    return { tokensIn: tIn, tokensOut: tOut, total: tIn + tOut }
+  }, [run])
+
+  const costUsd = useMemo(() => {
+    return run?.cost_usd ?? (run?.trace?.token_summary as Record<string, number> | undefined)?.cost_usd ?? null
+  }, [run])
+
+  const avgLatency = useMemo(() => {
+    return (run?.trace?.token_summary as Record<string, number> | undefined)?.avg_latency_ms ?? null
+  }, [run])
+
+  const hasTokenData = totalTokens.total > 0 || costUsd !== null
+
+  const lastError = useMemo(() => {
+    const allEvents = [...executionEvents, ...auditEvents]
+    const errorEvt = [...allEvents].reverse().find((e) => e.status === 'failed' || (e.kind as string) === 'error')
+    return errorEvt?.description ?? errorEvt?.title ?? null
+  }, [executionEvents, auditEvents])
+
+  const handleRetry = useCallback(async () => {
+    if (retrying) return
+    setRetrying(true)
+    try {
+      const res = await fetch(`/api/runs/${id}/retry`, { method: 'POST' })
+      if (res.ok) {
+        const json = await res.json()
+        const newId = json.data?.id ?? json.id
+        if (newId) {
+          router.push(`/runs/${newId}`)
+          return
+        }
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setRetrying(false)
+    }
+  }, [id, retrying, router])
+
+  const togglePayload = useCallback((evtId: string) => {
+    setExpandedPayloads((prev) => {
+      const next = new Set(prev)
+      if (next.has(evtId)) next.delete(evtId)
+      else next.add(evtId)
+      return next
+    })
+  }, [])
+
   if (loading || (fetching && !notFound)) {
     return (
       <UnifiedPageShell className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8" maxWidth="6xl">
@@ -164,6 +263,16 @@ export default function RunDetailPage() {
           <ArrowLeft className="h-3 w-3 shrink-0" />
           <span>Runs</span>
         </Link>
+        {(run.status === 'failed' || run.status === 'cancelled') && (
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            <RotateCcw className={`h-3 w-3 ${retrying ? 'animate-spin' : ''}`} />
+            {retrying ? 'Retrying...' : 'Retry'}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 sm:gap-6">
@@ -176,6 +285,18 @@ export default function RunDetailPage() {
             <span className="inline-flex items-center rounded bg-muted px-2 sm:px-2.5 py-1 font-mono text-xs whitespace-nowrap">{run.runner}</span>
             {duration && <span className="inline-flex items-center rounded bg-muted/60 px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap">Duration: {duration}</span>}
             <span className="inline-flex items-center rounded bg-muted/60 px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap">Events: {timeline.length}</span>
+            {totalTokens.total > 0 && (
+              <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap">
+                <Hash className="h-3 w-3" />
+                {totalTokens.total.toLocaleString()} tokens
+              </span>
+            )}
+            {costUsd !== null && (
+              <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap">
+                <DollarSign className="h-3 w-3" />
+                ${costUsd.toFixed(4)}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -235,6 +356,38 @@ export default function RunDetailPage() {
         )}
       </section>
 
+      {hasTokenData && (
+        <section className="space-y-5 sm:space-y-6">
+          <div className="flex items-center gap-3">
+            <Zap className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Token Summary
+            </span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <UnifiedCard>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div>
+                <p className="text-xs text-muted-foreground">Tokens In</p>
+                <p className="text-lg font-semibold mt-1">{totalTokens.tokensIn.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Tokens Out</p>
+                <p className="text-lg font-semibold mt-1">{totalTokens.tokensOut.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Cost</p>
+                <p className="text-lg font-semibold mt-1">{costUsd !== null ? `$${costUsd.toFixed(4)}` : '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Avg Latency</p>
+                <p className="text-lg font-semibold mt-1">{avgLatency !== null ? `${avgLatency}ms` : '--'}</p>
+              </div>
+            </div>
+          </UnifiedCard>
+        </section>
+      )}
+
       <section className="space-y-5 sm:space-y-6">
         <div className="flex items-center gap-3">
           <Workflow className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -250,34 +403,123 @@ export default function RunDetailPage() {
             </p>
           </UnifiedCard>
         ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {executionEvents.map((evt) => (
-              <UnifiedCard key={evt.id} animate={false} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 md:p-5">
-                <div className="mt-1 shrink-0 flex-none">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <span className="text-sm sm:text-base font-medium">{evt.title}</span>
-                    {evt.status && (
-                      <span className={`inline-flex items-center rounded bg-muted/60 px-1.5 sm:px-2 py-0.5 text-xs font-medium ${statusTone(evt.status)} whitespace-nowrap`}>
-                        {evt.status}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center rounded bg-muted/40 px-1.5 sm:px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">{evt.source}</span>
-                  </div>
-                  {evt.description && (
-                    <p className="mt-2 sm:mt-2.5 text-sm text-muted-foreground break-words">{evt.description}</p>
-                  )}
-                  <p className="mt-2.5 sm:mt-3 text-xs text-muted-foreground">
-                    {new Date(evt.timestamp).toLocaleString()}
-                  </p>
-                </div>
-              </UnifiedCard>
-            ))}
+          <div className="relative">
+            {/* Vertical timeline line */}
+            <div className="absolute left-[19px] sm:left-[23px] top-0 bottom-0 w-[2px] bg-border" />
+            <div className="space-y-3 sm:space-y-4">
+              {executionEvents.map((evt) => {
+                const payloadDuration = evt.payload ? formatPayloadDuration(evt.payload) : null
+                const payloadTokensIn = evt.payload?.tokens_in as number | undefined
+                const payloadTokensOut = evt.payload?.tokens_out as number | undefined
+                const hasPayloadTokens = typeof payloadTokensIn === 'number' || typeof payloadTokensOut === 'number'
+                const isExpanded = expandedPayloads.has(evt.id)
+
+                return (
+                  <UnifiedCard key={evt.id} animate={false} className="relative flex items-start gap-3 sm:gap-4 p-3 sm:p-4 md:p-5">
+                    <div className="mt-1 shrink-0 flex-none relative z-10 bg-background rounded-full p-0.5">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="text-sm sm:text-base font-medium">{evt.title}</span>
+                        {evt.status && (
+                          <span className={`inline-flex items-center rounded bg-muted/60 px-1.5 sm:px-2 py-0.5 text-xs font-medium ${statusTone(evt.status)} whitespace-nowrap`}>
+                            {evt.status}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center rounded bg-muted/40 px-1.5 sm:px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">{evt.source}</span>
+                        {payloadDuration && (
+                          <span className="inline-flex items-center rounded bg-muted/40 px-1.5 sm:px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">{payloadDuration}</span>
+                        )}
+                        {hasPayloadTokens && (
+                          <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-1.5 sm:px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">
+                            <Hash className="h-2.5 w-2.5" />
+                            {((payloadTokensIn ?? 0) + (payloadTokensOut ?? 0)).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      {evt.description && (
+                        <p className="mt-2 sm:mt-2.5 text-sm text-muted-foreground break-words">{evt.description}</p>
+                      )}
+                      <p className="mt-2.5 sm:mt-3 text-xs text-muted-foreground">
+                        {new Date(evt.timestamp).toLocaleString()}
+                      </p>
+                      {evt.payload && (
+                        <button
+                          onClick={() => togglePayload(evt.id)}
+                          className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          Details
+                        </button>
+                      )}
+                      {isExpanded && evt.payload && (
+                        <pre className="mt-2 rounded bg-muted/50 p-3 text-xs overflow-x-auto max-h-64 overflow-y-auto">
+                          {JSON.stringify(evt.payload, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  </UnifiedCard>
+                )
+              })}
+            </div>
           </div>
         )}
       </section>
+
+      {run.status === 'failed' && lastError && (
+        <section className="space-y-5 sm:space-y-6">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-4 w-4 text-red-500 shrink-0" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-red-500">
+              Failure Diagnosis
+            </span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <UnifiedCard className="border-red-500/20">
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Error</p>
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400 break-words">{lastError}</p>
+              </div>
+              {(() => {
+                const diagnosis = diagnoseError(lastError, [...executionEvents, ...auditEvents], routing)
+                return (
+                  <>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suggestion</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{diagnosis.suggestion}</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (retrying) return
+                        setRetrying(true)
+                        try {
+                          const res = await fetch(`/api/runs/${id}/retry`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(diagnosis.retryHint ?? {}),
+                          })
+                          if (res.ok) {
+                            const json = await res.json()
+                            const newId = json.data?.id ?? json.id
+                            if (newId) { router.push(`/runs/${newId}`); return }
+                          }
+                        } catch { /* silently fail */ } finally { setRetrying(false) }
+                      }}
+                      disabled={retrying}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw className={`h-3 w-3 ${retrying ? 'animate-spin' : ''}`} />
+                      {retrying ? 'Retrying...' : diagnosis.retryHint ? 'Retry with fallback' : 'Retry'}
+                    </button>
+                  </>
+                )
+              })()}
+            </div>
+          </UnifiedCard>
+        </section>
+      )}
 
       <section className="space-y-5 sm:space-y-6">
         <div className="flex items-center gap-3">

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { AIModelHealth, AIRuntimeSourceHealth } from '@/lib/ai/runtime-health'
+import { useVisibilityAwarePolling } from './use-visibility-aware-polling'
 
 type AIHealthResponse = {
   ok: boolean
@@ -15,35 +16,20 @@ export function useAIHealth() {
   const [data, setData] = useState<AIHealthResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      setLoading(true)
-      try {
-        const response = await fetch('/api/ai/health', { cache: 'no-store' })
-        const payload = await response.json().catch(() => null)
-        if (!cancelled) {
-          setData(payload)
-        }
-      } catch {
-        if (!cancelled) {
-          setData(null)
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
-    }
-
-    void load()
-    const interval = window.setInterval(load, 30000)
-    return () => {
-      cancelled = true
-      window.clearInterval(interval)
+  const poll = useCallback(async (signal: AbortSignal) => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/ai/health', { cache: 'no-store', signal })
+      const payload = await response.json().catch(() => null)
+      if (!signal.aborted) setData(payload)
+    } catch {
+      if (!signal.aborted) setData(null)
+    } finally {
+      if (!signal.aborted) setLoading(false)
     }
   }, [])
+
+  useVisibilityAwarePolling(poll, 30_000)
 
   const models = data?.models ?? []
   const runtimeSources = data?.runtime_sources ?? []

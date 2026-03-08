@@ -94,8 +94,8 @@ export const EXECUTION_MODE_LABELS: Record<ExecutionMode, string> = {
 }
 
 export const BACKEND_LABELS: Record<ExecutionBackend, string> = {
-  clawdbot: 'Standard',
-  openclaw: 'Advanced',
+  clawdbot: 'AI Engine',
+  openclaw: 'Browser Agent',
 }
 
 export const STATUS_LABELS: Record<LoopStatus | string, string> = {

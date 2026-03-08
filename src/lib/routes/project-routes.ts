@@ -8,7 +8,7 @@ export function getProjectListHref(params?: {
   if (params?.import) search.set('import', 'true')
   if (params?.organize) search.set('organize', 'true')
   const query = search.toString()
-  return query ? `/empire/missions?${query}` : '/empire/missions'
+  return query ? `/projects?${query}` : '/projects'
 }
 
 export function getProjectDetailHref(slugOrId: string): string {

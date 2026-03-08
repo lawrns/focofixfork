@@ -171,10 +171,91 @@ export function AIInsights({ userId, organizationId, className, runs, recentEven
     }
   }
 
-  const renderInsight = (insight: Insight, isPrimary = false) => {
+  const renderInsight = (insight: Insight, isPrimary = false, isCompact = false) => {
     const Icon = getInsightIcon(insight)
     const colors = getSeverityColors(insight.severity)
 
+    // Compact row layout for secondary insights list
+    if (isCompact) {
+      return (
+        <div
+          className={cn(
+            'flex items-start gap-3 p-3 rounded-lg border transition-colors',
+            'hover:bg-muted/50',
+            colors.border,
+            insight.severity === 'critical' && 'bg-rose-50/50 dark:bg-rose-950/20',
+            insight.severity === 'warning' && 'bg-amber-50/50 dark:bg-amber-950/20',
+            insight.severity === 'success' && 'bg-emerald-50/50 dark:bg-emerald-950/20'
+          )}
+        >
+          {/* Icon */}
+          <div
+            className={cn(
+              'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
+              colors.icon
+            )}
+          >
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h4 className={cn('font-medium text-sm', colors.text)}>
+                {insight.title}
+              </h4>
+              {insight.data?.trend && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'text-[10px] gap-1 flex-shrink-0',
+                    insight.data.trend === 'up' && 'border-emerald-400 text-emerald-700',
+                    insight.data.trend === 'down' && 'border-rose-400 text-rose-700'
+                  )}
+                >
+                  {insight.data.trend === 'up' ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : insight.data.trend === 'down' ? (
+                    <TrendingDown className="h-3 w-3" />
+                  ) : null}
+                  {insight.data.change !== undefined && `${insight.data.change > 0 ? '+' : ''}${insight.data.change}`}
+                </Badge>
+              )}
+            </div>
+            <p className={cn('text-sm mt-0.5 leading-relaxed', colors.subtext)}>
+              {insight.description}
+            </p>
+            {insight.data?.prediction && (
+              <p className={cn('text-xs font-medium mt-1.5', colors.text)}>
+                → {insight.data.prediction}
+              </p>
+            )}
+            {insight.actions && insight.actions.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                {insight.actions.map((action) => (
+                  <Button
+                    key={action.action}
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      if (action.href) {
+                        window.location.href = action.href
+                      }
+                    }}
+                    className="h-7 text-xs gap-1 px-2"
+                  >
+                    {action.label}
+                    <ArrowRight className="h-3 w-3" />
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // Full card layout for primary insight
     return (
       <Card
         className={cn(
@@ -364,18 +445,18 @@ export function AIInsights({ userId, organizationId, className, runs, recentEven
         {renderInsight(insights.primary_insight, true)}
       </motion.div>
 
-      {/* Secondary Insights */}
+      {/* Secondary Insights - Stacked vertical list for better readability */}
       {insights.secondary_insights.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-2">
           <AnimatePresence>
             {insights.secondary_insights.map((insight, index) => (
               <motion.div
                 key={insight.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.1 }}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
               >
-                {renderInsight(insight, false)}
+                {renderInsight(insight, false, true)}
               </motion.div>
             ))}
           </AnimatePresence>

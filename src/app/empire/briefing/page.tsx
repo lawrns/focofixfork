@@ -24,7 +24,16 @@ function BriefingPageInner() {
       const res = await fetch('/api/empire/briefing')
       const json = await res.json()
       setData(json)
-      if (!res.ok) setError(json?.error ?? 'Unavailable')
+      if (!res.ok) {
+        setError(json?.error ?? 'Unavailable')
+      } else if (json) {
+        // Wire briefing insights into notifications
+        void fetch('/api/notifications/from-briefing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ briefing: json }),
+        }).catch(() => { /* best-effort */ })
+      }
     } catch {
       setError('Service unreachable')
     } finally {

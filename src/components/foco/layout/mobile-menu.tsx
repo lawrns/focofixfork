@@ -10,16 +10,15 @@ import {
   Home,
   Activity,
   BarChart2,
-  BookOpen,
   Bot,
   GitBranch,
   RefreshCw,
-  Sun,
   FolderKanban,
-  Bell,
-  FileBarChart,
   Settings,
-  Terminal,
+  Monitor,
+  FileText,
+  Radio,
+  CheckSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -32,21 +31,21 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // OPERATE
-  { label: 'Overview',   href: '/dashboard',       icon: Home },
-  { label: 'Projects',   href: '/empire/missions', icon: FolderKanban },
-  { label: 'Runs',       href: '/runs',            icon: Activity },
-  { label: 'Audit Log',  href: '/ledger',          icon: BarChart2 },
-  // BUILD
-  { label: 'Command Center',  href: '/empire/command',  icon: Terminal,  section: 'Build' },
-  { label: 'Agents',          href: '/empire/agents',   icon: Bot },
-  { label: 'Pipeline',        href: '/empire/pipeline', icon: GitBranch },
-  { label: 'Recurring Tasks', href: '/empire/loops',    icon: RefreshCw },
-  // INFORM
-  { label: 'Daily Briefing', href: '/empire/briefing', icon: Sun,         section: 'Inform' },
-  { label: 'Notifications',  href: '/empire/signals',  icon: Bell },
-  { label: 'Reports',        href: '/reports',         icon: FileBarChart },
-  { label: 'Settings',       href: '/settings',        icon: Settings },
+  // WORK
+  { label: 'Overview',   href: '/dashboard',  icon: Home },
+  { label: 'Projects',   href: '/projects',   icon: FolderKanban },
+  { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare },
+  { label: 'Runs',       href: '/runs',       icon: Activity },
+  { label: 'Audit Log',  href: '/ledger',     icon: BarChart2 },
+  // AUTOMATION
+  { label: 'Agents',         href: '/agents',    icon: Bot,       section: 'Automation' },
+  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch },
+  { label: 'Recurring',      href: '/recurring', icon: RefreshCw },
+  { label: 'System Status',  href: '/system',    icon: Monitor },
+  { label: 'Briefing',       href: '/briefing',  icon: FileText },
+  // UTILITY
+  { label: 'Notifications',  href: '/notifications', icon: Radio,    section: 'Utility' },
+  { label: 'Settings',       href: '/settings',      icon: Settings },
 ]
 
 export function MobileMenu() {

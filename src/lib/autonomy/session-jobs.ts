@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { TrustScoringService } from '@/lib/trust/trust-scoring-service'
 
 export type AutonomySessionJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
 
@@ -134,7 +135,7 @@ export async function reconcileAutonomySession(
   const [{ data: sessionRow, error: sessionError }, jobs] = await Promise.all([
     supabase
       .from('autonomy_sessions')
-      .select('id, status, summary')
+      .select('id, status, summary, selected_agent, workspace_id, window_start, run_id')
       .eq('id', sessionId)
       .single(),
     listAutonomySessionJobs(supabase, sessionId),
@@ -179,6 +180,24 @@ export async function reconcileAutonomySession(
     .eq('id', sessionId)
 
   if (updateError) throw new Error(updateError.message)
+
+  // Fire-and-forget trust scoring on terminal status transitions
+  if (nextStatus !== sessionRow.status && ['completed', 'failed', 'cancelled'].includes(nextStatus)) {
+    const sa = sessionRow.selected_agent as Record<string, unknown> | null
+    if (sa?.id && sessionRow.workspace_id) {
+      void TrustScoringService.recordIteration(supabase, {
+        agentId: String(sa.id),
+        agentKey: String(sa.name ?? ''),
+        backend: String(sa.backend ?? 'clawdbot'),
+        workspaceId: sessionRow.workspace_id as string,
+        sessionId,
+        runId: (sessionRow.run_id as string) ?? null,
+        outcome: nextStatus === 'completed' ? 'success' : nextStatus === 'failed' ? 'failure' : 'cancelled',
+        durationMs: sessionRow.window_start ? Date.now() - new Date(sessionRow.window_start as string).getTime() : null,
+        metadata: summary,
+      }).catch(err => console.error('[TrustScoring] recordIteration failed:', err))
+    }
+  }
 
   return { status: nextStatus, summary, jobs }
 }

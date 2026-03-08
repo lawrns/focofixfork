@@ -36,6 +36,8 @@ import { CommandInput, type DispatchResult } from '@/components/dashboard/comman
 import { StatPillsBar } from '@/components/dashboard/stat-pills-bar'
 import { RunCardGrid } from '@/components/dashboard/run-card-grid'
 import { RecentEventsFeed } from '@/components/dashboard/recent-events-feed'
+import { PriorityFeed } from '@/components/dashboard/priority-feed'
+import { AttentionCountBadge } from '@/components/dashboard/attention-count-badge'
 import { useRunStream } from '@/hooks/use-run-stream'
 import type { TerminalLine } from '@/components/dashboard/run-card'
 import type { Run } from '@/components/dashboard/use-dashboard-data'
@@ -164,7 +166,6 @@ export default function DashboardPageClient() {
   const [streamStateMap, setStreamStateMap] = useState<Record<string, 'idle' | 'resolving' | 'connecting' | 'live' | 'ended' | 'unavailable'>>({})
   const [runJobMap, setRunJobMap] = useState<Record<string, string>>({})
   const dispatchRef = useRef<HTMLDivElement>(null)
-  const workRef = useRef<HTMLDivElement>(null)
   const proposalsRef = useRef<HTMLDivElement>(null)
   const runsRef = useRef<HTMLDivElement>(null)
   const activityRef = useRef<HTMLDivElement>(null)
@@ -258,6 +259,7 @@ export default function DashboardPageClient() {
     persona: string
     agentId: string
     personaLabel: string
+    lane?: string
   }): Promise<DispatchResult> => {
     setDispatching(true)
     setDispatchFlash(true)
@@ -310,6 +312,7 @@ export default function DashboardPageClient() {
           context: {
             persona: args.persona,
             source: 'dashboard',
+            lane: args.lane ?? null,
           },
           bootstrap_run_id: bootstrapRun.id,
           requested_model: defaultModel,
@@ -378,10 +381,13 @@ export default function DashboardPageClient() {
             title="Overview"
             subtitle="What happened, what needs attention, and what the cofounder is doing now."
             primaryAction={
-              <Button variant="outline" size="sm" onClick={() => data.fetchAll()} disabled={data.refreshing} className="h-8 gap-1.5">
-                <RefreshCw className={cn('h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <AttentionCountBadge count={data.attentionCount} />
+                <Button variant="outline" size="sm" onClick={() => data.fetchAll()} disabled={data.refreshing} className="h-8 gap-1.5">
+                  <RefreshCw className={cn('h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
+                  Refresh
+                </Button>
+              </div>
             }
           />
 
@@ -451,103 +457,29 @@ export default function DashboardPageClient() {
             onBlockedClick={() => setBlockedSheetOpen(true)}
           />
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <section
-              ref={proposalsRef}
-              id="proposals"
-              className={cn(
-                'scroll-mt-24 rounded-xl border border-dashed bg-muted/30 p-4 transition-colors',
-                activeView === 'proposals' && 'ring-2 ring-[color:var(--foco-teal)]/40 border-[color:var(--foco-teal)]'
-              )}
-              aria-label="Proposals section"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Proposals</p>
-                  <h2 className="mt-1 text-lg font-semibold">Review queue</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {data.proposals.filter((proposal) => proposal.status === 'pending_review').length} pending review · {data.proposals.length} visible
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigateToView('proposals')}>
-                  Review
-                </Button>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {data.proposals.length > 0 ? data.proposals.slice(0, 6).map((proposal) => (
-                  <div key={proposal.id} className="rounded-lg border border-dashed bg-muted/20 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mb-1">Agent proposal</p>
-                        <p className="truncate text-sm font-medium">{proposal.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {proposal.project?.name ?? 'No project'}{proposal.created_at ? ` · ${relativeTime(proposal.created_at)}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <Badge variant={proposal.status === 'pending_review' ? 'default' : 'outline'} className="capitalize">
-                          {proposal.status.replace(/_/g, ' ')}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                          Confidence —
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                    No proposals are waiting for review.
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section
-              ref={workRef}
-              id="work"
-              className={cn(
-                'scroll-mt-24 rounded-xl border bg-card/80 p-4 transition-colors',
-                activeView === 'work' && 'ring-2 ring-[color:var(--foco-teal)]/40 border-[color:var(--foco-teal)]'
-              )}
-              aria-label="Work section"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Work</p>
-                  <h2 className="mt-1 text-lg font-semibold">Current queue</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {data.workSummary.total} open items · {data.workSummary.urgent} urgent · {data.workSummary.blocked} blocked
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigateToView('work')}>
-                  Focus
-                </Button>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {data.workItems.length > 0 ? data.workItems.slice(0, 6).map((item) => (
-                  <div key={item.id} className="rounded-lg border bg-background/70 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{item.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {item.project?.name ?? 'No project'} · {(item.section ?? item.status).replace(/_/g, ' ')}
-                        </p>
-                      </div>
-                      <Badge variant={item.status === 'blocked' ? 'destructive' : 'outline'} className="capitalize">
-                        {(item.priority ?? item.status ?? 'open').replace(/_/g, ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                    No assigned work items for the current filter.
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
+          <section
+            ref={proposalsRef}
+            id="proposals"
+            className={cn(
+              'scroll-mt-24 transition-colors',
+              (activeView === 'proposals' || activeView === 'work') && 'ring-2 ring-[color:var(--foco-teal)]/40 rounded-xl'
+            )}
+            aria-label="Priority feed section"
+          >
+            <PriorityFeed
+              proposals={data.proposals}
+              workItems={data.workItems}
+              runs={data.allRuns}
+              agents={data.agents}
+              onRetryRun={async (runId) => {
+                try {
+                  const res = await fetch(`/api/runs/${runId}/retry`, { method: 'POST' })
+                  if (res.ok) window.dispatchEvent(new Event('runs:mutated'))
+                } catch { /* handled in feed */ }
+              }}
+              maxItems={12}
+            />
+          </section>
 
           <div ref={dispatchRef} id="dispatch" className="scroll-mt-24">
             <CommandInput

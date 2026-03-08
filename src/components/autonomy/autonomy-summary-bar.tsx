@@ -254,7 +254,7 @@ export function AutonomySummaryBar() {
             </Link>
           </Button>
           <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground" asChild>
-            <Link href="/empire/command">
+            <Link href="/system">
               <Terminal className="h-3 w-3" />
               Command
             </Link>

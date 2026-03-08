@@ -211,16 +211,15 @@ export class AIService {
     console.log('[AIService] chatCompletion called with', messages.length, 'messages')
     console.log('[AIService] Current provider:', this.config.provider, 'model:', this.config.model)
 
-    if (!this.config.apiKey) {
-      console.error('[AIService] No API key configured for', this.config.provider)
-      throw new Error(`${this.config.provider} API key not configured`);
-    }
-
-    if (!this.client && !this.isAnthropic && !this.isOllamaPrimary) {
-      throw new Error('Client not initialized');
-    }
-
     try {
+      if (!this.config.apiKey && !this.isOllamaPrimary) {
+        console.error('[AIService] No API key configured for', this.config.provider)
+        throw new Error(`${this.config.provider} API key not configured`);
+      }
+
+      if (!this.client && !this.isAnthropic && !this.isOllamaPrimary) {
+        throw new Error('Client not initialized');
+      }
       console.log('[AIService] Making API call to', this.config.baseURL, 'with model', this.config.model)
 
       if (this.isOllamaPrimary) {

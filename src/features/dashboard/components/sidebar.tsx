@@ -79,14 +79,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '/', active: true },
-    { icon: Folder, label: 'Projects', href: '/empire/missions' },
+    { icon: Folder, label: 'Projects', href: '/projects' },
   ]
 
   const empireItems = [
-    { icon: Activity, label: 'Empire OS', href: '/empire' },
-    { icon: Terminal, label: 'Command Center', href: '/empire/command' },
-    { icon: Bot, label: 'Agents', href: '/empire/agents' },
-    { icon: GitBranch, label: 'Pipeline', href: '/empire/pipeline' },
+    { icon: Activity, label: 'System Status', href: '/system' },
+    { icon: Bot, label: 'Agents', href: '/agents' },
+    { icon: GitBranch, label: 'Pipeline', href: '/pipeline' },
   ]
 
   const getStatusColor = (status: string) => {
@@ -162,7 +161,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* Empire Section */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Empire</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Automation</h3>
           </div>
 
           <div className="space-y-0.5">

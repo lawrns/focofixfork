@@ -114,7 +114,7 @@ export function FleetTab({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
               <span className="text-sm font-medium text-emerald-600">{activeRuns} running</span>
-              <a href="/empire/command" className="ml-auto text-[11px] text-[color:var(--foco-teal)] hover:underline">
+              <a href="/system" className="ml-auto text-[11px] text-[color:var(--foco-teal)] hover:underline">
                 View →
               </a>
             </div>

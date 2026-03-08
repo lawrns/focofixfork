@@ -195,28 +195,28 @@ export function GlobalKeyboardShortcuts() {
             showShortcutToast('Navigated to Dispatch', <Terminal className="h-4 w-4" />);
             break;
           case 'a':
-            router.push('/empire/agents');
+            router.push('/agents');
             showShortcutToast('Navigated to Agents', <Users className="h-4 w-4" />);
             break;
           case 'm':
-            router.push('/empire');
-            showShortcutToast('Navigated to Empire OS', <Users className="h-4 w-4" />);
+            router.push('/system');
+            showShortcutToast('Navigated to System Status', <Users className="h-4 w-4" />);
             break;
           
           // Additional G-key navigation (keeping existing shortcuts)
           case 'h': router.push('/dashboard'); break;
           case 'i': router.push('/clawdbot'); break;
-          case 'w': router.push('/dashboard?view=work'); break;
+          case 'w': router.push('/my-work'); break;
           case 'r': router.push('/runs'); break;
           case 'l': router.push('/ledger'); break;
-          case 'b': router.push('/empire/briefing'); break;
+          case 'b': router.push('/briefing'); break;
           case 'p': router.push('/projects'); break;
-          case 'n': router.push('/empire/signals'); break;
-          case 't': router.push('/empire/timeline'); break;
-          case 'j': router.push('/empire/agents'); break;
-          case 'v': router.push('/empire/pipeline'); break;
-          case 'k': router.push('/crons'); break;
-          case 'u': router.push('/empire/loops'); break;
+          case 'n': router.push('/notifications'); break;
+          case 't': router.push('/projects'); break;
+          case 'j': router.push('/agents'); break;
+          case 'v': router.push('/pipeline'); break;
+          case 'k': router.push('/recurring'); break;
+          case 'u': router.push('/recurring'); break;
           case 'e': router.push('/emails'); break;
           case 'f': router.push('/reports'); break;
           case 'q': router.push('/dashboard?view=proposals'); break;

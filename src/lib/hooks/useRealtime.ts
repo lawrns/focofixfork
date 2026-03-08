@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
+import { useEffect, useRef, useCallback, useState, useMemo, useReducer } from 'react'
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase-client'
 import { audioService } from '@/lib/audio/audio-service'
+import { reportChannelStatus, removeChannel } from './use-connection-health'
 import { AccessibilityService } from '@/lib/accessibility/accessibility'
 import type { RealTimeEvent } from '@/lib/models/real-time-events'
 
@@ -269,7 +270,7 @@ export function useRealtime(
 
     channel.subscribe((status) => {
       if (status === 'CHANNEL_ERROR') {
-        // Log errors in both development and production for debugging
+        reportChannelStatus(channelName, 'offline')
         console.error(`[useRealtime] Channel subscription error for ${channelName}`, {
           channelName,
           projectId: options.projectId,
@@ -278,6 +279,7 @@ export function useRealtime(
           status
         })
       } else if (status === 'SUBSCRIBED') {
+        reportChannelStatus(channelName, 'online')
         if (process.env.NODE_ENV === 'development') {
           console.log(`[useRealtime] Successfully subscribed to ${channelName}`, {
             channelName,
@@ -287,6 +289,7 @@ export function useRealtime(
           })
         }
       } else if (status === 'TIMED_OUT') {
+        reportChannelStatus(channelName, 'reconnecting')
         console.warn(`[useRealtime] Channel subscription timed out for ${channelName}`, {
           channelName,
           projectId: options.projectId,
@@ -294,6 +297,7 @@ export function useRealtime(
           userId: options.userId
         })
       } else if (status === 'CLOSED') {
+        removeChannel(channelName)
         if (process.env.NODE_ENV === 'development') {
           console.log(`[useRealtime] Channel closed for ${channelName}`)
         }
@@ -305,6 +309,9 @@ export function useRealtime(
 
   const unsubscribe = useCallback(() => {
     if (channelRef.current) {
+      // Clean up connection health tracking
+      const name = (channelRef.current as any).topic ?? ''
+      if (name) removeChannel(name)
       try {
         supabase.removeChannel(channelRef.current)
       } catch (error) {
@@ -387,6 +394,80 @@ export function useActivityFeed(options: RealtimeOptions = {}) {
     events,
     isSubscribed,
     clearEvents: () => setEvents([])
+  }
+}
+
+// ─── Optimistic update helper ───────────────────────────────────────────────
+//
+// Wraps a Supabase mutation so the UI updates instantly, then rolls back
+// if the server request fails. Works with any array-of-records state.
+//
+// Usage:
+//   const { items, applyOptimistic } = useOptimisticList<WorkItem>(initialItems)
+//   applyOptimistic(
+//     (draft) => draft.map(i => i.id === id ? { ...i, status: 'done' } : i),
+//     () => supabase.from('work_items').update({ status: 'done' }).eq('id', id)
+//   )
+
+type OptimisticAction<T> =
+  | { type: 'set'; items: T[] }
+  | { type: 'optimistic'; items: T[]; rollback: T[] }
+  | { type: 'commit' }
+  | { type: 'rollback' }
+
+function optimisticReducer<T>(
+  state: { items: T[]; pending: T[] | null },
+  action: OptimisticAction<T>
+): { items: T[]; pending: T[] | null } {
+  switch (action.type) {
+    case 'set':
+      return { items: action.items, pending: null }
+    case 'optimistic':
+      return { items: action.items, pending: action.rollback }
+    case 'commit':
+      return { ...state, pending: null }
+    case 'rollback':
+      return { items: state.pending ?? state.items, pending: null }
+  }
+}
+
+export function useOptimisticList<T>(initial: T[] = []) {
+  const [state, dispatch] = useReducer(optimisticReducer<T>, {
+    items: initial,
+    pending: null,
+  })
+
+  // Sync when the source-of-truth changes (e.g. new fetch / realtime push)
+  const setItems = useCallback((items: T[]) => {
+    dispatch({ type: 'set', items })
+  }, [])
+
+  const applyOptimistic = useCallback(
+    async (
+      updater: (current: T[]) => T[],
+      mutation: () => Promise<{ error?: any }>
+    ) => {
+      const rollback = state.items
+      dispatch({ type: 'optimistic', items: updater(state.items), rollback })
+      try {
+        const { error } = await mutation()
+        if (error) {
+          dispatch({ type: 'rollback' })
+        } else {
+          dispatch({ type: 'commit' })
+        }
+      } catch {
+        dispatch({ type: 'rollback' })
+      }
+    },
+    [state.items]
+  )
+
+  return {
+    items: state.items as T[],
+    isPending: state.pending !== null,
+    setItems,
+    applyOptimistic,
   }
 }
 

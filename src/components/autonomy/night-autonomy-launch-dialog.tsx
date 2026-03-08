@@ -93,6 +93,7 @@ export function NightAutonomyLaunchDialog({ trigger, onStarted, onStopped }: Nig
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([])
   const [objective, setObjective] = useState('')
   const [activeSession, setActiveSession] = useState<RunningSession | null>(null)
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1)
 
   useEffect(() => {
     if (currentWorkspace?.id) setWorkspaceId(currentWorkspace.id)
@@ -255,145 +256,188 @@ export function NightAutonomyLaunchDialog({ trigger, onStarted, onStopped }: Nig
           </div>
         ) : (
           <div className="space-y-5">
-            <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  <Wand2 className="h-3.5 w-3.5" />
-                  Selected Agent
+            {/* Step indicator */}
+            <div className="flex items-center justify-center gap-3">
+              {[
+                { step: 1 as const, label: 'Agent & Scope' },
+                { step: 2 as const, label: 'Objective' },
+                { step: 3 as const, label: 'Review' },
+              ].map(({ step, label }, i) => (
+                <div key={step} className="flex items-center gap-3">
+                  {i > 0 && <div className={`h-px w-8 ${wizardStep >= step ? 'bg-[color:var(--foco-teal)]' : 'bg-border'}`} />}
+                  <div className="flex items-center gap-2">
+                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${wizardStep >= step ? 'bg-[color:var(--foco-teal)] text-white' : 'bg-muted text-muted-foreground'}`}>
+                      {step}
+                    </div>
+                    <span className={`text-xs ${wizardStep === step ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{label}</span>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  {options.agents.map((agent) => {
-                    const selected = agent.id === selectedAgentId
-                    return (
-                      <button
-                        key={agent.id}
-                        type="button"
-                        className={`rounded-xl border p-3 text-left transition ${selected ? 'border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/5' : 'border-border hover:border-[color:var(--foco-teal)]/50'}`}
-                        onClick={() => setSelectedAgentId(agent.id)}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-medium">{agent.name}</div>
-                            <div className="text-sm text-muted-foreground">{agent.role}</div>
-                          </div>
-                          <Badge variant={selected ? 'default' : 'outline'}>{agent.kind}</Badge>
-                        </div>
-                        <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
-                          {agent.description ?? agent.risk_model}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+              ))}
+            </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  <GitBranch className="h-3.5 w-3.5" />
-                  Indexed Codebases
-                </div>
-                <ScrollArea className="h-[280px] rounded-xl border">
-                  <div className="space-y-2 p-3">
-                    {options.projects.map((project) => {
-                      const checked = selectedProjectIds.includes(project.id)
+            {/* Founder profile issues blocking gate */}
+            {options.founder_profile?.issues?.some(i => i.severity === 'error') && wizardStep === 1 && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                <div className="font-medium mb-1">Founder profile has unresolved issues:</div>
+                {options.founder_profile.issues.map((issue) => issue.message).join(' ')}
+              </div>
+            )}
+
+            {/* Step 1: Agent + Scope */}
+            {wizardStep === 1 && (
+              <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Selected Agent
+                  </div>
+                  <div className="grid gap-2">
+                    {options.agents.map((agent) => {
+                      const selected = agent.id === selectedAgentId
                       return (
-                        <label key={project.id} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3">
-                          <Checkbox checked={checked} onCheckedChange={(value) => toggleProject(project.id, Boolean(value))} />
-                          <div className="min-w-0">
-                            <div className="font-medium">{project.name}</div>
-                            <div className="truncate text-xs text-muted-foreground">{project.local_path}</div>
-                            <div className="mt-1 flex items-center gap-2">
-                              <Badge variant="outline">Alignment {project.founder_alignment.score}</Badge>
-                              {project.founder_alignment.blockedByAntiGoals.length > 0 && (
-                                <Badge variant="destructive">Anti-goal conflict</Badge>
-                              )}
+                        <button
+                          key={agent.id}
+                          type="button"
+                          className={`rounded-xl border p-3 text-left transition ${selected ? 'border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/5' : 'border-border hover:border-[color:var(--foco-teal)]/50'}`}
+                          onClick={() => setSelectedAgentId(agent.id)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-medium">{agent.name}</div>
+                              <div className="text-sm text-muted-foreground">{agent.role}</div>
                             </div>
-                            {project.founder_alignment.reasons.length > 0 && (
-                              <div className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
-                                {project.founder_alignment.reasons.join(' • ')}
-                              </div>
-                            )}
-                            {project.git_remote && (
-                              <div className="truncate text-[11px] text-muted-foreground">{project.git_remote}</div>
-                            )}
+                            <Badge variant={selected ? 'default' : 'outline'}>{agent.kind}</Badge>
                           </div>
-                        </label>
+                          <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                            {agent.description ?? agent.risk_model}
+                          </div>
+                        </button>
                       )
                     })}
                   </div>
-                </ScrollArea>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="night-objective">Wishes for tonight</Label>
-              <Textarea
-                id="night-objective"
-                value={objective}
-                onChange={(event) => setObjective(event.target.value)}
-                placeholder="Example: tighten proposal flow reliability, fix failing orchestration tests, and leave branches ready for morning review."
-                className="min-h-[120px]"
-              />
-            </div>
-
-            <div className="grid gap-3 rounded-xl border bg-muted/30 p-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  Safety defaults
                 </div>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>Always sync selected repos before execution</li>
-                  <li>Never commit or push to default/protected branches</li>
-                  <li>Skip dirty worktrees and log the reason</li>
-                </ul>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  Tonight&apos;s scope
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {selectedAgent ? `${selectedAgent.name}` : 'No agent selected'} across {selectedProjects.length} selected codebase{selectedProjects.length === 1 ? '' : 's'}.
-                </div>
-                <Input value={options.git_defaults.branchPrefix} disabled aria-label="Night autonomy branch prefix" />
-              </div>
-            </div>
 
-            <div className="rounded-xl border p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <ShieldCheck className="h-4 w-4 text-[color:var(--foco-teal)]" />
-                Founder context
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                {options.founder_profile?.available ? options.founder_profile.excerpt : 'Founder profile is missing or empty. Night autonomy will run without founder-specific business context.'}
-              </div>
-              {options.founder_profile?.parsed && (
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Priority Order</div>
-                    <div className="mt-1 text-sm">{options.founder_profile.parsed.strategicPriorityOrder.join(' -> ')}</div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    <GitBranch className="h-3.5 w-3.5" />
+                    Indexed Codebases
                   </div>
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Current Bottlenecks</div>
-                    <div className="mt-1 text-sm">{options.founder_profile.parsed.bottlenecks.join(', ') || 'None listed'}</div>
+                  <ScrollArea className="h-[280px] rounded-xl border">
+                    <div className="space-y-2 p-3">
+                      {options.projects.map((project) => {
+                        const checked = selectedProjectIds.includes(project.id)
+                        return (
+                          <label key={project.id} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3">
+                            <Checkbox checked={checked} onCheckedChange={(value) => toggleProject(project.id, Boolean(value))} />
+                            <div className="min-w-0">
+                              <div className="font-medium">{project.name}</div>
+                              <div className="truncate text-xs text-muted-foreground">{project.local_path}</div>
+                              <div className="mt-1 flex items-center gap-2">
+                                <Badge variant="outline" title="0 = no alignment data yet">Alignment {project.founder_alignment.score}</Badge>
+                                {project.founder_alignment.blockedByAntiGoals.length > 0 && (
+                                  <Badge variant="destructive">Anti-goal conflict</Badge>
+                                )}
+                              </div>
+                              {project.founder_alignment.reasons.length > 0 && (
+                                <div className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
+                                  {project.founder_alignment.reasons.join(' • ')}
+                                </div>
+                              )}
+                              {project.git_remote && (
+                                <div className="truncate text-[11px] text-muted-foreground">{project.git_remote}</div>
+                              )}
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Objective */}
+            {wizardStep === 2 && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="night-objective">Wishes for tonight</Label>
+                  <Textarea
+                    id="night-objective"
+                    value={objective}
+                    onChange={(event) => setObjective(event.target.value)}
+                    placeholder="Example: tighten proposal flow reliability, fix failing orchestration tests, and leave branches ready for morning review."
+                    className="min-h-[160px]"
+                  />
+                </div>
+                <div className="rounded-xl border p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <ShieldCheck className="h-4 w-4 text-[color:var(--foco-teal)]" />
+                    Founder context
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    {options.founder_profile?.available ? options.founder_profile.excerpt : 'Founder profile is missing or empty. Night autonomy will run without founder-specific business context.'}
+                  </div>
+                  {options.founder_profile?.parsed && (
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Priority Order</div>
+                        <div className="mt-1 text-sm">{options.founder_profile.parsed.strategicPriorityOrder.join(' -> ')}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Current Bottlenecks</div>
+                        <div className="mt-1 text-sm">{options.founder_profile.parsed.bottlenecks.join(', ') || 'None listed'}</div>
+                      </div>
+                    </div>
+                  )}
+                  {options.founder_profile?.stale ? (
+                    <div className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+                      Founder profile is stale. Ranking remains active but should be reviewed before broadening autonomy.
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Review */}
+            {wizardStep === 3 && (
+              <div className="space-y-4">
+                <div className="grid gap-3 rounded-xl border bg-muted/30 p-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      Safety defaults
+                    </div>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>Always sync selected repos before execution</li>
+                      <li>Never commit or push to default/protected branches</li>
+                      <li>Skip dirty worktrees and log the reason</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      Tonight&apos;s scope
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedAgent ? `${selectedAgent.name}` : 'No agent selected'} across {selectedProjects.length} selected codebase{selectedProjects.length === 1 ? '' : 's'}.
+                    </div>
+                    <Input value={options.git_defaults.branchPrefix} disabled aria-label="Night autonomy branch prefix" />
                   </div>
                 </div>
-              )}
-              {options.founder_profile?.issues?.length ? (
-                <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
-                  {options.founder_profile.issues.map((issue) => issue.message).join(' ')}
+
+                {objective.trim() && (
+                  <div className="rounded-xl border p-4">
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Objective</div>
+                    <div className="text-sm">{objective}</div>
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="h-3.5 w-3.5 inline mr-1.5" />
+                  This will grant the selected agent autonomous execution access to the chosen codebases during the configured overnight window. Monitor progress in the audit log.
                 </div>
-              ) : null}
-              {options.founder_profile?.stale ? (
-                <div className="mt-3 text-xs text-amber-700 dark:text-amber-300">
-                  Founder profile is stale. Ranking remains active but should be reviewed before broadening autonomy.
-                </div>
-              ) : null}
-              <div className="mt-3 text-xs text-muted-foreground">
-                Projects are ordered by founder alignment first, then name.
               </div>
-            </div>
+            )}
 
             {activeSession && (
               <div className="rounded-xl border border-[color:var(--foco-teal)]/30 bg-[color:var(--foco-teal)]/5 p-4 text-sm">
@@ -406,17 +450,38 @@ export function NightAutonomyLaunchDialog({ trigger, onStarted, onStopped }: Nig
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="flex-row justify-between sm:justify-between">
           {activeSession ? (
             <Button type="button" variant="destructive" onClick={stopNightMode} disabled={submitting}>
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4" />}
               Stop Session
             </Button>
           ) : (
-            <Button type="button" onClick={startNightMode} disabled={submitting || !selectedAgent || selectedProjectIds.length === 0 || !workspaceId}>
-              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Moon className="mr-2 h-4 w-4" />}
-              Start Night Loop
-            </Button>
+            <>
+              <div>
+                {wizardStep > 1 && (
+                  <Button type="button" variant="outline" onClick={() => setWizardStep((s) => Math.max(1, s - 1) as 1 | 2 | 3)}>
+                    Back
+                  </Button>
+                )}
+              </div>
+              <div>
+                {wizardStep < 3 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setWizardStep((s) => Math.min(3, s + 1) as 1 | 2 | 3)}
+                    disabled={wizardStep === 1 && (!selectedAgent || selectedProjectIds.length === 0)}
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={startNightMode} disabled={submitting || !selectedAgent || selectedProjectIds.length === 0 || !workspaceId}>
+                    {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Moon className="mr-2 h-4 w-4" />}
+                    Start Night Loop
+                  </Button>
+                )}
+              </div>
+            </>
           )}
         </DialogFooter>
       </DialogContent>

@@ -62,7 +62,7 @@ export async function GET(_req: NextRequest) {
   const clawdbotHeaders: Record<string, string> = {}
   if (clawdbotToken) clawdbotHeaders['Authorization'] = `Bearer ${clawdbotToken}`
 
-  const clawdbotProbe = probe('ClawdBot API', `${CLAWDBOT_API}/health`, { headers: clawdbotHeaders })
+  const clawdbotProbe = probe('AI Engine', `${CLAWDBOT_API}/health`, { headers: clawdbotHeaders })
   const clawdbotBody = fetch(`${CLAWDBOT_API}/health`, {
     headers: clawdbotHeaders,
     signal: AbortSignal.timeout(3000),
@@ -76,7 +76,7 @@ export async function GET(_req: NextRequest) {
     clawdbotProbe,
     clawdbotBody,
     capabilityBody,
-    probe('Critter Relay', `${OPENCLAW_URL}/`),
+    probe('Browser Agent', `${OPENCLAW_URL}/`),
     probe('Temporal',       `${temporalUiUrl}/`),
     probe('n8n',            `${N8N_URL}/healthz`),
     probe('ChromaDB',       `${CHROMADB_URL}/api/v2/heartbeat`),

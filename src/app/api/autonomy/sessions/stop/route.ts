@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { authRequiredResponse, successResponse, missingFieldResponse, databaseErrorResponse } from '@/lib/api/response-helpers'
+import { reconcileAutonomySession } from '@/lib/autonomy/session-jobs'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,15 @@ export async function POST(req: NextRequest) {
       return mergeAuthResponse(databaseErrorResponse('Failed to stop autonomy session', sessionError), authResponse)
     }
 
+    await supabase
+      .from('autonomy_session_jobs')
+      .update({
+        status: 'cancelled',
+        error: reason,
+      })
+      .eq('session_id', sessionId)
+      .in('status', ['queued', 'running'])
+
     if (sessionRow.run_id) {
       await supabase
         .from('runs')
@@ -46,11 +56,13 @@ export async function POST(req: NextRequest) {
         .eq('id', sessionRow.run_id)
     }
 
+    await reconcileAutonomySession(supabase, sessionId)
+
     await supabase.from('ledger_events').insert({
       type: 'autonomy_session_stopped',
       source: 'cofounder',
       context_id: sessionId,
-      payload: { run_id: sessionId, reason },
+      payload: { run_id: sessionRow.run_id, reason },
       timestamp: now,
     })
 

@@ -54,9 +54,10 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
 
   return useMemo(() => {
     const breadcrumbs: Breadcrumb[] = [];
+    const currentPath = pathname ?? '';
 
     // Dashboard page: /dashboard
-    if (pathname === '/dashboard') {
+    if (currentPath === '/dashboard') {
       return [
         {
           label: 'Dashboard',
@@ -66,7 +67,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
     }
 
     // Always start with Home for authenticated pages (except dashboard)
-    if (!pathname.includes('/login') && !pathname.includes('/register')) {
+    if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
       breadcrumbs.push({
         label: 'Home',
         href: '/dashboard',
@@ -75,7 +76,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
     }
 
     // Projects page: /empire/missions (canonical list)
-    if (pathname === '/empire/missions') {
+    if (currentPath === '/empire/missions') {
       breadcrumbs.push({
         label: 'Projects',
         isCurrent: true,
@@ -84,7 +85,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
     }
 
     // Project detail page: /projects/[slug] (canonical detail) or /empire/missions/[slug] (legacy alias)
-    if (pathname.includes('/projects/') || pathname.includes('/empire/missions/')) {
+    if (currentPath.includes('/projects/') || currentPath.includes('/empire/missions/')) {
       breadcrumbs.push({
         label: 'Projects',
         href: '/empire/missions',
@@ -97,7 +98,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
         if (taskTitle) {
           breadcrumbs.push({
             label: projectName,
-            href: pathname.split('/tasks')[0], // Navigate to project root
+            href: currentPath.split('/tasks')[0], // Navigate to project root
             isCurrent: false,
             truncated: truncatedName !== projectName ? truncatedName : undefined,
           });
@@ -125,7 +126,7 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
     }
 
     // Other authenticated pages (settings, etc.)
-    const segments = pathname.split('/').filter(Boolean);
+    const segments = currentPath.split('/').filter(Boolean);
     if (segments.length > 0) {
       const lastSegment = segments[segments.length - 1];
       const formatted = formatGenericSegment(lastSegment)

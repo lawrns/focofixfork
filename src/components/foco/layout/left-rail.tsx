@@ -1,36 +1,26 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useUIPreferencesStore } from '@/lib/stores/foco-store';
-import { useAuth } from '@/lib/hooks/use-auth';
 import {
   Home,
   Settings,
   PanelLeftClose,
   PanelLeft,
-  Send,
   Activity,
-  Clock,
-  Mail,
-  Archive,
-  Shield,
-  BookOpen,
-  Radar,
   FileText,
   Bot,
-  ListTodo,
   GitBranch,
   BarChart2,
-  ClipboardList,
-  Terminal,
   Radio,
-  Crosshair,
-  History,
-  Antenna,
+  RefreshCw,
+  Monitor,
+  FolderKanban,
+  CheckSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -44,44 +34,33 @@ interface NavItem {
   shortcut?: string;
 }
 
-const mainNavItems: NavItem[] = [
-  { label: 'Dashboard',   href: '/dashboard', icon: Home,     shortcut: 'G H' },
-  { label: 'Intel Feed',  href: '/clawdbot',  icon: Radar,    shortcut: 'G I' },
-  { label: 'My Tasks',    href: '/my-work',   icon: ListTodo, shortcut: 'G W' },
-  { label: 'Runs',        href: '/runs',      icon: Activity, shortcut: 'G R' },
-  { label: 'Audit Log',   href: '/ledger',    icon: BookOpen, shortcut: 'G L' },
+// WORK — daily work
+const workNavItems: NavItem[] = [
+  { label: 'Overview',   href: '/dashboard',  icon: Home,         shortcut: 'G H' },
+  { label: 'Projects',   href: '/projects',   icon: FolderKanban, shortcut: 'G P' },
+  { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare,  shortcut: 'G W' },
+  { label: 'Runs',       href: '/runs',       icon: Activity,     shortcut: 'G R' },
+  { label: 'Audit Log',  href: '/ledger',     icon: BarChart2,    shortcut: 'G L' },
 ];
 
-const empireNavItems: NavItem[] = [
-  { label: 'Empire OS',      href: '/empire',          icon: Activity,  shortcut: 'G M' },
-  { label: 'Command Center', href: '/empire/command',  icon: Terminal,  shortcut: 'G C' },
-  { label: 'Agents',         href: '/empire/agents',   icon: Bot,       shortcut: 'G J' },
-  { label: 'Pipeline',       href: '/empire/pipeline', icon: GitBranch, shortcut: 'G V' },
-  { label: 'Crons',          href: '/crons',           icon: Clock,     shortcut: 'G K' },
+// AUTOMATION — agent operations
+const automationNavItems: NavItem[] = [
+  { label: 'Agents',         href: '/agents',    icon: Bot,       shortcut: 'G J' },
+  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch, shortcut: 'G V' },
+  { label: 'Recurring',      href: '/recurring', icon: RefreshCw, shortcut: 'G U' },
+  { label: 'System Status',  href: '/system',    icon: Monitor,   shortcut: 'G M' },
+  { label: 'Briefing',       href: '/briefing',  icon: FileText,  shortcut: 'G B' },
 ];
 
-const projectsNavItems: NavItem[] = [
-  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: FileText,  shortcut: 'G B' },
-  { label: 'Projects',           href: '/empire/missions',  icon: Crosshair, shortcut: 'G P' },
-  { label: 'Social Intel',       href: '/empire/hive',      icon: Antenna,   shortcut: 'G X' },
-  { label: 'Notifications',      href: '/empire/signals',   icon: Radio,     shortcut: 'G N' },
-  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: History,   shortcut: 'G T' },
-];
-
-const manageNavItems: NavItem[] = [
-  { label: 'Emails',         href: '/emails',      icon: Mail,          shortcut: 'G E' },
-  { label: 'Reports',        href: '/reports',     icon: BarChart2,     shortcut: 'G F' },
-  { label: 'Task Proposals', href: '/proposals',   icon: ClipboardList, shortcut: 'G Q' },
-  { label: 'Artifacts',      href: '/artifacts',   icon: Archive,       shortcut: 'G A' },
-  { label: 'Policies',       href: '/policies',    icon: Shield,        shortcut: 'G Y' },
-  
+// BOTTOM — utility items
+const bottomNavItems: NavItem[] = [
+  { label: 'Notifications', href: '/notifications', icon: Radio,    shortcut: 'G N' },
+  { label: 'Settings',      href: '/settings',      icon: Settings, shortcut: 'G S' },
 ];
 
 export function LeftRail() {
   const pathname = usePathname();
-  const router = useRouter();
   const { sidebarCollapsed: sidebarCollapsedRaw, toggleSidebar } = useUIPreferencesStore();
-  const { user } = useAuth();
 
   // Gate sidebarCollapsed on isMounted — Zustand persist reads localStorage
   // synchronously on the client, causing SSR mismatch if used directly.
@@ -106,7 +85,7 @@ export function LeftRail() {
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive =
       pathname === item.href ||
-      (item.href !== '/dashboard' && pathname.startsWith(item.href));
+      (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 
     const inner = (
       <Link
@@ -206,92 +185,37 @@ export function LeftRail() {
       {/* Navigation */}
       <nav ref={navRef} className="relative flex-1 overflow-y-auto py-4 px-2.5 space-y-1 scrollbar-hide">
 
-        {/* Dispatch button */}
-        {sidebarCollapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-full h-9 mb-4 text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-                onClick={() => router.push('/empire/command')}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Run Command</TooltipContent>
-          </Tooltip>
-        ) : (
-          <Button
-            variant="ghost"
-            className="w-full justify-start mb-4 h-9 text-[13px] font-medium text-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal-dim)] border border-dashed border-[color:var(--foco-teal)]/30"
-            onClick={() => router.push('/empire/command')}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Run Command
-          </Button>
-        )}
-
-        {/* Main nav */}
-        {mainNavItems.map(item => (
-          <NavLink key={item.href} item={item} />
-        ))}
-
-        {/* Divider */}
-        <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
-
-        {/* Empire section label */}
+        {/* WORK */}
         {!sidebarCollapsed && (
           <div className="px-3 pb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Empire
-            </span>
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Work</span>
           </div>
         )}
+        {workNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
-        {/* Empire nav */}
-        {empireNavItems.map(item => <NavLink key={item.href} item={item} />)}
-
-        {/* Divider */}
         <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* Projects section label */}
+        {/* AUTOMATION */}
         {!sidebarCollapsed && (
           <div className="px-3 pb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Projects
-            </span>
+            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Automation</span>
           </div>
         )}
+        {automationNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
-        {/* Projects nav */}
-        {projectsNavItems.map(item => <NavLink key={item.href} item={item} />)}
-
-        {/* Divider */}
         <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />
 
-        {/* Manage section label */}
-        {!sidebarCollapsed && (
-          <div className="px-3 pb-1">
-            <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">
-              Manage
-            </span>
-          </div>
-        )}
+        {/* BOTTOM NAV */}
+        {bottomNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
-        {/* Manage nav */}
-        {manageNavItems.map(item => <NavLink key={item.href} item={item} />)}
-
-        {/* Scroll fade affordance */}
+        {/* Scroll fade */}
         {navOverflows && (
           <div className="sticky bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--foco-rail-bg)] to-transparent pointer-events-none" />
         )}
       </nav>
 
-      {/* Bottom: Settings + Collapse */}
-      <div className="border-t border-[var(--foco-rail-border)] p-2 space-y-0.5">
-        <NavLink item={{ label: 'Settings', href: '/settings', icon: Settings }} />
-
+      {/* Bottom: Collapse only — Settings is in INFORM */}
+      <div className="border-t border-[var(--foco-rail-border)] p-2">
         <Button
           variant="ghost"
           size="sm"

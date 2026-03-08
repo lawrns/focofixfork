@@ -17,10 +17,15 @@ import { type AgentLane } from '@/lib/agent-ops/types'
 interface CustomAgentRow {
   id: string
   name: string
+  kind: 'custom' | 'persona' | 'lane'
   lane: AgentLane
   slug: string
+  role: string
   description: string | null
   system_prompt: string
+  expertise: string[]
+  incentives: string[]
+  risk_model: string
   avatar_url: string | null
   active: boolean
   approval_sensitivity: 'low' | 'medium' | 'high'
@@ -51,10 +56,15 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(agentId ?? null)
 
   const [name, setName] = useState('')
+  const [kind, setKind] = useState<'custom' | 'persona' | 'lane'>('custom')
   const [lane, setLane] = useState<AgentLane>('product_ui')
+  const [role, setRole] = useState('Specialist advisor')
   const [prompt, setPrompt] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [description, setDescription] = useState('')
+  const [expertiseRaw, setExpertiseRaw] = useState('')
+  const [incentivesRaw, setIncentivesRaw] = useState('')
+  const [riskModel, setRiskModel] = useState('Balance speed, quality, and risk according to role.')
   const [readScopeRaw, setReadScopeRaw] = useState('')
   const [writeScopeRaw, setWriteScopeRaw] = useState('')
   const [tagsRaw, setTagsRaw] = useState('')
@@ -81,10 +91,15 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
   const resetForm = () => {
     setSelectedAgentId(null)
     setName('')
+    setKind('custom')
     setLane('product_ui')
+    setRole('Specialist advisor')
     setPrompt('')
     setAvatarUrl('')
     setDescription('')
+    setExpertiseRaw('')
+    setIncentivesRaw('')
+    setRiskModel('Balance speed, quality, and risk according to role.')
     setReadScopeRaw('')
     setWriteScopeRaw('')
     setTagsRaw('')
@@ -95,10 +110,15 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
   const hydrateForm = (agent: CustomAgentRow) => {
     setSelectedAgentId(agent.id)
     setName(agent.name)
+    setKind(agent.kind ?? 'custom')
     setLane(agent.lane)
+    setRole(agent.role ?? 'Specialist advisor')
     setPrompt(agent.system_prompt ?? '')
     setAvatarUrl(agent.avatar_url ?? '')
     setDescription(agent.description ?? '')
+    setExpertiseRaw((agent.expertise ?? []).join(', '))
+    setIncentivesRaw((agent.incentives ?? []).join(', '))
+    setRiskModel(agent.risk_model ?? 'Balance speed, quality, and risk according to role.')
     setReadScopeRaw((agent.read_scope ?? []).join(', '))
     setWriteScopeRaw((agent.write_scope ?? []).join(', '))
     setTagsRaw((agent.persona_tags ?? []).join(', '))
@@ -154,9 +174,14 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
       const payload = {
         workspace_id: workspaceId ?? null,
         name: name.trim(),
+        kind,
         lane,
+        role: role.trim(),
         description: description.trim() || null,
         system_prompt: prompt.trim(),
+        expertise: parseCsv(expertiseRaw),
+        incentives: parseCsv(incentivesRaw),
+        risk_model: riskModel.trim(),
         avatar_url: avatarUrl.trim() || null,
         read_scope: parseCsv(readScopeRaw),
         write_scope: parseCsv(writeScopeRaw),
@@ -248,6 +273,25 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
               <Label>Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Growth Operator" />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label>Kind</Label>
+                <Select value={kind} onValueChange={(next) => setKind(next as 'custom' | 'persona' | 'lane')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="persona">Persona</SelectItem>
+                    <SelectItem value="lane">Lane</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Role</Label>
+                <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Rendering performance specialist" />
+              </div>
+            </div>
             <div className="space-y-1.5">
               <Label>Lane</Label>
               <Select value={lane} onValueChange={(next) => setLane(next as AgentLane)}>
@@ -297,6 +341,25 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
             <div className="space-y-1.5">
               <Label>Description</Label>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Objective style and focus" />
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Expertise (CSV)</Label>
+                <Input value={expertiseRaw} onChange={(e) => setExpertiseRaw(e.target.value)} placeholder="react, perf, api design" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Incentives (CSV)</Label>
+                <Input value={incentivesRaw} onChange={(e) => setIncentivesRaw(e.target.value)} placeholder="ship safely, reduce latency" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Risk Model</Label>
+              <Textarea
+                value={riskModel}
+                onChange={(e) => setRiskModel(e.target.value)}
+                rows={3}
+                placeholder="What this agent tends to protect against or optimize for."
+              />
             </div>
             <div className="space-y-1.5">
               <Label>System Prompt</Label>
@@ -360,13 +423,14 @@ export function CustomAgentModal({ workspaceId, agentId, trigger, onSaved }: Cus
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{agent.name}</p>
                           <div className="mt-1 flex items-center gap-1 flex-wrap">
+                            <Badge variant="outline" className="text-[10px]">{agent.kind}</Badge>
                             <Badge variant="outline" className="text-[10px]">{LANE_LABEL[agent.lane]}</Badge>
                             <Badge variant={agent.active ? 'secondary' : 'outline'} className="text-[10px]">
                               {agent.active ? 'Active' : 'Inactive'}
                             </Badge>
                             <Badge variant="outline" className="text-[10px]">{agent.approval_sensitivity}</Badge>
                           </div>
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{agent.description || `slug: ${agent.slug}`}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{agent.role || agent.description || `slug: ${agent.slug}`}</p>
                         </div>
                       </div>
 

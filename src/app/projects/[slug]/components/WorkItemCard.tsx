@@ -9,11 +9,14 @@ import {
   AlertTriangle,
   Clock,
   GripVertical,
+  CheckCircle2,
+  Bot,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { WorkItem } from '@/types/foco';
 import { priorityColors } from './constants';
+import { DelegationBadge } from './DelegationBadge';
 
 export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchive }: {
   item: WorkItem;
@@ -51,6 +54,19 @@ export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchi
     onArchive?.(item);
   };
 
+  const metadata = typeof item.metadata === 'object' && item.metadata !== null
+    ? item.metadata as Record<string, unknown>
+    : {};
+  const executionState = metadata.execution_state as Record<string, unknown> | undefined;
+  const verificationSummary = metadata.verification_summary as Record<string, unknown> | undefined;
+  const latestExecutionSummary = typeof executionState?.summary === 'string' ? executionState.summary : null;
+  const latestVerificationStatus = typeof verificationSummary?.latest_status === 'string' ? verificationSummary.latest_status : null;
+  const recommendedAgent = typeof item.assigned_agent === 'string'
+    ? item.assigned_agent
+    : typeof metadata.recommended_agent === 'string'
+      ? metadata.recommended_agent
+      : null;
+
   const cardContent = (
     <div
       draggable={!isMobile}
@@ -76,6 +92,9 @@ export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchi
           </div>
 
           <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {item.delegation_status && item.delegation_status !== 'none' && (
+              <DelegationBadge status={item.delegation_status} />
+            )}
             {item.type === 'bug' && (
               <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
                 Bug
@@ -92,7 +111,25 @@ export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchi
                 Blocked
               </Badge>
             )}
+            {recommendedAgent && (
+              <Badge variant="outline" className="text-xs text-blue-700 border-blue-200 bg-blue-50">
+                <Bot className="mr-1 h-3 w-3" />
+                {recommendedAgent}
+              </Badge>
+            )}
+            {latestVerificationStatus && (
+              <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
+                <CheckCircle2 className="mr-1 h-3 w-3" />
+                {latestVerificationStatus}
+              </Badge>
+            )}
           </div>
+
+          {latestExecutionSummary && (
+            <p className="mb-2 line-clamp-2 text-[11px] text-zinc-500">
+              {latestExecutionSummary}
+            </p>
+          )}
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">

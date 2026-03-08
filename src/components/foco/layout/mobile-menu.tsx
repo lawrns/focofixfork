@@ -8,26 +8,17 @@ import {
   Menu,
   X,
   Home,
-  Rss,
-  CheckSquare,
   Activity,
-  BookOpen,
-  Cpu,
-  Terminal,
+  BarChart2,
   Bot,
-  Workflow,
-  Clock,
-  Sun,
-  FolderKanban,
-  Users,
-  Bell,
-  CalendarDays,
-  Mail,
-  FileBarChart,
   GitBranch,
-  Archive,
-  Shield,
+  RefreshCw,
+  FolderKanban,
   Settings,
+  Monitor,
+  FileText,
+  Radio,
+  CheckSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -40,31 +31,21 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // CORE
-  { label: 'Dashboard',   href: '/dashboard', icon: Home },
-  { label: 'Intel Feed',  href: '/clawdbot',  icon: Rss },
-  { label: 'My Tasks',    href: '/my-work',   icon: CheckSquare },
-  { label: 'Runs',        href: '/runs',      icon: Activity },
-  { label: 'Audit Log',   href: '/ledger',    icon: BookOpen },
-  // EMPIRE
-  { label: 'Empire OS',      href: '/empire',           icon: Cpu,      section: 'Empire' },
-  { label: 'Command Center', href: '/empire/command',   icon: Terminal },
-  { label: 'Agents',         href: '/empire/agents',    icon: Bot },
-  { label: 'Pipeline',       href: '/empire/pipeline',  icon: Workflow },
-  { label: 'Crons',          href: '/crons',            icon: Clock },
-  // PROJECTS
-  { label: 'Daily Briefing',     href: '/empire/briefing',  icon: Sun,          section: 'Projects' },
-  { label: 'Projects',           href: '/empire/missions',  icon: FolderKanban },
-  { label: 'Notifications',      href: '/empire/signals',   icon: Bell },
-  { label: 'Milestone Timeline', href: '/empire/timeline',  icon: CalendarDays },
-  // MANAGE
-  { label: 'Emails',         href: '/emails',     icon: Mail,         section: 'Manage' },
-  { label: 'Reports',        href: '/reports',    icon: FileBarChart },
-  { label: 'Task Proposals', href: '/proposals',  icon: GitBranch },
-  { label: 'Artifacts',      href: '/artifacts',  icon: Archive },
-  { label: 'Policies',       href: '/policies',   icon: Shield },
-  // SETTINGS
-  { label: 'Settings',  href: '/settings',  icon: Settings, section: 'Settings' },
+  // WORK
+  { label: 'Overview',   href: '/dashboard',  icon: Home },
+  { label: 'Projects',   href: '/projects',   icon: FolderKanban },
+  { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare },
+  { label: 'Runs',       href: '/runs',       icon: Activity },
+  { label: 'Audit Log',  href: '/ledger',     icon: BarChart2 },
+  // AUTOMATION
+  { label: 'Agents',         href: '/agents',    icon: Bot,       section: 'Automation' },
+  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch },
+  { label: 'Recurring',      href: '/recurring', icon: RefreshCw },
+  { label: 'System Status',  href: '/system',    icon: Monitor },
+  { label: 'Briefing',       href: '/briefing',  icon: FileText },
+  // UTILITY
+  { label: 'Notifications',  href: '/notifications', icon: Radio,    section: 'Utility' },
+  { label: 'Settings',       href: '/settings',      icon: Settings },
 ]
 
 export function MobileMenu() {

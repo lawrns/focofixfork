@@ -62,8 +62,8 @@ export default function CoursePlayerPage() {
 function CoursePlayerContent() {
   const router = useRouter()
   const params = useParams()
-  const workspaceId = params.id as string
-  const courseSlug = params.slug as string
+  const workspaceId = typeof params?.id === 'string' ? params.id : ''
+  const courseSlug = typeof params?.slug === 'string' ? params.slug : ''
   const { user } = useAuth()
 
   const [course, setCourse] = useState<Course | null>(null)

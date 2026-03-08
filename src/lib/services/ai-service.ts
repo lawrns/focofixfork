@@ -10,14 +10,19 @@
  */
 
 import OpenAI from 'openai';
-
-export type AIProvider = 'openai' | 'deepseek' | 'glm';
+import type { AIExecutionProfile, AIProvider } from '@/lib/ai/policy';
+import { isOllamaProxyConfigured, ollamaProxyChat } from '@/lib/ai/ollama-proxy'
 
 interface AIConfig {
   provider: AIProvider;
   apiKey: string;
   baseURL?: string;
   model: string;
+}
+
+interface AnthropicMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
 }
 
 /**
@@ -48,10 +53,14 @@ export class AIService {
   private client: OpenAI | null;
   private config: AIConfig;
   private isGLM: boolean;
+  private isAnthropic: boolean;
+  private isOllamaPrimary: boolean;
+  private executionOverrides: Pick<AIExecutionProfile, 'temperature' | 'max_tokens'> | null;
 
-  constructor(provider?: AIProvider) {
+  constructor(providerOrProfile?: AIProvider | Pick<AIExecutionProfile, 'provider' | 'model' | 'temperature' | 'max_tokens'>) {
     // Determine provider and configuration
-    const aiProvider = provider || (process.env.AI_PROVIDER as AIProvider) || 'glm';
+    const profile = providerOrProfile && typeof providerOrProfile === 'object' ? providerOrProfile : null
+    const aiProvider = (typeof providerOrProfile === 'string' ? providerOrProfile : profile?.provider) || (process.env.AI_PROVIDER as AIProvider) || 'glm';
 
     console.log('[AIService] Constructor called with provider:', aiProvider)
     console.log('[AIService] Environment variables:', {
@@ -59,16 +68,23 @@ export class AIService {
       GLM_API_KEY: process.env.GLM_API_KEY ? '***' + process.env.GLM_API_KEY.slice(-4) : 'undefined',
       DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ? '***' + process.env.DEEPSEEK_API_KEY.slice(-4) : 'undefined',
       OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***' + process.env.OPENAI_API_KEY.slice(-4) : 'undefined',
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '***' + process.env.ANTHROPIC_API_KEY.slice(-4) : 'undefined',
     })
 
     this.isGLM = aiProvider === 'glm';
+    this.isAnthropic = aiProvider === 'anthropic';
+    this.isOllamaPrimary = false;
+    this.executionOverrides = profile ? {
+      temperature: profile.temperature,
+      max_tokens: profile.max_tokens,
+    } : null
 
     if (aiProvider === 'glm') {
       this.config = {
         provider: 'glm',
         apiKey: process.env.Z_AI_API_KEY || process.env.GLM_API_KEY || '',
         baseURL: 'https://api.z.ai/api/coding/paas/v4/',
-        model: process.env.GLM_MODEL || 'glm-5'
+        model: profile?.model || process.env.GLM_MODEL || 'glm-5'
       };
       console.log('[AIService] Using GLM (Z.ai) CODING endpoint with model:', this.config.model)
     } else if (aiProvider === 'deepseek') {
@@ -76,14 +92,31 @@ export class AIService {
         provider: 'deepseek',
         apiKey: process.env.DEEPSEEK_API_KEY || '',
         baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-        model: 'deepseek-chat'
+        model: profile?.model || process.env.DEEPSEEK_MODEL || 'deepseek-chat'
       };
       console.log('[AIService] Using DeepSeek provider with model:', this.config.model)
+    } else if (aiProvider === 'anthropic') {
+      this.config = {
+        provider: 'anthropic',
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        baseURL: 'https://api.anthropic.com/v1',
+        model: profile?.model || process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
+      };
+      console.log('[AIService] Using Anthropic provider with model:', this.config.model)
+    } else if (aiProvider === 'ollama') {
+      this.isOllamaPrimary = true;
+      this.config = {
+        provider: 'ollama',
+        apiKey: process.env.OLLAMA_PROXY_KEY || '',
+        baseURL: (process.env.OLLAMA_PROXY_URL || '').replace(/\/+$/, ''),
+        model: profile?.model || 'qwen3.5:latest'
+      };
+      console.log('[AIService] Using Ollama proxy as primary provider with model:', this.config.model)
     } else {
       this.config = {
         provider: 'openai',
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
+        model: profile?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
       };
       console.log('[AIService] Using OpenAI provider with model:', this.config.model)
     }
@@ -107,6 +140,8 @@ export class AIService {
         baseURL: this.config.baseURL,
         fetch: createGLMFetch(this.config.apiKey)
       });
+    } else if (this.isAnthropic || this.isOllamaPrimary) {
+      this.client = null;
     } else {
       this.client = new OpenAI({
         apiKey: this.config.apiKey,
@@ -115,43 +150,118 @@ export class AIService {
     }
   }
 
+  private async anthropicChatCompletion(
+    messages: AnthropicMessage[],
+    options?: { temperature?: number; maxTokens?: number }
+  ) {
+    const systemMessages = messages.filter((message) => message.role === 'system').map((message) => message.content);
+    const conversation = messages
+      .filter((message) => message.role !== 'system')
+      .map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+
+    if (conversation.length === 0) {
+      throw new Error('Anthropic requests require at least one non-system message');
+    }
+
+    const response = await fetch(`${this.config.baseURL}/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': this.config.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: this.config.model,
+        max_tokens: options?.maxTokens ?? this.executionOverrides?.max_tokens ?? 2000,
+        temperature: options?.temperature ?? this.executionOverrides?.temperature ?? 0.7,
+        system: systemMessages.length > 0 ? systemMessages.join('\n\n') : undefined,
+        messages: conversation.map((message) => ({
+          role: message.role,
+          content: [{ type: 'text', text: message.content }],
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Anthropic API error ${response.status}: ${body}`);
+    }
+
+    const payload = await response.json() as {
+      content?: Array<{ type?: string; text?: string }>
+    };
+
+    return payload.content
+      ?.filter((entry) => entry.type === 'text' && typeof entry.text === 'string')
+      .map((entry) => entry.text)
+      .join('\n')
+      .trim() || '';
+  }
+
   /**
    * Generate chat completion
    */
-  async chatCompletion(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>) {
+  async chatCompletion(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    options?: { temperature?: number; maxTokens?: number }
+  ) {
     console.log('[AIService] chatCompletion called with', messages.length, 'messages')
     console.log('[AIService] Current provider:', this.config.provider, 'model:', this.config.model)
 
-    if (!this.config.apiKey) {
-      console.error('[AIService] No API key configured for', this.config.provider)
-      throw new Error(`${this.config.provider} API key not configured`);
-    }
-
-    if (!this.client) {
-      throw new Error('Client not initialized');
-    }
-
     try {
+      if (!this.config.apiKey && !this.isOllamaPrimary) {
+        console.error('[AIService] No API key configured for', this.config.provider)
+        throw new Error(`${this.config.provider} API key not configured`);
+      }
+
+      if (!this.client && !this.isAnthropic && !this.isOllamaPrimary) {
+        throw new Error('Client not initialized');
+      }
       console.log('[AIService] Making API call to', this.config.baseURL, 'with model', this.config.model)
 
-      const response = await this.client.chat.completions.create({
+      if (this.isOllamaPrimary) {
+        const result = await ollamaProxyChat(messages, { model: this.config.model as any })
+        console.log('[AIService] Ollama proxy primary call succeeded, model:', result.model)
+        return result.content
+      }
+
+      if (this.isAnthropic) {
+        return await this.anthropicChatCompletion(messages, options)
+      }
+
+      const response = await this.client!.chat.completions.create({
         model: this.config.model,
         messages,
-        temperature: 0.7,
-        max_tokens: 2000
+        temperature: options?.temperature ?? this.executionOverrides?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? this.executionOverrides?.max_tokens ?? 2000
       });
 
       console.log('[AIService] API response received')
       return response.choices[0]?.message?.content || '';
 
     } catch (error) {
-      console.error('[AIService] API call failed:', error)
+      console.error('[AIService] Primary API call failed:', error)
       console.error('[AIService] Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         status: (error as any)?.status,
         code: (error as any)?.code,
-        stack: error instanceof Error ? error.stack : undefined
       })
+
+      // Attempt Ollama proxy fallback (skip if already using ollama as primary)
+      if (!this.isOllamaPrimary && isOllamaProxyConfigured()) {
+        console.warn('[AIService] ⚡ Triggering Ollama proxy fallback')
+        try {
+          const result = await ollamaProxyChat(messages)
+          console.log('[AIService] Ollama proxy fallback succeeded, model:', result.model)
+          return result.content
+        } catch (fallbackError) {
+          console.error('[AIService] Ollama proxy fallback also failed:', fallbackError)
+        }
+      }
+
       throw error;
     }
   }
@@ -178,7 +288,10 @@ export class AIService {
 
     messages.push({ role: 'user', content: request.prompt });
 
-    const content = await this.chatCompletion(messages);
+    const content = await this.chatCompletion(messages, {
+      temperature: request.temperature,
+      maxTokens: request.maxTokens,
+    });
 
     return {
       content,

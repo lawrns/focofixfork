@@ -12,6 +12,8 @@ export async function GET(req: NextRequest) {
   const run_id = searchParams.get('run_id')
   const task_id = searchParams.get('task_id')
   const type = searchParams.get('type')
+  const project_id = searchParams.get('project_id')
+  const artifact_kind = searchParams.get('artifact_kind')
   const limit = parseInt(searchParams.get('limit') || '50')
 
   let query = supabase
@@ -23,6 +25,8 @@ export async function GET(req: NextRequest) {
   if (run_id) query = query.eq('run_id', run_id)
   if (task_id) query = query.eq('task_id', task_id)
   if (type) query = query.eq('type', type)
+  if (project_id) query = query.eq('project_id', project_id)
+  if (artifact_kind) query = query.eq('artifact_kind', artifact_kind)
 
   const { data, error: dbError } = await query
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })

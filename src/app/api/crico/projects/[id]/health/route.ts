@@ -20,6 +20,17 @@ interface HealthMetrics {
 function calculateHealthScores(metrics: HealthMetrics) {
   const { total_tasks, done_tasks, stagnant, completion_rate } = metrics;
 
+  if (total_tasks < 5) {
+    return {
+      velocity_score: null as number | null,
+      quality_score: null as number | null,
+      team_score: null as number | null,
+      time_score: null as number | null,
+      overall_score: null as number | null,
+      status: 'insufficient_data' as const,
+    };
+  }
+
   // velocity_score
   const velocity_score = total_tasks > 0
     ? Math.round((done_tasks / total_tasks) * 100)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { getSpecialistAdvisor, wrapAdvisorTask } from '@/lib/agent-avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,13 +20,29 @@ export async function POST(request: NextRequest) {
     const body = rawBody ? JSON.parse(rawBody) : {}
     const { agentId, task, context } = body
     const correlationId = crypto.randomUUID()
+    const advisor = typeof agentId === 'string' ? getSpecialistAdvisor(agentId) : undefined
+    const resolvedTask = advisor && typeof task === 'string' ? wrapAdvisorTask(advisor, task) : task
+    const resolvedContext = advisor
+      ? {
+          ...(context && typeof context === 'object' ? context : {}),
+          advisor: {
+            id: advisor.id,
+            nativeId: advisor.nativeId,
+            name: advisor.name,
+            role: advisor.role,
+            description: advisor.description,
+            personaTags: advisor.personaTags,
+            systemPrompt: advisor.systemPrompt,
+          },
+        }
+      : context
 
     // Try Gateway hooks/agent-run
     try {
       const response = await fetch(`${GATEWAY_URL}/hooks/agent-run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: agentId, task, context, correlation_id: correlationId }),
+        body: JSON.stringify({ agent_id: agentId, task: resolvedTask, context: resolvedContext, correlation_id: correlationId }),
       })
       if (response.ok) {
         const data = await response.json()

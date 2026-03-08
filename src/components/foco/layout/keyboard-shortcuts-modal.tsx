@@ -43,6 +43,7 @@ import {
   Rss,
   Wand2,
   Antenna,
+  RefreshCw,
 } from 'lucide-react';
 
 type ShortcutCategory = 'Global' | 'Navigation' | 'Quick Actions' | 'Views';
@@ -144,9 +145,9 @@ const shortcuts: Shortcut[] = [
     icon: LayoutDashboard,
   },
   {
-    id: 'nav-command-center',
+    id: 'nav-dispatch',
     keys: ['G', 'C'],
-    description: 'Go to Command Center',
+    description: 'Go to Dispatch',
     category: 'Navigation',
     icon: Terminal,
   },
@@ -159,8 +160,8 @@ const shortcuts: Shortcut[] = [
   },
   {
     id: 'nav-my-work',
-    keys: ['G', 'M'],
-    description: 'Go to My Work',
+    keys: ['G', 'W'],
+    description: 'Go to My Tasks',
     category: 'Navigation',
     icon: CheckSquare,
   },
@@ -195,11 +196,18 @@ const shortcuts: Shortcut[] = [
     icon: FolderOpen,
   },
   {
-    id: 'nav-crons',
+    id: 'nav-recurring',
     keys: ['G', 'K'],
-    description: 'Go to Crons',
+    description: 'Go to Recurring',
     category: 'Navigation',
     icon: Clock,
+  },
+  {
+    id: 'nav-loops',
+    keys: ['G', 'U'],
+    description: 'Go to Recurring Tasks',
+    category: 'Navigation',
+    icon: RefreshCw,
   },
   {
     id: 'nav-timeline',
@@ -232,7 +240,7 @@ const shortcuts: Shortcut[] = [
   {
     id: 'nav-proposals',
     keys: ['G', 'Q'],
-    description: 'Go to Proposals',
+    description: 'Go to Proposal Queue',
     category: 'Navigation',
     icon: FileText,
   },
@@ -259,22 +267,22 @@ const shortcuts: Shortcut[] = [
   },
   {
     id: 'nav-policies',
-    keys: ['G', 'S'],
-    description: 'Go to Settings/Policies',
+    keys: ['G', 'Y'],
+    description: 'Go to Policies',
     category: 'Navigation',
     icon: Shield,
   },
   {
     id: 'nav-settings',
-    keys: ['G', '?'],
+    keys: ['G', 'S'],
     description: 'Go to Settings',
     category: 'Navigation',
     icon: Settings,
   },
   {
-    id: 'nav-empire',
+    id: 'nav-system',
     keys: ['G', 'M'],
-    description: 'Go to Empire OS',
+    description: 'Go to System Status',
     category: 'Navigation',
     icon: Cpu,
   },

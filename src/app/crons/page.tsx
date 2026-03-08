@@ -780,14 +780,14 @@ function CronsPageContent() {
 
   useEffect(() => {
     if (!user) return
-    if (searchParams.get('create') === 'true') {
+    if (searchParams?.get('create') === 'true') {
       setDialogOpen(true)
     }
   }, [searchParams, user])
 
   useEffect(() => {
     if (!user || crons.length === 0) return
-    const editId = searchParams.get('edit')
+    const editId = searchParams?.get('edit')
     if (!editId) return
     const match = crons.find((c) => c.id === editId)
     if (match) {

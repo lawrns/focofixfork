@@ -149,6 +149,9 @@ export interface WorkItem {
   closure_note?: string;
   ai_context_sources: unknown[];
   metadata: Record<string, unknown>;
+  delegation_status?: 'none' | 'pending' | 'delegated' | 'running' | 'completed' | 'failed' | 'cancelled' | null;
+  assigned_agent?: string | null;
+  run_id?: string | null;
   created_at: string;
   updated_at: string;
   // Relations
@@ -159,6 +162,39 @@ export interface WorkItem {
   children?: WorkItem[];
   dependencies?: WorkItemDependency[];
   comments_count?: number;
+  execution_events?: TaskExecutionEvent[];
+  verifications?: TaskVerification[];
+  orchestration_summary?: TaskOrchestrationSummary;
+}
+
+export interface TaskExecutionEvent {
+  id: string;
+  actor_type: 'user' | 'agent' | 'system';
+  actor_id?: string | null;
+  event_type: string;
+  summary: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface TaskVerification {
+  id: string;
+  verification_type: 'unit' | 'integration' | 'e2e' | 'manual' | 'smoke';
+  status: 'passed' | 'failed' | 'needs_follow_up';
+  command?: string | null;
+  summary: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface TaskOrchestrationSummary {
+  source?: string | null;
+  recommended_execution?: 'human' | 'agent' | 'hybrid' | null;
+  recommended_agent?: string | null;
+  latest_execution_summary?: string | null;
+  verification_required?: boolean;
+  latest_verification_status?: string | null;
+  latest_verification_summary?: string | null;
 }
 
 export interface WorkItemDependency {

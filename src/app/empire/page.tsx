@@ -160,8 +160,8 @@ export default function EmpirePage() {
   return (
     <PageShell>
       <PageHeader
-        title="Empire OS"
-        subtitle="Infrastructure, briefings, and agent orchestration"
+        title="System Status"
+        subtitle="Service health, agent overview, and daily briefing"
         primaryAction={
           <div className="flex items-center gap-2">
             {lastRefresh && (
@@ -201,7 +201,7 @@ export default function EmpirePage() {
           'bg-rose-500':    overallStatus === 'down',
         })} />
         <span className={cn('text-[12px] font-mono-display', overallColor)}>
-          EMPIRE {overallStatus.toUpperCase()}
+          SYSTEM {overallStatus.toUpperCase()}
         </span>
         {health?.timestamp && (
           <span className="text-[11px] text-muted-foreground">
@@ -254,7 +254,7 @@ export default function EmpirePage() {
           <div className="flex items-center justify-between mb-3">
             <SectionLabel icon={Bot} label="Agent Roster Preview" className="mb-0" />
             <Button asChild variant="outline" size="sm" className="h-8">
-              <Link href="/empire/agents">
+              <Link href="/agents">
                 Manage Agents
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Link>

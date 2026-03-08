@@ -38,6 +38,12 @@ jest.mock('@/lib/stores/foco-store', () => ({
     density: 'comfortable',
     setDensity: jest.fn(),
   }),
+  useWorkspaceStore: () => ({
+    currentWorkspace: { id: 'ws-1', name: 'Workspace' },
+    workspaces: [],
+    setCurrentWorkspace: jest.fn(),
+    setWorkspaces: jest.fn(),
+  }),
 }));
 
 // Mock auth hook

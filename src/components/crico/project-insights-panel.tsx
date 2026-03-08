@@ -8,12 +8,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface HealthData {
-  overall_score: number;
-  velocity_score: number;
-  quality_score: number;
-  team_score: number;
-  time_score: number;
-  status: 'healthy' | 'at_risk' | 'critical' | 'unknown';
+  overall_score: number | null;
+  velocity_score: number | null;
+  quality_score: number | null;
+  team_score: number | null;
+  time_score: number | null;
+  status: 'healthy' | 'at_risk' | 'critical' | 'unknown' | 'insufficient_data';
   metrics?: {
     total_tasks?: number;
     done_tasks?: number;
@@ -49,6 +49,7 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bar: string 
   at_risk: { label: 'At Risk', color: 'text-amber-600', bar: 'bg-amber-500' },
   critical: { label: 'Critical', color: 'text-rose-600', bar: 'bg-rose-500' },
   unknown: { label: 'Unknown', color: 'text-zinc-500', bar: 'bg-zinc-400' },
+  insufficient_data: { label: 'Not enough data', color: 'text-zinc-500', bar: 'bg-zinc-300' },
 };
 
 function ScoreBar({ label, score }: { label: string; score: number }) {
@@ -177,12 +178,21 @@ export function ProjectInsightsPanel({ projectId }: ProjectInsightsPanelProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {health ? (
+          {health?.status === 'insufficient_data' ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-muted-foreground">
+                Not enough data yet — add at least 5 tasks to enable AI health tracking.
+              </p>
+              <Button variant="outline" size="sm" className="mt-3" asChild>
+                <a href={`/projects/${projectId}?tab=board`}>Go to Board</a>
+              </Button>
+            </div>
+          ) : health ? (
             <>
-              <ScoreBar label="Velocity" score={health.velocity_score} />
-              <ScoreBar label="Quality" score={health.quality_score} />
-              <ScoreBar label="Team" score={health.team_score} />
-              <ScoreBar label="Timeline" score={health.time_score} />
+              <ScoreBar label="Velocity" score={health.velocity_score ?? 0} />
+              <ScoreBar label="Quality" score={health.quality_score ?? 0} />
+              <ScoreBar label="Team" score={health.team_score ?? 0} />
+              <ScoreBar label="Timeline" score={health.time_score ?? 0} />
               {health.metrics && (
                 <div className="pt-3 mt-3 border-t border-border grid grid-cols-3 gap-3 text-center">
                   <div>

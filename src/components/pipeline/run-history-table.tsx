@@ -69,10 +69,12 @@ function StatusBadge({ status }: { status: PipelineRun['status'] }) {
 
 function modelLabel(m: string) {
   const map: Record<string, string> = {
+    'gpt-5.4-medium':  'GPT-5.4',
     'claude-opus-4-6':  'Opus 4.6',
     'kimi-k2-fast':     'Kimi Fast',
     'kimi-k2-standard': 'Kimi Std',
     'kimi-k2-max':      'Kimi Max',
+    'glm-5':            'GLM-5',
     'codex-lite':       'Codex Lite',
     'codex-standard':   'Codex',
     'codex-pro':        'Codex Pro',
@@ -135,11 +137,27 @@ export function RunHistoryTable({
                 <StatusBadge status={run.status} />
               </TableCell>
               <TableCell>
-                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                  {modelLabel(run.planner_model)} →{' '}
-                  {modelLabel(run.executor_model)}
-                  {run.reviewer_model && ` → ${modelLabel(run.reviewer_model)}`}
-                </span>
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                    {modelLabel(run.planner_model)} →{' '}
+                    {modelLabel(run.executor_model)}
+                    {run.reviewer_model && ` → ${modelLabel(run.reviewer_model)}`}
+                  </span>
+                  {(run.routing_profile_id || (run.provider_chain?.length ?? 0) > 0) && (
+                    <div className="flex flex-wrap gap-1">
+                      {run.routing_profile_id && (
+                        <Badge variant="outline" className="text-[10px]">
+                          {run.routing_profile_id}
+                        </Badge>
+                      )}
+                      {(run.provider_chain?.length ?? 0) > 0 && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {run.provider_chain!.length} fallback{run.provider_chain!.length === 1 ? '' : 's'}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-center">
                 <span className="text-xs text-muted-foreground">

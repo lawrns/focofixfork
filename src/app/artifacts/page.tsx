@@ -12,7 +12,11 @@ type Artifact = {
   id: string
   run_id: string | null
   task_id: string | null
+  project_id?: string | null
+  report_id?: string | null
   type: string
+  artifact_kind?: string
+  title?: string | null
   uri: string
   meta: Record<string, unknown>
   created_at: string
@@ -31,6 +35,7 @@ const typeIcons: Record<string, React.ElementType> = {
   log: Terminal,
   pdf: FileText,
   file: File,
+  project_report: FileText,
 }
 
 export default function ArtifactsPage() {
@@ -63,11 +68,11 @@ export default function ArtifactsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Artifacts" subtitle="Screenshots, logs, and files from runs" />
+      <PageHeader title="Artifacts" subtitle="Screenshots, logs, files, and project reports from runs" />
 
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList>
-          {['all','screenshot','log','file','pdf'].map(t => (
+          {['all','project_report','screenshot','log','file','pdf'].map(t => (
             <TabsTrigger key={t} value={t} className="capitalize">{t}</TabsTrigger>
           ))}
         </TabsList>
@@ -79,7 +84,7 @@ export default function ArtifactsPage() {
             <Archive className="h-6 w-6 text-[color:var(--foco-teal)]" />
           </div>
           <p className="text-sm font-medium">No artifacts yet</p>
-          <p className="text-xs text-muted-foreground">Screenshots, logs, and files from runs will appear here.</p>
+          <p className="text-xs text-muted-foreground">Screenshots, logs, files, and project reports from runs will appear here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -87,7 +92,11 @@ export default function ArtifactsPage() {
             const Icon = typeIcons[artifact.type] ?? File
             const isImage = isImageUri(artifact.uri)
             const isExternal = isExternalUrl(artifact.uri)
-            const href = isExternal ? artifact.uri : `/api/artifacts/${artifact.id}/download`
+            const href = artifact.type === 'project_report'
+              ? artifact.uri
+              : isExternal
+                ? artifact.uri
+                : `/api/artifacts/${artifact.id}/download`
 
             return (
               <div
@@ -108,7 +117,7 @@ export default function ArtifactsPage() {
                       href={href}
                       target={isExternal ? '_blank' : undefined}
                       rel={isExternal ? 'noopener noreferrer' : undefined}
-                      download={!isExternal && !isImage ? '' : undefined}
+                      download={!isExternal && !isImage && artifact.type !== 'project_report' ? '' : undefined}
                       className="inline-flex items-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       {isExternal ? (
@@ -118,7 +127,9 @@ export default function ArtifactsPage() {
                       )}
                     </a>
                   </div>
+                  <p className="text-[12px] font-medium truncate">{artifact.title ?? artifact.meta?.title as string ?? artifact.uri}</p>
                   <p className="text-[12px] text-muted-foreground font-mono-display truncate">{artifact.uri}</p>
+                  {artifact.project_id && <p className="text-[11px] text-muted-foreground">Project: {artifact.project_id.slice(0, 8)}</p>}
                   <p className="text-[11px] text-muted-foreground mt-1">{new Date(artifact.created_at).toLocaleString()}</p>
                 </div>
                 <button

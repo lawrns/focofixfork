@@ -4,14 +4,19 @@
  */
 
 import type { PlanResult, ExecutionResult } from './types'
+import { formatPlanningInputs, type PlanningInputs } from './agent-planning'
 
-export function buildPlanContext(taskDescription: string): string {
-  return `# Engineering Task
+export function buildPlanContext(taskDescription: string, options: PlanningInputs = {}): string {
+  const planningInputs = formatPlanningInputs(options)
+
+  return `# User Request
 
 ${taskDescription}
 
 # Instructions
-Analyze this task carefully. Consider the codebase patterns (Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui, Supabase). Identify all files that need to change, estimate complexity, and list risks especially around database migrations, auth, and RLS.`
+Analyze this request carefully. Consider the codebase patterns (Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui, Supabase). The plan must be globally reusable, coherent across different agent types, and implementation-ready.
+
+${planningInputs}`
 }
 
 export function buildExecuteContext(

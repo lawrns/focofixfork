@@ -24,6 +24,11 @@ type TimelineEvent = {
   payload?: Record<string, unknown> | null
 }
 
+type RoutingSnapshot = {
+  requested?: Record<string, unknown> | null
+  actual?: Record<string, unknown> | null
+}
+
 function inferRunStatusFromLedger(rows: LedgerRow[]): 'completed' | 'failed' | 'cancelled' | null {
   for (let i = rows.length - 1; i >= 0; i--) {
     const payload = rows[i].payload ?? {}
@@ -235,11 +240,13 @@ export async function GET(
 
   const auditEvents = timeline.filter((evt) => evt.kind === 'audit')
   const executionEvents = timeline.filter((evt) => evt.kind === 'execution' || evt.kind === 'lifecycle')
+  const routing = ((run.trace as Record<string, unknown> | null)?.ai_routing ?? null) as RoutingSnapshot | null
 
   return mergeAuthResponse(
     NextResponse.json({
       data: {
         run,
+        routing,
         artifacts: artifacts ?? [],
         timeline,
         execution_events: executionEvents,

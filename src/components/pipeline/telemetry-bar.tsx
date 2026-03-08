@@ -1,7 +1,9 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { AnimatedCounter } from '@/components/ui/animated-counter'
+import { motionPresets } from '@/lib/motion/presets'
 
 interface TelemetryBarProps {
   tokens: number
@@ -27,48 +29,52 @@ export function TelemetryBar({ tokens, runtimeMs, complexity, confidence, costUs
   const complexityKey = ['low', 'medium', 'high'].includes(complexity) ? complexity : 'unknown'
 
   return (
-    <div className="rounded-xl border border-border bg-card/60 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+    <motion.div
+      layout
+      transition={motionPresets.panel}
+      className="rounded-xl border border-border bg-card/60 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-3"
+    >
       {/* Tokens */}
-      <div className="flex flex-col gap-0.5 min-w-[80px]">
+      <motion.div layout transition={motionPresets.chip} className="flex flex-col gap-0.5 min-w-[80px]">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
           Tokens {isLive ? '' : '(est)'}
         </span>
         <span className="text-sm font-semibold tabular-nums">
           {isLive ? '' : '~'}<AnimatedCounter value={tokens} duration={600} />
         </span>
-      </div>
+      </motion.div>
 
       <div className="h-8 w-px bg-border hidden sm:block" />
 
       {/* Runtime */}
-      <div className="flex flex-col gap-0.5 min-w-[80px]">
+      <motion.div layout transition={motionPresets.chip} className="flex flex-col gap-0.5 min-w-[80px]">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
           Runtime
         </span>
         <span className="text-sm font-semibold tabular-nums">
           <AnimatedCounter value={runtimeSec} duration={250} decimals={1} suffix="s" />
         </span>
-      </div>
+      </motion.div>
 
       <div className="h-8 w-px bg-border hidden sm:block" />
 
       {/* Cost */}
       {costUsd != null && costUsd > 0 && (
         <>
-          <div className="flex flex-col gap-0.5 min-w-[60px]">
+          <motion.div layout transition={motionPresets.chip} className="flex flex-col gap-0.5 min-w-[60px]">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
               Cost
             </span>
             <span className="text-sm font-semibold tabular-nums">
               ${costUsd.toFixed(4)}
             </span>
-          </div>
+          </motion.div>
           <div className="h-8 w-px bg-border hidden sm:block" />
         </>
       )}
 
       {/* Complexity */}
-      <div className="flex flex-col gap-0.5">
+      <motion.div layout transition={motionPresets.chip} className="flex flex-col gap-0.5">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
           Complexity
         </span>
@@ -80,12 +86,12 @@ export function TelemetryBar({ tokens, runtimeMs, complexity, confidence, costUs
         >
           {complexity}
         </span>
-      </div>
+      </motion.div>
 
       <div className="h-8 w-px bg-border hidden sm:block" />
 
       {/* Confidence */}
-      <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+      <motion.div layout transition={motionPresets.chip} className="flex flex-col gap-1 flex-1 min-w-[120px]">
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
             Confidence
@@ -95,12 +101,13 @@ export function TelemetryBar({ tokens, runtimeMs, complexity, confidence, costUs
           </span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-          <div
+          <motion.div
             className={cn('h-full rounded-full transition-all duration-700', CONFIDENCE_BAR(confidence))}
-            style={{ width: `${confidence}%` }}
+            animate={{ width: `${confidence}%` }}
+            transition={motionPresets.fadeNormal}
           />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

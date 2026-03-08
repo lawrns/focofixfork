@@ -9,6 +9,386 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agents: {
+        Row: {
+          id: string
+          workspace_id: string
+          backend: 'crico' | 'clawdbot' | 'bosun' | 'openclaw' | 'custom'
+          agent_key: string
+          display_name: string
+          slug: string
+          description: string | null
+          public_profile: boolean
+          autonomy_tier: 'off' | 'advisor' | 'bounded' | 'near_full'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          backend: 'crico' | 'clawdbot' | 'bosun' | 'openclaw' | 'custom'
+          agent_key: string
+          display_name: string
+          slug: string
+          description?: string | null
+          public_profile?: boolean
+          autonomy_tier?: 'off' | 'advisor' | 'bounded' | 'near_full'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          backend?: 'crico' | 'clawdbot' | 'bosun' | 'openclaw' | 'custom'
+          agent_key?: string
+          display_name?: string
+          slug?: string
+          description?: string | null
+          public_profile?: boolean
+          autonomy_tier?: 'off' | 'advisor' | 'bounded' | 'near_full'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "foco_workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      agent_trust_scores: {
+        Row: {
+          id: string
+          agent_id: string
+          workspace_id: string
+          score: number
+          total_iterations: number
+          successful_iterations: number
+          failed_iterations: number
+          cancelled_iterations: number
+          avg_duration_ms: number | null
+          last_iteration_at: string | null
+          revenue_correlation: number
+          score_history: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          workspace_id: string
+          score?: number
+          total_iterations?: number
+          successful_iterations?: number
+          failed_iterations?: number
+          cancelled_iterations?: number
+          avg_duration_ms?: number | null
+          last_iteration_at?: string | null
+          revenue_correlation?: number
+          score_history?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          workspace_id?: string
+          score?: number
+          total_iterations?: number
+          successful_iterations?: number
+          failed_iterations?: number
+          cancelled_iterations?: number
+          avg_duration_ms?: number | null
+          last_iteration_at?: string | null
+          revenue_correlation?: number
+          score_history?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_trust_scores_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_trust_scores_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "foco_workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      agent_poe_anchors: {
+        Row: {
+          id: string
+          agent_id: string
+          workspace_id: string
+          session_id: string | null
+          run_id: string | null
+          ledger_event_id: string | null
+          ledger_hash: string | null
+          outcome: 'success' | 'failure' | 'partial' | 'cancelled'
+          input_hash: string | null
+          output_hash: string | null
+          duration_ms: number | null
+          score_delta: number | null
+          score_after: number | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          workspace_id: string
+          session_id?: string | null
+          run_id?: string | null
+          ledger_event_id?: string | null
+          ledger_hash?: string | null
+          outcome: 'success' | 'failure' | 'partial' | 'cancelled'
+          input_hash?: string | null
+          output_hash?: string | null
+          duration_ms?: number | null
+          score_delta?: number | null
+          score_after?: number | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          workspace_id?: string
+          session_id?: string | null
+          run_id?: string | null
+          ledger_event_id?: string | null
+          ledger_hash?: string | null
+          outcome?: 'success' | 'failure' | 'partial' | 'cancelled'
+          input_hash?: string | null
+          output_hash?: string | null
+          duration_ms?: number | null
+          score_delta?: number | null
+          score_after?: number | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_poe_anchors_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_poe_anchors_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "foco_workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      revenue_attributions: {
+        Row: {
+          id: string
+          agent_id: string
+          workspace_id: string
+          poe_anchor_id: string | null
+          amount_cents: number
+          currency: string
+          stripe_event_id: string | null
+          description: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          workspace_id: string
+          poe_anchor_id?: string | null
+          amount_cents?: number
+          currency?: string
+          stripe_event_id?: string | null
+          description?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          workspace_id?: string
+          poe_anchor_id?: string | null
+          amount_cents?: number
+          currency?: string
+          stripe_event_id?: string | null
+          description?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_attributions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_attributions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "foco_workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      autonomy_graduation_log: {
+        Row: {
+          id: string
+          agent_id: string
+          workspace_id: string
+          previous_tier: 'off' | 'advisor' | 'bounded' | 'near_full'
+          new_tier: 'off' | 'advisor' | 'bounded' | 'near_full'
+          trigger_reason: string
+          trust_score_at_change: number
+          triggered_by: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          workspace_id: string
+          previous_tier: 'off' | 'advisor' | 'bounded' | 'near_full'
+          new_tier: 'off' | 'advisor' | 'bounded' | 'near_full'
+          trigger_reason: string
+          trust_score_at_change: number
+          triggered_by?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          workspace_id?: string
+          previous_tier?: 'off' | 'advisor' | 'bounded' | 'near_full'
+          new_tier?: 'off' | 'advisor' | 'bounded' | 'near_full'
+          trigger_reason?: string
+          trust_score_at_change?: number
+          triggered_by?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomy_graduation_log_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autonomy_graduation_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "foco_workspaces"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      cofounder_loops: {
+        Row: {
+          id: string
+          user_id: string
+          workspace_id: string
+          loop_type: 'morning_briefing' | 'pr_babysitter' | 'health_patrol' | 'codebase_gardening' | 'custom'
+          schedule_kind: 'preset' | 'cron'
+          schedule_value: string
+          timezone: string
+          requested_execution_mode: 'report_only' | 'bounded_execution'
+          effective_execution_mode: 'report_only' | 'bounded_execution'
+          execution_backend: 'clawdbot' | 'openclaw'
+          execution_target: Json
+          planning_agent: Json | null
+          selected_project_ids: string[]
+          git_strategy: Json
+          config: Json
+          policy_snapshot: Json
+          status: 'active' | 'paused' | 'completed' | 'cancelled' | 'expired'
+          expires_at: string | null
+          last_tick_at: string | null
+          next_tick_at: string | null
+          active_session_id: string | null
+          iteration_count: number
+          summary: Json
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          workspace_id: string
+          loop_type: 'morning_briefing' | 'pr_babysitter' | 'health_patrol' | 'codebase_gardening' | 'custom'
+          schedule_kind?: 'preset' | 'cron'
+          schedule_value: string
+          timezone?: string
+          requested_execution_mode?: 'report_only' | 'bounded_execution'
+          effective_execution_mode?: 'report_only' | 'bounded_execution'
+          execution_backend?: 'clawdbot' | 'openclaw'
+          execution_target?: Json
+          planning_agent?: Json | null
+          selected_project_ids?: string[]
+          git_strategy?: Json
+          config?: Json
+          policy_snapshot?: Json
+          status?: 'active' | 'paused' | 'completed' | 'cancelled' | 'expired'
+          expires_at?: string | null
+          last_tick_at?: string | null
+          next_tick_at?: string | null
+          active_session_id?: string | null
+          iteration_count?: number
+          summary?: Json
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          workspace_id?: string
+          loop_type?: 'morning_briefing' | 'pr_babysitter' | 'health_patrol' | 'codebase_gardening' | 'custom'
+          schedule_kind?: 'preset' | 'cron'
+          schedule_value?: string
+          timezone?: string
+          requested_execution_mode?: 'report_only' | 'bounded_execution'
+          effective_execution_mode?: 'report_only' | 'bounded_execution'
+          execution_backend?: 'clawdbot' | 'openclaw'
+          execution_target?: Json
+          planning_agent?: Json | null
+          selected_project_ids?: string[]
+          git_strategy?: Json
+          config?: Json
+          policy_snapshot?: Json
+          status?: 'active' | 'paused' | 'completed' | 'cancelled' | 'expired'
+          expires_at?: string | null
+          last_tick_at?: string | null
+          next_tick_at?: string | null
+          active_session_id?: string | null
+          iteration_count?: number
+          summary?: Json
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           id: string

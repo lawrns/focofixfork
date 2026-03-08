@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const body = await req.json()
-  const { runner, task_id, status, summary, project_id } = body
+  const { runner, task_id, status, summary, project_id, trace } = body
 
   if (!runner) return NextResponse.json({ error: 'runner required' }, { status: 400 })
 
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       summary: summary ?? null,
       status: initialStatus,
       started_at: startedAt,
+      trace: trace ?? {},
     })
     .select()
     .single()

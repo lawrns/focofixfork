@@ -8,7 +8,7 @@ import { AgentRosterExtended } from '@/components/empire/agent-roster-extended'
 
 function EmpireAgentsContent() {
   const searchParams = useSearchParams()
-  const workspaceId = searchParams.get('workspace_id')
+  const workspaceId = searchParams?.get('workspace_id') ?? null
 
   return (
     <PageShell>

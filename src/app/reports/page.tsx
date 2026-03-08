@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -168,7 +169,7 @@ function WeeklyStatusReport({ projectStatus, onExport, onShare, onShowSources }:
   );
 }
 
-export default function ReportsPage() {
+function ReportsPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [timeRange, setTimeRange] = useState('week');
@@ -178,8 +179,8 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reportScopeLabel, setReportScopeLabel] = useState<string | null>(null);
 
-  const projectSlug = searchParams.get('project_slug');
-  const generateStatus = searchParams.get('generate') === 'status';
+  const projectSlug = searchParams?.get('project_slug') ?? null;
+  const generateStatus = searchParams?.get('generate') === 'status';
 
   const fetchReportData = useCallback(async () => {
     if (!user) return;
@@ -268,10 +269,6 @@ export default function ReportsPage() {
     }
   }, [fetchReportData]);
 
-  const handleReportClick = useCallback((reportId: string) => {
-    toast.info(`Report ${reportId} is selected.`);
-  }, []);
-
   if (isLoading) {
     return (
       <PageShell>
@@ -354,13 +351,10 @@ export default function ReportsPage() {
             <CardContent className="space-y-2">
               {recentReports.length > 0 ? (
                 recentReports.map((report) => (
-                  <div
+                  <Link
                     key={report.id}
+                    href={`/reports/${report.id}`}
                     className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer group"
-                    onClick={() => handleReportClick(report.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleReportClick(report.id)}
                   >
                     <FileText className="h-4 w-4 text-zinc-400" />
                     <div className="flex-1 min-w-0">
@@ -371,7 +365,7 @@ export default function ReportsPage() {
                       <Zap className="h-3 w-3 text-[color:var(--foco-teal)]" />
                     )}
                     <ArrowRight className="h-4 w-4 text-zinc-300 opacity-0 group-hover:opacity-100" />
-                  </div>
+                  </Link>
                 ))
               ) : (
                 <p className="text-sm text-zinc-500 py-4 text-center">No recent reports found.</p>
@@ -381,5 +375,13 @@ export default function ReportsPage() {
         </div>
       </div>
     </PageShell>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<PageShell><div>Loading reports...</div></PageShell>}>
+      <ReportsPageContent />
+    </Suspense>
   );
 }

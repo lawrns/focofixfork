@@ -13,7 +13,7 @@ import { fetchBosunAgents } from '@/lib/command-center/adapters/bosun-adapter'
 import { fetchOpenClawAgents } from '@/lib/command-center/adapters/openclaw-adapter'
 import type { UnifiedAgent } from '@/lib/command-center/types'
 import { AGENT_LANES, type AgentLane, type CustomAgentProfileRow } from '@/lib/agent-ops/types'
-import { getAgentAvatar, SPECIALIST_ADVISORS } from '@/lib/agent-avatars'
+import { getAgentAvatar, SPECIALIST_ADVISORS, buildSpecialistAdvisorRecord } from '@/lib/agent-avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -186,16 +186,30 @@ export async function GET(req: NextRequest) {
     })
     .map(mapSystemAgent)
 
-  const advisors = SPECIALIST_ADVISORS.map((advisor, index) => ({
+  const advisors = await Promise.all(SPECIALIST_ADVISORS.map(async (advisor, index) => {
+    const resolvedAdvisor = await buildSpecialistAdvisorRecord(advisor)
+    return {
     id: advisor.id,
+    kind: 'persona',
     native_id: advisor.nativeId,
     backend: advisor.backend,
     name: advisor.name,
     role: advisor.role,
     model: normalizeModel(advisor.model),
     status: advisor.status,
-    avatar_url: advisor.avatarUrl,
+    avatar_url: resolvedAdvisor.avatarUrl ?? null,
+    description: advisor.description,
+    expertise: advisor.personaTags,
+    incentives: [
+      'Provide a differentiated strategic lens',
+      'Challenge default assumptions',
+      'Push for sharper tradeoffs',
+    ],
+    risk_model: advisor.description,
+    system_prompt: advisor.systemPrompt,
+    persona_tags: advisor.personaTags,
     featured_order: index,
+    }
   }))
 
   let customQuery = supabase
@@ -303,10 +317,15 @@ export async function GET(req: NextRequest) {
     id: row.id,
     name: row.name,
     slug: row.slug,
+    kind: row.kind,
     lane: row.lane,
+    role: row.role,
     description: row.description,
     avatar_url: row.avatar_url,
     active: row.active,
+    expertise: row.expertise,
+    incentives: row.incentives,
+    risk_model: row.risk_model,
     approval_sensitivity: row.approval_sensitivity,
     persona_tags: row.persona_tags,
     updated_at: row.updated_at,

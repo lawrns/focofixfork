@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/data-display/avatar'
 import { Bot, Loader2, Send, Sparkles } from 'lucide-react'
 import type { AgentOption, ProjectOption } from './use-dashboard-data'
+import { containsSensitiveText, redactSensitiveText } from '@/lib/security/redaction'
 
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
 
@@ -19,6 +20,22 @@ export const PERSONA_PRESETS: Array<{ key: 'cto' | 'coo' | 'auto' | 'intake'; la
   { key: 'auto', label: 'Auto', description: 'Automatic best-agent routing' },
   { key: 'intake', label: 'Intake', description: 'Task intake and triage' },
 ]
+
+type Lane = 'auto' | 'product_ui' | 'platform_api' | 'requirements'
+
+const LANE_OPTIONS: Array<{ key: Lane; label: string; paths: string }> = [
+  { key: 'auto', label: 'Auto', paths: '' },
+  { key: 'product_ui', label: 'Product UI', paths: 'src/app/, src/components/' },
+  { key: 'platform_api', label: 'Platform API', paths: 'src/app/api/, src/lib/services/' },
+  { key: 'requirements', label: 'Requirements', paths: 'docs/, FOUNDER_PROFILE.md' },
+]
+
+const PERSONA_LANE_MAP: Record<string, Lane> = {
+  cto: 'platform_api',
+  coo: 'requirements',
+  auto: 'auto',
+  intake: 'auto',
+}
 
 type RibbonState = {
   agent: string
@@ -40,7 +57,7 @@ type CommandInputProps = {
   selectedProjectId: string
   selectedProjectSlug: string
   onProjectChange: (projectId: string) => void
-  onDispatch: (args: { task: string; persona: string; agentId: string; personaLabel: string }) => Promise<DispatchResult>
+  onDispatch: (args: { task: string; persona: string; agentId: string; personaLabel: string; lane?: string }) => Promise<DispatchResult>
   dispatching: boolean
   ribbon: RibbonState | null
   dispatchFlash: boolean
@@ -58,17 +75,21 @@ export function CommandInput({
   dispatchFlash,
 }: CommandInputProps) {
   const [persona, setPersona] = useState<'cto' | 'coo' | 'auto' | 'intake'>('auto')
+  const [lane, setLane] = useState<Lane>('auto')
   const [agentId, setAgentId] = useState('')
   const [task, setTask] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const personaLabel = PERSONA_PRESETS.find((preset) => preset.key === persona)?.label ?? 'Auto'
+  const activeLane = LANE_OPTIONS.find((l) => l.key === lane)
   const selectedAgent = agents.find((agent) => agent.nativeId === agentId)
+  const redactedPreview = redactSensitiveText(task)
+  const sensitiveInput = task.trim().length > 0 && containsSensitiveText(task)
 
   const handleSubmit = async () => {
     if (!task.trim()) return
     setErrorMessage(null)
-    const result = await onDispatch({ task, persona, agentId: agentId.trim() || personaLabel, personaLabel })
+    const result = await onDispatch({ task, persona, agentId: agentId.trim() || personaLabel, personaLabel, lane: lane !== 'auto' ? lane : undefined })
     if (!result.ok) {
       setErrorMessage(result.error ?? 'Dispatch failed')
       return
@@ -90,7 +111,7 @@ export function CommandInput({
               {PERSONA_PRESETS.map((preset) => (
                 <button
                   key={preset.key}
-                  onClick={() => setPersona(preset.key)}
+                  onClick={() => { setPersona(preset.key); setLane(PERSONA_LANE_MAP[preset.key] ?? 'auto') }}
                   className={cn(
                     'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors flex-shrink-0 whitespace-nowrap',
                     preset.key === persona
@@ -99,6 +120,21 @@ export function CommandInput({
                   )}
                 >
                   {preset.label}
+                </button>
+              ))}
+              <span className="text-[10px] text-muted-foreground mx-0.5">|</span>
+              {LANE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setLane(opt.key)}
+                  className={cn(
+                    'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors flex-shrink-0 whitespace-nowrap',
+                    opt.key === lane
+                      ? 'border-indigo-500 bg-indigo-500 text-white'
+                      : 'border-border bg-muted/40 text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {opt.label}
                 </button>
               ))}
               <Popover>
@@ -173,6 +209,12 @@ export function CommandInput({
             </p>
           ) : null}
 
+          {sensitiveInput ? (
+            <p className="px-4 text-xs text-amber-600 dark:text-amber-400" role="status" aria-live="polite">
+              Sensitive values detected. The dashboard will redact previews, but avoid pasting raw credentials unless they are required.
+            </p>
+          ) : null}
+
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,7 +223,7 @@ export function CommandInput({
           >
             <div className="flex flex-col gap-2 md:flex-row md:items-center">
               <div className="bg-muted/50 rounded-md px-3 py-1.5 text-[11px] font-mono text-muted-foreground flex-1">
-                routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · mode <span className="text-foreground/70">gateway</span>
+                routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · lane <span className="text-foreground/70">{activeLane?.label ?? 'auto'}</span>{activeLane?.paths ? <span className="text-muted-foreground/60"> ({activeLane.paths})</span> : null} · mode <span className="text-foreground/70">persisted pipeline</span>
               </div>
 
               <select
@@ -195,6 +237,10 @@ export function CommandInput({
                 ))}
               </select>
             </div>
+            <p className="mt-2 px-1 text-[11px] text-muted-foreground">
+              Every dispatch creates a saved run first. Live output only appears after a stream is actually attached.
+              {task.trim() ? ` Preview: ${redactedPreview.slice(0, 160)}` : ''}
+            </p>
           </motion.div>
         </div>
       </motion.div>

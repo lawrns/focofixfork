@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DiagramContainer } from '@/components/command-center/diagram/diagram-container'
+import { NightAutonomyCard } from '@/components/command-center/orchestrator/night-autonomy-card'
+import { LoopsSummaryCard } from '@/components/autonomy/loops-summary-card'
 import { AgentDetailSheet } from '@/components/command-center/panels/agent-detail-sheet'
 import { CreateMissionDialog } from '@/components/command-center/dialogs/create-mission-dialog'
 import { AgentTable } from '@/components/command-center/tables/agent-table'
@@ -52,6 +54,7 @@ import {
   ShieldCheck,
   Gauge,
   Workflow,
+  RotateCw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -92,9 +95,23 @@ interface ProjectOption {
   name: string
 }
 
+interface ClawdbotActivityItem {
+  id: string
+  agent_key: string
+  event_type: string
+  direction: string
+  session_key?: string | null
+  title: string
+  detail: string | null
+  payload?: Record<string, unknown>
+  project_id?: string | null
+  created_at: string
+}
+
 const AGENT_POLL_INTERVAL = 10_000
 const DECISIONS_POLL_INTERVAL = 15_000
 const COFOUNDER_POLL_INTERVAL = 20_000
+const CLAWDBOT_ACTIVITY_POLL_INTERVAL = 8_000
 const RUNS_POLL_INTERVAL = 15_000
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
 
@@ -156,9 +173,12 @@ export function CommandCenterClient() {
   const [globalSearch, setGlobalSearch] = useState('')
   const [cofounderInsights, setCofounderInsights] = useState<CoFounderInsightItem[]>([])
   const [cofounderLoading, setCofounderLoading] = useState(true)
+  const [clawdbotActivity, setClawdbotActivity] = useState<ClawdbotActivityItem[]>([])
+  const [clawdbotActivityLoading, setClawdbotActivityLoading] = useState(true)
 
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
   const [selectedProjectSlug, setSelectedProjectSlug] = useState('')
+  const [dispatchKind, setDispatchKind] = useState<'task' | 'report'>('task')
   const [commandExpanded, setCommandExpanded] = useState(false)
   const [persona, setPersona] = useState<'cto' | 'coo' | 'auto' | 'intake'>('auto')
   const [agentId, setAgentId] = useState(process.env.EMPIRE_EXECUTION_MODEL || '')
@@ -171,7 +191,10 @@ export function CommandCenterClient() {
   const [activeRuns, setActiveRuns] = useState<Run[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
   const [fleetExpanded, setFleetExpanded] = useState(false)
+  const [ruleExpanded, setRuleExpanded] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CoFounderInsightItem | null>(null)
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
+  const [activeLoopCount, setActiveLoopCount] = useState(0)
 
   const { setAgents, setMissions, setError, setDecisions, approveDecision } = store
 
@@ -241,6 +264,21 @@ export function CommandCenterClient() {
     }
   }, [])
 
+  const loadClawdbotActivity = useCallback(async (signal?: AbortSignal, initialLoad = false) => {
+    if (initialLoad) setClawdbotActivityLoading(true)
+    try {
+      const params = new URLSearchParams({ limit: '16' })
+      const res = await fetch(`/api/agents/clawdbot/activity?${params.toString()}`, { signal })
+      if (!res.ok) return
+      const json = await res.json()
+      setClawdbotActivity((json?.data?.items ?? []) as ClawdbotActivityItem[])
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+    } finally {
+      if (initialLoad) setClawdbotActivityLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (store.paused) return
     const controller = new AbortController()
@@ -276,6 +314,16 @@ export function CommandCenterClient() {
   }, [loadCofounderInsights])
 
   useEffect(() => {
+    const controller = new AbortController()
+    loadClawdbotActivity(controller.signal, true)
+    const id = setInterval(() => loadClawdbotActivity(controller.signal), CLAWDBOT_ACTIVITY_POLL_INTERVAL)
+    return () => {
+      controller.abort()
+      clearInterval(id)
+    }
+  }, [loadClawdbotActivity])
+
+  useEffect(() => {
     const load = async () => {
       setHealthLoading(true)
       try {
@@ -289,6 +337,26 @@ export function CommandCenterClient() {
       }
     }
     load()
+  }, [])
+
+  useEffect(() => {
+    const wsId = searchParams?.get('workspace_id') ?? null
+    setWorkspaceId(wsId)
+  }, [searchParams])
+
+  useEffect(() => {
+    const fetchActiveLoops = async () => {
+      try {
+        const res = await fetch('/api/autonomy/loops?status=active&limit=1')
+        if (res.ok) {
+          const json = await res.json()
+          setActiveLoopCount(json?.data?.count ?? json?.count ?? 0)
+        }
+      } catch {
+        // noop — loop count is non-critical
+      }
+    }
+    void fetchActiveLoops()
   }, [])
 
   useEffect(() => {
@@ -311,7 +379,7 @@ export function CommandCenterClient() {
 
   useEffect(() => {
     if (agentParamHandled.current) return
-    const agentParam = searchParams.get('agent')
+    const agentParam = searchParams?.get('agent')
     if (!agentParam || store.agents.length === 0) return
     const match = store.agents.find((a) => a.id === agentParam || a.nativeId === agentParam)
     if (match) {
@@ -332,6 +400,45 @@ export function CommandCenterClient() {
       ].slice(-120))
     }, delay)
   }, [])
+
+  const streamCommandSurfaceJob = useCallback(async (streamUrl: string) => {
+    const streamRes = await fetch(streamUrl, {
+      headers: { Accept: 'text/event-stream' },
+    })
+    if (!streamRes.ok || !streamRes.body) throw new Error('Failed to connect to command stream')
+
+    const reader = streamRes.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        try {
+          const event = JSON.parse(line.slice(6)) as Record<string, unknown>
+          if (event.type === 'status_update' && typeof event.message === 'string') {
+            pushTerminalLine({ token: inferSoapToken(event.message), text: event.message })
+          } else if (event.type === 'reasoning' && typeof event.text === 'string') {
+            pushTerminalLine({ token: 'PLAN', text: event.text })
+          } else if (event.type === 'output_chunk' && typeof event.text === 'string') {
+            pushTerminalLine({ token: 'RESULT', text: event.text })
+          } else if (event.type === 'error' && typeof event.message === 'string') {
+            pushTerminalLine({ token: 'ERROR', text: event.message })
+          } else if (event.type === 'done' && typeof event.summary === 'string') {
+            pushTerminalLine({ token: 'RESULT', text: event.summary })
+          }
+        } catch {
+          // ignore malformed stream chunks
+        }
+      }
+    }
+  }, [pushTerminalLine])
 
   const triggerDispatchArc = useCallback((agentLabel: string, userTask: string, runId?: string) => {
     setRibbon({ agent: agentLabel, task: userTask, runId })
@@ -382,25 +489,68 @@ export function CommandCenterClient() {
 
     const personaLabel = PERSONA_PRESETS.find((preset) => preset.key === persona)?.label ?? 'Auto'
     const targetAgent = agentId.trim() || personaLabel
+    const selectedProject = projectOptions.find((project) => project.slug === selectedProjectSlug) ?? null
 
     try {
-      const res = await fetch('/api/openclaw-gateway/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: targetAgent,
-          task,
-          project_slug: selectedProjectSlug || undefined,
-          context: { persona },
-        }),
-      })
+      if (dispatchKind === 'report') {
+        if (!selectedProject) {
+          pushTerminalLine({ token: 'ERROR', text: 'Select a project before generating a report.' })
+          return
+        }
 
-      if (!res.ok) {
-        triggerDispatchArc(targetAgent, task)
-        pushTerminalLine({ token: 'ERROR', text: 'Gateway rejected dispatch request' })
+        const reportPrompt = `${task.trim()}\n\nFocus on codebase health, project direction, risks, next steps, and how to steer this project toward well-being.`
+        triggerDispatchArc(targetAgent, reportPrompt)
+        pushTerminalLine({ token: 'PLAN', text: `Report mode active for ${selectedProject.name}` })
+
+        const res = await fetch('/api/command-surface/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: reportPrompt,
+            mode: persona,
+            project_id: selectedProject.id,
+            planning_goal: `Generate a durable project steering report for ${selectedProject.name}`,
+            context: {
+              dispatch_kind: 'project_report',
+              selected_agent_id: targetAgent,
+              selected_agent_name: targetAgent,
+              project_slug: selectedProject.slug,
+            },
+            report_request: {
+              enabled: true,
+              report_type: 'project_health',
+              project_id: selectedProject.id,
+              selected_agent_id: targetAgent,
+              selected_agent_name: targetAgent,
+            },
+          }),
+        })
+
+        const payload = await res.json()
+        if (!res.ok || !payload?.stream_url) {
+          pushTerminalLine({ token: 'ERROR', text: payload?.error ?? 'Report dispatch failed' })
+        } else {
+          await streamCommandSurfaceJob(payload.stream_url as string)
+        }
       } else {
-        const data = await res.json()
-        triggerDispatchArc(targetAgent, task, data?.runId)
+        const res = await fetch('/api/openclaw-gateway/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentId: targetAgent,
+            task,
+            project_slug: selectedProjectSlug || undefined,
+            context: { persona },
+          }),
+        })
+
+        if (!res.ok) {
+          triggerDispatchArc(targetAgent, task)
+          pushTerminalLine({ token: 'ERROR', text: 'Gateway rejected dispatch request' })
+        } else {
+          const data = await res.json()
+          triggerDispatchArc(targetAgent, task, data?.runId)
+        }
       }
 
       setTask('')
@@ -411,7 +561,7 @@ export function CommandCenterClient() {
     } finally {
       setDispatching(false)
     }
-  }, [task, persona, agentId, selectedProjectSlug, triggerDispatchArc, pushTerminalLine])
+  }, [task, persona, agentId, selectedProjectSlug, triggerDispatchArc, pushTerminalLine, dispatchKind, projectOptions, streamCommandSurfaceJob])
 
   const staleCount = store.agents.filter((agent) => {
     if (agent.status !== 'working' || !agent.lastActiveAt) return false
@@ -456,8 +606,8 @@ export function CommandCenterClient() {
     <TooltipProvider delayDuration={120}>
       <PageShell className="space-y-3">
         <PageHeader
-          title="Critter Mission Control"
-          subtitle="Dense command-and-observe surface for live agent operations"
+          title="Command Center"
+          subtitle="Live agent operations and decision review."
           primaryAction={
             <div className="flex items-center gap-2">
               {store.error && (
@@ -484,15 +634,61 @@ export function CommandCenterClient() {
           }
         />
 
-        <div className="rounded-lg border border-zinc-300/70 bg-zinc-100/70 px-3 py-2 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200">
-          Strategic rule active: dispatches favor observable execution and guarded transitions.
+        <div className="rounded-lg border border-zinc-300/70 bg-zinc-100/70 dark:border-zinc-700 dark:bg-zinc-900/60">
+          <button
+            type="button"
+            onClick={() => setRuleExpanded((prev) => !prev)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-zinc-700 dark:text-zinc-200 font-medium">Strategic rule active</span>
+            <span className="text-xs text-muted-foreground truncate">dispatches favor observable execution and guarded transitions</span>
+            <span className="ml-auto shrink-0">
+              {ruleExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+            </span>
+          </button>
+          <AnimatePresence initial={false}>
+            {ruleExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={SHARED_SPRING}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-zinc-300/70 dark:border-zinc-700 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-300 space-y-1">
+                  <p>All dispatches route through observable execution paths. Guarded transitions are enforced — no silent state mutations allowed. Escalations require operator acknowledgement before proceeding to irreversible actions.</p>
+                  <p className="text-muted-foreground">Mode: Reactive · Policy: Guarded · Escalation ladder: warn → hold → abort</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
+        {/* Zone 1: Command */}
         <div className="bg-gradient-to-b from-background to-muted/20 rounded-xl border p-3 space-y-2">
+          <div className="flex items-center gap-2 px-0.5">
+            <Send className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Command</span>
+          </div>
           <motion.div layoutId="command-surface" transition={SHARED_SPRING} className="rounded-xl border border-zinc-300/70 bg-card p-3">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {(['task', 'report'] as const).map((kind) => (
+                    <button
+                      key={kind}
+                      onClick={() => setDispatchKind(kind)}
+                      className={cn(
+                        'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors',
+                        kind === dispatchKind
+                          ? 'border-cyan-500 bg-cyan-500 text-white'
+                          : 'border-border bg-muted/40 text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      {kind === 'task' ? 'Task' : 'Report'}
+                    </button>
+                  ))}
                   {PERSONA_PRESETS.map((preset) => (
                     <button
                       key={preset.key}
@@ -579,6 +775,7 @@ export function CommandCenterClient() {
                         <span className="font-medium text-foreground">Context</span>
                         <div className="mt-1 flex items-center gap-1.5 text-[10px]">
                           <span className="rounded-full border px-2 py-0.5">{PERSONA_PRESETS.find((preset) => preset.key === persona)?.description}</span>
+                          <span className="rounded-full border px-2 py-0.5">{dispatchKind === 'report' ? 'durable report artifact' : 'live task dispatch'}</span>
                           {connected && <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-500">live logs</span>}
                         </div>
                       </div>
@@ -642,6 +839,7 @@ export function CommandCenterClient() {
           stale={staleCount}
           paused={store.paused}
           flashPending={pendingFlash}
+          activeLoops={activeLoopCount}
         />
 
         <FleetStatusPanel
@@ -655,14 +853,12 @@ export function CommandCenterClient() {
           avgLatency={avgLatency}
         />
 
-        <div className="grid gap-2 xl:grid-cols-12">
-          <div className="xl:col-span-5">
-            <ActiveRunsBoard runs={activeRuns} loading={runsLoading} />
-          </div>
-          <div className="xl:col-span-7">
-            <SoapTerminal lines={mergedTerminalLines} open={terminalOpen} onOpenChange={setTerminalOpen} connected={connected} />
-          </div>
+        {/* Zone 2: Live Status Strip — compact KPI pills + expandable fleet detail */}
+        <div className="space-y-2">
+          <ActiveRunsBoard runs={activeRuns} loading={runsLoading} />
         </div>
+
+        <ClawdbotActivityFeed events={clawdbotActivity} loading={clawdbotActivityLoading} />
 
         <LiveTickerFeed
           loading={cofounderLoading}
@@ -670,6 +866,67 @@ export function CommandCenterClient() {
           onOpenEvent={(event) => setSelectedEvent(event)}
         />
 
+        {/* Zone 3: Attention Required */}
+        {(() => {
+          const pendingDecisions = store.decisions
+          const problemRuns = activeRuns.filter((run) => run.status === 'failed' || run.status === 'cancelled')
+          const hasAttention = pendingDecisions.length > 0 || problemRuns.length > 0
+          return (
+            <div className="rounded-xl border">
+              <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/20">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Attention Required</span>
+                {hasAttention && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-500">
+                    {pendingDecisions.length + problemRuns.length}
+                  </Badge>
+                )}
+              </div>
+              <div className="p-3">
+                {!hasAttention ? (
+                  <div className="flex items-center gap-2 text-sm text-emerald-500">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>All clear — no pending decisions or failed runs.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingDecisions.map((decision) => (
+                      <div key={decision.id} className="rounded-lg border border-dashed bg-amber-500/5 border-amber-500/30 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <Badge className="text-[10px] mb-1" variant="outline">{decision.severity}</Badge>
+                            <p className="text-sm font-medium">{decision.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{decision.actionHint}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => approveDecision(decision.id, 'approve')}>Approve</Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => approveDecision(decision.id, 'reject')}>Reject</Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {problemRuns.map((run) => (
+                      <div key={run.id} className="rounded-lg border border-dashed bg-rose-500/5 border-rose-500/30 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <Badge className="text-[10px] mb-1 border-rose-500/40 text-rose-500" variant="outline">{run.status}</Badge>
+                            <p className="text-sm font-medium font-mono">{run.runner}</p>
+                            {run.summary && <p className="text-xs text-muted-foreground mt-0.5 truncate">{run.summary}</p>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            <ElapsedTimer since={run.started_at || run.created_at} />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Zone 4: Deep Inspection */}
         <div className="hidden md:block rounded-xl border overflow-hidden bg-card/80" style={{ minHeight: '220px' }}>
           <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
             <Cpu className="h-4 w-4 text-muted-foreground" />
@@ -682,25 +939,44 @@ export function CommandCenterClient() {
           <MobileCommandView />
         </div>
 
-        <Tabs defaultValue="agents">
-          <TabsList>
-            <TabsTrigger value="agents">Agents</TabsTrigger>
-            <TabsTrigger value="missions">Missions</TabsTrigger>
-            <TabsTrigger value="runs">Runs</TabsTrigger>
-          </TabsList>
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Deep Inspection</span>
+          </div>
+          <Tabs defaultValue={searchParams?.get('tab') ?? 'agents'}>
+            <TabsList>
+              <TabsTrigger value="agents">Agents</TabsTrigger>
+              <TabsTrigger value="missions">Missions</TabsTrigger>
+              <TabsTrigger value="autonomy">Autonomy</TabsTrigger>
+              <TabsTrigger value="runs">Runs</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="agents" className="mt-3">
-            <AgentTable />
-          </TabsContent>
+            <TabsContent value="agents" className="mt-3">
+              <AgentTable />
+            </TabsContent>
 
-          <TabsContent value="missions" className="mt-3">
-            <MissionTable />
-          </TabsContent>
+            <TabsContent value="missions" className="mt-3">
+              <MissionTable />
+            </TabsContent>
 
-          <TabsContent value="runs" className="mt-3">
-            <RunsTable />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="autonomy" className="mt-3">
+              <div className="grid gap-4 md:grid-cols-2">
+                <NightAutonomyCard />
+                <LoopsSummaryCard workspaceId={workspaceId ?? null} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="runs" className="mt-3">
+              <RunsTable />
+            </TabsContent>
+
+            <TabsContent value="logs" className="mt-3">
+              <SoapTerminal lines={mergedTerminalLines} open={true} onOpenChange={setTerminalOpen} connected={connected} />
+            </TabsContent>
+          </Tabs>
+        </div>
 
         <AgentDetailSheet />
         <CreateMissionDialog open={missionDialogOpen} onClose={() => setMissionDialogOpen(false)} />
@@ -753,6 +1029,7 @@ function ExecutionStatBar({
   stale,
   paused,
   flashPending,
+  activeLoops,
 }: {
   running: number
   pending: number
@@ -762,14 +1039,16 @@ function ExecutionStatBar({
   stale: number
   paused: boolean
   flashPending: boolean
+  activeLoops: number
 }) {
   const stats = [
-    { label: 'Running', value: running, icon: Activity },
-    { label: 'Pending', value: pending, icon: Clock3 },
-    { label: 'Done', value: done, icon: Workflow },
-    { label: 'Blocked', value: blocked, icon: ShieldCheck },
-    { label: 'Failed', value: failed, icon: AlertCircle },
-    { label: 'Stale', value: stale, icon: Gauge },
+    { label: 'Running', value: running, icon: Activity, teal: false },
+    { label: 'Pending', value: pending, icon: Clock3, teal: false },
+    { label: 'Done', value: done, icon: Workflow, teal: false },
+    { label: 'Blocked', value: blocked, icon: ShieldCheck, teal: false },
+    { label: 'Failed', value: failed, icon: AlertCircle, teal: false },
+    { label: 'Stale', value: stale, icon: Gauge, teal: false },
+    { label: 'Active Loops', value: activeLoops, icon: RotateCw, teal: true },
   ]
 
   return (
@@ -784,11 +1063,12 @@ function ExecutionStatBar({
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1 text-xs',
                   stat.label === 'Pending' && flashPending && 'border-amber-400 bg-amber-400/20',
+                  stat.teal && 'border-[color:var(--foco-teal)]/30 bg-[color:var(--foco-teal)]/10',
                 )}
               >
-                <stat.icon className="h-3.5 w-3.5" />
+                <stat.icon className={cn('h-3.5 w-3.5', stat.teal && 'text-[color:var(--foco-teal)]')} />
                 <span>{stat.label}</span>
-                <span className="font-mono">{stat.value}</span>
+                <span className={cn('font-mono', stat.teal && 'text-[color:var(--foco-teal)]')}>{stat.value}</span>
               </motion.div>
             </TooltipTrigger>
             <TooltipContent className="text-xs">{stat.label} agents or items</TooltipContent>
@@ -1075,6 +1355,59 @@ function LiveTickerFeed({
                 </motion.button>
               ))}
             </AnimatePresence>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ClawdbotActivityFeed({
+  events,
+  loading,
+}: {
+  events: ClawdbotActivityItem[]
+  loading: boolean
+}) {
+  return (
+    <Card>
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm">Clawdbot Live Feed</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading live bridge events...</p>
+        ) : events.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No live bridge activity yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {events.slice(0, 8).map((event) => {
+              const model = typeof event.payload?.model_preference === 'string'
+                ? event.payload.model_preference
+                : typeof event.payload?.model === 'string'
+                  ? event.payload.model
+                  : null
+
+              return (
+                <div key={event.id} className="rounded-md border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="border-cyan-500/40 text-cyan-500">
+                      {event.event_type}
+                    </Badge>
+                    <span className="font-mono text-xs">{event.agent_key}</span>
+                    <span className="text-[10px] text-muted-foreground">{relativeTime(event.created_at)}</span>
+                    {model && <Badge variant="outline" className="ml-auto text-[10px]">{model}</Badge>}
+                  </div>
+                  <p className="mt-1 text-xs font-medium">{event.title}</p>
+                  {event.detail && <p className="mt-1 text-xs text-muted-foreground">{event.detail}</p>}
+                  <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span>{event.direction}</span>
+                    {event.project_id && <span className="font-mono">project:{event.project_id.slice(0, 8)}</span>}
+                    {typeof event.session_key === 'string' && <span className="font-mono">session:{event.session_key}</span>}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </CardContent>

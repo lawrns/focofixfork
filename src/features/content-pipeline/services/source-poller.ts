@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 import { getDatasetItems, startApifyRun } from './apify-client';
 import { prepareApifyItemsForSource } from './social-ingestion';
+import { ContentAnalyzer } from './content-analyzer';
 import { getSourceHeaders, getSourceProviderConfig } from '@/features/content-pipeline/server/source-record';
 
 // Simple XML parser for RSS feeds
@@ -231,6 +232,7 @@ export class SourcePoller {
     }
 
     let itemsNew = 0;
+    const createdItemIds: string[] = [];
 
     for (const item of items) {
       // Check for duplicates by external_id
@@ -246,7 +248,7 @@ export class SourcePoller {
       }
 
       // Insert new item
-      const { error } = await supabaseAdmin
+      const { data: inserted, error } = await supabaseAdmin
         .from('content_items')
         .insert({
           source_id: source.id,
@@ -266,14 +268,36 @@ export class SourcePoller {
           provider_payload: item.provider_payload ?? {},
           download_status: item.download_status ?? 'not_applicable',
           transcript_status: item.transcript_status ?? 'not_applicable',
+          analysis_status: 'pending',
           published_at: item.published_at,
           status: 'unread',
-        });
+        })
+        .select('id');
 
       if (error) {
         logger.error(`Error inserting content item:`, error);
       } else {
         itemsNew++;
+        if (Array.isArray(inserted)) {
+          for (const row of inserted) {
+            if (row && typeof row.id === 'string') createdItemIds.push(row.id);
+          }
+        }
+      }
+    }
+
+    if (createdItemIds.length > 0) {
+      const { data: createdItems, error: fetchError } = await supabaseAdmin
+        .from('content_items')
+        .select('*')
+        .in('id', createdItemIds);
+
+      if (fetchError) {
+        logger.error('Error fetching newly inserted content items for analysis:', fetchError);
+      } else {
+        for (const item of createdItems ?? []) {
+          await ContentAnalyzer.analyzeItem(item as any);
+        }
       }
     }
 

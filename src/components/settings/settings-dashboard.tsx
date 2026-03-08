@@ -63,7 +63,7 @@ export function SettingsDashboard() {
 
   // Update tab from URL params after hydration
   useEffect(() => {
-    const tab = searchParams.get('tab')
+    const tab = searchParams?.get('tab')
     if (tab) {
       setActiveTab(tab)
     }

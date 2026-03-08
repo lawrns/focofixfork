@@ -38,6 +38,27 @@ vi.mock('@/lib/supabase-server', () => ({
 import { GET as getSocialSources } from '@/app/api/content-pipeline/social/sources/route'
 import { GET as getSocialInsights } from '@/app/api/content-pipeline/social/insights/route'
 
+const emptyInsightsPayload = {
+  top_insights: [],
+  themes: [],
+  grouped_signals: [],
+  platform_counts: {},
+  total_items: 0,
+  analyzed_count: 0,
+  transcript_coverage: {
+    total_video_items: 0,
+    completed: 0,
+    failed: 0,
+    pending: 0,
+  },
+  source_health: {
+    active: 0,
+    error: 0,
+    paused: 0,
+  },
+  unresolved_failures: [],
+}
+
 describe('content pipeline social routes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -105,6 +126,32 @@ describe('content pipeline social routes', () => {
               }),
             }
           },
+        }
+      }
+
+      if (table === 'apify_runs') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({
+                    data: {
+                      id: 'run-1',
+                      status: 'succeeded',
+                      metrics: {
+                        transcripts_completed: 2,
+                      },
+                      started_at: '2026-03-05T19:00:00.000Z',
+                      completed_at: '2026-03-05T19:01:00.000Z',
+                      error: null,
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
         }
       }
 
@@ -186,11 +233,7 @@ describe('content pipeline social routes', () => {
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
     expect(body.data).toEqual({
-      top_insights: [],
-      themes: [],
-      platform_counts: {},
-      total_items: 0,
-      analyzed_count: 0,
+      ...emptyInsightsPayload,
     })
   })
 
@@ -219,11 +262,7 @@ describe('content pipeline social routes', () => {
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
     expect(body.data).toEqual({
-      top_insights: [],
-      themes: [],
-      platform_counts: {},
-      total_items: 0,
-      analyzed_count: 0,
+      ...emptyInsightsPayload,
     })
   })
 
@@ -269,27 +308,42 @@ describe('content pipeline social routes', () => {
             expect(columns).toContain('ai_summary')
             return {
               in: () => ({
-                not: () => ({
-                  gte: () => ({
-                    order: () => ({
-                      limit: async () => ({
-                        data: [
-                          {
-                            id: 'item-1',
-                            ai_summary: 'Users are discussing the launch',
-                            ai_tags: ['launch', 'growth'],
-                            relevance_score: 0.9,
-                            published_at: null,
-                            created_at: '2026-03-05T19:00:00.000Z',
-                            source_id: 'source-1',
+                gte: () => ({
+                  order: () => ({
+                    limit: async () => ({
+                      data: [
+                        {
+                          id: 'item-1',
+                          ai_summary: 'Users are discussing the launch',
+                          ai_tags: ['launch', 'growth'],
+                          relevance_score: 0.9,
+                          published_at: null,
+                          created_at: '2026-03-05T19:00:00.000Z',
+                          source_id: 'source-1',
+                          transcript_status: 'complete',
+                          download_status: 'complete',
+                          analysis_status: 'complete',
+                          analysis_error: null,
+                          signal_type: 'demand-signal',
+                          signal_confidence: 0.8,
+                          signal_urgency: 'active',
+                          upgrade_implication: 'Ship faster around launch workflows',
+                          evidence_excerpt: 'Users are discussing the launch',
+                          signal_payload: {
+                            signal_type: 'demand-signal',
+                            confidence: 0.8,
+                            urgency: 'active',
+                            upgrade_implication: 'Ship faster around launch workflows',
+                            evidence_excerpt: 'Users are discussing the launch',
+                            themes: ['launch'],
                           },
-                        ],
-                        error: null,
-                      }),
+                        },
+                      ],
+                      error: null,
                     }),
                   }),
                 }),
-              }),
+              })
             }
           },
         }
@@ -313,5 +367,18 @@ describe('content pipeline social routes', () => {
     expect(body.data.platform_counts).toEqual({ twitter: 1 })
     expect(body.data.total_items).toBe(4)
     expect(body.data.analyzed_count).toBe(1)
+    expect(body.data.grouped_signals).toEqual([
+      expect.objectContaining({
+        signal_type: 'demand-signal',
+        tag: 'launch',
+        urgency: 'active',
+      }),
+    ])
+    expect(body.data.transcript_coverage).toEqual({
+      total_video_items: 1,
+      completed: 1,
+      failed: 0,
+      pending: 0,
+    })
   })
 })

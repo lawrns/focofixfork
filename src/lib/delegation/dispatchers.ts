@@ -17,6 +17,8 @@ export interface DispatchPayload {
   agentId: string
   callbackUrl?: string
   workingDirectory?: string | null
+  preferredModel?: string | null
+  runtimeProfile?: Record<string, unknown>
 }
 
 export interface DispatchResult {
@@ -60,6 +62,8 @@ export async function dispatchToClawdBot(payload: DispatchPayload): Promise<Disp
         title: payload.title,
         description: payload.description,
         system_prompt: payload.systemPrompt,
+        preferred_model: payload.preferredModel ?? undefined,
+        runtime_profile: payload.runtimeProfile ?? undefined,
         ...(payload.callbackUrl ? { callback_url: payload.callbackUrl } : {}),
         ...(payload.workingDirectory ? { working_directory: payload.workingDirectory } : {}),
       }),

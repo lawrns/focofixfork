@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toSelectValueWithNone, fromSelectValue } from '@/lib/ui/select-validation'
 
 type EmailStatus =
   | 'queued'
@@ -213,12 +214,12 @@ function CreateEmailDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="email-project">Project (optional)</Label>
-            <Select value={projectId} onValueChange={setProjectId}>
+            <Select value={toSelectValueWithNone(projectId, '__none__')} onValueChange={(v) => setProjectId(fromSelectValue(v, '__none__') ?? '')}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {Array.isArray(projects) && projects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2">

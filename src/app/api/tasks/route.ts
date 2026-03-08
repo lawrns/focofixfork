@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/response-helpers'
 import type { TaskFilters } from '@/lib/repositories/task-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { createTaskExecutionEvent } from '@/features/task-intake'
 
 export const dynamic = 'force-dynamic'
 
@@ -137,6 +138,35 @@ export async function POST(req: NextRequest) {
   if (isError(taskResult)) {
     return databaseErrorResponse(taskResult.error.message, taskResult.error.details)
   }
+
+  await supabaseAdmin
+    .from('work_items')
+    .update({
+      metadata: {
+        source: 'manual',
+        execution_state: {
+          summary: null,
+          latest_event: 'created_manually',
+        },
+        verification_summary: {
+          required: false,
+          latest_status: null,
+          latest_summary: null,
+        },
+      },
+    })
+    .eq('id', taskResult.data.id)
+
+  await createTaskExecutionEvent({
+    workItemId: taskResult.data.id,
+    workspaceId: project.workspace_id,
+    projectId: body.project_id,
+    actorType: 'user',
+    actorId: user.id,
+    eventType: 'created_manually',
+    summary: 'Task created manually.',
+    details: {},
+  })
 
   // OPTIMIZATION: Invalidate related caches after mutation
   const { invalidateCache } = await import('@/lib/cache/redis')

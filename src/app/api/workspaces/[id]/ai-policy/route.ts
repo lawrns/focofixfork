@@ -12,6 +12,7 @@ import {
   invalidUUIDResponse
 } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { DEFAULT_WORKSPACE_AI_POLICY, normalizeWorkspaceAIPolicy, type WorkspaceAIPolicy } from '@/lib/ai/policy'
 
 import { z } from 'zod'
 
@@ -49,14 +50,42 @@ const WorkspaceAIPolicySchema = z.object({
   }).default({
     confidence_min_for_auto: 0.75,
   }),
+  model_profiles: z.record(z.object({
+    provider: z.enum(['openai', 'deepseek', 'glm', 'anthropic']).optional(),
+    model: z.string().min(1).max(200).optional(),
+    temperature: z.number().min(0).max(2).optional(),
+    max_tokens: z.number().min(1).max(32768).optional(),
+    fallback_chain: z.array(z.string()).default([]),
+  })).default({}),
+  tool_profiles: z.record(z.object({
+    tool_mode: z.enum(['none', 'llm_tools_only', 'surfaces_only', 'llm_tools_and_surfaces']).optional(),
+    allowed_tools: z.array(z.string()).default([]),
+  })).default({}),
+  prompt_profiles: z.record(z.object({
+    system_instructions: z.string().max(2000).optional(),
+    prompt_instructions: z.string().max(6000).optional(),
+    handbook_slugs: z.array(z.string()).default([]),
+  })).default({}),
+  agent_profiles: z.record(z.object({
+    provider: z.enum(['openai', 'deepseek', 'glm', 'anthropic']).optional(),
+    model: z.string().min(1).max(200).optional(),
+    temperature: z.number().min(0).max(2).optional(),
+    max_tokens: z.number().min(1).max(32768).optional(),
+    fallback_chain: z.array(z.string()).default([]),
+    tool_mode: z.enum(['none', 'llm_tools_only', 'surfaces_only', 'llm_tools_and_surfaces']).optional(),
+    allowed_tools: z.array(z.string()).default([]),
+    system_prompt: z.string().max(12000).optional(),
+    handbook_slugs: z.array(z.string()).default([]),
+  })).default({}),
+  skills_policy: z.object({
+    use_case_handbooks: z.record(z.array(z.string())).default({}),
+    allow_workspace_handbooks: z.boolean().default(true),
+  }).default({
+    use_case_handbooks: {},
+    allow_workspace_handbooks: true,
+  }),
   audit_level: z.enum(['minimal', 'standard', 'full']).default('standard'),
 })
-
-type WorkspaceAIPolicy = z.infer<typeof WorkspaceAIPolicySchema> & {
-  version: number
-  last_updated_by?: string
-  last_updated_at?: string
-}
 
 /**
  * GET /api/workspaces/[id]/ai-policy
@@ -105,47 +134,7 @@ export async function GET(
     const workspace = workspaceResult.data
 
     // Parse and return the AI policy with defaults
-    const defaultPolicy: WorkspaceAIPolicy = {
-      system_instructions: '',
-      task_prompts: {
-        task_generation: '',
-        task_analysis: '',
-        prioritization: '',
-      },
-      allowed_tools: ['query_tasks', 'get_task_details', 'get_project_overview'],
-      constraints: {
-        allow_task_creation: true,
-        allow_task_updates: true,
-        allow_task_deletion: false,
-        require_approval_for_changes: false,
-        max_tokens_per_request: 4096,
-      },
-      execution_mode: 'auto',
-      approval_thresholds: {
-        confidence_min_for_auto: 0.75,
-      },
-      audit_level: 'standard',
-      version: 1,
-    }
-
-    // Merge stored policy with defaults
-    const storedPolicy = workspace.ai_policy as Partial<WorkspaceAIPolicy> | null
-    const aiPolicy: WorkspaceAIPolicy = {
-      ...defaultPolicy,
-      ...storedPolicy,
-      task_prompts: {
-        ...defaultPolicy.task_prompts,
-        ...(storedPolicy?.task_prompts || {}),
-      },
-      constraints: {
-        ...defaultPolicy.constraints,
-        ...(storedPolicy?.constraints || {}),
-      },
-      approval_thresholds: {
-        ...defaultPolicy.approval_thresholds,
-        ...(storedPolicy?.approval_thresholds || {}),
-      },
-    }
+    const aiPolicy = normalizeWorkspaceAIPolicy(workspace.ai_policy)
 
     return mergeAuthResponse(successResponse(aiPolicy), authResponse)
   } catch (error: unknown) {
@@ -215,7 +204,8 @@ export async function PUT(
 
     // Create updated policy with incremented version
     const updatedPolicy: WorkspaceAIPolicy = {
-      ...parseResult.data,
+      ...DEFAULT_WORKSPACE_AI_POLICY,
+      ...normalizeWorkspaceAIPolicy(parseResult.data),
       version: currentVersion + 1,
       last_updated_by: user.email || user.id,
       last_updated_at: new Date().toISOString(),

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
+import { reconcileAutonomySession } from '@/lib/autonomy/session-jobs'
+import { finalizeLoopIterationFromSession } from '@/lib/autonomy/loops'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +44,8 @@ export async function POST(req: NextRequest) {
     automation_run_id,
     email_delivery_id,
     job_id,
+    // Loop-linked autonomy session job fields
+    autonomy_session_job_id,
   } = body as Record<string, any>
 
   if (!type || !source) {
@@ -98,6 +102,81 @@ export async function POST(req: NextRequest) {
       user_id,
       idempotency_key: idempotencyKey ?? undefined,
     })
+  }
+
+  // Reconcile autonomy session job if this event is loop-linked
+  const TERMINAL_OR_PROGRESS_TYPES = ['running', 'started', 'completed', 'succeeded', 'done', 'failed', 'error', 'cancelled']
+  const typeStr = typeof type === 'string' ? type.toLowerCase() : ''
+  const isProgressEvent = TERMINAL_OR_PROGRESS_TYPES.some((t) => typeStr.includes(t))
+
+  if (isProgressEvent && (autonomy_session_job_id || correlation_id)) {
+    try {
+      // Look up the autonomy session job
+      let sessionJobRow: { id: string; session_id: string; external_run_id?: string | null } | null = null
+
+      if (autonomy_session_job_id) {
+        const { data } = await supabase
+          .from('autonomy_session_jobs')
+          .select('id, session_id, external_run_id')
+          .eq('id', autonomy_session_job_id)
+          .maybeSingle()
+        sessionJobRow = data ?? null
+      }
+
+      if (!sessionJobRow && correlation_id) {
+        const { data } = await supabase
+          .from('autonomy_session_jobs')
+          .select('id, session_id, external_run_id')
+          .eq('correlation_id', correlation_id)
+          .maybeSingle()
+        sessionJobRow = data ?? null
+      }
+
+      if (sessionJobRow) {
+        // Map gateway state to job status
+        let nextJobStatus: 'running' | 'completed' | 'failed' | 'cancelled' | null = null
+        if (typeStr.includes('running') || typeStr.includes('started')) {
+          nextJobStatus = 'running'
+        } else if (typeStr.includes('completed') || typeStr.includes('succeeded') || typeStr.includes('done')) {
+          nextJobStatus = 'completed'
+        } else if (typeStr.includes('failed') || typeStr.includes('error')) {
+          nextJobStatus = 'failed'
+        } else if (typeStr.includes('cancelled')) {
+          nextJobStatus = 'cancelled'
+        }
+
+        const jobPatch: Record<string, unknown> = {}
+        if (nextJobStatus) jobPatch.status = nextJobStatus
+        // Store external_run_id from run_id if not already set
+        if (run_id && !sessionJobRow.external_run_id) {
+          jobPatch.external_run_id = run_id
+        }
+
+        if (Object.keys(jobPatch).length > 0) {
+          await supabase
+            .from('autonomy_session_jobs')
+            .update(jobPatch)
+            .eq('id', sessionJobRow.id)
+        }
+
+        // Reconcile the parent session
+        const reconciled = await reconcileAutonomySession(supabase, sessionJobRow.session_id)
+
+        // If session reached terminal state, finalize any linked loop iteration
+        const TERMINAL_SESSION_STATUSES = ['completed', 'failed', 'cancelled']
+        if (TERMINAL_SESSION_STATUSES.includes(reconciled.status)) {
+          try {
+            await finalizeLoopIterationFromSession(supabase, sessionJobRow.session_id)
+          } catch (finalizeErr) {
+            // Non-fatal — loop finalization may not be applicable for every session
+            console.warn('[openclaw/events] finalizeLoopIterationFromSession failed:', finalizeErr)
+          }
+        }
+      }
+    } catch (reconcileErr) {
+      // Non-fatal — don't fail the event ingestion if reconciliation errors
+      console.warn('[openclaw/events] autonomy session job reconciliation failed:', reconcileErr)
+    }
   }
 
   // Write ledger event with optional automation links

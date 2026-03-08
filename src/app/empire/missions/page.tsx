@@ -32,13 +32,13 @@ export default function MissionBoardsPage() {
     <div className="space-y-4">
       <div className="w-full">
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-          Mission board uses your shared projects workspace. Manage Night Mode in{' '}
+          Project board uses your shared projects workspace. Manage Night Mode in{' '}
           <Link href="/settings" className="font-medium underline">
             Settings
           </Link>{' '}
           and run live autonomy controls in{' '}
-          <Link href="/empire/command" className="font-medium underline">
-            Command Center
+          <Link href="/system" className="font-medium underline">
+            System Status
           </Link>.
         </div>
       </div>

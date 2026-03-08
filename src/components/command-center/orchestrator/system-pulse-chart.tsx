@@ -28,8 +28,8 @@ export function SystemPulseChart() {
           const json = await res.json()
           const services = json.services || []
 
-          const clawdbotService = services.find((s: { name: string }) => s.name === 'ClawdBot API')
-          const openclawService = services.find((s: { name: string }) => s.name === 'OpenClaw Relay')
+          const clawdbotService = services.find((s: { name: string }) => s.name === 'AI Engine')
+          const openclawService = services.find((s: { name: string }) => s.name === 'Browser Agent')
           const upCount = services.filter((s: { status: string }) => s.status === 'up').length
 
           const now = new Date()
@@ -130,7 +130,7 @@ export function SystemPulseChart() {
               stroke="#6366f1"
               fillOpacity={1}
               fill="url(#colorClawdbot)"
-              name="ClawdBot"
+              name="AI Engine"
               isAnimationActive={false}
             />
             <Area
@@ -139,7 +139,7 @@ export function SystemPulseChart() {
               stroke="#00c8aa"
               fillOpacity={1}
               fill="url(#colorOpenclaw)"
-              name="Critter"
+              name="Browser Agent"
               isAnimationActive={false}
             />
           </AreaChart>

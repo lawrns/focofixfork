@@ -7,11 +7,17 @@ import {
   Archive, 
   Sparkles,
   Tag,
-  ExternalLink,
   Loader2,
   Filter,
   Inbox,
   CheckCheck,
+  FileAudio2,
+  Video,
+  AlertTriangle,
+  Twitter,
+  Instagram,
+  Youtube,
+  Antenna,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,7 +25,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ContentItem } from '../types';
 
 type ItemStatus = 'unread' | 'read' | 'archived' | 'actioned';
@@ -56,6 +61,27 @@ function RelevanceBadge({ score }: { score: number }) {
   );
 }
 
+function PlatformBadge({ platform }: { platform?: string }) {
+  const Icon =
+    platform === 'twitter' ? Twitter :
+    platform === 'instagram' ? Instagram :
+    platform === 'youtube' ? Youtube :
+    Antenna;
+
+  const label =
+    platform === 'twitter' ? 'X' :
+    platform === 'instagram' ? 'Instagram' :
+    platform === 'youtube' ? 'YouTube' :
+    platform || 'Source';
+
+  return (
+    <Badge variant="outline" className="text-[10px] gap-1">
+      <Icon className="h-3 w-3" />
+      {label}
+    </Badge>
+  );
+}
+
 interface ContentItemCardProps {
   item: ContentItem;
   onStatusChange: (id: string, status: ItemStatus) => void;
@@ -69,6 +95,20 @@ function ContentItemCard({ item, onStatusChange }: ContentItemCardProps) {
   const handleStatusChange = (newStatus: ItemStatus) => {
     onStatusChange(item.id, newStatus);
   };
+
+  const transcriptTone =
+    item.transcript_status === 'complete'
+      ? 'text-emerald-600'
+      : item.transcript_status === 'failed'
+        ? 'text-rose-600'
+        : 'text-muted-foreground';
+
+  const analysisTone =
+    item.analysis_status === 'complete'
+      ? 'text-emerald-600'
+      : item.analysis_status === 'failed'
+        ? 'text-rose-600'
+        : 'text-muted-foreground';
 
   return (
     <Card className={cn(
@@ -96,6 +136,34 @@ function ContentItemCard({ item, onStatusChange }: ContentItemCardProps) {
                 </>
               )}
             </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <PlatformBadge platform={item.content_sources?.platform} />
+              {item.video_url && (
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <Video className="h-3 w-3" />
+                  Video
+                </Badge>
+              )}
+              <Badge variant="outline" className={`text-[10px] gap-1 ${transcriptTone}`}>
+                <FileAudio2 className="h-3 w-3" />
+                {item.transcript_status === 'complete'
+                  ? 'Transcript ready'
+                  : item.transcript_status === 'failed'
+                    ? 'Transcript failed'
+                    : item.transcript_status === 'pending'
+                      ? 'Transcript pending'
+                      : 'No transcript'}
+              </Badge>
+              <Badge variant="outline" className={`text-[10px] ${analysisTone}`}>
+                {item.analysis_status === 'complete'
+                  ? 'Signal ready'
+                  : item.analysis_status === 'failed'
+                    ? 'Signal failed'
+                    : item.analysis_status === 'processing'
+                      ? 'Analyzing'
+                      : 'Awaiting analysis'}
+              </Badge>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -118,8 +186,46 @@ function ContentItemCard({ item, onStatusChange }: ContentItemCardProps) {
           <div className="mb-3 p-3 bg-secondary/50 rounded-md">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Sparkles className="h-3 w-3" />
-              <span className="text-xs">Analyzing...</span>
+              <span className="text-xs">
+                {item.analysis_status === 'failed' ? 'Signal extraction failed' : 'Analyzing...'}
+              </span>
             </div>
+          </div>
+        )}
+
+        {item.upgrade_implication && (
+          <div className="mb-3 rounded-md border border-border/70 px-3 py-2">
+            <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Upgrade implication
+            </div>
+            <p className="text-sm">{item.upgrade_implication}</p>
+          </div>
+        )}
+
+        {item.evidence_excerpt && (
+          <div className="mb-3 rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+            <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Evidence
+            </div>
+            <p className="text-sm text-muted-foreground">{item.evidence_excerpt}</p>
+          </div>
+        )}
+
+        {item.analysis_error && (
+          <div className="mb-3 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3" />
+              {item.analysis_error}
+            </div>
+          </div>
+        )}
+
+        {item.transcript_text && (
+          <div className="mb-3 rounded-md border border-border/60 px-3 py-2">
+            <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Transcript
+            </div>
+            <p className="text-sm text-muted-foreground line-clamp-4">{item.transcript_text}</p>
           </div>
         )}
 

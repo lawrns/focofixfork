@@ -8,6 +8,8 @@
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { aiService } from './ai-service'
+import { AIService } from './ai-service'
+import type { AIExecutionProfile } from '@/lib/ai/policy'
 
 export interface ProjectSpecification {
   name: string
@@ -56,11 +58,26 @@ export interface ParsedProject {
 }
 
 export class OpenAIProjectManager {
+  private static getService(profile?: AIExecutionProfile): AIService {
+    if (!profile) return aiService
+    return new AIService({
+      provider: profile.provider,
+      model: profile.model,
+      temperature: profile.temperature,
+      max_tokens: profile.max_tokens,
+    })
+  }
+
   /**
    * Parse natural language project specification into structured data
    */
-  static async parseProjectSpecification(spec: string | ProjectSpecification, userId: string): Promise<ParsedProject> {
+  static async parseProjectSpecification(
+    spec: string | ProjectSpecification,
+    userId: string,
+    profile?: AIExecutionProfile
+  ): Promise<ParsedProject> {
     const specText = typeof spec === 'string' ? spec : this.formatSpecification(spec)
+    const service = this.getService(profile)
 
     const systemPrompt = `You are a project management AI expert. Your task is to parse project specifications and generate complete project structures with milestones and tasks.
 
@@ -120,11 +137,11 @@ RULES:
 Return ONLY valid JSON, no explanations.`
 
     try {
-      const response = await aiService.generate({
+      const response = await service.generate({
         prompt: userPrompt,
         systemPrompt,
-        temperature: 0.3, // Low temperature for consistent structure
-        maxTokens: 3000
+        temperature: profile?.temperature ?? 0.3, // Low temperature for consistent structure
+        maxTokens: profile?.max_tokens ?? 3000
       })
 
       // Extract JSON from response

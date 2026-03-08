@@ -7,6 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { AIService } from './ai-service'
 import { TaskRepository, type Task } from '../repositories/task-repository'
 import { isError } from '../repositories/base-repository'
+import type { AIExecutionProfile, WorkspaceAIPolicy } from '@/lib/ai/policy'
 
 export type TaskActionType =
   | 'suggest_subtasks'
@@ -34,24 +35,13 @@ export interface TaskActionPreview {
   }
   metadata: {
     model: string
+    provider?: string
     latency_ms: number
     policy_version: number
+    use_case?: string
+    tool_mode?: string
+    allowed_tools?: string[]
   }
-}
-
-export interface WorkspacePolicy {
-  system_instructions?: string
-  task_prompts?: {
-    task_generation?: string
-    task_analysis?: string
-    prioritization?: string
-  }
-  constraints?: {
-    allow_task_creation?: boolean
-    allow_task_updates?: boolean
-    require_approval_for_changes?: boolean
-  }
-  version?: number
 }
 
 // Database-backed preview storage (no more in-memory Map that loses data on restart)
@@ -61,9 +51,14 @@ export class TaskActionService {
   private supabase: SupabaseClient
   private taskRepo: TaskRepository
 
-  constructor(supabase: SupabaseClient) {
+  constructor(supabase: SupabaseClient, profile?: AIExecutionProfile) {
     this.supabase = supabase
-    this.aiService = new AIService()
+    this.aiService = new AIService(profile ? {
+      provider: profile.provider,
+      model: profile.model,
+      temperature: profile.temperature,
+      max_tokens: profile.max_tokens,
+    } : undefined)
     this.taskRepo = new TaskRepository(supabase)
   }
 
@@ -72,8 +67,9 @@ export class TaskActionService {
    */
   async generatePreview(
     request: TaskActionRequest,
-    policy: WorkspacePolicy,
-    userId: string
+    policy: WorkspaceAIPolicy,
+    userId: string,
+    profile?: AIExecutionProfile
   ): Promise<TaskActionPreview> {
     const startTime = Date.now()
     console.log('[TaskActionService] generatePreview called:', { 
@@ -98,10 +94,14 @@ export class TaskActionService {
 
     // Call AI service
     console.log('[TaskActionService] Calling AI service...')
-    const response = await this.aiService.chatCompletion([
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [
       { role: 'system', content: this.getSystemPrompt(policy) },
-      { role: 'user', content: prompt }
-    ])
+      { role: 'user', content: prompt },
+    ]
+    const response = await this.aiService.chatCompletion(messages, {
+      temperature: profile?.temperature,
+      maxTokens: profile?.max_tokens,
+    })
     console.log('[TaskActionService] AI service responded')
 
     // Parse AI response
@@ -118,8 +118,12 @@ export class TaskActionService {
       },
       metadata: {
         model: this.aiService.getProviderInfo().model,
+        provider: this.aiService.getProviderInfo().provider,
         latency_ms: Date.now() - startTime,
-        policy_version: policy.version || 1
+        policy_version: policy.version || 1,
+        use_case: profile?.use_case,
+        tool_mode: profile?.capability_manifest.tool_mode,
+        allowed_tools: profile?.capability_manifest.allowed_tools ?? [],
       }
     }
     console.log('[TaskActionService] Preview created:', executionId)
@@ -217,7 +221,7 @@ export class TaskActionService {
   /**
    * Build prompt based on action type
    */
-  private buildPrompt(action: TaskActionType, task: Task, policy: WorkspacePolicy): string {
+  private buildPrompt(action: TaskActionType, task: Task, policy: WorkspaceAIPolicy): string {
     const customPrompts = policy.task_prompts || {}
 
     const taskContext = `
@@ -386,7 +390,7 @@ Respond with ONLY a JSON object in this exact format:
   /**
    * Get system prompt with workspace customization
    */
-  private getSystemPrompt(policy: WorkspacePolicy): string {
+  private getSystemPrompt(policy: WorkspaceAIPolicy): string {
     const basePrompt = `You are an AI assistant for a project management tool called Foco.
 You help users manage their tasks more effectively by providing intelligent suggestions.
 Always respond with valid JSON as specified in the prompt.

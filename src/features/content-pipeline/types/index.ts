@@ -38,6 +38,15 @@ export interface ContentItem {
   provider_payload?: Record<string, unknown>;
   download_status?: 'pending' | 'complete' | 'failed' | 'not_applicable';
   transcript_status?: 'pending' | 'complete' | 'failed' | 'not_applicable';
+  analysis_status?: 'pending' | 'processing' | 'complete' | 'failed';
+  analysis_error?: string;
+  analysis_run_id?: string;
+  signal_type?: string;
+  signal_confidence?: number;
+  signal_urgency?: 'monitor' | 'active' | 'urgent';
+  upgrade_implication?: string;
+  evidence_excerpt?: string;
+  signal_payload?: UpgradeSignal;
   ai_summary?: string;
   ai_tags?: string[];
   relevance_score: number;
@@ -45,6 +54,12 @@ export interface ContentItem {
   published_at?: string;
   analyzed_at?: string;
   created_at: string;
+  content_sources?: {
+    id?: string;
+    name?: string;
+    platform?: string;
+    url?: string;
+  } | null;
 }
 
 export interface RawContentItem {
@@ -83,4 +98,24 @@ export interface AnalysisResult {
   summary: string;
   tags: string[];
   relevanceScore: number;
+  signalType?: string;
+  confidence?: number;
+  urgency?: 'monitor' | 'active' | 'urgent';
+  upgradeImplication?: string;
+  evidenceExcerpt?: string;
+  themes?: string[];
+  affectedArea?: string;
+  payload?: UpgradeSignal;
+}
+
+export interface UpgradeSignal {
+  summary: string;
+  signal_type: string;
+  confidence: number;
+  urgency: 'monitor' | 'active' | 'urgent';
+  affected_area: string;
+  upgrade_implication: string;
+  evidence_excerpt: string;
+  themes: string[];
+  tags: string[];
 }

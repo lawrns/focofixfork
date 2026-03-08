@@ -22,18 +22,17 @@ export function useProjectData(user: any, slug: string) {
   const [delegationEnabled, setDelegationEnabled] = useState(false);
   const [agentPool, setAgentPool] = useState<string[]>([]);
 
-  useEffect(() => {
-    async function fetchProjectData(signal: AbortSignal) {
-      if (!user || !slug) return;
+  async function fetchProjectData(signal?: AbortSignal) {
+    if (!user || !slug) return;
 
-      try {
-        setLoading(true);
-        setError(null);
+    try {
+      setLoading(true);
+      setError(null);
 
-        const projectRes = await fetch(`/api/projects?slug=${encodeURIComponent(slug)}&limit=1`, {
-          credentials: 'include',
-          signal,
-        });
+      const projectRes = await fetch(`/api/projects?slug=${encodeURIComponent(slug)}&limit=1`, {
+        credentials: 'include',
+        signal,
+      });
 
         if (!projectRes.ok) {
           if (projectRes.status === 404) throw new Error('Project not found');
@@ -97,15 +96,16 @@ export function useProjectData(user: any, slug: string) {
             : member.user_profiles,
         }));
         setTeamMembers(normalizedMembers);
-      } catch (err: any) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        console.error('Error fetching project data:', err);
-        setError(err.message || 'Failed to load project');
-      } finally {
-        setLoading(false);
-      }
+    } catch (err: any) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      console.error('Error fetching project data:', err);
+      setError(err.message || 'Failed to load project');
+    } finally {
+      setLoading(false);
     }
+  }
 
+  useEffect(() => {
     const controller = new AbortController();
     fetchProjectData(controller.signal);
     return () => controller.abort();
@@ -119,5 +119,6 @@ export function useProjectData(user: any, slug: string) {
     activeRuns,
     delegationEnabled, setDelegationEnabled,
     agentPool,
+    refetch: fetchProjectData,
   };
 }

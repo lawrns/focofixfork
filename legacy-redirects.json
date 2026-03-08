@@ -7,5 +7,21 @@
   { "source": "/dashboard/settings", "destination": "/settings", "permanent": false },
   { "source": "/dashboard/profile", "destination": "/profile", "permanent": false },
   { "source": "/dashboard-simple", "destination": "/dashboard", "permanent": false },
-  { "source": "/tasks", "destination": "/my-work", "permanent": false }
+  { "source": "/tasks", "destination": "/my-work", "permanent": false },
+  { "source": "/empire/missions", "destination": "/projects", "permanent": true },
+  { "source": "/empire/missions/:path*", "destination": "/projects/:path*", "permanent": true },
+  { "source": "/empire/agents", "destination": "/agents", "permanent": true },
+  { "source": "/empire/agents/:path*", "destination": "/agents/:path*", "permanent": true },
+  { "source": "/empire/pipeline", "destination": "/pipeline", "permanent": true },
+  { "source": "/empire/loops", "destination": "/recurring", "permanent": true },
+  { "source": "/empire/signals", "destination": "/notifications", "permanent": true },
+  { "source": "/empire/briefing", "destination": "/briefing", "permanent": true },
+  { "source": "/empire/command", "destination": "/system", "permanent": true },
+  { "source": "/empire", "destination": "/system", "permanent": true },
+  { "source": "/crons", "destination": "/recurring", "permanent": true },
+  { "source": "/clawdbot", "destination": "/briefing", "permanent": true },
+  { "source": "/policies", "destination": "/settings", "permanent": false },
+  { "source": "/timeline", "destination": "/projects", "permanent": false },
+  { "source": "/inbox", "destination": "/notifications", "permanent": false },
+  { "source": "/people", "destination": "/projects", "permanent": false }
 ]

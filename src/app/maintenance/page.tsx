@@ -31,7 +31,7 @@ interface ScanWithProject extends DependencyScan {
 function MaintenancePageContent() {
   const { error: showError, info: showInfo } = useToastHelpers();
   const searchParams = useSearchParams();
-  const projectId = searchParams.get('projectId');
+  const projectId = searchParams?.get('projectId') ?? null;
 
   const [activeTab, setActiveTab] = useState('overview');
   const [scans, setScans] = useState<ScanWithProject[]>([]);

@@ -29,9 +29,14 @@ interface Params {
 
 const updateCustomAgentSchema = z.object({
   name: z.string().min(2).max(100).optional(),
+  kind: z.enum(['custom', 'persona', 'lane']).optional(),
   lane: z.enum(AGENT_LANES).optional(),
+  role: z.string().min(2).max(120).optional(),
   description: z.string().max(800).optional().nullable(),
   system_prompt: z.string().min(20).max(12000).optional(),
+  expertise: z.array(z.string().min(1).max(80)).max(20).optional(),
+  incentives: z.array(z.string().min(1).max(120)).max(20).optional(),
+  risk_model: z.string().min(10).max(1200).optional(),
   tool_access: z.record(z.unknown()).optional(),
   write_scope: z.array(z.string().min(1).max(200)).max(20).optional(),
   read_scope: z.array(z.string().min(1).max(200)).max(20).optional(),
@@ -87,6 +92,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const patch: Record<string, unknown> = { ...input }
   if (typeof input.name === 'string') {
     patch.slug = slugifyAgentName(input.name)
+  }
+  if (typeof input.role === 'string') {
+    patch.role = input.role.trim()
+  }
+  if (typeof input.risk_model === 'string') {
+    patch.risk_model = input.risk_model.trim()
   }
 
   const { data, error: updateError } = await supabase

@@ -89,14 +89,13 @@ export async function middleware(req: NextRequest) {
   const PERMANENT_REDIRECTS: Record<string, string> = {
     '/signup': '/register',
     '/tasks': '/my-work',
-    '/calendar': '/empire/timeline',
+    '/calendar': '/projects',
     '/dashboard-simple': '/dashboard',
     '/favorites': '/my-work',
-    '/team': '/empire/fleet',
+    '/team': '/projects',
     '/dashboard/settings': '/settings',
-    '/projects': '/empire/missions',
-    '/decisions': '/empire/command',
-    '/milestones': '/empire/timeline',
+    '/decisions': '/system',
+    '/milestones': '/projects',
   }
   const redirectTarget = PERMANENT_REDIRECTS[pathname]
   if (redirectTarget) {
@@ -122,6 +121,13 @@ export async function middleware(req: NextRequest) {
     '/openclaw',
     '/empire',
     '/clawdbot',
+    '/agents',
+    '/pipeline',
+    '/recurring',
+    '/system',
+    '/notifications',
+    '/briefing',
+    '/projects',
   ]
 
   // Public routes (accessible without authentication)

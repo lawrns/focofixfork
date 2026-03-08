@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
 import { TaskActionService } from '@/lib/services/task-action-service'
+import { normalizeWorkspaceAIPolicy } from '@/lib/ai/policy'
+import { resolveAIExecutionProfile } from '@/lib/ai/resolver'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,12 +49,18 @@ export async function POST(request: NextRequest) {
       return mergeAuthResponse(NextResponse.json({ logs, error: 'Failed to get workspace' }, { status: 500 }), authResponse)
     }
     
-    const policy = workspaceResult.data.ai_policy || {}
+    const policy = normalizeWorkspaceAIPolicy(workspaceResult.data.ai_policy)
     logs.push(`Workspace policy: ${JSON.stringify(policy)}`)
+
+    const profile = await resolveAIExecutionProfile({
+      useCase: 'task_action',
+      policy,
+    })
+    logs.push(`Resolved profile: ${JSON.stringify(profile)}`)
 
     // Step 5: Test TaskActionService with detailed error capture
     logs.push('Step 5: Creating TaskActionService...')
-    const taskActionService = new TaskActionService(supabase)
+    const taskActionService = new TaskActionService(supabase, profile)
     logs.push('TaskActionService created')
     
     logs.push('Step 6: Calling generatePreview...')
@@ -69,7 +77,8 @@ export async function POST(request: NextRequest) {
       const preview = await taskActionService.generatePreview(
         { action: body.action, task_id: body.task_id, workspace_id: body.workspace_id },
         policy,
-        user.id
+        user.id,
+        profile
       )
       
       console.log = originalConsoleLog

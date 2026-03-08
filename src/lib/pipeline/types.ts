@@ -1,3 +1,58 @@
+import type { PlanningAgentDescriptor } from './agent-planning'
+
+export interface ProblemFrame {
+  user_request: string
+  decision_to_make: string
+  desired_outcome: string
+  constraints: string[]
+  assumptions: string[]
+}
+
+export interface AgentPerspective {
+  agent_name: string
+  role: string
+  perspective: string
+  recommendation: string
+  reasoning: string[]
+  concerns: string[]
+  confidence: 'low' | 'medium' | 'high'
+}
+
+export interface AgentChallenge {
+  from_agent: string
+  to_agent: string
+  challenge: string
+  why_it_matters: string
+}
+
+export interface AgentRevision {
+  agent_name: string
+  revision: string
+}
+
+export interface ConsolidatedAnswer {
+  recommendation: string
+  why_this_path_wins: string[]
+  points_of_agreement: string[]
+  remaining_disagreements: string[]
+  uncertainties: string[]
+  validation_needed: string[]
+}
+
+export interface ExecutionPlanStep {
+  order: number
+  action: string
+  owner: string
+  dependencies: string[]
+  output: string
+}
+
+export interface ExecutionPlanRisk {
+  risk: string
+  impact: 'low' | 'medium' | 'high'
+  mitigation: string
+}
+
 export interface PlanResult {
   summary: string
   steps: string[]
@@ -6,6 +61,24 @@ export interface PlanResult {
   db_implications: string[]
   validation_strategy: string
   estimated_complexity: 'low' | 'medium' | 'high'
+  problem_frame?: ProblemFrame
+  selected_agents?: PlanningAgentDescriptor[]
+  agent_perspectives?: AgentPerspective[]
+  agent_debate?: {
+    challenges: AgentChallenge[]
+    revisions: AgentRevision[]
+    unresolved_disagreements: string[]
+  }
+  consolidated_answer?: ConsolidatedAnswer
+  execution_plan?: {
+    objective: string
+    recommended_approach: string
+    steps: ExecutionPlanStep[]
+    risks: ExecutionPlanRisk[]
+    open_questions: string[]
+    success_criteria: string[]
+    immediate_next_actions: string[]
+  }
 }
 
 export interface ExecutionResult {
@@ -29,7 +102,29 @@ export interface ReviewReport {
   confidence_score: number // 0–100
 }
 
+export interface ProjectReportRequest {
+  enabled: boolean
+  report_type: string
+  project_id: string
+  workspace_id?: string | null
+  selected_agent_id?: string | null
+  selected_agent_name?: string | null
+}
+
 export type PipelineStatus = 'planning' | 'executing' | 'reviewing' | 'complete' | 'failed' | 'cancelled'
+
+export type PipelineRunnerKind = 'clawdbot_stream' | 'clawdbot_async' | 'in_app_direct'
+
+export interface PipelineFallbackEvent {
+  phase: PipelinePhase
+  kind: 'runner_switch' | 'model_remap'
+  from: string
+  to: string
+  reason: string
+  at: string
+}
+
+export type PipelinePhaseStatus = 'idle' | 'active' | 'done' | 'failed' | 'skipped' | 'cancelled'
 
 export interface PipelineRun {
   id: string
@@ -42,7 +137,7 @@ export interface PipelineRun {
   plan_model_actual?: string | null
   execute_model_actual?: string | null
   review_model_actual?: string | null
-  fallbacks_triggered?: unknown[]
+  fallbacks_triggered?: PipelineFallbackEvent[]
   status: PipelineStatus
   plan_result: PlanResult | null
   execution_result: ExecutionResult | null
@@ -75,7 +170,28 @@ export interface PipelineRun {
 
 export type PipelineSSEEvent =
   | { type: 'run_start'; run_id: string; started_at: number }
+  | {
+      type: 'run_profile'
+      requested: { plan: string | null; execute: string | null; review: string | null }
+      resolved: { plan: string; execute: string; review: string }
+      fallback_chain: { plan: string[]; execute: string[]; review: string[] }
+      provider_chain?: string[]
+      routing_profile_id?: string | null
+    }
   | { type: 'phase_start'; phase: PipelinePhase; model: string }
+  | {
+      type: 'phase_routing'
+      phase: PipelinePhase
+      requested_model: string | null
+      resolved_model: string
+      actual_model: string | null
+      runner: PipelineRunnerKind
+    }
+  | {
+      type: 'phase_fallback'
+      phase: PipelinePhase
+      fallback: PipelineFallbackEvent
+    }
   | { type: 'text_delta'; phase: PipelinePhase; text: string }
   | { type: 'ttft'; phase: PipelinePhase; ms: number }
   | { type: 'usage'; phase: PipelinePhase; input_tokens: number; output_tokens: number; cost_usd: number; model: string }
@@ -83,24 +199,33 @@ export type PipelineSSEEvent =
   | { type: 'phase_error'; phase: PipelinePhase; message: string }
   | { type: 'activity'; phase: PipelinePhase | 'system'; message: string }
   | { type: 'pipeline_complete'; run_id: string; total_elapsed_ms: number }
+  | { type: 'report_created'; report_id: string; artifact_id: string; title: string }
   | { type: 'pipeline_error'; message: string }
 
 export type PipelinePhase = 'plan' | 'execute' | 'review'
 
 // Model hint names passed to ClawdBot routing
 export const PLANNER_MODELS = [
+  { label: 'GPT-5.4 Medium', value: 'gpt-5.4-medium' },
   { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+  { label: 'GLM-5', value: 'glm-5' },
 ] as const
 
 export const EXECUTOR_MODELS = [
+  { label: 'GPT-5.4 Medium', value: 'gpt-5.4-medium' },
   { label: 'Kimi K2.5 Standard', value: 'kimi-k2-standard' },
   { label: 'Kimi K2.5 Fast', value: 'kimi-k2-fast' },
   { label: 'Kimi K2.5 Max', value: 'kimi-k2-max' },
+  { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+  { label: 'GLM-5', value: 'glm-5' },
 ] as const
 
 export const REVIEWER_MODELS = [
+  { label: 'GPT-5.4 Medium', value: 'gpt-5.4-medium' },
   { label: 'Codex Standard', value: 'codex-standard' },
   { label: 'Codex Lite', value: 'codex-lite' },
   { label: 'Codex Pro', value: 'codex-pro' },
   { label: 'Codex Max', value: 'codex-max' },
+  { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+  { label: 'GLM-5', value: 'glm-5' },
 ] as const

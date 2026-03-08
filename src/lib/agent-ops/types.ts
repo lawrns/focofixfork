@@ -64,9 +64,14 @@ export interface CustomAgentProfileRow {
   workspace_id: string | null
   name: string
   slug: string
+  kind: 'custom' | 'persona' | 'lane'
   lane: AgentLane
+  role: string
   description: string | null
   system_prompt: string
+  expertise: string[]
+  incentives: string[]
+  risk_model: string
   tool_access: Record<string, unknown>
   write_scope: string[]
   read_scope: string[]

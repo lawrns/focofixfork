@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 function ContentPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const initialProjectId = searchParams.get('project_id');
+  const initialProjectId = searchParams?.get('project_id') ?? null;
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);

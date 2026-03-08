@@ -52,11 +52,11 @@ export default function SearchPageClient() {
   const [results, setResults] = useState<SearchResult>({ tasks: [], projects: [] });
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
-    scope: (searchParams.get('scope') as any) || 'all',
-    projectId: searchParams.get('project_id') || undefined,
-    dateFrom: searchParams.get('date_from') || undefined,
-    dateTo: searchParams.get('date_to') || undefined,
-    status: searchParams.get('status') || undefined,
+    scope: (searchParams?.get('scope') as any) || 'all',
+    projectId: searchParams?.get('project_id') || undefined,
+    dateFrom: searchParams?.get('date_from') || undefined,
+    dateTo: searchParams?.get('date_to') || undefined,
+    status: searchParams?.get('status') || undefined,
   });
   const [dateRange, setDateRange] = useState<DateRange>('any');
   const [customDateFrom, setCustomDateFrom] = useState('');

@@ -82,11 +82,22 @@ export async function POST(req: NextRequest) {
     const success = await ContentAnalyzer.processAnalysisResult(itemId, {
       summary: analysis.summary || body.output || 'No summary available',
       tags: analysis.tags || analysis.Tags || [],
+      themes: analysis.themes || analysis.Themes || [],
       relevanceScore: typeof analysis.relevanceScore === 'number' 
         ? analysis.relevanceScore 
         : typeof analysis.relevance_score === 'number'
           ? analysis.relevance_score
           : 0.5,
+      signalType: analysis.signalType || analysis.signal_type,
+      confidence: typeof analysis.confidence === 'number'
+        ? analysis.confidence
+        : typeof analysis.signal_confidence === 'number'
+          ? analysis.signal_confidence
+          : undefined,
+      urgency: analysis.urgency || analysis.signal_urgency,
+      affectedArea: analysis.affectedArea || analysis.affected_area,
+      upgradeImplication: analysis.upgradeImplication || analysis.upgrade_implication,
+      evidenceExcerpt: analysis.evidenceExcerpt || analysis.evidence_excerpt,
     });
 
     if (!success) {

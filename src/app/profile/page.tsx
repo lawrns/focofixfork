@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { supabase } from '@/lib/supabase-client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { AIModelPreferencesCard } from '@/components/profile/ai-model-preferences-card';
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -162,6 +163,8 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
+
+        <AIModelPreferencesCard />
       </div>
     </PageShell>
   );

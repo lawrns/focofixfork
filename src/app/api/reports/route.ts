@@ -73,6 +73,7 @@ export async function GET(req: NextRequest) {
     if (projectsError) {
       return mergeAuthResponse(databaseErrorResponse('Failed to fetch report projects', projectsError), authResponse)
     }
+    const projectIds = (projects ?? []).map((project) => project.id)
 
     // Fetch work items for metrics
     const { data: workItems, error: workItemsError } = await supabase
@@ -160,12 +161,20 @@ export async function GET(req: NextRequest) {
     ]
 
     // Fetch recent reports from reports table
-    const { data: recentReports } = await supabase
+    let reportsQuery = supabase
       .from('reports')
-      .select('id, title, type, created_at')
+      .select('id, title, report_type, created_at, is_ai_generated, project_id')
       .in('workspace_id', workspaceIds)
       .order('created_at', { ascending: false })
       .limit(5)
+
+    if (projectId) {
+      reportsQuery = reportsQuery.eq('project_id', projectId)
+    } else if (projectSlug && projectIds.length > 0) {
+      reportsQuery = reportsQuery.in('project_id', projectIds)
+    }
+
+    const { data: recentReports } = await reportsQuery
 
     return mergeAuthResponse(successResponse({
       metrics,
@@ -175,9 +184,9 @@ export async function GET(req: NextRequest) {
       recentReports: (recentReports || []).map(r => ({
         id: r.id,
         title: r.title,
-        type: r.type,
+        type: r.report_type,
         date: new Date(r.created_at).toLocaleDateString(),
-        aiGenerated: false
+        aiGenerated: Boolean(r.is_ai_generated)
       }))
     }), authResponse)
   } catch (err: unknown) {

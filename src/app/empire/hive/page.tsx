@@ -9,12 +9,18 @@ import {
   Trash2,
   Zap,
   BarChart3,
+  Twitter,
+  Instagram,
+  Youtube,
+  Video,
+  FileAudio2,
+  AlertTriangle,
 } from 'lucide-react';
 import { PageShell } from '@/components/layout/page-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/hooks/use-auth';
 import type { ContentItem } from '@/features/content-pipeline/types';
@@ -34,18 +40,34 @@ interface SocialSource {
   error_count: number;
   item_count: number;
   created_at: string;
+  latest_run?: {
+    status: 'running' | 'succeeded' | 'failed' | 'aborted' | 'timed_out';
+    metrics?: {
+      video_items_detected?: number;
+      videos_downloaded?: number;
+      transcripts_completed?: number;
+      transcripts_failed?: number;
+    };
+    completed_at?: string;
+    error?: string;
+  } | null;
 }
 
 interface InsightsStats {
   total_items: number;
   analyzed_count: number;
   platform_counts: Record<string, number>;
+  transcript_coverage?: {
+    completed: number;
+    failed: number;
+    pending: number;
+  };
 }
 
-const platformIcons: Record<string, string> = {
-  twitter: '𝕏',
-  instagram: '📷',
-  youtube: '▶',
+const platformMeta: Record<string, { label: string; Icon: typeof Twitter }> = {
+  twitter: { label: 'X', Icon: Twitter },
+  instagram: { label: 'Instagram', Icon: Instagram },
+  youtube: { label: 'YouTube', Icon: Youtube },
 };
 
 function HivePageContent() {
@@ -58,16 +80,18 @@ function HivePageContent() {
   const [loadingItems, setLoadingItems] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [pollingId, setPollingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchSources = useCallback(async () => {
     setLoadingSources(true);
+    setLoadError(null);
     try {
       const res = await fetch('/api/content-pipeline/social/sources');
       if (!res.ok) throw new Error('Failed');
       const json = await res.json();
       setSources(json.data || []);
     } catch {
-      // silent
+      setLoadError('Failed to load channels');
     } finally {
       setLoadingSources(false);
     }
@@ -80,7 +104,7 @@ function HivePageContent() {
       const json = await res.json();
       setStats(json.data);
     } catch {
-      // silent
+      setLoadError((current) => current ?? 'Failed to load insights');
     }
   }, []);
 
@@ -101,7 +125,7 @@ function HivePageContent() {
       allItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setItems(allItems);
     } catch {
-      // silent
+      setLoadError((current) => current ?? 'Failed to load feed items');
     } finally {
       setLoadingItems(false);
     }
@@ -120,6 +144,7 @@ function HivePageContent() {
 
   const handleRefresh = () => {
     fetchSources();
+    fetchItems();
     fetchInsightsStats();
   };
 
@@ -158,12 +183,14 @@ function HivePageContent() {
   const activeSources = sources.filter((s) => s.status === 'active').length;
   const todayItems = stats?.total_items ?? 0;
   const analyzedItems = stats?.analyzed_count ?? 0;
+  const transcriptCompleted = stats?.transcript_coverage?.completed ?? 0;
+  const transcriptFailures = stats?.transcript_coverage?.failed ?? 0;
 
   return (
     <PageShell maxWidth="7xl">
       <PageHeader
         title="Social Intelligence"
-        subtitle="Monitor social channels for AI-powered insights"
+        subtitle="Derive upgrade intelligence from social channels"
         primaryAction={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleRefresh}>
@@ -184,11 +211,21 @@ function HivePageContent() {
         <StatCard label="Items (48h)" value={todayItems} icon={<BarChart3 className="h-4 w-4" />} />
         <StatCard label="AI Analyzed" value={analyzedItems} icon={<Zap className="h-4 w-4" />} />
         <StatCard
-          label="Platforms"
-          value={Object.keys(stats?.platform_counts ?? {}).length}
-          icon={<Antenna className="h-4 w-4" />}
+          label="Transcripts"
+          value={transcriptCompleted}
+          icon={<FileAudio2 className="h-4 w-4" />}
         />
       </div>
+
+      {loadError && (
+        <Card className="mb-6 border-amber-500/40 bg-amber-500/5">
+          <CardContent className="flex items-center gap-2 p-3 text-sm text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4" />
+            <span>{loadError}</span>
+            {transcriptFailures > 0 && <Badge variant="outline">{transcriptFailures} failed transcripts</Badge>}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
@@ -238,15 +275,27 @@ function HivePageContent() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-lg">{platformIcons[source.platform] || '📡'}</span>
+                          <PlatformBadge platform={source.platform} />
                           <span className="text-sm font-medium truncate">{source.name}</span>
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                           <span>{source.item_count} items</span>
                           <span>every {source.poll_interval_minutes}m</span>
                         </div>
+                        {source.latest_run?.metrics && (
+                          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                            <RunMetric icon={<Video className="h-3 w-3" />} value={source.latest_run.metrics.video_items_detected ?? 0} label="videos" />
+                            <RunMetric icon={<FileAudio2 className="h-3 w-3" />} value={source.latest_run.metrics.transcripts_completed ?? 0} label="transcribed" />
+                            {(source.latest_run.metrics.transcripts_failed ?? 0) > 0 && (
+                              <RunMetric icon={<AlertTriangle className="h-3 w-3" />} value={source.latest_run.metrics.transcripts_failed ?? 0} label="failed" tone="danger" />
+                            )}
+                          </div>
+                        )}
                         {source.last_error && (
                           <p className="text-[11px] text-rose-500 mt-1 truncate">{source.last_error}</p>
+                        )}
+                        {source.latest_run?.error && (
+                          <p className="text-[11px] text-rose-500 mt-1 truncate">{source.latest_run.error}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -313,6 +362,30 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function PlatformBadge({ platform }: { platform?: string }) {
+  const meta = platform ? platformMeta[platform] : null;
+  const Icon = meta?.Icon ?? Antenna;
+
+  return (
+    <Badge variant="outline" className="gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wide">
+      <Icon className="h-3 w-3" />
+      {meta?.label ?? platform ?? 'Source'}
+    </Badge>
+  );
+}
+
+function RunMetric(
+  { icon, value, label, tone = 'default' }:
+  { icon: React.ReactNode; value: number; label: string; tone?: 'default' | 'danger' }
+) {
+  return (
+    <span className={tone === 'danger' ? 'inline-flex items-center gap-1 text-rose-600' : 'inline-flex items-center gap-1'}>
+      {icon}
+      {value} {label}
+    </span>
   );
 }
 

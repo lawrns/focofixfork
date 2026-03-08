@@ -39,6 +39,7 @@ export async function startApifyRun(
 
   const actorId = getActorId(config)
   const waitForFinish = options.waitForFinishSeconds ?? 0
+  const timeoutMs = Math.max(45_000, (waitForFinish * 1000) + 30_000)
   const url = `${APIFY_BASE_URL}/acts/${encodeURIComponent(actorId)}/runs?waitForFinish=${waitForFinish}`
   assertEgressAllowed(url)
 
@@ -49,7 +50,7 @@ export async function startApifyRun(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(getActorInput(config)),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(timeoutMs),
   })
 
   if (!response.ok) {
@@ -110,4 +111,3 @@ export function mapApifyItemsToRawContent(items: Record<string, unknown>[]): Raw
     }
   })
 }
-

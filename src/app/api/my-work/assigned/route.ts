@@ -46,11 +46,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Get project details for each task
-  const projectIds = [...new Set(tasks.map(t => t.project_id))];
-  const { data: projects } = await supabase
-    .from('foco_projects')
-    .select('id, name, slug, color')
-    .in('id', projectIds);
+  const projectIds = [...new Set(tasks.map(t => t.project_id).filter(Boolean))];
+  const { data: projects } = projectIds.length > 0
+    ? await supabase
+        .from('foco_projects')
+        .select('id, name, slug, color')
+        .in('id', projectIds)
+    : { data: [] };
 
   const projectMap = new Map(projects?.map(p => [p.id, p]) || []);
 

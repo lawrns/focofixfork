@@ -2,12 +2,10 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, X, ExternalLink, Clock, Inbox, GitBranch, Square, Trash2, Command, Lightbulb } from 'lucide-react';
+import { Bot, Cpu, Sparkles, CheckCircle, XCircle, Loader2, Terminal, X, ExternalLink, Clock, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { CommandSurfaceProps, CommandMode, CTODecision, COODecision, AgentTrackerState } from './types';
@@ -15,8 +13,13 @@ import { QuickCapture } from '@/features/task-intake/components/quick-capture';
 import { useCommandPipeline } from './use-command-pipeline';
 import { DecisionPreview } from './decision-preview';
 import { extractOutcome } from './execution-result';
-import { CustomAgentModal } from '@/components/agent-ops/custom-agent-modal';
 import { ExecutionLogPanel } from './execution-log-panel';
+import { useCurrentWorkspace } from '@/hooks/use-current-workspace';
+import { usePlanningAgents } from '@/components/planning-agents/use-planning-agents';
+import { ProjectBriefPanel } from './components/project-brief-panel';
+import { RecentActionsPanel } from './components/recent-actions-panel';
+import { CommandSurfaceHeader } from './components/command-surface-header';
+import { CommandComposer } from './components/command-composer';
 
 function normalizeError(err: unknown): string {
   if (!err) return 'Unknown error'
@@ -34,6 +37,15 @@ type ExecutionPolicy = {
   mode: 'auto' | 'semi_auto';
   confidenceMinForAuto: number;
   requireApprovalForChanges: boolean;
+};
+
+type RuntimeProfileSummary = {
+  workspaceId: string | null;
+  planModel: string | null;
+  executeModel: string | null;
+  reviewModel: string | null;
+  customAgentOverrides: number;
+  toolMode: string | null;
 };
 
 type ProjectBriefDraft = {
@@ -145,45 +157,6 @@ function AgentTrackerBar({
   )
 }
 
-// Mode Selector Button Component
-function ModeButton({
-  mode,
-  isActive,
-  onClick,
-}: {
-  mode: CommandMode;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  const config = MODE_CONFIG[mode];
-  
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'group relative flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-        config.ringColor,
-        isActive 
-          ? cn(config.bgColor, config.color, 'shadow-sm', config.borderColor, 'border')
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-      )}
-    >
-      <span className={cn(
-        'transition-transform duration-200',
-        isActive ? 'scale-110' : 'group-hover:scale-105'
-      )}>
-        {config.icon}
-      </span>
-      <span className="hidden sm:inline">{config.label}</span>
-      {isActive && (
-        <span className="absolute inset-0 rounded-lg ring-1 ring-inset ring-current opacity-20" />
-      )}
-    </button>
-  );
-}
-
 export function CommandSurface({
   context = 'dashboard',
   contextId,
@@ -196,6 +169,7 @@ export function CommandSurface({
   const [mode, setMode] = useState<CommandMode>(defaultMode);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(contextId ?? null);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [agentPickerOpen, setAgentPickerOpen] = useState(false);
   const [isSyncingGit, setIsSyncingGit] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<CTODecision | COODecision | null>(null);
   const [pendingPlan, setPendingPlan] = useState<ReturnType<typeof analyzePrompt>['plan'] | null>(null);
@@ -213,9 +187,26 @@ export function CommandSurface({
     confidenceMinForAuto: 0.75,
     requireApprovalForChanges: false,
   });
+  const [runtimeProfile, setRuntimeProfile] = useState<RuntimeProfileSummary>({
+    workspaceId: null,
+    planModel: null,
+    executeModel: null,
+    reviewModel: null,
+    customAgentOverrides: 0,
+    toolMode: null,
+  });
   const [actionRunId, setActionRunId] = useState<string | null>(null);
   const [projectRequiredError, setProjectRequiredError] = useState<string | null>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(true);
+  const { workspaceId } = useCurrentWorkspace();
+  const {
+    agents: availableAgents,
+    selectedIds: selectedAgentIds,
+    setSelectedIds,
+    selectedAgents: selectedPlanningAgents,
+    isSaving: savingAgentDefaults,
+    saveDefaults: saveWorkspaceAgentDefaults,
+  } = usePlanningAgents(workspaceId);
 
   const { execution, isProcessing, streamingText, executionEvents, analyzePrompt, executeCommand, submitPrompt, clearExecution, cancelExecution, history, deleteHistoryEvent } = useCommandPipeline();
 
@@ -242,10 +233,6 @@ export function CommandSurface({
   useEffect(() => {
     const loadPolicy = async () => {
       try {
-        const workspaceRes = await fetch('/api/user/workspace');
-        if (!workspaceRes.ok) return;
-        const workspaceJson = await workspaceRes.json();
-        const workspaceId = workspaceJson?.data?.workspace_id ?? workspaceJson?.workspace_id;
         if (!workspaceId) return;
 
         const policyRes = await fetch(`/api/workspaces/${workspaceId}/ai-policy`);
@@ -262,12 +249,20 @@ export function CommandSurface({
           confidenceMinForAuto: Number.isFinite(threshold) ? threshold : 0.75,
           requireApprovalForChanges,
         });
+        setRuntimeProfile({
+          workspaceId,
+          planModel: policy?.model_profiles?.command_surface_plan?.model ?? policy?.model_profiles?.pipeline_plan?.model ?? null,
+          executeModel: policy?.model_profiles?.command_surface_execute?.model ?? policy?.model_profiles?.pipeline_execute?.model ?? null,
+          reviewModel: policy?.model_profiles?.command_surface_review?.model ?? policy?.model_profiles?.pipeline_review?.model ?? null,
+          customAgentOverrides: Object.keys(policy?.agent_profiles ?? {}).length,
+          toolMode: policy?.tool_profiles?.command_surface_execute?.tool_mode ?? null,
+        });
       } catch {
         // Use defaults if policy cannot be fetched
       }
     };
     loadPolicy();
-  }, []);
+  }, [workspaceId]);
 
   // Keyboard shortcut handler
   useEffect(() => {
@@ -360,7 +355,7 @@ export function CommandSurface({
           return
         }
 
-        const result = await submitPrompt(goPrompt, 'auto', goProjectId)
+        const result = await submitPrompt(goPrompt, 'auto', goProjectId, undefined, { selectedAgents: selectedPlanningAgents })
         if (result.status === 'failed') {
           toast.error(normalizeError(result.error) || 'Command failed')
         } else {
@@ -423,7 +418,10 @@ export function CommandSurface({
         return; // Wait for user approval in the decision dialog
       }
 
-      const result = await executeCommand(text, mode, analysis.plan, analysis.decision, { projectId: selectedProjectId });
+      const result = await executeCommand(text, mode, analysis.plan, analysis.decision, {
+        projectId: selectedProjectId,
+        selectedAgents: selectedPlanningAgents,
+      });
       if (result.status === 'completed') {
         const o = extractOutcome(result.plan.steps);
         toast.success(o.label, {
@@ -447,7 +445,7 @@ export function CommandSurface({
     }
 
     // Stream the command through ClawdBot
-    const result = await submitPrompt(text, mode, selectedProjectId);
+    const result = await submitPrompt(text, mode, selectedProjectId, undefined, { selectedAgents: selectedPlanningAgents });
 
     if (result.status === 'failed') {
       const errMsg = normalizeError(result.error) || 'Command failed'
@@ -461,7 +459,7 @@ export function CommandSurface({
 
     onExecutionComplete?.(result);
     setPrompt('');
-  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router, shouldAskProjectBrief, selectedProjectId]);
+  }, [mode, isProcessing, analyzePrompt, submitPrompt, onExecutionComplete, clearExecution, executionPolicy, executeCommand, router, shouldAskProjectBrief, selectedProjectId, selectedPlanningAgents]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,7 +469,10 @@ export function CommandSurface({
   const handleApprove = useCallback(async () => {
     if (!pendingDecision || !pendingPlan) return;
 
-    const result = await executeCommand(prompt, mode, pendingPlan, pendingDecision, { projectId: selectedProjectId });
+    const result = await executeCommand(prompt, mode, pendingPlan, pendingDecision, {
+      projectId: selectedProjectId,
+      selectedAgents: selectedPlanningAgents,
+    });
     
     if (result.status === 'completed') {
       const o = extractOutcome(result.plan.steps);
@@ -487,7 +488,7 @@ export function CommandSurface({
     setPendingDecision(null);
     setPendingPlan(null);
     setPrompt('');
-  }, [pendingDecision, pendingPlan, prompt, mode, executeCommand, onExecutionComplete, router, selectedProjectId]);
+  }, [pendingDecision, pendingPlan, prompt, mode, executeCommand, onExecutionComplete, router, selectedProjectId, selectedPlanningAgents]);
 
   const handleReject = useCallback(() => {
     setPendingDecision(null);
@@ -583,87 +584,32 @@ export function CommandSurface({
       <div className="relative p-5 sm:p-6 space-y-5">
         {/* Header with Mode Selector */}
         <div className="flex flex-col gap-4">
-          {/* Top row: Title and project selector */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                'flex items-center justify-center w-10 h-10 rounded-xl',
-                'bg-gradient-to-br from-primary/10 to-primary/5',
-                'border border-primary/20 shadow-sm'
-              )}>
-                <Bot className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-lg leading-tight">Command Surface</h2>
-                <p className="text-xs text-muted-foreground">Your AI-powered workspace assistant</p>
-              </div>
-              {runningCount > 0 && (
-                <Badge variant="secondary" className="gap-1.5 px-2.5 py-1 bg-teal-500/10 text-teal-600 border-teal-500/20">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500" />
-                  </span>
-                  {runningCount} running
-                </Badge>
-              )}
-            </div>
-            
-            {/* Project Selector */}
-            <div className="flex items-center gap-2">
-              <Select
-                value={selectedProjectId ?? 'none'}
-                onValueChange={(v) => {
-                  setSelectedProjectId(v === 'none' ? null : v)
-                  if (v !== 'none') setProjectRequiredError(null)
-                }}
-              >
-                <SelectTrigger
-                  className={cn(
-                    'h-9 text-sm w-[160px] bg-background/50',
-                    projectRequiredError && 'border-rose-500 focus-visible:ring-rose-500'
-                  )}
-                >
-                  <SelectValue placeholder="Select project..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No project</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      <span className="truncate max-w-[140px] block">{p.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={handleSyncGit}
-                disabled={isSyncingGit}
-                title="Sync git repos as projects"
-              >
-                {isSyncingGit ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <GitBranch className="h-4 w-4" />
-                )}
-              </Button>
-              <CustomAgentModal />
-            </div>
-          </div>
-
-          {/* Mode Selector - Horizontal Segmented Control */}
-          <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-muted/50 border border-border/50">
-            {(Object.keys(MODE_CONFIG) as CommandMode[]).map((m) => (
-              <ModeButton
-                key={m}
-                mode={m}
-                isActive={mode === m}
-                onClick={() => setMode(m)}
-              />
-            ))}
-          </div>
+          <CommandSurfaceHeader
+            mode={mode}
+            modeConfig={MODE_CONFIG}
+            runningCount={runningCount}
+            selectedProjectId={selectedProjectId}
+            setSelectedProjectId={(value) => {
+              setSelectedProjectId(value)
+              if (value) setProjectRequiredError(null)
+            }}
+            projects={projects}
+            projectRequiredError={projectRequiredError}
+            isSyncingGit={isSyncingGit}
+            handleSyncGit={() => void handleSyncGit()}
+            executionPolicy={executionPolicy}
+            runtimeProfile={runtimeProfile}
+            agents={availableAgents}
+            selectedIds={selectedAgentIds}
+            selectedAgents={selectedPlanningAgents}
+            agentPickerOpen={agentPickerOpen}
+            setAgentPickerOpen={setAgentPickerOpen}
+            setSelectedIds={setSelectedIds}
+            saveWorkspaceAgentDefaults={() => void saveWorkspaceAgentDefaults()}
+            savingAgentDefaults={savingAgentDefaults}
+            workspaceId={workspaceId}
+            setMode={setMode}
+          />
 
           {projectRequiredError && (
             <div className="flex items-center gap-2 text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-3 py-2 rounded-lg border border-rose-200 dark:border-rose-800">
@@ -675,67 +621,12 @@ export function CommandSurface({
 
         {/* Decision Preview */}
         {projectBriefOpen && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 space-y-4 dark:border-amber-800 dark:bg-amber-950/20">
-            <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50">
-                <Lightbulb className="h-4 w-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Before I create this project, define the brief</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  This keeps creation actionable instead of generating a generic implementation plan.
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-3">
-              <Input
-                placeholder="Project name"
-                value={projectBrief.name}
-                onChange={(e) => setProjectBrief(prev => ({ ...prev, name: e.target.value }))}
-                className="bg-background/50"
-              />
-              <Textarea
-                placeholder="Primary goal (what success looks like)"
-                value={projectBrief.goal}
-                onChange={(e) => setProjectBrief(prev => ({ ...prev, goal: e.target.value }))}
-                rows={2}
-                className="bg-background/50 resize-none"
-              />
-              <Textarea
-                placeholder="Scope (key deliverables, constraints)"
-                value={projectBrief.scope}
-                onChange={(e) => setProjectBrief(prev => ({ ...prev, scope: e.target.value }))}
-                rows={2}
-                className="bg-background/50 resize-none"
-              />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  placeholder="Timeline (e.g. 2 weeks)"
-                  value={projectBrief.timeline}
-                  onChange={(e) => setProjectBrief(prev => ({ ...prev, timeline: e.target.value }))}
-                  className="bg-background/50"
-                />
-                <Input
-                  placeholder="Owner"
-                  value={projectBrief.owner}
-                  onChange={(e) => setProjectBrief(prev => ({ ...prev, owner: e.target.value }))}
-                  className="bg-background/50"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setProjectBriefOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleProjectBriefSubmit}>
-                Continue
-              </Button>
-            </div>
-          </div>
+          <ProjectBriefPanel
+            projectBrief={projectBrief}
+            setProjectBrief={setProjectBrief}
+            onCancel={() => setProjectBriefOpen(false)}
+            onContinue={handleProjectBriefSubmit}
+          />
         )}
 
         {pendingDecision && (
@@ -824,63 +715,13 @@ export function CommandSurface({
         )}
 
         {/* Persistent command history */}
-        {history.length > 0 && (
-          <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Recent Actions
-            </p>
-            <div className="space-y-2">
-              {history.slice(0, 5).map((item) => (
-                <div key={item.id} className="flex items-start gap-2 text-xs">
-                  <span className={cn(
-                    'mt-0.5 h-1.5 w-1.5 rounded-full',
-                    item.status === 'completed' && 'bg-emerald-400',
-                    item.status === 'failed' && 'bg-rose-400',
-                    item.status === 'running' && 'bg-amber-400'
-                  )} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-foreground/90">{item.prompt}</p>
-                    <p className="truncate text-muted-foreground/80">
-                      {normalizeError(item.outputPreview) || (item.status === 'running' ? 'Running...' : 'No output')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {item.runId && item.status === 'running' && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        disabled={actionRunId === (item.runId ?? item.id)}
-                        onClick={() => stopRun(item.runId!)}
-                        title="Stop run"
-                      >
-                        <Square className="h-3 w-3" />
-                      </Button>
-                    )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-red-600 hover:text-red-700"
-                      disabled={actionRunId === (item.runId ?? item.id)}
-                      onClick={() => deleteRecentAction(item)}
-                      title="Delete action"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                    {item.runId && (
-                      <button
-                        className="text-teal-400 hover:underline"
-                        onClick={() => router.push(`/runs/${item.runId}`)}
-                      >
-                        Run
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <RecentActionsPanel
+          history={history}
+          actionRunId={actionRunId}
+          normalizeError={normalizeError}
+          onStop={stopRun}
+          onDelete={deleteRecentAction}
+        />
 
         {/* Input Form - or Quick Capture in intake mode */}
         {mode === 'intake' ? (
@@ -890,100 +731,24 @@ export function CommandSurface({
             className="border-0 shadow-none"
           />
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="relative">
-              <Input
-                data-command-input="true"
-                placeholder={currentMode.placeholder}
-                value={prompt}
-                onChange={(e) => {
-                  setPrompt(e.target.value);
-                  setShowShortcutHint(!e.target.value);
-                }}
-                onFocus={() => setShowShortcutHint(!prompt)}
-                onBlur={() => setShowShortcutHint(false)}
-                disabled={isProcessing || !!pendingDecision}
-                className={cn(
-                  'w-full min-h-14 pl-4 pr-24 text-base',
-                  'bg-background/80 backdrop-blur-sm',
-                  'border-border/60 focus-visible:border-primary/50',
-                  'shadow-inner transition-all duration-200',
-                  'placeholder:text-muted-foreground/60'
-                )}
-              />
-              {/* Keyboard shortcut hint */}
-              {showShortcutHint && !prompt && !isProcessing && !pendingDecision && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs text-muted-foreground/50 pointer-events-none">
-                  <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted border border-border/50 font-sans text-[10px]">
-                    <Command className="h-3 w-3" />
-                    <span>K</span>
-                  </kbd>
-                  <span className="hidden sm:inline">to focus</span>
-                </div>
-              )}
-              {/* Send button inside input */}
-              <Button 
-                type="submit" 
-                disabled={isProcessing || !prompt.trim() || !!pendingDecision}
-                size="icon"
-                className={cn(
-                  'absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10',
-                  'transition-all duration-200',
-                  prompt.trim() && !isProcessing && 'opacity-100 scale-100',
-                  (!prompt.trim() || isProcessing) && 'opacity-50 scale-95'
-                )}
-              >
-                {isProcessing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            
-            {/* Action buttons row */}
-            <div className="flex items-center justify-between">
-              {/* Quick Suggestions */}
-              {!prompt && !isProcessing && !pendingDecision && (
-                <div className="flex flex-wrap gap-2">
-                  {currentMode.examples.slice(0, 3).map((example, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={cn(
-                        'text-xs px-3 py-1.5 rounded-full transition-all duration-200',
-                        currentMode.bgColor,
-                        currentMode.color,
-                        'hover:shadow-sm border border-transparent hover:border-current/20'
-                      )}
-                      onClick={() => { 
-                        setPrompt(example); 
-                        handleSubmitText(example); 
-                      }}
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Stop button when processing */}
-              <div className="ml-auto">
-                {isProcessing && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={cancelExecution}
-                    className="gap-1.5"
-                  >
-                    <Square className="h-3.5 w-3.5 fill-current" />
-                    Stop
-                  </Button>
-                )}
-              </div>
-            </div>
-          </form>
+          <CommandComposer
+            mode={mode}
+            prompt={prompt}
+            setPrompt={setPrompt}
+            showShortcutHint={showShortcutHint}
+            setShowShortcutHint={setShowShortcutHint}
+            isProcessing={isProcessing}
+            pendingDecision={Boolean(pendingDecision)}
+            handleSubmit={handleSubmit}
+            handleSubmitText={(text) => {
+              void handleSubmitText(text)
+            }}
+            cancelExecution={cancelExecution}
+            placeholder={currentMode.placeholder}
+            examples={currentMode.examples}
+            bgColor={currentMode.bgColor}
+            color={currentMode.color}
+          />
         )}
       </div>
     </div>

@@ -36,7 +36,10 @@ interface AdvisorEntry {
   role: string
   model: 'OPUS' | 'SONNET' | 'KIMI' | 'GLM-5' | 'UNKNOWN'
   status: 'idle' | 'working' | 'blocked' | 'done' | 'error' | 'paused'
-  avatar_url: string
+  avatar_url?: string | null
+  description: string
+  system_prompt: string
+  persona_tags: string[]
   featured_order: number
 }
 
@@ -144,17 +147,17 @@ type FocusAgent = {
 }
 
 const BACKEND_LABEL: Record<BackendKey, string> = {
-  clawdbot: 'ClawdBot',
-  crico: 'CRICO',
-  bosun: 'Bosun',
-  openclaw: 'OpenClaw',
+  clawdbot: 'AI Engine',
+  crico: 'Intelligence',
+  bosun: 'Scheduler',
+  openclaw: 'Browser Agent',
 }
 
 const BACKEND_PURPOSE: Record<BackendKey, string> = {
   clawdbot: 'Lead execution operator for high-context work and live routing.',
-  crico: 'Operations coordination and structured decision support.',
+  crico: 'Operations intelligence and structured decision support.',
   bosun: 'Scheduling, automation, and repeatable task orchestration.',
-  openclaw: 'Gateway and relay coverage for general dispatch.',
+  openclaw: 'Browser-based agent for web interactions and general dispatch.',
 }
 
 const LANE_LABEL: Record<'product_ui' | 'platform_api' | 'requirements', string> = {
@@ -204,6 +207,48 @@ function createDetailData(agent: FocusAgent): AgentDetailData {
   return agent.detail
 }
 
+function getDiagnosticMessage(agent: FocusAgent): string {
+  const detail = agent.detail
+  if (agent.status === 'UNREACHABLE') {
+    return `The ${agent.backend} service is not responding. This usually means the backend process is stopped or the network is unreachable. Check that the service is running.`
+  }
+  if (detail.description?.toLowerCase().includes('auth') || detail.description?.toLowerCase().includes('token')) {
+    return `Authentication error with ${agent.backend}. The API key or service token may be expired or misconfigured.`
+  }
+  if (detail.description?.toLowerCase().includes('timeout')) {
+    return `${agent.backend} is timing out. The service may be overloaded or the endpoint may be unreachable.`
+  }
+  return detail.description || `${agent.name} is in an error state. Check the logs for details.`
+}
+
+function getDiagnosticActions(agent: FocusAgent): Array<{ label: string; href: string }> {
+  const actions: Array<{ label: string; href: string }> = [
+    { label: 'View logs', href: '#' },
+    { label: 'Check settings', href: '/settings' },
+  ]
+  if (agent.status === 'UNREACHABLE') {
+    actions.unshift({ label: 'System status', href: '/system' })
+  }
+  return actions
+}
+
+function getActivityBars(lastActivity: string): number[] {
+  const hoursAgo = (Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60)
+  // Generate 7 bars (one per day) - more recent = taller bars
+  // This is a simplified visualization; real data would come from an API
+  return Array.from({ length: 7 }, (_, i) => {
+    const dayOffset = 6 - i // 0 = oldest, 6 = most recent
+    if (hoursAgo > 168) return 0 // No activity in 7 days
+    if (dayOffset >= Math.floor(hoursAgo / 24)) return 0
+    // Simulate decreasing activity further from last active
+    const recency = 1 - (dayOffset * 24 - (168 - hoursAgo)) / 168
+    if (recency > 0.7) return 3
+    if (recency > 0.4) return 2
+    if (recency > 0.1) return 1
+    return 0
+  })
+}
+
 function FocusAgentCard({
   agent,
   onView,
@@ -233,6 +278,28 @@ function FocusAgentCard({
           <p className="mt-1 text-xs font-medium text-foreground/80">{agent.role}</p>
           <p className="mt-1 text-xs text-muted-foreground">{agent.purpose}</p>
           <p className="mt-2 text-[11px] text-muted-foreground">Last activity: {formatRelativeTime(agent.lastActivity)}</p>
+          {agent.lastActivity && (
+            <div className="mt-1 flex items-center gap-1.5">
+              <div className="flex gap-px">
+                {getActivityBars(agent.lastActivity).map((level, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'w-1 rounded-full',
+                      level === 0 ? 'h-1.5 bg-zinc-300 dark:bg-zinc-700' :
+                      level === 1 ? 'h-2.5 bg-zinc-400 dark:bg-zinc-600' :
+                      level === 2 ? 'h-3.5 bg-emerald-500/60' :
+                      'h-4 bg-emerald-500'
+                    )}
+                  />
+                ))}
+              </div>
+              <span className="text-[10px] text-muted-foreground">7d activity</span>
+            </div>
+          )}
+          {agent.backend === 'Advisor' && !agent.lastActivity && (
+            <p className="mt-1 text-[10px] text-amber-500">No recommendations generated yet — dispatch to activate</p>
+          )}
         </div>
       </div>
 
@@ -272,6 +339,25 @@ function FocusAgentCard({
           />
         ) : null}
       </div>
+
+      {(agent.status === 'ERROR' || agent.status === 'UNREACHABLE') && (
+        <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/5 p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-500 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Diagnostic</p>
+              <p className="mt-1 text-xs text-muted-foreground">{getDiagnosticMessage(agent)}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {getDiagnosticActions(agent).map((action) => (
+                  <Button key={action.label} variant="outline" size="sm" className="h-7 text-xs" asChild>
+                    <Link href={action.href}>{action.label}</Link>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -374,7 +460,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
       model: agent.model,
       backend: BACKEND_LABEL[agent.backend],
       lastActivity: agent.last_active_at,
-      dispatchHref: `/empire/command?agent=${encodeURIComponent(agent.id)}`,
+      dispatchHref: `/system?agent=${encodeURIComponent(agent.id)}`,
       readOnly: true,
       detail: {
         id: agent.id,
@@ -386,7 +472,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
         status: agent.status,
         lastActivity: agent.last_active_at,
         description: agent.error_message || BACKEND_PURPOSE[agent.backend],
-        commandHref: `/empire/command?agent=${encodeURIComponent(agent.id)}`,
+        commandHref: `/system?agent=${encodeURIComponent(agent.id)}`,
       },
       logAgent: {
         id: agent.id,
@@ -411,7 +497,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
         model: advisor.model,
         backend: 'Advisor',
         lastActivity: null,
-        dispatchHref: `/empire/command?agent=${encodeURIComponent(advisor.id)}`,
+        dispatchHref: `/system?agent=${encodeURIComponent(advisor.id)}`,
         readOnly: true,
         detail: {
           id: advisor.id,
@@ -421,8 +507,10 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
           role: advisor.role,
           model: advisor.model,
           status: advisor.status,
-          description: `${advisor.name} is configured as a named executive advisor.`,
-          commandHref: `/empire/command?agent=${encodeURIComponent(advisor.id)}`,
+          description: advisor.description,
+          systemPrompt: advisor.system_prompt,
+          personaTags: advisor.persona_tags,
+          commandHref: `/system?agent=${encodeURIComponent(advisor.id)}`,
         },
         logAgent: {
           id: advisor.id,
@@ -445,7 +533,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
         status: agent.active ? 'IDLE' : 'PAUSED',
         backend: 'Custom',
         lastActivity: agent.updated_at,
-        dispatchHref: `/empire/command?agent=${encodeURIComponent(agent.id)}`,
+        dispatchHref: `/system?agent=${encodeURIComponent(agent.id)}`,
         readOnly: false,
         customAgentId: agent.id,
         detail: {
@@ -457,7 +545,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
           status: agent.active ? 'active' : 'inactive',
           description: agent.description,
           personaTags: agent.persona_tags,
-          commandHref: `/empire/command?agent=${encodeURIComponent(agent.id)}`,
+          commandHref: `/system?agent=${encodeURIComponent(agent.id)}`,
         },
         logAgent: {
           id: agent.id,
@@ -727,7 +815,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
                               status: agent.status,
                               lastActivity: agent.last_active_at,
                               description: agent.error_message || BACKEND_PURPOSE[agent.backend],
-                              commandHref: `/empire/command?agent=${encodeURIComponent(agent.id)}`,
+                              commandHref: `/system?agent=${encodeURIComponent(agent.id)}`,
                             })
                             setDetailOpen(true)
                           }}
@@ -771,7 +859,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
                     ))}
                     {openMessages.length > 4 ? (
                       <Button asChild variant="ghost" size="sm" className="h-8">
-                        <Link href="/empire/command">More</Link>
+                        <Link href="/system">More</Link>
                       </Button>
                     ) : null}
                   </CardContent>
@@ -787,7 +875,7 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
                     ))}
                     {(overview?.recent.decisions ?? []).length > 4 ? (
                       <Button asChild variant="ghost" size="sm" className="h-8">
-                        <Link href="/empire/command">More</Link>
+                        <Link href="/system">More</Link>
                       </Button>
                     ) : null}
                   </CardContent>

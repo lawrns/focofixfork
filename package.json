@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "next dev --port 4000",
     "build": "next build",
+    "postbuild": "node scripts/fix-next-pages-runtime.js",
     "start": "next start --port 4000",
     "lint": "next lint",
     "test": "vitest",
@@ -38,6 +39,7 @@
     "test:load": "k6 run tests/load/",
     "test:smoke": "playwright test tests/smoke/",
     "test:api:production": "bash run-api-tests.sh",
+    "test:live:pipeline-routing": "LIVE_CLAWDBOT_PIPELINE=1 vitest run tests/live/pipeline-routing-live.test.ts",
     "test:components": "vitest run tests/unit/components/",
     "test:services": "vitest run tests/unit/services/",
     "test:watch": "vitest",

@@ -29,7 +29,7 @@ const envSchema = z.object({
   DEEPSEEK_API_KEY: z.string().optional(),
   DEEPSEEK_MODEL: z.string().optional(),
   DEEPSEEK_BASE_URL: z.string().optional(),
-  AI_PROVIDER: z.enum(['openai', 'deepseek', 'glm']).optional(),
+  AI_PROVIDER: z.enum(['openai', 'deepseek', 'glm', 'ollama']).optional(),
 
   NEXT_PUBLIC_OLLAMA_URL: z.string().url().optional(),
   NEXT_PUBLIC_OLLAMA_DEFAULT_MODEL: z.string().optional(),
@@ -46,6 +46,10 @@ const envSchema = z.object({
 
   // Email
   RESEND_API_KEY: z.string().optional(),
+
+  // Ollama Proxy (fallback provider)
+  OLLAMA_PROXY_URL: z.string().url().optional(),
+  OLLAMA_PROXY_KEY: z.string().optional(),
 
   // Node environment
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

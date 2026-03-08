@@ -33,13 +33,14 @@ interface ResolveProfileDbOptions {
 
 function getEnvProvider(): AIProvider {
   const provider = process.env.AI_PROVIDER
-  return provider === 'openai' || provider === 'deepseek' || provider === 'glm' || provider === 'anthropic' ? provider : 'glm'
+  return provider === 'openai' || provider === 'deepseek' || provider === 'glm' || provider === 'anthropic' || provider === 'ollama' ? provider : 'glm'
 }
 
 function getEnvDefaultModel(provider: AIProvider): string {
   if (provider === 'openai') return process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
   if (provider === 'anthropic') return process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
   if (provider === 'deepseek') return process.env.DEEPSEEK_MODEL || 'deepseek-chat'
+  if (provider === 'ollama') return 'ollama-qwen3.5'
   return process.env.GLM_MODEL || 'glm-5'
 }
 

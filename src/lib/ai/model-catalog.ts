@@ -1,6 +1,6 @@
 import type { AIProvider } from '@/lib/ai/policy'
 
-export type ModelCatalogProvider = AIProvider | 'clawdbot'
+export type ModelCatalogProvider = AIProvider | 'clawdbot' | 'ollama'
 
 export type ModelRuntimeSource =
   | 'openai_api'
@@ -10,6 +10,8 @@ export type ModelRuntimeSource =
   | 'kimi_api'
   | 'zai_coding_api'
   | 'deepseek_api'
+  | 'openrouter_api'
+  | 'ollama_proxy'
 
 export interface ModelCatalogEntry {
   value: string
@@ -91,6 +93,22 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     runtimeSourceLabel: 'DeepSeek API',
   },
   {
+    provider: 'openai',
+    value: 'openrouter-gpt-5.4-high',
+    label: 'GPT-5.4 High (OpenRouter)',
+    runtimeSource: 'openrouter_api',
+    runtimeSourceLabel: 'OpenRouter',
+    pipelineOnly: true,
+  },
+  {
+    provider: 'openai',
+    value: 'openrouter-gpt-5.4',
+    label: 'GPT-5.4 (OpenRouter)',
+    runtimeSource: 'openrouter_api',
+    runtimeSourceLabel: 'OpenRouter',
+    pipelineOnly: true,
+  },
+  {
     provider: 'clawdbot',
     value: 'kimi-k2-standard',
     label: 'Kimi K2 Standard',
@@ -115,6 +133,22 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     runtimeSource: 'kimi_cli',
     runtimeSourceLabel: 'Kimi CLI / API',
     alternateRuntimeSources: ['kimi_api'],
+    pipelineOnly: true,
+  },
+  {
+    provider: 'ollama',
+    value: 'ollama-qwen3.5',
+    label: 'Qwen 3.5 (Ollama Proxy)',
+    runtimeSource: 'ollama_proxy',
+    runtimeSourceLabel: 'Ollama Proxy',
+    pipelineOnly: true,
+  },
+  {
+    provider: 'ollama',
+    value: 'ollama-kimi-k2.5-cloud',
+    label: 'Kimi K2.5 Cloud (Ollama Proxy)',
+    runtimeSource: 'ollama_proxy',
+    runtimeSourceLabel: 'Ollama Proxy',
     pipelineOnly: true,
   },
 ]

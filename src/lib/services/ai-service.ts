@@ -11,6 +11,7 @@
 
 import OpenAI from 'openai';
 import type { AIExecutionProfile, AIProvider } from '@/lib/ai/policy';
+import { isOllamaProxyConfigured, ollamaProxyChat } from '@/lib/ai/ollama-proxy'
 
 interface AIConfig {
   provider: AIProvider;
@@ -53,6 +54,7 @@ export class AIService {
   private config: AIConfig;
   private isGLM: boolean;
   private isAnthropic: boolean;
+  private isOllamaPrimary: boolean;
   private executionOverrides: Pick<AIExecutionProfile, 'temperature' | 'max_tokens'> | null;
 
   constructor(providerOrProfile?: AIProvider | Pick<AIExecutionProfile, 'provider' | 'model' | 'temperature' | 'max_tokens'>) {
@@ -71,6 +73,7 @@ export class AIService {
 
     this.isGLM = aiProvider === 'glm';
     this.isAnthropic = aiProvider === 'anthropic';
+    this.isOllamaPrimary = false;
     this.executionOverrides = profile ? {
       temperature: profile.temperature,
       max_tokens: profile.max_tokens,
@@ -100,6 +103,15 @@ export class AIService {
         model: profile?.model || process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
       };
       console.log('[AIService] Using Anthropic provider with model:', this.config.model)
+    } else if (aiProvider === 'ollama') {
+      this.isOllamaPrimary = true;
+      this.config = {
+        provider: 'ollama',
+        apiKey: process.env.OLLAMA_PROXY_KEY || '',
+        baseURL: (process.env.OLLAMA_PROXY_URL || '').replace(/\/+$/, ''),
+        model: profile?.model || 'qwen3.5:latest'
+      };
+      console.log('[AIService] Using Ollama proxy as primary provider with model:', this.config.model)
     } else {
       this.config = {
         provider: 'openai',
@@ -128,7 +140,7 @@ export class AIService {
         baseURL: this.config.baseURL,
         fetch: createGLMFetch(this.config.apiKey)
       });
-    } else if (this.isAnthropic) {
+    } else if (this.isAnthropic || this.isOllamaPrimary) {
       this.client = null;
     } else {
       this.client = new OpenAI({
@@ -204,12 +216,18 @@ export class AIService {
       throw new Error(`${this.config.provider} API key not configured`);
     }
 
-    if (!this.client && !this.isAnthropic) {
+    if (!this.client && !this.isAnthropic && !this.isOllamaPrimary) {
       throw new Error('Client not initialized');
     }
 
     try {
       console.log('[AIService] Making API call to', this.config.baseURL, 'with model', this.config.model)
+
+      if (this.isOllamaPrimary) {
+        const result = await ollamaProxyChat(messages, { model: this.config.model as any })
+        console.log('[AIService] Ollama proxy primary call succeeded, model:', result.model)
+        return result.content
+      }
 
       if (this.isAnthropic) {
         return await this.anthropicChatCompletion(messages, options)
@@ -226,13 +244,25 @@ export class AIService {
       return response.choices[0]?.message?.content || '';
 
     } catch (error) {
-      console.error('[AIService] API call failed:', error)
+      console.error('[AIService] Primary API call failed:', error)
       console.error('[AIService] Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         status: (error as any)?.status,
         code: (error as any)?.code,
-        stack: error instanceof Error ? error.stack : undefined
       })
+
+      // Attempt Ollama proxy fallback (skip if already using ollama as primary)
+      if (!this.isOllamaPrimary && isOllamaProxyConfigured()) {
+        console.warn('[AIService] ⚡ Triggering Ollama proxy fallback')
+        try {
+          const result = await ollamaProxyChat(messages)
+          console.log('[AIService] Ollama proxy fallback succeeded, model:', result.model)
+          return result.content
+        } catch (fallbackError) {
+          console.error('[AIService] Ollama proxy fallback also failed:', fallbackError)
+        }
+      }
+
       throw error;
     }
   }

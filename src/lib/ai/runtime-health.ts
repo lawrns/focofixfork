@@ -28,6 +28,8 @@ const SOURCE_LABELS: Record<ModelRuntimeSource, string> = {
   kimi_api: 'Kimi API',
   zai_coding_api: 'Z.AI Coding',
   deepseek_api: 'DeepSeek API',
+  openrouter_api: 'OpenRouter',
+  ollama_proxy: 'Ollama Proxy',
 }
 
 function commandExists(command: string): boolean {
@@ -115,6 +117,18 @@ function buildRuntimeSourceHealth(capabilities: any | null): Record<ModelRuntime
       label: SOURCE_LABELS.deepseek_api,
       available: Boolean(process.env.DEEPSEEK_API_KEY),
       reason: process.env.DEEPSEEK_API_KEY ? 'Configured' : 'Missing DEEPSEEK_API_KEY',
+    },
+    openrouter_api: {
+      source: 'openrouter_api',
+      label: SOURCE_LABELS.openrouter_api,
+      available: Boolean(process.env.OPENROUTER_API_KEY),
+      reason: process.env.OPENROUTER_API_KEY ? 'Configured' : 'Missing OPENROUTER_API_KEY',
+    },
+    ollama_proxy: {
+      source: 'ollama_proxy',
+      label: SOURCE_LABELS.ollama_proxy,
+      available: Boolean(process.env.OLLAMA_PROXY_URL && process.env.OLLAMA_PROXY_KEY),
+      reason: process.env.OLLAMA_PROXY_URL && process.env.OLLAMA_PROXY_KEY ? 'Configured' : 'Missing OLLAMA_PROXY_URL or OLLAMA_PROXY_KEY',
     },
   }
 }

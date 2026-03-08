@@ -33,9 +33,12 @@ function fromEnvProfile(): ClawdRoutingProfile {
     profile_id: 'env-default',
     source: 'env',
     plan_model: process.env.EMPIRE_PLANNING_MODEL ?? 'claude-opus-4-6',
-    execute_model: process.env.EMPIRE_EXECUTION_MODEL ?? 'kimi-k2-standard',
-    review_model: process.env.EMPIRE_REVIEW_MODEL ?? 'codex-standard',
-    fallback_chain: [process.env.EMPIRE_FALLBACK_MODEL ?? 'glm-5'].filter(Boolean),
+    execute_model: process.env.EMPIRE_EXECUTION_MODEL ?? 'claude-sonnet-4-6',
+    review_model: process.env.EMPIRE_REVIEW_MODEL ?? 'claude-opus-4-6',
+    fallback_chain: [
+      process.env.EMPIRE_FALLBACK_MODEL ?? 'glm-5',
+      ...(process.env.OLLAMA_PROXY_URL && process.env.OLLAMA_PROXY_KEY ? ['ollama-qwen3.5'] : []),
+    ].filter(Boolean),
   }
 }
 

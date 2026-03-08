@@ -1,4 +1,4 @@
-export type AIProvider = 'openai' | 'deepseek' | 'glm' | 'anthropic'
+export type AIProvider = 'openai' | 'deepseek' | 'glm' | 'anthropic' | 'ollama'
 
 export type AIUseCase =
   | 'task_action'

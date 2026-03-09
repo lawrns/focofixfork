@@ -32,16 +32,16 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   // WORK
-  { label: 'Overview',   href: '/dashboard',  icon: Home },
+  { label: 'Cockpit',    href: '/dashboard',  icon: Home },
   { label: 'Projects',   href: '/projects',   icon: FolderKanban },
   { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare },
   { label: 'Runs',       href: '/runs',       icon: Activity },
   { label: 'Audit Log',  href: '/ledger',     icon: BarChart2 },
   // AUTOMATION
   { label: 'Agents',         href: '/agents',    icon: Bot,       section: 'Automation' },
-  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch },
+  { label: 'Workflows',      href: '/pipeline',  icon: GitBranch },
   { label: 'Recurring',      href: '/recurring', icon: RefreshCw },
-  { label: 'System Status',  href: '/system',    icon: Monitor },
+  { label: 'Autonomy',       href: '/system',    icon: Monitor },
   { label: 'Briefing',       href: '/briefing',  icon: FileText },
   // UTILITY
   { label: 'Notifications',  href: '/notifications', icon: Radio,    section: 'Utility' },

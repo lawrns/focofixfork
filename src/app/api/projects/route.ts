@@ -10,6 +10,7 @@ import {
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { hasFounderFullAccess } from '@/lib/auth/founder-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,23 +34,27 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const limit = parseInt(searchParams.get('limit') || '100')
   const slug = searchParams.get('slug')?.trim() || null
+  const hasFullAccess = hasFounderFullAccess(user)
 
   // Get all workspace memberships for this user (admin client bypasses recursive RLS pitfalls).
-  const { data: membershipRows, error: membershipError } = await supabaseAdmin
-    .from('foco_workspace_members')
-    .select('workspace_id')
-    .eq('user_id', user.id)
-  if (membershipError) {
-    return mergeAuthResponse(internalErrorResponse(membershipError.message), authResponse)
-  }
+  let workspaceIds: string[] = []
+  if (!hasFullAccess) {
+    const { data: membershipRows, error: membershipError } = await supabaseAdmin
+      .from('foco_workspace_members')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+    if (membershipError) {
+      return mergeAuthResponse(internalErrorResponse(membershipError.message), authResponse)
+    }
 
-  const workspaceIds = Array.from(
-    new Set((membershipRows ?? []).map((row: any) => row.workspace_id).filter(Boolean))
-  ) as string[]
+    workspaceIds = Array.from(
+      new Set((membershipRows ?? []).map((row: any) => row.workspace_id).filter(Boolean))
+    ) as string[]
+  }
   const primaryWorkspaceId = workspaceIds[0] ?? null
 
   // No workspace membership → return empty list (not an error, not a data leak)
-  if (workspaceIds.length === 0) {
+  if (!hasFullAccess && workspaceIds.length === 0) {
     return mergeAuthResponse(
       successResponse({ projects: [], workspaceId: null, workspaceIds: [] }),
       authResponse
@@ -59,8 +64,11 @@ export async function GET(req: NextRequest) {
   let projectsQuery = supabaseAdmin
     .from('foco_projects')
     .select('id, workspace_id, owner_id, name, slug, status, description, color, icon, is_pinned, updated_at, local_path, git_remote, delegation_settings, assigned_agent_pool')
-    .in('workspace_id', workspaceIds)
     .is('archived_at', null)
+
+  if (!hasFullAccess) {
+    projectsQuery = projectsQuery.in('workspace_id', workspaceIds)
+  }
 
   if (slug) {
     projectsQuery = projectsQuery.eq('slug', slug)

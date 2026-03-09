@@ -133,7 +133,7 @@ export async function createLoop(
     timezone,
     requested_execution_mode: requestedMode,
     effective_execution_mode: effectiveMode,
-    execution_backend: input.execution_backend ?? 'clawdbot',
+    execution_backend: input.execution_backend ?? 'openclaw',
     execution_target: input.execution_target ?? {},
     planning_agent: input.planning_agent ?? null,
     selected_project_ids: input.selected_project_ids ?? [],

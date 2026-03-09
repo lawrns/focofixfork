@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { hasFounderFullAccessById } from '@/lib/auth/founder-access'
 
 // ✅ FIXED: Database alignment completed - all table and column names now match actual schema
 // Tables: workspace_members, foco_projects, foco_project_members
@@ -30,6 +31,10 @@ export async function checkWorkspaceRole(
   workspaceId: string,
   requiredRoles: WorkspaceRole[]
 ): Promise<boolean> {
+  if (hasFounderFullAccessById(userId)) {
+    return true
+  }
+
   try {
     const { data: member, error } = await supabaseAdmin
       .from('foco_workspace_members')
@@ -56,6 +61,10 @@ export async function checkWorkspaceMembership(
   userId: string,
   workspaceId: string
 ): Promise<boolean> {
+  if (hasFounderFullAccessById(userId)) {
+    return true
+  }
+
   try {
     const { data: member, error } = await supabaseAdmin
       .from('foco_workspace_members')
@@ -79,6 +88,10 @@ export async function checkProjectPermission(
   projectId: string,
   permission: Permission
 ): Promise<boolean> {
+  if (hasFounderFullAccessById(userId)) {
+    return true
+  }
+
   try {
     // First check if user is the project creator
     const { data: project, error: projectError } = await supabaseAdmin
@@ -176,6 +189,10 @@ export async function getUserWorkspaceRole(
   userId: string,
   workspaceId: string
 ): Promise<WorkspaceRole | null> {
+  if (hasFounderFullAccessById(userId)) {
+    return 'owner'
+  }
+
   try {
     const { data: member, error } = await supabaseAdmin
       .from('foco_workspace_members')
@@ -202,6 +219,10 @@ export async function getUserProjectRole(
   userId: string,
   projectId: string
 ): Promise<ProjectRole | null> {
+  if (hasFounderFullAccessById(userId)) {
+    return 'owner'
+  }
+
   try {
     // Check if user is project creator first
     const { data: project } = await supabaseAdmin

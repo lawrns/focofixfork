@@ -103,7 +103,7 @@ function initialForm(): FormState {
     schedulePreset: 'every_morning',
     scheduleCronCustom: '',
     timezone: defaultTimezone(),
-    backend: 'clawdbot',
+    backend: 'openclaw',
     mode: 'report_only',
     objective: '',
   }
@@ -292,22 +292,14 @@ export function CreateLoopDialog({
             {/* Execution backend */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Execution Engine</label>
-              <p className="text-[11px] text-muted-foreground">Standard is recommended for most tasks.</p>
+              <p className="text-[11px] text-muted-foreground">Recurring autonomy now dispatches through OpenClaw only.</p>
               <div className="flex gap-1">
-                {([
-                  { value: 'clawdbot', label: 'Standard' },
-                  { value: 'openclaw', label: 'Advanced' },
-                ] as { value: ExecutionBackend; label: string }[]).map((b) => (
+                {([{ value: 'openclaw', label: 'OpenClaw' }] as { value: ExecutionBackend; label: string }[]).map((b) => (
                   <button
                     key={b.value}
                     type="button"
                     onClick={() => setField('backend', b.value)}
-                    className={cn(
-                      'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
-                      form.backend === b.value
-                        ? 'border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/10 text-[color:var(--foco-teal)]'
-                        : 'border-border text-muted-foreground hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-foreground',
-                    )}
+                    className="rounded-md border border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/10 px-3 py-1.5 text-xs font-medium text-[color:var(--foco-teal)]"
                   >
                     {b.label}
                   </button>

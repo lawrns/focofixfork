@@ -10,8 +10,9 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { logClawdActionVisibility } from '@/lib/cofounder-mode/clawd-visibility'
 import { isLane } from '@/lib/agent-ops/lane-policy'
 import { createCommandStreamJob, publishCommandStreamEvent, setJobRunId } from '@/lib/command-surface/stream-broker'
-import { runPipelineStreamJob } from '@/lib/command-surface/pipeline-runner'
+import { mergeRunTrace } from '@/lib/runs/trace'
 import { redactSensitiveText } from '@/lib/security/redaction'
+import { dispatchOpenClawTask } from '@/lib/openclaw/client'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,11 +39,6 @@ export async function POST(req: NextRequest) {
     limits,
     report_request,
     bootstrap_run_id,
-    requested_model,
-    requested_planner_model,
-    requested_executor_model,
-    requested_reviewer_model,
-    requested_fallback_chain,
   } = body as {
     prompt?: string
     mode?: string
@@ -57,11 +53,6 @@ export async function POST(req: NextRequest) {
     limits?: unknown
     report_request?: Record<string, unknown> | null
     bootstrap_run_id?: string | null
-    requested_model?: string | null
-    requested_planner_model?: string | null
-    requested_executor_model?: string | null
-    requested_reviewer_model?: string | null
-    requested_fallback_chain?: string[] | null
   }
 
   if (!prompt?.trim()) {
@@ -74,10 +65,35 @@ export async function POST(req: NextRequest) {
   const normalizedMode = typeof mode === 'string' && mode.trim() ? mode : 'auto'
   const jobId = createCommandStreamJob(user.id)
   const bootstrapRunId = typeof bootstrap_run_id === 'string' && bootstrap_run_id.trim() ? bootstrap_run_id.trim() : null
+  const correlationId = bootstrapRunId ?? crypto.randomUUID()
   const timestamp = () => new Date().toISOString()
+  const callbackUrl = new URL('/api/openclaw/callback', req.url).toString()
+
+  const persistCommandSurfaceState = async (
+    runId: string | null,
+    patch: Record<string, unknown>,
+  ) => {
+    if (!runId) return
+    await mergeRunTrace(supabase, runId, {
+      command_surface: patch,
+    })
+  }
 
   if (bootstrapRunId) {
     await setJobRunId(jobId, bootstrapRunId)
+    await persistCommandSurfaceState(bootstrapRunId, {
+      job_id: jobId,
+      stream_state: 'queued',
+      last_stream_event_at: timestamp(),
+    })
+    await mergeRunTrace(supabase, bootstrapRunId, {
+      openclaw: {
+        correlation_id: correlationId,
+        dispatch_kind: 'command_surface',
+        status: 'queued',
+        last_event_at: timestamp(),
+      },
+    })
   }
 
   publishCommandStreamEvent(jobId, {
@@ -104,83 +120,104 @@ export async function POST(req: NextRequest) {
     // Visibility telemetry is non-fatal.
   }
 
-  void runPipelineStreamJob({
-    origin: req.nextUrl.origin,
-    cookieHeader: req.headers.get('cookie'),
-    supabase,
-    workspaceId: workspace_id ?? null,
-    userId: user.id,
-    userEmail: user.email ?? null,
-    prompt,
-    mode: normalizedMode,
-    projectId: project_id ?? null,
-    lane: lane ?? null,
-    taskId: task_id ?? null,
-    requestedModel: requested_model ?? null,
-    requestedPlannerModel: requested_planner_model ?? null,
-    requestedExecutorModel: requested_executor_model ?? null,
-    requestedReviewerModel: requested_reviewer_model ?? null,
-    requestedFallbackChain: Array.isArray(requested_fallback_chain)
-      ? requested_fallback_chain.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-      : null,
-    selectedAgents: selected_agents ?? null,
-    planningContext: context ?? null,
-    planningGoal: planning_goal ?? null,
-    constraints: constraints ?? null,
-    limits: limits ?? null,
-    reportRequest: report_request ?? null,
-    bootstrapRunId,
-  }, {
-    onStatusUpdate(status, message, phase) {
-      publishCommandStreamEvent(jobId, {
-        type: 'status_update',
-        status,
-        message,
-        phase,
-        timestamp: timestamp(),
+  const primaryAgentId = Array.isArray(selected_agents)
+    ? selected_agents.find((item): item is string => typeof item === 'string' && item.trim().length > 0) ?? 'cofounder'
+    : 'cofounder'
+
+  try {
+    const dispatchResult = await dispatchOpenClawTask({
+      agentId: primaryAgentId,
+      task: prompt,
+      correlationId,
+      callbackUrl,
+      taskId: task_id ?? undefined,
+      title: bootstrapRunId ? `Command surface run ${bootstrapRunId}` : 'Command surface run',
+      context: {
+        source: 'command_surface',
+        workspace_id: workspace_id ?? null,
+        project_id: project_id ?? null,
+        task_id: task_id ?? null,
+        mode: normalizedMode,
+        lane: isLane(lane) ? lane : null,
+        run_id: bootstrapRunId,
+        selected_agents: selected_agents ?? null,
+        planning_context: context ?? null,
+        planning_goal: planning_goal ?? null,
+        constraints: constraints ?? null,
+        limits: limits ?? null,
+        report_request: report_request ?? null,
+        actor_user_id: user.id,
+      },
+    })
+
+    if (bootstrapRunId) {
+      await mergeRunTrace(supabase, bootstrapRunId, {
+        openclaw: {
+          correlation_id: dispatchResult.correlationId,
+          gateway_run_id: dispatchResult.runId,
+          agent_id: primaryAgentId,
+          status: dispatchResult.status,
+          last_event_at: timestamp(),
+          last_summary: 'Task accepted by OpenClaw gateway',
+          dispatch_kind: 'command_surface',
+        },
       })
-    },
-    onReasoning(text, phase) {
-      publishCommandStreamEvent(jobId, {
-        type: 'reasoning',
-        text,
-        phase,
-        timestamp: timestamp(),
+    }
+
+    publishCommandStreamEvent(jobId, {
+      type: 'status_update',
+      status: 'executing',
+      message: 'Task accepted by OpenClaw gateway',
+      timestamp: timestamp(),
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'OpenClaw dispatch failed'
+    if (bootstrapRunId) {
+      await mergeRunTrace(supabase, bootstrapRunId, {
+        command_surface: {
+          job_id: jobId,
+          stream_state: 'error',
+          last_stream_event_at: timestamp(),
+          last_error: message,
+        },
+        openclaw: {
+          correlation_id: correlationId,
+          agent_id: primaryAgentId,
+          status: 'error',
+          last_event_at: timestamp(),
+          last_error: message,
+          dispatch_kind: 'command_surface',
+        },
+      }, {
+        status: 'failed',
+        summary: redactSensitiveText(prompt.trim()).slice(0, 180),
       })
-    },
-    onOutput(text, phase) {
-      publishCommandStreamEvent(jobId, {
-        type: 'output_chunk',
-        text,
-        phase,
-        timestamp: timestamp(),
-      })
-    },
-    onRunStart(runId) {
-      return setJobRunId(jobId, runId)
-    },
-    onPhaseError(message) {
-      publishCommandStreamEvent(jobId, {
-        type: 'error',
-        message,
-        timestamp: timestamp(),
-      })
-    },
-    onDone(exitCode, summary) {
-      publishCommandStreamEvent(jobId, {
-        type: 'done',
-        exitCode,
-        summary,
-        timestamp: timestamp(),
-      })
-    },
-  })
+    }
+
+    publishCommandStreamEvent(jobId, {
+      type: 'error',
+      message,
+      timestamp: timestamp(),
+    })
+    publishCommandStreamEvent(jobId, {
+      type: 'done',
+      exitCode: 1,
+      summary: message,
+      timestamp: timestamp(),
+    })
+
+    return mergeAuthResponse(
+      NextResponse.json({ error: message }, { status: 502 }),
+      authResponse,
+    )
+  }
 
   return mergeAuthResponse(
     NextResponse.json({
       ok: true,
       job_id: jobId,
       stream_url: `/api/command-surface/stream/${jobId}`,
+      correlation_id: correlationId,
     }),
     authResponse,
   )

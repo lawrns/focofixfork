@@ -11,13 +11,13 @@ interface RouteParams {
 }
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const { id: projectId, proposalId } = await params
-  const access = await getProjectAccess(projectId, user)
+  const access = await getProjectAccess(projectId, user, supabase)
   if (!access) return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
-  if (!access.canReview) return mergeAuthResponse(forbiddenResponse('Only workspace admins can reject workflows'), authResponse)
+  if (!access.canReview) return mergeAuthResponse(forbiddenResponse('Only project reviewers can reject workflows'), authResponse)
 
   try {
     const proposal = await getWorkflowProposal(projectId, proposalId)

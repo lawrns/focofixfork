@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Command Center | Empire OS',
-  description: 'Live agent orchestration, decision queue, and system health monitoring',
+  title: 'Cockpit Redirect',
+  description: 'Legacy command-center entrypoint redirected to the canonical cockpit surface.',
 };
 
 export default function CommandCenterPage() {

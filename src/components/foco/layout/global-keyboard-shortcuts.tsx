@@ -71,10 +71,10 @@ function showShortcutToast(message: string, icon?: React.ReactNode) {
  * - Cmd/Ctrl+Shift+P - Create new project
  * - Cmd/Ctrl+Shift+F - Toggle Focus Mode
  * - Cmd/Ctrl+Shift+L - Toggle theme (light/dark)
- * - G then D - Go to Dashboard
- * - G then C - Go to Command Center
+ * - G then D - Go to Cockpit
+ * - G then C - Go to Dispatch
  * - G then A - Go to Agents
- * - G then M - Go to My Work
+ * - G then M - Go to Autonomy
  * - ? - Show keyboard shortcuts help
  */
 export function GlobalKeyboardShortcuts() {
@@ -188,7 +188,7 @@ export function GlobalKeyboardShortcuts() {
           // Core navigation
           case 'd':
             router.push('/dashboard');
-            showShortcutToast('Navigated to Dashboard', <LayoutDashboard className="h-4 w-4" />);
+            showShortcutToast('Navigated to Cockpit', <LayoutDashboard className="h-4 w-4" />);
             break;
           case 'c':
             router.push('/dashboard?view=dispatch');
@@ -200,7 +200,7 @@ export function GlobalKeyboardShortcuts() {
             break;
           case 'm':
             router.push('/system');
-            showShortcutToast('Navigated to System Status', <Users className="h-4 w-4" />);
+            showShortcutToast('Navigated to Autonomy', <Users className="h-4 w-4" />);
             break;
           
           // Additional G-key navigation (keeping existing shortcuts)

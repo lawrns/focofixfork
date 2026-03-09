@@ -11,16 +11,27 @@ interface RouteParams {
 }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
   const { id: projectId } = await params
-  const access = await getProjectAccess(projectId, user)
+  const access = await getProjectAccess(projectId, user, supabase)
   if (!access) return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
 
   try {
     const workflows = await listProjectWorkflows(projectId)
-    return mergeAuthResponse(NextResponse.json({ ok: true, data: { workflows } }), authResponse)
+    return mergeAuthResponse(
+      NextResponse.json({
+        ok: true,
+        data: {
+          workflows,
+          permissions: {
+            canReview: access.canReview,
+          },
+        },
+      }),
+      authResponse
+    )
   } catch (routeError) {
     const message = routeError instanceof Error ? routeError.message : 'Failed to load project workflows'
     return mergeAuthResponse(NextResponse.json({ ok: false, error: { message } }, { status: 500 }), authResponse)

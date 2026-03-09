@@ -61,8 +61,8 @@ export function CommandPalette() {
 
   const commands: CommandItem[] = useMemo(() => [
     // Navigation
-    { id: 'nav-dashboard', label: 'Go to Dashboard', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/dashboard'), keywords: ['home', 'overview'] },
-    { id: 'nav-dispatch', label: 'Go to Dispatch', icon: Send, shortcut: 'G C', group: 'Navigation', action: () => router.push('/dashboard?view=dispatch'), keywords: ['agent', 'dispatch', 'command center', 'mission control'] },
+    { id: 'nav-dashboard', label: 'Go to Cockpit', icon: Home, shortcut: 'G H', group: 'Navigation', action: () => router.push('/dashboard'), keywords: ['home', 'overview', 'cockpit'] },
+    { id: 'nav-dispatch', label: 'Go to Dispatch', icon: Send, shortcut: 'G C', group: 'Navigation', action: () => router.push('/dashboard?view=dispatch'), keywords: ['agent', 'dispatch', 'cockpit', 'mission control'] },
     { id: 'nav-intel', label: 'Go to Intel Feed', icon: Rss, shortcut: 'G I', group: 'Navigation', action: () => router.push('/clawdbot'), keywords: ['intel', 'feed'] },
     { id: 'nav-runs', label: 'Go to Runs', icon: Activity, shortcut: 'G R', group: 'Navigation', action: () => router.push('/runs'), keywords: ['executions', 'history'] },
     { id: 'nav-ledger', label: 'Go to Audit Log', icon: BookOpen, shortcut: 'G L', group: 'Navigation', action: () => router.push('/ledger'), keywords: ['events', 'log', 'ledger'] },
@@ -70,7 +70,7 @@ export function CommandPalette() {
     { id: 'nav-emails', label: 'Go to Emails', icon: Mail, shortcut: 'G E', group: 'Navigation', action: () => router.push('/emails'), keywords: ['outbox', 'messages'] },
     { id: 'nav-artifacts', label: 'Go to Artifacts', icon: FileBox, shortcut: 'G A', group: 'Navigation', action: () => router.push('/artifacts'), keywords: ['files'] },
     { id: 'nav-policies', label: 'Go to Policies', icon: Shield, shortcut: 'G Y', group: 'Navigation', action: () => router.push('/policies'), keywords: ['guardrails', 'fleet'] },
-    { id: 'nav-cmd-center', label: 'Go to Empire OS', icon: Cpu, shortcut: 'G M', group: 'Navigation', action: () => router.push('/empire'), keywords: ['agents', 'command', 'swarm', 'crico', 'clawdbot', 'bosun', 'empire'] },
+    { id: 'nav-cmd-center', label: 'Go to Autonomy', icon: Cpu, shortcut: 'G M', group: 'Navigation', action: () => router.push('/system'), keywords: ['agents', 'autonomy', 'swarm', 'crico', 'clawdbot', 'bosun', 'system'] },
     { id: 'nav-settings', label: 'Go to Settings', icon: Settings, shortcut: 'G S', group: 'Navigation', action: () => router.push('/settings') },
     { id: 'nav-my-work', label: 'Go to Work Queue', icon: CheckSquare, shortcut: 'G W', group: 'Navigation', action: () => router.push('/dashboard?view=work'), keywords: ['tasks', 'work', 'todo'] },
     { id: 'nav-briefing', label: 'Daily Briefing', icon: Sun, shortcut: 'G B', group: 'Navigation', action: () => router.push('/empire/briefing'), keywords: ['briefing', 'daily', 'summary'] },
@@ -80,7 +80,7 @@ export function CommandPalette() {
     { id: 'nav-timeline', label: 'Milestone Timeline', icon: GitBranch, shortcut: 'G T', group: 'Navigation', action: () => router.push('/empire/timeline'), keywords: ['timeline', 'milestones'] },
     { id: 'nav-proposals', label: 'Go to Proposal Queue', icon: FileText, shortcut: 'G Q', group: 'Navigation', action: () => router.push('/dashboard?view=proposals'), keywords: ['proposals', 'tasks'] },
     { id: 'nav-reports', label: 'Reports', icon: BarChart, shortcut: 'G F', group: 'Navigation', action: () => router.push('/reports'), keywords: ['reports', 'analytics'] },
-    { id: 'nav-pipeline', label: 'Pipeline', icon: Workflow, shortcut: 'G V', group: 'Navigation', action: () => router.push('/empire/pipeline'), keywords: ['pipeline', 'workflow'] },
+    { id: 'nav-pipeline', label: 'Workflows', icon: Workflow, shortcut: 'G V', group: 'Navigation', action: () => router.push('/pipeline'), keywords: ['pipeline', 'workflow', 'orchestration'] },
 
     // Quick Actions
     { id: 'dispatch-agent', label: 'Dispatch Agent', icon: Send, shortcut: 'C', group: 'Quick Actions', action: () => router.push('/dashboard?view=dispatch'), keywords: ['new', 'task', 'agent'] },

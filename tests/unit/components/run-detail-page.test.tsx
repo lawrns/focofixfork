@@ -434,7 +434,7 @@ describe('RunDetailPage', () => {
       // diagnoseError matches /model.*does not exist/ and returns the model unavailable suggestion
       expect(
         screen.getByText(
-          'The requested model is unavailable. Try switching to Claude or a different provider.'
+          'Requested model unavailable. Switch provider or choose a different model.'
         )
       ).toBeInTheDocument()
     })

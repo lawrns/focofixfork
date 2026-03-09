@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getOpenClawServerConfig } from '@/lib/openclaw/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,7 @@ const DEFAULT_RELAY = 'http://127.0.0.1:18792'
  *  - supabase (cloud) mode: blocked by middleware unless an explicit relay is configured
  */
 export async function GET(req: NextRequest) {
+  const serverConfig = await getOpenClawServerConfig()
   const isLocalMode = (process.env.FOCO_DB ?? 'sqlite') === 'sqlite'
 
   // ── S2B: Local-mode token check ────────────────────────────────────────────
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   // ── S2D: Cloud-mode relay guard ────────────────────────────────────────────
   if (!isLocalMode) {
-    const relay = process.env.FOCO_OPENCLAW_RELAY ?? ''
+    const relay = serverConfig.relayUrl ?? ''
     const isDefaultOrMissing = !relay || relay === DEFAULT_RELAY || relay === 'http://127.0.0.1:18792'
     if (isDefaultOrMissing) {
       return NextResponse.json(
@@ -45,8 +47,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const relayUrl = process.env.FOCO_OPENCLAW_RELAY ?? DEFAULT_RELAY
-  const token = process.env.FOCO_OPENCLAW_TOKEN ?? process.env.OPENCLAW_SERVICE_TOKEN ?? ''
+  const relayUrl = serverConfig.relayUrl ?? DEFAULT_RELAY
+  const token = serverConfig.gatewayToken
 
   const result = {
     relay: { reachable: false, url: relayUrl, port: extractPort(relayUrl) },

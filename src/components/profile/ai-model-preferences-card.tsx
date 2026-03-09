@@ -4,165 +4,73 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { MODEL_CATALOG } from '@/lib/ai/model-catalog'
-import { getModelRuntimeSourceLabel } from '@/lib/ai/model-catalog'
-import { useAIHealth } from '@/lib/hooks/use-ai-health'
-import { useUserModelPreferences } from '@/lib/stores/user-model-preferences'
-
-const GENERAL_MODELS = MODEL_CATALOG.filter((entry) => !entry.pipelineOnly)
-const PIPELINE_MODELS = MODEL_CATALOG
+import { useOpenClawRuntime } from '@/lib/hooks/use-openclaw-runtime'
 
 export function AIModelPreferencesCard() {
-  const { getModelHealth, loading: healthLoading } = useAIHealth()
-  const {
-    defaultModel,
-    fallbackChain,
-    plannerModel,
-    executorModel,
-    reviewerModel,
-    setDefaultModel,
-    setFallbackAt,
-    setPlannerModel,
-    setExecutorModel,
-    setReviewerModel,
-    reset,
-  } = useUserModelPreferences()
-
-  const defaultModelHealth = getModelHealth(defaultModel)
+  const { data, loading, refresh } = useOpenClawRuntime()
+  const primaryLabel = data?.modelAlias ?? data?.primaryModel ?? 'Not configured'
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>AI model preferences</CardTitle>
         <CardDescription>
-          Personal defaults override workspace routing at request time. GPT-5.4 Medium is the recommended baseline, and you can still pin plan / execute / review models when needed.
+          OpenClaw is the source of truth for model routing. Change the active model in OpenClaw, then refresh this card.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-2">
-            <Label>Default model</Label>
-            <Select value={defaultModel} onValueChange={setDefaultModel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a default model" />
-              </SelectTrigger>
-              <SelectContent>
-                {GENERAL_MODELS.map((model) => (
-                  <SelectItem key={model.value} value={model.value}>
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Primary model</Label>
+            <div className="rounded-md border px-3 py-2 text-sm">
+              {loading ? 'Loading OpenClaw runtime…' : primaryLabel}
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Runtime source</Label>
             <div className="rounded-md border px-3 py-2 text-sm">
-              <div>{getModelRuntimeSourceLabel(defaultModel) ?? 'Inherited'}</div>
+              <div>{data?.tokenSource === 'env' ? 'OpenClaw env token' : data?.tokenSource === 'config' ? 'OpenClaw config token' : 'Not configured'}</div>
               <div className="mt-1 text-xs text-muted-foreground">
-                {healthLoading
-                  ? 'Checking availability...'
-                  : defaultModelHealth?.available
-                    ? defaultModelHealth.reason
-                    : defaultModelHealth?.reason ?? 'Health unavailable'}
+                {loading
+                  ? 'Checking OpenClaw runtime...'
+                  : data?.relayReachable
+                    ? `Relay reachable at ${data.relayUrl}`
+                    : `Relay unavailable at ${data?.relayUrl ?? 'unknown relay'}`}
               </div>
             </div>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {[0, 1, 2].map((index) => {
-            const selected = fallbackChain[index] ?? '__none__'
-            return (
-              <div key={index} className="space-y-2">
-                <Label>Fallback {index + 1}</Label>
-                <Select value={selected} onValueChange={(value) => setFallbackAt(index, value === '__none__' ? null : value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {GENERAL_MODELS.filter((model) => model.value !== defaultModel).map((model) => (
-                      <SelectItem key={`${index}-${model.value}`} value={model.value}>
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <Label>Planner override</Label>
-            <Select value={plannerModel ?? '__inherit__'} onValueChange={(value) => setPlannerModel(value === '__inherit__' ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Inherit default" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__inherit__">Inherit default</SelectItem>
-                {PIPELINE_MODELS.map((model) => (
-                  <SelectItem key={`planner-${model.value}`} value={model.value}>
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Gateway</Label>
+            <div className="rounded-md border px-3 py-2 text-sm">{data?.gatewayUrl ?? 'Unknown'}</div>
           </div>
           <div className="space-y-2">
-            <Label>Executor override</Label>
-            <Select value={executorModel ?? '__inherit__'} onValueChange={(value) => setExecutorModel(value === '__inherit__' ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Inherit default" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__inherit__">Inherit default</SelectItem>
-                {PIPELINE_MODELS.map((model) => (
-                  <SelectItem key={`executor-${model.value}`} value={model.value}>
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Workspace</Label>
+            <div className="rounded-md border px-3 py-2 text-sm">{data?.workspacePath ?? 'Unknown'}</div>
           </div>
           <div className="space-y-2">
-            <Label>Reviewer override</Label>
-            <Select value={reviewerModel ?? '__inherit__'} onValueChange={(value) => setReviewerModel(value === '__inherit__' ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Inherit default" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__inherit__">Inherit default</SelectItem>
-                {PIPELINE_MODELS.map((model) => (
-                  <SelectItem key={`reviewer-${model.value}`} value={model.value}>
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Config path</Label>
+            <div className="rounded-md border px-3 py-2 text-sm">{data?.configPath ?? 'Unknown'}</div>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Badge variant={defaultModelHealth?.available ? 'default' : 'destructive'}>
-            Primary · {defaultModel}
+          <Badge variant={data?.relayReachable ? 'default' : 'destructive'}>
+            Primary · {primaryLabel}
           </Badge>
-          {fallbackChain.map((model, index) => (
-            <Badge
-              key={`${model}-${index}`}
-              variant={getModelHealth(model)?.available ? 'outline' : 'destructive'}
-            >
-              Fallback {index + 1} · {model}
-            </Badge>
-          ))}
+          <Badge variant={data?.tokenConfigured ? 'outline' : 'destructive'}>
+            Auth · {data?.tokenConfigured ? 'Configured' : 'Missing'}
+          </Badge>
+          <Badge variant="outline">
+            Tabs · {data?.attachedTabs ?? 0}
+          </Badge>
         </div>
 
         <div className="flex justify-end">
-          <Button variant="outline" onClick={reset}>
-            Reset to recommended
+          <Button variant="outline" onClick={() => void refresh()}>
+            Refresh from OpenClaw
           </Button>
         </div>
       </CardContent>

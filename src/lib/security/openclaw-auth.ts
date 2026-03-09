@@ -1,4 +1,6 @@
 import crypto from 'crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 import { NextRequest } from 'next/server'
 
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000
@@ -12,6 +14,26 @@ function safeEquals(a: string, b: string): boolean {
 
 function getBearerToken(req: NextRequest): string {
   return (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+}
+
+function getGatewayTokenFromConfig(): string {
+  try {
+    const root = process.env.OPENCLAW_CONFIG_PATH?.trim()
+      ? path.join(process.env.OPENCLAW_CONFIG_PATH.trim(), 'openclaw.json')
+      : path.join(process.env.HOME ?? '/tmp', '.openclaw', 'openclaw.json')
+    const raw = fs.readFileSync(root, 'utf8')
+    const parsed = JSON.parse(raw) as {
+      gateway?: {
+        auth?: {
+          token?: unknown
+        }
+      }
+    }
+    const token = parsed.gateway?.auth?.token
+    return typeof token === 'string' ? token.trim() : ''
+  } catch {
+    return ''
+  }
 }
 
 export function buildOpenClawSignature(
@@ -47,10 +69,15 @@ export function authorizeOpenClawRequest(
   req: NextRequest,
   rawBody: string = ''
 ): boolean {
-  const serviceToken = process.env.OPENCLAW_SERVICE_TOKEN ?? process.env.BOSUN_SERVICE_TOKEN
+  const acceptedTokens = [
+    process.env.OPENCLAW_SERVICE_TOKEN,
+    process.env.BOSUN_SERVICE_TOKEN,
+    process.env.FOCO_OPENCLAW_TOKEN,
+    process.env.OPENCLAW_GATEWAY_TOKEN,
+    getGatewayTokenFromConfig(),
+  ].filter((token): token is string => typeof token === 'string' && token.length > 0)
   const bearer = getBearerToken(req)
-  if (serviceToken && bearer && safeEquals(bearer, serviceToken)) return true
+  if (bearer && acceptedTokens.some((token) => safeEquals(bearer, token))) return true
 
   return verifyOpenClawSignature(req, rawBody)
 }
-

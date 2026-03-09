@@ -17,6 +17,7 @@ export default function LoginPage() {
 
         {/* Subtle grid bg */}
         <div
+          aria-hidden="true"
           className="absolute inset-0 opacity-[0.025]"
           style={{
             backgroundImage:
@@ -27,6 +28,7 @@ export default function LoginPage() {
 
         {/* Teal glow orb */}
         <div
+          aria-hidden="true"
           className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-3xl"
           style={{ background: 'radial-gradient(circle, rgba(var(--foco-teal-rgb), 0.08) 0%, transparent 70%)' }}
         />
@@ -60,8 +62,8 @@ export default function LoginPage() {
               { icon: Zap, text: 'Native WhatsApp — operate from anywhere' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-[color:var(--foco-teal)]" />
+                <div aria-hidden="true" className="w-8 h-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
+                  <Icon aria-hidden="true" className="w-4 h-4 text-[color:var(--foco-teal)]" />
                 </div>
                 <span className="text-[13px] text-muted-foreground">{text}</span>
               </div>
@@ -75,7 +77,7 @@ export default function LoginPage() {
             &ldquo;Critter gives us full visibility into every agent run. We dispatch, monitor, and sleep easy.&rdquo;
           </p>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
+            <div aria-hidden="true" className="w-6 h-6 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
               <span className="text-[10px] font-bold text-[color:var(--foco-teal)]">OA</span>
             </div>
             <span className="text-[12px] text-muted-foreground">Oscar A. · Fyves</span>

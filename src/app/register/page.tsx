@@ -18,6 +18,7 @@ function RegisterFormWrapper() {
 
         {/* Grid bg */}
         <div
+          aria-hidden="true"
           className="absolute inset-0 opacity-[0.025]"
           style={{
             backgroundImage:
@@ -28,6 +29,7 @@ function RegisterFormWrapper() {
 
         {/* Teal glow */}
         <div
+          aria-hidden="true"
           className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl"
           style={{ background: 'radial-gradient(circle, rgba(var(--foco-teal-rgb), 0.07) 0%, transparent 70%)' }}
         />
@@ -61,8 +63,8 @@ function RegisterFormWrapper() {
               { icon: Users,    text: 'Multi-workspace — teams, roles, and permissions' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-[color:var(--foco-teal)]" />
+                <div aria-hidden="true" className="w-8 h-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
+                  <Icon aria-hidden="true" className="w-4 h-4 text-[color:var(--foco-teal)]" />
                 </div>
                 <span className="text-[13px] text-muted-foreground">{text}</span>
               </div>
@@ -72,11 +74,11 @@ function RegisterFormWrapper() {
 
         {/* Stats */}
         <div className="relative z-10 grid grid-cols-3 gap-4">
-          {[
-            { value: '10×', label: 'Faster' },
-            { value: '94%', label: 'Fewer meetings' },
-            { value: '2 min', label: 'Setup' },
-          ].map((s, i) => (
+            {[
+              { value: '10×', label: 'Faster' },
+              { value: '94%', label: 'Fewer meetings' },
+              { value: '2 min', label: 'Setup' },
+            ].map((s, i) => (
             <div key={i} className="text-center">
               <div className="text-xl font-bold font-mono-display text-[color:var(--foco-teal)]">{s.value}</div>
               <div className="text-[11px] text-muted-foreground mt-0.5">{s.label}</div>

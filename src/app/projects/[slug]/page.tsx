@@ -42,6 +42,10 @@ export default function ProjectPage() {
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
   const [briefDialogOpen, setBriefDialogOpen] = useState(false);
   const { openTaskModal } = useCreateTaskModal();
+  const currentTeamMember = teamMembers.find((member) => member.user_id === user?.id);
+  const isWorkflowReviewer =
+    Boolean(user) &&
+    (project?.owner_id === user?.id || ['owner', 'admin'].includes(currentTeamMember?.role ?? ''));
 
   const handleStatusChange = async (taskId: string, status: WorkItemStatus) => {
     try {
@@ -297,7 +301,7 @@ export default function ProjectPage() {
         <TabsContent value="workflows">
           <ProjectWorkflowsTab
             project={project}
-            isReviewer={Boolean(user)}
+            isReviewer={isWorkflowReviewer}
           />
         </TabsContent>
 

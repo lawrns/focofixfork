@@ -9,6 +9,7 @@ import { UnifiedCard } from '@/components/ui/unified-card'
 import { StatusBadge } from '@/components/ui/unified-badge'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { getModelLabel, getModelRuntimeSourceLabel } from '@/lib/ai/model-catalog'
+import { diagnoseRunFailure, type RoutingSnapshot } from '@/lib/runs/diagnostics'
 
 type RunArtifact = { type: string; uri: string; name?: string; title?: string | null }
 type Run = {
@@ -25,25 +26,6 @@ type Run = {
   tokens_in?: number | null
   tokens_out?: number | null
   cost_usd?: number | null
-}
-
-type RoutingSnapshot = {
-  requested?: {
-    model?: string | null
-    planner_model?: string | null
-    executor_model?: string | null
-    reviewer_model?: string | null
-    fallback_chain?: string[] | null
-  } | null
-  actual?: {
-    planner_model?: string | null
-    executor_model?: string | null
-    reviewer_model?: string | null
-    planner_provider?: string | null
-    executor_provider?: string | null
-    reviewer_provider?: string | null
-    fallback_chain?: string[] | null
-  } | null
 }
 
 type TimelineEvent = {
@@ -76,41 +58,6 @@ function statusTone(status?: TimelineEvent['status']): string {
   if (status === 'cancelled') return 'text-zinc-500'
   if (status === 'pending') return 'text-amber-600 dark:text-amber-400'
   return 'text-muted-foreground'
-}
-
-function diagnoseError(
-  errorText: string,
-  allEvents: TimelineEvent[] = [],
-  routing: RoutingSnapshot | null = null,
-): { suggestion: string; retryHint?: Record<string, unknown> } {
-  // Aggregate all error texts from failed events
-  const allErrorTexts = [
-    errorText,
-    ...allEvents
-      .filter(e => e.status === 'failed')
-      .map(e => [e.description, e.title, e.payload ? JSON.stringify(e.payload) : ''].filter(Boolean).join(' ')),
-  ].join(' ')
-  const lower = allErrorTexts.toLowerCase()
-
-  const fallbackModel = routing?.requested?.fallback_chain?.[0]
-  const fallbackLabel = fallbackModel ? getModelLabel(fallbackModel) : null
-
-  if (/model.*not.?found|model.*does not exist/.test(lower)) {
-    if (fallbackLabel && fallbackModel) {
-      return { suggestion: `Model unavailable. Fallback: ${fallbackLabel}`, retryHint: { model_override: fallbackModel } }
-    }
-    return { suggestion: 'The requested model is unavailable. Try switching to Claude or a different provider.' }
-  }
-  if (/429|rate.?limit/.test(lower)) return { suggestion: 'Rate limited — switch provider or wait before retrying.' }
-  if (/500|502|503|504/.test(lower)) {
-    const code = lower.match(/\b(500|502|503|504)\b/)?.[0] ?? 'unknown'
-    return { suggestion: `Backend error ${code} — check System Status for service health.` }
-  }
-  if (/ECONNREFUSED|fetch failed|ENOTFOUND/i.test(allErrorTexts)) return { suggestion: 'Service unreachable — verify the backend is running and accessible.' }
-  if (/context.?length|token.?limit|max.?tokens/i.test(allErrorTexts)) return { suggestion: 'Context length exceeded — use a larger model or split the task into smaller parts.' }
-  if (/timeout/.test(lower)) return { suggestion: 'The operation timed out. Consider breaking the task into smaller steps.' }
-  if (/401|403|unauthorized/.test(lower)) return { suggestion: 'Authentication failed. Check the API key configuration in Settings.' }
-  return { suggestion: 'Review the execution trace above for details.' }
 }
 
 function formatPayloadDuration(payload: Record<string, unknown>): string | null {
@@ -187,17 +134,26 @@ export default function RunDetailPage() {
 
   const hasTokenData = totalTokens.total > 0 || costUsd !== null
 
-  const lastError = useMemo(() => {
-    const allEvents = [...executionEvents, ...auditEvents]
-    const errorEvt = [...allEvents].reverse().find((e) => e.status === 'failed' || (e.kind as string) === 'error')
-    return errorEvt?.description ?? errorEvt?.title ?? null
-  }, [executionEvents, auditEvents])
+  const diagnostics = useMemo(() => (
+    run
+      ? diagnoseRunFailure({
+          status: run.status,
+          summary: run.summary ?? null,
+          trace: run.trace,
+          events: [...executionEvents, ...auditEvents],
+        })
+      : null
+  ), [auditEvents, executionEvents, run])
 
-  const handleRetry = useCallback(async () => {
+  const handleRetry = useCallback(async (retryHint?: Record<string, unknown> | null) => {
     if (retrying) return
     setRetrying(true)
     try {
-      const res = await fetch(`/api/runs/${id}/retry`, { method: 'POST' })
+      const res = await fetch(`/api/runs/${id}/retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        ...(retryHint ? { body: JSON.stringify(retryHint) } : {}),
+      })
       if (res.ok) {
         const json = await res.json()
         const newId = json.data?.id ?? json.id
@@ -265,7 +221,7 @@ export default function RunDetailPage() {
         </Link>
         {(run.status === 'failed' || run.status === 'cancelled') && (
           <button
-            onClick={handleRetry}
+            onClick={() => void handleRetry()}
             disabled={retrying}
             className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
@@ -467,7 +423,7 @@ export default function RunDetailPage() {
         )}
       </section>
 
-      {run.status === 'failed' && lastError && (
+      {run.status === 'failed' && diagnostics && (
         <section className="space-y-5 sm:space-y-6">
           <div className="flex items-center gap-3">
             <ShieldAlert className="h-4 w-4 text-red-500 shrink-0" />
@@ -480,42 +436,22 @@ export default function RunDetailPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Error</p>
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400 break-words">{lastError}</p>
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400 break-words">{diagnostics.lastError}</p>
               </div>
-              {(() => {
-                const diagnosis = diagnoseError(lastError, [...executionEvents, ...auditEvents], routing)
-                return (
-                  <>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suggestion</p>
-                      <p className="mt-2 text-sm text-muted-foreground">{diagnosis.suggestion}</p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (retrying) return
-                        setRetrying(true)
-                        try {
-                          const res = await fetch(`/api/runs/${id}/retry`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(diagnosis.retryHint ?? {}),
-                          })
-                          if (res.ok) {
-                            const json = await res.json()
-                            const newId = json.data?.id ?? json.id
-                            if (newId) { router.push(`/runs/${newId}`); return }
-                          }
-                        } catch { /* silently fail */ } finally { setRetrying(false) }
-                      }}
-                      disabled={retrying}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                    >
-                      <RotateCcw className={`h-3 w-3 ${retrying ? 'animate-spin' : ''}`} />
-                      {retrying ? 'Retrying...' : diagnosis.retryHint ? 'Retry with fallback' : 'Retry'}
-                    </button>
-                  </>
-                )
-              })()}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suggestion</p>
+                <p className="mt-2 text-sm text-muted-foreground">{diagnostics.suggestion}</p>
+              </div>
+              {diagnostics.retryHint && (
+                <button
+                  onClick={() => void handleRetry(diagnostics.retryHint)}
+                  disabled={retrying}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  <RotateCcw className={`h-3 w-3 ${retrying ? 'animate-spin' : ''}`} />
+                  {retrying ? 'Retrying...' : diagnostics.retryLabel}
+                </button>
+              )}
             </div>
           </UnifiedCard>
         </section>

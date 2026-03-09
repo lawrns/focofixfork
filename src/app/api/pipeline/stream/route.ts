@@ -1,53 +1,57 @@
-/**
- * POST /api/pipeline/stream
- *
- * SSE endpoint for the full pipeline lifecycle.
- * Creates DB row → streams planning via ClawdBot /tasks/stream →
- * dispatches execution/review with polling → relays all events to client.
- *
- * Event protocol: each line is `data: {json}\n\n` per SSE spec.
- * See PipelineSSEEvent in types.ts for the event schema.
- */
-
 import { NextRequest } from 'next/server'
 import { getAuthUser } from '@/lib/api/auth-helper'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { PIPELINE_PROMPTS } from '@/lib/pipeline/dispatcher'
-import { buildPlanContext, buildExecuteContext, buildReviewContext } from '@/lib/pipeline/context-builder'
-import { listHandbooks } from '@/lib/handbook/handbook-loader'
-import type { PlanResult, ExecutionResult, ReviewReport, PipelineFallbackEvent, PipelinePhase, ProjectReportRequest } from '@/lib/pipeline/types'
+import { buildPlanContext } from '@/lib/pipeline/context-builder'
+import type { PipelinePhase, PipelineSSEEvent, ProjectReportRequest } from '@/lib/pipeline/types'
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
+import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { persistProjectReport } from '@/lib/project-reports'
-import { runPhaseDirect, parsePlanResult, parseExecutionResult, parseReviewResult } from '@/lib/pipeline/runtime'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300 // 5 min max for streaming
+export const maxDuration = 300
 
-const CLAWDBOT_BASE = process.env.CLAWDBOT_API_URL || 'http://127.0.0.1:18794'
-const CLAWDBOT_TOKEN = process.env.OPENCLAW_SERVICE_TOKEN ?? ''
-const REPORT_EXECUTE_PROMPT = `You are a senior technical strategy operator preparing a structured project health report.
-Do not produce code patches. Assess the project/codebase and output ONLY valid JSON:
-{
-  "summary": "one-sentence overall assessment",
-  "patches": [],
-  "commands_suggested": [],
-  "warnings": ["key risk or caveat"],
-  "notes": "Detailed assessment covering technical health, strategic direction, risks, next steps, and confidence."
-}`
-const REPORT_REVIEW_PROMPT = `You are a principal reviewer improving a project health report.
-Do not review code patches. Review the assessment for rigor, blind spots, and strategic usefulness.
-Output ONLY valid JSON matching the existing review schema. Put steering recommendations into "improvements" and key risks into "critical_issues" or "risks".`
+function authHeaders(req: NextRequest): HeadersInit {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const cookie = req.headers.get('cookie')
+  if (cookie) headers.cookie = cookie
+  return headers
+}
 
-function getCallbackUrl(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL ?? 'http://127.0.0.1:3000'
-  const normalized = base.startsWith('http') ? base : `https://${base}`
-  return `${normalized}/api/pipeline/callback`
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function emitEvent(controller: ReadableStreamDefaultController<Uint8Array>, encoder: TextEncoder, event: PipelineSSEEvent) {
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+}
+
+async function dispatchLocalPhase(
+  req: NextRequest,
+  path: '/api/pipeline/execute' | '/api/pipeline/review',
+  body: Record<string, unknown>,
+) {
+  const res = await fetch(new URL(path, req.nextUrl.origin), {
+    method: 'POST',
+    headers: authHeaders(req),
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  })
+
+  const json = await res.json().catch(() => null)
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error?.message ?? json?.error ?? `Phase dispatch failed (${res.status})`)
+  }
+  return json
 }
 
 export async function POST(req: NextRequest) {
   const { user, supabase, error } = await getAuthUser(req)
   if (error || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+
+  if (!supabaseAdmin) {
+    return new Response(JSON.stringify({ error: 'DB not available' }), { status: 500 })
   }
 
   const body = await req.json()
@@ -75,11 +79,11 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: 'task_description is required' }), { status: 400 })
   }
 
-  if (!supabaseAdmin) {
-    return new Response(JSON.stringify({ error: 'DB not available' }), { status: 500 })
-  }
-
   const workspaceId = workspace_id ?? null
+  const normalizedReportRequest = report_request && typeof report_request === 'object'
+    ? report_request as ProjectReportRequest
+    : null
+
   const [{ profile: plannerProfile }, { profile: executorProfile }, { profile: reviewerProfile }] = await Promise.all([
     resolveAIExecutionProfileFromWorkspace({
       supabase,
@@ -106,11 +110,11 @@ export async function POST(req: NextRequest) {
       requestedFallbackChain: Array.isArray(requested_reviewer_fallback_chain) ? requested_reviewer_fallback_chain : undefined,
     }),
   ])
+
   const planner_model = plannerProfile.model
   const executor_model = executorProfile.model
   const reviewer_model = reviewerProfile.model
 
-  // Create pipeline run in DB
   const startedAt = new Date().toISOString()
   const { data: run, error: insertError } = await supabaseAdmin
     .from('pipeline_runs')
@@ -141,26 +145,61 @@ export async function POST(req: NextRequest) {
   }
 
   const runId = run.id
-  const pipelineStartMs = Date.now()
-  const normalizedReportRequest = report_request && typeof report_request === 'object'
-    ? report_request as ProjectReportRequest
-    : null
+  const planContext = buildPlanContext(task_description, {
+    selected_agents,
+    context: normalizedReportRequest?.enabled
+      ? {
+          ...(context && typeof context === 'object' ? context as Record<string, unknown> : {}),
+          report_mode: true,
+          report_type: normalizedReportRequest.report_type,
+        }
+      : context,
+    planning_goal,
+    constraints,
+    limits,
+  })
 
-  // Create readable stream for SSE
+  let plannerRunId: string | null = null
+  try {
+    plannerRunId = await dispatchPipelinePhase({
+      pipelineRunId: runId,
+      phase: 'plan',
+      preferredModel: planner_model,
+      taskDescription: task_description,
+      context: planContext,
+    })
+
+    await supabaseAdmin
+      .from('pipeline_runs')
+      .update({ planner_run_id: plannerRunId })
+      .eq('id', runId)
+  } catch (dispatchError) {
+    const message = dispatchError instanceof Error ? dispatchError.message : 'Failed to start planning phase'
+    await supabaseAdmin
+      .from('pipeline_runs')
+      .update({ status: 'failed' })
+      .eq('id', runId)
+    return new Response(JSON.stringify({ error: message }), { status: 502 })
+  }
+
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      function emit(event: Record<string, unknown>) {
-        try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
-        } catch {
-          // Stream closed by client
-        }
+      const pipelineStartMs = Date.now()
+      const seenPhaseComplete = new Set<PipelinePhase>()
+      let executeTriggered = false
+      let reviewTriggered = false
+      let reportCreated = false
+      let closed = false
+
+      const close = () => {
+        if (closed) return
+        closed = true
+        controller.close()
       }
 
-      // ── Run Start ───────────────────────────────────────────────────────
-      emit({ type: 'run_start', run_id: runId, started_at: pipelineStartMs })
-      emit({
+      emitEvent(controller, encoder, { type: 'run_start', run_id: runId, started_at: pipelineStartMs })
+      emitEvent(controller, encoder, {
         type: 'run_profile',
         requested: {
           plan: requested_planner_model,
@@ -184,736 +223,214 @@ export async function POST(req: NextRequest) {
         ])),
         routing_profile_id: plannerProfile.routing_profile_id ?? null,
       })
-      emit({
-        type: 'activity',
-        phase: 'system',
-        message: `Routing profile ${plannerProfile.routing_profile_id ?? 'env'}: ${planner_model} -> ${executor_model} -> ${reviewer_model}`,
+      emitEvent(controller, encoder, { type: 'phase_start', phase: 'plan', model: planner_model })
+      emitEvent(controller, encoder, {
+        type: 'phase_routing',
+        phase: 'plan',
+        requested_model: requested_planner_model,
+        resolved_model: planner_model,
+        actual_model: null,
+        runner: 'openclaw_stream',
       })
-      emit({ type: 'activity', phase: 'system', message: 'Pipeline started' })
+      emitEvent(controller, encoder, { type: 'activity', phase: 'plan', message: 'Planning phase dispatched to OpenClaw' })
 
-      // ── Phase 1: Planning (streaming via ClawdBot) ──────────────────────
-      emit({ type: 'phase_start', phase: 'plan', model: planner_model })
-      emit({ type: 'phase_routing', phase: 'plan', requested_model: requested_planner_model, resolved_model: planner_model, actual_model: planner_model, runner: 'clawdbot_stream' })
-      emit({ type: 'activity', phase: 'plan', message: `Dispatching to ${planner_model}` })
+      const startedAtMs = Date.now()
 
-      const planContext = buildPlanContext(task_description, {
-        selected_agents,
-        context: normalizedReportRequest?.enabled
-          ? {
-              ...(context && typeof context === 'object' ? context as Record<string, unknown> : {}),
-              report_mode: true,
-              report_type: normalizedReportRequest.report_type,
-            }
-          : context,
-        planning_goal,
-        constraints,
-        limits,
-      })
-      const planTaskId = `pipeline:${runId}:plan`
-      const planSystemPrompt = `${PIPELINE_PROMPTS.plan}\n\n# Preferred Model\n${planner_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nplan`
+      while (!closed && Date.now() - startedAtMs < 295_000) {
+        const { data: currentRun } = await supabaseAdmin
+          .from('pipeline_runs')
+          .select('*')
+          .eq('id', runId)
+          .single()
 
-      let planOutput = ''
-      let planTokensIn = 0
-      let planTokensOut = 0
-      let planCostUsd = 0
-      let planElapsedMs = 0
-      let planTtftMs: number | null = null
-      let planModelActual = planner_model
-      let planSuccess = false
-      let persistedReviewResult: ReviewReport | null = null
-      let planFallbackEvents: PipelineFallbackEvent[] = []
-
-      try {
-        // Try streaming endpoint first
-        const streamRes = await fetch(`${CLAWDBOT_BASE}/tasks/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-          },
-          body: JSON.stringify({
-            task_id: planTaskId,
-            title: `[Pipeline:PLAN] ${task_description.slice(0, 120)}`,
-            description: planContext,
-            system_prompt: planSystemPrompt,
-            preferred_model: planner_model,
-          }),
-          signal: AbortSignal.timeout(240_000), // 4 min timeout
-        })
-
-        if (!streamRes.ok || !streamRes.body) {
-          throw new Error(`ClawdBot stream ${streamRes.status}`)
+        if (!currentRun) {
+          emitEvent(controller, encoder, { type: 'pipeline_error', message: 'Pipeline run no longer exists' })
+          close()
+          return
         }
 
-        // Parse SSE from ClawdBot
-        const reader = streamRes.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-        let outputTokenEstimate = 0
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-
-          // Process complete SSE messages
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const event = JSON.parse(line.slice(6))
-
-              if (event.type === 'text_delta') {
-                planOutput += event.text
-                outputTokenEstimate++
-                emit({ type: 'text_delta', phase: 'plan', text: event.text })
-                // Emit running token count every ~20 tokens
-                if (outputTokenEstimate % 20 === 0) {
-                  emit({ type: 'activity', phase: 'plan', message: `Generating… ~${outputTokenEstimate} tokens` })
-                }
-              } else if (event.type === 'ttft') {
-                planTtftMs = event.ms
-                emit({ type: 'ttft', phase: 'plan', ms: event.ms })
-                emit({ type: 'activity', phase: 'plan', message: `${event.model ?? planner_model} responded (TTFT: ${event.ms}ms)` })
-              } else if (event.type === 'usage') {
-                planTokensIn = event.input_tokens
-                planTokensOut = event.output_tokens
-                planCostUsd = event.cost_usd ?? 0
-                planModelActual = event.model ?? planModelActual
-                emit({
-                  type: 'usage',
-                  phase: 'plan',
-                  input_tokens: planTokensIn,
-                  output_tokens: planTokensOut,
-                  cost_usd: planCostUsd,
-                  model: event.model ?? planner_model,
-                })
-              } else if (event.type === 'done') {
-                planOutput = event.output ?? planOutput
-                planElapsedMs = event.elapsed_ms ?? (Date.now() - pipelineStartMs)
-                planSuccess = true
-              } else if (event.type === 'error') {
-                throw new Error(event.message ?? 'ClawdBot streaming error')
-              }
-            } catch (parseErr) {
-              // Skip malformed SSE lines
-              if (parseErr instanceof Error && parseErr.message.includes('ClawdBot')) throw parseErr
-            }
-          }
+        if (currentRun.status === 'cancelled') {
+          emitEvent(controller, encoder, { type: 'pipeline_error', message: 'Pipeline cancelled' })
+          close()
+          return
         }
 
-        if (!planSuccess && planOutput.length > 0) {
-          planSuccess = true
-          planElapsedMs = Date.now() - pipelineStartMs
-        }
-      } catch (streamErr) {
-        // Fallback: try non-streaming dispatch
-        emit({ type: 'activity', phase: 'plan', message: 'Streaming unavailable, using async dispatch…' })
-
-        try {
-          const res = await fetch(`${CLAWDBOT_BASE}/tasks`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-            },
-            body: JSON.stringify({
-              task_id: planTaskId,
-              title: `[Pipeline:PLAN] ${task_description.slice(0, 120)}`,
-              description: planContext,
-              system_prompt: planSystemPrompt,
-              preferred_model: planner_model,
-              callback_url: getCallbackUrl(),
-            }),
-            signal: AbortSignal.timeout(10_000),
+        if (currentRun.status === 'failed') {
+          emitEvent(controller, encoder, {
+            type: 'pipeline_error',
+            message: typeof currentRun.review_result?.summary === 'string'
+              ? currentRun.review_result.summary
+              : typeof currentRun.execution_result?.summary === 'string'
+                ? currentRun.execution_result.summary
+                : typeof currentRun.plan_result?.summary === 'string'
+                  ? currentRun.plan_result.summary
+                  : 'Pipeline failed',
           })
+          close()
+          return
+        }
 
-          if (!res.ok) throw new Error(`ClawdBot dispatch ${res.status}`)
-          const data = await res.json()
-
-          // Poll ClawdBot for completion
-          const externalRunId = data.run_id ?? data.id
-          if (externalRunId) {
-            emit({ type: 'activity', phase: 'plan', message: `Queued as ${externalRunId}, polling…` })
-            const pollResult = await pollClawdBotTask(externalRunId, (msg) => {
-              emit({ type: 'activity', phase: 'plan', message: msg })
-            })
-            if (pollResult) {
-              planOutput = pollResult.output ?? ''
-              planTokensIn = pollResult.tokens_in ?? 0
-              planTokensOut = pollResult.tokens_out ?? 0
-              planElapsedMs = Date.now() - pipelineStartMs
-              planSuccess = true
-            }
-          }
-        } catch (fallbackErr) {
-          const direct = await runPhaseDirect<PlanResult>({
+        if (currentRun.plan_result && !seenPhaseComplete.has('plan')) {
+          seenPhaseComplete.add('plan')
+          emitEvent(controller, encoder, {
+            type: 'phase_complete',
             phase: 'plan',
-            requestedModel: requested_planner_model ?? planner_model,
-            resolvedModel: planner_model,
-            fallbackChain: plannerProfile.fallback_chain,
-            taskDescription: task_description,
-            context: planContext,
+            elapsed_ms: currentRun.planner_elapsed_ms ?? Math.max(Date.now() - pipelineStartMs, 1),
+            result: currentRun.plan_result,
           })
-
-          planFallbackEvents = direct.fallbackEvents
-          for (const fallback of direct.fallbackEvents) {
-            emit({ type: 'phase_fallback', phase: 'plan', fallback })
-            emit({ type: 'activity', phase: 'plan', message: fallback.reason })
-          }
-
-          if (!direct.ok) {
-            const msg = direct.error ?? (fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error')
-            emit({ type: 'phase_error', phase: 'plan', message: msg })
-            emit({ type: 'activity', phase: 'system', message: `Planning failed: ${msg}` })
-            await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
-            emit({ type: 'pipeline_error', message: msg })
-            controller.close()
-            return
-          }
-
-          planOutput = direct.output ?? ''
-          planElapsedMs = direct.elapsedMs
-          planModelActual = direct.actualModel ?? planner_model
-          planSuccess = true
-        }
-      }
-
-      if (!planSuccess) {
-        const direct = await runPhaseDirect<PlanResult>({
-          phase: 'plan',
-          requestedModel: requested_planner_model ?? planner_model,
-          resolvedModel: planner_model,
-          fallbackChain: plannerProfile.fallback_chain,
-          taskDescription: task_description,
-          context: planContext,
-        })
-        planFallbackEvents = direct.fallbackEvents
-        for (const fallback of direct.fallbackEvents) {
-          emit({ type: 'phase_fallback', phase: 'plan', fallback })
-          emit({ type: 'activity', phase: 'plan', message: fallback.reason })
-        }
-        if (!direct.ok) {
-          emit({ type: 'phase_error', phase: 'plan', message: direct.error ?? 'No plan output received' })
-          await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
-          emit({ type: 'pipeline_error', message: direct.error ?? 'Planning phase failed' })
-          controller.close()
-          return
-        }
-        planOutput = direct.output ?? ''
-        planElapsedMs = direct.elapsedMs
-        planModelActual = direct.actualModel ?? planner_model
-        planSuccess = true
-      }
-
-      // Parse plan result
-      const planResult: PlanResult | null = parsePlanResult(planOutput)
-
-      emit({
-        type: 'phase_complete',
-        phase: 'plan',
-        elapsed_ms: planElapsedMs,
-        result: planResult,
-      })
-      emit({
-        type: 'activity',
-        phase: 'plan',
-        message: `Plan complete — ${planResult?.steps?.length ?? 0} steps, ${planTokensOut} tokens, ${(planElapsedMs / 1000).toFixed(1)}s`,
-      })
-
-      // Save plan to DB
-      await supabaseAdmin
-        .from('pipeline_runs')
-        .update({
-          plan_result: planResult,
-          status: 'executing',
-          planner_tokens_in: planTokensIn,
-          planner_tokens_out: planTokensOut,
-          planner_ttft_ms: planTtftMs,
-          planner_elapsed_ms: planElapsedMs,
-          total_cost_usd: planCostUsd,
-          plan_model_actual: planModelActual,
-          fallbacks_triggered: planFallbackEvents,
-        })
-        .eq('id', runId)
-
-      // ── Phase 2: Execution (dispatch + poll) ──────────────────────────────
-      emit({ type: 'phase_start', phase: 'execute', model: executor_model })
-      emit({ type: 'phase_routing', phase: 'execute', requested_model: requested_executor_model, resolved_model: executor_model, actual_model: executor_model, runner: 'clawdbot_stream' })
-      emit({ type: 'activity', phase: 'execute', message: `Dispatching to ${executor_model}` })
-
-      const execContext = buildExecuteContext(task_description, planResult!)
-      const execTaskId = `pipeline:${runId}:execute`
-      const execSystemPrompt = `${normalizedReportRequest?.enabled ? REPORT_EXECUTE_PROMPT : PIPELINE_PROMPTS.execute}\n\n# Preferred Model\n${executor_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nexecute`
-
-      let execOutput = ''
-      let execTokensIn = 0
-      let execTokensOut = 0
-      let execCostUsd = 0
-      let execElapsedMs = 0
-      let execModelActual = executor_model
-      let execSuccess = false
-      let execFallbackEvents: PipelineFallbackEvent[] = []
-
-      try {
-        // Try streaming for execution too
-        const execPhaseStart = Date.now()
-        const streamRes = await fetch(`${CLAWDBOT_BASE}/tasks/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-          },
-          body: JSON.stringify({
-            task_id: execTaskId,
-            title: `[Pipeline:EXECUTE] ${task_description.slice(0, 120)}`,
-            description: execContext,
-            system_prompt: execSystemPrompt,
-            preferred_model: executor_model,
-          }),
-          signal: AbortSignal.timeout(240_000),
-        })
-
-        if (!streamRes.ok || !streamRes.body) {
-          throw new Error(`ClawdBot stream ${streamRes.status}`)
         }
 
-        const reader = streamRes.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-        let outputTokenEstimate = 0
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const event = JSON.parse(line.slice(6))
-              if (event.type === 'text_delta') {
-                execOutput += event.text
-                outputTokenEstimate++
-                emit({ type: 'text_delta', phase: 'execute', text: event.text })
-              } else if (event.type === 'ttft') {
-                emit({ type: 'ttft', phase: 'execute', ms: event.ms })
-                emit({ type: 'activity', phase: 'execute', message: `${executor_model} responded (TTFT: ${event.ms}ms)` })
-              } else if (event.type === 'usage') {
-                execTokensIn = event.input_tokens
-                execTokensOut = event.output_tokens
-                execCostUsd = event.cost_usd ?? 0
-                execModelActual = event.model ?? execModelActual
-                emit({ type: 'usage', phase: 'execute', input_tokens: execTokensIn, output_tokens: execTokensOut, cost_usd: execCostUsd, model: event.model ?? executor_model })
-              } else if (event.type === 'done') {
-                execOutput = event.output ?? execOutput
-                execElapsedMs = event.elapsed_ms ?? (Date.now() - execPhaseStart)
-                execSuccess = true
-              } else if (event.type === 'error') {
-                throw new Error(event.message)
-              }
-            } catch (parseErr) {
-              if (parseErr instanceof Error && !parseErr.message.includes('JSON')) throw parseErr
-            }
-          }
-        }
-
-        if (!execSuccess && execOutput.length > 0) {
-          execSuccess = true
-          execElapsedMs = Date.now() - execPhaseStart
-        }
-      } catch {
-        // Fallback: non-streaming dispatch + poll
-        emit({ type: 'activity', phase: 'execute', message: 'Streaming unavailable, using async dispatch…' })
-        try {
-          const res = await fetch(`${CLAWDBOT_BASE}/tasks`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-            },
-            body: JSON.stringify({
-              task_id: execTaskId,
-              title: `[Pipeline:EXECUTE] ${task_description.slice(0, 120)}`,
-              description: execContext,
-              system_prompt: execSystemPrompt,
-              preferred_model: executor_model,
-              callback_url: getCallbackUrl(),
-            }),
-            signal: AbortSignal.timeout(10_000),
-          })
-
-          if (!res.ok) throw new Error(`Execute dispatch ${res.status}`)
-          const data = await res.json()
-          const externalRunId = data.run_id ?? data.id
-
-          if (externalRunId) {
-            emit({ type: 'activity', phase: 'execute', message: `Queued as ${externalRunId}, polling…` })
-            const pollResult = await pollClawdBotTask(externalRunId, (msg) => {
-              emit({ type: 'activity', phase: 'execute', message: msg })
-            })
-            if (pollResult) {
-              execOutput = pollResult.output ?? ''
-              execTokensIn = pollResult.tokens_in ?? 0
-              execTokensOut = pollResult.tokens_out ?? 0
-              execElapsedMs = Date.now() - pipelineStartMs
-              execSuccess = true
-            }
-          }
-        } catch (fbErr) {
-          const direct = await runPhaseDirect<ExecutionResult>({
+        if (currentRun.plan_result && !executeTriggered) {
+          executeTriggered = true
+          emitEvent(controller, encoder, { type: 'phase_start', phase: 'execute', model: executor_model })
+          emitEvent(controller, encoder, {
+            type: 'phase_routing',
             phase: 'execute',
-            requestedModel: requested_executor_model ?? executor_model,
-            resolvedModel: executor_model,
-            fallbackChain: executorProfile.fallback_chain,
-            taskDescription: task_description,
-            context: execContext,
+            requested_model: requested_executor_model,
+            resolved_model: executor_model,
+            actual_model: null,
+            runner: 'openclaw_stream',
           })
+          emitEvent(controller, encoder, { type: 'activity', phase: 'execute', message: 'Execution phase dispatched to OpenClaw' })
 
-          execFallbackEvents = direct.fallbackEvents
-          for (const fallback of direct.fallbackEvents) {
-            emit({ type: 'phase_fallback', phase: 'execute', fallback })
-            emit({ type: 'activity', phase: 'execute', message: fallback.reason })
-          }
-
-          if (!direct.ok) {
-            const msg = direct.error ?? (fbErr instanceof Error ? fbErr.message : 'Unknown error')
-            emit({ type: 'phase_error', phase: 'execute', message: msg })
-            emit({ type: 'activity', phase: 'system', message: `Execution failed: ${msg}` })
-            await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
-            emit({ type: 'pipeline_error', message: msg })
-            controller.close()
+          try {
+            await dispatchLocalPhase(req, '/api/pipeline/execute', {
+              run_id: runId,
+              executor_model: requested_executor_model,
+              executor_fallback_chain: requested_executor_fallback_chain,
+            })
+          } catch (phaseError) {
+            emitEvent(controller, encoder, {
+              type: 'phase_error',
+              phase: 'execute',
+              message: phaseError instanceof Error ? phaseError.message : 'Failed to dispatch execute phase',
+            })
+            emitEvent(controller, encoder, {
+              type: 'pipeline_error',
+              message: phaseError instanceof Error ? phaseError.message : 'Failed to dispatch execute phase',
+            })
+            close()
             return
           }
-
-          execOutput = direct.output ?? ''
-          execElapsedMs = direct.elapsedMs
-          execModelActual = direct.actualModel ?? executor_model
-          execSuccess = true
         }
-      }
 
-      if (!execSuccess) {
-        const direct = await runPhaseDirect<ExecutionResult>({
-          phase: 'execute',
-          requestedModel: requested_executor_model ?? executor_model,
-          resolvedModel: executor_model,
-          fallbackChain: executorProfile.fallback_chain,
-          taskDescription: task_description,
-          context: execContext,
-        })
-        execFallbackEvents = direct.fallbackEvents
-        for (const fallback of direct.fallbackEvents) {
-          emit({ type: 'phase_fallback', phase: 'execute', fallback })
-          emit({ type: 'activity', phase: 'execute', message: fallback.reason })
-        }
-        if (!direct.ok) {
-          emit({ type: 'phase_error', phase: 'execute', message: direct.error ?? 'No execution output received' })
-          await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', fallbacks_triggered: direct.fallbackEvents }).eq('id', runId)
-          emit({ type: 'pipeline_error', message: direct.error ?? 'Execution phase failed' })
-          controller.close()
-          return
-        }
-        execOutput = direct.output ?? ''
-        execElapsedMs = direct.elapsedMs
-        execModelActual = direct.actualModel ?? executor_model
-        execSuccess = true
-      }
-
-      // Parse execution result
-      const execResult: ExecutionResult | null = parseExecutionResult(execOutput)
-
-      const filesChanged = execResult?.patches?.map((p) => p.file) ?? []
-      const dbChanges = filesChanged.some((f) => f.includes('migration') || f.includes('.sql'))
-
-      emit({
-        type: 'phase_complete',
-        phase: 'execute',
-        elapsed_ms: execElapsedMs,
-        result: execResult,
-      })
-      emit({
-        type: 'activity',
-        phase: 'execute',
-        message: `Execution done — ${execResult?.patches?.length ?? 0} patches, ${execTokensOut} tokens, ${(execElapsedMs / 1000).toFixed(1)}s`,
-      })
-
-      const nextStatus = auto_review ? 'reviewing' : 'complete'
-      await supabaseAdmin
-        .from('pipeline_runs')
-        .update({
-          execution_result: execResult,
-          files_changed: filesChanged,
-          db_changes: dbChanges,
-          status: nextStatus,
-          executor_tokens_in: execTokensIn,
-          executor_tokens_out: execTokensOut,
-          executor_elapsed_ms: execElapsedMs,
-          total_cost_usd: planCostUsd + execCostUsd,
-          execute_model_actual: execModelActual,
-          fallbacks_triggered: [...planFallbackEvents, ...execFallbackEvents],
-        })
-        .eq('id', runId)
-
-      // ── Phase 3: Review (if auto-review enabled) ──────────────────────────
-      if (auto_review && execResult) {
-        emit({ type: 'phase_start', phase: 'review', model: reviewer_model })
-        emit({ type: 'phase_routing', phase: 'review', requested_model: requested_reviewer_model, resolved_model: reviewer_model, actual_model: reviewer_model, runner: 'clawdbot_stream' })
-        emit({ type: 'activity', phase: 'review', message: `Dispatching to ${reviewer_model}` })
-
-        const migrationFiles = await listHandbooks().catch(() => [] as string[])
-        const reviewContext = buildReviewContext(task_description, planResult!, execResult, migrationFiles)
-        const reviewTaskId = `pipeline:${runId}:review`
-        const reviewSystemPrompt = `${normalizedReportRequest?.enabled ? REPORT_REVIEW_PROMPT : PIPELINE_PROMPTS.review}\n\n# Preferred Model\n${reviewer_model}\n\n# Pipeline Run ID\n${runId}\n\n# Phase\nreview`
-
-        let reviewOutput = ''
-        let reviewTokensIn = 0
-        let reviewTokensOut = 0
-        let reviewCostUsd = 0
-        let reviewElapsedMs = 0
-        let reviewModelActual = reviewer_model
-        let reviewSuccess = false
-        let reviewFallbackEvents: PipelineFallbackEvent[] = []
-
-        try {
-          const reviewPhaseStart = Date.now()
-          const streamRes = await fetch(`${CLAWDBOT_BASE}/tasks/stream`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-            },
-            body: JSON.stringify({
-              task_id: reviewTaskId,
-              title: `[Pipeline:REVIEW] ${task_description.slice(0, 120)}`,
-              description: reviewContext,
-              system_prompt: reviewSystemPrompt,
-              preferred_model: reviewer_model,
-            }),
-            signal: AbortSignal.timeout(240_000),
+        if (currentRun.execution_result && !seenPhaseComplete.has('execute')) {
+          seenPhaseComplete.add('execute')
+          emitEvent(controller, encoder, {
+            type: 'phase_complete',
+            phase: 'execute',
+            elapsed_ms: currentRun.executor_elapsed_ms ?? Math.max(Date.now() - pipelineStartMs, 1),
+            result: currentRun.execution_result,
           })
+        }
 
-          if (!streamRes.ok || !streamRes.body) throw new Error(`Stream ${streamRes.status}`)
+        if (currentRun.execution_result && currentRun.auto_reviewed && !reviewTriggered) {
+          reviewTriggered = true
+          emitEvent(controller, encoder, { type: 'phase_start', phase: 'review', model: reviewer_model })
+          emitEvent(controller, encoder, {
+            type: 'phase_routing',
+            phase: 'review',
+            requested_model: requested_reviewer_model,
+            resolved_model: reviewer_model,
+            actual_model: null,
+            runner: 'openclaw_stream',
+          })
+          emitEvent(controller, encoder, { type: 'activity', phase: 'review', message: 'Review phase dispatched to OpenClaw' })
 
-          const reader = streamRes.body.getReader()
-          const decoder = new TextDecoder()
-          let buf = ''
-
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            buf += decoder.decode(value, { stream: true })
-
-            const lines = buf.split('\n')
-            buf = lines.pop() ?? ''
-
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue
-              try {
-                const event = JSON.parse(line.slice(6))
-                if (event.type === 'text_delta') {
-                  reviewOutput += event.text
-                  emit({ type: 'text_delta', phase: 'review', text: event.text })
-                } else if (event.type === 'ttft') {
-                  emit({ type: 'ttft', phase: 'review', ms: event.ms })
-                  emit({ type: 'activity', phase: 'review', message: `${reviewer_model} responded (TTFT: ${event.ms}ms)` })
-                } else if (event.type === 'usage') {
-                  reviewTokensIn = event.input_tokens
-                  reviewTokensOut = event.output_tokens
-                  reviewCostUsd = event.cost_usd ?? 0
-                  reviewModelActual = event.model ?? reviewModelActual
-                  emit({ type: 'usage', phase: 'review', input_tokens: reviewTokensIn, output_tokens: reviewTokensOut, cost_usd: reviewCostUsd, model: event.model ?? reviewer_model })
-                } else if (event.type === 'done') {
-                  reviewOutput = event.output ?? reviewOutput
-                  reviewElapsedMs = event.elapsed_ms ?? (Date.now() - reviewPhaseStart)
-                  reviewSuccess = true
-                } else if (event.type === 'error') {
-                  throw new Error(event.message)
-                }
-              } catch (parseErr) {
-                if (parseErr instanceof Error && !parseErr.message.includes('JSON')) throw parseErr
-              }
-            }
-          }
-
-          if (!reviewSuccess && reviewOutput.length > 0) {
-            reviewSuccess = true
-            reviewElapsedMs = Date.now() - reviewPhaseStart
-          }
-        } catch {
-          // Fallback: non-streaming dispatch
           try {
-            const res = await fetch(`${CLAWDBOT_BASE}/tasks`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-              },
-              body: JSON.stringify({
-                task_id: reviewTaskId,
-                title: `[Pipeline:REVIEW] ${task_description.slice(0, 120)}`,
-                description: reviewContext,
-                system_prompt: reviewSystemPrompt,
-                preferred_model: reviewer_model,
-                callback_url: getCallbackUrl(),
-              }),
-              signal: AbortSignal.timeout(10_000),
+            await dispatchLocalPhase(req, '/api/pipeline/review', {
+              run_id: runId,
+              reviewer_model: requested_reviewer_model,
+              reviewer_fallback_chain: requested_reviewer_fallback_chain,
+              handbook_slug: handbook_slug || 'general',
             })
-
-            if (!res.ok) throw new Error(`Review dispatch ${res.status}`)
-            const data = await res.json()
-            const externalRunId = data.run_id ?? data.id
-
-            if (externalRunId) {
-              emit({ type: 'activity', phase: 'review', message: `Queued as ${externalRunId}, polling…` })
-              const pollResult = await pollClawdBotTask(externalRunId, (msg) => {
-                emit({ type: 'activity', phase: 'review', message: msg })
-              })
-              if (pollResult) {
-                reviewOutput = pollResult.output ?? ''
-                reviewTokensIn = pollResult.tokens_in ?? 0
-                reviewTokensOut = pollResult.tokens_out ?? 0
-                reviewElapsedMs = Date.now() - pipelineStartMs
-                reviewSuccess = true
-              }
-            }
-          } catch (fbErr) {
-            const direct = await runPhaseDirect<ReviewReport>({
+          } catch (phaseError) {
+            emitEvent(controller, encoder, {
+              type: 'phase_error',
               phase: 'review',
-              requestedModel: requested_reviewer_model ?? reviewer_model,
-              resolvedModel: reviewer_model,
-              fallbackChain: reviewerProfile.fallback_chain,
-              taskDescription: task_description,
-              context: reviewContext,
+              message: phaseError instanceof Error ? phaseError.message : 'Failed to dispatch review phase',
             })
-            reviewFallbackEvents = direct.fallbackEvents
-            for (const fallback of direct.fallbackEvents) {
-              emit({ type: 'phase_fallback', phase: 'review', fallback })
-              emit({ type: 'activity', phase: 'review', message: fallback.reason })
-            }
-            if (!direct.ok) {
-              const msg = direct.error ?? (fbErr instanceof Error ? fbErr.message : 'Unknown error')
-              emit({ type: 'phase_error', phase: 'review', message: msg })
-              emit({ type: 'activity', phase: 'system', message: `Review failed: ${msg}` })
-            } else {
-              reviewOutput = direct.output ?? ''
-              reviewElapsedMs = direct.elapsedMs
-              reviewModelActual = direct.actualModel ?? reviewer_model
-              reviewSuccess = true
-            }
+            emitEvent(controller, encoder, {
+              type: 'pipeline_error',
+              message: phaseError instanceof Error ? phaseError.message : 'Failed to dispatch review phase',
+            })
+            close()
+            return
           }
         }
 
-        if (reviewSuccess) {
-          const reviewResult: ReviewReport | null = parseReviewResult(reviewOutput)
-          persistedReviewResult = reviewResult
-
-          emit({
+        if (currentRun.review_result && !seenPhaseComplete.has('review')) {
+          seenPhaseComplete.add('review')
+          emitEvent(controller, encoder, {
             type: 'phase_complete',
             phase: 'review',
-            elapsed_ms: reviewElapsedMs,
-            result: reviewResult,
+            elapsed_ms: currentRun.reviewer_elapsed_ms ?? Math.max(Date.now() - pipelineStartMs, 1),
+            result: currentRun.review_result,
           })
-          emit({
-            type: 'activity',
-            phase: 'review',
-            message: `Review done — confidence ${reviewResult?.confidence_score ?? '?'}%, ${reviewTokensOut} tokens`,
-          })
-
-          await supabaseAdmin
-            .from('pipeline_runs')
-            .update({
-              review_result: reviewResult,
-              status: 'complete',
-              reviewer_tokens_in: reviewTokensIn,
-              reviewer_tokens_out: reviewTokensOut,
-              reviewer_elapsed_ms: reviewElapsedMs,
-              total_cost_usd: planCostUsd + execCostUsd + reviewCostUsd,
-              review_model_actual: reviewModelActual,
-              fallbacks_triggered: [...planFallbackEvents, ...execFallbackEvents, ...reviewFallbackEvents],
-            })
-            .eq('id', runId)
-        } else {
-          // Review failed but execution succeeded — mark complete
-          await supabaseAdmin
-            .from('pipeline_runs')
-            .update({ status: 'complete' })
-            .eq('id', runId)
         }
-      }
 
-      // ── Pipeline Complete ──────────────────────────────────────────────────
-      if (
-        normalizedReportRequest?.enabled &&
-        project_id &&
-        workspaceId
-      ) {
-        try {
+        if (
+          normalizedReportRequest?.enabled &&
+          !reportCreated &&
+          currentRun.plan_result &&
+          currentRun.review_result &&
+          currentRun.project_id &&
+          workspaceId
+        ) {
           const { data: project } = await supabaseAdmin
             .from('foco_projects')
             .select('name')
-            .eq('id', project_id)
+            .eq('id', currentRun.project_id)
             .maybeSingle()
 
-          const persisted = await persistProjectReport(supabaseAdmin, {
-            projectId: project_id,
-            workspaceId,
-            userId: user.id,
-            runId,
-            taskDescription: task_description.trim(),
-            projectName: typeof project?.name === 'string' ? project.name : 'Project',
-            reportType: normalizedReportRequest.report_type,
-            selectedAgentId: normalizedReportRequest.selected_agent_id ?? null,
-            selectedAgentName: normalizedReportRequest.selected_agent_name ?? null,
-            planResult,
-            reviewResult: auto_review ? persistedReviewResult : null,
-          })
-
-          emit({
-            type: 'report_created',
-            report_id: persisted.reportId,
-            artifact_id: persisted.artifactId,
-            title: persisted.title,
-          })
-          emit({
-            type: 'activity',
-            phase: 'system',
-            message: `Project report created: ${persisted.title}`,
-          })
-        } catch (reportErr) {
-          const message = reportErr instanceof Error ? reportErr.message : 'Failed to persist project report'
-          emit({
-            type: 'activity',
-            phase: 'system',
-            message,
-          })
+          if (project?.name) {
+            try {
+              const report = await persistProjectReport(supabaseAdmin, {
+                projectId: currentRun.project_id,
+                workspaceId,
+                userId: user.id,
+                runId,
+                taskDescription: currentRun.task_description,
+                projectName: project.name,
+                reportType: normalizedReportRequest.report_type,
+                selectedAgentId: normalizedReportRequest.selected_agent_id ?? null,
+                selectedAgentName: normalizedReportRequest.selected_agent_name ?? null,
+                planResult: currentRun.plan_result,
+                reviewResult: currentRun.review_result,
+              })
+              reportCreated = true
+              emitEvent(controller, encoder, {
+                type: 'report_created',
+                report_id: report.reportId,
+                artifact_id: report.artifactId,
+                title: report.title,
+              })
+            } catch {
+              // report persistence is non-fatal for the pipeline stream
+            }
+          }
         }
+
+        const isDoneWithoutReview = Boolean(currentRun.execution_result) && !currentRun.auto_reviewed
+        const isDoneWithReview = Boolean(currentRun.review_result)
+        if (isDoneWithoutReview || isDoneWithReview) {
+          emitEvent(controller, encoder, {
+            type: 'pipeline_complete',
+            run_id: runId,
+            total_elapsed_ms: Math.max(Date.now() - pipelineStartMs, 1),
+          })
+          close()
+          return
+        }
+
+        await delay(1000)
       }
 
-      const totalElapsedMs = Date.now() - pipelineStartMs
-      emit({
-        type: 'pipeline_complete',
-        run_id: runId,
-        total_elapsed_ms: totalElapsedMs,
-        hierarchy: {
-          routing_profile_id: plannerProfile.routing_profile_id,
-          plan: planner_model,
-          execute: executor_model,
-          review: reviewer_model,
-        },
+      emitEvent(controller, encoder, {
+        type: 'pipeline_error',
+        message: 'Pipeline stream timed out while waiting for OpenClaw callbacks',
       })
-      emit({
-        type: 'activity',
-        phase: 'system',
-        message: `Pipeline complete — ${(totalElapsedMs / 1000).toFixed(1)}s total`,
-      })
-
-      controller.close()
+      close()
     },
   })
 
@@ -922,56 +439,6 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
     },
   })
-}
-
-// ── ClawdBot polling helper ───────────────────────────────────────────────────
-
-async function pollClawdBotTask(
-  runId: string,
-  onActivity: (msg: string) => void,
-  timeoutMs = 240_000,
-  intervalMs = 2_000,
-): Promise<{ output: string; tokens_in: number; tokens_out: number; cost_usd: number } | null> {
-  const deadline = Date.now() + timeoutMs
-  let lastStatus = ''
-
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(`${CLAWDBOT_BASE}/tasks/${runId}`, {
-        headers: CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {},
-        signal: AbortSignal.timeout(5_000),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        if (data.status !== lastStatus) {
-          lastStatus = data.status
-          onActivity(`Status: ${data.status}`)
-        }
-
-        if (data.status === 'completed') {
-          return {
-            output: data.output ?? '',
-            tokens_in: data.tokens_in ?? 0,
-            tokens_out: data.tokens_out ?? 0,
-            cost_usd: data.cost_usd ?? 0,
-          }
-        }
-
-        if (data.status === 'failed') {
-          throw new Error(data.error ?? 'Task failed on ClawdBot')
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('Task failed')) throw err
-      // Network error — retry
-    }
-
-    await new Promise((r) => setTimeout(r, intervalMs))
-  }
-
-  throw new Error('ClawdBot task timed out')
 }

@@ -7,6 +7,13 @@ import type { TerminalLine, TerminalToken } from '@/components/dashboard/run-car
 const SOAP_REGEX = /^\[(ACTION|OBSERVE|PLAN|INIT|RESULT|ERROR)\]\s*/
 const LOOKUP_RETRY_DELAYS_MS = [400, 800, 1200, 1600, 2000, 2500]
 
+type RunStreamLookupResponse = {
+  state?: 'resolving' | 'live' | 'ended' | 'unavailable'
+  retryable?: boolean
+  reason?: string
+  jobId?: string | null
+}
+
 function parseToken(text: string): { token: TerminalToken; cleanText: string } {
   const match = text.match(SOAP_REGEX)
   if (match) {
@@ -162,24 +169,21 @@ export function useRunStream(
         try {
           setConnectionState('resolving')
           const res = await fetch(`/api/command-surface/stream/by-run/${runId}`, { signal: controller.signal })
+          const data = await res.json().catch(() => null) as RunStreamLookupResponse | null
+
           if (res.ok) {
-            const data = await res.json() as { jobId?: string } | null
             if (data?.jobId) {
               void connectToStream(data.jobId)
               return
             }
-          } else if (!res.ok) {
-            // If the server signals the run is too old to ever get a stream,
-            // stop retrying immediately instead of spamming 6 more requests.
-            try {
-              const body = await res.json() as { retryable?: boolean } | null
-              if (body?.retryable === false) {
-                setConnectionState('unavailable')
-                return
-              }
-            } catch {
-              // ignore parse failure — fall through to retry logic
+
+            if (data?.retryable === false) {
+              setConnectionState(data.state === 'ended' ? 'ended' : 'unavailable')
+              return
             }
+          } else if (data?.retryable === false) {
+            setConnectionState('unavailable')
+            return
           }
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return

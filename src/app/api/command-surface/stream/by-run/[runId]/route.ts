@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { getJobIdByRunId } from '@/lib/command-surface/stream-broker'
+import { readCommandSurfaceTrace } from '@/lib/runs/trace'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -22,35 +23,40 @@ export async function GET(req: NextRequest, { params }: Params) {
     return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
   }
 
-  const jobId = await getJobIdByRunId(runId)
-  if (!jobId) {
-    // Check if the run is old enough that a stream will never arrive.
-    // New runs within the staleness window may still have their stream job
-    // registered imminently — those should keep retrying.
-    let retryable = true
-    try {
-      const { data: run } = await supabase
-        .from('runs')
-        .select('created_at')
-        .eq('id', runId)
-        .single()
+  const { data: run } = await supabase
+    .from('runs')
+    .select('created_at, trace')
+    .eq('id', runId)
+    .single()
 
-      if (run?.created_at) {
-        const ageMs = Date.now() - new Date(run.created_at).getTime()
-        if (ageMs > STREAM_STALENESS_MS) retryable = false
-      }
-    } catch {
-      // If we can't query, keep retryable=true so the client tries normally.
-    }
+  if (!run) {
+    return mergeAuthResponse(NextResponse.json({ error: 'Run not found' }, { status: 404 }), authResponse)
+  }
+
+  const trace = readCommandSurfaceTrace(run.trace)
+  const jobId = (await getJobIdByRunId(runId)) ?? trace.job_id
+
+  if (!jobId) {
+    const ageMs = Date.now() - new Date(run.created_at).getTime()
+    const retryable = ageMs <= STREAM_STALENESS_MS && trace.stream_state !== 'ended' && trace.stream_state !== 'unavailable'
+    const state = retryable ? 'resolving' : trace.stream_state === 'ended' ? 'ended' : 'unavailable'
+    const reason = retryable ? 'awaiting_stream_registration' : trace.stream_state === 'ended' ? 'stream_ended' : 'no_live_stream'
 
     return mergeAuthResponse(
-      NextResponse.json({ error: 'No stream found for this run', retryable }, { status: 404 }),
+      NextResponse.json({
+        state,
+        retryable,
+        reason,
+        jobId: null,
+      }),
       authResponse
     )
   }
 
   return mergeAuthResponse(
     NextResponse.json({
+      state: trace.stream_state === 'ended' ? 'ended' : 'live',
+      retryable: false,
       jobId,
       stream_url: `/api/command-surface/stream/${jobId}`,
     }),

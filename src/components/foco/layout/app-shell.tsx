@@ -21,7 +21,7 @@ interface AppShellProps {
 }
 
 // Pages that should not show the app chrome (sidebar, topbar, etc.)
-const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/forgot-password', '/reset-password']);
+const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/signup', '/forgot-password', '/reset-password']);
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
@@ -60,6 +60,8 @@ export function AppShell({ children }: AppShellProps) {
   const sidebarCollapsedAfterMount = isMounted && sidebarCollapsed;
 
   const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-56 lg:pl-60';
+  const mainChromeClasses = isAppPage ? 'pt-12 md:pt-14' : 'pt-0';
+  const contentChromeClasses = isAppPage ? 'w-full px-2 py-3 sm:px-3 md:px-5 md:py-5 lg:px-6 lg:py-6' : 'w-full';
 
   return (
     <MotionConfig reducedMotion="user">
@@ -103,11 +105,11 @@ export function AppShell({ children }: AppShellProps) {
         suppressHydrationWarning
         className={cn(
           'min-h-screen w-full transition-all duration-200',
-          'pt-12 md:pt-14',
+          mainChromeClasses,
           isAppPage && mainPaddingLeft,
         )}
       >
-        <div className="w-full px-2 py-3 sm:px-3 md:px-5 md:py-5 lg:px-6 lg:py-6">
+        <div className={contentChromeClasses}>
           {children}
         </div>
       </main>

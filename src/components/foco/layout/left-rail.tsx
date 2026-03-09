@@ -36,7 +36,7 @@ interface NavItem {
 
 // WORK — daily work
 const workNavItems: NavItem[] = [
-  { label: 'Overview',   href: '/dashboard',  icon: Home,         shortcut: 'G H' },
+  { label: 'Cockpit',    href: '/dashboard',  icon: Home,         shortcut: 'G H' },
   { label: 'Projects',   href: '/projects',   icon: FolderKanban, shortcut: 'G P' },
   { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare,  shortcut: 'G W' },
   { label: 'Runs',       href: '/runs',       icon: Activity,     shortcut: 'G R' },
@@ -46,9 +46,9 @@ const workNavItems: NavItem[] = [
 // AUTOMATION — agent operations
 const automationNavItems: NavItem[] = [
   { label: 'Agents',         href: '/agents',    icon: Bot,       shortcut: 'G J' },
-  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch, shortcut: 'G V' },
+  { label: 'Workflows',      href: '/pipeline',  icon: GitBranch, shortcut: 'G V' },
   { label: 'Recurring',      href: '/recurring', icon: RefreshCw, shortcut: 'G U' },
-  { label: 'System Status',  href: '/system',    icon: Monitor,   shortcut: 'G M' },
+  { label: 'Autonomy',       href: '/system',    icon: Monitor,   shortcut: 'G M' },
   { label: 'Briefing',       href: '/briefing',  icon: FileText,  shortcut: 'G B' },
 ];
 

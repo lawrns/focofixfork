@@ -1,4 +1,22 @@
+import type { CommandSurfaceStreamState } from '@/lib/runs/trace'
+
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+
+export type RunDiagnostics = {
+  lastError: string
+  suggestion: string
+  retryHint: Record<string, unknown> | null
+  retryLabel: string
+  code: string
+}
+
+export type RunStreamInfo = {
+  job_id?: string | null
+  stream_state?: CommandSurfaceStreamState | null
+  last_stream_event_at?: string | null
+  last_error?: string | null
+  last_summary?: string | null
+}
 
 export interface Run {
   id: string
@@ -12,6 +30,9 @@ export interface Run {
   tokens_in?: number | null
   tokens_out?: number | null
   cost_usd?: number | null
+  trace?: Record<string, unknown> | null
+  diagnostics?: RunDiagnostics | null
+  stream?: RunStreamInfo | null
 }
 
 export const RUN_STATUS_COLORS: Record<RunStatus, string> = {

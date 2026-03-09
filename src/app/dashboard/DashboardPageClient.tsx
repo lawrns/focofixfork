@@ -43,7 +43,6 @@ import type { TerminalLine } from '@/components/dashboard/run-card'
 import type { Run } from '@/components/dashboard/use-dashboard-data'
 import type { AgentExecutionStatus } from '@/components/command-surface/types'
 import { redactSensitiveText } from '@/lib/security/redaction'
-import { useUserModelPreferences } from '@/lib/stores/user-model-preferences'
 
 const AIInsights = dynamic(
   () => import('@/components/dashboard/AIInsights').then((m) => m.AIInsights),
@@ -141,14 +140,6 @@ export default function DashboardPageClient() {
   const searchParams = useSearchParams()
   const { user, loading } = useAuth()
   const selectedView = normalizeDashboardView(searchParams?.get('view') ?? null)
-  const {
-    defaultModel,
-    fallbackChain,
-    plannerModel: preferredPlannerModel,
-    executorModel: preferredExecutorModel,
-    reviewerModel: preferredReviewerModel,
-  } = useUserModelPreferences()
-
   const data = useDashboardData(user)
 
   const [showStrategicBanner, setShowStrategicBanner] = useState(true)
@@ -170,9 +161,10 @@ export default function DashboardPageClient() {
   const runsRef = useRef<HTMLDivElement>(null)
   const activityRef = useRef<HTMLDivElement>(null)
   const persistedRunStatusRef = useRef<Record<string, string>>({})
+  const activeModelLabel = data.openclawRuntime?.modelAlias ?? data.openclawRuntime?.primaryModel ?? 'Inherited'
 
   useEffect(() => {
-    document.title = 'Dashboard | Critter'
+    document.title = 'Cockpit | Critter'
   }, [])
 
   useEffect(() => {
@@ -275,14 +267,9 @@ export default function DashboardPageClient() {
           summary: summarizeDispatch(args.task),
           project_id: data.selectedProjectId || null,
           trace: {
-            ai_routing: {
-              requested: {
-                model: defaultModel,
-                planner_model: preferredPlannerModel,
-                executor_model: preferredExecutorModel,
-                reviewer_model: preferredReviewerModel,
-                fallback_chain: fallbackChain,
-              },
+            openclaw: {
+              dispatch_kind: 'dashboard',
+              agent_id: args.agentId || args.personaLabel,
             },
           },
         }),
@@ -315,11 +302,6 @@ export default function DashboardPageClient() {
             lane: args.lane ?? null,
           },
           bootstrap_run_id: bootstrapRun.id,
-          requested_model: defaultModel,
-          requested_planner_model: preferredPlannerModel,
-          requested_executor_model: preferredExecutorModel,
-          requested_reviewer_model: preferredReviewerModel,
-          requested_fallback_chain: fallbackChain,
         }),
       })
 
@@ -348,7 +330,7 @@ export default function DashboardPageClient() {
     } finally {
       setDispatching(false)
     }
-  }, [data, defaultModel, fallbackChain, preferredExecutorModel, preferredPlannerModel, preferredReviewerModel, triggerDispatchArc])
+  }, [data, triggerDispatchArc])
 
   const displayedRuns = (() => {
     const realIds = new Set(data.activeRuns.map((run) => run.id))
@@ -359,7 +341,10 @@ export default function DashboardPageClient() {
   })()
   const navigateToView = useCallback((view: DashboardView) => {
     setActiveView(view)
-  }, [])
+    const params = new URLSearchParams(searchParams?.toString() ?? '')
+    params.set('view', view)
+    router.replace(`/dashboard?${params.toString()}`, { scroll: false })
+  }, [router, searchParams])
   const blockedWorkItems = data.workItems.filter((item) => item.status === 'blocked' || item.section === 'waiting')
   const blockedCount = blockedWorkItems.length + (data.fleetPaused ? 1 : 0)
 
@@ -378,8 +363,8 @@ export default function DashboardPageClient() {
       <TooltipProvider delayDuration={120}>
         <PageShell className="space-y-3 rounded-xl bg-gradient-to-b from-background to-muted/20 px-1 py-2 sm:px-2 lg:px-3">
           <PageHeader
-            title="Overview"
-            subtitle="What happened, what needs attention, and what the cofounder is doing now."
+            title="Critter Cockpit"
+            subtitle="Dispatch, observe, and diagnose the OpenClaw runtime from one operator surface."
             primaryAction={
               <div className="flex items-center gap-2">
                 <AttentionCountBadge count={data.attentionCount} />
@@ -394,7 +379,11 @@ export default function DashboardPageClient() {
           <AutonomySummaryBar />
 
           {/* While you slept strip — only shown when there is non-zero data */}
-          {(data.doneCount > 0 || (data.autonomousStats?.improvementsWeek ?? 0) > 0 || data.proposals.filter((p) => p.status === 'pending_review').length > 0) && (
+          {(data.doneCount > 0
+            || (data.autonomousStats?.improvementsWeek ?? 0) > 0
+            || data.proposals.filter((p) => p.status === 'pending_review').length > 0
+            || (data.autonomy?.activeLoops ?? 0) > 0
+            || (data.autonomy?.pendingDecisions ?? 0) > 0) && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="font-medium text-foreground/70">Last 24h:</span>
               {data.doneCount > 0 && (
@@ -412,6 +401,16 @@ export default function DashboardPageClient() {
                   {data.proposals.filter((p) => p.status === 'pending_review').length} proposals waiting
                 </Badge>
               )}
+              {(data.autonomy?.activeLoops ?? 0) > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-[color:var(--foco-teal)] border-[color:var(--foco-teal)]/30">
+                  {data.autonomy.activeLoops} autonomy loops active
+                </Badge>
+              )}
+              {(data.autonomy?.pendingDecisions ?? 0) > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-amber-500 border-amber-500/30">
+                  {data.autonomy.pendingDecisions} approvals pending
+                </Badge>
+              )}
             </div>
           )}
 
@@ -426,7 +425,7 @@ export default function DashboardPageClient() {
               { id: 'activity', label: 'Activity', icon: BookOpen },
             ].map((item) => {
               const Icon = item.icon
-              const active = selectedView === item.id
+              const active = activeView === item.id
               return (
                 <Button
                   key={item.id}
@@ -508,6 +507,7 @@ export default function DashboardPageClient() {
               className="w-full flex items-center gap-2 px-3 py-2 text-left"
             >
               <Badge variant="outline" className="text-[10px]">AI Gateway · {data.gatewayStatus}</Badge>
+              <Badge variant="outline" className="text-[10px]">Model · {activeModelLabel}</Badge>
               <Badge variant="outline" className="text-[10px]">Workload · {data.activeRuns.length} active</Badge>
               <Badge variant="outline" className="text-[10px]">Errors · {data.failedCount}</Badge>
               <span className="ml-auto text-xs text-muted-foreground">Fleet status</span>
@@ -528,7 +528,10 @@ export default function DashboardPageClient() {
                       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">System Health</p>
                       <p className="mt-2 text-sm font-medium">Gateway: {data.gatewayStatus}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Auth: {data.tokenValid ? 'Valid' : data.tokenValid === null ? 'Checking...' : 'Invalid'} · Sessions: {data.attachedTabs}
+                        Auth: {data.tokenValid ? 'Configured' : data.tokenValid === null ? 'Checking...' : 'Missing'} · Sessions: {data.attachedTabs}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Primary model: {activeModelLabel}
                       </p>
                     </div>
                     <div className="rounded-lg border p-3">

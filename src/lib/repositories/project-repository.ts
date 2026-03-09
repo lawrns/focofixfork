@@ -5,6 +5,7 @@
 
 import { BaseRepository, Result, Ok, Err, isError } from './base-repository'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { hasFounderFullAccessById } from '@/lib/auth/founder-access'
 
 export interface Project {
   id: string
@@ -315,6 +316,10 @@ export class ProjectRepository extends BaseRepository<Project> {
    * Verify user has access to a specific project
    */
   async hasAccess(projectId: string, userId: string): Promise<Result<boolean>> {
+    if (hasFounderFullAccessById(userId)) {
+      return Ok(true)
+    }
+
     // Fetch project to get workspace_id
     const projectResult = await this.findById(projectId)
     if (isError(projectResult)) {
@@ -346,6 +351,10 @@ export class ProjectRepository extends BaseRepository<Project> {
    * Verify user has admin access to a project's workspace
    */
   async hasAdminAccess(projectId: string, userId: string): Promise<Result<boolean>> {
+    if (hasFounderFullAccessById(userId)) {
+      return Ok(true)
+    }
+
     // Fetch project to get workspace_id
     const projectResult = await this.findById(projectId)
     if (isError(projectResult)) {
@@ -382,6 +391,20 @@ export class ProjectRepository extends BaseRepository<Project> {
     projectIds: string[],
     userId: string
   ): Promise<Result<{ hasAccess: boolean; role: string | null; workspaceIds: string[] }>> {
+    if (hasFounderFullAccessById(userId)) {
+      const projectsResult = await this.findByIds(projectIds)
+      if (isError(projectsResult)) {
+        return projectsResult
+      }
+
+      const workspaceIds = [...new Set(projectsResult.data.map((project) => project.workspace_id))]
+      return Ok({
+        hasAccess: true,
+        role: 'owner',
+        workspaceIds,
+      })
+    }
+
     // Fetch projects to get workspace_ids
     const projectsResult = await this.findByIds(projectIds)
     if (isError(projectsResult)) {

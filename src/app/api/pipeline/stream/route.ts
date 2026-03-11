@@ -6,6 +6,7 @@ import type { PipelinePhase, PipelineSSEEvent, ProjectReportRequest } from '@/li
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 import { dispatchPipelinePhase } from '@/lib/pipeline/dispatcher'
 import { persistProjectReport } from '@/lib/project-reports'
+import { insertPipelineRunRecord } from '@/lib/pipeline/pipeline-run-record'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -116,29 +117,25 @@ export async function POST(req: NextRequest) {
   const reviewer_model = reviewerProfile.model
 
   const startedAt = new Date().toISOString()
-  const { data: run, error: insertError } = await supabaseAdmin
-    .from('pipeline_runs')
-    .insert({
-      user_id: user.id,
-      workspace_id: workspaceId,
-      task_description: task_description.trim(),
-      planner_model,
-      executor_model,
-      reviewer_model,
-      routing_profile_id: plannerProfile.routing_profile_id,
-      provider_chain: Array.from(new Set([
-        ...plannerProfile.fallback_chain,
-        ...executorProfile.fallback_chain,
-        ...reviewerProfile.fallback_chain,
-      ])),
-      status: 'planning',
-      auto_reviewed: auto_review,
-      handbook_ref: handbook_slug || null,
-      started_at: startedAt,
-      ...(project_id ? { project_id } : {}),
-    })
-    .select('id')
-    .single()
+  const { data: run, error: insertError } = await insertPipelineRunRecord(supabaseAdmin, {
+    user_id: user.id,
+    workspace_id: workspaceId,
+    task_description: task_description.trim(),
+    planner_model,
+    executor_model,
+    reviewer_model,
+    routing_profile_id: plannerProfile.routing_profile_id,
+    provider_chain: Array.from(new Set([
+      ...plannerProfile.fallback_chain,
+      ...executorProfile.fallback_chain,
+      ...reviewerProfile.fallback_chain,
+    ])),
+    status: 'planning',
+    auto_reviewed: auto_review,
+    handbook_ref: handbook_slug || null,
+    started_at: startedAt,
+    ...(project_id ? { project_id } : {}),
+  })
 
   if (insertError || !run) {
     return new Response(JSON.stringify({ error: 'Failed to create pipeline run' }), { status: 500 })

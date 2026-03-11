@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (authError || !user) {
     return mergeAuthResponse(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), authResponse)
   }
-  const baseUrl = 'http://127.0.0.1:3001'  // Not used but kept for signature compatibility
+  const baseUrl = req.nextUrl.origin
   const openclawToken = process.env.OPENCLAW_SERVICE_TOKEN
   const bosunToken = process.env.BOSUN_SERVICE_TOKEN
 

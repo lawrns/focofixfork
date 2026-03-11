@@ -11,11 +11,11 @@ function mapBosunStatus(status: string | undefined): AgentNodeStatus {
 
 export async function fetchBosunAgents(_baseUrl: string, serviceToken?: string): Promise<UnifiedAgent[]> {
   try {
-    const bosunApi = process.env.BOSUN_API_URL ?? 'http://127.0.0.1:3001'
+    const bosunApi = process.env.BOSUN_API_URL ?? _baseUrl.replace(/\/+$/, '')
     const headers: Record<string, string> = {}
     if (serviceToken) headers['Authorization'] = `Bearer ${serviceToken}`
 
-    const res = await fetch(`${bosunApi}/api/kanban/tasks`, {
+    const res = await fetch(`${bosunApi}/api/bosun/kanban/tasks`, {
       headers,
       signal: AbortSignal.timeout(5000),
     })

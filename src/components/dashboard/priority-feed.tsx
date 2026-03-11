@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -73,6 +73,7 @@ export interface PriorityFeedProps {
     status: string
     errorMessage?: string | null
   }>
+  dismissedItemIds?: Iterable<string>
   onRetryRun?: (runId: string) => void
   onApproveProposal?: (proposalId: string) => void
   onDismissItem?: (itemId: string) => void
@@ -136,7 +137,7 @@ function relativeTime(iso: string): string {
 // Build priority items from heterogeneous sources
 // ---------------------------------------------------------------------------
 
-function buildPriorityItems(props: PriorityFeedProps): PriorityFeedItem[] {
+export function buildPriorityItems(props: PriorityFeedProps): PriorityFeedItem[] {
   const items: PriorityFeedItem[] = []
 
   // Failed runs -> P0
@@ -259,7 +260,10 @@ const itemVariants = {
 
 export function PriorityFeed(props: PriorityFeedProps) {
   const { maxItems = 12 } = props
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const dismissed = useMemo(
+    () => new Set(Array.from(props.dismissedItemIds ?? [])),
+    [props.dismissedItemIds]
+  )
 
   const allItems = useMemo(() => buildPriorityItems(props), [props])
 
@@ -277,8 +281,7 @@ export function PriorityFeed(props: PriorityFeedProps) {
   )
 
   function handleDismiss(item: PriorityFeedItem) {
-    setDismissed((prev) => new Set(prev).add(item.id))
-    item.onSecondaryAction?.()
+    props.onDismissItem?.(item.id)
   }
 
   if (visibleItems.length === 0) {

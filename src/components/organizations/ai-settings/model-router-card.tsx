@@ -61,11 +61,11 @@ export function ModelRouterCard({
   updatePolicy: (updater: (prev: WorkspaceAIPolicy) => WorkspaceAIPolicy) => void
 }) {
   const { getModelHealth, loading: healthLoading } = useAIHealth()
-  const generalDefault = policy.model_profiles?.task_action?.model ?? 'gpt-5.4-medium'
+  const generalDefault = policy.model_profiles?.task_action?.model ?? 'glm-5'
   const fallbackChain = policy.model_profiles?.task_action?.fallback_chain ?? ['claude-opus-4-6', 'glm-5']
-  const plannerModel = policy.model_profiles?.pipeline_plan?.model ?? 'gpt-5.4-medium'
+  const plannerModel = policy.model_profiles?.pipeline_plan?.model ?? 'glm-5'
   const executorModel = policy.model_profiles?.pipeline_execute?.model ?? 'kimi-k2-standard'
-  const reviewerModel = policy.model_profiles?.pipeline_review?.model ?? 'gpt-5.4-medium'
+  const reviewerModel = policy.model_profiles?.pipeline_review?.model ?? 'glm-5'
   const generalHealth = getModelHealth(generalDefault)
 
   return (

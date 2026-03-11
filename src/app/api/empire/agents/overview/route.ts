@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const baseUrl = 'http://127.0.0.1:3001'
+  const baseUrl = req.nextUrl.origin
   const openclawToken = process.env.OPENCLAW_SERVICE_TOKEN
   const bosunToken = process.env.BOSUN_SERVICE_TOKEN
 

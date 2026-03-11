@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { buildPlanContext } from '@/lib/pipeline/context-builder'
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 import { dispatchOrFallbackPhase, parsePlanResult } from '@/lib/pipeline/runtime'
+import { insertPipelineRunRecord } from '@/lib/pipeline/pipeline-run-record'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,20 +51,16 @@ export async function POST(req: NextRequest) {
     const planner_model = profile.model
 
     // Create pipeline_runs row
-    const { data: run, error: insertError } = await supabaseAdmin
-      .from('pipeline_runs')
-      .insert({
-        user_id: user.id,
-        workspace_id: workspace_id ?? null,
-        task_description: task_description.trim(),
-        planner_model,
-        routing_profile_id: profile.routing_profile_id,
-        provider_chain: profile.fallback_chain,
-        status: 'planning',
-        started_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single()
+    const { data: run, error: insertError } = await insertPipelineRunRecord(supabaseAdmin, {
+      user_id: user.id,
+      workspace_id: workspace_id ?? null,
+      task_description: task_description.trim(),
+      planner_model,
+      routing_profile_id: profile.routing_profile_id,
+      provider_chain: profile.fallback_chain,
+      status: 'planning',
+      started_at: new Date().toISOString(),
+    })
 
     if (insertError || !run) {
       return mergeAuthResponse(internalErrorResponse('Failed to create pipeline run', insertError), authResponse)

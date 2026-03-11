@@ -23,6 +23,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
 import { CreateLoopDialog } from '@/components/autonomy/create-loop-dialog'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { useCurrentWorkspace } from '@/hooks/use-current-workspace'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { CofounderLoop } from '@/lib/autonomy/loop-types'
@@ -136,6 +137,7 @@ function DeleteLoopDialog({
 
 export default function LoopsPage() {
   const { user, loading } = useAuth()
+  const { workspaceId } = useCurrentWorkspace()
   const [loops, setLoops] = useState<CofounderLoop[]>([])
   const [fetching, setFetching] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -214,7 +216,7 @@ export default function LoopsPage() {
       <CreateLoopDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        workspaceId={null}
+        workspaceId={workspaceId}
         onCreated={() => void load()}
       />
 

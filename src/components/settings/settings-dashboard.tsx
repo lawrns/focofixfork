@@ -29,6 +29,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSyncStatus } from '@/lib/hooks/useSyncStatus'
 import { useWorkspaceStore } from '@/lib/stores/foco-store'
+import { getCurrentWorkspaceId } from '@/hooks/use-current-workspace'
 import { SyncIndicator } from '@/components/ui/sync-indicator'
 import { RoleManagement } from './role-management'
 import { ExportDialog } from '@/components/deprecation/ExportDialog'
@@ -319,11 +320,8 @@ export function SettingsDashboard() {
     orgSyncStatus.startSync()
     setSaving(true)
     try {
-      // Get workspace ID first
-      const workspaceResponse = await fetch('/api/user/workspace')
-      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
-      const workspaceData = await workspaceResponse.json()
-      const workspaceId = workspaceData.workspace_id
+      const workspaceId = await getCurrentWorkspaceId()
+      if (!workspaceId) throw new Error('Failed to get workspace')
 
       const response = await fetch(`/api/workspaces/${workspaceId}/settings`, {
         method: 'PUT',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, Sun, GitPullRequest, Heart, Scissors, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { LoopType, ExecutionBackend, ExecutionMode } from '@/lib/autonomy/loop-types'
+import { getCurrentWorkspaceId } from '@/hooks/use-current-workspace'
 import { toast } from 'sonner'
 
 export interface CreateLoopDialogProps {
@@ -118,6 +119,31 @@ export function CreateLoopDialog({
   const [form, setForm] = useState<FormState>(initialForm)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [resolvedWorkspaceId, setResolvedWorkspaceId] = useState<string | null>(workspaceId)
+  const [resolvingWorkspace, setResolvingWorkspace] = useState(false)
+
+  useEffect(() => {
+    setResolvedWorkspaceId(workspaceId)
+  }, [workspaceId])
+
+  useEffect(() => {
+    if (!open || workspaceId || resolvedWorkspaceId || resolvingWorkspace) return
+
+    let cancelled = false
+
+    void (async () => {
+      setResolvingWorkspace(true)
+      const nextWorkspaceId = await getCurrentWorkspaceId()
+      if (!cancelled) {
+        setResolvedWorkspaceId(nextWorkspaceId)
+        setResolvingWorkspace(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, resolvingWorkspace, resolvedWorkspaceId, workspaceId])
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -125,7 +151,9 @@ export function CreateLoopDialog({
   }
 
   async function handleSubmit() {
-    if (!workspaceId) {
+    const effectiveWorkspaceId = workspaceId ?? resolvedWorkspaceId
+
+    if (!effectiveWorkspaceId) {
       setSubmitError('No workspace selected.')
       return
     }
@@ -146,7 +174,7 @@ export function CreateLoopDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          workspace_id: workspaceId,
+          workspace_id: effectiveWorkspaceId,
           loop_type: form.loopType,
           schedule_kind: isCustomCron ? 'cron' : 'preset',
           schedule_value: scheduleValue,
@@ -187,6 +215,7 @@ export function CreateLoopDialog({
   }
 
   const isCustomCron = form.schedulePreset === '__custom__'
+  const effectiveWorkspaceId = workspaceId ?? resolvedWorkspaceId
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -376,6 +405,11 @@ export function CreateLoopDialog({
               {submitError}
             </p>
           )}
+          {!effectiveWorkspaceId && resolvingWorkspace && (
+            <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              Loading workspace context…
+            </p>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
@@ -391,10 +425,14 @@ export function CreateLoopDialog({
             size="sm"
             className="gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90 text-white"
             onClick={handleSubmit}
-            disabled={submitting || !workspaceId}
+            disabled={submitting || resolvingWorkspace || !effectiveWorkspaceId}
           >
-            {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {submitting ? 'Creating…' : 'Create Recurring Task'}
+            {(submitting || resolvingWorkspace) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {submitting
+              ? 'Creating…'
+              : resolvingWorkspace
+              ? 'Loading workspace…'
+              : 'Create Recurring Task'}
           </Button>
         </DialogFooter>
       </DialogContent>

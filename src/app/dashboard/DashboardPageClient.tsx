@@ -43,6 +43,7 @@ import type { TerminalLine } from '@/components/dashboard/run-card'
 import type { Run } from '@/components/dashboard/use-dashboard-data'
 import type { AgentExecutionStatus } from '@/components/command-surface/types'
 import { redactSensitiveText } from '@/lib/security/redaction'
+import { buildPriorityItems } from '@/components/dashboard/priority-feed'
 
 const AIInsights = dynamic(
   () => import('@/components/dashboard/AIInsights').then((m) => m.AIInsights),
@@ -51,6 +52,8 @@ const AIInsights = dynamic(
 
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
 const DASHBOARD_VIEWS = ['dispatch', 'work', 'proposals', 'runs', 'activity'] as const
+const DASHBOARD_DEFAULT_EXECUTOR_MODEL = 'kimi-k2-standard'
+const DASHBOARD_DISMISSED_ATTENTION_STORAGE_KEY = 'dashboard_dismissed_attention_items'
 
 type DashboardView = (typeof DASHBOARD_VIEWS)[number]
 
@@ -153,6 +156,7 @@ export default function DashboardPageClient() {
   const [blockedSheetOpen, setBlockedSheetOpen] = useState(false)
 
   const [syntheticRuns, setSyntheticRuns] = useState<Run[]>([])
+  const [dismissedAttentionItemIds, setDismissedAttentionItemIds] = useState<string[]>([])
   const [terminalLinesMap, setTerminalLinesMap] = useState<Record<string, TerminalLine[]>>({})
   const [streamStateMap, setStreamStateMap] = useState<Record<string, 'idle' | 'resolving' | 'connecting' | 'live' | 'ended' | 'unavailable'>>({})
   const [runJobMap, setRunJobMap] = useState<Record<string, string>>({})
@@ -166,6 +170,28 @@ export default function DashboardPageClient() {
   useEffect(() => {
     document.title = 'Cockpit | Critter'
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const stored = window.localStorage.getItem(DASHBOARD_DISMISSED_ATTENTION_STORAGE_KEY)
+      if (!stored) return
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        setDismissedAttentionItemIds(parsed.filter((item): item is string => typeof item === 'string'))
+      }
+    } catch {
+      // Ignore malformed persisted dismissals.
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(
+      DASHBOARD_DISMISSED_ATTENTION_STORAGE_KEY,
+      JSON.stringify(dismissedAttentionItemIds)
+    )
+  }, [dismissedAttentionItemIds])
 
   useEffect(() => {
     if (selectedView) setActiveView(selectedView)
@@ -262,14 +288,23 @@ export default function DashboardPageClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          runner: args.agentId || args.personaLabel,
+          runner: args.agentId || 'cofounder',
           status: 'pending',
           summary: summarizeDispatch(args.task),
           project_id: data.selectedProjectId || null,
           trace: {
+            ai_routing: {
+              requested: {
+                model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
+                executor_model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
+                fallback_chain: [],
+              },
+              actual: null,
+            },
             openclaw: {
               dispatch_kind: 'dashboard',
-              agent_id: args.agentId || args.personaLabel,
+              agent_id: args.agentId || 'cofounder',
+              model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
             },
           },
         }),
@@ -296,6 +331,7 @@ export default function DashboardPageClient() {
           mode: 'auto',
           project_id: data.selectedProjectId || null,
           selected_agents: args.agentId ? [args.agentId] : null,
+          preferred_model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
           context: {
             persona: args.persona,
             source: 'dashboard',
@@ -347,6 +383,35 @@ export default function DashboardPageClient() {
   }, [router, searchParams])
   const blockedWorkItems = data.workItems.filter((item) => item.status === 'blocked' || item.section === 'waiting')
   const blockedCount = blockedWorkItems.length + (data.fleetPaused ? 1 : 0)
+  const dismissedAttentionSet = new Set(dismissedAttentionItemIds)
+  const visibleAttentionCount = buildPriorityItems({
+    proposals: data.proposals,
+    workItems: data.workItems,
+    runs: data.allRuns,
+    agents: data.agents,
+    onRetryRun: undefined,
+    onApproveProposal: undefined,
+    onDismissItem: undefined,
+  }).filter((item) => !dismissedAttentionSet.has(item.id)).length
+
+  const handleDismissAttentionItem = useCallback(async (itemId: string) => {
+    setDismissedAttentionItemIds((prev) => prev.includes(itemId) ? prev : [...prev, itemId])
+
+    if (!itemId.startsWith('run-')) {
+      return
+    }
+
+    const runId = itemId.slice(4)
+    try {
+      const response = await fetch(`/api/runs/${runId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        throw new Error(`Failed to delete run ${runId}`)
+      }
+      window.dispatchEvent(new Event('runs:mutated'))
+    } catch {
+      setDismissedAttentionItemIds((prev) => prev.filter((id) => id !== itemId))
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -367,7 +432,7 @@ export default function DashboardPageClient() {
             subtitle="Dispatch, observe, and diagnose the OpenClaw runtime from one operator surface."
             primaryAction={
               <div className="flex items-center gap-2">
-                <AttentionCountBadge count={data.attentionCount} />
+                <AttentionCountBadge count={visibleAttentionCount} />
                 <Button variant="outline" size="sm" onClick={() => data.fetchAll()} disabled={data.refreshing} className="h-8 gap-1.5">
                   <RefreshCw className={cn('h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
                   Refresh
@@ -416,34 +481,6 @@ export default function DashboardPageClient() {
 
           <StrategicBanner visible={showStrategicBanner} onDismiss={() => setShowStrategicBanner(false)} />
 
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'proposals', label: 'Proposals', icon: ClipboardList },
-              { id: 'dispatch', label: 'Dispatch', icon: Send },
-              { id: 'work', label: 'Work', icon: FolderKanban },
-              { id: 'runs', label: 'Runs', icon: RefreshCw },
-              { id: 'activity', label: 'Activity', icon: BookOpen },
-            ].map((item) => {
-              const Icon = item.icon
-              const active = activeView === item.id
-              return (
-                <Button
-                  key={item.id}
-                  type="button"
-                  size="sm"
-                  variant={active ? 'default' : 'outline'}
-                  className="h-8 gap-1.5"
-                  onClick={() => navigateToView(item.id as DashboardView)}
-                  aria-label={`${item.label} view`}
-                  aria-pressed={active}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {item.label}
-                </Button>
-              )
-            })}
-          </div>
-
           <StatPillsBar
             runningCount={data.runningCount}
             pendingCount={data.pendingCount}
@@ -470,12 +507,14 @@ export default function DashboardPageClient() {
               workItems={data.workItems}
               runs={data.allRuns}
               agents={data.agents}
+              dismissedItemIds={dismissedAttentionItemIds}
               onRetryRun={async (runId) => {
                 try {
                   const res = await fetch(`/api/runs/${runId}/retry`, { method: 'POST' })
                   if (res.ok) window.dispatchEvent(new Event('runs:mutated'))
                 } catch { /* handled in feed */ }
               }}
+              onDismissItem={handleDismissAttentionItem}
               maxItems={12}
             />
           </section>

@@ -18,8 +18,8 @@ export async function fetchCricoAgents(_baseUrl: string, token?: string): Promis
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    // Fetch from API proxy endpoint using internal localhost:3001 reference
-    const res = await fetch('http://127.0.0.1:3001/api/crico/actions?limit=20', {
+    const apiBaseUrl = _baseUrl.replace(/\/+$/, '')
+    const res = await fetch(`${apiBaseUrl}/api/crico/actions?limit=20`, {
       headers,
       signal: AbortSignal.timeout(5000),
     })

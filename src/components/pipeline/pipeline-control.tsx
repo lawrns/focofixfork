@@ -45,9 +45,9 @@ type WorkspacePipelineDefaults = {
 }
 
 const DEFAULT_PIPELINE_DEFAULTS: WorkspacePipelineDefaults = {
-  plan: 'gpt-5.4-medium',
+  plan: 'glm-5',
   execute: 'kimi-k2-standard',
-  review: 'gpt-5.4-medium',
+  review: 'glm-5',
   planFallback: [],
   executeFallback: [],
   reviewFallback: [],

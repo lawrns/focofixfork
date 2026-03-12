@@ -7,21 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Plus, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import type { CofounderLoop } from '@/lib/autonomy/loop-types'
-import {
-  LOOP_TYPE_LABELS,
-  STATUS_LABELS,
-  BACKEND_LABELS,
-  describeCronSchedule,
-} from '@/lib/autonomy/loop-types'
-import { CreateLoopDialog } from '@/components/autonomy/create-loop-dialog'
+import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api/fetch-client'
+import { normalizeApiError } from '@/lib/utils/normalize-api-error'
 
-function loopTypeLabel(loopType: string): string {
-  return LOOP_TYPE_LABELS[loopType] ?? loopType.replace(/_/g, ' ')
-}
-
-function scheduleLabel(loop: CofounderLoop): string {
-  return describeCronSchedule(loop.schedule_kind, loop.schedule_value, loop.timezone)
+type CronSummary = {
+  id: string
+  name: string
+  schedule: string
+  enabled: boolean
+  description?: string
+  next_run_at: string | null
+  last_run_at: string | null
 }
 
 function relativeTime(isoString: string | null | undefined): string {
@@ -51,117 +48,124 @@ function relativeTime(isoString: string | null | undefined): string {
   return isPast ? `${label} ago` : `in ${label}`
 }
 
-function statusBadgeClass(status: string): string {
-  switch (status) {
-    case 'active':
-      return 'text-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/10 border-[color:var(--foco-teal)]/20'
-    case 'paused':
-      return 'text-amber-500 bg-amber-500/10 border-amber-500/20'
-    case 'cancelled':
-    case 'expired':
-      return 'text-rose-500 bg-rose-500/10 border-rose-500/20'
-    case 'completed':
-      return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
-    default:
-      return 'text-muted-foreground bg-muted border-border'
-  }
+function statusBadgeClass(enabled: boolean): string {
+  return enabled
+    ? 'text-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/10 border-[color:var(--foco-teal)]/20'
+    : 'text-amber-500 bg-amber-500/10 border-amber-500/20'
 }
 
 export interface LoopSummaryCardProps {
   workspaceId?: string | null
 }
 
-export function LoopsSummaryCard({ workspaceId }: LoopSummaryCardProps) {
-  const [loops, setLoops] = useState<CofounderLoop[]>([])
+export function LoopsSummaryCard({ workspaceId: _workspaceId }: LoopSummaryCardProps) {
+  const [crons, setCrons] = useState<CronSummary[]>([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [patching, setPatching] = useState<string | null>(null)
-  const [createOpen, setCreateOpen] = useState(false)
 
-  const fetchLoops = useCallback(async () => {
+  const fetchCrons = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams({ limit: '20' })
-      if (workspaceId) params.set('workspace_id', workspaceId)
-      const res = await fetch(`/api/autonomy/loops?${params.toString()}`)
+      const res = await apiFetch('/api/crons')
       const json = await res.json()
       if (!res.ok) {
-        setError(json?.error ?? 'Failed to load loops')
+        setError(normalizeApiError(json?.error, 'Failed to load recurring jobs'))
         return
       }
-      setLoops((json?.data?.data ?? json?.data ?? []) as CofounderLoop[])
-      setCount(json?.data?.count ?? json?.count ?? 0)
+      const jobs = (Array.isArray(json?.data) ? json.data : []) as CronSummary[]
+      setCrons(jobs)
+      setCount(typeof json?.count === 'number' ? json.count : jobs.length)
     } catch {
       setError('Service unreachable')
     } finally {
       setLoading(false)
     }
-  }, [workspaceId])
+  }, [])
 
   useEffect(() => {
-    fetchLoops()
-  }, [fetchLoops])
+    void fetchCrons()
+  }, [fetchCrons])
 
-  async function toggleLoopStatus(loop: CofounderLoop) {
-    const nextStatus = loop.status === 'active' ? 'paused' : 'active'
-    setPatching(loop.id)
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void fetchCrons()
+    }, 15_000)
+
+    const handleFocus = () => {
+      void fetchCrons()
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchCrons()
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [fetchCrons])
+
+  async function toggleCronStatus(cron: CronSummary) {
+    setPatching(cron.id)
     try {
-      await fetch(`/api/autonomy/loops/${loop.id}`, {
+      const res = await apiFetch(`/api/crons/${cron.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({ enabled: !cron.enabled }),
       })
-      setLoops((prev) =>
-        prev.map((l) => (l.id === loop.id ? { ...l, status: nextStatus as CofounderLoop['status'] } : l)),
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        toast.error(normalizeApiError(json?.error, 'Failed to update recurring job'))
+        return
+      }
+      setCrons((prev) =>
+        prev.map((item) => (item.id === cron.id ? { ...item, enabled: !cron.enabled } : item)),
       )
     } catch {
-      // Swallow; state stays unchanged
+      toast.error('Service unreachable')
     } finally {
       setPatching(null)
     }
   }
 
   return (
-    <>
-      <CreateLoopDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        workspaceId={workspaceId ?? null}
-        onCreated={() => void fetchLoops()}
-      />
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-sm">Recurring Tasks</CardTitle>
-              {!loading && (
-                <Badge variant="outline" className="text-xs font-normal">
-                  {count}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1 px-2 text-[11px]"
-                onClick={() => setCreateOpen(true)}
-              >
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm">Recurring Tasks</CardTitle>
+            {!loading && (
+              <Badge variant="outline" className="text-xs font-normal">
+                {count}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button asChild size="sm" variant="outline" className="h-7 gap-1 px-2 text-[11px]">
+              <Link href="/recurring?create=true">
                 <Plus className="h-3.5 w-3.5" />
                 New
-              </Button>
-              <Link
-                href="/recurring"
-                className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1"
-              >
-                View all
-                <ArrowRight className="h-3 w-3" />
               </Link>
-            </div>
+            </Button>
+            <Link
+              href="/recurring"
+              className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1"
+            >
+              View all
+              <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
       <CardContent>
         {loading ? (
           <div className="space-y-3">
@@ -175,33 +179,33 @@ export function LoopsSummaryCard({ workspaceId }: LoopSummaryCardProps) {
           </div>
         ) : error ? (
           <p className="text-sm text-rose-500">{error}</p>
-        ) : loops.length === 0 ? (
+        ) : crons.length === 0 ? (
           <div className="text-center py-4 space-y-2">
-            <p className="text-sm text-muted-foreground">No active recurring tasks</p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1 px-2 text-[11px]"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Create one
+            <p className="text-sm text-muted-foreground">No recurring OpenClaw jobs</p>
+            <Button asChild size="sm" variant="outline" className="h-7 gap-1 px-2 text-[11px]">
+              <Link href="/recurring?create=true">
+                <Plus className="h-3.5 w-3.5" />
+                Create one
+              </Link>
             </Button>
           </div>
         ) : (
           <div className="divide-y">
-            {loops.map((loop) => (
-              <div key={loop.id} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
+            {crons.map((cron) => (
+              <div key={cron.id} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 space-y-0.5">
-                    <p className="text-sm font-medium truncate">{loopTypeLabel(loop.loop_type)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{scheduleLabel(loop)}</p>
+                    <p className="text-sm font-medium truncate">{cron.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{cron.schedule}</p>
+                    {cron.description && (
+                      <p className="text-xs text-muted-foreground truncate">{cron.description}</p>
+                    )}
                   </div>
                   <Badge
                     variant="outline"
-                    className={`shrink-0 text-[10px] font-medium ${statusBadgeClass(loop.status)}`}
+                    className={`shrink-0 text-[10px] font-medium ${statusBadgeClass(cron.enabled)}`}
                   >
-                    {STATUS_LABELS[loop.status] ?? loop.status}
+                    {cron.enabled ? 'Active' : 'Paused'}
                   </Badge>
                 </div>
 
@@ -209,45 +213,36 @@ export function LoopsSummaryCard({ workspaceId }: LoopSummaryCardProps) {
                   <span>
                     Next run:{' '}
                     <span className="text-foreground font-medium">
-                      {relativeTime(loop.next_tick_at)}
+                      {relativeTime(cron.next_run_at)}
                     </span>
                   </span>
-                  <span>·</span>
-                  <span>
-                    Runs:{' '}
-                    <span className="text-foreground font-medium">{loop.iteration_count}</span>
-                  </span>
-                  {loop.execution_backend && (
+                  {cron.last_run_at && (
                     <>
                       <span>·</span>
-                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 font-normal">
-                        {BACKEND_LABELS[loop.execution_backend] ?? loop.execution_backend}
-                      </Badge>
+                      <span>
+                        Last run:{' '}
+                        <span className="text-foreground font-medium">
+                          {relativeTime(cron.last_run_at)}
+                        </span>
+                      </span>
                     </>
                   )}
                 </div>
 
-                {(loop.status === 'active' || loop.status === 'paused') && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 text-[11px] px-2"
-                    disabled={patching === loop.id}
-                    onClick={() => toggleLoopStatus(loop)}
-                  >
-                    {patching === loop.id
-                      ? '...'
-                      : loop.status === 'active'
-                      ? 'Pause'
-                      : 'Resume'}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 text-[11px] px-2"
+                  disabled={patching === cron.id}
+                  onClick={() => toggleCronStatus(cron)}
+                >
+                  {patching === cron.id ? '...' : cron.enabled ? 'Pause' : 'Resume'}
+                </Button>
               </div>
             ))}
           </div>
         )}
       </CardContent>
     </Card>
-    </>
   )
 }

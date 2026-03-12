@@ -74,7 +74,7 @@ export function useProjectHandlers({
   }, [setProjects, user?.user_metadata?.full_name, user?.user_metadata?.name]);
 
   const handleCreateProject = useCallback(async () => {
-    if (!newProjectName.trim() || !currentWorkspaceId) {
+    if (!newProjectName.trim()) {
       toast.error('Please enter a project name');
       return;
     }
@@ -88,7 +88,6 @@ export function useProjectHandlers({
         body: JSON.stringify({
           name: newProjectName.trim(),
           description: newProjectDescription.trim() || null,
-          workspace_id: currentWorkspaceId,
           status: 'active',
           color: '#6366F1',
           icon: 'folder',
@@ -118,7 +117,7 @@ export function useProjectHandlers({
     } finally {
       setIsCreatingProject(false);
     }
-  }, [currentWorkspaceId, newProjectDescription, newProjectName, router, setCreateDialogOpen, setIsCreatingProject, setNewProjectDescription, setNewProjectName]);
+  }, [newProjectDescription, newProjectName, router, setCreateDialogOpen, setIsCreatingProject, setNewProjectDescription, setNewProjectName]);
 
   const handleDuplicateProject = useCallback(async (project: ProjectData) => {
     try {
@@ -132,7 +131,7 @@ export function useProjectHandlers({
           color: project.color,
           icon: project.icon,
           status: project.status,
-          workspace_id: currentWorkspaceId,
+          workspace_id: project.workspaceId ?? currentWorkspaceId ?? undefined,
         }),
       });
 

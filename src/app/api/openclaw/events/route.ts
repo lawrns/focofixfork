@@ -35,6 +35,126 @@ function eventMessage(payload: Record<string, unknown>): string | null {
   return null
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function threadMessageStatusFromRunStatus(status: 'pending' | 'running' | 'completed' | 'failed' | null) {
+  if (status === 'running') return 'running'
+  if (status === 'completed') return 'completed'
+  if (status === 'failed') return 'failed'
+  return 'pending'
+}
+
+function outputSummary(payload: Record<string, unknown>): string | null {
+  const summary = eventMessage(payload)
+  if (summary) return summary
+  if (typeof payload.output === 'string' && payload.output.trim()) return payload.output.trim()
+  if (payload.output && typeof payload.output === 'object') return JSON.stringify(payload.output)
+  return null
+}
+
+async function reconcileWorkspaceAgentRun(args: {
+  supabase: ReturnType<typeof supabaseAdmin>
+  trace: Record<string, unknown>
+  nextStatus: 'pending' | 'running' | 'completed' | 'failed' | null
+  payload: Record<string, unknown>
+  gatewayRunId: string | null
+}) {
+  const workspaceAgent = asObject(args.trace.workspace_agent)
+  if (Object.keys(workspaceAgent).length === 0) return
+
+  const now = new Date().toISOString()
+  const message = outputSummary(args.payload)
+  const terminal = args.nextStatus === 'completed' || args.nextStatus === 'failed'
+
+  const placeholderMessageId = typeof workspaceAgent.placeholder_message_id === 'string'
+    ? workspaceAgent.placeholder_message_id
+    : null
+
+  if (placeholderMessageId) {
+    const { data: placeholder } = await args.supabase
+      .from('agent_thread_messages')
+      .select('metadata')
+      .eq('id', placeholderMessageId)
+      .maybeSingle()
+
+    const existingMetadata = placeholder && typeof placeholder.metadata === 'object' && !Array.isArray(placeholder.metadata)
+      ? placeholder.metadata as Record<string, unknown>
+      : {}
+
+    await args.supabase
+      .from('agent_thread_messages')
+      .update({
+        status: threadMessageStatusFromRunStatus(args.nextStatus),
+        content:
+          message ??
+          (args.nextStatus === 'running'
+            ? 'OpenClaw is working through the request.'
+            : args.nextStatus === 'failed'
+              ? 'OpenClaw failed to complete the request.'
+              : 'OpenClaw completed the request.'),
+        metadata: {
+          ...existingMetadata,
+          last_status: args.nextStatus,
+          gateway_run_id: args.gatewayRunId,
+          last_event_at: now,
+          summary: message,
+        },
+      })
+      .eq('id', placeholderMessageId)
+
+    const threadId = typeof workspaceAgent.thread_id === 'string' ? workspaceAgent.thread_id : null
+    if (threadId) {
+      await args.supabase
+        .from('agent_threads')
+        .update({ last_message_at: now })
+        .eq('id', threadId)
+    }
+  }
+
+  const automationRunId = typeof workspaceAgent.automation_run_id === 'string'
+    ? workspaceAgent.automation_run_id
+    : null
+  const automationId = typeof workspaceAgent.automation_id === 'string'
+    ? workspaceAgent.automation_id
+    : null
+
+  if (automationRunId) {
+    await args.supabase
+      .from('automation_runs')
+      .update({
+        status: args.nextStatus ?? 'pending',
+        external_run_id: args.gatewayRunId,
+        ended_at: terminal ? now : null,
+        output: args.nextStatus === 'completed' ? args.payload : {},
+        error: args.nextStatus === 'failed' ? (message ?? 'OpenClaw task failed') : null,
+        trace: {
+          workspace_agent: workspaceAgent,
+          openclaw: {
+            gateway_run_id: args.gatewayRunId,
+            status: args.nextStatus,
+            last_event_at: now,
+            summary: message,
+          },
+        },
+      })
+      .eq('id', automationRunId)
+  }
+
+  if (automationId) {
+    await args.supabase
+      .from('automation_jobs')
+      .update({
+        last_status: args.nextStatus ?? 'pending',
+        last_run_at: now,
+      })
+      .eq('id', automationId)
+  }
+}
+
 function supabaseAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -255,6 +375,14 @@ export async function POST(req: NextRequest) {
           ...(message ? { summary: message } : {}),
         },
       )
+
+      await reconcileWorkspaceAgentRun({
+        supabase,
+        trace: asObject(existingRun.trace),
+        nextStatus,
+        payload: normalizedPayload,
+        gatewayRunId: typeof run_id === 'string' ? run_id : null,
+      })
 
       if (commandSurface.job_id) {
         if (nextStatus === 'pending' || nextStatus === 'running') {

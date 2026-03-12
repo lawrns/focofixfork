@@ -11,6 +11,7 @@ import {
   CreditCard,
   Bell,
   Plug,
+  Brain,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,12 +33,14 @@ import { NotificationSettings } from './components/NotificationSettings';
 import { IntegrationsSettings } from './components/IntegrationsSettings';
 import { SecuritySettings } from './components/SecuritySettings';
 import { BillingSettings } from './components/BillingSettings';
+import { AgentPersonalitySettings } from './components/openclaw/AgentPersonalitySettings';
 
 const settingsSections = [
   { id: 'workspace', label: 'Workspace', icon: Settings },
   { id: 'members', label: 'Members & Roles', icon: Users },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'ai', label: 'AI Policy', icon: Zap },
+  { id: 'agent-personality', label: 'Agent Personality', icon: Brain },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'security', label: 'Security', icon: Shield },
@@ -78,6 +81,8 @@ export default function SettingsPage() {
         return <AppearanceSettings />;
       case 'ai':
         return <AIPolicySettings />;
+      case 'agent-personality':
+        return <AgentPersonalitySettings />;
       case 'notifications':
         return <NotificationSettings />;
       case 'integrations':

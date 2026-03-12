@@ -264,6 +264,13 @@ export default function WorkspaceDetailPage() {
           </div>
 
           <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/workspaces/${workspaceId}`)}
+            >
+              <Zap className="w-4 h-4" />
+              Open Workspace
+            </Button>
             {canManageMembers && (
               <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
                 <DialogTrigger asChild>

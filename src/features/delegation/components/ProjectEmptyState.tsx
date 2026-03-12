@@ -7,11 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getProjectListHref } from '@/lib/routes/project-routes'
 
 interface ProjectEmptyStateProps {
-  workspaceId: string
   hasProjects?: boolean
 }
 
-export function ProjectEmptyState({ workspaceId, hasProjects = false }: ProjectEmptyStateProps) {
+export function ProjectEmptyState({ hasProjects = false }: ProjectEmptyStateProps) {
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
       <div className="text-center mb-12">

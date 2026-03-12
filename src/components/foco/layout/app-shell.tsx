@@ -50,16 +50,18 @@ export function AppShell({ children }: AppShellProps) {
 
   // ⚠️ HYDRATION FIX: pathname from usePathname() is undefined on server (SSR).
   const isPublicPage = pathname ? PUBLIC_PATHS.has(pathname) : false;
-
   // Gate focus mode on isMounted to avoid reading Zustand persist before hydration
   const focusModeActiveAfterMount = isMounted && focusModeActive;
   const isAppPage = !isPublicPage;
   const isFocusMode = isAppPage && focusModeActiveAfterMount;
+  const showAppChrome = isMounted && isAppPage
 
   // Gate sidebar collapse on isMounted
   const sidebarCollapsedAfterMount = isMounted && sidebarCollapsed;
 
-  const mainPaddingLeft = sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-56 lg:pl-60';
+  const mainPaddingLeft = isAppPage
+    ? (sidebarCollapsedAfterMount ? 'md:pl-[52px]' : 'md:pl-56 lg:pl-60')
+    : ''
   const mainChromeClasses = isAppPage ? 'pt-12 md:pt-14' : 'pt-0';
   const contentChromeClasses = isAppPage ? 'w-full px-2 py-3 sm:px-3 md:px-5 md:py-5 lg:px-6 lg:py-6' : 'w-full';
 
@@ -81,7 +83,7 @@ export function AppShell({ children }: AppShellProps) {
         suppressHydrationWarning on the outer div handles the structural diff.
         This is a known React hydration pattern for Zustand-persisted layout.
       */}
-      {isMounted && isAppPage && (
+      {showAppChrome && (
         <>
           <MobileMenu />
           <LeftRail />
@@ -115,7 +117,7 @@ export function AppShell({ children }: AppShellProps) {
       </main>
 
       {/* Mobile FAB — Dispatch */}
-      {isMounted && isAppPage && !isFocusMode && (
+      {showAppChrome && !isFocusMode && (
         <div className="fixed bottom-6 right-6 z-40 md:hidden">
           <button
             onClick={() => router.push('/dashboard?view=dispatch')}
@@ -130,7 +132,7 @@ export function AppShell({ children }: AppShellProps) {
       <UndoToast />
 
       {/* BossBar — fleet status strip for app pages only */}
-      {isMounted && isAppPage && <BossBar sidebarCollapsed={sidebarCollapsedAfterMount} />}
+      {showAppChrome && <BossBar sidebarCollapsed={sidebarCollapsedAfterMount} />}
           </div>
         </SwarmProvider>
       </LazyMotion>

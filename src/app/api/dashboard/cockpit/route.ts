@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const { user, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  const [runtimeRes, runsRes, fleetRes, ledgerRes, projectsRes, agentsRes, workRes, proposalsRes, statsRes, decisionsRes, loopsRes, sessionsRes] = await Promise.all([
+  const [runtimeRes, runsRes, fleetRes, ledgerRes, projectsRes, agentsRes, workRes, proposalsRes, statsRes, decisionsRes, cronsRes, sessionsRes] = await Promise.all([
     fetchJson(req, '/api/openclaw/runtime'),
     fetchJson(req, '/api/runs?include=stream'),
     fetchJson(req, '/api/policies/fleet-status'),
@@ -37,16 +37,12 @@ export async function GET(req: NextRequest) {
     fetchJson(req, '/api/proposals?limit=8'),
     fetchJson(req, '/api/dashboard/autonomous-stats'),
     fetchJson(req, '/api/command-center/decisions'),
-    fetchJson(req, '/api/autonomy/loops?status=active&limit=10'),
+    fetchJson(req, '/api/crons'),
     fetchJson(req, '/api/autonomy/sessions?limit=1'),
   ])
 
-  const loopsData = loopsRes.json?.data
-  const activeLoops = Array.isArray(loopsData?.data)
-    ? loopsData.data.length
-    : Array.isArray(loopsData)
-      ? loopsData.length
-      : loopsData?.count ?? loopsRes.json?.count ?? 0
+  const cronsData = Array.isArray(cronsRes.json?.data) ? cronsRes.json.data : []
+  const activeLoops = cronsData.filter((job: { enabled?: boolean }) => job.enabled !== false).length
 
   const sessions = sessionsRes.json?.data?.sessions ?? sessionsRes.json?.sessions ?? []
 

@@ -44,14 +44,14 @@ export async function fetchOpenClawAgents(_baseUrl: string): Promise<UnifiedAgen
   }
 
   if (!status || !status.relay?.reachable) {
+    // Return idle instead of error - OpenClaw may not be running locally
     return [{
       id: 'openclaw::relay',
       backend: 'openclaw',
       nativeId: 'relay',
-      name: 'Browser Agent',
-      role: 'Browser orchestration',
-      status: 'error',
-      errorMessage: 'Relay unreachable',
+      name: 'OpenClaw Agent',
+      role: 'AI agent gateway',
+      status: 'idle',
       raw: {},
     }]
   }

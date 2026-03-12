@@ -17,6 +17,7 @@ import {
   addDependencySchema,
   removeDependencySchema,
 } from '@/features/tasks/validation/dependency.schema'
+import { accessFailureResponse, requireTaskAccess } from '@/server/auth/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,8 @@ export async function GET(
     }
 
     const { id } = await params
+    const access = await requireTaskAccess({ taskId: id })
+    if (!access.ok) return accessFailureResponse(access)
 
     // Get all dependencies where this work item depends on others
     const { data: dependencies, error: queryError } = await supabase
@@ -83,6 +86,8 @@ export async function POST(
     }
 
     const { id: workItemId } = await params
+    const access = await requireTaskAccess({ taskId: workItemId })
+    if (!access.ok) return accessFailureResponse(access)
     const body = await req.json()
 
     // If depends_on_id is provided in request, use it; otherwise use from body
@@ -239,6 +244,8 @@ export async function DELETE(
     }
 
     const { id: workItemId } = await params
+    const access = await requireTaskAccess({ taskId: workItemId })
+    if (!access.ok) return accessFailureResponse(access)
     const body = await req.json()
 
     const { depends_on_id } = body

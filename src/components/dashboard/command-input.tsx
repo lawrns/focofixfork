@@ -13,6 +13,8 @@ import type { AgentOption, ProjectOption } from './use-dashboard-data'
 import { containsSensitiveText, redactSensitiveText } from '@/lib/security/redaction'
 
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
+const DEFAULT_AGENT_ID = 'cofounder'
+const DEFAULT_EXECUTOR_LABEL = 'Kimi K2 Standard'
 
 export const PERSONA_PRESETS: Array<{ key: 'cto' | 'coo' | 'auto' | 'intake'; label: string; description: string }> = [
   { key: 'cto', label: 'CTO', description: 'Architecture and systems decisions' },
@@ -89,7 +91,7 @@ export function CommandInput({
   const handleSubmit = async () => {
     if (!task.trim()) return
     setErrorMessage(null)
-    const result = await onDispatch({ task, persona, agentId: agentId.trim() || personaLabel, personaLabel, lane: lane !== 'auto' ? lane : undefined })
+    const result = await onDispatch({ task, persona, agentId: agentId.trim() || DEFAULT_AGENT_ID, personaLabel, lane: lane !== 'auto' ? lane : undefined })
     if (!result.ok) {
       setErrorMessage(result.error ?? 'Dispatch failed')
       return
@@ -223,7 +225,7 @@ export function CommandInput({
           >
             <div className="flex flex-col gap-2 md:flex-row md:items-center">
               <div className="bg-muted/50 rounded-md px-3 py-1.5 text-[11px] font-mono text-muted-foreground flex-1">
-                routing <span className="text-foreground/70">{personaLabel}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · lane <span className="text-foreground/70">{activeLane?.label ?? 'auto'}</span>{activeLane?.paths ? <span className="text-muted-foreground/60"> ({activeLane.paths})</span> : null} · mode <span className="text-foreground/70">persisted pipeline</span>
+                routing <span className="text-foreground/70">{personaLabel}</span> · model <span className="text-foreground/70">{DEFAULT_EXECUTOR_LABEL}</span> · project <span className="text-foreground/70">{selectedProjectSlug || 'default'}</span> · lane <span className="text-foreground/70">{activeLane?.label ?? 'auto'}</span>{activeLane?.paths ? <span className="text-muted-foreground/60"> ({activeLane.paths})</span> : null} · mode <span className="text-foreground/70">persisted pipeline</span>
               </div>
 
               <select

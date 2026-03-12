@@ -11,19 +11,22 @@ import {
   GripVertical,
   CheckCircle2,
   Bot,
+  Send,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { WorkItem } from '@/types/foco';
 import { priorityColors } from './constants';
 import { DelegationBadge } from './DelegationBadge';
 
-export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchive }: {
+export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchive, onQueueToAI }: {
   item: WorkItem;
   onDragStart?: (item: WorkItem) => void;
   onDragEnd?: () => void;
   onComplete?: (item: WorkItem) => void;
   onArchive?: (item: WorkItem) => void;
+  onQueueToAI?: (taskId: string) => void;
 }) {
   const router = useRouter();
   const isMobile = useMobile();
@@ -53,6 +56,8 @@ export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchi
   const handleArchive = () => {
     onArchive?.(item);
   };
+
+  const isQueuedForAI = item.delegation_status && item.delegation_status !== 'none' && item.delegation_status !== 'failed';
 
   const metadata = typeof item.metadata === 'object' && item.metadata !== null
     ? item.metadata as Record<string, unknown>
@@ -153,6 +158,24 @@ export function WorkItemCard({ item, onDragStart, onDragEnd, onComplete, onArchi
               </Avatar>
             )}
           </div>
+          {onQueueToAI && item.status !== 'done' && (
+            <div className="mt-2 flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-[11px] text-[color:var(--foco-teal)]"
+                disabled={Boolean(isQueuedForAI)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onQueueToAI(item.id);
+                }}
+              >
+                <Send className="mr-1 h-3 w-3" />
+                {isQueuedForAI ? 'Queued for AI' : 'Send to AI'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       <p className="text-[10px] text-zinc-400 mt-1 text-center opacity-0 group-hover:opacity-100 transition-opacity">

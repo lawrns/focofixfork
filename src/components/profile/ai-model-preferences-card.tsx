@@ -9,6 +9,7 @@ import { useOpenClawRuntime } from '@/lib/hooks/use-openclaw-runtime'
 export function AIModelPreferencesCard() {
   const { data, loading, refresh } = useOpenClawRuntime()
   const primaryLabel = data?.modelAlias ?? data?.primaryModel ?? 'Not configured'
+  const configuredModels = data?.configuredModels ?? []
 
   return (
     <Card>
@@ -57,15 +58,29 @@ export function AIModelPreferencesCard() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Badge variant={data?.relayReachable ? 'default' : 'destructive'}>
+          <Badge variant={data?.gatewayHealthy ? 'default' : 'destructive'}>
             Primary · {primaryLabel}
           </Badge>
           <Badge variant={data?.tokenConfigured ? 'outline' : 'destructive'}>
             Auth · {data?.tokenConfigured ? 'Configured' : 'Missing'}
           </Badge>
+          <Badge variant={data?.defaultModelConfigured ? 'outline' : 'destructive'}>
+            Default model · {data?.defaultModelConfigured ? 'Configured in OpenClaw' : 'Missing from OpenClaw config'}
+          </Badge>
           <Badge variant="outline">
             Tabs · {data?.attachedTabs ?? 0}
           </Badge>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Configured models</Label>
+          <div className="rounded-md border px-3 py-2 text-sm">
+            {loading
+              ? 'Loading configured models…'
+              : configuredModels.length > 0
+                ? configuredModels.join(', ')
+                : 'No models configured in OpenClaw'}
+          </div>
         </div>
 
         <div className="flex justify-end">

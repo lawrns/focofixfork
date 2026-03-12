@@ -44,11 +44,14 @@ export type OpenClawRuntime = {
   relayUrl: string
   gatewayUrl: string
   relayReachable: boolean
+  gatewayHealthy: boolean
   dispatchConfigured: boolean
   tokenConfigured: boolean
   tokenSource: 'env' | 'config' | 'none'
   primaryModel: string | null
   modelAlias: string | null
+  configuredModels: string[]
+  defaultModelConfigured: boolean
   workspacePath: string | null
   attachedTabs: number
 }

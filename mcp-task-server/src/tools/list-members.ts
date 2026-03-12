@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { supabase, WorkspaceMember } from '../db.js';
+import { supabase } from '../db.js';
 import { validateAdmin, isAdminOfWorkspace } from '../admin-auth.js';
+import { listWorkspaceMembers } from '../workspace-agent.js';
 
 export const listMembersSchema = z.object({
   workspace_id: z.string().uuid().describe('The workspace ID to list members from'),
@@ -27,20 +28,17 @@ export async function listMembers(input: ListMembersInput) {
   }
 
   // Get workspace members with user info
-  const { data: members, error } = await supabase
-    .from('workspace_members')
-    .select('id, workspace_id, user_id, role')
-    .eq('workspace_id', input.workspace_id)
-    .order('role');
-
-  if (error) {
+  let members: Record<string, unknown>[];
+  try {
+    members = await listWorkspaceMembers(input.workspace_id);
+  } catch (error) {
     return {
       content: [
         {
           type: 'text' as const,
           text: JSON.stringify({
             error: 'DATABASE_ERROR',
-            message: error.message,
+            message: error instanceof Error ? error.message : 'Failed to list workspace members',
           }),
         },
       ],
@@ -49,7 +47,6 @@ export async function listMembers(input: ListMembersInput) {
   }
 
   // Get user emails for each member
-  const userIds = members?.map(m => m.user_id) || [];
   const { data: authData } = await supabase.auth.admin.listUsers();
   
   const userMap = new Map<string, { email: string }>();
@@ -59,7 +56,7 @@ export async function listMembers(input: ListMembersInput) {
 
   const enrichedMembers = members?.map(m => ({
     ...m,
-    email: userMap.get(m.user_id)?.email || 'unknown',
+    email: userMap.get(typeof m.user_id === 'string' ? m.user_id : '')?.email || 'unknown',
   })) || [];
 
   return {

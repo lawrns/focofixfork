@@ -1,4 +1,5 @@
 import { getOpenClawServerConfig, buildEmptyRuntimeSnapshot } from './config'
+import { buildOpenClawBridgeDetails, buildOpenClawBridgePrompt } from './tool-bridge'
 import type {
   OpenClawDispatchRequest,
   OpenClawDispatchResult,
@@ -15,6 +16,34 @@ function normalizeList(value: unknown): Array<Record<string, unknown>> {
     : []
 }
 
+const EXECUTION_FRAMING = `You are in an available workspace. Use tools when possible.
+Do not answer with shell advice unless blocked.
+Report concrete outputs.`
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function buildToolBridgePrompt(context: Record<string, unknown>): string | null {
+  const workspaceId = typeof context.workspace_id === 'string' ? context.workspace_id : null
+  const actorUserId = typeof context.actor_user_id === 'string' ? context.actor_user_id : null
+  if (!workspaceId || !actorUserId) return null
+
+  const details = buildOpenClawBridgeDetails({
+    workspaceId,
+    actorUserId,
+    useCase:
+      typeof context.ai_use_case === 'string' && context.ai_use_case.trim().length > 0
+        ? context.ai_use_case as any
+        : 'command_surface_execute',
+    agentId: typeof context.agent_id === 'string' ? context.agent_id : null,
+  })
+
+  return buildOpenClawBridgePrompt(details)
+}
+
 export async function getOpenClawRuntimeSnapshot(): Promise<OpenClawRuntimeSnapshot> {
   const serverConfig = await getOpenClawServerConfig()
   const snapshot = buildEmptyRuntimeSnapshot(
@@ -25,6 +54,10 @@ export async function getOpenClawRuntimeSnapshot(): Promise<OpenClawRuntimeSnaps
 
   snapshot.primaryModel = serverConfig.primaryModel
   snapshot.modelAlias = serverConfig.modelAlias
+  snapshot.configuredModels = serverConfig.configuredModels
+  snapshot.defaultModelConfigured = Boolean(
+    serverConfig.primaryModel && serverConfig.configuredModels.includes(serverConfig.primaryModel)
+  )
   snapshot.workspacePath = serverConfig.workspacePath
   snapshot.tokenConfigured = Boolean(serverConfig.hookToken || serverConfig.gatewayToken)
   snapshot.tokenSource = serverConfig.tokenSource
@@ -44,6 +77,7 @@ export async function getOpenClawRuntimeSnapshot(): Promise<OpenClawRuntimeSnaps
     const profiles = normalizeList((body as Record<string, unknown>).profiles)
 
     snapshot.relayReachable = true
+    snapshot.gatewayHealthy = true
     snapshot.tabs = tabs.map((tab) => ({
       id: String(tab.id ?? tab.tabId ?? ''),
       title: String(tab.title ?? tab.name ?? ''),
@@ -68,6 +102,30 @@ export async function dispatchOpenClawTask(
 ): Promise<OpenClawDispatchResult> {
   const serverConfig = await getOpenClawServerConfig()
   const correlationId = request.correlationId?.trim() || crypto.randomUUID()
+  const context = asRecord(request.context)
+  const toolBridgePrompt = buildToolBridgePrompt(context)
+
+  // Apply execution framing to the task
+  const framedTask = [
+    EXECUTION_FRAMING,
+    toolBridgePrompt,
+    request.task,
+  ].filter((part): part is string => typeof part === 'string' && part.trim().length > 0).join('\n\n')
+
+  const bridgeContext = (() => {
+    const workspaceId = typeof context.workspace_id === 'string' ? context.workspace_id : null
+    const actorUserId = typeof context.actor_user_id === 'string' ? context.actor_user_id : null
+    if (!workspaceId || !actorUserId) return null
+    return buildOpenClawBridgeDetails({
+      workspaceId,
+      actorUserId,
+      useCase:
+        typeof context.ai_use_case === 'string' && context.ai_use_case.trim().length > 0
+          ? context.ai_use_case as any
+          : 'command_surface_execute',
+      agentId: typeof context.agent_id === 'string' ? context.agent_id : null,
+    })
+  })()
 
   const response = await fetch(`${serverConfig.gatewayUrl}/hooks/agent-run`, {
     method: 'POST',
@@ -79,10 +137,13 @@ export async function dispatchOpenClawTask(
       agent_id: request.agentId,
       task_id: request.taskId ?? undefined,
       title: request.title ?? undefined,
-      task: request.task,
-      preferred_model: request.preferredModel ?? undefined,
+      task: framedTask,
+      preferred_model: request.preferredModel ?? 'kimi-coding/k2p5',
       callback_url: request.callbackUrl ?? undefined,
-      context: request.context ?? {},
+      context: {
+        ...context,
+        ...(bridgeContext ? { foco_tool_bridge: bridgeContext } : {}),
+      },
       correlation_id: correlationId,
     }),
     signal: AbortSignal.timeout(30_000),

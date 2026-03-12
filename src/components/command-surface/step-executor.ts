@@ -1,5 +1,6 @@
 import type { CommandMode, PlanStep, StepResult, CTODecision, COODecision } from './types';
 import { normalizeApiError } from './pipeline-utils';
+import { apiFetch } from '@/lib/api/fetch-client';
 
 export async function executeStep(
   step: PlanStep,
@@ -30,7 +31,7 @@ export async function executeStep(
       if (decision && 'crons' in decision && decision.crons.length > 0) {
         const cron = decision.crons[0];
         try {
-          const res = await fetch('/api/crons', {
+          const res = await apiFetch('/api/crons', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -183,7 +184,7 @@ export async function executeStep(
         }
         if (cronStep?.result) {
           const cronId = (cronStep.result as any).cronId;
-          const res = await fetch(`/api/crons/${cronId}`);
+          const res = await apiFetch(`/api/crons/${cronId}`);
           if (!res.ok) return { success: false, error: 'Cron not found in database after creation' };
           return { success: true, result: { verified: true, type: 'cron', id: cronId } };
         }

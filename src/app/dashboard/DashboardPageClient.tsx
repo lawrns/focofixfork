@@ -468,7 +468,7 @@ export default function DashboardPageClient() {
               )}
               {(data.autonomy?.activeLoops ?? 0) > 0 && (
                 <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-[color:var(--foco-teal)] border-[color:var(--foco-teal)]/30">
-                  {data.autonomy.activeLoops} autonomy loops active
+                  {data.autonomy.activeLoops} recurring jobs active
                 </Badge>
               )}
               {(data.autonomy?.pendingDecisions ?? 0) > 0 && (

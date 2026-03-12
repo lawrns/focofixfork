@@ -61,9 +61,17 @@ function extractPrimaryModel(config: OpenClawConfigRecord): { model: string | nu
   }
 }
 
+function extractConfiguredModels(config: OpenClawConfigRecord): string[] {
+  const agents = asRecord(config.agents)
+  const defaults = asRecord(agents.defaults)
+  const models = asRecord(defaults.models)
+  return Object.keys(models).filter((key) => key.trim().length > 0)
+}
+
 export async function getOpenClawServerConfig() {
   const config = await readConfig()
   const { model, alias } = extractPrimaryModel(config)
+  const configuredModels = extractConfiguredModels(config)
   const gatewayTokenFromConfig = extractGatewayToken(config)
   const hookTokenFromConfig = extractHookToken(config)
   const envGatewayToken =
@@ -81,6 +89,7 @@ export async function getOpenClawServerConfig() {
     config,
     primaryModel: model,
     modelAlias: alias,
+    configuredModels,
     workspacePath: readString(asRecord(asRecord(config.agents).defaults).workspace),
     gatewayUrl: process.env.OPENCLAW_GATEWAY_URL ?? DEFAULT_GATEWAY_URL,
     relayUrl: process.env.FOCO_OPENCLAW_RELAY ?? DEFAULT_RELAY_URL,
@@ -102,11 +111,14 @@ export function buildEmptyRuntimeSnapshot(configPath: string, relayUrl: string, 
     relayUrl,
     gatewayUrl,
     relayReachable: false,
+    gatewayHealthy: false,
     dispatchConfigured: false,
     tokenConfigured: false,
     tokenSource: 'none',
     primaryModel: null,
     modelAlias: null,
+    configuredModels: [],
+    defaultModelConfigured: false,
     workspacePath: null,
     attachedTabs: 0,
     tabs: [],

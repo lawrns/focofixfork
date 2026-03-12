@@ -1,8 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 
-import { TaskRepository } from '@/lib/repositories/task-repository'
-import { isError } from '@/lib/repositories/base-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { createTaskExecutionEvent } from '@/features/task-intake'
 import {
@@ -11,9 +9,10 @@ import {
   taskNotFoundResponse,
   internalErrorResponse,
   databaseErrorResponse,
-  forbiddenResponse,
   badRequestResponse,
+  forbiddenResponse,
 } from '@/lib/api/response-helpers'
+import { accessFailureResponse, requireTaskAccess } from '@/server/auth/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +28,8 @@ export async function GET(
     }
 
     const { id } = await params
+    const access = await requireTaskAccess({ taskId: id })
+    if (!access.ok) return accessFailureResponse(access)
 
     // Use admin client to bypass RLS, then verify access manually
     // This is more reliable than depending on RLS with server-side auth
@@ -44,18 +45,6 @@ export async function GET(
 
     if (!task) {
       return taskNotFoundResponse(id)
-    }
-
-    // Verify user has access to this task's workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('id')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership) {
-      return forbiddenResponse('You do not have access to this task')
     }
 
     // Fetch related data (project, assignee)
@@ -144,6 +133,8 @@ export async function PATCH(
     }
 
     const { id } = await params
+    const access = await requireTaskAccess({ taskId: id })
+    if (!access.ok) return accessFailureResponse(access)
     const body = await req.json()
 
     // Verify task exists and user has access
@@ -155,18 +146,6 @@ export async function PATCH(
 
     if (!task) {
       return taskNotFoundResponse(id)
-    }
-
-    // Verify user has access to this task's workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('id')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership) {
-      return forbiddenResponse('You do not have access to this task')
     }
 
     const { data: project } = await supabaseAdmin
@@ -232,7 +211,7 @@ export async function PATCH(
         workspaceId: task.workspace_id,
         projectId: task.project_id,
         actorType: 'user',
-        actorId: user.id,
+        actorId: access.user.id,
         eventType: 'status_changed',
         summary: `Task moved from ${task.status} to ${body.status}.`,
         details: {
@@ -262,13 +241,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error, response: authResponse } = await getAuthUser(req)
+    const { error, response: authResponse } = await getAuthUser(req)
 
-    if (error || !user) {
+    if (error) {
       return mergeAuthResponse(authRequiredResponse(), authResponse)
     }
 
     const { id } = await params
+    const access = await requireTaskAccess({ taskId: id, minimumRole: 'admin' })
+    if (!access.ok) return accessFailureResponse(access)
 
     // Verify task exists and user has access
     const { data: task } = await supabaseAdmin
@@ -279,23 +260,6 @@ export async function DELETE(
 
     if (!task) {
       return taskNotFoundResponse(id)
-    }
-
-    // Verify user has access to this task's workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('id, role')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership) {
-      return forbiddenResponse('You do not have access to this task')
-    }
-
-    // Only admins and owners can delete tasks
-    if (!['owner', 'admin'].includes(membership.role)) {
-      return forbiddenResponse('Only admins can delete tasks')
     }
 
     const { error: deleteError } = await supabaseAdmin

@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     limits,
     report_request,
     bootstrap_run_id,
+    preferred_model,
   } = body as {
     prompt?: string
     mode?: string
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     limits?: unknown
     report_request?: Record<string, unknown> | null
     bootstrap_run_id?: string | null
+    preferred_model?: string | null
   }
 
   if (!prompt?.trim()) {
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest) {
   }
 
   const normalizedMode = typeof mode === 'string' && mode.trim() ? mode : 'auto'
+  const preferredModel = typeof preferred_model === 'string' && preferred_model.trim() ? preferred_model.trim() : undefined
   const jobId = createCommandStreamJob(user.id)
   const bootstrapRunId = typeof bootstrap_run_id === 'string' && bootstrap_run_id.trim() ? bootstrap_run_id.trim() : null
   const correlationId = bootstrapRunId ?? crypto.randomUUID()
@@ -87,10 +90,21 @@ export async function POST(req: NextRequest) {
       last_stream_event_at: timestamp(),
     })
     await mergeRunTrace(supabase, bootstrapRunId, {
+      ai_routing: preferredModel
+        ? {
+            requested: {
+              model: preferredModel,
+              executor_model: preferredModel,
+              fallback_chain: [],
+            },
+            actual: null,
+          }
+        : {},
       openclaw: {
         correlation_id: correlationId,
         dispatch_kind: 'command_surface',
         status: 'queued',
+        model: preferredModel,
         last_event_at: timestamp(),
       },
     })
@@ -132,6 +146,7 @@ export async function POST(req: NextRequest) {
       callbackUrl,
       taskId: task_id ?? undefined,
       title: bootstrapRunId ? `Command surface run ${bootstrapRunId}` : 'Command surface run',
+      preferredModel,
       context: {
         source: 'command_surface',
         workspace_id: workspace_id ?? null,
@@ -146,17 +161,34 @@ export async function POST(req: NextRequest) {
         constraints: constraints ?? null,
         limits: limits ?? null,
         report_request: report_request ?? null,
+        preferred_model: preferredModel,
         actor_user_id: user.id,
+        agent_id: primaryAgentId,
+        ai_use_case: 'command_surface_execute',
       },
     })
 
     if (bootstrapRunId) {
       await mergeRunTrace(supabase, bootstrapRunId, {
+        ai_routing: preferredModel
+          ? {
+              requested: {
+                model: preferredModel,
+                executor_model: preferredModel,
+                fallback_chain: [],
+              },
+              actual: {
+                executor_model: preferredModel,
+                fallback_chain: [],
+              },
+            }
+          : {},
         openclaw: {
           correlation_id: dispatchResult.correlationId,
           gateway_run_id: dispatchResult.runId,
           agent_id: primaryAgentId,
           status: dispatchResult.status,
+          model: preferredModel,
           last_event_at: timestamp(),
           last_summary: 'Task accepted by OpenClaw gateway',
           dispatch_kind: 'command_surface',

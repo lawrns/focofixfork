@@ -4,15 +4,15 @@ import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 export async function POST(request: NextRequest) {
   const { user, supabase, response } = await getAuthUser(request)
   if (!user) {
-    return NextResponse.json({ error: 'Auth required' }, { status: 401 })
+    return mergeAuthResponse(NextResponse.json({ error: 'Auth required' }, { status: 401 }), response)
   }
 
   try {
     const body = await request.json()
-    const { briefing } = body
+    const { briefing, workspaceId: requestedWorkspaceId } = body
 
     if (!briefing) {
-      return NextResponse.json({ error: 'Missing briefing data' }, { status: 400 })
+      return mergeAuthResponse(NextResponse.json({ error: 'Missing briefing data' }, { status: 400 }), response)
     }
 
     const notifications: Array<{
@@ -85,10 +85,18 @@ export async function POST(request: NextRequest) {
       return mergeAuthResponse(NextResponse.json({ ok: true, created: 0, skipped: notifications.length }), response)
     }
 
+    const workspaceId = await resolveWorkspaceId(supabase, user.id, requestedWorkspaceId)
+    if (!workspaceId) {
+      return mergeAuthResponse(
+        NextResponse.json({ ok: true, created: 0, skipped: newNotifications.length, reason: 'no_workspace' }),
+        response
+      )
+    }
+
     const { error } = await supabase.from('inbox_items').insert(
       newNotifications.map((n) => ({
         ...n,
-        workspace_id: null,
+        workspace_id: workspaceId,
       }))
     )
 
@@ -100,6 +108,29 @@ export async function POST(request: NextRequest) {
     return mergeAuthResponse(NextResponse.json({ ok: true, created: newNotifications.length }), response)
   } catch (err) {
     console.error('[notifications/from-briefing] error:', err)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return mergeAuthResponse(NextResponse.json({ error: 'Internal error' }, { status: 500 }), response)
   }
+}
+
+async function resolveWorkspaceId(
+  supabase: { from: (table: string) => any },
+  userId: string,
+  requestedWorkspaceId?: string | null
+): Promise<string | null> {
+  const query = supabase
+    .from('foco_workspace_members')
+    .select('workspace_id')
+    .eq('user_id', userId)
+
+  const membershipQuery = requestedWorkspaceId
+    ? query.eq('workspace_id', requestedWorkspaceId)
+    : query.limit(1)
+
+  const { data, error } = await membershipQuery.maybeSingle()
+  if (error) {
+    console.error('[notifications/from-briefing] workspace lookup error:', error)
+    return null
+  }
+
+  return data?.workspace_id ?? null
 }

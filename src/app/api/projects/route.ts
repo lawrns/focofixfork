@@ -11,6 +11,7 @@ import { ProjectRepository } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { hasFounderFullAccess } from '@/lib/auth/founder-access'
+import { resolvePrimaryWorkspace } from '@/server/workspaces/primary'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,22 +37,13 @@ export async function GET(req: NextRequest) {
   const slug = searchParams.get('slug')?.trim() || null
   const hasFullAccess = hasFounderFullAccess(user)
 
-  // Get all workspace memberships for this user (admin client bypasses recursive RLS pitfalls).
-  let workspaceIds: string[] = []
-  if (!hasFullAccess) {
-    const { data: membershipRows, error: membershipError } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('workspace_id')
-      .eq('user_id', user.id)
-    if (membershipError) {
-      return mergeAuthResponse(internalErrorResponse(membershipError.message), authResponse)
-    }
-
-    workspaceIds = Array.from(
-      new Set((membershipRows ?? []).map((row: any) => row.workspace_id).filter(Boolean))
-    ) as string[]
+  const scope = await resolvePrimaryWorkspace({ user, client: supabaseAdmin })
+  if (!scope.ok) {
+    return mergeAuthResponse(internalErrorResponse(scope.message), authResponse)
   }
-  const primaryWorkspaceId = workspaceIds[0] ?? null
+
+  const workspaceIds = scope.workspaceIds
+  const primaryWorkspaceId = scope.workspaceId
 
   // No workspace membership → return empty list (not an error, not a data leak)
   if (!hasFullAccess && workspaceIds.length === 0) {
@@ -219,26 +211,22 @@ export async function POST(req: NextRequest) {
     return mergeAuthResponse(badRequestResponse('Project name is required'), authResponse)
   }
 
-  const membershipsQuery = supabase
-    .from('foco_workspace_members')
-    .select('workspace_id')
-    .eq('user_id', user.id)
-    .limit(requestedWorkspaceId ? 50 : 1)
-
-  const { data: memberships, error: membershipError } = await membershipsQuery
-  if (membershipError) {
-    return mergeAuthResponse(internalErrorResponse(membershipError.message), authResponse)
+  const scope = await resolvePrimaryWorkspace({
+    user,
+    requestedWorkspaceId,
+    createIfMissing: true,
+    client: supabaseAdmin || supabase,
+  })
+  if (!scope.ok) {
+    if (scope.code === 'WORKSPACE_FORBIDDEN' || scope.code === 'WORKSPACE_NOT_FOUND') {
+      return mergeAuthResponse(badRequestResponse(scope.message), authResponse)
+    }
+    return mergeAuthResponse(internalErrorResponse(scope.message), authResponse)
   }
 
-  const workspaceIds = (memberships ?? []).map((m) => m.workspace_id)
-  const workspaceId = requestedWorkspaceId ?? workspaceIds[0]
-
+  const workspaceId = scope.workspaceId
   if (!workspaceId) {
-    return mergeAuthResponse(badRequestResponse('No workspace membership found'), authResponse)
-  }
-
-  if (requestedWorkspaceId && !workspaceIds.includes(requestedWorkspaceId)) {
-    return mergeAuthResponse(badRequestResponse('Invalid workspace for current user'), authResponse)
+    return mergeAuthResponse(internalErrorResponse('Failed to resolve a project scope'), authResponse)
   }
 
   const repo = new ProjectRepository(supabaseAdmin || supabase)

@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { Plus, Zap, AlertTriangle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { apiFetch } from '@/lib/api/fetch-client';
 import type { WorkItem, WorkItemStatus } from '@/types/foco';
 import { ListView, PeopleView, SettingsView, TimelineView } from '@/components/project';
 import { useCreateTaskModal } from '@/features/tasks';
@@ -35,6 +36,7 @@ export default function ProjectPage() {
     activeRuns,
     delegationEnabled, setDelegationEnabled,
     agentPool,
+    queueItems, setQueueItems,
     refetch,
   } = useProjectData(user, slug);
 
@@ -47,27 +49,33 @@ export default function ProjectPage() {
     Boolean(user) &&
     (project?.owner_id === user?.id || ['owner', 'admin'].includes(currentTeamMember?.role ?? ''));
 
+  const upsertTask = (taskId: string, patch: Partial<WorkItem>) => {
+    setTasks((current) => current.map((task) => (
+      task.id === taskId ? { ...task, ...patch } : task
+    )));
+  };
+
   const handleStatusChange = async (taskId: string, status: WorkItemStatus) => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
+      const res = await apiFetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error();
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, status } : t));
+      upsertTask(taskId, { status });
     } catch { toast.error('Failed to update task status'); }
   };
 
   const handleDrop = async (taskId: string, newStatus: WorkItemStatus) => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
+      const res = await apiFetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error();
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      upsertTask(taskId, { status: newStatus });
       toast.success('Task moved');
     } catch { toast.error('Failed to move task'); }
   };
@@ -82,30 +90,51 @@ export default function ProjectPage() {
 
   const handleCompleteTask = async (item: WorkItem) => {
     try {
-      const res = await fetch(`/api/tasks/${item.id}`, {
+      const res = await apiFetch(`/api/tasks/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'done' }),
       });
       if (!res.ok) throw new Error();
-      setTasks(tasks.map(t => t.id === item.id ? { ...t, status: 'done' } : t));
+      upsertTask(item.id, { status: 'done' });
       toast.success('Task completed');
     } catch { toast.error('Failed to complete task'); }
   };
 
   const handleArchiveTask = async (item: WorkItem) => {
     try {
-      const res = await fetch(`/api/tasks/${item.id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/tasks/${item.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       setTasks(tasks.filter(t => t.id !== item.id));
       toast.success('Task archived');
     } catch { toast.error('Failed to archive task'); }
   };
 
+  const handleQueueTaskForAI = async (taskId: string) => {
+    if (!project?.id) return;
+    try {
+      const res = await apiFetch(`/api/projects/${project.id}/delegation/queue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_ids: [taskId] }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.ok) {
+        throw new Error(payload?.error?.message || 'Failed to queue task for AI')
+      }
+
+      upsertTask(taskId, { delegation_status: 'pending' })
+      setQueueItems(payload?.data?.items ?? queueItems)
+      toast.success('Task queued for AI when dependencies are ready')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to queue task for AI')
+    }
+  };
+
   const handleAddMember = async (email: string, role: string) => {
     if (!project?.id) return;
     try {
-      const res = await fetch(`/api/projects/${project.id}/team`, {
+      const res = await apiFetch(`/api/projects/${project.id}/team`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, role })
       });
@@ -118,7 +147,7 @@ export default function ProjectPage() {
   const handleRemoveMember = async (memberId: string) => {
     if (!project?.id) return;
     try {
-      const res = await fetch(`/api/projects/${project.id}/team/${memberId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/projects/${project.id}/team/${memberId}`, { method: 'DELETE' });
       if (!res.ok) { const data = await res.json(); toast.error(data.error?.message || 'Failed to remove member'); return; }
       toast.success('Member removed successfully');
     } catch { toast.error('Failed to remove member'); }
@@ -127,7 +156,7 @@ export default function ProjectPage() {
   const handleUpdateRole = async (memberId: string, role: string) => {
     if (!project?.id) return;
     try {
-      const res = await fetch(`/api/projects/${project.id}/team/${memberId}`, {
+      const res = await apiFetch(`/api/projects/${project.id}/team/${memberId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role })
       });
@@ -138,10 +167,9 @@ export default function ProjectPage() {
 
   const handleSaveSettings = async (updates: Partial<Project>) => {
     if (!project?.id) throw new Error('Project not loaded');
-    const res = await fetch(`/api/projects/${project.id}`, {
+    const res = await apiFetch(`/api/projects/${project.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(updates),
     });
     if (!res.ok) {
@@ -153,10 +181,9 @@ export default function ProjectPage() {
 
   const handleArchiveProject = async () => {
     if (!project?.id) throw new Error('Project not loaded');
-    const res = await fetch(`/api/projects/${project.id}`, {
+    const res = await apiFetch(`/api/projects/${project.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ archived_at: new Date().toISOString() }),
     });
     if (!res.ok) {
@@ -168,9 +195,8 @@ export default function ProjectPage() {
 
   const handleDeleteProject = async () => {
     if (!project?.id) throw new Error('Project not loaded');
-    const res = await fetch(`/api/projects/${project.id}`, {
+    const res = await apiFetch(`/api/projects/${project.id}`, {
       method: 'DELETE',
-      credentials: 'include',
     });
     if (!res.ok) {
       const payload = await res.json().catch(() => ({}));
@@ -256,6 +282,7 @@ export default function ProjectPage() {
             onAddTask={handleAddTaskToColumn}
             onComplete={handleCompleteTask}
             onArchive={handleArchiveTask}
+            onQueueToAI={handleQueueTaskForAI}
           />
         </TabsContent>
 
@@ -294,7 +321,8 @@ export default function ProjectPage() {
             delegationEnabled={delegationEnabled}
             setDelegationEnabled={setDelegationEnabled}
             agentPool={agentPool}
-            setTasks={setTasks}
+            queueItems={queueItems}
+            onQueueToAI={handleQueueTaskForAI}
           />
         </TabsContent>
 

@@ -36,14 +36,32 @@ export class SettingsRepository extends BaseRepository<UserProfileWithSettings> 
     super(supabase)
   }
 
-  /**
-   * Get user settings by user ID
-   */
-  async getSettings(userId: string): Promise<Result<UserSettings>> {
+  private async findSettingsRow(userId: string): Promise<Result<{ id: string; settings: UserSettings }>> {
+    const byId = await this.findSettingsRowByColumn('id', userId)
+    if (byId.ok || byId.error.code !== 'NOT_FOUND') {
+      return byId
+    }
+
+    const byUserId = await this.findSettingsRowByColumn('user_id', userId)
+    if (!byUserId.ok && this.isMissingColumnError(byUserId.error.details)) {
+      return Err({
+        code: 'NOT_FOUND',
+        message: `User profile with id ${userId} not found`,
+        details: { userId },
+      })
+    }
+
+    return byUserId
+  }
+
+  private async findSettingsRowByColumn(
+    column: 'id' | 'user_id',
+    userId: string
+  ): Promise<Result<{ id: string; settings: UserSettings }>> {
     const { data, error } = await this.supabase
       .from(this.table)
-      .select('settings')
-      .eq('id', userId)
+      .select('id, settings')
+      .eq(column, userId)
       .maybeSingle()
 
     if (error) {
@@ -62,23 +80,44 @@ export class SettingsRepository extends BaseRepository<UserProfileWithSettings> 
       })
     }
 
-    return Ok((data.settings as UserSettings) || {})
+    return Ok({
+      id: data.id as string,
+      settings: (data.settings as UserSettings) || {},
+    })
+  }
+
+  private isMissingColumnError(details: unknown): boolean {
+    if (!details || typeof details !== 'object') {
+      return false
+    }
+
+    const code = 'code' in details ? details.code : null
+    return code === '42703' || code === 'PGRST204'
+  }
+
+  /**
+   * Get user settings by user ID
+   */
+  async getSettings(userId: string): Promise<Result<UserSettings>> {
+    const row = await this.findSettingsRow(userId)
+    if (isError(row)) {
+      return row
+    }
+
+    return Ok(row.data.settings)
   }
 
   /**
    * Update user settings (merge with existing)
    */
   async updateSettings(userId: string, updates: Partial<UserSettings>): Promise<Result<UserSettings>> {
-    // First, get current settings
-    const currentResult = await this.getSettings(userId)
-
-    // If error, return it
-    if (isError(currentResult)) {
+    const currentResult = await this.findSettingsRow(userId)
+    if (isError(currentResult) && currentResult.error.code !== 'NOT_FOUND') {
       return currentResult
     }
 
     // Merge settings
-    const currentSettings = currentResult.data
+    const currentSettings = currentResult.ok ? currentResult.data.settings : {}
     const updatedSettings: Record<string, unknown> = { ...currentSettings }
 
     // Update workspace settings if provided
@@ -109,14 +148,29 @@ export class SettingsRepository extends BaseRepository<UserProfileWithSettings> 
       }
     })
 
-    // Update in database
-    const { error: updateError } = await this.supabase
-      .from(this.table)
-      .update({
-        settings: updatedSettings,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
+    const payload = {
+      id: currentResult.ok ? currentResult.data.id : userId,
+      settings: updatedSettings,
+      updated_at: new Date().toISOString(),
+    }
+
+    const mutation = currentResult.ok
+      ? this.supabase
+          .from(this.table)
+          .update({
+            settings: updatedSettings,
+            updated_at: payload.updated_at,
+          })
+          .eq('id', currentResult.data.id)
+          .select('settings')
+          .single()
+      : this.supabase
+          .from(this.table)
+          .upsert(payload, { onConflict: 'id' })
+          .select('settings')
+          .single()
+
+    const { data, error: updateError } = await mutation
 
     if (updateError) {
       return Err({
@@ -126,7 +180,7 @@ export class SettingsRepository extends BaseRepository<UserProfileWithSettings> 
       })
     }
 
-    return Ok(updatedSettings as UserSettings)
+    return Ok(((data?.settings as UserSettings) || updatedSettings) as UserSettings)
   }
 
   /**

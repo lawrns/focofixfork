@@ -1,1 +1,1 @@
-export { default } from '@/app/empire/loops/page'
+export { default } from '@/app/crons/page'

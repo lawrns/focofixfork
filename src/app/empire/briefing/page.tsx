@@ -31,7 +31,7 @@ function BriefingPageInner() {
         void fetch('/api/notifications/from-briefing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ briefing: json }),
+          body: JSON.stringify({ briefing: json, workspaceId }),
         }).catch(() => { /* best-effort */ })
       }
     } catch {

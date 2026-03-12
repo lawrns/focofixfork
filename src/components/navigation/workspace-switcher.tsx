@@ -44,6 +44,8 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const [activeIndex, setActiveIndex] = useState(0)
   const [announcement, setAnnouncement] = useState('')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [storedWorkspaceSlug, setStoredWorkspaceSlug] = useState('')
+  const [storedWorkspaceId, setStoredWorkspaceId] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -51,8 +53,15 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const { user } = useAuth()
 
   // Get current workspace from props or localStorage
-  const current = currentWorkspace || localStorage.getItem('lastWorkspace') || ''
-  const currentWorkspaceData = workspaces.find(w => w.slug === current)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setStoredWorkspaceSlug(localStorage.getItem('lastWorkspace') || '')
+    setStoredWorkspaceId(localStorage.getItem('lastWorkspaceId') || '')
+  }, [])
+
+  const current = currentWorkspace || storedWorkspaceSlug || ''
+  const currentWorkspaceId = storedWorkspaceId
+  const currentWorkspaceData = workspaces.find(w => w.slug === current || w.id === currentWorkspaceId)
 
   // Fetch workspaces on mount
   useEffect(() => {
@@ -101,13 +110,13 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
   const handleWorkspaceSwitch = (workspace: Workspace) => {
     localStorage.setItem('lastWorkspace', workspace.slug)
+    localStorage.setItem('lastWorkspaceId', workspace.id)
     audioService.play('sync')
     hapticService.light()
     setAnnouncement(`Switched to ${workspace.name}`)
     setIsOpen(false)
 
-    // Navigate to workspace dashboard
-    router.push(`/${workspace.slug}/dashboard`)
+    router.push(`/workspaces/${workspace.id}`)
   }
 
   const handleCreateWorkspace = () => {
@@ -170,6 +179,10 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
         setIsOpen(false)
         break
     }
+  }
+
+  if (!isLoading && workspaces.length <= 1) {
+    return null
   }
 
   return (

@@ -6,6 +6,10 @@ export type AIUseCase =
   | 'command_surface_plan'
   | 'command_surface_execute'
   | 'command_surface_review'
+  | 'workspace_plan'
+  | 'workspace_execute'
+  | 'workspace_review'
+  | 'workspace_automation'
   | 'pipeline_plan'
   | 'pipeline_execute'
   | 'pipeline_review'
@@ -118,7 +122,7 @@ export const DEFAULT_WORKSPACE_AI_POLICY: WorkspaceAIPolicy = {
     task_analysis: '',
     prioritization: '',
   },
-  allowed_tools: ['query_tasks', 'get_task_details', 'get_project_overview'],
+  allowed_tools: ['query_tasks', 'get_task_details', 'get_project_overview', 'search_workspace', 'get_page', 'query_database', 'list_connectors', 'search_mail'],
   allowed_actions: ['suggest'],
   auto_apply: false,
   confidence_threshold: 0.8,
@@ -126,7 +130,7 @@ export const DEFAULT_WORKSPACE_AI_POLICY: WorkspaceAIPolicy = {
   approval_thresholds: {
     confidence_min_for_auto: 0.75,
   },
-  data_sources: ['tasks', 'comments', 'docs'],
+  data_sources: ['tasks', 'comments', 'docs', 'blocks', 'databases'],
   audit_visible: true,
   constraints: {
     allow_task_creation: true,

@@ -35,6 +35,8 @@ export async function POST(req: NextRequest) {
       ...context,
       dispatch_source: typeof body.source === 'string' ? body.source : 'focofixfork',
       actor_user_id: user.id,
+      agent_id: agentId,
+      ai_use_case: typeof context.ai_use_case === 'string' ? context.ai_use_case : 'command_surface_execute',
     },
     correlationId: typeof body.correlationId === 'string' ? body.correlationId : null,
   })

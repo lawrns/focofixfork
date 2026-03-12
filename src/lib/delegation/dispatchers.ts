@@ -59,8 +59,8 @@ export async function dispatchToClawdBot(payload: DispatchPayload): Promise<Disp
       task: taskBody || payload.title,
       taskId: payload.taskId,
       title: payload.title,
-      callbackUrl: payload.callbackUrl ?? null,
-      preferredModel: payload.preferredModel ?? null,
+      callbackUrl: payload.callbackUrl ?? undefined,
+      preferredModel: payload.preferredModel ?? undefined,
       context: {
         source: 'delegation_dispatcher',
         title: payload.title,

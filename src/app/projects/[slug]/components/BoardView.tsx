@@ -15,6 +15,7 @@ interface BoardViewProps {
   onAddTask: (status: WorkItemStatus) => void;
   onComplete: (item: WorkItem) => void;
   onArchive: (item: WorkItem) => void;
+  onQueueToAI: (taskId: string) => void;
 }
 
 export function BoardView({
@@ -25,6 +26,7 @@ export function BoardView({
   onAddTask,
   onComplete,
   onArchive,
+  onQueueToAI,
 }: BoardViewProps) {
   const isMobile = useMobile();
 
@@ -62,6 +64,7 @@ export function BoardView({
                 onAddTask={onAddTask}
                 onComplete={onComplete}
                 onArchive={onArchive}
+                onQueueToAI={onQueueToAI}
               />
             </motion.div>
           </AnimatePresence>
@@ -99,6 +102,7 @@ export function BoardView({
           onAddTask={onAddTask}
           onComplete={onComplete}
           onArchive={onArchive}
+          onQueueToAI={onQueueToAI}
         />
       ))}
     </div>

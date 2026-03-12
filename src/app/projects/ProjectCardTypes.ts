@@ -1,5 +1,6 @@
 export interface ProjectData {
   id: string;
+  workspaceId?: string | null;
   name: string;
   slug: string;
   description?: string;
@@ -24,6 +25,7 @@ export interface ProjectData {
 
 interface ApiProjectRow {
   id: string
+  workspace_id?: string | null
   name: string
   slug: string
   description?: string | null
@@ -51,6 +53,7 @@ export function mapApiProjectRow(
 ): ProjectData {
   return {
     id: project.id,
+    workspaceId: project.workspace_id ?? null,
     name: project.name,
     slug: project.slug,
     description: project.description ?? undefined,

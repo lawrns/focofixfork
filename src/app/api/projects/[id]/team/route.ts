@@ -1,16 +1,16 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {
   authRequiredResponse,
   successResponse,
-  forbiddenResponse,
   databaseErrorResponse,
   notFoundResponse,
   missingFieldResponse,
   conflictResponse
 } from '@/lib/api/response-helpers'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { hasFounderFullAccess } from '@/lib/auth/founder-access'
+import { accessFailureResponse, requireProjectAccess } from '@/server/auth/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,37 +24,12 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await params
-    const { user, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
+    if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-    if (authError || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
-    // Get project and verify access
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('foco_projects')
-      .select('id, workspace_id')
-      .eq('id', projectId)
-      .maybeSingle()
-
-    if (projectError) {
-      return databaseErrorResponse('Failed to fetch project', projectError)
-    }
-
-    if (!project) {
-      return notFoundResponse('Project', projectId)
-    }
-
-    // Verify user has access to workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('role')
-      .eq('workspace_id', project.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership) {
-      return forbiddenResponse('You do not have access to this project')
+    if (!hasFounderFullAccess(user)) {
+      const access = await requireProjectAccess({ projectId })
+      if (!access.ok) return accessFailureResponse(access)
     }
 
     // Get project members with user details
@@ -76,10 +51,10 @@ export async function GET(
 
     if (membersError) {
       // Table might not exist, return empty array
-      return mergeAuthResponse(successResponse([]), authResponse)
+      return successResponse([])
     }
 
-    return mergeAuthResponse(successResponse(members || []), authResponse)
+    return successResponse(members || [])
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to fetch project team', message)
@@ -96,43 +71,18 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params
-    const { user, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
+    if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-    if (authError || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
+    if (!hasFounderFullAccess(user)) {
+      const access = await requireProjectAccess({ projectId, minimumRole: 'admin' })
+      if (!access.ok) return accessFailureResponse(access)
     }
 
     const body = await request.json()
 
     if (!body.email && !body.user_id) {
       return missingFieldResponse('email or user_id')
-    }
-
-    // Get project and verify access
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('foco_projects')
-      .select('id, workspace_id')
-      .eq('id', projectId)
-      .maybeSingle()
-
-    if (projectError) {
-      return databaseErrorResponse('Failed to fetch project', projectError)
-    }
-
-    if (!project) {
-      return notFoundResponse('Project', projectId)
-    }
-
-    // Verify user has admin access to workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('role')
-      .eq('workspace_id', project.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      return forbiddenResponse('Only workspace admins can add project members')
     }
 
     // Find user by email if not provided user_id
@@ -174,11 +124,10 @@ export async function POST(
       .single()
 
     if (insertError) {
-      const errorRes = databaseErrorResponse('Failed to add project member', insertError)
-      return mergeAuthResponse(errorRes, authResponse)
+      return databaseErrorResponse('Failed to add project member', insertError)
     }
 
-    return mergeAuthResponse(successResponse(newMember), authResponse)
+    return successResponse(newMember)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to add project member', message)

@@ -1,14 +1,13 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { createTaskExecutionEvent } from '@/features/task-intake'
 import {
   successResponse,
-  authRequiredResponse,
   taskNotFoundResponse,
-  forbiddenResponse,
   databaseErrorResponse,
+  badRequestResponse,
 } from '@/lib/api/response-helpers'
+import { accessFailureResponse, requireTaskAccess } from '@/server/auth/access'
+import { queueProjectTasksForDelegation } from '@/lib/delegation/queue'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,13 +16,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error, response: authResponse } = await getAuthUser(req)
-
-    if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
     const { id } = await params
+    const access = await requireTaskAccess({ taskId: id })
+    if (!access.ok) return accessFailureResponse(access)
 
     // Fetch the task
     const { data: task, error: taskError } = await supabaseAdmin
@@ -40,42 +35,23 @@ export async function POST(
       return taskNotFoundResponse(id)
     }
 
-    // Verify user has access to this task's workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('id')
-      .eq('workspace_id', task.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership) {
-      return forbiddenResponse('You do not have access to this task')
+    if (typeof task.project_id !== 'string' || task.project_id.length === 0) {
+      return badRequestResponse('Only project tasks can be queued for AI delegation')
     }
 
-    // Queue for delegation by setting status to 'pending'
-    const { data: updated, error: updateError } = await supabaseAdmin
-      .from('work_items')
-      .update({ delegation_status: 'pending', updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (updateError) {
-      return databaseErrorResponse('Failed to queue task for delegation', updateError)
-    }
-
-    await createTaskExecutionEvent({
-      workItemId: id,
-      workspaceId: task.workspace_id,
+    await queueProjectTasksForDelegation({
       projectId: task.project_id,
-      actorType: 'user',
-      actorId: user.id,
-      eventType: 'queued_for_delegation',
-      summary: 'Task queued for agent delegation.',
-      details: {},
+      taskIds: [id],
+      actorId: access.user.id,
     })
 
-    return mergeAuthResponse(successResponse(updated), authResponse)
+    const { data: updated } = await supabaseAdmin
+      .from('work_items')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    return successResponse(updated)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to delegate task', message)

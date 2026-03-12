@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-import { authRequiredResponse, forbiddenResponse, notFoundResponse } from '@/lib/api/response-helpers'
+import { notFoundResponse } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { getProjectAccess } from '@/lib/projects/access'
 import { ALLOWED_AUGMENTATIONS, getWorkflowProposal, updateWorkflowProposal, createDraftWorkflowFromProposal } from '@/lib/n8n/project-workflows'
 import { getWorkflowTemplateById } from '@/lib/n8n/templates/registry'
 import { canActivateWorkflow } from '@/lib/n8n/governance'
 import { n8nRequest } from '@/lib/n8n/client'
+import { accessFailureResponse, requireProjectAccess } from '@/server/auth/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,21 +14,17 @@ interface RouteParams {
 }
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
-  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
-
   const { id: projectId, proposalId } = await params
-  const access = await getProjectAccess(projectId, user, supabase)
-  if (!access) return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
-  if (!access.canReview) return mergeAuthResponse(forbiddenResponse('Only project reviewers can approve workflows'), authResponse)
+  const access = await requireProjectAccess({ projectId, minimumRole: 'admin' })
+  if (!access.ok) return accessFailureResponse(access)
 
   try {
     const proposal = await getWorkflowProposal(projectId, proposalId)
-    if (!proposal) return mergeAuthResponse(notFoundResponse('Workflow proposal', proposalId), authResponse)
+    if (!proposal) return notFoundResponse('Workflow proposal', proposalId)
 
     const template = getWorkflowTemplateById(proposal.source_template_id)
     if (!template) {
-      return mergeAuthResponse(NextResponse.json({ ok: false, error: { message: 'Template no longer exists' } }, { status: 400 }), authResponse)
+      return NextResponse.json({ ok: false, error: { message: 'Template no longer exists' } }, { status: 400 })
     }
 
     const body = await req.json().catch(() => ({}))
@@ -96,23 +91,23 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const updated = await updateWorkflowProposal(proposal.id, {
       status: decision.allowed ? 'activated' : 'approved',
-      approver_id: user.id,
+      approver_id: access.user.id,
       approved_at: new Date().toISOString(),
       selected_add_ons: selectedAddOns,
       n8n_workflow_id: workflowId,
       automation_job_id: job?.id ?? null,
     })
 
-    return mergeAuthResponse(NextResponse.json({
+    return NextResponse.json({
       ok: true,
       data: {
         proposal: updated,
         workflow: activatedWorkflow ?? created,
         activated: Boolean(activatedWorkflow),
       },
-    }), authResponse)
+    })
   } catch (routeError) {
     const message = routeError instanceof Error ? routeError.message : 'Failed to approve workflow proposal'
-    return mergeAuthResponse(NextResponse.json({ ok: false, error: { message } }, { status: 500 }), authResponse)
+    return NextResponse.json({ ok: false, error: { message } }, { status: 500 })
   }
 }

@@ -64,3 +64,23 @@ export interface ProjectWorkflowLiveItem {
   recent_failures: number;
   updated_at: string;
 }
+
+export interface ProjectDelegationQueueItem {
+  id: string;
+  title: string;
+  status: string;
+  priority: string | null;
+  delegation_status: string | null;
+  assigned_agent: string | null;
+  run_id: string | null;
+  position: string | number | null;
+  created_at: string;
+  updated_at: string;
+  ready: boolean;
+  blocker_count: number;
+  blockers: Array<{
+    id: string;
+    title: string;
+    status: string | null;
+  }>;
+}

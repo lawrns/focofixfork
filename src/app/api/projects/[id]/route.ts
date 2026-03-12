@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-
 import { ProjectRepository } from '@/lib/repositories/project-repository'
 import type { UpdateProjectData } from '@/lib/repositories/project-repository'
 import { isError } from '@/lib/repositories/base-repository'
-import { authRequiredResponse, successResponse, databaseErrorResponse, projectNotFoundResponse, validateUUID, forbiddenResponse } from '@/lib/api/response-helpers'
+import { successResponse, databaseErrorResponse, projectNotFoundResponse, validateUUID } from '@/lib/api/response-helpers'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { accessFailureResponse, requireProjectAccess } from '@/server/auth/access'
+import { requireAuth } from '@/server/auth/requireAuth'
+import { hasFounderFullAccess } from '@/lib/auth/founder-access'
+import { resolvePrimaryWorkspace } from '@/server/workspaces/primary'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,14 +16,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-
-    if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
     const { id } = await params
-    const accessClient = supabaseAdmin || supabase
+    const access = await requireProjectAccess({ projectId: id })
+    if (!access.ok) return accessFailureResponse(access)
+
+    const accessClient = supabaseAdmin
     const repo = new ProjectRepository(accessClient)
 
     // Try to find by ID first
@@ -29,37 +28,51 @@ export async function GET(
 
     // If not found and ID doesn't look like UUID, try by slug
     if (isError(result) && result.error.code === 'NOT_FOUND') {
-      // Extract workspace_id from query params for slug lookup
       const { searchParams } = new URL(req.url)
-      const workspaceId = searchParams.get('workspace_id')
+      const requestedWorkspaceId = searchParams.get('workspace_id')
+      const auth = await requireAuth()
+      const scope = await resolvePrimaryWorkspace({
+        user: auth,
+        requestedWorkspaceId,
+        client: supabaseAdmin,
+      })
 
-      if (workspaceId) {
-        result = await repo.findBySlug(workspaceId, id)
+      if (!scope.ok) {
+        return databaseErrorResponse(scope.message, scope.details)
+      }
+
+      if (scope.workspaceId && requestedWorkspaceId) {
+        result = await repo.findBySlug(scope.workspaceId, id)
+      } else if (scope.workspaceIds.length > 0) {
+        let slugQuery = accessClient
+          .from('foco_projects')
+          .select('*')
+          .eq('slug', id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+
+        if (!hasFounderFullAccess(auth)) {
+          slugQuery = slugQuery.in('workspace_id', scope.workspaceIds)
+        }
+
+        const { data: projectBySlug, error: slugError } = await slugQuery.maybeSingle()
+        if (slugError) {
+          return databaseErrorResponse('Failed to fetch project', slugError)
+        }
+        if (projectBySlug) {
+          result = { ok: true, data: projectBySlug as any }
+        }
       }
     }
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
+        return projectNotFoundResponse(id)
       }
-      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    const { data: membership, error: membershipError } = await accessClient
-      .from('foco_workspace_members')
-      .select('id')
-      .eq('workspace_id', result.data.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (membershipError) {
-      return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
-    }
-    if (!membership) {
-      return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
-    }
-
-    return mergeAuthResponse(successResponse(result.data), authResponse)
+    return successResponse(result.data)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to fetch project', message)
@@ -71,12 +84,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-
-    if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
     const { id } = await params
     
     // Validate UUID format
@@ -85,30 +92,19 @@ export async function PATCH(
       return uuidError
     }
 
+    const access = await requireProjectAccess({ projectId: id })
+    if (!access.ok) return accessFailureResponse(access)
+
     const body = await req.json()
-    const accessClient = supabaseAdmin || supabase
+    const accessClient = supabaseAdmin
     const repo = new ProjectRepository(accessClient)
 
     const existing = await repo.findById(id)
     if (isError(existing)) {
       if (existing.error.code === 'NOT_FOUND') {
-        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
+        return projectNotFoundResponse(id)
       }
-      return mergeAuthResponse(databaseErrorResponse(existing.error.message, existing.error.details), authResponse)
-    }
-
-    const { data: membership, error: membershipError } = await accessClient
-      .from('foco_workspace_members')
-      .select('id')
-      .eq('workspace_id', existing.data.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (membershipError) {
-      return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
-    }
-    if (!membership) {
-      return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
+      return databaseErrorResponse(existing.error.message, existing.error.details)
     }
 
     // Build update object with only provided fields
@@ -129,15 +125,15 @@ export async function PATCH(
 
     if (isError(result)) {
       if (result.error.code === 'NOT_FOUND') {
-        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
+        return projectNotFoundResponse(id)
       }
       if (result.error.code === 'DUPLICATE_SLUG') {
-        return mergeAuthResponse(databaseErrorResponse('Slug already exists in workspace', result.error.details), authResponse)
+        return databaseErrorResponse('Slug already exists in workspace', result.error.details)
       }
-      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return mergeAuthResponse(successResponse(result.data), authResponse)
+    return successResponse(result.data)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to update project', message)
@@ -149,12 +145,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-
-    if (error || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
     const { id } = await params
     
     // Validate UUID format
@@ -163,38 +153,27 @@ export async function DELETE(
       return uuidError
     }
 
-    const accessClient = supabaseAdmin || supabase
+    const access = await requireProjectAccess({ projectId: id })
+    if (!access.ok) return accessFailureResponse(access)
+
+    const accessClient = supabaseAdmin
     const repo = new ProjectRepository(accessClient)
 
     const existing = await repo.findById(id)
     if (isError(existing)) {
       if (existing.error.code === 'NOT_FOUND') {
-        return mergeAuthResponse(projectNotFoundResponse(id), authResponse)
+        return projectNotFoundResponse(id)
       }
-      return mergeAuthResponse(databaseErrorResponse(existing.error.message, existing.error.details), authResponse)
-    }
-
-    const { data: membership, error: membershipError } = await accessClient
-      .from('foco_workspace_members')
-      .select('id')
-      .eq('workspace_id', existing.data.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (membershipError) {
-      return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
-    }
-    if (!membership) {
-      return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
+      return databaseErrorResponse(existing.error.message, existing.error.details)
     }
 
     const result = await repo.delete(id)
 
     if (isError(result)) {
-      return mergeAuthResponse(databaseErrorResponse(result.error.message, result.error.details), authResponse)
+      return databaseErrorResponse(result.error.message, result.error.details)
     }
 
-    return mergeAuthResponse(successResponse({ deleted: true }), authResponse)
+    return successResponse({ deleted: true })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to delete project', message)

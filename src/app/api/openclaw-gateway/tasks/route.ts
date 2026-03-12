@@ -40,12 +40,19 @@ export async function POST(request: NextRequest) {
           },
         }
       : context
+    const executionContext = {
+      ...(resolvedContext && typeof resolvedContext === 'object' ? resolvedContext : {}),
+      ...(typeof agentId === 'string' && agentId.trim() ? { agent_id: agentId.trim() } : {}),
+      ...(typeof (resolvedContext as Record<string, unknown> | null)?.ai_use_case === 'string'
+        ? {}
+        : { ai_use_case: 'command_surface_execute' }),
+    }
 
     try {
       const data = await dispatchOpenClawTask({
         agentId,
         task: resolvedTask,
-        context: resolvedContext,
+        context: executionContext,
         correlationId,
         callbackUrl,
         taskId: typeof body.taskId === 'string' ? body.taskId : null,

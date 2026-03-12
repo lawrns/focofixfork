@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Activity, AlertTriangle, Bot, CheckCircle2, Clock3, ExternalLink, PlayCircle, ShieldAlert, Sparkles, Workflow } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
+import { apiFetch } from '@/lib/api/fetch-client'
 import { ApprovalButtons } from '@/components/proposals/approval-buttons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,8 +40,8 @@ export function ProjectWorkflowsTab({
     try {
       setLoading(true)
       const [proposalRes, liveRes] = await Promise.all([
-        fetch(`/api/projects/${project.id}/workflows/proposals`, { credentials: 'include', cache: 'no-store' }),
-        fetch(`/api/projects/${project.id}/workflows`, { credentials: 'include', cache: 'no-store' }),
+        apiFetch(`/api/projects/${project.id}/workflows/proposals`, { cache: 'no-store' }),
+        apiFetch(`/api/projects/${project.id}/workflows`, { cache: 'no-store' }),
       ])
       const proposalJson = await proposalRes.json().catch(() => ({}))
       const liveJson = await liveRes.json().catch(() => ({}))
@@ -80,9 +81,8 @@ export function ProjectWorkflowsTab({
   const handleGenerate = useCallback(async () => {
     try {
       setGenerating(true)
-      const res = await fetch(`/api/projects/${project.id}/workflows/proposals/generate`, {
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/proposals/generate`, {
         method: 'POST',
-        credentials: 'include',
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? 'Failed to generate workflow proposals')
@@ -98,10 +98,9 @@ export function ProjectWorkflowsTab({
 
   const handleApprove = useCallback(async (proposal: ProjectWorkflowProposal) => {
     try {
-      const res = await fetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/approve`, {
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ selected_add_ons: selectedAddOns[proposal.id] ?? proposal.suggested_add_ons.map((item) => item.id) }),
       })
       const json = await res.json().catch(() => ({}))
@@ -115,9 +114,8 @@ export function ProjectWorkflowsTab({
 
   const handleReject = useCallback(async (proposal: ProjectWorkflowProposal) => {
     try {
-      const res = await fetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/reject`, {
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/reject`, {
         method: 'POST',
-        credentials: 'include',
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? 'Failed to reject workflow')
@@ -130,9 +128,8 @@ export function ProjectWorkflowsTab({
 
   const handleToggleWorkflow = useCallback(async (workflow: ProjectWorkflowLiveItem, action: 'activate' | 'deactivate') => {
     try {
-      const res = await fetch(`/api/projects/${project.id}/workflows/${workflow.workflow_id}/${action}`, {
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/${workflow.workflow_id}/${action}`, {
         method: 'POST',
-        credentials: 'include',
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? `Failed to ${action} workflow`)

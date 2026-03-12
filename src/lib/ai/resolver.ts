@@ -45,7 +45,7 @@ function getEnvDefaultModel(provider: AIProvider): string {
 }
 
 async function getRoutingDefault(useCase: AIUseCase): Promise<Partial<AIExecutionProfile>> {
-  if (!useCase.startsWith('command_surface_') && !useCase.startsWith('pipeline_')) {
+  if (!useCase.startsWith('command_surface_') && !useCase.startsWith('pipeline_') && !useCase.startsWith('workspace_')) {
     return {}
   }
 

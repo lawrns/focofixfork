@@ -32,6 +32,10 @@ export interface AuthResult {
  */
 export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
   let response = NextResponse.next()
+  const authHeader = req.headers.get('authorization')
+  const accessToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : null
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,8 +57,10 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
     }
   )
 
-  // First try getUser() which validates the JWT from cookies
-  const { data: { user }, error } = await supabase.auth.getUser()
+  // First try the bearer token if provided, then fall back to the request cookies.
+  const { data: { user }, error } = accessToken
+    ? await supabase.auth.getUser(accessToken)
+    : await supabase.auth.getUser()
   
   // If getUser fails, log the error for debugging
   if (error) {

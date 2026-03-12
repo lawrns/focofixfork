@@ -1,14 +1,14 @@
 import { NextRequest } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-
 import { supabaseAdmin } from '@/lib/supabase-server'
 import {
   authRequiredResponse,
   successResponse,
-  forbiddenResponse,
   databaseErrorResponse,
   notFoundResponse
 } from '@/lib/api/response-helpers'
+import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
+import { hasFounderFullAccess } from '@/lib/auth/founder-access'
+import { accessFailureResponse, requireProjectAccess } from '@/server/auth/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,40 +22,15 @@ export async function PATCH(
 ) {
   try {
     const { id: projectId, userId: targetUserId } = await params
-    const { user, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
+    if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-    if (authError || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
+    if (!hasFounderFullAccess(user)) {
+      const access = await requireProjectAccess({ projectId, minimumRole: 'admin' })
+      if (!access.ok) return accessFailureResponse(access)
     }
 
     const body = await request.json()
-
-    // Get project and verify access
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('foco_projects')
-      .select('id, workspace_id')
-      .eq('id', projectId)
-      .maybeSingle()
-
-    if (projectError) {
-      return databaseErrorResponse('Failed to fetch project', projectError)
-    }
-
-    if (!project) {
-      return notFoundResponse('Project', projectId)
-    }
-
-    // Verify user has admin access to workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('role')
-      .eq('workspace_id', project.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      return forbiddenResponse('Only workspace admins can update project member roles')
-    }
 
     // Update member role
     const { data: updatedMember, error: updateError } = await supabaseAdmin
@@ -67,16 +42,14 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      const errorRes = databaseErrorResponse('Failed to update member role', updateError)
-      return mergeAuthResponse(errorRes, authResponse)
+      return databaseErrorResponse('Failed to update member role', updateError)
     }
 
     if (!updatedMember) {
-      const errorRes = notFoundResponse('Project member', targetUserId)
-      return mergeAuthResponse(errorRes, authResponse)
+      return notFoundResponse('Project member', targetUserId)
     }
 
-    return mergeAuthResponse(successResponse(updatedMember), authResponse)
+    return successResponse(updatedMember)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to update project member', message)
@@ -93,37 +66,12 @@ export async function DELETE(
 ) {
   try {
     const { id: projectId, userId: targetUserId } = await params
-    const { user, error: authError, response: authResponse } = await getAuthUser(request)
+    const { user, error, response: authResponse } = await getAuthUser(request)
+    if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-    if (authError || !user) {
-      return mergeAuthResponse(authRequiredResponse(), authResponse)
-    }
-
-    // Get project and verify access
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('foco_projects')
-      .select('id, workspace_id')
-      .eq('id', projectId)
-      .maybeSingle()
-
-    if (projectError) {
-      return databaseErrorResponse('Failed to fetch project', projectError)
-    }
-
-    if (!project) {
-      return notFoundResponse('Project', projectId)
-    }
-
-    // Verify user has admin access to workspace
-    const { data: membership } = await supabaseAdmin
-      .from('foco_workspace_members')
-      .select('role')
-      .eq('workspace_id', project.workspace_id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      return forbiddenResponse('Only workspace admins can remove project members')
+    if (!hasFounderFullAccess(user)) {
+      const access = await requireProjectAccess({ projectId, minimumRole: 'admin' })
+      if (!access.ok) return accessFailureResponse(access)
     }
 
     // Remove member from project
@@ -134,11 +82,10 @@ export async function DELETE(
       .eq('user_id', targetUserId)
 
     if (deleteError) {
-      const errorRes = databaseErrorResponse('Failed to remove project member', deleteError)
-      return mergeAuthResponse(errorRes, authResponse)
+      return databaseErrorResponse('Failed to remove project member', deleteError)
     }
 
-    return mergeAuthResponse(successResponse({ message: 'Member removed successfully' }), authResponse)
+    return successResponse({ message: 'Member removed successfully' })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return databaseErrorResponse('Failed to remove project member', message)

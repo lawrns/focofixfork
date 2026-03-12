@@ -2,8 +2,9 @@
 
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { toast } from 'sonner';
+import { apiFetch } from '@/lib/api/fetch-client';
 import type { WorkItem } from '@/types/foco';
-import type { Project } from './types';
+import type { Project, ProjectDelegationQueueItem } from './types';
 import { DelegationBadge } from './DelegationBadge';
 
 interface FleetTabProps {
@@ -14,7 +15,8 @@ interface FleetTabProps {
   delegationEnabled: boolean;
   setDelegationEnabled: (val: boolean) => void;
   agentPool: string[];
-  setTasks: React.Dispatch<React.SetStateAction<WorkItem[]>>;
+  queueItems: ProjectDelegationQueueItem[];
+  onQueueToAI: (taskId: string) => void;
 }
 
 export function FleetTab({
@@ -25,7 +27,8 @@ export function FleetTab({
   delegationEnabled,
   setDelegationEnabled,
   agentPool,
-  setTasks,
+  queueItems,
+  onQueueToAI,
 }: FleetTabProps) {
   const [delegatingTaskId, setDelegatingTaskId] = useState<string | null>(null);
 
@@ -36,10 +39,9 @@ export function FleetTab({
     };
 
     try {
-      const res = await fetch(`/api/projects/${project?.id}`, {
+      const res = await apiFetch(`/api/projects/${project?.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ delegation_settings: nextSettings }),
       });
 
@@ -82,13 +84,7 @@ export function FleetTab({
                       onClick={async () => {
                         setDelegatingTaskId(task.id);
                         try {
-                          const res = await fetch(`/api/tasks/${task.id}/delegate`, { method: 'POST', credentials: 'include' });
-                          if (res.ok) {
-                            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, delegation_status: 'pending' } as any : t));
-                            toast.success('Task queued for delegation');
-                          } else {
-                            toast.error('Failed to delegate task');
-                          }
+                          await onQueueToAI(task.id);
                         } finally {
                           setDelegatingTaskId(null);
                         }
@@ -176,6 +172,29 @@ export function FleetTab({
                 <div key={agent} className="flex items-center gap-2 text-[11px] font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-2 py-1 rounded">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                   {agent}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <h3 className="font-medium text-sm mb-3">AI Queue</h3>
+          {queueItems.length === 0 ? (
+            <p className="text-sm text-zinc-400">No tasks queued for AI yet</p>
+          ) : (
+            <div className="space-y-2">
+              {queueItems.slice(0, 6).map((item) => (
+                <div key={item.id} className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs font-medium">{item.title}</p>
+                    <DelegationBadge status={item.delegation_status ?? 'none'} />
+                  </div>
+                  <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {item.ready
+                      ? 'Ready to dispatch when an agent is available'
+                      : `${item.blocker_count} blocker${item.blocker_count === 1 ? '' : 's'} before AI can pick this up`}
+                  </p>
                 </div>
               ))}
             </div>

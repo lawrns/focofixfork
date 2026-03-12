@@ -1,5 +1,6 @@
 import { supabase, MemberRole } from './db.js';
 import { CONFIG } from './config.js';
+import { listAdminWorkspaceMemberships } from './workspace-agent.js';
 
 export interface AdminContext {
   userId: string;
@@ -46,34 +47,10 @@ export async function validateAdmin(): Promise<AdminContext> {
     }
   }
 
-  // Get all workspaces where user is admin or owner
-  const { data: memberships, error: memberError } = await supabase
-    .from('workspace_members')
-    .select(`
-      workspace_id,
-      role,
-      workspaces!inner (
-        id,
-        name,
-        slug
-      )
-    `)
-    .eq('user_id', userId)
-    .in('role', ['owner', 'admin']);
-
-  if (memberError) {
-    throw new Error(`Failed to fetch admin workspaces: ${memberError.message}`);
-  }
-
-  if (!memberships || memberships.length === 0) {
+  const workspaces = await listAdminWorkspaceMemberships(userId!);
+  if (workspaces.length === 0) {
     throw new Error(`User ${email} is not an admin or owner of any workspace`);
   }
-
-  const workspaces = memberships.map((m: any) => ({
-    workspaceId: m.workspace_id,
-    workspaceName: m.workspaces.name,
-    role: m.role as MemberRole,
-  }));
 
   cachedAdminContext = {
     userId: userId!,

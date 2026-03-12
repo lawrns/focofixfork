@@ -19,6 +19,7 @@ import {
   summarizeRuntimeProfile,
   upsertClawdbotRuntimeProfile,
 } from '@/lib/clawdbot/runtime-profile'
+import { compareDelegationQueueItems, listProjectDelegationQueue } from './queue'
 
 export interface DelegationTickResult {
   processed: number
@@ -58,7 +59,7 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
   const { data: items, error: itemsError } = await supabaseAdmin
     .from('work_items')
     .select(`
-      id, workspace_id, title, description, priority, created_at, approval_required, approved_by, handbook_ref,
+      id, workspace_id, title, description, priority, position, created_at, approval_required, approved_by, handbook_ref,
       foco_projects!project_id (
         id, name, slug, assigned_agent_pool, delegation_settings, local_path, owner_id
       )
@@ -73,7 +74,40 @@ export async function processDelegationTick(): Promise<DelegationTickResult> {
 
   result.processed = items.length
 
+  const projectIds: string[] = Array.from(new Set(
+    items
+      .map((item: any) => item.foco_projects?.id)
+      .filter((value: unknown): value is string => typeof value === 'string' && value.length > 0)
+  ))
+  const queueByTaskId = new Map<string, Awaited<ReturnType<typeof listProjectDelegationQueue>>[number]>()
+  await Promise.all(projectIds.map(async (projectId) => {
+    const queueItems = await listProjectDelegationQueue(projectId)
+    for (const queueItem of queueItems) {
+      queueByTaskId.set(queueItem.id, queueItem)
+    }
+  }))
+
+  const runnableItems = items
+    .filter((item: any) => {
+      const queueItem = queueByTaskId.get(item.id)
+      return !queueItem || queueItem.ready
+    })
+    .sort((left: any, right: any) => {
+      const leftQueue = queueByTaskId.get(left.id)
+      const rightQueue = queueByTaskId.get(right.id)
+      if (leftQueue && rightQueue) {
+        return compareDelegationQueueItems(leftQueue, rightQueue)
+      }
+      return new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+    })
+  const runnableIds = new Set(runnableItems.map((item: any) => item.id))
+
   for (const item of items) {
+    if (!runnableIds.has(item.id)) {
+      result.skipped.push(item.id)
+      continue
+    }
+
     const project = (item as any).foco_projects
     if (!project) {
       result.skipped.push(item.id)

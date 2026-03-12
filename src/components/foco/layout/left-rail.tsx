@@ -21,10 +21,12 @@ import {
   Monitor,
   FolderKanban,
   CheckSquare,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { useCurrentWorkspace } from '@/lib/hooks/use-foco-data';
 
 interface NavItem {
   label: string;
@@ -61,6 +63,7 @@ const bottomNavItems: NavItem[] = [
 export function LeftRail() {
   const pathname = usePathname();
   const { sidebarCollapsed: sidebarCollapsedRaw, toggleSidebar } = useUIPreferencesStore();
+  const { workspace: currentWorkspace } = useCurrentWorkspace();
 
   // Gate sidebarCollapsed on isMounted — Zustand persist reads localStorage
   // synchronously on the client, causing SSR mismatch if used directly.
@@ -147,6 +150,14 @@ export function LeftRail() {
     return inner;
   };
 
+  const workspaceHref = currentWorkspace?.id ? `/workspaces/${currentWorkspace.id}` : '/organizations'
+  const workspaceNavItem: NavItem = {
+    label: 'Workspace',
+    href: workspaceHref,
+    icon: Building2,
+    shortcut: 'G O',
+  }
+
   /* ── Render ───────────────────────────────────────────────── */
   return (
     <aside
@@ -191,6 +202,7 @@ export function LeftRail() {
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Work</span>
           </div>
         )}
+        <NavLink item={workspaceNavItem} />
         {workNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Bot,
   CheckCircle2,
@@ -24,6 +25,8 @@ type WorkspaceSetupGuideProps = {
   onOpenAutomations: () => void;
 };
 
+const motionEase = [0.22, 1, 0.36, 1] as const;
+
 export function WorkspaceSetupGuide({
   compact,
   pagesCount,
@@ -36,6 +39,7 @@ export function WorkspaceSetupGuide({
   onOpenAssistant,
   onOpenAutomations,
 }: WorkspaceSetupGuideProps) {
+  const reduceMotion = useReducedMotion();
   const steps = [
     {
       title: "Create a page",
@@ -79,45 +83,62 @@ export function WorkspaceSetupGuide({
     },
   ];
 
+  const completeCount = steps.filter((step) => step.complete).length;
+  const progress = (completeCount / steps.length) * 100;
+
   return (
-    <section
+    <motion.section
+      layout
+      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: motionEase }}
       className={cn(
-        "rounded-2xl bg-muted/30 px-4 py-4 sm:px-5",
+        "relative overflow-hidden rounded-2xl bg-muted/20 px-4 py-4 sm:px-5",
         compact ? "border border-border/30" : "border border-border/50",
       )}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            Why use this
+            How it works
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
-            Use this to turn repeat work into an organized system the assistant
-            can help run.
+            Give the workspace a job, approve the first draft, and keep
+            improving the system over time.
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Instead of starting with blank docs and tables, you give the
-            workspace a job, approve the first draft, and then use the assistant
-            to improve the workflow over time.
+            The assistant should help you turn intent into structure, then turn
+            repeated work into trusted automation.
           </p>
         </div>
         <div className="text-sm text-muted-foreground">
-          {steps.filter((step) => step.complete).length} of {steps.length} steps
-          in motion
+          {completeCount} of {steps.length} steps in motion
         </div>
       </div>
 
-      <div
-        className={cn(
-          "mt-4 grid gap-3",
-          compact ? "lg:grid-cols-5" : "lg:grid-cols-5",
-        )}
-      >
+      <div className="relative mt-4 h-px w-full overflow-hidden rounded-full bg-border/70">
+        <motion.div
+          className="signal-divider h-full"
+          initial={reduceMotion ? false : { width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: motionEase }}
+        />
+      </div>
+
+      <div className="relative mt-4 grid gap-3 lg:grid-cols-5">
         {steps.map((step, index) => (
-          <div
+          <motion.div
+            layout
             key={step.title}
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.32,
+              delay: reduceMotion ? 0 : index * 0.05,
+              ease: motionEase,
+            }}
             className={cn(
-              "rounded-2xl px-3 py-3 transition",
+              "rounded-xl px-3 py-3 transition-colors duration-200",
               step.complete ? "bg-background/80" : "bg-background/60",
             )}
           >
@@ -156,14 +177,14 @@ export function WorkspaceSetupGuide({
             <Button
               variant={step.complete ? "ghost" : "secondary"}
               size="sm"
-              className="mt-3 h-8"
+              className="mt-3 h-8 transition-transform duration-200 hover:-translate-y-0.5"
               onClick={step.action}
             >
               {step.cta}
             </Button>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 }

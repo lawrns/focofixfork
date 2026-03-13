@@ -651,7 +651,9 @@ export function WorkspaceStudioClient({
       setResumeTarget(null);
       return;
     }
-    const storedPath = window.localStorage.getItem(`workspace:last:${workspaceId}`);
+    const storedPath = window.localStorage.getItem(
+      `workspace:last:${workspaceId}`,
+    );
     if (!storedPath || storedPath === `/workspaces/${workspaceId}`) {
       setResumeTarget(null);
       return;
@@ -861,7 +863,9 @@ export function WorkspaceStudioClient({
       current
         ? {
             ...current,
-            supportingItems: current.supportingItems.filter((item) => item.id !== id),
+            supportingItems: current.supportingItems.filter(
+              (item) => item.id !== id,
+            ),
           }
         : current,
     );
@@ -1219,12 +1223,12 @@ export function WorkspaceStudioClient({
       }>(
         `/api/workspaces/${workspaceId}/workflow-drafts/${workflowDraft.previewId}/apply`,
         {
-        method: "POST",
-        body: JSON.stringify({
-          supporting_items: workflowDraft.supportingItems,
-          owner_agent: activeAgentId || null,
-        }),
-      },
+          method: "POST",
+          body: JSON.stringify({
+            supporting_items: workflowDraft.supportingItems,
+            owner_agent: activeAgentId || null,
+          }),
+        },
       );
       const appliedIds = new Set(
         data.supporting_results
@@ -1395,7 +1399,9 @@ export function WorkspaceStudioClient({
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigateTo(`/organizations/${workspaceId}`)}
+                  onClick={() =>
+                    navigateTo(`/ai-control?workspace_id=${workspaceId}`)
+                  }
                 >
                   <BriefcaseBusiness className="mr-2 h-4 w-4" />
                   AI Settings
@@ -1653,7 +1659,9 @@ export function WorkspaceStudioClient({
                             <button
                               type="button"
                               onClick={() =>
-                                navigateTo(`/organizations/${workspaceId}`)
+                                navigateTo(
+                                  `/ai-control?workspace_id=${workspaceId}`,
+                                )
                               }
                               className="rounded-lg bg-muted/15 px-3 py-3 text-left text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
                             >
@@ -1698,7 +1706,9 @@ export function WorkspaceStudioClient({
                         </div>
                         <button
                           type="button"
-                          onClick={() => navigateTo(`/workspaces/${workspaceId}`)}
+                          onClick={() =>
+                            navigateTo(`/workspaces/${workspaceId}`)
+                          }
                           className="inline-flex items-center gap-1 text-sm text-[color:var(--foco-teal)] hover:underline"
                         >
                           Back to mission
@@ -1707,7 +1717,8 @@ export function WorkspaceStudioClient({
                           {currentSelectionTitle}
                         </CardTitle>
                         <CardDescription>
-                          Work on artifacts and structured data while the agent rail shows plans, runs, and receipts beside it.
+                          Work on artifacts and structured data while the agent
+                          rail shows plans, runs, and receipts beside it.
                         </CardDescription>
                       </div>
                       <Badge variant="secondary">{currentEntityType}</Badge>
@@ -1996,7 +2007,7 @@ export function WorkspaceStudioClient({
                   void restoreRevision(revisionId)
                 }
                 onOpenAiSettings={() =>
-                  navigateTo(`/organizations/${workspaceId}`)
+                  navigateTo(`/ai-control?workspace_id=${workspaceId}`)
                 }
               />
             </aside>

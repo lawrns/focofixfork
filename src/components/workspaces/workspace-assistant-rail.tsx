@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bot,
   CalendarClock,
@@ -83,7 +84,7 @@ function contextualPrompts(
     return [
       `Summarize "${currentSelectionTitle}" into an SOP`,
       `Extract tasks from "${currentSelectionTitle}" into a database`,
-      `Create an automation from this process`,
+      "Create an automation from this process",
     ];
   }
 
@@ -91,7 +92,7 @@ function contextualPrompts(
     return [
       `Suggest better properties for "${currentSelectionTitle}"`,
       `Identify bottlenecks in "${currentSelectionTitle}"`,
-      `Create an automation from the high-priority rows`,
+      "Create an automation from the high-priority rows",
     ];
   }
 
@@ -103,19 +104,20 @@ function contextualPrompts(
 }
 
 const railShellClass =
-  "rounded-[28px] border border-[color:var(--foco-teal)]/15 bg-card px-3 py-3 shadow-[0_24px_60px_-48px_rgba(var(--foco-teal-rgb),0.55)]";
+  "relative rounded-2xl border border-border/70 bg-card px-3 py-3 shadow-sm";
 
 const railPanelClass =
-  "rounded-2xl border border-border/60 bg-card/95 px-4 py-4 shadow-[0_16px_40px_-36px_rgba(15,23,42,0.45)]";
+  "rounded-xl border border-border/60 bg-card px-4 py-4 shadow-sm";
 
-const railInsetClass =
-  "rounded-2xl border border-border/60 bg-background/80 p-3 backdrop-blur-sm";
+const railInsetClass = "rounded-xl border border-border/60 bg-background p-3";
 
 const chipButtonClass =
-  "rounded-full border border-[color:var(--foco-teal)]/15 bg-[color:var(--foco-teal-dim)] px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-[color:var(--foco-teal)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--foco-teal)]/30";
+  "rounded-full border border-border/80 bg-background px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-[color:var(--foco-teal)]/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--foco-teal)]/30";
 
 const primaryRailButtonClass =
   "w-full bg-[color:var(--foco-teal)] text-white shadow-sm hover:bg-[color:var(--foco-teal)]/90 focus-visible:ring-[color:var(--foco-teal)]/35";
+
+const motionEase = [0.22, 1, 0.36, 1] as const;
 
 export function WorkspaceAssistantRail({
   activeTab,
@@ -153,45 +155,58 @@ export function WorkspaceAssistantRail({
   onRestoreRevision,
   onOpenAiSettings,
 }: WorkspaceAssistantRailProps) {
+  const reduceMotion = useReducedMotion();
   const prompts = contextualPrompts(currentEntityType, currentSelectionTitle);
 
   return (
-    <section className={railShellClass}>
-      <div className="px-1 pt-1">
+    <motion.section
+      layout
+      initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, ease: motionEase }}
+      className={railShellClass}
+    >
+      <div className="relative px-1 pt-1">
         <Tabs
           value={activeTab}
           onValueChange={(value) => onActiveTabChange(value as StudioTab)}
           className="h-full"
         >
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-border/60 bg-background/80 p-1">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-border/60 bg-background/85 p-1">
             <TabsTrigger
               value="assist"
               className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
             >
-              Agent
+              Assistant
             </TabsTrigger>
             <TabsTrigger
               value="activity"
               className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
             >
-              Runs
+              Activity
             </TabsTrigger>
             <TabsTrigger
               value="automations"
               className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
             >
-              Drafts
+              Automations
             </TabsTrigger>
             <TabsTrigger
               value="integrations"
               className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
             >
-              Grants
+              Connectors
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="assist" className="mt-4 space-y-4">
-            <div className={railPanelClass}>
+            <motion.div
+              layout
+              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.32, ease: motionEase }}
+              className={cn(railPanelClass, "overflow-hidden")}
+            >
               <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                 Current context
               </div>
@@ -200,14 +215,24 @@ export function WorkspaceAssistantRail({
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {currentEntityType === "workspace"
-                  ? "Keep the current plan, next action, and approval in one place so the operator does not need to scan the whole workspace."
+                  ? "Use the workspace as the operating context. Keep the request, plan, and approval in one place."
                   : currentEntityType === "page"
-                    ? "Use this artifact as context and keep the next action explicit."
-                    : "Use these records as context and keep the proposed action reviewable."}
+                    ? "Use this page as the source material and make the next transformation explicit."
+                    : "Use these records as operational context and keep the proposed change reviewable."}
               </p>
-            </div>
+            </motion.div>
 
-            <div className={railInsetClass}>
+            <motion.div
+              layout
+              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.32,
+                delay: reduceMotion ? 0 : 0.04,
+                ease: motionEase,
+              }}
+              className={railInsetClass}
+            >
               <Label>Agent</Label>
               <Select value={activeAgentId} onValueChange={onAgentChange}>
                 <SelectTrigger className="mt-2">
@@ -221,95 +246,160 @@ export function WorkspaceAssistantRail({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </motion.div>
 
-            <div className="space-y-2">
+            <motion.div
+              layout
+              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.32,
+                delay: reduceMotion ? 0 : 0.08,
+                ease: motionEase,
+              }}
+              className="space-y-2"
+            >
               <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                 Suggested next actions
               </div>
               <div className="flex flex-wrap gap-2">
-                {prompts.map((prompt) => (
-                  <button
+                {prompts.map((prompt, index) => (
+                  <motion.button
                     key={prompt}
                     type="button"
                     onClick={() => onPrepareAction(prompt)}
                     className={chipButtonClass}
+                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.24,
+                      delay: reduceMotion ? 0 : 0.1 + index * 0.04,
+                      ease: motionEase,
+                    }}
+                    whileHover={reduceMotion ? undefined : { y: -2 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                   >
                     {prompt}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            {preparedAction ? (
-              <div className={railPanelClass}>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Current plan
-                </div>
-                <div className="mt-3 space-y-4">
-                  <div>
-                    <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      Request
-                    </div>
-                    <p className="mt-1 text-sm text-foreground">
-                      {preparedAction.request}
-                    </p>
+            <AnimatePresence initial={false} mode="wait">
+              {preparedAction ? (
+                <motion.div
+                  key="prepared-action"
+                  layout
+                  initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
+                  transition={{ duration: 0.28, ease: motionEase }}
+                  className={railPanelClass}
+                >
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                    Current plan
                   </div>
-                  <div>
-                    <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      Plan
+                  <div className="mt-3 space-y-4">
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                        Request
+                      </div>
+                      <p className="mt-1 text-sm text-foreground">
+                        {preparedAction.request}
+                      </p>
                     </div>
-                    <div className="mt-2 space-y-2">
-                      {preparedAction.plan.map((step) => (
-                        <div
-                          key={step}
-                          className="rounded-xl bg-[color:var(--foco-teal-dim)] px-3 py-2 text-sm"
-                        >
-                          {step}
-                        </div>
-                      ))}
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                        Plan
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {preparedAction.plan.map((step, index) => (
+                          <motion.div
+                            key={step}
+                            initial={
+                              reduceMotion ? false : { opacity: 0, x: -8 }
+                            }
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{
+                              duration: 0.22,
+                              delay: reduceMotion ? 0 : index * 0.04,
+                              ease: motionEase,
+                            }}
+                            className="rounded-xl bg-[color:var(--foco-teal-dim)] px-3 py-2 text-sm"
+                          >
+                            {step}
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                        Preview
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {preparedAction.preview.map((item, index) => (
+                          <motion.div
+                            key={item}
+                            initial={
+                              reduceMotion ? false : { opacity: 0, y: 8 }
+                            }
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              duration: 0.22,
+                              delay: reduceMotion ? 0 : 0.04 + index * 0.04,
+                              ease: motionEase,
+                            }}
+                            className="rounded-xl border border-dashed border-border/60 bg-background/80 px-3 py-2 text-sm text-muted-foreground"
+                          >
+                            {item}
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={onApplyPreparedAction}
+                      disabled={postingMessage}
+                      className={primaryRailButtonClass}
+                    >
+                      {postingMessage ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <SendHorizontal className="mr-2 h-4 w-4" />
+                      )}
+                      {preparedAction.applyLabel}
+                    </Button>
                   </div>
-                  <div>
-                    <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      Next action
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      {preparedAction.preview.map((item) => (
-                        <div
-                          key={item}
-                          className="rounded-xl bg-[color:var(--foco-teal-dim)] px-3 py-2 text-sm"
-                        >
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={onApplyPreparedAction}
-                    disabled={postingMessage}
-                    className={primaryRailButtonClass}
-                  >
-                    {postingMessage ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <SendHorizontal className="mr-2 h-4 w-4" />
-                    )}
-                    {preparedAction.applyLabel}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                icon={Bot}
-                title="No plan prepared"
-                description="Describe the next action you want. The agent will return a plan and a preview before anything runs."
-                size="sm"
-                className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
-              />
-            )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="prepared-empty"
+                  initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
+                  transition={{ duration: 0.24, ease: motionEase }}
+                >
+                  <EmptyState
+                    icon={Bot}
+                    title="No plan prepared"
+                    description="Describe the next action you want. The agent will return a plan and a preview before anything runs."
+                    size="sm"
+                    className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className={cn(railInsetClass, "space-y-3")}>
+            <motion.div
+              layout
+              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.32,
+                delay: reduceMotion ? 0 : 0.12,
+                ease: motionEase,
+              }}
+              className={cn(railInsetClass, "space-y-3")}
+            >
               <Textarea
                 ref={composerRef}
                 value={composer}
@@ -325,7 +415,7 @@ export function WorkspaceAssistantRail({
                 <SendHorizontal className="mr-2 h-4 w-4" />
                 Preview action
               </Button>
-            </div>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="activity" className="mt-4 space-y-4">
@@ -484,7 +574,8 @@ export function WorkspaceAssistantRail({
                   Workflow drafts
                 </div>
                 <div className="mt-1 text-lg font-medium">
-                  Govern repeatable workflows with reviewable drafts and test runs
+                  Govern repeatable workflows with reviewable drafts and test
+                  runs
                 </div>
               </div>
               <Button onClick={onCreateAutomation}>
@@ -568,7 +659,8 @@ export function WorkspaceAssistantRail({
                   Tool grants
                 </div>
                 <div className="mt-1 text-lg font-medium">
-                  Grant the tools this mission can safely use outside the workspace
+                  Grant the tools this mission can safely use outside the
+                  workspace
                 </div>
               </div>
               <Button onClick={onShowConnectorDialog}>
@@ -618,31 +710,21 @@ export function WorkspaceAssistantRail({
                         {capability}
                       </span>
                     ))}
-                    {connector.capabilities.length === 0 ? (
-                      <span className="text-sm text-muted-foreground">
-                        No explicit capabilities saved
-                      </span>
-                    ) : null}
                   </div>
-                  {connector.last_error ? (
-                    <div className="mt-3 text-sm text-red-600 dark:text-red-400">
-                      {connector.last_error}
-                    </div>
-                  ) : null}
                 </div>
               ))}
               {connectors.length === 0 ? (
                 <EmptyState
                   icon={Mail}
-                  title="No tool grants configured"
-                  description="Grant Slack or mail access so the mission can act outside the artifact surface."
+                  title="No connectors yet"
+                  description="Connect Slack or mail so the assistant can act outside the workspace with explicit approval."
                   primaryAction={{
-                    label: "Connect channel",
-                    onClick: onShowConnectorDialog,
+                    label: "Open AI settings",
+                    onClick: onOpenAiSettings,
                   }}
                   secondaryAction={{
-                    label: "Open AI Settings",
-                    onClick: onOpenAiSettings,
+                    label: "Connect channel",
+                    onClick: onShowConnectorDialog,
                   }}
                   size="sm"
                   className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
@@ -652,6 +734,6 @@ export function WorkspaceAssistantRail({
           </TabsContent>
         </Tabs>
       </div>
-    </section>
+    </motion.section>
   );
 }

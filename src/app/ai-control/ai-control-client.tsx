@@ -8,19 +8,17 @@ import AISettingsTab from "@/components/organizations/ai-settings-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  StudioHeader,
+  StudioSectionCard,
+  StudioSurface,
+} from "@/components/ui/studio-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type WorkspaceOption = {
@@ -92,89 +90,90 @@ export function AIControlClient() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
-        <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-card px-6 py-6 shadow-sm">
-          <div
-            className="signal-grid absolute inset-0 opacity-30"
-            aria-hidden="true"
-          />
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                <span className="rounded-full bg-muted px-2.5 py-1 text-foreground">
-                  AI control
-                </span>
-                {selectedWorkspace ? (
-                  <span className="normal-case tracking-normal text-sm font-medium text-foreground">
-                    {selectedWorkspace.name}
+        <StudioSurface
+          tone="card"
+          padding="lg"
+          signal
+          signalClassName="opacity-30"
+        >
+          <div className="relative">
+            <StudioHeader
+              level={1}
+              eyebrow={
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-foreground">
+                    AI control
                   </span>
-                ) : null}
-              </div>
-              <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-foreground">
-                Runtime, agents, and guardrails for the current workspace.
-              </h1>
-              <p className="max-w-3xl text-base leading-7 text-muted-foreground">
-                This is the AI control layer for the selected workspace. Tune
-                runtime defaults here, then return to the workspace to keep
-                working with the same agents and policies in context.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="bg-background">
-                  <Bot className="mr-1 h-3.5 w-3.5" />
-                  Workspace-scoped runtime
-                </Badge>
-                <Badge variant="outline" className="bg-background">
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
-                  Custom agent overrides
-                </Badge>
-                <Badge variant="outline" className="bg-background">
-                  <Shield className="mr-1 h-3.5 w-3.5" />
-                  Guardrails and fleet links
-                </Badge>
-              </div>
-            </div>
-
-            <div className="flex w-full flex-col gap-3 lg:max-w-md">
-              <div className="space-y-2">
-                <div className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-                  Workspace
+                  {selectedWorkspace ? (
+                    <span className="normal-case tracking-normal text-sm font-medium text-foreground">
+                      {selectedWorkspace.name}
+                    </span>
+                  ) : null}
                 </div>
-                <Select
-                  value={selectedWorkspaceId || undefined}
-                  onValueChange={handleWorkspaceChange}
-                  disabled={isLoading || workspaces.length === 0}
-                >
-                  <SelectTrigger className="bg-background">
-                    <SelectValue
-                      placeholder={
-                        isLoading ? "Loading workspaces..." : "Select workspace"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workspaces.map((workspace) => (
-                      <SelectItem key={workspace.id} value={workspace.id}>
-                        {workspace.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              }
+              title="Runtime, agents, and guardrails for the current workspace."
+              description="This is the AI control layer for the selected workspace. Tune runtime defaults here, then return to the workspace to keep working with the same agents and policies in context."
+              actions={
+                <div className="flex w-full flex-col gap-3 lg:min-w-[19rem]">
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                      Workspace
+                    </div>
+                    <Select
+                      value={selectedWorkspaceId || undefined}
+                      onValueChange={handleWorkspaceChange}
+                      disabled={isLoading || workspaces.length === 0}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue
+                          placeholder={
+                            isLoading
+                              ? "Loading workspaces..."
+                              : "Select workspace"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workspaces.map((workspace) => (
+                          <SelectItem key={workspace.id} value={workspace.id}>
+                            {workspace.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {selectedWorkspace ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="justify-between bg-background"
-                >
-                  <Link href={`/workspaces/${selectedWorkspace.id}`}>
-                    Return to workspace
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : null}
+                  {selectedWorkspace ? (
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="justify-between bg-background"
+                    >
+                      <Link href={`/workspaces/${selectedWorkspace.id}`}>
+                        Return to workspace
+                        <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              }
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-background">
+                <Bot className="mr-1 h-3.5 w-3.5" />
+                Workspace-scoped runtime
+              </Badge>
+              <Badge variant="outline" className="bg-background">
+                <Sparkles className="mr-1 h-3.5 w-3.5" />
+                Custom agent overrides
+              </Badge>
+              <Badge variant="outline" className="bg-background">
+                <Shield className="mr-1 h-3.5 w-3.5" />
+                Guardrails and fleet links
+              </Badge>
             </div>
           </div>
-        </section>
+        </StudioSurface>
 
         <Tabs defaultValue={initialTab} className="space-y-6">
           <TabsList className="grid w-full max-w-2xl grid-cols-3 rounded-2xl border border-border/60 bg-background/80 p-1">
@@ -191,24 +190,24 @@ export function AIControlClient() {
                 className="space-y-6"
               />
             ) : (
-              <Card>
-                <CardContent className="py-10 text-sm text-muted-foreground">
+              <StudioSurface
+                tone="card"
+                className="text-sm text-muted-foreground"
+              >
+                <div className="py-5">
                   Select a workspace to load its AI runtime settings.
-                </CardContent>
-              </Card>
+                </div>
+              </StudioSurface>
             )}
           </TabsContent>
 
           <TabsContent value="overview" className="space-y-6">
-            <Card className="border-border/70">
-              <CardHeader>
-                <CardTitle>What belongs here</CardTitle>
-                <CardDescription>
-                  AI settings should control how the workspace thinks and acts,
-                  not take you into team administration.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">
+            <StudioSectionCard
+              title="What belongs here"
+              description="AI settings should control how the workspace thinks and acts, not take you into team administration."
+              icon={Sparkles}
+            >
+              <div className="space-y-3 text-sm leading-6 text-muted-foreground">
                 <p>
                   Use this surface to tune model routing, allowed tools,
                   prompts, and agent-specific overrides for the selected
@@ -226,20 +225,17 @@ export function AIControlClient() {
                     </span>
                   </p>
                 ) : null}
-              </CardContent>
-            </Card>
+              </div>
+            </StudioSectionCard>
           </TabsContent>
 
           <TabsContent value="guardrails" className="space-y-6">
-            <Card className="border-border/70">
-              <CardHeader>
-                <CardTitle>Guardrails and fleet controls</CardTitle>
-                <CardDescription>
-                  Global pause state and policy management stay available here
-                  as linked control surfaces.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
+            <StudioSectionCard
+              title="Guardrails and fleet controls"
+              description="Global pause state and policy management stay available here as linked control surfaces."
+              icon={Shield}
+            >
+              <div className="flex flex-wrap gap-3">
                 <Button asChild>
                   <Link href="/policies">Open guardrails</Link>
                 </Button>
@@ -250,8 +246,8 @@ export function AIControlClient() {
                     </Link>
                   </Button>
                 ) : null}
-              </CardContent>
-            </Card>
+              </div>
+            </StudioSectionCard>
           </TabsContent>
         </Tabs>
       </div>

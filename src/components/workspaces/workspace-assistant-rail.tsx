@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { StudioHeader, StudioSurface } from "@/components/ui/studio-shell";
 import { cn } from "@/lib/utils";
 import type {
   AgentOption,
@@ -103,14 +104,6 @@ function contextualPrompts(
   ];
 }
 
-const railShellClass =
-  "relative rounded-2xl border border-border/70 bg-card px-3 py-3 shadow-sm";
-
-const railPanelClass =
-  "rounded-xl border border-border/60 bg-card px-4 py-4 shadow-sm";
-
-const railInsetClass = "rounded-xl border border-border/60 bg-background p-3";
-
 const chipButtonClass =
   "rounded-full border border-border/80 bg-background px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-[color:var(--foco-teal)]/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--foco-teal)]/30";
 
@@ -164,9 +157,9 @@ export function WorkspaceAssistantRail({
       initial={reduceMotion ? false : { opacity: 0, x: 18 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: motionEase }}
-      className={railShellClass}
+      className="space-y-0"
     >
-      <div className="relative px-1 pt-1">
+      <StudioSurface tone="card" padding="sm" className="relative">
         <Tabs
           value={activeTab}
           onValueChange={(value) => onActiveTabChange(value as StudioTab)}
@@ -205,21 +198,25 @@ export function WorkspaceAssistantRail({
               initial={reduceMotion ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.32, ease: motionEase }}
-              className={cn(railPanelClass, "overflow-hidden")}
+              className="overflow-hidden"
             >
-              <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                Current context
-              </div>
-              <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
-                {currentSelectionTitle}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {currentEntityType === "workspace"
-                  ? "Use the workspace as the operating context. Keep the request, plan, and approval in one place."
-                  : currentEntityType === "page"
-                    ? "Use this page as the source material and make the next transformation explicit."
-                    : "Use these records as operational context and keep the proposed change reviewable."}
-              </p>
+              <StudioSurface
+                tone="plain"
+                padding="sm"
+                className="overflow-hidden"
+              >
+                <StudioHeader
+                  eyebrow="Current context"
+                  title={currentSelectionTitle}
+                  description={
+                    currentEntityType === "workspace"
+                      ? "Use the workspace as the operating context. Keep the request, plan, and approval in one place."
+                      : currentEntityType === "page"
+                        ? "Use this page as the source material and make the next transformation explicit."
+                        : "Use these records as operational context and keep the proposed change reviewable."
+                  }
+                />
+              </StudioSurface>
             </motion.div>
 
             <motion.div
@@ -231,21 +228,23 @@ export function WorkspaceAssistantRail({
                 delay: reduceMotion ? 0 : 0.04,
                 ease: motionEase,
               }}
-              className={railInsetClass}
+              className="space-y-0"
             >
-              <Label>Agent</Label>
-              <Select value={activeAgentId} onValueChange={onAgentChange}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Pick an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} · {agent.kind}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <StudioSurface tone="inset" padding="sm">
+                <Label>Agent</Label>
+                <Select value={activeAgentId} onValueChange={onAgentChange}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Pick an agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name} · {agent.kind}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </StudioSurface>
             </motion.div>
 
             <motion.div
@@ -294,81 +293,83 @@ export function WorkspaceAssistantRail({
                   animate={{ opacity: 1, y: 0 }}
                   exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
                   transition={{ duration: 0.28, ease: motionEase }}
-                  className={railPanelClass}
+                  className="space-y-0"
                 >
-                  <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                    Current plan
-                  </div>
-                  <div className="mt-3 space-y-4">
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                        Request
-                      </div>
-                      <p className="mt-1 text-sm text-foreground">
-                        {preparedAction.request}
-                      </p>
+                  <StudioSurface tone="plain" padding="sm">
+                    <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                      Current plan
                     </div>
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                        Plan
+                    <div className="mt-3 space-y-4">
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                          Request
+                        </div>
+                        <p className="mt-1 text-sm text-foreground">
+                          {preparedAction.request}
+                        </p>
                       </div>
-                      <div className="mt-2 space-y-2">
-                        {preparedAction.plan.map((step, index) => (
-                          <motion.div
-                            key={step}
-                            initial={
-                              reduceMotion ? false : { opacity: 0, x: -8 }
-                            }
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{
-                              duration: 0.22,
-                              delay: reduceMotion ? 0 : index * 0.04,
-                              ease: motionEase,
-                            }}
-                            className="rounded-xl bg-[color:var(--foco-teal-dim)] px-3 py-2 text-sm"
-                          >
-                            {step}
-                          </motion.div>
-                        ))}
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                          Plan
+                        </div>
+                        <div className="mt-2 space-y-2">
+                          {preparedAction.plan.map((step, index) => (
+                            <motion.div
+                              key={step}
+                              initial={
+                                reduceMotion ? false : { opacity: 0, x: -8 }
+                              }
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{
+                                duration: 0.22,
+                                delay: reduceMotion ? 0 : index * 0.04,
+                                ease: motionEase,
+                              }}
+                              className="rounded-xl bg-[color:var(--foco-teal-dim)] px-3 py-2 text-sm"
+                            >
+                              {step}
+                            </motion.div>
+                          ))}
+                        </div>
                       </div>
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                          Preview
+                        </div>
+                        <div className="mt-2 space-y-2">
+                          {preparedAction.preview.map((item, index) => (
+                            <motion.div
+                              key={item}
+                              initial={
+                                reduceMotion ? false : { opacity: 0, y: 8 }
+                              }
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{
+                                duration: 0.22,
+                                delay: reduceMotion ? 0 : 0.04 + index * 0.04,
+                                ease: motionEase,
+                              }}
+                              className="rounded-xl border border-dashed border-border/60 bg-background/80 px-3 py-2 text-sm text-muted-foreground"
+                            >
+                              {item}
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                      <Button
+                        onClick={onApplyPreparedAction}
+                        disabled={postingMessage}
+                        className={primaryRailButtonClass}
+                      >
+                        {postingMessage ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <SendHorizontal className="mr-2 h-4 w-4" />
+                        )}
+                        {preparedAction.applyLabel}
+                      </Button>
                     </div>
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                        Preview
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        {preparedAction.preview.map((item, index) => (
-                          <motion.div
-                            key={item}
-                            initial={
-                              reduceMotion ? false : { opacity: 0, y: 8 }
-                            }
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                              duration: 0.22,
-                              delay: reduceMotion ? 0 : 0.04 + index * 0.04,
-                              ease: motionEase,
-                            }}
-                            className="rounded-xl border border-dashed border-border/60 bg-background/80 px-3 py-2 text-sm text-muted-foreground"
-                          >
-                            {item}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                    <Button
-                      onClick={onApplyPreparedAction}
-                      disabled={postingMessage}
-                      className={primaryRailButtonClass}
-                    >
-                      {postingMessage ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <SendHorizontal className="mr-2 h-4 w-4" />
-                      )}
-                      {preparedAction.applyLabel}
-                    </Button>
-                  </div>
+                  </StudioSurface>
                 </motion.div>
               ) : (
                 <motion.div
@@ -398,29 +399,31 @@ export function WorkspaceAssistantRail({
                 delay: reduceMotion ? 0 : 0.12,
                 ease: motionEase,
               }}
-              className={cn(railInsetClass, "space-y-3")}
+              className="space-y-0"
             >
-              <Textarea
-                ref={composerRef}
-                value={composer}
-                onChange={(event) => onComposerChange(event.target.value)}
-                placeholder="Describe the next action. Example: Inspect the latest bug signal and prepare a patch brief."
-                className="min-h-[120px] bg-background"
-              />
-              <Button
-                onClick={() => onPrepareAction()}
-                disabled={postingMessage || !composer.trim()}
-                className={primaryRailButtonClass}
-              >
-                <SendHorizontal className="mr-2 h-4 w-4" />
-                Preview action
-              </Button>
+              <StudioSurface tone="inset" padding="sm" className="space-y-3">
+                <Textarea
+                  ref={composerRef}
+                  value={composer}
+                  onChange={(event) => onComposerChange(event.target.value)}
+                  placeholder="Describe the next action. Example: Inspect the latest bug signal and prepare a patch brief."
+                  className="min-h-[120px] bg-background"
+                />
+                <Button
+                  onClick={() => onPrepareAction()}
+                  disabled={postingMessage || !composer.trim()}
+                  className={primaryRailButtonClass}
+                >
+                  <SendHorizontal className="mr-2 h-4 w-4" />
+                  Preview action
+                </Button>
+              </StudioSurface>
             </motion.div>
           </TabsContent>
 
           <TabsContent value="activity" className="mt-4 space-y-4">
             {flowStrip}
-            <div className={railInsetClass}>
+            <StudioSurface tone="inset" padding="sm">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
@@ -460,7 +463,7 @@ export function WorkspaceAssistantRail({
                   />
                 ) : null}
               </div>
-            </div>
+            </StudioSurface>
 
             {messages.length > 0 ? (
               <ScrollArea className="h-[240px] rounded-2xl border border-border/60 bg-background/70 p-3">
@@ -488,7 +491,7 @@ export function WorkspaceAssistantRail({
               </ScrollArea>
             ) : null}
 
-            <div className={railInsetClass}>
+            <StudioSurface tone="inset" padding="sm">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
@@ -530,10 +533,10 @@ export function WorkspaceAssistantRail({
                   )}
                 </div>
               </ScrollArea>
-            </div>
+            </StudioSurface>
 
             {revisions.length > 0 ? (
-              <div className={railInsetClass}>
+              <StudioSurface tone="inset" padding="sm">
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                     Revisions
@@ -563,7 +566,7 @@ export function WorkspaceAssistantRail({
                     </div>
                   ))}
                 </div>
-              </div>
+              </StudioSurface>
             ) : null}
           </TabsContent>
 
@@ -733,7 +736,7 @@ export function WorkspaceAssistantRail({
             </div>
           </TabsContent>
         </Tabs>
-      </div>
+      </StudioSurface>
     </motion.section>
   );
 }

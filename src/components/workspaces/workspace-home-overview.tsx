@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StudioHeader, StudioSurface } from "@/components/ui/studio-shell";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type {
@@ -88,21 +89,6 @@ const listButtonClass =
 
 const motionEase = [0.22, 1, 0.36, 1] as const;
 
-function sectionHeading(title: string, description?: string) {
-  return (
-    <div className="space-y-1.5">
-      <h2 className="text-lg font-semibold tracking-[-0.02em] text-foreground">
-        {title}
-      </h2>
-      {description ? (
-        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 function supportingItemIcon(kind: StarterPlanItem["kind"]) {
   if (kind === "page") return FileText;
   if (kind === "database") return Database;
@@ -173,118 +159,116 @@ export function WorkspaceHomeOverview({
           initial={reduceMotion ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: motionEase }}
-          className="relative space-y-5 overflow-hidden rounded-2xl border border-border/70 bg-card px-6 py-6 shadow-sm"
+          className="space-y-5"
         >
-          <div
-            className="signal-grid absolute inset-0 opacity-40"
-            aria-hidden="true"
-          />
-          <div className="relative space-y-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <StudioSurface
+            tone="card"
+            padding="lg"
+            signal
+            signalClassName="opacity-40"
+            className="space-y-5"
+          >
+            <div className="relative space-y-3">
+              <StudioHeader
+                level={1}
+                eyebrow={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-foreground">
+                      Mission canvas
+                    </span>
+                    <span>Workspace</span>
+                    <span className="normal-case tracking-normal text-sm font-medium text-foreground">
+                      {workspace?.name ?? "Workspace"}
+                    </span>
+                  </div>
+                }
+                title="Describe the operating job, preview the plan, and keep the resulting work legible."
+                description={
+                  workspaceSummary.trim() ||
+                  "Tell the workspace what it should absorb and produce. The assistant returns a reviewable plan, then the resulting artifacts, automations, and runs stay visible in one calm operating surface."
+                }
+                actions={
+                  resumeTarget ? (
+                    <motion.div
+                      layout="position"
+                      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={transition(0.08)}
+                    >
+                      <Button
+                        variant="outline"
+                        onClick={onResumeTarget}
+                        className="border-[color:var(--foco-teal)]/20 bg-background/70 hover:border-[color:var(--foco-teal)]/35 hover:bg-[color:var(--foco-teal-dim)]"
+                      >
+                        Resume {resumeTarget.entityType}
+                      </Button>
+                    </motion.div>
+                  ) : null
+                }
+              />
+
               <motion.div
                 layout="position"
-                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={transition(0.04)}
-                className="space-y-2"
+                transition={transition(0.12)}
+                className="flex flex-wrap items-center gap-2"
               >
-                <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-foreground">
-                    Mission canvas
-                  </span>
-                  <span>Workspace</span>
-                  <span className="normal-case tracking-normal text-sm font-medium text-foreground">
-                    {workspace?.name ?? "Workspace"}
-                  </span>
-                </div>
-                <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-foreground sm:text-[2.2rem]">
-                  Describe the operating job, preview the plan, and keep the
-                  resulting work legible.
-                </h1>
-                <p className="max-w-3xl text-base leading-7 text-muted-foreground">
-                  {workspaceSummary.trim() ||
-                    "Tell the workspace what it should absorb and produce. The assistant returns a reviewable plan, then the resulting artifacts, automations, and runs stay visible in one calm operating surface."}
-                </p>
-              </motion.div>
-              {resumeTarget ? (
-                <motion.div
-                  layout="position"
-                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={transition(0.08)}
+                <Badge
+                  variant="outline"
+                  className="border-[color:var(--foco-teal)]/20 bg-background/80 text-foreground"
                 >
-                  <Button
-                    variant="outline"
-                    onClick={onResumeTarget}
-                    className="border-[color:var(--foco-teal)]/20 bg-background/70 hover:border-[color:var(--foco-teal)]/35 hover:bg-[color:var(--foco-teal-dim)]"
-                  >
-                    Resume {resumeTarget.entityType}
-                  </Button>
-                </motion.div>
-              ) : null}
+                  {threads.length} signal{threads.length === 1 ? "" : "s"}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="border-[color:var(--foco-teal)]/20 bg-background/80 text-foreground"
+                >
+                  {artifactCount} artifact{artifactCount === 1 ? "" : "s"}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="border-[color:var(--foco-teal)]/20 bg-background/80 text-foreground"
+                >
+                  {automations.length} workflow
+                  {automations.length === 1 ? "" : "s"}
+                </Badge>
+              </motion.div>
             </div>
 
             <motion.div
-              layout="position"
-              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              layout
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={transition(0.12)}
-              className="flex flex-wrap items-center gap-2"
+              transition={transition(0.16)}
+              className="relative flex flex-col gap-3 md:flex-row md:items-end"
             >
-              <Badge
-                variant="outline"
-                className="border-[color:var(--foco-teal)]/20 bg-background/80 text-foreground"
+              <div className="min-w-0 flex-1 space-y-2">
+                <label
+                  htmlFor="workspace-purpose"
+                  className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground"
+                >
+                  Mission statement
+                </label>
+                <Input
+                  id="workspace-purpose"
+                  value={workspaceSummary}
+                  onChange={(event) =>
+                    onWorkspaceSummaryChange(event.target.value)
+                  }
+                  placeholder="Example: Turn Slack bugs into patch briefs, approvals, and branch-safe execution."
+                  className="h-11 bg-background/85"
+                />
+              </div>
+              <Button
+                onClick={onSaveWorkspaceSummary}
+                disabled={savingWorkspaceSummary}
+                className={primaryActionClass}
               >
-                {threads.length} signal{threads.length === 1 ? "" : "s"}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="border-[color:var(--foco-teal)]/20 bg-background/80 text-foreground"
-              >
-                {artifactCount} artifact{artifactCount === 1 ? "" : "s"}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="border-[color:var(--foco-teal)]/20 bg-background/80 text-foreground"
-              >
-                {automations.length} workflow
-                {automations.length === 1 ? "" : "s"}
-              </Badge>
+                {savingWorkspaceSummary ? "Saving..." : "Save mission"}
+              </Button>
             </motion.div>
-          </div>
-
-          <motion.div
-            layout
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={transition(0.16)}
-            className="relative flex flex-col gap-3 md:flex-row md:items-end"
-          >
-            <div className="min-w-0 flex-1 space-y-2">
-              <label
-                htmlFor="workspace-purpose"
-                className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground"
-              >
-                Mission statement
-              </label>
-              <Input
-                id="workspace-purpose"
-                value={workspaceSummary}
-                onChange={(event) =>
-                  onWorkspaceSummaryChange(event.target.value)
-                }
-                placeholder="Example: Turn Slack bugs into patch briefs, approvals, and branch-safe execution."
-                className="h-11 bg-background/85"
-              />
-            </div>
-            <Button
-              onClick={onSaveWorkspaceSummary}
-              disabled={savingWorkspaceSummary}
-              className={primaryActionClass}
-            >
-              {savingWorkspaceSummary ? "Saving..." : "Save mission"}
-            </Button>
-          </motion.div>
+          </StudioSurface>
         </motion.section>
 
         <motion.section
@@ -295,10 +279,10 @@ export function WorkspaceHomeOverview({
           className="border-t border-border/60 pt-8"
         >
           <div className="space-y-4">
-            {sectionHeading(
-              "Signals",
-              "Start with incoming work. A signal can be a bug report, a request, or any recurring event the workspace should absorb and turn into an actionable plan.",
-            )}
+            <StudioHeader
+              title="Signals"
+              description="Start with incoming work. A signal can be a bug report, a request, or any recurring event the workspace should absorb and turn into an actionable plan."
+            />
             {latestThreads.length === 0 ? (
               <p className="text-sm leading-6 text-muted-foreground">
                 No signals yet. The first mission request, imported workflow, or
@@ -345,10 +329,10 @@ export function WorkspaceHomeOverview({
           className="border-t border-border/60 pt-8"
         >
           <div className="space-y-5">
-            {sectionHeading(
-              "Agent plan",
-              "Describe what should happen in plain language or paste workflow JSON. The system returns a reviewable plan before anything is provisioned.",
-            )}
+            <StudioHeader
+              title="Agent plan"
+              description="Describe what should happen in plain language or paste workflow JSON. The system returns a reviewable plan before anything is provisioned."
+            />
 
             <motion.div
               layout="position"
@@ -471,164 +455,168 @@ export function WorkspaceHomeOverview({
                   animate={{ opacity: 1, y: 0 }}
                   exit={reduceMotion ? undefined : { opacity: 0, y: -12 }}
                   transition={{ duration: 0.42, ease: motionEase }}
-                  className="relative space-y-6 overflow-hidden rounded-2xl border border-border/60 bg-card px-5 py-5 shadow-sm"
+                  className="space-y-6"
                 >
-                  <div
-                    className="signal-grid absolute inset-0 opacity-30"
-                    aria-hidden="true"
-                  />
-                  <div className="signal-divider h-px w-full" />
+                  <StudioSurface
+                    tone="card"
+                    signal
+                    signalClassName="opacity-30"
+                    className="space-y-6"
+                  >
+                    <div className="signal-divider h-px w-full" />
 
-                  <div className="relative flex flex-wrap items-center gap-2">
-                    <Badge
-                      className={cn("border", riskTone(workflowDraft.riskTier))}
-                    >
-                      {workflowDraft.riskTier} risk
-                    </Badge>
-                    <Badge variant="secondary">
-                      {workflowDraft.triggerLabel}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {workflowDraft.effectiveMode}
-                    </Badge>
-                  </div>
-
-                  <div className="relative space-y-2">
-                    <h3 className="text-xl font-semibold tracking-[-0.03em] text-foreground">
-                      {workflowDraft.title}
-                    </h3>
-                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                      {workflowDraft.summary}
-                    </p>
-                  </div>
-
-                  <div className="relative space-y-3">
-                    {workflowDraft.stepLabels.map((step, index) => (
-                      <motion.div
-                        key={`${step}-${index}`}
-                        layout="position"
-                        initial={reduceMotion ? false : { opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={transition(0.04 + index * 0.04)}
-                        className="flex items-start gap-3 border-l-2 border-[color:var(--foco-teal)]/20 pl-4"
+                    <div className="relative flex flex-wrap items-center gap-2">
+                      <Badge
+                        className={cn(
+                          "border",
+                          riskTone(workflowDraft.riskTier),
+                        )}
                       >
-                        <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--foco-teal-dim)] text-xs font-semibold text-foreground">
-                          {index + 1}
-                        </div>
-                        <div className="text-sm leading-6 text-foreground">
-                          {step}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {workflowDraft.supportingItems.length > 0 ? (
-                    <div className="relative space-y-4">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                          Artifacts this plan will create
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          Keep what helps the operator understand, approve, or
-                          execute the work. Remove anything decorative.
-                        </p>
-                      </div>
-                      <div className="space-y-4">
-                        {workflowDraft.supportingItems.map((item, index) => {
-                          const ItemIcon = supportingItemIcon(item.kind);
-                          return (
-                            <motion.div
-                              layout
-                              key={item.id}
-                              initial={
-                                reduceMotion ? false : { opacity: 0, y: 10 }
-                              }
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={transition(0.08 + index * 0.04)}
-                              className="space-y-3 border-l-2 border-border pl-4"
-                            >
-                              <div className="flex items-center gap-2">
-                                <ItemIcon className="h-4 w-4 text-[color:var(--foco-teal)]" />
-                                <Badge
-                                  variant="secondary"
-                                  className="capitalize"
-                                >
-                                  {item.kind}
-                                </Badge>
-                                {item.status === "applied" ? (
-                                  <span className="text-sm text-emerald-700">
-                                    Provisioned
-                                  </span>
-                                ) : null}
-                              </div>
-                              <Input
-                                value={item.title}
-                                onChange={(event) =>
-                                  onUpdateSupportingItem(item.id, {
-                                    title: event.target.value,
-                                  })
-                                }
-                              />
-                              <Textarea
-                                value={item.detail}
-                                onChange={(event) =>
-                                  onUpdateSupportingItem(item.id, {
-                                    detail: event.target.value,
-                                  })
-                                }
-                                className="min-h-[88px]"
-                              />
-                              {item.status !== "applied" ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    onRemoveSupportingItem(item.id)
-                                  }
-                                >
-                                  Remove
-                                </Button>
-                              ) : null}
-                            </motion.div>
-                          );
-                        })}
-                      </div>
+                        {workflowDraft.riskTier} risk
+                      </Badge>
+                      <Badge variant="secondary">
+                        {workflowDraft.triggerLabel}
+                      </Badge>
+                      <Badge variant="secondary">
+                        {workflowDraft.effectiveMode}
+                      </Badge>
                     </div>
-                  ) : null}
 
-                  {workflowDraft.warnings.length > 0 ? (
-                    <div className="relative space-y-2">
-                      <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                        Warnings
-                      </h4>
-                      {workflowDraft.warnings.map((warning) => (
-                        <div
-                          key={warning}
-                          className="border-l-2 border-amber-300 bg-amber-50/70 pl-4 text-sm leading-6 text-amber-900"
+                    <StudioHeader
+                      level={3}
+                      title={workflowDraft.title}
+                      description={workflowDraft.summary}
+                      className="relative"
+                      titleClassName="text-xl font-semibold tracking-[-0.03em]"
+                    />
+
+                    <div className="relative space-y-3">
+                      {workflowDraft.stepLabels.map((step, index) => (
+                        <motion.div
+                          key={`${step}-${index}`}
+                          layout="position"
+                          initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={transition(0.04 + index * 0.04)}
+                          className="flex items-start gap-3 border-l-2 border-[color:var(--foco-teal)]/20 pl-4"
                         >
-                          {warning}
-                        </div>
+                          <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--foco-teal-dim)] text-xs font-semibold text-foreground">
+                            {index + 1}
+                          </div>
+                          <div className="text-sm leading-6 text-foreground">
+                            {step}
+                          </div>
+                        </motion.div>
                       ))}
                     </div>
-                  ) : null}
 
-                  <div className="relative flex flex-wrap gap-3">
-                    <Button
-                      onClick={onApplyWorkflowDraft}
-                      disabled={workflowDraftBusy}
-                      className={primaryActionClass}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      {workflowDraftBusy ? "Provisioning..." : "Approve plan"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={onOpenWorkflowDrafts}
-                      className="border-[color:var(--foco-teal)]/15 hover:border-[color:var(--foco-teal)]/30 hover:bg-[color:var(--foco-teal-dim)]"
-                    >
-                      Open drafts
-                    </Button>
-                  </div>
+                    {workflowDraft.supportingItems.length > 0 ? (
+                      <div className="relative space-y-4">
+                        <StudioHeader
+                          title="Artifacts this plan will create"
+                          description="Keep what helps the operator understand, approve, or execute the work. Remove anything decorative."
+                          eyebrowClassName="tracking-[0.18em]"
+                          eyebrow="Artifacts"
+                        />
+                        <div className="space-y-4">
+                          {workflowDraft.supportingItems.map((item, index) => {
+                            const ItemIcon = supportingItemIcon(item.kind);
+                            return (
+                              <motion.div
+                                layout
+                                key={item.id}
+                                initial={
+                                  reduceMotion ? false : { opacity: 0, y: 10 }
+                                }
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={transition(0.08 + index * 0.04)}
+                                className="space-y-3 border-l-2 border-border pl-4"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <ItemIcon className="h-4 w-4 text-[color:var(--foco-teal)]" />
+                                  <Badge
+                                    variant="secondary"
+                                    className="capitalize"
+                                  >
+                                    {item.kind}
+                                  </Badge>
+                                  {item.status === "applied" ? (
+                                    <span className="text-sm text-emerald-700">
+                                      Provisioned
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <Input
+                                  value={item.title}
+                                  onChange={(event) =>
+                                    onUpdateSupportingItem(item.id, {
+                                      title: event.target.value,
+                                    })
+                                  }
+                                />
+                                <Textarea
+                                  value={item.detail}
+                                  onChange={(event) =>
+                                    onUpdateSupportingItem(item.id, {
+                                      detail: event.target.value,
+                                    })
+                                  }
+                                  className="min-h-[88px]"
+                                />
+                                {item.status !== "applied" ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      onRemoveSupportingItem(item.id)
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                ) : null}
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {workflowDraft.warnings.length > 0 ? (
+                      <div className="relative space-y-2">
+                        <StudioHeader
+                          title="Warnings"
+                          eyebrow="Warnings"
+                          eyebrowClassName="tracking-[0.18em]"
+                        />
+                        {workflowDraft.warnings.map((warning) => (
+                          <div
+                            key={warning}
+                            className="border-l-2 border-amber-300 bg-amber-50/70 pl-4 text-sm leading-6 text-amber-900"
+                          >
+                            {warning}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="relative flex flex-wrap gap-3">
+                      <Button
+                        onClick={onApplyWorkflowDraft}
+                        disabled={workflowDraftBusy}
+                        className={primaryActionClass}
+                      >
+                        <Check className="mr-2 h-4 w-4" />
+                        {workflowDraftBusy ? "Provisioning..." : "Approve plan"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={onOpenWorkflowDrafts}
+                        className="border-[color:var(--foco-teal)]/15 hover:border-[color:var(--foco-teal)]/30 hover:bg-[color:var(--foco-teal-dim)]"
+                      >
+                        Open drafts
+                      </Button>
+                    </div>
+                  </StudioSurface>
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -643,10 +631,10 @@ export function WorkspaceHomeOverview({
           className="border-t border-border/60 pt-8"
         >
           <div className="space-y-6">
-            {sectionHeading(
-              "Artifacts",
-              "Artifacts are the human-facing outputs of the system: briefs, pages, trackers, and structured records that explain what happened and what should happen next.",
-            )}
+            <StudioHeader
+              title="Artifacts"
+              description="Artifacts are the human-facing outputs of the system: briefs, pages, trackers, and structured records that explain what happened and what should happen next."
+            />
 
             <div className="grid gap-8 lg:grid-cols-2">
               <div className="space-y-4">
@@ -761,10 +749,10 @@ export function WorkspaceHomeOverview({
           className="border-t border-border/60 pt-8"
         >
           <div className="space-y-4">
-            {sectionHeading(
-              "Runs",
-              "Runs show what the system actually did after a plan was approved. Keep them separate from the mission description so action history stays legible.",
-            )}
+            <StudioHeader
+              title="Runs"
+              description="Runs show what the system actually did after a plan was approved. Keep them separate from the mission description so action history stays legible."
+            />
             {latestThreads.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No runs yet. Apply an agent plan to create the first execution

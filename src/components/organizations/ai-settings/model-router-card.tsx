@@ -2,14 +2,6 @@
 
 import { Bot, ChevronsUpDown, Route } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,8 +9,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { StudioSectionCard, StudioSurface } from "@/components/ui/studio-shell";
 import type { WorkspaceAIPolicy, AIUseCase } from "@/lib/ai/policy";
 import { MODEL_CATALOG } from "@/components/organizations/ai-settings/constants";
+import {
+  SettingsField,
+  SettingsSelectField,
+} from "@/components/organizations/ai-settings/primitives";
 import {
   ADVANCED_USE_CASES,
   PRIMARY_USE_CASES,
@@ -96,206 +93,98 @@ export function ModelRouterCard({
   const generalHealth = getModelHealth(generalDefault);
 
   return (
-    <Card className="border-border shadow-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Route className="h-5 w-5" />
-          Model Router
-        </CardTitle>
-        <CardDescription>
-          Set one recommended default model, keep an ordered fallback chain, and
-          tune the plan / execute / review chain in one place.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="rounded-xl border border-border bg-muted/30 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Bot className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <div className="text-sm font-medium">
-                Recommended default model
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Applied as the baseline across general AI use cases.
-              </div>
+    <StudioSectionCard
+      title="Model Router"
+      description="Set one recommended default model, keep an ordered fallback chain, and tune the plan / execute / review chain in one place."
+      icon={Route}
+      contentClassName="space-y-6"
+    >
+      <StudioSurface tone="muted">
+        <div className="mb-3 flex items-center gap-2">
+          <Bot className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <div className="text-sm font-medium">Recommended default model</div>
+            <div className="text-xs text-muted-foreground">
+              Applied as the baseline across general AI use cases.
             </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-2">
-              <Label>Default model</Label>
-              <Select
-                value={generalDefault}
-                onValueChange={(value) =>
-                  updatePolicy((prev) =>
-                    setModelForUseCases(
-                      prev,
-                      GENERAL_USE_CASES,
-                      value,
-                      fallbackChain,
-                    ),
-                  )
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a default model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {GENERAL_MODELS.map((model) => (
-                    <SelectItem key={model.value} value={model.value}>
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Runtime source</Label>
-              <div className="rounded-xl border border-border bg-background px-3 py-2 text-sm">
-                <div>
-                  {getModelRuntimeSourceLabel(generalDefault) ?? "Inherited"}
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {healthLoading
-                    ? "Checking availability..."
-                    : generalHealth?.available
-                      ? generalHealth.reason
-                      : (generalHealth?.reason ?? "Health unavailable")}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {[0, 1, 2].map((index) => {
-              const selected = fallbackChain[index] ?? "__none__";
-              return (
-                <div key={index} className="space-y-2">
-                  <Label>Fallback {index + 1}</Label>
-                  <Select
-                    value={selected}
-                    onValueChange={(value) => {
-                      const next = [...fallbackChain];
-                      if (value === "__none__") next.splice(index, 1);
-                      else next[index] = value;
-                      const normalized = next.filter(Boolean).slice(0, 3);
-                      updatePolicy((prev) =>
-                        setModelForUseCases(
-                          prev,
-                          GENERAL_USE_CASES,
-                          generalDefault,
-                          normalized,
-                        ),
-                      );
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
-                      {GENERAL_MODELS.filter(
-                        (model) => model.value !== generalDefault,
-                      ).map((model) => (
-                        <SelectItem
-                          key={`${index}-${model.value}`}
-                          value={model.value}
-                        >
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[generalDefault, ...fallbackChain]
-              .filter(Boolean)
-              .map((model, index) => (
-                <Badge
-                  key={`${model}-${index}`}
-                  variant={
-                    getModelHealth(model)?.available
-                      ? index === 0
-                        ? "default"
-                        : "outline"
-                      : "destructive"
-                  }
-                >
-                  {index === 0 ? "Primary" : `Fallback ${index}`} · {model}
-                </Badge>
-              ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-border p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <div className="text-sm font-medium">
-                Plan / execute / review chain
+        <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+          <SettingsField label="Default model">
+            <Select
+              value={generalDefault}
+              onValueChange={(value) =>
+                updatePolicy((prev) =>
+                  setModelForUseCases(
+                    prev,
+                    GENERAL_USE_CASES,
+                    value,
+                    fallbackChain,
+                  ),
+                )
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a default model" />
+              </SelectTrigger>
+              <SelectContent>
+                {GENERAL_MODELS.map((model) => (
+                  <SelectItem key={model.value} value={model.value}>
+                    {model.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SettingsField>
+          <SettingsField label="Runtime source">
+            <StudioSurface tone="inset" padding="sm" className="text-sm">
+              <div>
+                {getModelRuntimeSourceLabel(generalDefault) ?? "Inherited"}
               </div>
-              <div className="text-xs text-muted-foreground">
-                These defaults drive both the pipeline screen and the command
-                surface.
+              <div className="mt-1 text-xs text-muted-foreground">
+                {healthLoading
+                  ? "Checking availability..."
+                  : generalHealth?.available
+                    ? generalHealth.reason
+                    : (generalHealth?.reason ?? "Health unavailable")}
               </div>
-            </div>
-          </div>
+            </StudioSurface>
+          </SettingsField>
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              {
-                label: "Planner",
-                value: plannerModel,
-                useCases: [
-                  "pipeline_plan",
-                  "command_surface_plan",
-                ] as AIUseCase[],
-              },
-              {
-                label: "Executor",
-                value: executorModel,
-                useCases: [
-                  "pipeline_execute",
-                  "command_surface_execute",
-                ] as AIUseCase[],
-              },
-              {
-                label: "Reviewer",
-                value: reviewerModel,
-                useCases: [
-                  "pipeline_review",
-                  "command_surface_review",
-                ] as AIUseCase[],
-              },
-            ].map((item) => (
-              <div key={item.label} className="space-y-2">
-                <Label>{item.label}</Label>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {[0, 1, 2].map((index) => {
+            const selected = fallbackChain[index] ?? "__none__";
+            return (
+              <SettingsField key={index} label={`Fallback ${index + 1}`}>
                 <Select
-                  value={item.value}
-                  onValueChange={(value) =>
+                  value={selected}
+                  onValueChange={(value) => {
+                    const next = [...fallbackChain];
+                    if (value === "__none__") next.splice(index, 1);
+                    else next[index] = value;
+                    const normalized = next.filter(Boolean).slice(0, 3);
                     updatePolicy((prev) =>
                       setModelForUseCases(
                         prev,
-                        item.useCases,
-                        value,
-                        prev.model_profiles?.[item.useCases[0]]?.fallback_chain,
+                        GENERAL_USE_CASES,
+                        generalDefault,
+                        normalized,
                       ),
-                    )
-                  }
+                    );
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue
-                      placeholder={`Select ${item.label.toLowerCase()} model`}
-                    />
+                    <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PIPELINE_MODELS.map((model) => (
+                    <SelectItem value="__none__">None</SelectItem>
+                    {GENERAL_MODELS.filter(
+                      (model) => model.value !== generalDefault,
+                    ).map((model) => (
                       <SelectItem
-                        key={`${item.label}-${model.value}`}
+                        key={`${index}-${model.value}`}
                         value={model.value}
                       >
                         {model.label}
@@ -303,30 +192,114 @@ export function ModelRouterCard({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  {getModelRuntimeSourceLabel(item.value) ?? "Inherited"}
-                </p>
-              </div>
-            ))}
-          </div>
+              </SettingsField>
+            );
+          })}
+        </div>
 
-          <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {PIPELINE_CHAIN_USE_CASES.map((item) => {
-              const model =
-                policy.model_profiles?.[item.id]?.model ?? generalDefault;
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs"
-                >
-                  <div className="font-medium">{item.label}</div>
-                  <div className="mt-1 text-muted-foreground">{model}</div>
-                </div>
-              );
-            })}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[generalDefault, ...fallbackChain]
+            .filter(Boolean)
+            .map((model, index) => (
+              <Badge
+                key={`${model}-${index}`}
+                variant={
+                  getModelHealth(model)?.available
+                    ? index === 0
+                      ? "default"
+                      : "outline"
+                    : "destructive"
+                }
+              >
+                {index === 0 ? "Primary" : `Fallback ${index}`} · {model}
+              </Badge>
+            ))}
+        </div>
+      </StudioSurface>
+
+      <StudioSurface tone="plain">
+        <div className="mb-4 flex items-center gap-2">
+          <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <div className="text-sm font-medium">
+              Plan / execute / review chain
+            </div>
+            <div className="text-xs text-muted-foreground">
+              These defaults drive both the pipeline screen and the command
+              surface.
+            </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            {
+              label: "Planner",
+              value: plannerModel,
+              useCases: [
+                "pipeline_plan",
+                "command_surface_plan",
+              ] as AIUseCase[],
+            },
+            {
+              label: "Executor",
+              value: executorModel,
+              useCases: [
+                "pipeline_execute",
+                "command_surface_execute",
+              ] as AIUseCase[],
+            },
+            {
+              label: "Reviewer",
+              value: reviewerModel,
+              useCases: [
+                "pipeline_review",
+                "command_surface_review",
+              ] as AIUseCase[],
+            },
+          ].map((item) => (
+            <SettingsSelectField
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              onValueChange={(value) =>
+                updatePolicy((prev) =>
+                  setModelForUseCases(
+                    prev,
+                    item.useCases,
+                    value,
+                    prev.model_profiles?.[item.useCases[0]]?.fallback_chain,
+                  ),
+                )
+              }
+              placeholder={`Select ${item.label.toLowerCase()} model`}
+              hint={getModelRuntimeSourceLabel(item.value) ?? "Inherited"}
+              options={PIPELINE_MODELS.map((model) => ({
+                value: model.value,
+                label: model.label,
+              }))}
+            />
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {PIPELINE_CHAIN_USE_CASES.map((item) => {
+            const model =
+              policy.model_profiles?.[item.id]?.model ?? generalDefault;
+            return (
+              <StudioSurface
+                key={item.id}
+                tone="muted"
+                padding="sm"
+                className="text-xs"
+              >
+                <div className="font-medium">{item.label}</div>
+                <div className="mt-1 text-muted-foreground">{model}</div>
+              </StudioSurface>
+            );
+          })}
+        </div>
+      </StudioSurface>
+    </StudioSectionCard>
   );
 }

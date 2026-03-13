@@ -20,33 +20,30 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  StudioHeader,
+  StudioIconTile,
+  StudioSectionCard,
+  StudioStatCard,
+  StudioSurface,
+} from "@/components/ui/studio-shell";
 import { CustomAgentModal } from "@/components/agent-ops/custom-agent-modal";
 import { cardContainer, cardEntrance } from "@/lib/animations/motion-system";
 import type { AIUseCase, WorkspaceAIPolicy } from "@/lib/ai/policy";
+import {
+  SettingsChoiceCard,
+  SettingsField,
+  SettingsSelectField,
+  SettingsToolCard,
+} from "./primitives";
 import {
   ADVANCED_USE_CASES,
   AUDIT_LEVELS,
@@ -66,22 +63,18 @@ type PolicyUpdater = (
 export function AccessDeniedNotice({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <Card className="border-border bg-card">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
-            <div>
-              <p className="font-medium text-foreground">
-                Admin access required
-              </p>
-              <p className="text-sm text-muted-foreground">
-                You need admin or owner permissions to manage workspace AI
-                settings.
-              </p>
-            </div>
+      <StudioSurface tone="card">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+          <div>
+            <p className="font-medium text-foreground">Admin access required</p>
+            <p className="text-sm text-muted-foreground">
+              You need admin or owner permissions to manage workspace AI
+              settings.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </StudioSurface>
     </div>
   );
 }
@@ -91,13 +84,15 @@ export function LoadingState({ className }: { className?: string }) {
     <div className={className}>
       <div className="space-y-6">
         {[0, 1, 2].map((index) => (
-          <div
+          <StudioSurface
             key={index}
-            className="animate-pulse rounded-2xl border bg-background p-6"
+            tone="card"
+            padding="lg"
+            className="animate-pulse bg-background"
           >
             <div className="h-6 w-48 rounded bg-muted" />
             <div className="mt-4 h-24 rounded bg-muted" />
-          </div>
+          </StudioSurface>
         ))}
       </div>
     </div>
@@ -149,21 +144,18 @@ export function AISettingsHeader({
   return (
     <>
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-foreground">
-            <Sparkles className="h-3.5 w-3.5" />
-            AI runtime control plane
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              AI Routing, Tools & Prompts
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Configure workspace-wide defaults, per-use-case model routing, and
-              custom-agent overrides from one screen.
-            </p>
-          </div>
-        </div>
+        <StudioHeader
+          eyebrow={
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-foreground">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI runtime control plane
+            </span>
+          }
+          eyebrowClassName="tracking-normal"
+          title="AI Routing, Tools & Prompts"
+          titleClassName="text-2xl tracking-tight"
+          description="Configure workspace-wide defaults, per-use-case model routing, and custom-agent overrides from one screen."
+        />
 
         <Button
           onClick={onSave}
@@ -193,22 +185,12 @@ export function AISettingsHeader({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05, duration: 0.25 }}
           >
-            <Card className="border-border bg-card shadow-sm">
-              <CardContent className="flex items-center gap-4 pt-6">
-                <div className="rounded-xl bg-foreground p-3 text-background">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    {item.label}
-                  </div>
-                  <div className="text-2xl font-semibold">{item.value}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {item.hint}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <StudioStatCard
+              label={item.label}
+              value={item.value}
+              hint={item.hint}
+              icon={item.icon}
+            />
           </motion.div>
         ))}
       </div>
@@ -227,60 +209,52 @@ export function WorkspaceDefaultsSection({
 
   return (
     <motion.div initial="hidden" animate="visible" variants={cardEntrance}>
-      <Card className="overflow-hidden border-border shadow-sm">
-        <div className="border-b border-border bg-muted/40 px-6 py-5 text-foreground">
-          <div className="flex items-center gap-3">
-            <Settings2 className="h-5 w-5" />
-            <div>
-              <h3 className="font-semibold">Workspace Defaults</h3>
-              <p className="text-sm text-muted-foreground">
-                Fallback rules applied when a use case does not specify its own
-                routing profile.
-              </p>
-            </div>
-          </div>
-        </div>
-        <CardContent className="grid gap-6 pt-6 xl:grid-cols-[1.35fr_0.95fr]">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="workspace-system-instructions">
-                Global system instructions
-              </Label>
-              <Textarea
-                id="workspace-system-instructions"
-                rows={6}
-                value={policy.system_instructions}
-                onChange={(event) =>
-                  updatePolicy((prev) => ({
-                    ...prev,
-                    system_instructions: event.target.value.slice(
-                      0,
-                      systemInstructionsLimit,
-                    ),
-                  }))
-                }
-                placeholder="Define the shared voice, risk posture, or quality bar for all workspace AI activity."
-                className="resize-none"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
+      <StudioSectionCard
+        title="Workspace Defaults"
+        description="Fallback rules applied when a use case does not specify its own routing profile."
+        icon={Settings2}
+        contentClassName="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]"
+      >
+        <div className="space-y-6">
+          <SettingsField
+            label="Global system instructions"
+            htmlFor="workspace-system-instructions"
+            hint={
+              <div className="flex justify-between">
                 <span>Used as the inherited base prompt across flows.</span>
                 <span>
                   {policy.system_instructions.length} /{" "}
                   {systemInstructionsLimit}
                 </span>
               </div>
-            </div>
+            }
+          >
+            <Textarea
+              id="workspace-system-instructions"
+              rows={6}
+              value={policy.system_instructions}
+              onChange={(event) =>
+                updatePolicy((prev) => ({
+                  ...prev,
+                  system_instructions: event.target.value.slice(
+                    0,
+                    systemInstructionsLimit,
+                  ),
+                }))
+              }
+              placeholder="Define the shared voice, risk posture, or quality bar for all workspace AI activity."
+              className="resize-none"
+            />
+          </SettingsField>
 
-            <div className="grid gap-3 md:grid-cols-3">
-              {TASK_PROMPTS.map((prompt) => (
-                <div
-                  key={prompt.id}
-                  className="rounded-xl border border-border bg-muted/30 p-4"
+          <div className="grid gap-3 md:grid-cols-3">
+            {TASK_PROMPTS.map((prompt) => (
+              <StudioSurface key={prompt.id} tone="muted">
+                <SettingsField
+                  label={prompt.title}
+                  hint={prompt.description}
+                  labelClassName="text-sm font-medium"
                 >
-                  <div className="mb-2 text-sm font-medium">{prompt.title}</div>
-                  <p className="mb-3 text-xs text-muted-foreground">
-                    {prompt.description}
-                  </p>
                   <Textarea
                     rows={5}
                     value={policy.task_prompts[prompt.id]}
@@ -296,168 +270,144 @@ export function WorkspaceDefaultsSection({
                     placeholder={prompt.placeholder}
                     className="resize-none bg-background"
                   />
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-xl border border-border p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <Wrench className="h-4 w-4 text-muted-foreground" />
-                <div className="text-sm font-medium">
-                  Default tool allowlist
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                {TOOL_OPTIONS.map((tool) => {
-                  const enabled = policy.allowed_tools.includes(tool.id);
-                  return (
-                    <label
-                      key={tool.id}
-                      htmlFor={`default-tool-${tool.id}`}
-                      className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-border hover:bg-muted/40"
-                    >
-                      <Checkbox
-                        id={`default-tool-${tool.id}`}
-                        checked={enabled}
-                        onCheckedChange={() =>
-                          updatePolicy((prev) => ({
-                            ...prev,
-                            allowed_tools: enabled
-                              ? prev.allowed_tools.filter(
-                                  (id) => id !== tool.id,
-                                )
-                              : [...prev.allowed_tools, tool.id],
-                          }))
-                        }
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium">{tool.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {tool.description}
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
+                </SettingsField>
+              </StudioSurface>
+            ))}
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
-              <div className="mb-4 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <div className="text-sm font-medium">
-                  Automation & approvals
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Execution mode</Label>
-                  <RadioGroup
-                    value={policy.execution_mode ?? "auto"}
-                    onValueChange={(value) =>
+          <StudioSurface tone="plain">
+            <div className="mb-3 flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+              <div className="text-sm font-medium">Default tool allowlist</div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {TOOL_OPTIONS.map((tool) => {
+                const enabled = policy.allowed_tools.includes(tool.id);
+                return (
+                  <SettingsToolCard
+                    key={tool.id}
+                    id={`default-tool-${tool.id}`}
+                    title={tool.name}
+                    description={tool.description}
+                    checked={enabled}
+                    tone="background"
+                    className="cursor-pointer transition-colors hover:border-border hover:bg-muted/40"
+                    onCheckedChange={() =>
                       updatePolicy((prev) => ({
                         ...prev,
-                        execution_mode:
-                          value as WorkspaceAIPolicy["execution_mode"],
+                        allowed_tools: enabled
+                          ? prev.allowed_tools.filter((id) => id !== tool.id)
+                          : [...prev.allowed_tools, tool.id],
                       }))
                     }
-                    className="space-y-2"
-                  >
-                    <label className="flex items-start gap-3 rounded-xl border border-border bg-background p-3">
+                  />
+                );
+              })}
+            </div>
+          </StudioSurface>
+        </div>
+
+        <div className="space-y-6">
+          <StudioSurface tone="muted">
+            <div className="mb-4 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              <div className="text-sm font-medium">Automation & approvals</div>
+            </div>
+            <div className="space-y-4">
+              <SettingsField label="Execution mode">
+                <RadioGroup
+                  value={policy.execution_mode ?? "auto"}
+                  onValueChange={(value) =>
+                    updatePolicy((prev) => ({
+                      ...prev,
+                      execution_mode:
+                        value as WorkspaceAIPolicy["execution_mode"],
+                    }))
+                  }
+                  className="space-y-2"
+                >
+                  <SettingsChoiceCard
+                    control={
                       <RadioGroupItem
                         value="auto"
                         id="exec-auto"
                         className="mt-1"
                       />
-                      <div>
-                        <div className="text-sm font-medium">Auto</div>
-                        <div className="text-xs text-muted-foreground">
-                          AI may proceed when confidence and policy gates allow
-                          it.
-                        </div>
-                      </div>
-                    </label>
-                    <label className="flex items-start gap-3 rounded-xl border border-border bg-background p-3">
+                    }
+                    title="Auto"
+                    description="AI may proceed when confidence and policy gates allow it."
+                  />
+                  <SettingsChoiceCard
+                    control={
                       <RadioGroupItem
                         value="semi_auto"
                         id="exec-semi-auto"
                         className="mt-1"
                       />
-                      <div>
-                        <div className="text-sm font-medium">Semi-auto</div>
-                        <div className="text-xs text-muted-foreground">
-                          Keep the system in review-heavy mode.
-                        </div>
-                      </div>
-                    </label>
-                  </RadioGroup>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="approval-threshold">
-                    Confidence threshold for autonomous execution
-                  </Label>
-                  <Input
-                    id="approval-threshold"
-                    type="number"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={
-                      policy.approval_thresholds?.confidence_min_for_auto ??
-                      0.75
                     }
-                    onChange={(event) =>
-                      updatePolicy((prev) => ({
-                        ...prev,
-                        approval_thresholds: {
-                          ...(prev.approval_thresholds ?? {}),
-                          confidence_min_for_auto: Math.max(
-                            0,
-                            Math.min(1, Number(event.target.value) || 0.75),
-                          ),
-                        },
-                      }))
-                    }
-                    className="max-w-[220px] bg-background"
+                    title="Semi-auto"
+                    description="Keep the system in review-heavy mode."
                   />
-                </div>
+                </RadioGroup>
+              </SettingsField>
 
-                <div className="space-y-3">
-                  {[
-                    {
-                      key: "allow_task_creation",
-                      label: "Allow task creation",
-                      description: "Lets AI create new tasks and subtasks.",
-                    },
-                    {
-                      key: "allow_task_updates",
-                      label: "Allow task updates",
-                      description: "Lets AI modify existing tasks.",
-                    },
-                    {
-                      key: "allow_task_deletion",
-                      label: "Allow task deletion",
-                      description: "Lets AI permanently remove tasks.",
-                    },
-                    {
-                      key: "require_approval_for_changes",
-                      label: "Require approval for changes",
-                      description: "Forces apply actions into approval mode.",
-                    },
-                  ].map((row) => (
-                    <div
-                      key={row.key}
-                      className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background p-3"
-                    >
-                      <div>
-                        <div className="text-sm font-medium">{row.label}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {row.description}
-                        </div>
-                      </div>
+              <SettingsField
+                label="Confidence threshold for autonomous execution"
+                htmlFor="approval-threshold"
+              >
+                <Input
+                  id="approval-threshold"
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={
+                    policy.approval_thresholds?.confidence_min_for_auto ?? 0.75
+                  }
+                  onChange={(event) =>
+                    updatePolicy((prev) => ({
+                      ...prev,
+                      approval_thresholds: {
+                        ...(prev.approval_thresholds ?? {}),
+                        confidence_min_for_auto: Math.max(
+                          0,
+                          Math.min(1, Number(event.target.value) || 0.75),
+                        ),
+                      },
+                    }))
+                  }
+                  className="max-w-[220px] bg-background"
+                />
+              </SettingsField>
+
+              <div className="space-y-3">
+                {[
+                  {
+                    key: "allow_task_creation",
+                    label: "Allow task creation",
+                    description: "Lets AI create new tasks and subtasks.",
+                  },
+                  {
+                    key: "allow_task_updates",
+                    label: "Allow task updates",
+                    description: "Lets AI modify existing tasks.",
+                  },
+                  {
+                    key: "allow_task_deletion",
+                    label: "Allow task deletion",
+                    description: "Lets AI permanently remove tasks.",
+                  },
+                  {
+                    key: "require_approval_for_changes",
+                    label: "Require approval for changes",
+                    description: "Forces apply actions into approval mode.",
+                  },
+                ].map((row) => (
+                  <SettingsChoiceCard
+                    key={row.key}
+                    title={row.label}
+                    description={row.description}
+                    control={
                       <Switch
                         checked={Boolean(
                           policy.constraints?.[
@@ -476,107 +426,101 @@ export function WorkspaceDefaultsSection({
                           }))
                         }
                       />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="max-tokens">
-                    Workspace max tokens per request
-                  </Label>
-                  <Input
-                    id="max-tokens"
-                    type="number"
-                    min={256}
-                    max={32768}
-                    step={256}
-                    value={policy.constraints?.max_tokens_per_request ?? 4096}
-                    onChange={(event) =>
-                      updatePolicy((prev) => ({
-                        ...prev,
-                        constraints: {
-                          ...(prev.constraints ?? {}),
-                          max_tokens_per_request: Math.min(
-                            32768,
-                            Math.max(256, Number(event.target.value) || 4096),
-                          ),
-                        },
-                      }))
                     }
-                    className="max-w-[220px] bg-background"
+                    controlPosition="end"
+                    className="items-center justify-between"
                   />
-                </div>
+                ))}
               </div>
-            </div>
 
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
-              <div className="mb-4 flex items-center gap-2">
-                <History className="h-4 w-4 text-muted-foreground" />
-                <div className="text-sm font-medium">Audit level</div>
-              </div>
-              <RadioGroup
-                value={policy.audit_level}
-                onValueChange={(value) =>
-                  updatePolicy((prev) => ({
-                    ...prev,
-                    audit_level: value as WorkspaceAIPolicy["audit_level"],
-                  }))
-                }
-                className="space-y-2"
+              <SettingsField
+                label="Workspace max tokens per request"
+                htmlFor="max-tokens"
               >
-                {AUDIT_LEVELS.map((level) => (
-                  <label
-                    key={level.value}
-                    className="flex items-start gap-3 rounded-xl border border-border bg-background p-3"
-                  >
+                <Input
+                  id="max-tokens"
+                  type="number"
+                  min={256}
+                  max={32768}
+                  step={256}
+                  value={policy.constraints?.max_tokens_per_request ?? 4096}
+                  onChange={(event) =>
+                    updatePolicy((prev) => ({
+                      ...prev,
+                      constraints: {
+                        ...(prev.constraints ?? {}),
+                        max_tokens_per_request: Math.min(
+                          32768,
+                          Math.max(256, Number(event.target.value) || 4096),
+                        ),
+                      },
+                    }))
+                  }
+                  className="max-w-[220px] bg-background"
+                />
+              </SettingsField>
+            </div>
+          </StudioSurface>
+
+          <StudioSurface tone="muted">
+            <div className="mb-4 flex items-center gap-2">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <div className="text-sm font-medium">Audit level</div>
+            </div>
+            <RadioGroup
+              value={policy.audit_level}
+              onValueChange={(value) =>
+                updatePolicy((prev) => ({
+                  ...prev,
+                  audit_level: value as WorkspaceAIPolicy["audit_level"],
+                }))
+              }
+              className="space-y-2"
+            >
+              {AUDIT_LEVELS.map((level) => (
+                <SettingsChoiceCard
+                  key={level.value}
+                  control={
                     <RadioGroupItem
                       value={level.value}
                       id={`audit-${level.value}`}
                       className="mt-1"
                     />
-                    <div>
-                      <div className="text-sm font-medium">{level.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {level.description}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
+                  }
+                  title={level.title}
+                  description={level.description}
+                />
+              ))}
+            </RadioGroup>
+          </StudioSurface>
 
-            <div className="rounded-xl border border-border bg-card p-4 text-foreground">
-              <div className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                Version Info
+          <StudioSurface tone="plain" className="text-foreground">
+            <div className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              Version Info
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div>
+                <div className="text-xs text-muted-foreground">Version</div>
+                <div className="text-xl font-semibold">{policy.version}</div>
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Version</div>
-                  <div className="text-xl font-semibold">{policy.version}</div>
+              <div>
+                <div className="text-xs text-muted-foreground">Updated By</div>
+                <div className="text-sm font-medium">
+                  {policy.last_updated_by || "N/A"}
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    Updated By
-                  </div>
-                  <div className="text-sm font-medium">
-                    {policy.last_updated_by || "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    Updated At
-                  </div>
-                  <div className="text-sm font-medium">
-                    {policy.last_updated_at
-                      ? new Date(policy.last_updated_at).toLocaleString()
-                      : "N/A"}
-                  </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Updated At</div>
+                <div className="text-sm font-medium">
+                  {policy.last_updated_at
+                    ? new Date(policy.last_updated_at).toLocaleString()
+                    : "N/A"}
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </StudioSurface>
+        </div>
+      </StudioSectionCard>
     </motion.div>
   );
 }
@@ -584,33 +528,30 @@ export function WorkspaceDefaultsSection({
 export function CapabilityMatrixSection() {
   return (
     <motion.div initial="hidden" animate="visible" variants={cardEntrance}>
-      <Card className="border-border shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Layers3 className="h-5 w-5" />
-            Capability Matrix
-          </CardTitle>
-          <CardDescription>
-            Start simple. Expand a use case only when it truly needs more power.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <motion.div
-            variants={cardContainer}
-            initial="hidden"
-            animate="visible"
-            className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4"
-          >
-            {CAPABILITY_MATRIX.map((item) => (
-              <motion.div
-                key={item.mode}
-                variants={cardEntrance}
-                className="rounded-xl border border-border bg-card p-4 shadow-sm"
-              >
+      <StudioSectionCard
+        title="Capability Matrix"
+        description="Start simple. Expand a use case only when it truly needs more power."
+        icon={Layers3}
+      >
+        <motion.div
+          variants={cardContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4"
+        >
+          {CAPABILITY_MATRIX.map((item) => (
+            <motion.div
+              key={item.mode}
+              variants={cardEntrance}
+              className="space-y-0"
+            >
+              <StudioSurface tone="card">
                 <div className="mb-3 flex items-center gap-3">
-                  <div className="rounded-xl bg-foreground p-2.5 text-background">
-                    <item.icon className="h-4 w-4" />
-                  </div>
+                  <StudioIconTile
+                    icon={item.icon}
+                    tone="inverse"
+                    className="h-9 w-9"
+                  />
                   <div>
                     <div className="text-sm font-medium">{item.title}</div>
                     <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
@@ -626,11 +567,11 @@ export function CapabilityMatrixSection() {
                     <div key={detail}>· {detail}</div>
                   ))}
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </CardContent>
-      </Card>
+              </StudioSurface>
+            </motion.div>
+          ))}
+        </motion.div>
+      </StudioSectionCard>
     </motion.div>
   );
 }
@@ -673,52 +614,43 @@ export function UseCaseRoutingSection({
 }: UseCaseRoutingSectionProps) {
   return (
     <motion.div initial="hidden" animate="visible" variants={cardEntrance}>
-      <Card className="border-border shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {title.includes("Advanced") ? (
-              <Wand2 className="h-5 w-5" />
-            ) : (
-              <Brain className="h-5 w-5" />
-            )}
-            {title}
-          </CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {useCases.map((useCase, index) => {
-            const model = policy.model_profiles?.[useCase.id] ?? {};
-            const tools = policy.tool_profiles?.[useCase.id] ?? {};
-            const prompts = policy.prompt_profiles?.[useCase.id] ?? {};
-            const handbooks =
-              policy.skills_policy?.use_case_handbooks?.[useCase.id] ??
-              prompts.handbook_slugs ??
-              [];
-            const isCustomized = Boolean(
-              model.provider ||
-              model.model ||
-              model.fallback_chain?.length ||
-              tools.tool_mode ||
-              tools.allowed_tools?.length ||
-              prompts.system_instructions ||
-              prompts.prompt_instructions ||
-              handbooks.length,
-            );
+      <StudioSectionCard
+        title={title}
+        description={description}
+        icon={title.includes("Advanced") ? Wand2 : Brain}
+        contentClassName="space-y-4"
+      >
+        {useCases.map((useCase, index) => {
+          const model = policy.model_profiles?.[useCase.id] ?? {};
+          const tools = policy.tool_profiles?.[useCase.id] ?? {};
+          const prompts = policy.prompt_profiles?.[useCase.id] ?? {};
+          const handbooks =
+            policy.skills_policy?.use_case_handbooks?.[useCase.id] ??
+            prompts.handbook_slugs ??
+            [];
+          const isCustomized = Boolean(
+            model.provider ||
+            model.model ||
+            model.fallback_chain?.length ||
+            tools.tool_mode ||
+            tools.allowed_tools?.length ||
+            prompts.system_instructions ||
+            prompts.prompt_instructions ||
+            handbooks.length,
+          );
 
-            if (title.includes("Advanced")) {
-              return (
-                <div
-                  key={useCase.id}
-                  className="rounded-xl border border-border bg-muted/30 p-4"
-                >
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <div className="font-medium">{useCase.title}</div>
-                    <Badge variant="outline">{useCase.badge}</Badge>
-                  </div>
-                  <div className="mb-4 text-sm text-muted-foreground">
-                    {useCase.description}
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-4">
+          if (title.includes("Advanced")) {
+            return (
+              <StudioSurface key={useCase.id} tone="muted">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="font-medium">{useCase.title}</div>
+                  <Badge variant="outline">{useCase.badge}</Badge>
+                </div>
+                <div className="mb-4 text-sm text-muted-foreground">
+                  {useCase.description}
+                </div>
+                <div className="grid gap-3 md:grid-cols-4">
+                  <SettingsField label="Model">
                     <Input
                       value={model.model ?? ""}
                       onChange={(event) =>
@@ -728,51 +660,35 @@ export function UseCaseRoutingSection({
                       }
                       placeholder="Model"
                     />
-                    <Select
-                      value={model.provider ?? "__default__"}
-                      onValueChange={(value) =>
-                        updateUseCaseModel(useCase.id, {
-                          provider: value === "__default__" ? undefined : value,
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__default__">
-                          Inherited provider
-                        </SelectItem>
-                        {PROVIDER_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={tools.tool_mode ?? "__default__"}
-                      onValueChange={(value) =>
-                        updateUseCaseTools(useCase.id, {
-                          tool_mode:
-                            value === "__default__" ? undefined : value,
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Tool mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__default__">
-                          Inherited tool mode
-                        </SelectItem>
-                        {TOOL_MODE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  </SettingsField>
+                  <SettingsSelectField
+                    label="Provider"
+                    value={model.provider ?? "__default__"}
+                    onValueChange={(value) =>
+                      updateUseCaseModel(useCase.id, {
+                        provider: value === "__default__" ? undefined : value,
+                      })
+                    }
+                    placeholder="Provider"
+                    inheritedLabel="Inherited provider"
+                    options={PROVIDER_OPTIONS}
+                  />
+                  <SettingsSelectField
+                    label="Tool mode"
+                    value={tools.tool_mode ?? "__default__"}
+                    onValueChange={(value) =>
+                      updateUseCaseTools(useCase.id, {
+                        tool_mode: value === "__default__" ? undefined : value,
+                      })
+                    }
+                    placeholder="Tool mode"
+                    inheritedLabel="Inherited tool mode"
+                    options={TOOL_MODE_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                  />
+                  <SettingsField label="Fallback chain">
                     <Input
                       value={formatList(model.fallback_chain)}
                       onChange={(event) =>
@@ -782,279 +698,229 @@ export function UseCaseRoutingSection({
                       }
                       placeholder="Fallback chain"
                     />
-                  </div>
+                  </SettingsField>
                 </div>
-              );
-            }
+              </StudioSurface>
+            );
+          }
 
-            return (
-              <motion.div
-                key={useCase.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04, duration: 0.2 }}
+          return (
+            <motion.div
+              key={useCase.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04, duration: 0.2 }}
+            >
+              <Collapsible
+                open={expandedPrompts.includes(useCase.id)}
+                onOpenChange={() => toggleExpanded(useCase.id)}
               >
-                <Collapsible
-                  open={expandedPrompts.includes(useCase.id)}
-                  onOpenChange={() => toggleExpanded(useCase.id)}
+                <StudioSurface
+                  tone="plain"
+                  padding="none"
+                  className="overflow-hidden"
                 >
-                  <div className="overflow-hidden rounded-xl border border-border bg-card">
-                    <CollapsibleTrigger asChild>
-                      <button className="flex w-full items-center justify-between gap-4 bg-muted/20 px-5 py-4 text-left transition-colors hover:bg-muted/35">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{useCase.title}</span>
-                            <Badge
-                              variant={isCustomized ? "default" : "secondary"}
-                            >
-                              {isCustomized ? "Customized" : "Inherited"}
-                            </Badge>
-                            <Badge variant="outline">{useCase.badge}</Badge>
-                          </div>
-                          <div className="mt-1 text-sm text-muted-foreground">
-                            {useCase.description}
-                          </div>
+                  <CollapsibleTrigger asChild>
+                    <button className="flex w-full items-center justify-between gap-4 bg-muted/20 px-5 py-4 text-left transition-colors hover:bg-muted/35">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{useCase.title}</span>
+                          <Badge
+                            variant={isCustomized ? "default" : "secondary"}
+                          >
+                            {isCustomized ? "Customized" : "Inherited"}
+                          </Badge>
+                          <Badge variant="outline">{useCase.badge}</Badge>
                         </div>
-                        {expandedPrompts.includes(useCase.id) ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </button>
-                    </CollapsibleTrigger>
-
-                    <CollapsibleContent>
-                      <div className="grid gap-5 border-t border-border px-5 py-5 xl:grid-cols-[0.92fr_1.08fr]">
-                        <div className="space-y-4">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Provider</Label>
-                              <Select
-                                value={model.provider ?? "__default__"}
-                                onValueChange={(value) =>
-                                  updateUseCaseModel(useCase.id, {
-                                    provider:
-                                      value === "__default__"
-                                        ? undefined
-                                        : value,
-                                  })
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Use workspace default" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__default__">
-                                    Use workspace default
-                                  </SelectItem>
-                                  {PROVIDER_OPTIONS.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Tool mode</Label>
-                              <Select
-                                value={tools.tool_mode ?? "__default__"}
-                                onValueChange={(value) =>
-                                  updateUseCaseTools(useCase.id, {
-                                    tool_mode:
-                                      value === "__default__"
-                                        ? undefined
-                                        : value,
-                                  })
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Use workspace default" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__default__">
-                                    Use workspace default
-                                  </SelectItem>
-                                  {TOOL_MODE_OPTIONS.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <p className="text-xs text-muted-foreground">
-                                {TOOL_MODE_OPTIONS.find(
-                                  (option) => option.value === tools.tool_mode,
-                                )?.description ??
-                                  "Falls back to the workspace tool profile."}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Model identifier</Label>
-                            <Input
-                              value={model.model ?? ""}
-                              onChange={(event) =>
-                                updateUseCaseModel(useCase.id, {
-                                  model: event.target.value || undefined,
-                                })
-                              }
-                              placeholder="claude-opus-4-6, gpt-5-mini, glm-5..."
-                            />
-                          </div>
-
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                              <Label>Temperature</Label>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={2}
-                                step={0.05}
-                                value={model.temperature ?? ""}
-                                onChange={(event) =>
-                                  updateUseCaseModel(useCase.id, {
-                                    temperature:
-                                      event.target.value === ""
-                                        ? undefined
-                                        : Number(event.target.value),
-                                  })
-                                }
-                                placeholder="Inherited"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Max tokens</Label>
-                              <Input
-                                type="number"
-                                min={1}
-                                max={32768}
-                                step={128}
-                                value={model.max_tokens ?? ""}
-                                onChange={(event) =>
-                                  updateUseCaseModel(useCase.id, {
-                                    max_tokens:
-                                      event.target.value === ""
-                                        ? undefined
-                                        : Number(event.target.value),
-                                  })
-                                }
-                                placeholder="Inherited"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Fallback chain</Label>
-                              <Input
-                                value={formatList(model.fallback_chain)}
-                                onChange={(event) =>
-                                  updateUseCaseModel(useCase.id, {
-                                    fallback_chain: splitList(
-                                      event.target.value,
-                                    ),
-                                  })
-                                }
-                                placeholder="glm-5, codex-standard"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Handbook slugs</Label>
-                            <Input
-                              value={formatList(handbooks)}
-                              onChange={(event) =>
-                                updateUseCaseHandbooks(
-                                  useCase.id,
-                                  event.target.value,
-                                )
-                              }
-                              placeholder="general, coding, product..."
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>System instruction override</Label>
-                            <Textarea
-                              rows={4}
-                              value={prompts.system_instructions ?? ""}
-                              onChange={(event) =>
-                                updateUseCasePrompts(useCase.id, {
-                                  system_instructions:
-                                    event.target.value || undefined,
-                                })
-                              }
-                              placeholder="Optional system-level override for this use case."
-                              className="resize-none"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Prompt instructions</Label>
-                            <Textarea
-                              rows={5}
-                              value={prompts.prompt_instructions ?? ""}
-                              onChange={(event) =>
-                                updateUseCasePrompts(useCase.id, {
-                                  prompt_instructions:
-                                    event.target.value || undefined,
-                                })
-                              }
-                              placeholder="Add concise behavior or output-format guidance for this use case."
-                              className="resize-none"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Allowed tools for this use case</Label>
-                            <div className="grid gap-2 md:grid-cols-2">
-                              {TOOL_OPTIONS.map((tool) => {
-                                const checked =
-                                  tools.allowed_tools?.includes(tool.id) ??
-                                  false;
-                                return (
-                                  <label
-                                    key={tool.id}
-                                    className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-3"
-                                  >
-                                    <Checkbox
-                                      checked={checked}
-                                      onCheckedChange={() =>
-                                        toggleUseCaseTool(useCase.id, tool.id)
-                                      }
-                                    />
-                                    <div>
-                                      <div className="text-sm font-medium">
-                                        {tool.name}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {tool.description}
-                                      </div>
-                                    </div>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          {useCase.description}
                         </div>
                       </div>
-                    </CollapsibleContent>
-                  </div>
-                </Collapsible>
-              </motion.div>
-            );
-          })}
-        </CardContent>
-      </Card>
+                      {expandedPrompts.includes(useCase.id) ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <div className="grid gap-5 border-t border-border px-5 py-5 xl:grid-cols-[0.92fr_1.08fr]">
+                      <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <SettingsSelectField
+                            label="Provider"
+                            value={model.provider ?? "__default__"}
+                            onValueChange={(value) =>
+                              updateUseCaseModel(useCase.id, {
+                                provider:
+                                  value === "__default__" ? undefined : value,
+                              })
+                            }
+                            placeholder="Use workspace default"
+                            inheritedLabel="Use workspace default"
+                            options={PROVIDER_OPTIONS}
+                          />
+
+                          <SettingsSelectField
+                            label="Tool mode"
+                            value={tools.tool_mode ?? "__default__"}
+                            onValueChange={(value) =>
+                              updateUseCaseTools(useCase.id, {
+                                tool_mode:
+                                  value === "__default__" ? undefined : value,
+                              })
+                            }
+                            placeholder="Use workspace default"
+                            inheritedLabel="Use workspace default"
+                            hint={
+                              TOOL_MODE_OPTIONS.find(
+                                (option) => option.value === tools.tool_mode,
+                              )?.description ??
+                              "Falls back to the workspace tool profile."
+                            }
+                            options={TOOL_MODE_OPTIONS.map((option) => ({
+                              value: option.value,
+                              label: option.label,
+                            }))}
+                          />
+                        </div>
+
+                        <SettingsField label="Model identifier">
+                          <Input
+                            value={model.model ?? ""}
+                            onChange={(event) =>
+                              updateUseCaseModel(useCase.id, {
+                                model: event.target.value || undefined,
+                              })
+                            }
+                            placeholder="claude-opus-4-6, gpt-5-mini, glm-5..."
+                          />
+                        </SettingsField>
+
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <SettingsField label="Temperature">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={2}
+                              step={0.05}
+                              value={model.temperature ?? ""}
+                              onChange={(event) =>
+                                updateUseCaseModel(useCase.id, {
+                                  temperature:
+                                    event.target.value === ""
+                                      ? undefined
+                                      : Number(event.target.value),
+                                })
+                              }
+                              placeholder="Inherited"
+                            />
+                          </SettingsField>
+                          <SettingsField label="Max tokens">
+                            <Input
+                              type="number"
+                              min={1}
+                              max={32768}
+                              step={128}
+                              value={model.max_tokens ?? ""}
+                              onChange={(event) =>
+                                updateUseCaseModel(useCase.id, {
+                                  max_tokens:
+                                    event.target.value === ""
+                                      ? undefined
+                                      : Number(event.target.value),
+                                })
+                              }
+                              placeholder="Inherited"
+                            />
+                          </SettingsField>
+                          <SettingsField label="Fallback chain">
+                            <Input
+                              value={formatList(model.fallback_chain)}
+                              onChange={(event) =>
+                                updateUseCaseModel(useCase.id, {
+                                  fallback_chain: splitList(event.target.value),
+                                })
+                              }
+                              placeholder="glm-5, codex-standard"
+                            />
+                          </SettingsField>
+                        </div>
+
+                        <SettingsField label="Handbook slugs">
+                          <Input
+                            value={formatList(handbooks)}
+                            onChange={(event) =>
+                              updateUseCaseHandbooks(
+                                useCase.id,
+                                event.target.value,
+                              )
+                            }
+                            placeholder="general, coding, product..."
+                          />
+                        </SettingsField>
+                      </div>
+
+                      <div className="space-y-4">
+                        <SettingsField label="System instruction override">
+                          <Textarea
+                            rows={4}
+                            value={prompts.system_instructions ?? ""}
+                            onChange={(event) =>
+                              updateUseCasePrompts(useCase.id, {
+                                system_instructions:
+                                  event.target.value || undefined,
+                              })
+                            }
+                            placeholder="Optional system-level override for this use case."
+                            className="resize-none"
+                          />
+                        </SettingsField>
+
+                        <SettingsField label="Prompt instructions">
+                          <Textarea
+                            rows={5}
+                            value={prompts.prompt_instructions ?? ""}
+                            onChange={(event) =>
+                              updateUseCasePrompts(useCase.id, {
+                                prompt_instructions:
+                                  event.target.value || undefined,
+                              })
+                            }
+                            placeholder="Add concise behavior or output-format guidance for this use case."
+                            className="resize-none"
+                          />
+                        </SettingsField>
+
+                        <SettingsField label="Allowed tools for this use case">
+                          <div className="grid gap-2 md:grid-cols-2">
+                            {TOOL_OPTIONS.map((tool) => {
+                              const checked =
+                                tools.allowed_tools?.includes(tool.id) ?? false;
+                              return (
+                                <SettingsToolCard
+                                  key={tool.id}
+                                  title={tool.name}
+                                  description={tool.description}
+                                  checked={checked}
+                                  onCheckedChange={() =>
+                                    toggleUseCaseTool(useCase.id, tool.id)
+                                  }
+                                />
+                              );
+                            })}
+                          </div>
+                        </SettingsField>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </StudioSurface>
+              </Collapsible>
+            </motion.div>
+          );
+        })}
+      </StudioSectionCard>
     </motion.div>
   );
 }
@@ -1076,61 +942,54 @@ export function CustomAgentOverridesSection({
 }) {
   return (
     <motion.div initial="hidden" animate="visible" variants={cardEntrance}>
-      <Card className="border-border shadow-sm">
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Custom Agent Overrides
-              </CardTitle>
-              <CardDescription>
-                Tune model, tools, and prompt overlays for custom agents in this
-                workspace.
-              </CardDescription>
+      <StudioSectionCard
+        title="Custom Agent Overrides"
+        description="Tune model, tools, and prompt overlays for custom agents in this workspace."
+        icon={Bot}
+        actions={
+          <CustomAgentModal
+            workspaceId={workspaceId}
+            onSaved={() => void reload()}
+            trigger={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 self-start"
+              >
+                <Bot className="h-4 w-4" />
+                Manage Agents
+              </Button>
+            }
+          />
+        }
+        contentClassName="space-y-4"
+      >
+        {customAgents.length === 0 ? (
+          <StudioSurface tone="dashed" className="px-4 py-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
+              <Bot className="h-5 w-5 text-muted-foreground" />
             </div>
-            <CustomAgentModal
-              workspaceId={workspaceId}
-              onSaved={() => void reload()}
-              trigger={
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 self-start"
-                >
-                  <Bot className="h-4 w-4" />
-                  Manage Agents
-                </Button>
-              }
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {customAgents.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-sm">
-                <Bot className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="font-medium">
-                No custom agents found for this workspace
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                Create custom agents first, then their runtime override controls
-                will appear here.
-              </div>
+            <div className="font-medium">
+              No custom agents found for this workspace
             </div>
-          ) : (
-            customAgents.map((agent, index) => {
-              const override = policy.agent_profiles?.[agent.id] ?? {};
-              return (
-                <motion.div
-                  key={agent.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.04, duration: 0.2 }}
-                  className="rounded-xl border border-border bg-card p-5"
-                >
+            <div className="mt-1 text-sm text-muted-foreground">
+              Create custom agents first, then their runtime override controls
+              will appear here.
+            </div>
+          </StudioSurface>
+        ) : (
+          customAgents.map((agent, index) => {
+            const override = policy.agent_profiles?.[agent.id] ?? {};
+            return (
+              <motion.div
+                key={agent.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04, duration: 0.2 }}
+                className="space-y-0"
+              >
+                <StudioSurface tone="plain" className="p-5">
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1165,7 +1024,8 @@ export function CustomAgentOverridesSection({
                   <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
                     <div className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
-                        <Select
+                        <SettingsSelectField
+                          label="Provider"
                           value={override.provider ?? "__default__"}
                           onValueChange={(value) =>
                             updateAgentProfile(agent.id, {
@@ -1173,25 +1033,12 @@ export function CustomAgentOverridesSection({
                                 value === "__default__" ? undefined : value,
                             })
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Provider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__default__">
-                              Inherited provider
-                            </SelectItem>
-                            {PROVIDER_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select
+                          placeholder="Provider"
+                          inheritedLabel="Inherited provider"
+                          options={PROVIDER_OPTIONS}
+                        />
+                        <SettingsSelectField
+                          label="Tool mode"
                           value={override.tool_mode ?? "__default__"}
                           onValueChange={(value) =>
                             updateAgentProfile(agent.id, {
@@ -1199,137 +1046,128 @@ export function CustomAgentOverridesSection({
                                 value === "__default__" ? undefined : value,
                             })
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tool mode" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__default__">
-                              Inherited tool mode
-                            </SelectItem>
-                            {TOOL_MODE_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Tool mode"
+                          inheritedLabel="Inherited tool mode"
+                          options={TOOL_MODE_OPTIONS.map((option) => ({
+                            value: option.value,
+                            label: option.label,
+                          }))}
+                        />
                       </div>
 
-                      <Input
-                        value={override.model ?? ""}
-                        onChange={(event) =>
-                          updateAgentProfile(agent.id, {
-                            model: event.target.value || undefined,
-                          })
-                        }
-                        placeholder="Model override"
-                      />
+                      <SettingsField label="Model override">
+                        <Input
+                          value={override.model ?? ""}
+                          onChange={(event) =>
+                            updateAgentProfile(agent.id, {
+                              model: event.target.value || undefined,
+                            })
+                          }
+                          placeholder="Model override"
+                        />
+                      </SettingsField>
 
                       <div className="grid gap-4 md:grid-cols-3">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={2}
-                          step={0.05}
-                          value={override.temperature ?? ""}
-                          onChange={(event) =>
-                            updateAgentProfile(agent.id, {
-                              temperature:
-                                event.target.value === ""
-                                  ? undefined
-                                  : Number(event.target.value),
-                            })
-                          }
-                          placeholder="Temperature"
-                        />
-                        <Input
-                          type="number"
-                          min={1}
-                          max={32768}
-                          step={128}
-                          value={override.max_tokens ?? ""}
-                          onChange={(event) =>
-                            updateAgentProfile(agent.id, {
-                              max_tokens:
-                                event.target.value === ""
-                                  ? undefined
-                                  : Number(event.target.value),
-                            })
-                          }
-                          placeholder="Max tokens"
-                        />
-                        <Input
-                          value={formatList(override.fallback_chain)}
-                          onChange={(event) =>
-                            updateAgentProfile(agent.id, {
-                              fallback_chain: splitList(event.target.value),
-                            })
-                          }
-                          placeholder="Fallback chain"
-                        />
+                        <SettingsField label="Temperature">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={2}
+                            step={0.05}
+                            value={override.temperature ?? ""}
+                            onChange={(event) =>
+                              updateAgentProfile(agent.id, {
+                                temperature:
+                                  event.target.value === ""
+                                    ? undefined
+                                    : Number(event.target.value),
+                              })
+                            }
+                            placeholder="Temperature"
+                          />
+                        </SettingsField>
+                        <SettingsField label="Max tokens">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={32768}
+                            step={128}
+                            value={override.max_tokens ?? ""}
+                            onChange={(event) =>
+                              updateAgentProfile(agent.id, {
+                                max_tokens:
+                                  event.target.value === ""
+                                    ? undefined
+                                    : Number(event.target.value),
+                              })
+                            }
+                            placeholder="Max tokens"
+                          />
+                        </SettingsField>
+                        <SettingsField label="Fallback chain">
+                          <Input
+                            value={formatList(override.fallback_chain)}
+                            onChange={(event) =>
+                              updateAgentProfile(agent.id, {
+                                fallback_chain: splitList(event.target.value),
+                              })
+                            }
+                            placeholder="Fallback chain"
+                          />
+                        </SettingsField>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <Textarea
-                        rows={4}
-                        value={override.system_prompt ?? ""}
-                        onChange={(event) =>
-                          updateAgentProfile(agent.id, {
-                            system_prompt: event.target.value || undefined,
-                          })
-                        }
-                        placeholder="Optional runtime system prompt override for this agent."
-                        className="resize-none"
-                      />
-                      <Input
-                        value={formatList(override.handbook_slugs)}
-                        onChange={(event) =>
-                          updateAgentProfile(agent.id, {
-                            handbook_slugs: splitList(event.target.value),
-                          })
-                        }
-                        placeholder="Handbook slugs"
-                      />
+                      <SettingsField label="System prompt override">
+                        <Textarea
+                          rows={4}
+                          value={override.system_prompt ?? ""}
+                          onChange={(event) =>
+                            updateAgentProfile(agent.id, {
+                              system_prompt: event.target.value || undefined,
+                            })
+                          }
+                          placeholder="Optional runtime system prompt override for this agent."
+                          className="resize-none"
+                        />
+                      </SettingsField>
+                      <SettingsField label="Handbook slugs">
+                        <Input
+                          value={formatList(override.handbook_slugs)}
+                          onChange={(event) =>
+                            updateAgentProfile(agent.id, {
+                              handbook_slugs: splitList(event.target.value),
+                            })
+                          }
+                          placeholder="Handbook slugs"
+                        />
+                      </SettingsField>
                       <div className="grid gap-2 md:grid-cols-2">
                         {TOOL_OPTIONS.map((tool) => {
                           const checked =
                             override.allowed_tools?.includes(tool.id) ?? false;
                           return (
-                            <label
+                            <SettingsToolCard
                               key={`${agent.id}-${tool.id}`}
-                              className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-3"
-                            >
-                              <Checkbox
-                                checked={checked}
-                                onCheckedChange={() =>
-                                  toggleAgentTool(agent.id, tool.id)
-                                }
-                              />
-                              <div>
-                                <div className="text-sm font-medium">
-                                  {tool.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {tool.description}
-                                </div>
-                              </div>
-                            </label>
+                              title={tool.name}
+                              description={tool.description}
+                              checked={checked}
+                              onCheckedChange={() =>
+                                toggleAgentTool(agent.id, tool.id)
+                              }
+                            />
                           );
                         })}
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
+                </StudioSurface>
+              </motion.div>
+            );
+          })
+        )}
+      </StudioSectionCard>
     </motion.div>
   );
 }
@@ -1354,7 +1192,7 @@ export function MobileSaveBar({
           exit={{ opacity: 0, y: 18 }}
           className="fixed inset-x-4 bottom-4 z-20 md:hidden"
         >
-          <div className="rounded-xl border border-border bg-card p-3 shadow-lg">
+          <StudioSurface tone="plain" padding="sm" className="shadow-lg">
             <div className="mb-3 flex items-center justify-between text-sm">
               <div>
                 <div className="font-medium">Unsaved AI settings</div>
@@ -1381,7 +1219,7 @@ export function MobileSaveBar({
                 </>
               )}
             </Button>
-          </div>
+          </StudioSurface>
         </motion.div>
       )}
     </AnimatePresence>

@@ -775,7 +775,7 @@ export function WorkspaceStudioClient({
       );
       setWorkspace(updated);
       setWorkspaceSummary(updated.description ?? "");
-      toast.success("Workspace purpose updated");
+      toast.success("Mission updated");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -824,7 +824,7 @@ export function WorkspaceStudioClient({
       });
       setComposer(
         workflowDraftMode === "mission_prompt"
-          ? `Turn this mission into a reviewable plan and artifact: ${nextMission || "Create the first mission workflow draft."}`
+          ? `Turn this mission into a reviewable plan and artifact: ${nextMission || "Create the first mission plan."}`
           : "Review the imported workflow JSON and prepare a safe apply path.",
       );
       setPreparedAction(null);
@@ -833,7 +833,7 @@ export function WorkspaceStudioClient({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to generate workflow draft preview",
+          : "Failed to generate plan preview",
       );
     } finally {
       setWorkflowDraftBusy(false);
@@ -1242,11 +1242,11 @@ export function WorkspaceStudioClient({
           : current,
       );
       await loadBootstrap();
-      toast.success("Workflow draft provisioned");
+      toast.success("Plan approved and provisioned");
       setActiveTab("automations");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to apply workflow draft",
+        error instanceof Error ? error.message : "Failed to apply plan",
       );
     } finally {
       setWorkflowDraftBusy(false);
@@ -1410,14 +1410,6 @@ export function WorkspaceStudioClient({
                     Save Page
                   </Button>
                 )}
-                {!isWorkspaceHome && (
-                  <Button
-                    variant="outline"
-                    onClick={() => navigateTo(`/workspaces/${workspaceId}`)}
-                  >
-                    Mission Canvas
-                  </Button>
-                )}
               </div>
             }
           />
@@ -1484,8 +1476,8 @@ export function WorkspaceStudioClient({
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <SectionHeader
                         eyebrow="Artifacts"
-                        title="Mission artifacts and machine surfaces"
-                        description="Keep pages, structured records, and control-plane shortcuts in one calm stack while the main canvas stays primary."
+                        title="Artifacts and supporting records"
+                        description="Keep the mission documents, structured records, and system shortcuts close by while the main artifact stays primary."
                       />
                       <div className="relative w-full lg:max-w-sm">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1656,7 +1648,7 @@ export function WorkspaceStudioClient({
                           )}
                         </SidebarSection>
 
-                        <SidebarSection label="Control plane">
+                        <SidebarSection label="System">
                           <div className="grid gap-2.5">
                             <button
                               type="button"
@@ -1699,17 +1691,17 @@ export function WorkspaceStudioClient({
                       <div className="space-y-1">
                         <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                           {currentEntityType === "page"
-                            ? "Artifact canvas"
+                            ? "Artifact"
                             : currentEntityType === "database"
-                              ? "Record canvas"
-                              : "Mission canvas"}
+                              ? "Records"
+                              : "Mission"}
                         </div>
                         <button
                           type="button"
                           onClick={() => navigateTo(`/workspaces/${workspaceId}`)}
                           className="inline-flex items-center gap-1 text-sm text-[color:var(--foco-teal)] hover:underline"
                         >
-                          Mission Canvas
+                          Back to mission
                         </button>
                         <CardTitle className="text-2xl">
                           {currentSelectionTitle}

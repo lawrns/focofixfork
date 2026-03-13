@@ -25,7 +25,7 @@ type N8nNode = {
 
 function titleFromIntent(intent: string) {
   const trimmed = intent.trim();
-  if (!trimmed) return "Mission workflow draft";
+  if (!trimmed) return "Mission plan";
   return trimmed.length > 72 ? `${trimmed.slice(0, 69).trim()}...` : trimmed;
 }
 
@@ -154,8 +154,8 @@ export function buildWorkflowDraftFromIntent(intent: string): WorkspaceWorkflowD
   return {
     title,
     summary: intent.trim()
-      ? `Drafted a mission workflow for "${intent.trim()}".`
-      : "Drafted a generic mission workflow because no explicit mission prompt was provided.",
+      ? `Drafted a mission plan for "${intent.trim()}".`
+      : "Drafted a generic mission plan because no explicit mission prompt was provided.",
     triggerLabel: inferTriggerLabel(nodes),
     stepLabels: nodes.map((node) => String(node.name ?? node.type ?? "Step")),
     externalEffects: collectExternalEffects(nodes),
@@ -172,11 +172,11 @@ export function buildWorkflowDraftFromJson(workflowJson: Record<string, unknown>
   const title =
     typeof workflowJson.name === "string" && workflowJson.name.trim().length > 0
       ? workflowJson.name.trim()
-      : "Imported workflow draft";
+      : "Imported workflow plan";
 
   return {
     title,
-    summary: `Imported a workflow draft from JSON with ${nodes.length} step${nodes.length === 1 ? "" : "s"}.`,
+    summary: `Imported a workflow plan from JSON with ${nodes.length} step${nodes.length === 1 ? "" : "s"}.`,
     triggerLabel: inferTriggerLabel(nodes),
     stepLabels: nodes.map((node) => String(node.name ?? node.type ?? "Step")),
     externalEffects: collectExternalEffects(nodes),

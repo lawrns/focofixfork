@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import {
   Bot,
   CalendarClock,
@@ -59,7 +59,7 @@ type WorkspaceAssistantRailProps = {
   revisions: RevisionRecord[];
   runStatusTone: (status?: string | null) => string;
   relativeTime: (value?: string | null) => string;
-  flowStrip: React.ReactNode;
+  flowStrip: ReactNode;
   composerRef: RefObject<HTMLTextAreaElement>;
   onActiveTabChange: (value: StudioTab) => void;
   onSelectThread: (threadId: string | null) => void;
@@ -102,6 +102,21 @@ function contextualPrompts(
   ];
 }
 
+const railShellClass =
+  "rounded-[28px] border border-[color:var(--foco-teal)]/15 bg-card px-3 py-3 shadow-[0_24px_60px_-48px_rgba(var(--foco-teal-rgb),0.55)]";
+
+const railPanelClass =
+  "rounded-2xl border border-border/60 bg-card/95 px-4 py-4 shadow-[0_16px_40px_-36px_rgba(15,23,42,0.45)]";
+
+const railInsetClass =
+  "rounded-2xl border border-border/60 bg-background/80 p-3 backdrop-blur-sm";
+
+const chipButtonClass =
+  "rounded-full border border-[color:var(--foco-teal)]/15 bg-[color:var(--foco-teal-dim)] px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-[color:var(--foco-teal)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--foco-teal)]/30";
+
+const primaryRailButtonClass =
+  "w-full bg-[color:var(--foco-teal)] text-white shadow-sm hover:bg-[color:var(--foco-teal)]/90 focus-visible:ring-[color:var(--foco-teal)]/35";
+
 export function WorkspaceAssistantRail({
   activeTab,
   currentEntityType,
@@ -141,95 +156,58 @@ export function WorkspaceAssistantRail({
   const prompts = contextualPrompts(currentEntityType, currentSelectionTitle);
 
   return (
-    <section className="rounded-[28px] border border-[color:var(--foco-teal)]/12 bg-[linear-gradient(180deg,rgba(var(--foco-teal-rgb),0.06),rgba(255,255,255,0.9))] px-3 py-3 shadow-[0_20px_50px_-40px_rgba(0,196,154,0.35)]">
+    <section className={railShellClass}>
       <div className="px-1 pt-1">
         <Tabs
           value={activeTab}
           onValueChange={(value) => onActiveTabChange(value as StudioTab)}
           className="h-full"
         >
-          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl bg-white/85 p-1">
-            <TabsTrigger value="assist" className="flex-1 min-w-[120px] data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white">Plan</TabsTrigger>
-            <TabsTrigger value="activity" className="flex-1 min-w-[120px] data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white">Runs</TabsTrigger>
-            <TabsTrigger value="automations" className="flex-1 min-w-[120px] data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white">Workflow Drafts</TabsTrigger>
-            <TabsTrigger value="integrations" className="flex-1 min-w-[120px] data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white">Tool Grants</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-border/60 bg-background/80 p-1">
+            <TabsTrigger
+              value="assist"
+              className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
+            >
+              Agent
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
+            >
+              Runs
+            </TabsTrigger>
+            <TabsTrigger
+              value="automations"
+              className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
+            >
+              Drafts
+            </TabsTrigger>
+            <TabsTrigger
+              value="integrations"
+              className="min-w-0 data-[state=active]:bg-[color:var(--foco-teal)] data-[state=active]:text-white"
+            >
+              Grants
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="assist" className="mt-4 space-y-4">
-            <div className="rounded-2xl bg-white/85 px-4 py-4">
+            <div className={railPanelClass}>
               <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                Context
+                Current context
               </div>
               <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
                 {currentSelectionTitle}
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {currentEntityType === "workspace"
-                  ? "Turn a signal into a plan, a workflow draft, or a reviewable artifact."
+                  ? "Keep the current plan, next action, and approval in one place so the operator does not need to scan the whole workspace."
                   : currentEntityType === "page"
-                    ? "Use the current artifact as context for a plan, rewrite, extraction, or execution brief."
-                    : "Use the current records as context for a plan, triage flow, or workflow draft."}
+                    ? "Use this artifact as context and keep the next action explicit."
+                    : "Use these records as context and keep the proposed action reviewable."}
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {prompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => onPrepareAction(prompt)}
-                    className="rounded-full border border-[color:var(--foco-teal)]/15 bg-[color:var(--foco-teal-dim)] px-3 py-2 text-left text-sm text-foreground transition hover:border-[color:var(--foco-teal)]/30"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Signal thread
-                </div>
-                <div className="mt-1 text-lg font-medium">
-                  {currentSelectionTitle}
-                </div>
-              </div>
-              <Button variant="outline" onClick={() => onSelectThread(null)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {threads.map((thread) => (
-                <button
-                  key={thread.id}
-                  type="button"
-                  onClick={() => onSelectThread(thread.id)}
-                  className={cn(
-                    "w-full rounded-lg border px-3 py-2 text-left transition",
-                    selectedThreadId === thread.id
-                      ? "bg-secondary text-foreground"
-                      : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <div className="font-medium">{thread.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Updated {relativeTime(thread.last_message_at)}
-                  </div>
-                </button>
-              ))}
-              {threads.length === 0 && messages.length === 0 ? (
-                <EmptyState
-                  icon={Bot}
-                  title="No thread yet"
-                  description="Prepare the first action and apply it when the preview looks right."
-                  size="sm"
-                  className="rounded-lg bg-background/80 px-4 py-6"
-                />
-              ) : null}
-            </div>
-
-            <div className="rounded-lg bg-white/85 p-3">
+            <div className={railInsetClass}>
               <Label>Agent</Label>
               <Select value={activeAgentId} onValueChange={onAgentChange}>
                 <SelectTrigger className="mt-2">
@@ -245,10 +223,28 @@ export function WorkspaceAssistantRail({
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                Suggested next actions
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {prompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => onPrepareAction(prompt)}
+                    className={chipButtonClass}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {preparedAction ? (
-              <div className="rounded-2xl border border-[color:var(--foco-teal)]/12 bg-white/90 px-4 py-4">
+              <div className={railPanelClass}>
                 <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Preview before apply
+                  Current plan
                 </div>
                 <div className="mt-3 space-y-4">
                   <div>
@@ -276,7 +272,7 @@ export function WorkspaceAssistantRail({
                   </div>
                   <div>
                     <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      Preview
+                      Next action
                     </div>
                     <div className="mt-2 space-y-2">
                       {preparedAction.preview.map((item) => (
@@ -292,7 +288,7 @@ export function WorkspaceAssistantRail({
                   <Button
                     onClick={onApplyPreparedAction}
                     disabled={postingMessage}
-                    className="w-full bg-[color:var(--foco-teal)] text-white hover:opacity-95"
+                    className={primaryRailButtonClass}
                   >
                     {postingMessage ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -303,10 +299,81 @@ export function WorkspaceAssistantRail({
                   </Button>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <EmptyState
+                icon={Bot}
+                title="No plan prepared"
+                description="Describe the next action you want. The agent will return a plan and a preview before anything runs."
+                size="sm"
+                className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
+              />
+            )}
+
+            <div className={cn(railInsetClass, "space-y-3")}>
+              <Textarea
+                ref={composerRef}
+                value={composer}
+                onChange={(event) => onComposerChange(event.target.value)}
+                placeholder="Describe the next action. Example: Inspect the latest bug signal and prepare a patch brief."
+                className="min-h-[120px] bg-background"
+              />
+              <Button
+                onClick={() => onPrepareAction()}
+                disabled={postingMessage || !composer.trim()}
+                className={primaryRailButtonClass}
+              >
+                <SendHorizontal className="mr-2 h-4 w-4" />
+                Preview action
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-4 space-y-4">
+            {flowStrip}
+            <div className={railInsetClass}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                    Signal threads
+                  </div>
+                  <div className="mt-1 text-lg font-medium">
+                    Recent mission activity
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                {threads.slice(0, 6).map((thread) => (
+                  <button
+                    key={thread.id}
+                    type="button"
+                    onClick={() => onSelectThread(thread.id)}
+                    className={cn(
+                      "w-full rounded-2xl border px-3 py-2 text-left transition-colors",
+                      selectedThreadId === thread.id
+                        ? "border-[color:var(--foco-teal)]/20 bg-[color:var(--foco-teal-dim)] text-foreground"
+                        : "bg-background text-muted-foreground hover:border-[color:var(--foco-teal)]/15 hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <div className="font-medium">{thread.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Updated {relativeTime(thread.last_message_at)}
+                    </div>
+                  </button>
+                ))}
+                {threads.length === 0 && messages.length === 0 ? (
+                  <EmptyState
+                    icon={Bot}
+                    title="No activity yet"
+                    description="The first approved action will create a thread, run, and receipt here."
+                    size="sm"
+                    className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
+                  />
+                ) : null}
+              </div>
+            </div>
 
             {messages.length > 0 ? (
-              <ScrollArea className="h-[280px] rounded-lg bg-white/85 p-3">
+              <ScrollArea className="h-[240px] rounded-2xl border border-border/60 bg-background/70 p-3">
                 <div className="space-y-3">
                   {messages.map((message) => (
                     <div
@@ -315,7 +382,7 @@ export function WorkspaceAssistantRail({
                         "rounded-xl px-4 py-3",
                         message.role === "user"
                           ? "ml-8 bg-primary text-primary-foreground"
-                          : "mr-8 bg-background text-foreground shadow-sm",
+                          : "mr-8 border border-border/60 bg-card text-foreground shadow-sm",
                       )}
                     >
                       <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.18em]">
@@ -331,28 +398,7 @@ export function WorkspaceAssistantRail({
               </ScrollArea>
             ) : null}
 
-            <div className="space-y-3 rounded-lg bg-white/85 p-3">
-              <Textarea
-                ref={composerRef}
-                value={composer}
-                onChange={(event) => onComposerChange(event.target.value)}
-                placeholder="Describe the outcome you want. The rail will show a plan, preview, approval step, and receipt."
-                className="min-h-[120px] bg-background"
-              />
-              <Button
-                onClick={() => onPrepareAction()}
-                disabled={postingMessage || !composer.trim()}
-                className="w-full bg-[color:var(--foco-teal)] text-white hover:opacity-95"
-              >
-                <SendHorizontal className="mr-2 h-4 w-4" />
-                Preview action
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="activity" className="mt-4 space-y-4">
-            {flowStrip}
-            <div className="rounded-lg bg-white/85 p-3">
+            <div className={railInsetClass}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
@@ -372,7 +418,7 @@ export function WorkspaceAssistantRail({
                   </Badge>
                 ) : null}
               </div>
-              <ScrollArea className="mt-4 h-[280px] rounded-lg bg-background p-3 shadow-sm">
+              <ScrollArea className="mt-4 h-[280px] rounded-2xl border border-border/60 bg-background p-3 shadow-sm">
                 <div className="space-y-2">
                   {streamLines.length === 0 ? (
                     <div className="text-sm text-muted-foreground">
@@ -397,7 +443,7 @@ export function WorkspaceAssistantRail({
             </div>
 
             {revisions.length > 0 ? (
-              <div className="rounded-lg bg-white/85 p-3">
+              <div className={railInsetClass}>
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                     Revisions
@@ -408,7 +454,7 @@ export function WorkspaceAssistantRail({
                   {revisions.slice(0, 6).map((revision) => (
                     <div
                       key={revision.id}
-                      className="rounded-lg border bg-muted/20 p-3"
+                      className="rounded-2xl border border-border/60 bg-background/70 p-3"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
@@ -450,7 +496,7 @@ export function WorkspaceAssistantRail({
               {visibleAutomations.map((automation) => (
                 <div
                   key={automation.id}
-                  className="rounded-lg bg-white/85 p-4"
+                  className="rounded-2xl border border-border/60 bg-card/95 p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -509,7 +555,7 @@ export function WorkspaceAssistantRail({
                     onClick: onCreateAutomation,
                   }}
                   size="sm"
-                  className="rounded-lg bg-background/80 px-4 py-6"
+                  className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
                 />
               ) : null}
             </div>
@@ -534,7 +580,7 @@ export function WorkspaceAssistantRail({
               {connectors.map((connector) => (
                 <div
                   key={connector.id}
-                  className="rounded-lg bg-white/85 p-4"
+                  className="rounded-2xl border border-border/60 bg-card/95 p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
@@ -599,7 +645,7 @@ export function WorkspaceAssistantRail({
                     onClick: onOpenAiSettings,
                   }}
                   size="sm"
-                  className="rounded-lg bg-background/80 px-4 py-6"
+                  className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6"
                 />
               ) : null}
             </div>

@@ -52,7 +52,7 @@ export function PageShell({
       />
       <div
         className={cn(
-          'mx-auto w-full animate-fade-in',
+          'mx-auto w-full',
           maxWidthClasses[maxWidth],
           densityPadding[effectiveDensity],
           className

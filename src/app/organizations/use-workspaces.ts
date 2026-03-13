@@ -40,6 +40,20 @@ export function useWorkspaces() {
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<string | null>(null);
 
+  const normalizeWorkspacesPayload = (payload: unknown): Workspace[] => {
+    if (!payload || typeof payload !== 'object') return [];
+
+    const root = payload as Record<string, unknown>;
+    const candidates = [
+      root.data,
+      root.workspaces,
+      root.data && typeof root.data === 'object' ? (root.data as Record<string, unknown>).workspaces : undefined,
+    ];
+
+    const list = candidates.find(Array.isArray);
+    return Array.isArray(list) ? (list as Workspace[]) : [];
+  };
+
   const loadWorkspaces = useCallback(async () => {
     if (!user) {
       console.log('[Workspaces] Waiting for authentication...');
@@ -49,7 +63,7 @@ export function useWorkspaces() {
       const response = await fetch('/api/workspaces');
       if (response.ok) {
         const data = await response.json();
-        setWorkspaces(data.data || []);
+        setWorkspaces(normalizeWorkspacesPayload(data));
       } else {
         console.error('Failed to load workspaces:', response.status, response.statusText);
         const errorData = await response.json().catch(() => ({}));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useCallback, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ function MaintenancePageContent() {
   const [loading, setLoading] = useState(true);
   const [loadingSnapshots, setLoadingSnapshots] = useState(false);
 
-  const fetchScans = async () => {
+  const fetchScans = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/stale-deps');
@@ -56,7 +56,7 @@ function MaintenancePageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
   const fetchSnapshots = async (scanId: string) => {
     try {
@@ -83,8 +83,8 @@ function MaintenancePageContent() {
   };
 
   useEffect(() => {
-    fetchScans();
-  }, []);
+    void fetchScans();
+  }, [fetchScans]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

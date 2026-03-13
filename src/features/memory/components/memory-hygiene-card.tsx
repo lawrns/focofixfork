@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,11 +19,7 @@ export function MemoryHygieneCard({ projectId }: MemoryHygieneCardProps) {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadStats();
-  }, [projectId]);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/memory/${projectId}/index`);
@@ -37,7 +33,11 @@ export function MemoryHygieneCard({ projectId }: MemoryHygieneCardProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
 
   const handleReindex = async () => {
     try {

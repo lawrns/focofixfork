@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -300,10 +301,12 @@ export function ImageGenerator({
             {currentResult?.public_url ? (
               <div className="space-y-4">
                 <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
-                  <img
+                  <Image
                     src={currentResult.public_url}
                     alt={currentResult.prompt || 'Generated image'}
-                    className="w-full h-full object-contain"
+                    fill
+                    unoptimized
+                    className="object-contain"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -360,9 +363,12 @@ export function ImageGenerator({
                       >
                         <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
                           {gen.thumbnailUrl ? (
-                            <img
+                            <Image
                               src={gen.thumbnailUrl}
                               alt=""
+                              width={48}
+                              height={48}
+                              unoptimized
                               className="w-full h-full object-cover rounded"
                             />
                           ) : gen.status === 'generating' ? (

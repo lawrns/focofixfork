@@ -86,7 +86,9 @@ export function LeftRail() {
 
   /* ── NavLink ──────────────────────────────────────────────── */
   const NavLink = ({ item }: { item: NavItem }) => {
+    const isWorkspaceNav = item.href === '/workspaces' || item.href.startsWith('/workspaces/')
     const isActive =
+      (isWorkspaceNav && (pathname?.startsWith('/workspaces') || pathname?.startsWith('/organizations/'))) ||
       pathname === item.href ||
       (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 
@@ -150,9 +152,9 @@ export function LeftRail() {
     return inner;
   };
 
-  const workspaceHref = currentWorkspace?.id ? `/workspaces/${currentWorkspace.id}` : '/organizations'
+  const workspaceHref = currentWorkspace?.id ? `/workspaces/${currentWorkspace.id}` : '/workspaces'
   const workspaceNavItem: NavItem = {
-    label: 'Workspace',
+    label: 'Workspaces',
     href: workspaceHref,
     icon: Building2,
     shortcut: 'G O',

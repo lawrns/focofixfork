@@ -106,7 +106,7 @@ export function AppShell({ children }: AppShellProps) {
       <main
         suppressHydrationWarning
         className={cn(
-          'min-h-screen w-full transition-all duration-200',
+          'min-h-screen w-full',
           mainChromeClasses,
           isAppPage && mainPaddingLeft,
         )}

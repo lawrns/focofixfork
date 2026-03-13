@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useRecentItems } from '@/hooks/useRecentItems';
 import { apiFetch } from '@/lib/api/fetch-client';
 import type { WorkItem } from '@/types/foco';
@@ -29,7 +29,7 @@ export function useProjectData(user: any, slug: string) {
   const [agentPool, setAgentPool] = useState<string[]>([]);
   const [queueItems, setQueueItems] = useState<ProjectDelegationQueueItem[]>([]);
 
-  async function fetchProjectData(signal?: AbortSignal) {
+  const fetchProjectData = useCallback(async (signal?: AbortSignal) => {
     if (!user || !slug) return;
 
     try {
@@ -125,13 +125,13 @@ export function useProjectData(user: any, slug: string) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [addItem, slug, user]);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchProjectData(controller.signal);
+    void fetchProjectData(controller.signal);
     return () => controller.abort();
-  }, [user, slug, addItem]);
+  }, [fetchProjectData]);
 
   return {
     project, setProject,

@@ -533,7 +533,6 @@ export function useExecuteCommand(deps: ExecutionDeps) {
     appendExecutionEvent,
     cancelRequestedRef,
     createCommandRun,
-    executeCommand,
     finalizeCommandRun,
     logHistoryEvent,
     setExecution,

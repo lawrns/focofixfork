@@ -15,6 +15,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'proposals': 'Task Proposals',
   'my-work': 'My Tasks',
   'ledger': 'Audit Log',
+  'workspaces': 'Workspaces',
   'clawdbot': 'Intel Feed',
   'crons': 'Crons',
   'empire': 'Empire OS',
@@ -120,6 +121,61 @@ export function useBreadcrumbs(projectName?: string, taskTitle?: string): Breadc
           isCurrent: true,
           truncated: truncatedTitle !== taskTitle ? truncatedTitle : undefined,
         });
+      }
+
+      return breadcrumbs;
+    }
+
+    if (currentPath === '/workspaces') {
+      breadcrumbs.push({
+        label: 'Workspaces',
+        isCurrent: true,
+      });
+      return breadcrumbs;
+    }
+
+    if (currentPath.startsWith('/workspaces/')) {
+      breadcrumbs.push({
+        label: 'Workspaces',
+        href: '/workspaces',
+        isCurrent: false,
+      });
+
+      const segments = currentPath.split('/').filter(Boolean);
+      const detailSegments = segments.slice(1);
+
+      if (detailSegments.length > 0) {
+        const workspaceSegment = detailSegments[0];
+        const workspaceFormatted = formatGenericSegment(workspaceSegment);
+        const workspaceHref = `/workspaces/${workspaceSegment}`;
+        const isWorkspaceCurrent = detailSegments.length === 1;
+
+        breadcrumbs.push({
+          label: workspaceFormatted.label,
+          href: isWorkspaceCurrent ? undefined : workspaceHref,
+          isCurrent: isWorkspaceCurrent,
+          truncated: workspaceFormatted.truncated,
+        });
+
+        if (detailSegments.length >= 3) {
+          const sectionSegment = detailSegments[1];
+          const sectionFormatted = formatGenericSegment(sectionSegment);
+          const resourceSegment = detailSegments[2];
+          const resourceFormatted = formatGenericSegment(resourceSegment);
+
+          breadcrumbs.push({
+            label: sectionFormatted.label,
+            href: `${workspaceHref}/${sectionSegment}/${resourceSegment}`,
+            isCurrent: false,
+            truncated: sectionFormatted.truncated,
+          });
+
+          breadcrumbs.push({
+            label: resourceFormatted.label,
+            isCurrent: true,
+            truncated: resourceFormatted.truncated,
+          });
+        }
       }
 
       return breadcrumbs;

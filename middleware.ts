@@ -84,6 +84,8 @@ export async function middleware(req: NextRequest) {
   }
 
   const { pathname } = req.nextUrl
+  const authHeader = req.headers.get('authorization')
+  const hasBearerAuth = Boolean(authHeader && authHeader.startsWith('Bearer '))
 
   // Permanent redirects for deleted/renamed pages (301)
   const PERMANENT_REDIRECTS: Record<string, string> = {
@@ -202,6 +204,11 @@ export async function middleware(req: NextRequest) {
       (pathname === '/api/openclaw/status' && process.env.FOCO_DB === 'sqlite') ||
       pathname.startsWith('/api/invitations/') && pathname.includes('/accept')
     ) {
+      return res
+    }
+
+    // For service-to-service and scripted flows, let route-level auth validate bearer tokens.
+    if (hasBearerAuth) {
       return res
     }
 

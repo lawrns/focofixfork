@@ -12,7 +12,8 @@
     "public/"
   ],
   "scripts": {
-    "dev": "next dev --port 4000",
+    "dev": "node scripts/dev-guard.mjs",
+    "dev:next": "next dev --hostname 127.0.0.1 --port 4000",
     "build": "node scripts/build-with-runtime-fix.js",
     "postbuild": "node scripts/fix-next-pages-runtime.js",
     "start": "next start --port 4000",

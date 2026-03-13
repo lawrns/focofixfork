@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AlertTriangle, GitBranch, Loader2, Moon, ShieldCheck, Square, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -107,12 +107,7 @@ export function NightAutonomyLaunchDialog({ trigger, onStarted, onStopped }: Nig
     })()
   }, [open, workspaceId])
 
-  useEffect(() => {
-    if (!open || !workspaceId) return
-    void refresh()
-  }, [open, workspaceId])
-
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!workspaceId) return
     try {
       setLoading(true)
@@ -150,7 +145,12 @@ export function NightAutonomyLaunchDialog({ trigger, onStarted, onStopped }: Nig
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedAgentId, workspaceId])
+
+  useEffect(() => {
+    if (!open || !workspaceId) return
+    void refresh()
+  }, [open, refresh, workspaceId])
 
   const selectedAgent = useMemo(
     () => options?.agents.find((agent) => agent.id === selectedAgentId) ?? null,

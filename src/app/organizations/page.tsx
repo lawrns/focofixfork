@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import MainLayout from '@/components/layout/MainLayout'
+import { PageShell } from '@/components/layout/page-shell'
+import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Settings } from 'lucide-react'
@@ -82,14 +83,12 @@ function WorkspacesContent() {
 
   if (isLoading) {
     return (
-      <MainLayout>
+      <PageShell>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="animate-pulse">
-              <div className="h-8 bg-muted rounded w-64 mb-2"></div>
-              <div className="h-4 bg-muted rounded w-96"></div>
-            </div>
-          </div>
+          <PageHeader
+            title="Workspaces"
+            subtitle="Manage your workspaces and team members."
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <Card key={i}>
@@ -104,29 +103,25 @@ function WorkspacesContent() {
             ))}
           </div>
         </div>
-      </MainLayout>
+      </PageShell>
     )
   }
 
   if (!user) {
     return (
-      <MainLayout>
+      <PageShell>
         <PageLoadingSkeleton />
-      </MainLayout>
+      </PageShell>
     )
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6 px-4 py-6 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Workspaces</h1>
-            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-              Manage your workspaces and team members
-            </p>
-          </div>
-        </div>
+    <PageShell>
+      <div className="space-y-6">
+        <PageHeader
+          title="Workspaces"
+          subtitle="Manage your workspaces, members, and invitations."
+        />
 
         {workspaces.length === 0 ? (
           <WorkspacesEmpty
@@ -228,6 +223,6 @@ function WorkspacesContent() {
           onCreate={handleCreateWorkspace}
         />
       </div>
-    </MainLayout>
+    </PageShell>
   )
 }

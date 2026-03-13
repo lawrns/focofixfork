@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -125,17 +126,17 @@ export function MediaGallery({
 
   // Initial load
   useEffect(() => {
-    fetchAssets(true);
-  }, [typeFilter, projectId]);
+    void fetchAssets(true);
+  }, [fetchAssets, typeFilter, projectId]);
 
   // Search debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setOffset(0);
-      fetchAssets(true);
+      void fetchAssets(true);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [fetchAssets, searchQuery]);
 
   // Infinite scroll
   useEffect(() => {
@@ -323,11 +324,12 @@ export function MediaGallery({
               <CardContent className="p-0">
                 <div className="aspect-square bg-muted relative">
                   {asset.public_url ? (
-                    <img
+                    <Image
                       src={asset.public_url}
                       alt={asset.prompt || 'Media asset'}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
+                      fill
+                      unoptimized
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -417,9 +419,12 @@ export function MediaGallery({
               <CardContent className="p-3 flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted rounded flex-shrink-0 overflow-hidden">
                   {asset.public_url ? (
-                    <img
+                    <Image
                       src={asset.public_url}
                       alt=""
+                      width={64}
+                      height={64}
+                      unoptimized
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -512,9 +517,12 @@ export function MediaGallery({
             
             <div className="mt-4">
               {selectedAsset.public_url && (
-                <img
+                <Image
                   src={selectedAsset.public_url}
                   alt={selectedAsset.prompt || 'Media asset'}
+                  width={1200}
+                  height={900}
+                  unoptimized
                   className="w-full max-h-[60vh] object-contain rounded-lg"
                 />
               )}

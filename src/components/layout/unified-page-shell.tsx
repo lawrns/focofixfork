@@ -39,7 +39,7 @@ export function UnifiedPageShell({
 }: UnifiedPageShellProps) {
   if (!animate) {
     return (
-      <div className={cn('mx-auto w-full py-4 sm:py-5 lg:py-6 animate-fade-in', maxWidthClasses[maxWidth], className)}>
+      <div className={cn('mx-auto w-full py-4 sm:py-5 lg:py-6', maxWidthClasses[maxWidth], className)}>
         {children}
       </div>
     )

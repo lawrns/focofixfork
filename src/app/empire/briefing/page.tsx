@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useCallback, useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { PageHeader } from '@/components/layout/page-header'
@@ -17,7 +17,7 @@ function BriefingPageInner() {
   const [loading, setLoading] = useState(true)
   const [error, setError]   = useState<string | null>(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -39,9 +39,9 @@ function BriefingPageInner() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [workspaceId])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void load() }, [load])
 
   return (
     <PageShell>

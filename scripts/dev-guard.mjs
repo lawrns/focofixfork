@@ -4,7 +4,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import process from 'node:process'
 
 const PORT = 4000
-const HOST = process.env.HOST || '127.0.0.1'
+const HOST = process.env.HOST || '0.0.0.0'
 const RESTART_DELAY_MS = 1500
 
 let child = null

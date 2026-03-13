@@ -13,10 +13,10 @@
   ],
   "scripts": {
     "dev": "node scripts/dev-guard.mjs",
-    "dev:next": "next dev --hostname 127.0.0.1 --port 4000",
+    "dev:next": "next dev --hostname 0.0.0.0 --port 4000",
     "build": "node scripts/build-with-runtime-fix.js",
     "postbuild": "node scripts/fix-next-pages-runtime.js",
-    "start": "next start --port 4000",
+    "start": "next start --hostname 0.0.0.0 --port 4000",
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -50,10 +50,10 @@
     "format:check": "prettier --check .",
     "db:migrate:test": "supabase db push --schema test",
     "db:seed:test": "supabase db seed --schema test",
-    "start:test": "NODE_ENV=test next start --port 4000",
+    "start:test": "NODE_ENV=test next start --hostname 0.0.0.0 --port 4000",
     "build:test": "NODE_ENV=test node scripts/build-with-runtime-fix.js",
     "type-check": "tsc --noEmit",
-    "preview": "npm run build && next start --port 4000",
+    "preview": "npm run build && next start --hostname 0.0.0.0 --port 4000",
     "analyze": "ANALYZE=true node scripts/build-with-runtime-fix.js"
   },
   "dependencies": {

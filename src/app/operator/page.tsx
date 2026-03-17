@@ -9,7 +9,7 @@ export const metadata = {
 export default function OperatorPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center text-zinc-600 text-sm font-mono">
+      <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
         loading operator pulse...
       </div>
     }>

@@ -167,7 +167,7 @@ export function SignalsPanel({ events, refreshing, onRefresh }: SignalsPanelProp
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pr-1">
         {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-zinc-700 gap-2">
             <Clock className="w-5 h-5" />

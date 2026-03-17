@@ -146,14 +146,14 @@ function AttentionCard({ item }: { item: AttentionItem }) {
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        'rounded-lg border p-3 flex flex-col gap-2 group',
+        'rounded-xl border p-3 flex flex-col gap-2 group',
         cfg.border, cfg.bg,
       )}
     >
       <div className="flex items-start gap-2">
         <Icon className={cn('w-3.5 h-3.5 flex-shrink-0 mt-0.5', cfg.color)} />
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold text-zinc-200 leading-tight truncate">{item.title}</p>
+          <p className="text-sm font-semibold text-zinc-100 leading-tight truncate">{item.title}</p>
           <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">{item.detail}</p>
         </div>
         <div className={cn('w-1 h-1 rounded-full flex-shrink-0 mt-1.5', cfg.color.replace('text-', 'bg-'))} />

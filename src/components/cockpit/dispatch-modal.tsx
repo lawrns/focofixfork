@@ -125,7 +125,7 @@ export function DispatchModal({ open, onClose, agents, projects, onDispatched, p
           >
             <form
               onSubmit={handleSubmit}
-              className="bg-[#111113] border border-zinc-700/60 rounded-2xl shadow-2xl overflow-hidden"
+              className="bg-[#0e0e10] border border-zinc-800/50 rounded-xl shadow-2xl overflow-hidden"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-800/60">

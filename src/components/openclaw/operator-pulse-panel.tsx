@@ -140,7 +140,7 @@ function CronJobCard({ job, onRunNow }: { job: OpenClawCronJobPulse; onRunNow: (
   return (
     <div
       className={cn(
-        'rounded-lg border p-4 flex flex-col gap-3 transition-colors',
+        'rounded-xl border p-4 flex flex-col gap-3 transition-colors',
         !job.enabled && 'opacity-50 border-zinc-800 bg-zinc-900/20',
         job.enabled && status === 'ok' && 'border-zinc-800 bg-zinc-900/50',
         job.enabled && status === 'warn' && 'border-yellow-900/50 bg-zinc-900/50',
@@ -408,9 +408,9 @@ export function OperatorPulsePanel() {
     signalStrength >= 2 ? 'text-yellow-400' : 'text-red-400'
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans">
+    <div className="h-full text-zinc-100 font-sans">
       {/* Top bar */}
-      <div className="border-b border-zinc-800 bg-zinc-950 px-6 py-3 flex items-center justify-between gap-4">
+      <div className="border-b border-zinc-800/50 bg-[#0d0d0f] px-5 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Radio className="w-4 h-4 text-emerald-400" />
           <span className="text-sm font-semibold tracking-tight text-zinc-100">OpenClaw Operator</span>
@@ -436,7 +436,7 @@ export function OperatorPulsePanel() {
         </div>
       </div>
 
-      <div className="px-6 py-6 max-w-[1400px] mx-auto flex flex-col gap-6">
+      <div className="px-5 py-4 max-w-[1400px] mx-auto flex flex-col gap-4 overflow-y-auto">
 
         {/* Alert strip */}
         {alerts.length > 0 && (
@@ -451,7 +451,7 @@ export function OperatorPulsePanel() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* Gateway */}
           <div className={cn(
-            'rounded-lg border p-3 flex flex-col gap-1.5',
+            'rounded-xl border p-3 flex flex-col gap-1.5',
             gateway.healthy ? 'border-emerald-900/50 bg-emerald-950/10' : 'border-red-900/60 bg-red-950/10',
           )}>
             <div className="flex items-center gap-2">
@@ -468,7 +468,7 @@ export function OperatorPulsePanel() {
           </div>
 
           {/* Model */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col gap-1.5">
+          <div className="rounded-xl border border-zinc-800/50 bg-[#0e0e10] p-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <Cpu className="w-3.5 h-3.5 text-sky-400" />
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Model</span>
@@ -482,7 +482,7 @@ export function OperatorPulsePanel() {
           </div>
 
           {/* Cron health */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col gap-1.5">
+          <div className="rounded-xl border border-zinc-800/50 bg-[#0e0e10] p-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <Timer className="w-3.5 h-3.5 text-violet-400" />
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Cron Jobs</span>
@@ -499,7 +499,7 @@ export function OperatorPulsePanel() {
           </div>
 
           {/* Workspace */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col gap-1.5">
+          <div className="rounded-xl border border-zinc-800/50 bg-[#0e0e10] p-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <FileText className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Workspace</span>
@@ -521,7 +521,7 @@ export function OperatorPulsePanel() {
           </div>
 
           {/* CPU */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col gap-1.5">
+          <div className="rounded-xl border border-zinc-800/50 bg-[#0e0e10] p-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <Cpu className="w-3.5 h-3.5 text-teal-400" />
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider">CPU</span>
@@ -536,7 +536,7 @@ export function OperatorPulsePanel() {
           </div>
 
           {/* RAM */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col gap-1.5">
+          <div className="rounded-xl border border-zinc-800/50 bg-[#0e0e10] p-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider">RAM</span>
@@ -555,7 +555,7 @@ export function OperatorPulsePanel() {
         </div>
 
         {/* Main content: cron grid + activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
           {/* Cron jobs */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -566,7 +566,7 @@ export function OperatorPulsePanel() {
             </div>
 
             {crons.jobs.length === 0 ? (
-              <div className="rounded-lg border border-zinc-800 p-8 text-center text-zinc-600 text-sm font-mono">
+              <div className="rounded-xl border border-zinc-800/50 p-8 text-center text-zinc-600 text-sm font-mono">
                 no cron jobs configured
               </div>
             ) : (
@@ -591,7 +591,7 @@ export function OperatorPulsePanel() {
               <span className="text-[10px] text-zinc-600 font-mono">{activityFeed.length} entries</span>
             </div>
 
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+            <div className="rounded-xl border border-zinc-800/50 bg-[#0e0e10] p-3">
               {activityFeed.length === 0 ? (
                 <p className="text-zinc-600 text-xs font-mono text-center py-6">no recent activity</p>
               ) : (

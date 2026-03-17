@@ -175,10 +175,10 @@ function AgentCard({
       transition={{ duration: 0.2 }}
       onClick={() => onInspect(agent)}
       className={cn(
-        'text-left rounded-xl border bg-[#111113] p-3.5 flex flex-col gap-2.5 transition-colors group hover:bg-[#151517]',
+        'text-left rounded-xl border bg-[#0e0e10] p-3 flex flex-col gap-2 transition-colors group hover:bg-[#151517]',
         'ring-2',
         cfg.ring,
-        status === 'error' ? 'border-rose-900/40' : 'border-zinc-800/60',
+        status === 'error' ? 'border-rose-900/40' : 'border-zinc-800/50',
       )}
     >
       {/* Header */}
@@ -206,7 +206,7 @@ function AgentCard({
 
       {/* Trust bar */}
       <div>
-        <span className="text-[9px] text-zinc-700 uppercase tracking-wider font-mono">trust</span>
+        <span className="text-[10px] text-zinc-700 uppercase tracking-wider font-mono">trust</span>
         <TrustBar score={trust} />
       </div>
 

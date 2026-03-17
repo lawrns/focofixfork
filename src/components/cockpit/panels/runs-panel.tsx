@@ -134,7 +134,7 @@ function RunCard({ run, onStop, onRetry }: {
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'rounded-xl border bg-[#111113] overflow-hidden',
+        'rounded-xl border bg-[#0e0e10] overflow-hidden',
         run.status === 'running' && 'border-emerald-900/40',
         run.status === 'pending' && 'border-amber-900/30',
         run.status === 'failed' && 'border-rose-900/50',

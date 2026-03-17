@@ -18,7 +18,6 @@
   { "source": "/empire/briefing", "destination": "/briefing", "permanent": true },
   { "source": "/empire/command", "destination": "/system", "permanent": true },
   { "source": "/empire", "destination": "/system", "permanent": true },
-  { "source": "/crons", "destination": "/recurring", "permanent": true },
   { "source": "/clawdbot", "destination": "/briefing", "permanent": true },
   { "source": "/policies", "destination": "/settings", "permanent": false },
   { "source": "/timeline", "destination": "/projects", "permanent": false },

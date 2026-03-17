@@ -126,7 +126,7 @@ export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user) router.push('/dashboard');
+    if (user) router.push('/cockpit');
   }, [user, router]);
 
   return (

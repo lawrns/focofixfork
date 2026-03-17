@@ -24,6 +24,9 @@ const SWITCHER_MODELS = [
   ...MODEL_CATALOG.filter((m) => !m.pipelineOnly).map((m) => ({ value: m.value, label: m.label, provider: m.provider })),
 ]
 
+const POLL_INTERVAL_ACTIVE = 15_000  // 15s when gateway has activity
+const POLL_INTERVAL_IDLE = 30_000    // 30s when idle
+
 function providerDot(provider: string) {
   const colors: Record<string, string> = {
     anthropic: 'bg-violet-400',
@@ -57,13 +60,22 @@ function Divider() {
 }
 
 export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
+  const [mounted, setMounted] = useState(false)
   const [health, setHealth] = useState<SystemHealth | null>(null)
-  const [preferredModel, setPreferredModel] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('cockpit_preferred_model') ?? ''
-    return ''
-  })
+  const [preferredModel, setPreferredModel] = useState('')
 
-  const fetch_ = useCallback(async () => {
+  // Hydration-safe mount: read localStorage only after mount
+  useEffect(() => {
+    setMounted(true)
+    const stored = localStorage.getItem('cockpit_preferred_model') ?? ''
+    if (stored) {
+      setPreferredModel(stored)
+      onModelChange?.(stored)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const fetchHealth = useCallback(async () => {
     try {
       const res = await fetch('/api/cockpit/system-health', { cache: 'no-store' })
       if (res.ok) setHealth(await res.json())
@@ -71,13 +83,15 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
   }, [])
 
   useEffect(() => {
-    fetch_()
-    const id = setInterval(fetch_, 8000)
+    fetchHealth()
+    // Adaptive polling: faster when there's activity
+    const id = setInterval(fetchHealth, POLL_INTERVAL_IDLE)
     return () => clearInterval(id)
-  }, [fetch_])
+  }, [fetchHealth])
 
   // Bootstrap model from gateway when no localStorage preference exists
   useEffect(() => {
+    if (!mounted) return
     const gwModel = health?.gateway.model
     if (gwModel && !preferredModel) {
       setPreferredModel(gwModel)
@@ -85,13 +99,12 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
       onModelChange?.(gwModel)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [health?.gateway.model])
+  }, [health?.gateway.model, mounted])
 
   function handleModelChange(model: string) {
     setPreferredModel(model)
     localStorage.setItem('cockpit_preferred_model', model)
     onModelChange?.(model)
-    // Best-effort: write to OpenClaw config on disk
     fetch('/api/openclaw/config', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -102,8 +115,21 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
   const gw = health?.gateway
   const sys = health?.system
   const crons = health?.crons
-
   const activeEntry = SWITCHER_MODELS.find((m) => m.value === preferredModel)
+
+  // Render a stable skeleton on server / before mount to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="h-8 bg-[#0d0d0f] border-b border-zinc-800/70 flex items-center px-4 gap-3 flex-shrink-0 overflow-x-hidden">
+        <div className="flex items-center gap-1.5 mr-1">
+          <Radio className="w-3 h-3 text-teal-400" />
+          <span className="text-[11px] font-semibold text-teal-400 tracking-wide font-mono">OPS</span>
+        </div>
+        <Divider />
+        <span className="text-[11px] text-zinc-600 font-mono">loading...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="h-8 bg-[#0d0d0f] border-b border-zinc-800/70 flex items-center px-4 gap-3 flex-shrink-0 overflow-x-hidden">

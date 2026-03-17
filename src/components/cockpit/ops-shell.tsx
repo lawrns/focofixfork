@@ -2,16 +2,17 @@
 
 import { ReactNode, useState, useCallback, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { SystemRibbon } from './system-ribbon'
 import { NavRail } from './nav-rail'
-import { DispatchModal } from './dispatch-modal'
-import { CommandPalette } from '@/components/foco/layout/command-palette'
-import { KeyboardShortcutsModal } from '@/components/foco/layout/keyboard-shortcuts-modal'
 import { UndoToast } from '@/components/foco/ui/undo-toast'
 import { SwarmProvider } from '@/components/critter/swarm-context'
 import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion'
-import { useAuth } from '@/lib/hooks/use-auth'
-import { useDashboardData } from '@/components/dashboard/use-dashboard-data'
+
+// Lazy-load heavy components — only downloaded when actually needed
+const CommandPalette = dynamic(() => import('@/components/foco/layout/command-palette').then(m => ({ default: m.CommandPalette })), { ssr: false })
+const KeyboardShortcutsModal = dynamic(() => import('@/components/foco/layout/keyboard-shortcuts-modal').then(m => ({ default: m.KeyboardShortcutsModal })), { ssr: false })
+const DispatchModalLazy = dynamic(() => import('./dispatch-modal-lazy'), { ssr: false })
 
 const PUBLIC_PATHS = new Set([
   '/', '/login', '/register', '/signup',
@@ -94,46 +95,19 @@ export function OpsShell({ children }: OpsShellProps) {
               </main>
             </div>
 
-            {/* Dispatch modal — available app-wide */}
-            <DispatchModalLazy
-              open={dispatchOpen}
-              onClose={() => setDispatchOpen(false)}
-              preferredModel={preferredModel}
-            />
+            {/* Dispatch modal — only loaded when opened */}
+            {dispatchOpen && (
+              <DispatchModalLazy
+                open={dispatchOpen}
+                onClose={() => setDispatchOpen(false)}
+                preferredModel={preferredModel}
+              />
+            )}
 
             <UndoToast />
           </div>
         </SwarmProvider>
       </LazyMotion>
     </MotionConfig>
-  )
-}
-
-/**
- * Lazy wrapper: only fetches agent/project data when dispatch modal is opened
- */
-function DispatchModalLazy({
-  open,
-  onClose,
-  preferredModel,
-}: {
-  open: boolean
-  onClose: () => void
-  preferredModel: string
-}) {
-  const { user } = useAuth()
-  const data = useDashboardData(user)
-
-  return (
-    <DispatchModal
-      open={open}
-      onClose={onClose}
-      agents={data.agents}
-      projects={data.projectOptions}
-      preferredModel={preferredModel}
-      onDispatched={() => {
-        setTimeout(data.fetchAll, 1500)
-      }}
-    />
   )
 }

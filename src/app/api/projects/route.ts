@@ -25,19 +25,18 @@ function toSlug(input: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
 
-  if (!supabaseAdmin) {
-    return mergeAuthResponse(internalErrorResponse('DB not available'), authResponse)
-  }
+  // Use admin client (bypasses RLS) when available; fall back to user-scoped client with RLS
+  const db = supabaseAdmin ?? supabase
 
   const { searchParams } = new URL(req.url)
   const limit = parseInt(searchParams.get('limit') || '100')
   const slug = searchParams.get('slug')?.trim() || null
   const hasFullAccess = hasFounderFullAccess(user)
 
-  const scope = await resolvePrimaryWorkspace({ user, client: supabaseAdmin })
+  const scope = await resolvePrimaryWorkspace({ user, client: db })
   if (!scope.ok) {
     return mergeAuthResponse(internalErrorResponse(scope.message), authResponse)
   }
@@ -53,7 +52,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  let projectsQuery = supabaseAdmin
+  let projectsQuery = db
     .from('foco_projects')
     .select('id, workspace_id, owner_id, name, slug, status, description, color, icon, is_pinned, updated_at, local_path, git_remote, delegation_settings, assigned_agent_pool')
     .is('archived_at', null)
@@ -90,17 +89,17 @@ export async function GET(req: NextRequest) {
   const ownerIds = [...new Set(projects.map((project: any) => project.owner_id).filter(Boolean))]
 
   const [workItemsResult, runsResult, ownersResult] = await Promise.all([
-    supabaseAdmin
+    db
       .from('work_items')
       .select('project_id, status, delegation_status')
       .in('project_id', projectIds),
-    supabaseAdmin
+    db
       .from('runs')
       .select('project_id, status')
       .in('project_id', projectIds)
       .in('status', ['pending', 'running']),
     ownerIds.length > 0
-      ? supabaseAdmin
+      ? db
         .from('user_profiles')
         .select('id, full_name, avatar_url')
         .in('id', ownerIds)

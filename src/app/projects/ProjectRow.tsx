@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   FolderKanban,
   Bot,
+  GitPullRequest,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,10 +31,11 @@ interface ProjectRowProps {
   onGenerateStatus: (project: ProjectData) => void;
   onArchive: (project: ProjectData) => void;
   onToggleDelegation: (project: ProjectData) => void;
+  onGitPull?: (project: ProjectData) => void;
   isMobile?: boolean;
 }
 
-export function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, onToggleDelegation, isMobile }: ProjectRowProps) {
+export function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, onToggleDelegation, onGitPull, isMobile }: ProjectRowProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   if (isMobile) {
@@ -90,6 +92,15 @@ export function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onA
               <DropdownMenuItem onClick={(e) => { e.preventDefault(); onGenerateStatus(project); }}>
                 Generate status update
               </DropdownMenuItem>
+              {project.localPath && onGitPull && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={(e) => { e.preventDefault(); onGitPull(project); }}>
+                    <GitPullRequest className="mr-2 h-4 w-4" />
+                    Git pull
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600"
@@ -237,6 +248,15 @@ export function ProjectRow({ project, onEdit, onDuplicate, onGenerateStatus, onA
             <DropdownMenuItem onClick={(e) => { e.preventDefault(); onGenerateStatus(project); }}>
               Generate status update
             </DropdownMenuItem>
+            {project.localPath && onGitPull && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.preventDefault(); onGitPull(project); }}>
+                  <GitPullRequest className="mr-2 h-4 w-4" />
+                  Git pull
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-red-600"

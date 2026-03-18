@@ -605,6 +605,12 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
 
   const openMessages = (overview?.recent.messages ?? []).filter((item) => item.status === 'open')
 
+  // Must be called before any early returns to satisfy rules-of-hooks
+  const topology = useMemo(
+    () => buildTopologyFromOverview(backendHealth),
+    [backendHealth]
+  )
+
   if (!overview && loading) {
     return (
       <Card>
@@ -615,11 +621,6 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
       </Card>
     )
   }
-
-  const topology = useMemo(
-    () => buildTopologyFromOverview(backendHealth),
-    [backendHealth]
-  )
 
   return (
     <>

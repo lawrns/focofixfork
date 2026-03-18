@@ -14,6 +14,7 @@ import {
   FolderOpen,
   CheckSquare,
   Bot,
+  GitPullRequest,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,9 +38,10 @@ interface ProjectCardProps {
   onGenerateStatus: (project: ProjectData) => void;
   onArchive: (project: ProjectData) => void;
   onToggleDelegation: (project: ProjectData) => void;
+  onGitPull?: (project: ProjectData) => void;
 }
 
-export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, onToggleDelegation }: ProjectCardProps) {
+export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, onArchive, onToggleDelegation, onGitPull }: ProjectCardProps) {
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   return (
@@ -106,6 +108,15 @@ export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, on
               <DropdownMenuItem onClick={(e) => { e.preventDefault(); onToggleDelegation(project); }}>
                 {project.delegationEnabled ? 'Disable' : 'Enable'} delegation
               </DropdownMenuItem>
+              {project.localPath && onGitPull && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={(e) => { e.preventDefault(); onGitPull(project); }}>
+                    <GitPullRequest className="mr-2 h-4 w-4" />
+                    Git pull
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600"

@@ -76,20 +76,16 @@ function getScanDirs(): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error, response: authResponse } = await getAuthUser(req)
+  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) {
     return mergeAuthResponse(authRequiredResponse(), authResponse)
   }
 
-  if (!supabaseAdmin) {
-    return mergeAuthResponse(
-      NextResponse.json({ error: 'DB not available' }, { status: 500 }),
-      authResponse
-    )
-  }
+  // Use admin client (bypasses RLS) when available; fall back to user-scoped client with RLS
+  const db = supabaseAdmin ?? supabase
 
   // Resolve workspace for this user
-  const { data: memberRow, error: memberErr } = await supabaseAdmin
+  const { data: memberRow, error: memberErr } = await db
     .from('foco_workspace_members')
     .select('workspace_id')
     .eq('user_id', user.id)
@@ -135,7 +131,7 @@ export async function POST(req: NextRequest) {
       ].filter(Boolean).join(' | ')
 
       try {
-        const { data, error: upsertErr } = await supabaseAdmin
+        const { data, error: upsertErr } = await db
           .from('foco_projects')
           .upsert(
             {

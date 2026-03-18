@@ -10,6 +10,8 @@ import {
   AlertTriangle,
   FolderKanban,
   ArrowUpDown,
+  ScanLine,
+  GitPullRequest,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +31,7 @@ import { buttons } from '@/lib/copy';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import { ProjectCard } from './ProjectCard';
 import { ProjectRow } from './ProjectRow';
 import { EditProjectDialog, CreateProjectDialog } from './ProjectsDialogs';
@@ -55,6 +58,9 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
   const [editDelegationEnabled, setEditDelegationEnabled] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isLanIpHost, setIsLanIpHost] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [lastScanAt, setLastScanAt] = useState<Date | null>(null);
+  const [scanResult, setScanResult] = useState<{ synced: number; errors: number } | null>(null);
 
   const {
     projects,
@@ -112,6 +118,60 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
     setIsLanIpHost(ipv4Pattern.test(host));
   }, []);
 
+  const scanWorkspace = async (silent = false) => {
+    if (isScanning) return;
+    setIsScanning(true);
+    try {
+      const res = await fetch('/api/projects/sync-git', { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (res.ok) {
+        setScanResult({ synced: data.synced?.length ?? 0, errors: data.errors?.length ?? 0 });
+        setLastScanAt(new Date());
+        if (!silent) {
+          // Soft-reload to pick up newly indexed projects
+          router.refresh();
+          if (data.synced?.length > 0) {
+            toast.success(`Scanned workspace`, { description: `${data.synced.length} project(s) indexed` });
+          }
+        }
+      }
+    } catch {
+      // silently ignore scan errors
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleGitPull = async (project: any) => {
+    try {
+      const res = await fetch('/api/projects/git-pull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ project_id: project.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Pulled ${project.name}`, { description: data.stdout?.trim() || 'Already up to date.' });
+        // Trigger a rescan to update the project description with latest branch
+        void fetch('/api/projects/sync-git', { method: 'POST', credentials: 'include' });
+      } else {
+        toast.error(`Pull failed: ${project.name}`, { description: data.error || 'Unknown error' });
+      }
+    } catch (err) {
+      toast.error(`Pull failed: ${project.name}`);
+    }
+  };
+
+  // Auto-scan workspace on mount and every 2 minutes (silent — no toast/reload)
+  useEffect(() => {
+    if (!user || authLoading) return;
+    scanWorkspace(true);
+    const interval = setInterval(() => scanWorkspace(true), 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
+
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.description?.toLowerCase().includes(search.toLowerCase())
@@ -136,6 +196,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
     onGenerateStatus: handleGenerateStatus,
     onArchive: handleArchiveProject,
     onToggleDelegation: handleToggleDelegation,
+    onGitPull: handleGitPull,
   };
 
   if (isLoading) {
@@ -184,6 +245,18 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => scanWorkspace(false)}
+            disabled={isScanning}
+            title={lastScanAt ? `Last scanned: ${lastScanAt.toLocaleTimeString()}` : 'Scan workspace for git repos'}
+            className="gap-1.5"
+          >
+            <ScanLine className={`h-4 w-4 ${isScanning ? 'animate-pulse' : ''}`} />
+            <span className="hidden sm:inline">{isScanning ? 'Scanning…' : 'Scan'}</span>
+          </Button>
+
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full sm:w-[160px] flex-1 sm:flex-none">
               <ArrowUpDown className="h-4 w-4" />

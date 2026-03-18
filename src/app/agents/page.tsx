@@ -5,8 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { PageShell } from '@/components/layout/page-shell'
 import { HeroSection } from '@/components/cinematic/hero-section'
-import { GlassCard } from '@/components/cinematic/glass-card'
-import { PulsingTopology, defaultSystemTopology } from '@/components/cinematic/pulsing-topology'
 import { AgentRosterExtended } from '@/components/empire/agent-roster-extended'
 import { Badge } from '@/components/ui/badge'
 
@@ -19,7 +17,6 @@ const fadeUp = {
 function AgentsContent() {
   const searchParams = useSearchParams()
   const workspaceId = searchParams?.get('workspace_id') ?? null
-  const topology = defaultSystemTopology()
 
   return (
     <PageShell>
@@ -27,7 +24,7 @@ function AgentsContent() {
         <motion.div variants={fadeUp}>
           <HeroSection
             title="Agent Roster"
-            subtitle="Focused operators and advisors — live topology and diagnostics at a glance"
+            subtitle="Focused operators and advisors — live topology wired to real backend health"
             badge={
               <Badge
                 variant="outline"
@@ -39,20 +36,8 @@ function AgentsContent() {
           />
         </motion.div>
 
-        <motion.div variants={fadeUp}>
-          <GlassCard hover={false} className="p-4">
-            <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-              System Topology
-            </p>
-            <PulsingTopology
-              nodes={topology.nodes}
-              edges={topology.edges}
-              height={240}
-            />
-          </GlassCard>
-        </motion.div>
-
         <motion.div variants={fadeUp} className="w-full">
+          {/* Topology is now rendered inside AgentRosterExtended using real backend health data */}
           <AgentRosterExtended workspaceId={workspaceId} />
         </motion.div>
       </motion.div>

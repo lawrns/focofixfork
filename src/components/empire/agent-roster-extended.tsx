@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { AlertCircle, Bot, Crown, Eye, FileText, Pencil, RefreshCw, SendHorizontal, Settings2, Sparkles, Users } from 'lucide-react'
+import { PulsingTopology, type TopoNode, type TopoEdge, type NodeStatus } from '@/components/cinematic/pulsing-topology'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -394,6 +395,41 @@ function SectionHeader({
   )
 }
 
+/* ── Topology builder from real overview data ──────────────────────────────── */
+
+const BACKEND_ICON: Record<BackendKey, string> = {
+  clawdbot: 'bot',
+  crico: 'brain',
+  bosun: 'cog',
+  openclaw: 'globe',
+}
+
+const BACKEND_X = 360
+const BACKEND_Y_START = 50
+const BACKEND_Y_STEP = 75
+
+function buildTopologyFromOverview(
+  backendHealth: BackendHealthRow[],
+): { nodes: TopoNode[]; edges: TopoEdge[] } {
+  const gatewayNode: TopoNode = {
+    id: 'gateway', label: 'Orchestrator', iconType: 'network',
+    status: 'healthy', x: 90, y: 165,
+  }
+
+  const backendNodes: TopoNode[] = backendHealth.map((bh, i) => ({
+    id: bh.backend,
+    label: BACKEND_LABEL[bh.backend],
+    iconType: BACKEND_ICON[bh.backend],
+    status: (bh.status === 'up' ? 'healthy' : 'down') as NodeStatus,
+    x: BACKEND_X,
+    y: BACKEND_Y_START + i * BACKEND_Y_STEP,
+  }))
+
+  const nodes = [gatewayNode, ...backendNodes]
+  const edges: TopoEdge[] = backendNodes.map(n => ({ from: 'gateway', to: n.id, animated: true }))
+  return { nodes, edges }
+}
+
 export function AgentRosterExtended({ workspaceId, preview = false }: AgentRosterExtendedProps) {
   const [overview, setOverview] = useState<OverviewPayload | null>(null)
   const [loading, setLoading] = useState(true)
@@ -580,9 +616,30 @@ export function AgentRosterExtended({ workspaceId, preview = false }: AgentRoste
     )
   }
 
+  const topology = useMemo(
+    () => buildTopologyFromOverview(backendHealth),
+    [backendHealth]
+  )
+
   return (
     <>
       <div className="space-y-5">
+        {/* Live topology wired to real backend health */}
+        {!preview && backendHealth.length > 0 && (
+          <div className="rounded-2xl border border-zinc-800/60 bg-[#0e0f11] p-4">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+              System Topology
+            </p>
+            <PulsingTopology
+              nodes={topology.nodes}
+              edges={topology.edges}
+              width={500}
+              height={Math.max(200, 50 + backendHealth.length * 75)}
+              initialZoom={0.8}
+            />
+          </div>
+        )}
+
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Focused roster</p>

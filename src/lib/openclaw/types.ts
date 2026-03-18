@@ -185,6 +185,16 @@ export interface OpenClawProfileInfo {
   active: boolean;
 }
 
+export interface OpenClawConfiguredAgent {
+  id: string;
+  default: boolean;
+  runtimeType: 'embedded' | 'acp';
+  acpAgent: string | null;
+  acpBackend: string | null;
+  acpMode: string | null;
+  cwd: string | null;
+}
+
 // Runtime snapshot for OpenClaw status
 export interface OpenClawRuntimeSnapshot {
   configPath: string;
@@ -198,6 +208,11 @@ export interface OpenClawRuntimeSnapshot {
   primaryModel: string | null;
   modelAlias: string | null;
   configuredModels: string[];
+  acpEnabled: boolean;
+  acpDispatchEnabled: boolean;
+  acpBackend: string | null;
+  configuredAgents: OpenClawConfiguredAgent[];
+  codexConfigured: boolean;
   defaultModelConfigured: boolean;
   workspacePath: string | null;
   attachedTabs: number;

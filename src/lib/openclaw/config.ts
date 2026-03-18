@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import type { OpenClawRuntimeSnapshot } from './types'
+import type { OpenClawConfiguredAgent, OpenClawRuntimeSnapshot } from './types'
 
-const DEFAULT_GATEWAY_URL = 'http://127.0.0.1:18789'
+const DEFAULT_GATEWAY_URL = 'http://127.0.0.1:18799'
 const DEFAULT_RELAY_URL = 'http://127.0.0.1:18792'
 
 type OpenClawConfigRecord = Record<string, unknown>
@@ -50,9 +50,10 @@ function extractHookToken(config: OpenClawConfigRecord): string | null {
 function extractPrimaryModel(config: OpenClawConfigRecord): { model: string | null; alias: string | null } {
   const agents = asRecord(config.agents)
   const defaults = asRecord(agents.defaults)
-  const model = asRecord(defaults.model)
+  const rawModel = defaults.model
+  const model = asRecord(rawModel)
   const models = asRecord(defaults.models)
-  const primary = readString(model.primary)
+  const primary = readString(rawModel) ?? readString(model.primary)
   const modelEntry = primary ? asRecord(models[primary]) : {}
 
   return {
@@ -68,10 +69,53 @@ function extractConfiguredModels(config: OpenClawConfigRecord): string[] {
   return Object.keys(models).filter((key) => key.trim().length > 0)
 }
 
+function extractAcpSettings(config: OpenClawConfigRecord): {
+  enabled: boolean
+  dispatchEnabled: boolean
+  backend: string | null
+} {
+  const acp = asRecord(config.acp)
+  const dispatch = asRecord(acp.dispatch)
+  const enabled = acp.enabled === true
+  const dispatchEnabled = dispatch.enabled === false ? false : true
+  return {
+    enabled,
+    dispatchEnabled,
+    backend: readString(acp.backend),
+  }
+}
+
+function extractConfiguredAgents(config: OpenClawConfigRecord): OpenClawConfiguredAgent[] {
+  const agents = asRecord(config.agents)
+  const list = Array.isArray(agents.list)
+    ? agents.list.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry))
+    : []
+
+  return list
+    .map((entry) => {
+      const id = readString(entry.id)
+      if (!id) return null
+      const runtime = asRecord(entry.runtime)
+      const acp = asRecord(runtime.acp)
+      return {
+        id,
+        default: entry.default === true,
+        runtimeType: readString(runtime.type) === 'acp' ? 'acp' : 'embedded',
+        acpAgent: readString(acp.agent),
+        acpBackend: readString(acp.backend),
+        acpMode: readString(acp.mode),
+        cwd: readString(acp.cwd),
+      } satisfies OpenClawConfiguredAgent
+    })
+    .filter((entry): entry is OpenClawConfiguredAgent => Boolean(entry))
+}
+
 export async function getOpenClawServerConfig() {
   const config = await readConfig()
   const { model, alias } = extractPrimaryModel(config)
   const configuredModels = extractConfiguredModels(config)
+  const acp = extractAcpSettings(config)
+  const configuredAgents = extractConfiguredAgents(config)
   const gatewayTokenFromConfig = extractGatewayToken(config)
   const hookTokenFromConfig = extractHookToken(config)
   const envGatewayToken =
@@ -90,6 +134,11 @@ export async function getOpenClawServerConfig() {
     primaryModel: model,
     modelAlias: alias,
     configuredModels,
+    acpEnabled: acp.enabled,
+    acpDispatchEnabled: acp.dispatchEnabled,
+    acpBackend: acp.backend,
+    configuredAgents,
+    codexConfigured: configuredAgents.some((agent) => agent.id === 'codex' || agent.acpAgent === 'codex'),
     workspacePath: readString(asRecord(asRecord(config.agents).defaults).workspace),
     gatewayUrl: process.env.OPENCLAW_GATEWAY_URL ?? DEFAULT_GATEWAY_URL,
     relayUrl: process.env.FOCO_OPENCLAW_RELAY ?? DEFAULT_RELAY_URL,
@@ -118,6 +167,11 @@ export function buildEmptyRuntimeSnapshot(configPath: string, relayUrl: string, 
     primaryModel: null,
     modelAlias: null,
     configuredModels: [],
+    acpEnabled: false,
+    acpDispatchEnabled: true,
+    acpBackend: null,
+    configuredAgents: [],
+    codexConfigured: false,
     defaultModelConfigured: false,
     workspacePath: null,
     attachedTabs: 0,

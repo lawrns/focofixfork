@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import type { OpenClawRuntime } from '@/components/dashboard/use-dashboard-data'
+import type { OpenClawRuntimeSnapshot } from '@/lib/openclaw/types'
 import { apiFetch } from '@/lib/api/fetch-client'
 
 export function useOpenClawRuntime() {
-  const [data, setData] = useState<OpenClawRuntime | null>(null)
+  const [data, setData] = useState<OpenClawRuntimeSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -13,7 +13,7 @@ export function useOpenClawRuntime() {
     try {
       const res = await apiFetch('/api/openclaw/runtime')
       const json = await res.json().catch(() => null)
-      setData((json?.data ?? null) as OpenClawRuntime | null)
+      setData((json?.data ?? null) as OpenClawRuntimeSnapshot | null)
     } finally {
       setLoading(false)
     }

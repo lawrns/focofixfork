@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation'
 import { audioService } from '@/lib/audio/audio-service'
 import { hapticService } from '@/lib/audio/haptic-service'
 import { AccessibilityService } from '@/lib/accessibility/accessibility'
+import { cn } from '@/lib/utils'
 
 interface Task {
   id: string
@@ -32,12 +33,195 @@ interface Task {
   position?: string
   comment_count?: number
   attachment_count?: number
+  delegation_status?: 'none' | 'pending' | 'delegated' | 'running' | 'completed' | 'failed' | 'cancelled' | null
+  assigned_agent?: string | null
+  run_id?: string | null
+  metadata?: Record<string, unknown> | null
 }
 
 interface Column {
   id: 'backlog' | 'next' | 'in_progress' | 'review' | 'blocked' | 'done'
   title: string
   tasks: Task[]
+}
+
+type ExecutionState = {
+  summary?: string | null
+  latest_event?: string | null
+  latest_step?: string | null
+  phase?: string | null
+  progress?: number | null
+}
+
+type VerificationState = {
+  required?: boolean
+  latest_status?: string | null
+  latest_summary?: string | null
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null
+}
+
+function parseExecutionState(task: Task): ExecutionState | null {
+  const metadata = asRecord(task.metadata)
+  const executionState = asRecord(metadata?.execution_state)
+  return executionState as ExecutionState | null
+}
+
+function parseVerificationState(task: Task): VerificationState | null {
+  const metadata = asRecord(task.metadata)
+  const verificationSummary = asRecord(metadata?.verification_summary)
+  return verificationSummary as VerificationState | null
+}
+
+function shortId(id: string, length = 6): string {
+  return id.slice(0, length)
+}
+
+function clampLabel(label: string, max = 42): string {
+  return label.length > max ? `${label.slice(0, max - 1)}…` : label
+}
+
+function normalizeProgress(value: unknown): string | null {
+  if (typeof value !== 'number' || Number.isNaN(value)) return null
+  const percent = value <= 1 ? value * 100 : value
+  return `${Math.max(0, Math.min(100, Math.round(percent)))}%`
+}
+
+function formatDelegationLabel(task: Task): string | null {
+  if (task.delegation_status && task.delegation_status !== 'none') {
+    const agent = task.assigned_agent ? ` • ${task.assigned_agent}` : ''
+    return `${task.delegation_status}${agent}`
+  }
+
+  if (task.assigned_agent) {
+    return `assigned • ${task.assigned_agent}`
+  }
+
+  return null
+}
+
+function formatExecutionLabel(task: Task): string | null {
+  const executionState = parseExecutionState(task)
+  const summary = executionState?.summary?.trim()
+  const latestEvent = executionState?.latest_event?.trim()
+  const latestStep = executionState?.latest_step?.trim()
+  const phase = executionState?.phase?.trim()
+  const progress = normalizeProgress(executionState?.progress)
+
+  if (summary) return summary
+  if (phase && progress) return `${phase} • ${progress}`
+  if (phase) return phase
+  if (latestStep) return latestStep
+  if (latestEvent) return latestEvent
+  return task.status === 'done' ? 'completed' : null
+}
+
+function formatVerificationLabel(task: Task): string | null {
+  const verification = parseVerificationState(task)
+
+  if (verification?.latest_status) {
+    const summary = verification.latest_summary?.trim()
+    return summary ? `verify • ${verification.latest_status} • ${summary}` : `verify • ${verification.latest_status}`
+  }
+
+  if (verification?.required) {
+    return 'verify required'
+  }
+
+  return null
+}
+
+function badgeToneForDelegation(status: Task['delegation_status']): 'secondary' | 'outline' | 'default' | 'destructive' {
+  switch (status) {
+    case 'running':
+      return 'default'
+    case 'delegated':
+    case 'pending':
+      return 'secondary'
+    case 'completed':
+      return 'outline'
+    case 'failed':
+      return 'destructive'
+    case 'cancelled':
+      return 'outline'
+    default:
+      return 'outline'
+  }
+}
+
+function badgeToneForExecution(task: Task): 'secondary' | 'outline' | 'default' | 'destructive' {
+  if (task.status === 'blocked') return 'destructive'
+  if (task.status === 'done') return 'outline'
+  if (task.status === 'in_progress') return 'default'
+  if (task.run_id) return 'secondary'
+  return 'outline'
+}
+
+function badgeToneForVerification(task: Task): 'secondary' | 'outline' | 'default' | 'destructive' {
+  const verification = parseVerificationState(task)
+  switch (verification?.latest_status) {
+    case 'passed':
+      return 'outline'
+    case 'failed':
+      return 'destructive'
+    case 'pending':
+      return 'secondary'
+    default:
+      return verification?.required ? 'secondary' : 'outline'
+  }
+}
+
+function badgeClassForTone(tone: 'secondary' | 'outline' | 'default' | 'destructive'): string {
+  switch (tone) {
+    case 'default':
+      return 'border-teal-500/30 bg-teal-500/10 text-teal-300'
+    case 'secondary':
+      return 'border-sky-500/30 bg-sky-500/10 text-sky-300'
+    case 'destructive':
+      return 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+    case 'outline':
+    default:
+      return 'border-zinc-700 bg-zinc-900/60 text-zinc-300'
+  }
+}
+
+function badgeClassForVerification(task: Task): string {
+  return badgeClassForTone(badgeToneForVerification(task))
+}
+
+function TaskSignalBadges({ task }: { task: Task }) {
+  const delegationLabel = formatDelegationLabel(task)
+  const executionLabel = formatExecutionLabel(task)
+  const verificationLabel = formatVerificationLabel(task)
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {task.run_id && (
+        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-5', badgeClassForTone(badgeToneForExecution(task)))}>
+          run #{shortId(task.run_id)}
+        </Badge>
+      )}
+      {delegationLabel && (
+        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-5', badgeClassForTone(badgeToneForDelegation(task.delegation_status)))}>
+          {clampLabel(delegationLabel)}
+        </Badge>
+      )}
+      {executionLabel && (
+        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-5', badgeClassForTone(badgeToneForExecution(task)))}>
+          {clampLabel(executionLabel)}
+        </Badge>
+      )}
+      {verificationLabel && (
+        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-5', badgeClassForVerification(task))}>
+          {clampLabel(verificationLabel)}
+        </Badge>
+      )}
+    </div>
+  )
 }
 
 export function KanbanBoard() {
@@ -424,6 +608,9 @@ export function KanbanBoard() {
                               </span>
                             )}
                           </div>
+                          <div className="mt-3">
+                            <TaskSignalBadges task={task} />
+                          </div>
                         </div>
                         <Select 
                           value={task.status} 
@@ -554,6 +741,9 @@ export function KanbanBoard() {
                                           {task.description}
                                         </p>
                                       )}
+                                      <div className="mt-3">
+                                        <TaskSignalBadges task={task} />
+                                      </div>
                                     </div>
 
                                     {/* Menu Button - Only visible on hover */}

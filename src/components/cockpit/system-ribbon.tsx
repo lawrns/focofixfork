@@ -24,7 +24,6 @@ const SWITCHER_MODELS = [
   ...MODEL_CATALOG.filter((m) => !m.pipelineOnly).map((m) => ({ value: m.value, label: m.label, provider: m.provider })),
 ]
 
-const POLL_INTERVAL_ACTIVE = 15_000  // 15s when gateway has activity
 const POLL_INTERVAL_IDLE = 30_000    // 30s when idle
 
 function providerDot(provider: string) {
@@ -39,24 +38,43 @@ function providerDot(provider: string) {
   return colors[provider] ?? 'bg-zinc-500'
 }
 
-function Dot({ on, warn, label }: { on: boolean; warn?: boolean; label: string }) {
+interface DotProps {
+  on: boolean
+  warn?: boolean
+  /** True while data hasn't arrived yet — show neutral state */
+  unknown?: boolean
+  label: string
+}
+
+function Dot({ on, warn, unknown, label }: DotProps) {
   return (
     <div className="flex items-center gap-1.5">
       <span
         className={cn(
           'w-1.5 h-1.5 rounded-full flex-shrink-0',
-          on && !warn && 'bg-emerald-400',
-          on && warn && 'bg-amber-400',
-          !on && 'bg-rose-500',
+          unknown           && 'bg-zinc-700',
+          !unknown && on && !warn && 'bg-emerald-400',
+          !unknown && !on && warn && 'bg-amber-400',
+          !unknown && !on && !warn && 'bg-rose-500',
         )}
       />
-      <span className="text-[11px] text-zinc-400 font-mono whitespace-nowrap">{label}</span>
+      <span
+        className={cn(
+          'text-[11px] font-mono whitespace-nowrap',
+          unknown            ? 'text-zinc-600'
+          : on               ? 'text-zinc-400'
+          : warn             ? 'text-amber-400'
+          :                    'text-rose-400',
+        )}
+      >
+        {label}
+      </span>
     </div>
   )
 }
 
 function Divider() {
-  return <span className="text-zinc-800 select-none">│</span>
+  return <span className="text-zinc-800 select-none mx-0.5">│</span>
 }
 
 export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
@@ -84,7 +102,6 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
 
   useEffect(() => {
     fetchHealth()
-    // Adaptive polling: faster when there's activity
     const id = setInterval(fetchHealth, POLL_INTERVAL_IDLE)
     return () => clearInterval(id)
   }, [fetchHealth])
@@ -115,24 +132,13 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
   const gw = health?.gateway
   const sys = health?.system
   const crons = health?.crons
+  const noData = health === null
   const activeEntry = SWITCHER_MODELS.find((m) => m.value === preferredModel)
 
-  // Render a stable skeleton on server / before mount to prevent hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="h-8 bg-[#0d0d0f] border-b border-zinc-800/70 flex items-center px-4 gap-3 flex-shrink-0 overflow-x-hidden">
-        <div className="flex items-center gap-1.5 mr-1">
-          <Radio className="w-3 h-3 text-teal-400" />
-          <span className="text-[11px] font-semibold text-teal-400 tracking-wide font-mono">OPS</span>
-        </div>
-        <Divider />
-        <span className="text-[11px] text-zinc-600 font-mono">loading...</span>
-      </div>
-    )
-  }
+  const cronsWarn = !!crons && crons.failing > 0 && crons.failing < crons.enabled
 
   return (
-    <div className="h-8 bg-[#0d0d0f] border-b border-zinc-800/70 flex items-center px-4 gap-3 flex-shrink-0 overflow-x-hidden">
+    <div className="h-8 bg-[#0d0d0f] border-b border-zinc-800/70 flex items-center px-4 gap-2 flex-shrink-0 overflow-x-hidden">
       {/* Brand */}
       <div className="flex items-center gap-1.5 mr-1">
         <Radio className="w-3 h-3 text-teal-400" />
@@ -146,23 +152,28 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
         <Zap className="w-3 h-3 text-zinc-600" />
         <Dot
           on={gw?.healthy ?? false}
-          label={gw?.healthy ? `Gateway ${gw?.version ?? ''}`.trim() : 'Gateway offline'}
+          unknown={noData}
+          label={noData ? 'Gateway —' : gw?.healthy ? `Gateway ${gw?.version ?? ''}`.trim() : 'Gateway offline'}
         />
       </div>
 
       <Divider />
 
-      {/* Crons */}
+      {/* Crons — amber label when any are failing */}
       <div className="flex items-center gap-1.5">
         <Timer className="w-3 h-3 text-zinc-600" />
         <Dot
           on={!!crons && crons.failing === 0}
-          warn={!!crons && crons.failing > 0 && crons.failing < crons.enabled}
+          warn={cronsWarn}
+          unknown={noData}
           label={
-            crons
+            noData ? 'Crons —'
+            : crons
               ? crons.failing === 0
                 ? `Crons ${crons.enabled}/${crons.total}`
-                : `Crons ${crons.failing} failing`
+                : cronsWarn
+                  ? `Crons ${crons.failing} failing`
+                  : `Crons ${crons.failing} failing`
               : 'Crons —'
           }
         />
@@ -173,39 +184,45 @@ export function SystemRibbon({ onModelChange }: SystemRibbonProps) {
       {/* Stream */}
       <Dot
         on={health?.stream.connected ?? false}
-        label={health?.stream.connected ? 'Stream live' : 'Stream off'}
+        unknown={noData}
+        label={noData ? 'Stream —' : health?.stream.connected ? 'Stream live' : 'Stream off'}
       />
 
       <Divider />
 
-      {/* System metrics */}
-      {sys && (
-        <>
-          <div className="flex items-center gap-1.5">
-            <Cpu className="w-3 h-3 text-zinc-600" />
-            <span
-              className={cn(
-                'text-[11px] font-mono',
-                sys.cpuPercent > 80 ? 'text-rose-400' : sys.cpuPercent > 60 ? 'text-amber-400' : 'text-zinc-400',
-              )}
-            >
-              CPU {sys.cpuPercent}%
-            </span>
-          </div>
-          <Divider />
-          <div className="flex items-center gap-1.5">
-            <HardDrive className="w-3 h-3 text-zinc-600" />
-            <span
-              className={cn(
-                'text-[11px] font-mono',
-                sys.memPercent > 85 ? 'text-rose-400' : sys.memPercent > 70 ? 'text-amber-400' : 'text-zinc-400',
-              )}
-            >
-              RAM {sys.memUsedGb}/{sys.memTotalGb}GB
-            </span>
-          </div>
-        </>
-      )}
+      {/* CPU — always rendered with dash placeholder */}
+      <div className="flex items-center gap-1.5">
+        <Cpu className="w-3 h-3 text-zinc-600" />
+        <span
+          className={cn(
+            'text-[11px] font-mono',
+            !sys ? 'text-zinc-600'
+            : sys.cpuPercent > 80 ? 'text-rose-400'
+            : sys.cpuPercent > 60 ? 'text-amber-400'
+            : 'text-zinc-400',
+          )}
+        >
+          CPU {sys ? `${sys.cpuPercent}%` : '—'}
+        </span>
+      </div>
+
+      <Divider />
+
+      {/* RAM — always rendered with dash placeholder */}
+      <div className="flex items-center gap-1.5">
+        <HardDrive className="w-3 h-3 text-zinc-600" />
+        <span
+          className={cn(
+            'text-[11px] font-mono',
+            !sys ? 'text-zinc-600'
+            : sys.memPercent > 85 ? 'text-rose-400'
+            : sys.memPercent > 70 ? 'text-amber-400'
+            : 'text-zinc-400',
+          )}
+        >
+          RAM {sys ? `${sys.memUsedGb}/${sys.memTotalGb}GB` : '—/—'}
+        </span>
+      </div>
 
       {/* Spacer */}
       <div className="flex-1" />

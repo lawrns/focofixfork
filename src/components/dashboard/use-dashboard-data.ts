@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import type { OpenClawRuntimeSnapshot } from '@/lib/openclaw/types'
 
 const DASHBOARD_PROJECT_STORAGE_KEY = 'dashboard_selected_project_id'
 
@@ -39,22 +40,7 @@ export type ProjectOption = {
   name: string
 }
 
-export type OpenClawRuntime = {
-  configPath: string
-  relayUrl: string
-  gatewayUrl: string
-  relayReachable: boolean
-  gatewayHealthy: boolean
-  dispatchConfigured: boolean
-  tokenConfigured: boolean
-  tokenSource: 'env' | 'config' | 'none'
-  primaryModel: string | null
-  modelAlias: string | null
-  configuredModels: string[]
-  defaultModelConfigured: boolean
-  workspacePath: string | null
-  attachedTabs: number
-}
+export type OpenClawRuntime = OpenClawRuntimeSnapshot
 
 export type DashboardWorkItem = {
   id: string

@@ -21,7 +21,7 @@ interface AppShellProps {
 }
 
 // Pages that should not show the app chrome (sidebar, topbar, etc.)
-const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/signup', '/forgot-password', '/reset-password']);
+const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/signup', '/forgot-password', '/reset-password', '/cockpit', '/operator']);
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
@@ -52,7 +52,8 @@ export function AppShell({ children }: AppShellProps) {
   const isPublicPage = pathname ? PUBLIC_PATHS.has(pathname) : false;
   // Gate focus mode on isMounted to avoid reading Zustand persist before hydration
   const focusModeActiveAfterMount = isMounted && focusModeActive;
-  const isAppPage = !isPublicPage;
+  const isPublicOrCockpit = isPublicPage || pathname?.startsWith('/cockpit') || pathname?.startsWith('/operator');
+  const isAppPage = !isPublicOrCockpit;
   const isFocusMode = isAppPage && focusModeActiveAfterMount;
   const showAppChrome = isMounted && isAppPage
 

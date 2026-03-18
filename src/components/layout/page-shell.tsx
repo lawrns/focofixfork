@@ -15,10 +15,10 @@ export function PageShell({
   maxWidth = 'full',
 }: PageShellProps) {
   return (
-    <div className="relative w-full h-full">
+    <div className="relative flex min-h-0 flex-1 flex-col w-full">
       <div
         className={cn(
-          'mx-auto w-full max-w-full px-5 py-4 space-y-6',
+          'mx-auto w-full max-w-full px-4 py-3 space-y-4 flex-1 min-h-0',
           className,
         )}
       >

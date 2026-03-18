@@ -84,7 +84,7 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="dark">
         <ErrorBoundary>
           <ProgressBar />
           <RouteProgressHandler />

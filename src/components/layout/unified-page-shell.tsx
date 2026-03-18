@@ -2,27 +2,13 @@
 
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { PageShell } from './page-shell'
 
 interface UnifiedPageShellProps {
   children: ReactNode
   className?: string
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl' | '7xl' | 'full'
   animate?: boolean
-}
-
-const FULL_WIDTH_CLASS = 'max-w-full'
-
-const maxWidthClasses = {
-  sm: FULL_WIDTH_CLASS,
-  md: FULL_WIDTH_CLASS,
-  lg: FULL_WIDTH_CLASS,
-  xl: FULL_WIDTH_CLASS,
-  '2xl': FULL_WIDTH_CLASS,
-  '4xl': FULL_WIDTH_CLASS,
-  '6xl': FULL_WIDTH_CLASS,
-  '7xl': FULL_WIDTH_CLASS,
-  full: FULL_WIDTH_CLASS,
 }
 
 const pageTransition = {
@@ -39,9 +25,9 @@ export function UnifiedPageShell({
 }: UnifiedPageShellProps) {
   if (!animate) {
     return (
-      <div className={cn('mx-auto w-full py-4 sm:py-5 lg:py-6', maxWidthClasses[maxWidth], className)}>
+      <PageShell className={className} maxWidth={maxWidth}>
         {children}
-      </div>
+      </PageShell>
     )
   }
 
@@ -51,9 +37,11 @@ export function UnifiedPageShell({
       initial="initial"
       animate="animate"
       exit="exit"
-      className={cn('mx-auto w-full py-4 sm:py-5 lg:py-6', maxWidthClasses[maxWidth], className)}
+      className="w-full"
     >
-      {children}
+      <PageShell className={className} maxWidth={maxWidth}>
+        {children}
+      </PageShell>
     </motion.div>
   )
 }

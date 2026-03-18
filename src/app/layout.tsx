@@ -25,6 +25,7 @@ export default function AppLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&true)){document.documentElement.classList.add('dark')}}catch(e){}})()` }} />
         <Script id="suppress-extension-errors" strategy="beforeInteractive">
           {`
             (function() {

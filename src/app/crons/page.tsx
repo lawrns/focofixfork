@@ -151,7 +151,7 @@ function relativeTime(iso: string | null): string {
 
 function StatusBar() {
   const { data, loading } = useOpenClawRuntime()
-  const reachable = Boolean(data?.relayReachable)
+  const reachable = Boolean(data?.gatewayHealthy)
   const statusClass = loading
     ? 'text-muted-foreground'
     : reachable

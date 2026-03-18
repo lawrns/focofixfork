@@ -44,6 +44,25 @@ function buildToolBridgePrompt(context: Record<string, unknown>): string | null 
   return buildOpenClawBridgePrompt(details)
 }
 
+function assertAgentDispatchReady(
+  agentId: string,
+  serverConfig: Awaited<ReturnType<typeof getOpenClawServerConfig>>,
+): void {
+  if (agentId !== 'codex') return
+
+  if (!serverConfig.acpEnabled) {
+    throw new Error(
+      `Codex dispatch is not enabled in ${serverConfig.configPath}. Set acp.enabled=true and restart the OpenClaw gateway.`
+    )
+  }
+
+  if (!serverConfig.codexConfigured) {
+    throw new Error(
+      `Codex is not configured in ${serverConfig.configPath}. Add a codex entry under agents.list with runtime.type=\"acp\" and runtime.acp.agent=\"codex\", then restart the OpenClaw gateway.`
+    )
+  }
+}
+
 export async function getOpenClawRuntimeSnapshot(): Promise<OpenClawRuntimeSnapshot> {
   const serverConfig = await getOpenClawServerConfig()
   const snapshot = buildEmptyRuntimeSnapshot(
@@ -55,6 +74,11 @@ export async function getOpenClawRuntimeSnapshot(): Promise<OpenClawRuntimeSnaps
   snapshot.primaryModel = serverConfig.primaryModel
   snapshot.modelAlias = serverConfig.modelAlias
   snapshot.configuredModels = serverConfig.configuredModels
+  snapshot.acpEnabled = serverConfig.acpEnabled
+  snapshot.acpDispatchEnabled = serverConfig.acpDispatchEnabled
+  snapshot.acpBackend = serverConfig.acpBackend
+  snapshot.configuredAgents = serverConfig.configuredAgents
+  snapshot.codexConfigured = serverConfig.codexConfigured
   snapshot.defaultModelConfigured = Boolean(
     serverConfig.primaryModel && serverConfig.configuredModels.includes(serverConfig.primaryModel)
   )
@@ -64,43 +88,56 @@ export async function getOpenClawRuntimeSnapshot(): Promise<OpenClawRuntimeSnaps
   snapshot.version = serverConfig.version
   snapshot.dispatchConfigured = Boolean(serverConfig.gatewayUrl)
 
+  // Check gateway health independently of relay auth
+  try {
+    const gwRes = await fetch(`${serverConfig.gatewayUrl}/health`, {
+      headers: authHeaders(serverConfig.gatewayToken),
+      signal: AbortSignal.timeout(3000),
+    })
+    snapshot.gatewayHealthy = gwRes.ok
+  } catch {
+    // gatewayHealthy stays false
+  }
+
+  // Check relay for browser tab / profile data
   try {
     const res = await fetch(`${serverConfig.relayUrl}/`, {
       headers: authHeaders(serverConfig.gatewayToken),
       signal: AbortSignal.timeout(3000),
     })
 
-    if (!res.ok) return snapshot
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}))
+      const tabs = normalizeList((body as Record<string, unknown>).tabs ?? (body as Record<string, unknown>).attached_tabs)
+      const profiles = normalizeList((body as Record<string, unknown>).profiles)
 
-    const body = await res.json().catch(() => ({}))
-    const tabs = normalizeList((body as Record<string, unknown>).tabs ?? (body as Record<string, unknown>).attached_tabs)
-    const profiles = normalizeList((body as Record<string, unknown>).profiles)
-
-    snapshot.relayReachable = true
-    snapshot.gatewayHealthy = true
-    snapshot.tabs = tabs.map((tab) => ({
-      id: String(tab.id ?? tab.tabId ?? ''),
-      title: String(tab.title ?? tab.name ?? ''),
-      url: String(tab.url ?? ''),
-      attached: Boolean(tab.attached ?? true),
-      profile: typeof tab.profile === 'string' ? tab.profile : undefined,
-      lastSeen: typeof tab.last_seen === 'string' ? tab.last_seen : undefined,
-    }))
-    snapshot.attachedTabs = snapshot.tabs.filter((tab) => tab.attached).length
-    snapshot.profiles = profiles.map((profile) => ({
-      name: String(profile.name ?? profile.profile ?? ''),
-      active: Boolean(profile.active ?? profile.current ?? false),
-    }))
-    return snapshot
+      snapshot.relayReachable = true
+      snapshot.tabs = tabs.map((tab) => ({
+        id: String(tab.id ?? tab.tabId ?? ''),
+        title: String(tab.title ?? tab.name ?? ''),
+        url: String(tab.url ?? ''),
+        attached: Boolean(tab.attached ?? true),
+        profile: typeof tab.profile === 'string' ? tab.profile : undefined,
+        lastSeen: typeof tab.last_seen === 'string' ? tab.last_seen : undefined,
+      }))
+      snapshot.attachedTabs = snapshot.tabs.filter((tab) => tab.attached).length
+      snapshot.profiles = profiles.map((profile) => ({
+        name: String(profile.name ?? profile.profile ?? ''),
+        active: Boolean(profile.active ?? profile.current ?? false),
+      }))
+    }
   } catch {
-    return snapshot
+    // relayReachable stays false
   }
+
+  return snapshot
 }
 
 export async function dispatchOpenClawTask(
   request: OpenClawDispatchRequest,
 ): Promise<OpenClawDispatchResult> {
   const serverConfig = await getOpenClawServerConfig()
+  assertAgentDispatchReady(request.agentId, serverConfig)
   const correlationId = request.correlationId?.trim() || crypto.randomUUID()
   const context = asRecord(request.context)
   const toolBridgePrompt = buildToolBridgePrompt(context)

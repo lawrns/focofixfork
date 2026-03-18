@@ -238,6 +238,8 @@ function CockpitFallback() {
   )
 }
 
+export { CockpitFallback }
+
 export function CockpitShell() {
   return (
     <Suspense fallback={<CockpitFallback />}>

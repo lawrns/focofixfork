@@ -154,10 +154,11 @@ SignalRow.displayName = 'SignalRow'
 interface SignalsPanelProps {
   events: LedgerEvent[]
   refreshing?: boolean
+  loading?: boolean
   onRefresh: () => void
 }
 
-export function SignalsPanel({ events, refreshing, onRefresh }: SignalsPanelProps) {
+export function SignalsPanel({ events, refreshing, loading, onRefresh }: SignalsPanelProps) {
   const sorted = [...events].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   )
@@ -167,7 +168,7 @@ export function SignalsPanel({ events, refreshing, onRefresh }: SignalsPanelProp
       <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
         <h2 className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Signals</h2>
         <div className="flex items-center gap-2">
-          {sorted.length > 0 && (
+          {!loading && sorted.length > 0 && (
             <span className="text-[10px] text-zinc-600 font-mono tabular-nums">{sorted.length} events</span>
           )}
           <button
@@ -181,7 +182,20 @@ export function SignalsPanel({ events, refreshing, onRefresh }: SignalsPanelProp
       </div>
 
       <div className="flex-1 overflow-y-auto -mx-2 px-0">
-        {sorted.length === 0 ? (
+        {loading ? (
+          <div className="space-y-px">
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} className="flex items-start gap-2 px-2 py-2 border-b border-zinc-800/30 last:border-0">
+                <div className="mt-px h-5 w-5 flex-shrink-0 animate-pulse rounded bg-zinc-800/60" />
+                <div className="flex-1 space-y-1">
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-zinc-800" />
+                  <div className="h-2.5 w-3/4 animate-pulse rounded bg-zinc-800/60" />
+                </div>
+                <div className="h-2.5 w-6 flex-shrink-0 animate-pulse rounded bg-zinc-900" />
+              </div>
+            ))}
+          </div>
+        ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-zinc-700 gap-2">
             <Clock className="w-5 h-5" />
             <span className="text-xs font-mono">no recent signals</span>

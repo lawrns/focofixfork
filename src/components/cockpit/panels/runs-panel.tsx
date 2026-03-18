@@ -268,9 +268,10 @@ interface RunsPanelProps {
   runs: Run[]
   onRefresh: () => void
   refreshing?: boolean
+  loading?: boolean
 }
 
-export function RunsPanel({ runs, onRefresh, refreshing }: RunsPanelProps) {
+export function RunsPanel({ runs, onRefresh, refreshing, loading }: RunsPanelProps) {
   const [stoppedIds, setStoppedIds] = useState<Set<string>>(new Set())
 
   const handleStop = useCallback((id: string) => {
@@ -319,7 +320,22 @@ export function RunsPanel({ runs, onRefresh, refreshing }: RunsPanelProps) {
 
       {/* Cards */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-        {grouped.length === 0 ? (
+        {loading ? (
+          <>
+            {[0, 1, 2].map(i => (
+              <div key={i} className="rounded-xl border border-zinc-800/60 bg-[#0e0e10] overflow-hidden">
+                <div className="px-4 py-3 flex items-start gap-3">
+                  <div className="mt-1.5 h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-zinc-700" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-2/3 animate-pulse rounded bg-zinc-800" />
+                    <div className="h-3 w-1/3 animate-pulse rounded bg-zinc-800/60" />
+                  </div>
+                  <div className="h-3 w-10 animate-pulse rounded bg-zinc-900" />
+                </div>
+              </div>
+            ))}
+          </>
+        ) : grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-zinc-700 gap-2">
             <XCircle className="w-6 h-6" />
             <span className="text-xs font-mono">no active runs</span>

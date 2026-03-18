@@ -26,9 +26,9 @@ function CockpitContent() {
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-4">
-      <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-        <div className="rounded-2xl border border-zinc-800/60 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.14),transparent_36%),linear-gradient(180deg,#111214,#0c0d0f)] p-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
+      <div className="grid gap-3 xl:grid-cols-[1.6fr_1fr]">
+        <div className="rounded-2xl border border-zinc-800/60 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.14),transparent_36%),linear-gradient(180deg,#111214,#0c0d0f)] p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Mission Control</p>
@@ -62,7 +62,7 @@ function CockpitContent() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: index * 0.03 }}
-              className="rounded-2xl border border-zinc-800/60 bg-[#0e0f11] p-4"
+              className="rounded-2xl border border-zinc-800/60 bg-[#0e0f11] p-3"
             >
               {typeof metric === 'number' ? (
                 <div className="space-y-3">
@@ -82,21 +82,22 @@ function CockpitContent() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1.25fr_1fr_0.9fr]">
-        <div className="min-h-0 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[1.25fr_1fr_0.9fr]">
+        <div className="min-h-0 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
           <RunsPanel
             runs={displayRuns}
             onRefresh={() => void data.refresh()}
             refreshing={data.loading}
+            loading={!snapshot}
           />
         </div>
 
-        <div className="min-h-0 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
-          <WorkboardPanel tasks={snapshot?.tasks ?? []} />
+        <div className="min-h-0 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+          <WorkboardPanel tasks={snapshot?.tasks ?? []} loading={!snapshot} />
         </div>
 
-        <div className="flex min-h-0 flex-col gap-4">
-          <div className="min-h-0 flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="min-h-0 flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
             <MachinePanel machine={snapshot?.machine ?? {
               signalStrength: 0,
               gatewayHealthy: false,
@@ -109,7 +110,7 @@ function CockpitContent() {
               alerts: [],
             }} runtime={snapshot?.runtime ?? null} streamState={data.streamState} />
           </div>
-          <div className="max-h-64 min-h-[15rem] rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
+          <div className="max-h-64 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
             <AttentionPanel
               runs={snapshot?.runs ?? []}
               workItems={(snapshot?.tasks ?? []).map((task) => ({
@@ -135,20 +136,21 @@ function CockpitContent() {
         </div>
       </div>
 
-      <div className="grid min-h-0 gap-4 xl:grid-cols-[1.6fr_1fr]">
-        <div className="min-h-[18rem] rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
-          <ActivityPanel activity={snapshot?.activity ?? []} />
+      <div className="grid min-h-0 gap-3 xl:grid-cols-[1.6fr_1fr]">
+        <div className="rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+          <ActivityPanel activity={snapshot?.activity ?? []} loading={!snapshot} />
         </div>
 
-        <div className="flex min-h-[18rem] flex-col gap-4">
-          <div className="min-h-0 flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
+        <div className="flex flex-col gap-3">
+          <div className="min-h-0 flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
             <SignalsPanel
               events={snapshot?.signals ?? []}
               refreshing={data.loading}
+              loading={!snapshot}
               onRefresh={() => void data.refresh()}
             />
           </div>
-          <div className="rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-4">
+          <div className="rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
             <AgentGrid agents={snapshot?.agents ?? []} runs={snapshot?.runs ?? []} />
           </div>
         </div>
@@ -159,15 +161,79 @@ function CockpitContent() {
 
 function CockpitFallback() {
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-4 px-5 py-4">
-      <div className="flex gap-5 flex-1 min-h-0">
-        <div className="flex-1 bg-[#0e0e10] rounded-2xl border border-zinc-800/50 animate-pulse" />
-        <div className="w-80 flex-shrink-0 flex flex-col gap-4">
-          <div className="flex-1 bg-[#0e0e10] rounded-2xl border border-zinc-800/50 animate-pulse" />
-          <div className="h-52 bg-[#0e0e10] rounded-2xl border border-zinc-800/50 animate-pulse" />
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
+      {/* Row 1: hero + metric cards — matches CockpitContent grid */}
+      <div className="grid gap-3 xl:grid-cols-[1.6fr_1fr]">
+        <div className="rounded-2xl border border-zinc-800/60 bg-[#111214] p-4">
+          <div className="h-3 w-28 animate-pulse rounded bg-zinc-800" />
+          <div className="mt-3 h-7 w-3/4 animate-pulse rounded bg-zinc-800" />
+          <div className="mt-2 h-3 w-full animate-pulse rounded bg-zinc-800/60" />
+          <div className="mt-1 h-3 w-2/3 animate-pulse rounded bg-zinc-800/60" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="rounded-2xl border border-zinc-800/60 bg-[#0e0f11] p-3">
+              <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
+              <div className="mt-3 h-8 w-12 animate-pulse rounded bg-zinc-800" />
+              <div className="mt-2 h-3 w-full animate-pulse rounded bg-zinc-900" />
+            </div>
+          ))}
         </div>
       </div>
-      <div className="h-32 bg-[#0e0e10] rounded-2xl border border-zinc-800/50 flex-shrink-0 animate-pulse" />
+      {/* Row 2: runs + workboard + machine/attention — matches xl:grid-cols-[1.25fr_1fr_0.9fr] */}
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[1.25fr_1fr_0.9fr]">
+        <div className="min-h-0 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+          <div className="h-3 w-24 animate-pulse rounded bg-zinc-800" />
+          {[0, 1, 2].map(i => (
+            <div key={i} className="mt-2 h-16 animate-pulse rounded-xl bg-zinc-800/40" />
+          ))}
+        </div>
+        <div className="min-h-0 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+          <div className="h-3 w-32 animate-pulse rounded bg-zinc-800" />
+          {[0, 1, 2].map(i => (
+            <div key={i} className="mt-2 h-20 animate-pulse rounded-xl bg-zinc-800/40" />
+          ))}
+        </div>
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="min-h-0 flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+            <div className="h-3 w-24 animate-pulse rounded bg-zinc-800" />
+            {[0, 1, 2].map(i => (
+              <div key={i} className="mt-2 h-10 animate-pulse rounded-xl bg-zinc-800/40" />
+            ))}
+          </div>
+          <div className="max-h-64 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+            <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
+            {[0, 1].map(i => (
+              <div key={i} className="mt-2 h-10 animate-pulse rounded-xl bg-zinc-800/40" />
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* Row 3: activity + signals/agents — matches xl:grid-cols-[1.6fr_1fr] */}
+      <div className="grid min-h-0 gap-3 xl:grid-cols-[1.6fr_1fr]">
+        <div className="rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+          <div className="h-3 w-32 animate-pulse rounded bg-zinc-800" />
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="mt-2 h-14 animate-pulse rounded-xl bg-zinc-800/40" />
+          ))}
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+            <div className="h-3 w-16 animate-pulse rounded bg-zinc-800" />
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} className="mt-2 h-8 animate-pulse rounded-lg bg-zinc-800/40" />
+            ))}
+          </div>
+          <div className="rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
+            <div className="h-3 w-24 animate-pulse rounded bg-zinc-800" />
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-800/40" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

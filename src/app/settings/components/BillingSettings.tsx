@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Check, CreditCard } from 'lucide-react';
+import { Check, CreditCard, Users, CheckSquare2, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,44 +48,69 @@ export function BillingSettings() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Current Plan</CardTitle>
-          <CardDescription>
-            You are currently on the Pro plan
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Current Plan</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                You are currently on the Pro plan
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-lg bg-secondary dark:bg-secondary/30 border dark:border-secondary dark:border-secondary">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">Pro Plan</span>
-                <Badge variant="secondary">Current</Badge>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 rounded-lg bg-secondary dark:bg-secondary/30 border border-gray-200 dark:border-gray-700 gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-xl font-semibold">Pro Plan</span>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 hover:bg-green-100 border-green-300 dark:border-green-700">Current</Badge>
               </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 $12/user/month • Billed monthly
               </p>
             </div>
-            <Button variant="outline" onClick={() => setShowUpgradeDialog(true)}>
+            <Button variant="outline" onClick={() => setShowUpgradeDialog(true)} className="sm:ml-4 w-full sm:w-auto">
               Change Plan
             </Button>
           </div>
 
-          <div className="mt-6">
-            <h4 className="font-medium mb-3">Usage this month</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-              <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900">
-                <div className="text-2xl font-semibold">8/20</div>
-                <div className="text-sm text-zinc-500">Team members</div>
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Usage this month</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="text-2xl font-semibold">8/20</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Team members</div>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600">
+                    <Users className="h-5 w-5" />
+                  </div>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900">
-                <div className="text-2xl font-semibold">247</div>
-                <div className="text-sm text-zinc-500">Tasks created</div>
+              <div className="p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="text-2xl font-semibold">247</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tasks created</div>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-600">
+                    <CheckSquare2 className="h-5 w-5" />
+                  </div>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900">
-                <div className="text-2xl font-semibold">12</div>
-                <div className="text-sm text-zinc-500">Projects</div>
+              <div className="p-4 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="text-2xl font-semibold">12</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Projects</div>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600">
+                    <Folder className="h-5 w-5" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -94,26 +119,31 @@ export function BillingSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Payment Method</CardTitle>
-          <CardDescription>
-            Manage your payment information
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Payment Method</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Manage your payment information
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-14 rounded bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-zinc-500" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 rounded-lg border border-gray-200 dark:border-gray-700 gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="h-12 w-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                <CreditCard className="h-6 w-6 text-gray-500" />
               </div>
               <div>
-                <div className="font-medium">•••• •••• •••• 4242</div>
-                <div className="text-sm text-zinc-500">Expires 12/2027</div>
+                <div className="font-semibold text-sm">•••• •••• •••• 4242</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Expires 12/2027</div>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => console.log('Payment method update clicked')}
+              className="sm:ml-4 w-full sm:w-auto"
             >
               Update
             </Button>
@@ -123,10 +153,14 @@ export function BillingSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Invoice History</CardTitle>
-          <CardDescription>
-            Download past invoices
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Invoice History</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Download past invoices
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">

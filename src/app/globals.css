@@ -146,6 +146,143 @@
 }
 
 @layer utilities {
+  /* ──── TYPOGRAPHY HIERARCHY ──── */
+  /* Page Title: 28px bold */
+  .title-page {
+    @apply text-4xl font-bold;
+  }
+
+  /* Section heading: 24px bold */
+  .title-section {
+    @apply text-2xl font-bold;
+  }
+
+  /* Subsection heading: 20px bold */
+  .title-subsection {
+    @apply text-xl font-bold;
+  }
+
+  /* Label: 14px regular/medium */
+  .label-text {
+    @apply text-sm font-medium;
+  }
+
+  /* Small text: 12px */
+  .text-small {
+    @apply text-xs;
+  }
+
+  /* Secondary text with proper contrast */
+  .text-muted {
+    @apply text-gray-500;
+  }
+
+  /* Tertiary text */
+  .text-hint {
+    @apply text-gray-400;
+  }
+
+  /* ──── FORM FIELD UTILITIES ──── */
+  /* Standard form field height */
+  .form-field {
+    @apply min-h-11 px-3 py-2 rounded-md border border-gray-300 text-base;
+  }
+
+  /* Focus state for form fields */
+  .form-field:focus {
+    @apply outline-none ring-2 ring-offset-2 ring-primary;
+  }
+
+  /* Placeholder text styling */
+  .form-field::placeholder {
+    @apply text-gray-500;
+  }
+
+  /* ──── TAB NAVIGATION ──---- */
+  /* Active tab indicator - bottom border style */
+  .tab-active {
+    @apply border-b-2 border-primary;
+  }
+
+  /* Inactive tab - no indicator */
+  .tab-inactive {
+    @apply border-b-2 border-transparent;
+  }
+
+  /* ──── ALERT STYLING ──── */
+  /* Failure/Error alert - prominent red */
+  .alert-error {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md bg-red-50 text-error border border-error/20;
+  }
+
+  .alert-error-icon::before {
+    content: "🔴";
+    @apply mr-1;
+  }
+
+  /* Warning alert - amber */
+  .alert-warning {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 text-warning border border-warning/20;
+  }
+
+  /* Success alert - green */
+  .alert-success {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 text-success border border-success/20;
+  }
+
+  /* ──── BUTTON STATE VISIBILITY ──── */
+  /* Button hover state - ensure visibility */
+  .btn-secondary:hover {
+    @apply border-gray-400 bg-gray-50 transition-colors;
+  }
+
+  .btn-secondary:focus {
+    @apply ring-2 ring-offset-2 ring-primary outline-none;
+  }
+
+  .btn-secondary:active {
+    @apply bg-gray-100;
+  }
+
+  /* ──── SIDEBAR ACTIVE STATE ──── */
+  /* Only active sidebar item should have background */
+  .sidebar-item-active {
+    @apply bg-teal-dim text-sidebar-text-active border-l-2 border-primary rounded-r-md;
+  }
+
+  /* Inactive sidebar items - transparent background */
+  .sidebar-item {
+    @apply bg-transparent text-sidebar-text hover:bg-gray-100 transition-colors;
+  }
+
+  /* ──── SPACING UTILITIES ──---- */
+  /* Consistent spacing for sections */
+  .section-gap {
+    @apply gap-12; /* 48px gap between major sections */
+  }
+
+  .element-gap {
+    @apply gap-4; /* 16px gap between elements */
+  }
+
+  /* ──── METRIC CARD DISTINCTION ──── */
+  /* Icons for metric cards */
+  .metric-icon {
+    @apply w-10 h-10 rounded-lg flex items-center justify-center text-lg;
+  }
+
+  .metric-people {
+    @apply bg-blue-100 text-blue-600;
+  }
+
+  .metric-tasks {
+    @apply bg-green-100 text-green-600;
+  }
+
+  .metric-projects {
+    @apply bg-purple-100 text-purple-600;
+  }
+
   /* Scrollbar utilities */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

@@ -10,8 +10,8 @@ import { SwarmProvider } from '@/components/critter/swarm-context'
 import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion'
 
 // Lazy-load heavy components — only downloaded when actually needed
-const CommandPalette = dynamic(() => import('@/components/foco/layout/command-palette').then(m => ({ default: m.CommandPalette })), { ssr: false })
-const KeyboardShortcutsModal = dynamic(() => import('@/components/foco/layout/keyboard-shortcuts-modal').then(m => ({ default: m.KeyboardShortcutsModal })), { ssr: false })
+const CommandPalette = dynamic(() => import('@/components/foco/layout/command-palette').then(m => ({ default: m.CommandPalette })))
+const KeyboardShortcutsModal = dynamic(() => import('@/components/foco/layout/keyboard-shortcuts-modal').then(m => ({ default: m.KeyboardShortcutsModal })))
 const DispatchModalLazy = dynamic(() => import('./dispatch-modal-lazy'), { ssr: false })
 
 const PUBLIC_PATHS = new Set([
@@ -90,7 +90,7 @@ export function OpsShell({ children }: OpsShellProps) {
             {/* Body: nav rail + content */}
             <div className="flex flex-1 min-h-0 overflow-hidden">
               <NavRail onAction={handleAction} />
-              <main className="flex-1 min-h-0 overflow-auto">
+              <main className="flex flex-col flex-1 min-h-0 overflow-auto">
                 {children}
               </main>
             </div>

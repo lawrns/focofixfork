@@ -26,7 +26,7 @@ function CockpitContent() {
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
+    <div className="flex h-full flex-col gap-3 overflow-hidden px-4 py-3">
       <div className="grid gap-3 xl:grid-cols-[1.6fr_1fr]">
         <div className="rounded-2xl border border-zinc-800/60 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.14),transparent_36%),linear-gradient(180deg,#111214,#0c0d0f)] p-4">
           <div className="flex items-start justify-between gap-4">
@@ -167,7 +167,7 @@ function CockpitContent() {
 
 function CockpitFallback() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
+    <div className="flex h-full flex-col gap-3 overflow-hidden px-4 py-3">
       {/* Row 1: hero + metric cards — matches CockpitContent grid */}
       <div className="grid gap-3 xl:grid-cols-[1.6fr_1fr]">
         <div className="rounded-2xl border border-zinc-800/60 bg-[#111214] p-4">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useRunStream } from '@/hooks/use-run-stream'
@@ -82,11 +82,11 @@ const TOKEN_COLORS: Record<string, string> = {
 
 /* ─── Individual run card ────────────────────────────────────────── */
 
-function RunCard({ run, onStop, onRetry }: {
+const RunCard = React.forwardRef<HTMLDivElement, {
   run: Run
   onStop: (id: string) => void
   onRetry: (id: string) => void
-}) {
+}>(function RunCard({ run, onStop, onRetry }, ref) {
   const [expanded, setExpanded] = useState(run.status === 'running')
   const [stopping, setStopping] = useState(false)
 
@@ -128,6 +128,7 @@ function RunCard({ run, onStop, onRetry }: {
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -258,7 +259,8 @@ function RunCard({ run, onStop, onRetry }: {
       </AnimatePresence>
     </motion.div>
   )
-}
+})
+RunCard.displayName = 'RunCard'
 
 /* ─── Panel ──────────────────────────────────────────────────────── */
 

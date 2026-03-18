@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import {
@@ -149,15 +149,15 @@ function TrustBar({ score }: { score: number }) {
 
 /* ─── Agent card ─────────────────────────────────────────────────── */
 
-function AgentCard({
-  agent,
-  runs,
-  onInspect,
-}: {
+const AgentCard = React.forwardRef<HTMLButtonElement, {
   agent: AgentOption
   runs: Run[]
   onInspect: (agent: AgentOption) => void
-}) {
+}>(function AgentCard({
+  agent,
+  runs,
+  onInspect,
+}, ref) {
   const status = agent.status ?? 'idle'
   const cfg = STATUS_MAP[status] ?? STATUS_MAP.idle
   const trust = computeTrust(agent, runs)
@@ -169,6 +169,7 @@ function AgentCard({
 
   return (
     <motion.button
+      ref={ref}
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -240,7 +241,8 @@ function AgentCard({
       })()}
     </motion.button>
   )
-}
+})
+AgentCard.displayName = 'AgentCard'
 
 /* ─── Grid ───────────────────────────────────────────────────────── */
 

@@ -1,260 +1,250 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
-import { authRequiredResponse } from '@/lib/api/response-helpers'
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthUser, mergeAuthResponse } from "@/lib/api/auth-helper";
+import { authRequiredResponse } from "@/lib/api/response-helpers";
+import { resolveSessionFromDisk } from "@/lib/openclaw/session-resolver";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-type LedgerRow = {
-  id: string
-  type: string
-  source: string
-  timestamp: string
-  context_id: string | null
-  payload: Record<string, unknown> | null
-}
+type RunTurn = {
+  id: string;
+  run_id: string;
+  idx: number;
+  kind: string;
+  prompt: string;
+  status: string;
+  outcome_kind: string | null;
+  preferred_model: string | null;
+  actual_model: string | null;
+  gateway_run_id: string | null;
+  correlation_id: string | null;
+  summary: string | null;
+  output: string | null;
+  session_path: string | null;
+  trace: Record<string, unknown>;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type Artifact = {
+  id: string;
+  run_id: string | null;
+  run_turn_id: string | null;
+  type: string;
+  uri: string;
+  meta: Record<string, unknown>;
+  created_at: string;
+};
 
 type TimelineEvent = {
-  id: string
-  kind: 'lifecycle' | 'execution' | 'audit'
-  title: string
-  description?: string
-  status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'info'
-  source: string
-  timestamp: string
-  payload?: Record<string, unknown> | null
-}
-
-type RoutingSnapshot = {
-  requested?: Record<string, unknown> | null
-  actual?: Record<string, unknown> | null
-}
-
-function inferRunStatusFromLedger(rows: LedgerRow[]): 'completed' | 'failed' | 'cancelled' | null {
-  for (let i = rows.length - 1; i >= 0; i--) {
-    const payload = rows[i].payload ?? {}
-    const status = typeof payload.status === 'string' ? payload.status.toLowerCase() : null
-    if (status === 'completed' || status === 'failed' || status === 'cancelled') {
-      return status
-    }
-  }
-  return null
-}
-
-function dedupeById<T extends { id: string }>(rows: T[]): T[] {
-  const seen = new Set<string>()
-  const out: T[] = []
-  for (const row of rows) {
-    if (seen.has(row.id)) continue
-    seen.add(row.id)
-    out.push(row)
-  }
-  return out
-}
-
-function mapLedgerEvent(evt: LedgerRow): TimelineEvent {
-  const payload = evt.payload ?? {}
-  const title = evt.type.replace(/\./g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  const payloadStatus =
-    typeof payload.status === 'string'
-      ? payload.status.toLowerCase()
-      : null
-  const status =
-    payloadStatus === 'completed' || payloadStatus === 'failed' || payloadStatus === 'running' || payloadStatus === 'cancelled'
-      ? payloadStatus
-      :
-    evt.type.includes('failed') ? 'failed' :
-    evt.type.includes('cancel') ? 'cancelled' :
-    evt.type.includes('resume') ? 'running' :
-    evt.type.includes('complete') ? 'completed' :
-    'info'
-
-  let description: string | undefined
-  if (typeof payload.message === 'string') description = payload.message
-  else if (typeof payload.summary === 'string') description = payload.summary
-  else if (typeof payload.status === 'string') description = `Status: ${payload.status}`
-
-  const kind: TimelineEvent['kind'] =
-    evt.source === 'policy' || evt.type.startsWith('policy.') || evt.type.startsWith('fleet.')
-      ? 'audit'
-      : 'execution'
-
-  return {
-    id: `ledger:${evt.id}`,
-    kind,
-    title,
-    description,
-    status,
-    source: evt.source,
-    timestamp: evt.timestamp,
-    payload: evt.payload,
-  }
-}
+  id: string;
+  kind: "lifecycle" | "execution" | "audit";
+  title: string;
+  description?: string;
+  status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "info";
+  source: string;
+  timestamp: string;
+  payload?: Record<string, unknown> | null;
+};
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
-  const { user, supabase, error, response: authResponse } = await getAuthUser(req)
-  if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
+  const {
+    user,
+    supabase,
+    error,
+    response: authResponse,
+  } = await getAuthUser(req);
+  if (error || !user)
+    return mergeAuthResponse(authRequiredResponse(), authResponse);
 
-  const runId = params.id
+  const runId = params.id;
 
+  // Fetch run data
   const { data: run, error: runError } = await supabase
-    .from('runs')
-    .select('*, run_steps(*)')
-    .eq('id', runId)
-    .single()
+    .from("runs")
+    .select("*")
+    .eq("id", runId)
+    .single();
 
   if (runError || !run) {
     return mergeAuthResponse(
-      NextResponse.json({ error: runError?.message ?? 'Run not found' }, { status: 404 }),
-      authResponse
-    )
+      NextResponse.json(
+        { error: runError?.message ?? "Run not found" },
+        { status: 404 },
+      ),
+      authResponse,
+    );
   }
 
-  const [contextEventsRes, payloadSnakeRes, payloadCamelRes, commandSurfaceRes] = await Promise.all([
-    supabase
-      .from('ledger_events')
-      .select('id,type,source,timestamp,context_id,payload')
-      .eq('context_id', runId)
-      .order('timestamp', { ascending: true })
-      .limit(200),
-    supabase
-      .from('ledger_events')
-      .select('id,type,source,timestamp,context_id,payload')
-      .filter('payload->>run_id', 'eq', runId)
-      .order('timestamp', { ascending: true })
-      .limit(200),
-    supabase
-      .from('ledger_events')
-      .select('id,type,source,timestamp,context_id,payload')
-      .filter('payload->>runId', 'eq', runId)
-      .order('timestamp', { ascending: true })
-      .limit(200),
-    supabase
-      .from('ledger_events')
-      .select('id,type,source,timestamp,context_id,payload')
-      .eq('type', 'command_surface.execution')
-      .eq('source', 'command_surface')
-      .filter('payload->>runId', 'eq', runId)
-      .order('timestamp', { ascending: true })
-      .limit(100),
-  ])
+  // Fetch all turns for this run
+  const { data: turns, error: turnsError } = await supabase
+    .from("run_turns")
+    .select("*")
+    .eq("run_id", runId)
+    .order("idx", { ascending: true });
 
-  const ledgerRows = dedupeById<LedgerRow>([
-    ...((contextEventsRes.data ?? []) as LedgerRow[]),
-    ...((payloadSnakeRes.data ?? []) as LedgerRow[]),
-    ...((payloadCamelRes.data ?? []) as LedgerRow[]),
-    ...((commandSurfaceRes.data ?? []) as LedgerRow[]),
-  ]).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-
-  const inferredRunStatus = inferRunStatusFromLedger(ledgerRows)
-  if (run.status === 'running' && inferredRunStatus) {
-    run.status = inferredRunStatus
-    run.ended_at = run.ended_at ?? new Date().toISOString()
-    // Best-effort self-heal for stale runs created before status sync improvements.
-    void supabase
-      .from('runs')
-      .update({ status: inferredRunStatus, ended_at: run.ended_at })
-      .eq('id', runId)
+  if (turnsError) {
+    return mergeAuthResponse(
+      NextResponse.json({ error: turnsError.message }, { status: 500 }),
+      authResponse,
+    );
   }
 
-  const timeline: TimelineEvent[] = []
-
-  timeline.push({
-    id: `run-created:${run.id}`,
-    kind: 'lifecycle',
-    title: 'Run created',
-    status: 'pending',
-    source: run.runner ?? 'system',
-    timestamp: run.created_at,
-    description: run.summary ?? undefined,
-  })
-
-  if (run.started_at) {
-    timeline.push({
-      id: `run-started:${run.id}`,
-      kind: 'lifecycle',
-      title: 'Execution started',
-      status: 'running',
-      source: run.runner ?? 'system',
-      timestamp: run.started_at,
-    })
-  }
-
-  const runSteps = (run.run_steps ?? []) as Array<{
-    id: string
-    type: string
-    created_at: string
-    input?: Record<string, unknown> | null
-  }>
-
-  for (const step of runSteps) {
-    timeline.push({
-      id: `step:${step.id}`,
-      kind: 'execution',
-      title: step.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-      description:
-        step.input && typeof step.input === 'object'
-          ? `Input keys: ${Object.keys(step.input).join(', ')}`
-          : undefined,
-      status: run.status === 'failed' ? 'failed' : run.status === 'cancelled' ? 'cancelled' : 'completed',
-      source: run.runner ?? 'run-step',
-      timestamp: step.created_at,
-      payload: step.input ?? null,
-    })
-  }
-
-  for (const ledgerRow of ledgerRows) {
-    timeline.push(mapLedgerEvent(ledgerRow))
-  }
-
-  if (run.ended_at) {
-    timeline.push({
-      id: `run-ended:${run.id}`,
-      kind: 'lifecycle',
-      title: 'Execution finished',
-      status: (run.status as TimelineEvent['status']) ?? 'info',
-      source: run.runner ?? 'system',
-      timestamp: run.ended_at,
-    })
-  }
-
-  const rank = (evt: TimelineEvent): number => {
-    if (evt.id.startsWith('run-created:')) return 0
-    if (evt.id.startsWith('run-started:')) return 1
-    if (evt.id.startsWith('run-ended:')) return 3
-    return 2
-  }
-  timeline.sort((a, b) => {
-    const t = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    if (t !== 0) return t
-    return rank(a) - rank(b)
-  })
-
+  // Fetch artifacts grouped by turn
   const { data: artifacts } = await supabase
-    .from('artifacts')
-    .select('*')
-    .eq('run_id', runId)
-    .order('created_at', { ascending: true })
+    .from("artifacts")
+    .select("*")
+    .eq("run_id", runId)
+    .order("created_at", { ascending: true });
 
-  const auditEvents = timeline.filter((evt) => evt.kind === 'audit')
-  const executionEvents = timeline.filter((evt) => evt.kind === 'execution' || evt.kind === 'lifecycle')
-  const routing = ((run.trace as Record<string, unknown> | null)?.ai_routing ?? null) as RoutingSnapshot | null
+  const typedTurns = (turns ?? []) as RunTurn[];
+  const typedArtifacts = (artifacts ?? []) as Artifact[];
+
+  // Group artifacts by turn
+  const artifactsByTurn: Record<string, Artifact[]> = {};
+  for (const artifact of typedArtifacts) {
+    const turnId = artifact.run_turn_id ?? "unassigned";
+    if (!artifactsByTurn[turnId]) artifactsByTurn[turnId] = [];
+    artifactsByTurn[turnId].push(artifact);
+  }
+
+  // Determine active turn
+  const activeTurn =
+    typedTurns.find(
+      (t) => t.status === "running" || t.status === "dispatched",
+    ) ??
+    typedTurns[typedTurns.length - 1] ??
+    null;
+
+  // Build timeline from turns
+  const timeline: TimelineEvent[] = [];
+  for (const turn of typedTurns) {
+    timeline.push({
+      id: `turn-created:${turn.id}`,
+      kind: "lifecycle",
+      title: `Turn ${turn.idx + 1} (${turn.kind})`,
+      description:
+        turn.prompt.slice(0, 200) + (turn.prompt.length > 200 ? "..." : ""),
+      status:
+        turn.status === "completed"
+          ? "completed"
+          : turn.status === "failed"
+            ? "failed"
+            : turn.status === "cancelled"
+              ? "cancelled"
+              : turn.status === "running"
+                ? "running"
+                : "pending",
+      source: "openclaw",
+      timestamp: turn.created_at,
+    });
+
+    if (turn.started_at && turn.started_at !== turn.created_at) {
+      timeline.push({
+        id: `turn-started:${turn.id}`,
+        kind: "execution",
+        title: `Turn ${turn.idx + 1} started`,
+        status: "running",
+        source: "openclaw",
+        timestamp: turn.started_at,
+      });
+    }
+
+    if (turn.ended_at) {
+      timeline.push({
+        id: `turn-ended:${turn.id}`,
+        kind: "execution",
+        title: `Turn ${turn.idx + 1} ${turn.outcome_kind ?? "completed"}`,
+        status:
+          turn.outcome_kind === "failed"
+            ? "failed"
+            : turn.outcome_kind === "cancelled"
+              ? "cancelled"
+              : "completed",
+        source: "openclaw",
+        timestamp: turn.ended_at,
+      });
+    }
+  }
+
+  // Determine outcome
+  const outcome = activeTurn?.outcome_kind ?? null;
+
+  // Resolve session if we have a correlation_id
+  let session = null;
+  let inspector = null;
+  if (activeTurn?.correlation_id || activeTurn?.run_id) {
+    session = await resolveSessionFromDisk(
+      activeTurn.run_id,
+      activeTurn.correlation_id ?? "",
+    );
+  }
+
+  // Build inspector data from traces
+  inspector = {
+    turns: typedTurns.map((t) => ({
+      id: t.id,
+      idx: t.idx,
+      kind: t.kind,
+      status: t.status,
+      outcome_kind: t.outcome_kind,
+      preferred_model: t.preferred_model,
+      actual_model: t.actual_model,
+      gateway_run_id: t.gateway_run_id,
+      correlation_id: t.correlation_id,
+      trace_keys: Object.keys(t.trace ?? {}),
+      has_output: !!t.output,
+      has_session_path: !!t.session_path,
+    })),
+    run_trace: run.trace ?? {},
+  };
 
   return mergeAuthResponse(
     NextResponse.json({
       data: {
         run,
-        routing,
-        artifacts: artifacts ?? [],
+        thread: {
+          id: run.id,
+          run_id: runId,
+          runner: run.runner,
+          status: run.status,
+          task_id: run.task_id ?? null,
+          started_at: run.started_at ?? null,
+          summary: run.summary,
+          created_at: run.created_at,
+          ended_at: run.ended_at,
+          artifacts: run.artifacts ?? [],
+          trace: run.trace ?? {},
+          tokens_in: run.tokens_in ?? null,
+          tokens_out: run.tokens_out ?? null,
+          cost_usd: run.cost_usd ?? null,
+        },
+        turns: typedTurns,
+        active_turn: activeTurn,
+        outcome,
+        session: session
+          ? {
+              path: session.path,
+              assistant_output: session.assistant_output?.slice(0, 2000),
+              tool_count: session.tool_markers?.length ?? 0,
+              cwd: session.cwd,
+            }
+          : null,
+        artifacts_by_turn: artifactsByTurn,
+        inspector,
         timeline,
-        execution_events: executionEvents,
-        audit_events: auditEvents,
-        has_timeline: timeline.length > 0,
-        last_event_at: timeline.length > 0 ? timeline[timeline.length - 1].timestamp : null,
       },
     }),
-    authResponse
-  )
+    authResponse,
+  );
 }

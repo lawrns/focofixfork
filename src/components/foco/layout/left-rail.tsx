@@ -21,10 +21,12 @@ import {
   Monitor,
   FolderKanban,
   CheckSquare,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { useCurrentWorkspace } from '@/lib/hooks/use-foco-data';
 
 interface NavItem {
   label: string;
@@ -36,7 +38,7 @@ interface NavItem {
 
 // WORK — daily work
 const workNavItems: NavItem[] = [
-  { label: 'Overview',   href: '/dashboard',  icon: Home,         shortcut: 'G H' },
+  { label: 'Cockpit',    href: '/dashboard',  icon: Home,         shortcut: 'G H' },
   { label: 'Projects',   href: '/projects',   icon: FolderKanban, shortcut: 'G P' },
   { label: 'My Tasks',   href: '/my-work',    icon: CheckSquare,  shortcut: 'G W' },
   { label: 'Runs',       href: '/runs',       icon: Activity,     shortcut: 'G R' },
@@ -46,9 +48,9 @@ const workNavItems: NavItem[] = [
 // AUTOMATION — agent operations
 const automationNavItems: NavItem[] = [
   { label: 'Agents',         href: '/agents',    icon: Bot,       shortcut: 'G J' },
-  { label: 'Pipeline',       href: '/pipeline',  icon: GitBranch, shortcut: 'G V' },
+  { label: 'Workflows',      href: '/pipeline',  icon: GitBranch, shortcut: 'G V' },
   { label: 'Recurring',      href: '/recurring', icon: RefreshCw, shortcut: 'G U' },
-  { label: 'System Status',  href: '/system',    icon: Monitor,   shortcut: 'G M' },
+  { label: 'Autonomy',       href: '/system',    icon: Monitor,   shortcut: 'G M' },
   { label: 'Briefing',       href: '/briefing',  icon: FileText,  shortcut: 'G B' },
 ];
 
@@ -61,6 +63,7 @@ const bottomNavItems: NavItem[] = [
 export function LeftRail() {
   const pathname = usePathname();
   const { sidebarCollapsed: sidebarCollapsedRaw, toggleSidebar } = useUIPreferencesStore();
+  const { workspace: currentWorkspace } = useCurrentWorkspace();
 
   // Gate sidebarCollapsed on isMounted — Zustand persist reads localStorage
   // synchronously on the client, causing SSR mismatch if used directly.
@@ -83,7 +86,9 @@ export function LeftRail() {
 
   /* ── NavLink ──────────────────────────────────────────────── */
   const NavLink = ({ item }: { item: NavItem }) => {
+    const isWorkspaceNav = item.href === '/workspaces' || item.href.startsWith('/workspaces/')
     const isActive =
+      (isWorkspaceNav && (pathname?.startsWith('/workspaces') || pathname?.startsWith('/organizations/'))) ||
       pathname === item.href ||
       (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 
@@ -147,6 +152,14 @@ export function LeftRail() {
     return inner;
   };
 
+  const workspaceHref = currentWorkspace?.id ? `/workspaces/${currentWorkspace.id}` : '/workspaces'
+  const workspaceNavItem: NavItem = {
+    label: 'Workspaces',
+    href: workspaceHref,
+    icon: Building2,
+    shortcut: 'G O',
+  }
+
   /* ── Render ───────────────────────────────────────────────── */
   return (
     <aside
@@ -191,6 +204,7 @@ export function LeftRail() {
             <span className="text-[10px] font-mono-display text-muted-foreground tracking-widest uppercase">Work</span>
           </div>
         )}
+        <NavLink item={workspaceNavItem} />
         {workNavItems.map(item => <NavLink key={item.href} item={item} />)}
 
         <div className="my-3.5 h-px bg-[var(--foco-rail-border)]" />

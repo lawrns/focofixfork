@@ -3,8 +3,157 @@ import { createClient } from '@supabase/supabase-js'
 import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
 import { reconcileAutonomySession } from '@/lib/autonomy/session-jobs'
 import { finalizeLoopIterationFromSession } from '@/lib/autonomy/loops'
+import { mergeRunTrace, readCommandSurfaceTrace } from '@/lib/runs/trace'
+import { publishCommandStreamEvent } from '@/lib/command-surface/stream-broker'
 
 export const dynamic = 'force-dynamic'
+
+function inferRunStatus(type: string, payload: Record<string, unknown>): 'pending' | 'running' | 'completed' | 'failed' | null {
+  const payloadStatus = typeof payload.status === 'string' ? payload.status.toLowerCase() : ''
+  const typeStatus = type.toLowerCase()
+  const combined = `${typeStatus} ${payloadStatus}`
+
+  if (combined.includes('completed') || combined.includes('succeeded') || combined.includes('done')) return 'completed'
+  if (combined.includes('failed') || combined.includes('error')) return 'failed'
+  if (combined.includes('running') || combined.includes('started') || combined.includes('progress')) return 'running'
+  if (combined.includes('queued') || combined.includes('accepted') || combined.includes('pending')) return 'pending'
+  return null
+}
+
+function streamStateFromRunStatus(status: 'pending' | 'running' | 'completed' | 'failed' | null) {
+  if (status === 'pending') return 'queued'
+  if (status === 'running') return 'live'
+  if (status === 'completed') return 'ended'
+  if (status === 'failed') return 'error'
+  return 'resolving'
+}
+
+function eventMessage(payload: Record<string, unknown>): string | null {
+  if (typeof payload.summary === 'string' && payload.summary.trim()) return payload.summary.trim()
+  if (typeof payload.message === 'string' && payload.message.trim()) return payload.message.trim()
+  if (typeof payload.error === 'string' && payload.error.trim()) return payload.error.trim()
+  return null
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function threadMessageStatusFromRunStatus(status: 'pending' | 'running' | 'completed' | 'failed' | null) {
+  if (status === 'running') return 'running'
+  if (status === 'completed') return 'completed'
+  if (status === 'failed') return 'failed'
+  return 'pending'
+}
+
+function outputSummary(payload: Record<string, unknown>): string | null {
+  const summary = eventMessage(payload)
+  if (summary) return summary
+  if (typeof payload.output === 'string' && payload.output.trim()) return payload.output.trim()
+  if (payload.output && typeof payload.output === 'object') return JSON.stringify(payload.output)
+  return null
+}
+
+async function reconcileWorkspaceAgentRun(args: {
+  supabase: ReturnType<typeof supabaseAdmin>
+  trace: Record<string, unknown>
+  nextStatus: 'pending' | 'running' | 'completed' | 'failed' | null
+  payload: Record<string, unknown>
+  gatewayRunId: string | null
+}) {
+  const workspaceAgent = asObject(args.trace.workspace_agent)
+  if (Object.keys(workspaceAgent).length === 0) return
+
+  const now = new Date().toISOString()
+  const message = outputSummary(args.payload)
+  const terminal = args.nextStatus === 'completed' || args.nextStatus === 'failed'
+
+  const placeholderMessageId = typeof workspaceAgent.placeholder_message_id === 'string'
+    ? workspaceAgent.placeholder_message_id
+    : null
+
+  if (placeholderMessageId) {
+    const { data: placeholder } = await args.supabase
+      .from('agent_thread_messages')
+      .select('metadata')
+      .eq('id', placeholderMessageId)
+      .maybeSingle()
+
+    const existingMetadata = placeholder && typeof placeholder.metadata === 'object' && !Array.isArray(placeholder.metadata)
+      ? placeholder.metadata as Record<string, unknown>
+      : {}
+
+    await args.supabase
+      .from('agent_thread_messages')
+      .update({
+        status: threadMessageStatusFromRunStatus(args.nextStatus),
+        content:
+          message ??
+          (args.nextStatus === 'running'
+            ? 'OpenClaw is working through the request.'
+            : args.nextStatus === 'failed'
+              ? 'OpenClaw failed to complete the request.'
+              : 'OpenClaw completed the request.'),
+        metadata: {
+          ...existingMetadata,
+          last_status: args.nextStatus,
+          gateway_run_id: args.gatewayRunId,
+          last_event_at: now,
+          summary: message,
+        },
+      })
+      .eq('id', placeholderMessageId)
+
+    const threadId = typeof workspaceAgent.thread_id === 'string' ? workspaceAgent.thread_id : null
+    if (threadId) {
+      await args.supabase
+        .from('agent_threads')
+        .update({ last_message_at: now })
+        .eq('id', threadId)
+    }
+  }
+
+  const automationRunId = typeof workspaceAgent.automation_run_id === 'string'
+    ? workspaceAgent.automation_run_id
+    : null
+  const automationId = typeof workspaceAgent.automation_id === 'string'
+    ? workspaceAgent.automation_id
+    : null
+
+  if (automationRunId) {
+    await args.supabase
+      .from('automation_runs')
+      .update({
+        status: args.nextStatus ?? 'pending',
+        external_run_id: args.gatewayRunId,
+        ended_at: terminal ? now : null,
+        output: args.nextStatus === 'completed' ? args.payload : {},
+        error: args.nextStatus === 'failed' ? (message ?? 'OpenClaw task failed') : null,
+        trace: {
+          workspace_agent: workspaceAgent,
+          openclaw: {
+            gateway_run_id: args.gatewayRunId,
+            status: args.nextStatus,
+            last_event_at: now,
+            summary: message,
+          },
+        },
+      })
+      .eq('id', automationRunId)
+  }
+
+  if (automationId) {
+    await args.supabase
+      .from('automation_jobs')
+      .update({
+        last_status: args.nextStatus ?? 'pending',
+        last_run_at: now,
+      })
+      .eq('id', automationId)
+  }
+}
 
 function supabaseAdmin() {
   return createClient(
@@ -61,6 +210,10 @@ export async function POST(req: NextRequest) {
     typeof idempotencyCandidate === 'string' && idempotencyCandidate.trim().length > 0
       ? idempotencyCandidate
       : null
+
+  const normalizedPayload = payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as Record<string, unknown>
+    : {}
 
   if (idempotencyKey) {
     const { data: existingEvent } = await supabase
@@ -179,6 +332,103 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const appRunId =
+    (typeof correlation_id === 'string' && correlation_id.trim().length > 0 ? correlation_id.trim() : null) ??
+    (typeof run_id === 'string' && run_id.trim().length > 0 ? run_id.trim() : null)
+
+  if (appRunId) {
+    const { data: existingRun } = await supabase
+      .from('runs')
+      .select('id, trace')
+      .eq('id', appRunId)
+      .maybeSingle()
+
+    if (existingRun?.id) {
+      const nextStatus = inferRunStatus(String(type), normalizedPayload)
+      const message = eventMessage(normalizedPayload)
+      const commandSurface = readCommandSurfaceTrace(existingRun.trace)
+      const now = new Date().toISOString()
+
+      await mergeRunTrace(
+        supabase,
+        existingRun.id,
+        {
+          openclaw: {
+            correlation_id: typeof correlation_id === 'string' ? correlation_id : existingRun.id,
+            gateway_run_id: typeof run_id === 'string' ? run_id : null,
+            status: nextStatus,
+            model: typeof normalizedPayload.model === 'string' ? normalizedPayload.model : null,
+            last_event_at: now,
+            ...(message ? { last_summary: message } : {}),
+            ...(nextStatus === 'failed' ? { last_error: message ?? 'OpenClaw task failed' } : {}),
+          },
+          command_surface: {
+            ...(commandSurface.job_id ? { job_id: commandSurface.job_id } : {}),
+            stream_state: streamStateFromRunStatus(nextStatus),
+            last_stream_event_at: now,
+            ...(message ? { last_summary: message } : {}),
+            ...(nextStatus === 'failed' ? { last_error: message ?? 'OpenClaw task failed' } : {}),
+          },
+        },
+        {
+          ...(nextStatus ? { status: nextStatus } : {}),
+          ...(message ? { summary: message } : {}),
+        },
+      )
+
+      await reconcileWorkspaceAgentRun({
+        supabase,
+        trace: asObject(existingRun.trace),
+        nextStatus,
+        payload: normalizedPayload,
+        gatewayRunId: typeof run_id === 'string' ? run_id : null,
+      })
+
+      if (commandSurface.job_id) {
+        if (nextStatus === 'pending' || nextStatus === 'running') {
+          publishCommandStreamEvent(commandSurface.job_id, {
+            type: 'status_update',
+            status: nextStatus === 'pending' ? 'queued' : 'executing',
+            message: message ?? (nextStatus === 'pending' ? 'Queued in OpenClaw' : 'Running in OpenClaw'),
+            timestamp: now,
+          })
+          if (message && nextStatus === 'running') {
+            publishCommandStreamEvent(commandSurface.job_id, {
+              type: 'reasoning',
+              text: message,
+              timestamp: now,
+            })
+          }
+        } else if (nextStatus === 'completed') {
+          publishCommandStreamEvent(commandSurface.job_id, {
+            type: 'status_update',
+            status: 'completed',
+            message: message ?? 'OpenClaw task completed',
+            timestamp: now,
+          })
+          publishCommandStreamEvent(commandSurface.job_id, {
+            type: 'done',
+            exitCode: 0,
+            summary: message ?? 'OpenClaw task completed',
+            timestamp: now,
+          })
+        } else if (nextStatus === 'failed') {
+          publishCommandStreamEvent(commandSurface.job_id, {
+            type: 'error',
+            message: message ?? 'OpenClaw task failed',
+            timestamp: now,
+          })
+          publishCommandStreamEvent(commandSurface.job_id, {
+            type: 'done',
+            exitCode: 1,
+            summary: message ?? 'OpenClaw task failed',
+            timestamp: now,
+          })
+        }
+      }
+    }
+  }
+
   // Write ledger event with optional automation links
   const { data: ledgerEvent, error: ledgerError } = await supabase
     .from('ledger_events')
@@ -193,7 +443,7 @@ export async function POST(req: NextRequest) {
       automation_run_id: automation_run_id ?? null,
       email_delivery_id: email_delivery_id ?? null,
       job_id: job_id ?? null,
-      payload: payload ?? {},
+      payload: normalizedPayload,
       idempotency_key: idempotencyKey,
     })
     .select()
@@ -204,10 +454,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Optionally update run status
-  if (run_id && payload?.status) {
+  if (run_id && normalizedPayload?.status) {
     await supabase
       .from('runs')
-      .update({ status: payload.status, summary: payload.summary ?? null })
+      .update({ status: normalizedPayload.status, summary: normalizedPayload.summary ?? null })
       .eq('id', run_id)
   }
 

@@ -54,8 +54,8 @@ export class OpenAIService {
     const provider = config?.provider || (process.env.AI_PROVIDER as AIProviderType) || 'glm'
     let apiKey = ''
     let baseURL: string | undefined
-    let model = 'gpt-5.4-medium'
-    let chatModel = 'gpt-5.4-medium'
+    let model = 'gpt-4o-mini'
+    let chatModel = 'gpt-4o-mini'
 
     if (provider === 'glm') {
       // Support both GLM_API_KEY and Z_AI_API_KEY (user preference)
@@ -80,8 +80,8 @@ export class OpenAIService {
       console.log('[OpenAIService] Using Anthropic provider')
     } else {
       apiKey = process.env.OPENAI_API_KEY || ''
-      model = process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
-      chatModel = process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || 'gpt-5.4-medium'
+      model = process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
+      chatModel = process.env.NEXT_PUBLIC_OPENAI_CHAT_MODEL || 'gpt-4o-mini'
       console.log('[OpenAIService] Using OpenAI provider')
     }
 

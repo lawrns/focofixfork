@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, UserPlus, Shield, Crown, Trash2, Calendar } from 'lucide-react'
+import { getCurrentWorkspaceId } from '@/hooks/use-current-workspace'
 import { useToast } from '@/components/toast/toast'
 
 interface WorkspaceMember {
@@ -46,11 +47,8 @@ export function RoleManagement() {
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user/workspace')
-      if (!response.ok) throw new Error('Failed to load members')
-
-      const data = await response.json()
-      const workspaceId = data.workspace_id
+      const workspaceId = await getCurrentWorkspaceId()
+      if (!workspaceId) throw new Error('Failed to load members')
 
       const membersResponse = await fetch(`/api/workspaces/${workspaceId}/members`)
       if (!membersResponse.ok) throw new Error('Failed to load members')
@@ -75,11 +73,8 @@ export function RoleManagement() {
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'member') => {
     try {
-      // Get workspace ID first
-      const workspaceResponse = await fetch('/api/user/workspace')
-      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
-      const workspaceData = await workspaceResponse.json()
-      const workspaceId = workspaceData.workspace_id
+      const workspaceId = await getCurrentWorkspaceId()
+      if (!workspaceId) throw new Error('Failed to get workspace')
 
       const response = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
         method: 'PUT',
@@ -120,11 +115,8 @@ export function RoleManagement() {
     try {
       setInviting(true)
 
-      // Get workspace ID first
-      const workspaceResponse = await fetch('/api/user/workspace')
-      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
-      const workspaceData = await workspaceResponse.json()
-      const workspaceId = workspaceData.workspace_id
+      const workspaceId = await getCurrentWorkspaceId()
+      if (!workspaceId) throw new Error('Failed to get workspace')
 
       const response = await fetch(`/api/workspaces/${workspaceId}/invitations`, {
         method: 'POST',
@@ -156,11 +148,8 @@ export function RoleManagement() {
 
   const handleRemoveMember = async (userId: string, memberName: string) => {
     try {
-      // Get workspace ID first
-      const workspaceResponse = await fetch('/api/user/workspace')
-      if (!workspaceResponse.ok) throw new Error('Failed to get workspace')
-      const workspaceData = await workspaceResponse.json()
-      const workspaceId = workspaceData.workspace_id
+      const workspaceId = await getCurrentWorkspaceId()
+      if (!workspaceId) throw new Error('Failed to get workspace')
 
       const response = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
         method: 'DELETE'

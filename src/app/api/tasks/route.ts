@@ -12,11 +12,12 @@ import {
   missingFieldResponse,
   projectNotFoundResponse,
   createPaginationMeta,
-  forbiddenResponse,
 } from '@/lib/api/response-helpers'
 import type { TaskFilters } from '@/lib/repositories/task-repository'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { createTaskExecutionEvent } from '@/features/task-intake'
+import { accessFailureResponse, requireProjectAccess } from '@/server/auth/access'
+import { queueProjectTasksForDelegation } from '@/lib/delegation/queue'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,20 +105,8 @@ export async function POST(req: NextRequest) {
   }
 
   const project = projectResult.data
-
-  const { data: membership, error: membershipError } = await accessClient
-    .from('foco_workspace_members')
-    .select('id')
-    .eq('workspace_id', project.workspace_id)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (membershipError) {
-    return mergeAuthResponse(databaseErrorResponse('Failed to verify project access', membershipError), authResponse)
-  }
-  if (!membership) {
-    return mergeAuthResponse(forbiddenResponse('You do not have access to this project'), authResponse)
-  }
+  const projectAccess = await requireProjectAccess({ projectId: project.id })
+  if (!projectAccess.ok) return accessFailureResponse(projectAccess)
 
   // Create task using TaskRepository
   const taskRepo = new TaskRepository(accessClient)
@@ -168,6 +157,14 @@ export async function POST(req: NextRequest) {
     details: {},
   })
 
+  if (body.send_to_ai_when_ready === true) {
+    await queueProjectTasksForDelegation({
+      projectId: body.project_id,
+      taskIds: [taskResult.data.id],
+      actorId: user.id,
+    })
+  }
+
   // OPTIMIZATION: Invalidate related caches after mutation
   const { invalidateCache } = await import('@/lib/cache/redis')
   const { CACHE_INVALIDATION_PATTERNS } = await import('@/lib/cache/cache-config')
@@ -176,5 +173,9 @@ export async function POST(req: NextRequest) {
     CACHE_INVALIDATION_PATTERNS.TASK(project.workspace_id, body.project_id)
   )
 
-  return mergeAuthResponse(successResponse(taskResult.data, undefined, 201), authResponse)
+  const responseTask = body.send_to_ai_when_ready === true
+    ? { ...taskResult.data, delegation_status: 'pending' }
+    : taskResult.data
+
+  return mergeAuthResponse(successResponse(responseTask, undefined, 201), authResponse)
 }

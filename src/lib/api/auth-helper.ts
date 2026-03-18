@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 
 export interface AuthResult {
   user: User | null
@@ -32,8 +32,12 @@ export interface AuthResult {
  */
 export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
   let response = NextResponse.next()
+  const authHeader = req.headers.get('authorization')
+  const accessToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : null
 
-  const supabase = createServerClient(
+  let supabase: SupabaseClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -53,8 +57,35 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
     }
   )
 
-  // First try getUser() which validates the JWT from cookies
-  const { data: { user }, error } = await supabase.auth.getUser()
+  let user: User | null = null
+  let error: { message: string } | null = null
+
+  if (accessToken) {
+    // Bearer-token auth should use a plain client instead of the SSR cookie client.
+    const tokenClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      },
+    )
+    const { data, error: tokenError } = await tokenClient.auth.getUser(accessToken)
+    user = data.user
+    error = tokenError ? { message: tokenError.message } : null
+    supabase = tokenClient as unknown as SupabaseClient
+  } else {
+    const { data, error: cookieError } = await supabase.auth.getUser()
+    user = data.user
+    error = cookieError ? { message: cookieError.message } : null
+  }
   
   // If getUser fails, log the error for debugging
   if (error) {

@@ -2,10 +2,10 @@
  * Dispatchers — sends tasks to agent backends with handbook context.
  */
 
-const CLAWDBOT_BASE = process.env.CLAWDBOT_API_URL ?? 'http://127.0.0.1:18794'
 const BOSUN_BASE = 'http://127.0.0.1:3001'
-const CLAWDBOT_TOKEN = process.env.OPENCLAW_SERVICE_TOKEN
 const BOSUN_TOKEN = process.env.BOSUN_SERVICE_TOKEN
+
+import { dispatchOpenClawTask } from '@/lib/openclaw/client'
 
 export interface DispatchPayload {
   taskId: string
@@ -45,47 +45,39 @@ function computeCostUsd(model: string | undefined, tokensIn: number, tokensOut: 
   return (tokensIn * rates.in + tokensOut * rates.out) / 1_000_000
 }
 
-/**
- * Dispatch to ClawdBot (primary agent backend).
- */
 export async function dispatchToClawdBot(payload: DispatchPayload): Promise<DispatchResult> {
   try {
-    const res = await fetch(`${CLAWDBOT_BASE}/tasks`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(CLAWDBOT_TOKEN ? { Authorization: `Bearer ${CLAWDBOT_TOKEN}` } : {}),
-      },
-      body: JSON.stringify({
-        agent_id: payload.agentId,
-        task_id: payload.taskId,
+    const taskBody = [
+      payload.systemPrompt?.trim() ? `System instructions:\n${payload.systemPrompt.trim()}` : null,
+      payload.description?.trim() ? `Task details:\n${payload.description.trim()}` : null,
+      payload.projectContext?.trim() ? `Project context:\n${payload.projectContext.trim()}` : null,
+      payload.featureContext?.trim() ? `Feature context:\n${payload.featureContext.trim()}` : null,
+    ].filter((part): part is string => Boolean(part)).join('\n\n')
+
+    const data = await dispatchOpenClawTask({
+      agentId: payload.agentId,
+      task: taskBody || payload.title,
+      taskId: payload.taskId,
+      title: payload.title,
+      callbackUrl: payload.callbackUrl ?? undefined,
+      preferredModel: payload.preferredModel ?? undefined,
+      context: {
+        source: 'delegation_dispatcher',
         title: payload.title,
-        description: payload.description,
-        system_prompt: payload.systemPrompt,
-        preferred_model: payload.preferredModel ?? undefined,
-        runtime_profile: payload.runtimeProfile ?? undefined,
-        ...(payload.callbackUrl ? { callback_url: payload.callbackUrl } : {}),
-        ...(payload.workingDirectory ? { working_directory: payload.workingDirectory } : {}),
-      }),
-      signal: AbortSignal.timeout(10_000),
+        working_directory: payload.workingDirectory ?? null,
+        runtime_profile: payload.runtimeProfile ?? null,
+        legacy_backend: 'dispatchToClawdBot',
+      },
+      correlationId: payload.taskId,
     })
 
-    if (!res.ok) {
-      const errorText = await res.text()
-      return { success: false, error: `ClawdBot ${res.status}: ${errorText}` }
+    return {
+      success: true,
+      externalRunId: data.runId ?? data.correlationId,
+      costUsd: undefined,
     }
-
-    const data = await res.json()
-    const tokensIn: number | undefined = data.tokens_in ?? data.usage?.input_tokens
-    const tokensOut: number | undefined = data.tokens_out ?? data.usage?.output_tokens
-    const costUsd: number | undefined = data.cost_usd ?? (
-      tokensIn != null && tokensOut != null
-        ? computeCostUsd(data.model, tokensIn, tokensOut)
-        : undefined
-    )
-    return { success: true, externalRunId: data.run_id ?? data.id, tokensIn, tokensOut, costUsd }
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'ClawdBot unreachable' }
+    return { success: false, error: err instanceof Error ? err.message : 'OpenClaw unreachable' }
   }
 }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import type { OpenClawRuntimeSnapshot } from '@/lib/openclaw/types'
 
 const DASHBOARD_PROJECT_STORAGE_KEY = 'dashboard_selected_project_id'
 
@@ -11,8 +12,8 @@ export type Run = {
   task_id: string | null
   started_at: string | null
   ended_at: string | null
-  created_at?: string
-  summary?: string | null
+  created_at: string
+  summary: string | null
   trace?: Record<string, unknown> | null
 }
 
@@ -39,6 +40,8 @@ export type ProjectOption = {
   name: string
 }
 
+export type OpenClawRuntime = OpenClawRuntimeSnapshot
+
 export type DashboardWorkItem = {
   id: string
   title: string
@@ -61,7 +64,7 @@ export type DashboardProposal = {
   status: string
   description?: string | null
   project_id?: string | null
-  created_at?: string
+  created_at: string
   project?: {
     id: string
     name: string
@@ -78,6 +81,7 @@ export function useDashboardData(user: { id: string } | null) {
   const [recentEvents, setRecentEvents] = useState<LedgerEvent[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [autonomousStats, setAutonomousStats] = useState({ improvementsWeek: 0, handbookEntries: 0 })
+  const [openclawRuntime, setOpenclawRuntime] = useState<OpenClawRuntime | null>(null)
 
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState('')
@@ -85,6 +89,7 @@ export function useDashboardData(user: { id: string } | null) {
   const [workItems, setWorkItems] = useState<DashboardWorkItem[]>([])
   const [workSummary, setWorkSummary] = useState({ total: 0, urgent: 0, blocked: 0 })
   const [proposals, setProposals] = useState<DashboardProposal[]>([])
+  const [autonomy, setAutonomy] = useState({ activeLoops: 0, pendingDecisions: 0, latestSession: null as Record<string, unknown> | null })
 
   const activeRuns = useMemo(() => {
     const now = Date.now()
@@ -167,89 +172,34 @@ export function useDashboardData(user: { id: string } | null) {
     setRefreshing(true)
 
     try {
-      const [statusRes, runsRes, fleetRes, ledgerRes, projectsRes, agentsRes, workRes, proposalsRes] = await Promise.allSettled([
-        fetch('/api/openclaw/status'),
-        fetch('/api/runs'),
-        fetch('/api/policies/fleet-status'),
-        fetch('/api/ledger?limit=18'),
-        fetch('/api/projects?limit=50'),
-        fetch('/api/command-center/agents'),
-        fetch('/api/my-work/assigned?limit=8'),
-        fetch('/api/proposals?limit=8'),
-      ])
+      const response = await fetch('/api/dashboard/cockpit')
+      if (!response.ok) throw new Error('Failed to load cockpit data')
 
-      if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
-        const data = await statusRes.value.json()
-        setRelayReachable(data.relay?.reachable ?? false)
-        setTokenValid(data.token?.valid ?? false)
-        setAttachedTabs(data.tabs?.filter((tab: any) => tab.attached).length ?? 0)
-      } else {
-        setRelayReachable(false)
-        setTokenValid(false)
-        setAttachedTabs(0)
+      const payload = await response.json()
+      const data = payload?.data ?? {}
+
+      setRelayReachable(data.relayReachable ?? false)
+      setTokenValid(data.tokenValid ?? false)
+      setAttachedTabs(data.attachedTabs ?? 0)
+      setOpenclawRuntime((data.openclawRuntime ?? null) as OpenClawRuntime | null)
+      setAllRuns((data.allRuns ?? []) as Run[])
+      setFleetPaused(data.fleetPaused ?? false)
+      setRecentEvents((data.recentEvents ?? []) as LedgerEvent[])
+      setAutonomousStats(data.autonomousStats ?? { improvementsWeek: 0, handbookEntries: 0 })
+
+      const projects = (data.projectOptions ?? []) as ProjectOption[]
+      setProjectOptions(projects)
+      if (selectedProjectId && !projects.some((project) => project.id === selectedProjectId)) {
+        setSelectedProjectId(projects[0]?.id ?? '')
+      } else if (!selectedProjectId && projects[0]?.id) {
+        setSelectedProjectId(projects[0].id)
       }
 
-      if (runsRes.status === 'fulfilled' && runsRes.value.ok) {
-        const data = await runsRes.value.json()
-        const runs: Run[] = data.data || data.runs || []
-        setAllRuns(runs)
-      }
-
-      if (fleetRes.status === 'fulfilled' && fleetRes.value.ok) {
-        const data = await fleetRes.value.json()
-        if (typeof data.paused === 'boolean') setFleetPaused(data.paused)
-      }
-
-      if (ledgerRes.status === 'fulfilled' && ledgerRes.value.ok) {
-        const data = await ledgerRes.value.json()
-        setRecentEvents(data.data || data.events || [])
-      }
-
-      if (projectsRes.status === 'fulfilled' && projectsRes.value.ok) {
-        const data = await projectsRes.value.json()
-        const projects = (data?.data?.projects ?? []) as ProjectOption[]
-        setProjectOptions(projects)
-        if (selectedProjectId && !projects.some((project) => project.id === selectedProjectId)) {
-          setSelectedProjectId(projects[0]?.id ?? '')
-        } else if (!selectedProjectId && projects[0]?.id) {
-          setSelectedProjectId(projects[0].id)
-        }
-      }
-
-      if (agentsRes.status === 'fulfilled' && agentsRes.value.ok) {
-        const data = await agentsRes.value.json()
-        const nextAgents = (data?.agents ?? []) as AgentOption[]
-        setAgents(nextAgents)
-      }
-
-      if (workRes.status === 'fulfilled' && workRes.value.ok) {
-        const data = await workRes.value.json()
-        setWorkItems((data?.data?.tasks ?? []) as DashboardWorkItem[])
-        setWorkSummary({
-          total: data?.data?.summary?.total ?? 0,
-          urgent: data?.data?.summary?.urgent ?? 0,
-          blocked: data?.data?.summary?.blocked ?? 0,
-        })
-      } else {
-        setWorkItems([])
-        setWorkSummary({ total: 0, urgent: 0, blocked: 0 })
-      }
-
-      if (proposalsRes.status === 'fulfilled' && proposalsRes.value.ok) {
-        const data = await proposalsRes.value.json()
-        setProposals((data?.data ?? []) as DashboardProposal[])
-      } else {
-        setProposals([])
-      }
-
-      const statsResponse = await fetch('/api/dashboard/autonomous-stats').catch(() => null)
-      if (statsResponse?.ok) {
-        const data = await statsResponse.json()
-        setAutonomousStats({
-          improvementsWeek: data.improvementsWeek ?? 0,
-          handbookEntries: data.improvementsMonth ?? 0,
-        })
-      }
+      setAgents((data.agents ?? []) as AgentOption[])
+      setWorkItems((data.workItems ?? []) as DashboardWorkItem[])
+      setWorkSummary(data.workSummary ?? { total: 0, urgent: 0, blocked: 0 })
+      setProposals((data.proposals ?? []) as DashboardProposal[])
+      setAutonomy(data.autonomy ?? { activeLoops: 0, pendingDecisions: 0, latestSession: null })
     } catch {
       // no-op
     } finally {
@@ -267,6 +217,8 @@ export function useDashboardData(user: { id: string } | null) {
       setWorkItems([])
       setWorkSummary({ total: 0, urgent: 0, blocked: 0 })
       setProposals([])
+      setAutonomy({ activeLoops: 0, pendingDecisions: 0, latestSession: null })
+      setOpenclawRuntime(null)
       return
     }
     void fetchAll()
@@ -296,6 +248,7 @@ export function useDashboardData(user: { id: string } | null) {
     recentEvents,
     refreshing,
     autonomousStats,
+    openclawRuntime,
     projectOptions,
     selectedProject,
     selectedProjectId,
@@ -313,6 +266,7 @@ export function useDashboardData(user: { id: string } | null) {
     g1Share,
     gatewayStatus,
     attentionCount,
+    autonomy,
     fetchAll,
   }
 }

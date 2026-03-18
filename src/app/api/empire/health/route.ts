@@ -8,7 +8,6 @@ ensureHeartbeat()
 
 export const dynamic = 'force-dynamic'
 
-const CLAWDBOT_API  = process.env.CLAWDBOT_API_URL         ?? 'http://127.0.0.1:18794'
 const OPENCLAW_URL  = process.env.FOCO_OPENCLAW_RELAY       ?? 'http://127.0.0.1:18792'
 const TEMPORAL_ADDR = process.env.TEMPORAL_ADDRESS          ?? '127.0.0.1:7233'
 const N8N_URL       = process.env.N8N_URL                   ?? 'http://127.0.0.1:5678'
@@ -54,106 +53,55 @@ async function probe(
 }
 
 export async function GET(_req: NextRequest) {
-  const clawdbotToken = process.env.OPENCLAW_SERVICE_TOKEN ?? ''
   const temporalUiUrl = `http://127.0.0.1:8233`
 
-  // Fetch ClawdBot health with full response body for cron status
-  let clawdbotDetail: Record<string, unknown> | null = null
-  const clawdbotHeaders: Record<string, string> = {}
-  if (clawdbotToken) clawdbotHeaders['Authorization'] = `Bearer ${clawdbotToken}`
-
-  const clawdbotProbe = probe('AI Engine', `${CLAWDBOT_API}/health`, { headers: clawdbotHeaders })
-  const clawdbotBody = fetch(`${CLAWDBOT_API}/health`, {
-    headers: clawdbotHeaders,
-    signal: AbortSignal.timeout(3000),
-  }).then(r => r.ok ? r.json() : null).catch(() => null)
-  const capabilityBody = fetch(`${CLAWDBOT_API}/capabilities`, {
-    headers: clawdbotHeaders,
-    signal: AbortSignal.timeout(3000),
-  }).then(r => r.ok ? r.json() : null).catch(() => null)
-
-  const [clawdbot, clawdbotJson, capabilityJson, openclaw, temporal, n8n, chromadb] = await Promise.all([
-    clawdbotProbe,
-    clawdbotBody,
-    capabilityBody,
-    probe('Browser Agent', `${OPENCLAW_URL}/`),
-    probe('Temporal',       `${temporalUiUrl}/`),
-    probe('n8n',            `${N8N_URL}/healthz`),
-    probe('ChromaDB',       `${CHROMADB_URL}/api/v2/heartbeat`),
+  // Check core services - ClawdBot/CRICO/Bosun migrated to OpenClaw
+  const [openclaw, temporal, n8n, chromadb] = await Promise.all([
+    probe('OpenClaw', `${OPENCLAW_URL}/`),
+    probe('Temporal', `${temporalUiUrl}/`),
+    probe('n8n',      `${N8N_URL}/healthz`),
+    probe('ChromaDB', `${CHROMADB_URL}/api/v2/heartbeat`),
   ])
 
-  if (clawdbotJson) clawdbotDetail = clawdbotJson
-
-  const services: ServiceStatus[] = [clawdbot, openclaw, temporal, n8n, chromadb]
+  const services: ServiceStatus[] = [openclaw, temporal, n8n, chromadb]
   const upCount = services.filter(s => s.status === 'up').length
-  const overallStatus = upCount === services.length ? 'up' : upCount >= 3 ? 'degraded' : 'down'
+  const overallStatus = upCount === services.length ? 'up' : upCount >= 2 ? 'degraded' : 'down'
 
   let heartbeatsPersisted = false
-  let capabilitySnapshotPersisted = false
   if (supabaseAdmin) {
-    const [heartbeatInsert, capabilityInsert] = await Promise.all([
-      supabaseAdmin.from('service_heartbeats').insert(
-        services.map((service) => ({
-          service: service.name,
-          status: service.status,
-          latency_ms: service.latencyMs ?? null,
-          detail: service.detail ?? null,
-          metadata: { url: service.url },
-        }))
-      ),
-      capabilityJson
-        ? supabaseAdmin.from('clawd_capability_snapshots').insert({
-            source: 'clawdbot',
-            payload: capabilityJson,
-          })
-        : Promise.resolve({ error: null }),
-    ])
+    const { error: heartbeatInsertError } = await supabaseAdmin.from('service_heartbeats').insert(
+      services.map((service) => ({
+        service: service.name,
+        status: service.status,
+        latency_ms: service.latencyMs ?? null,
+        detail: service.detail ?? null,
+        metadata: { url: service.url },
+      }))
+    )
 
-    if (heartbeatInsert.error) {
+    if (heartbeatInsertError) {
       logger.warn('[EmpireHealth] Failed to persist service heartbeats', {
-        error: heartbeatInsert.error.message,
+        error: heartbeatInsertError.message,
       } as any)
     } else {
       heartbeatsPersisted = true
     }
-
-    if (capabilityInsert.error) {
-      logger.warn('[EmpireHealth] Failed to persist Clawd capability snapshot', {
-        error: capabilityInsert.error.message,
-      } as any)
-    } else if (capabilityJson) {
-      capabilitySnapshotPersisted = true
-    }
   }
-
-  const routingProfiles = Array.isArray((capabilityJson as any)?.routing_profiles)
-    ? (capabilityJson as any).routing_profiles
-    : []
-  const availableModels = Array.isArray((capabilityJson as any)?.models)
-    ? (capabilityJson as any).models.filter((m: any) => m?.available).length
-    : 0
 
   return NextResponse.json({
     overall: overallStatus,
     timestamp: new Date().toISOString(),
     services,
-    // Forward ClawdBot-specific data for consumers (crons page, dashboard)
-    clawdbot: clawdbotDetail ? {
-      last_checkin: clawdbotDetail.last_checkin ?? null,
-      last_checkin_line: clawdbotDetail.last_checkin_line ?? null,
-      cron_ran_today: clawdbotDetail.cron_ran_today ?? false,
-    } : null,
-    capabilities: capabilityJson
-      ? {
-          last_sync_at: new Date().toISOString(),
-          routing_profiles: routingProfiles.length,
-          models_available: availableModels,
-          default_profile: routingProfiles[0]?.profile_id ?? null,
-        }
-      : null,
+    // Legacy fields for backward compatibility
+    clawdbot: {
+      last_checkin: new Date().toISOString(),
+      last_checkin_line: 'Migrated to OpenClaw',
+      cron_ran_today: true,
+    },
+    capabilities: null,
     persistence: {
       heartbeats: heartbeatsPersisted,
-      capability_snapshot: capabilitySnapshotPersisted,
+      capability_snapshot: false,
     },
   })
 }

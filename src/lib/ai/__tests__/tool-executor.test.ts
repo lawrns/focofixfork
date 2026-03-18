@@ -4,9 +4,37 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ToolExecutor } from '../tool-executor'
 import { PolicyViolationError, ToolExecutionError } from '../types'
 import type { ToolCallContext, WorkspaceAIPolicy } from '../types'
+
+const {
+  mockWorkspaceAgentService,
+  workspaceAgentInstance,
+} = vi.hoisted(() => {
+  const workspaceAgentInstance = {
+    searchWorkspace: vi.fn(),
+    getPageState: vi.fn(),
+    createPage: vi.fn(),
+    updatePage: vi.fn(),
+    appendBlocks: vi.fn(),
+    replaceBlocks: vi.fn(),
+    createDatabase: vi.fn(),
+    queryDatabase: vi.fn(),
+    createDatabaseRow: vi.fn(),
+    updateDatabaseRow: vi.fn(),
+  }
+
+  return {
+    mockWorkspaceAgentService: vi.fn(() => workspaceAgentInstance),
+    workspaceAgentInstance,
+  }
+})
+
+vi.mock('../../workspace-agent/service', () => ({
+  WorkspaceAgentService: mockWorkspaceAgentService,
+}))
+
+import { ToolExecutor } from '../tool-executor'
 
 // Mock Supabase client with proper chaining
 const createMockSupabase = () => {
@@ -60,6 +88,9 @@ describe('ToolExecutor', () => {
   beforeEach(() => {
     executor = new ToolExecutor()
     mockSupabase = createMockSupabase()
+    Object.values(workspaceAgentInstance).forEach((mock) => {
+      ;(mock as { mockReset?: () => void }).mockReset?.()
+    })
 
     // Default permissive policy
     const policy: WorkspaceAIPolicy = {
@@ -202,6 +233,49 @@ describe('ToolExecutor', () => {
 
       expect(result).toBeDefined()
     })
+
+    it('should handle search_workspace tool', async () => {
+      workspaceAgentInstance.searchWorkspace.mockResolvedValue([
+        { entity_id: 'page-1', entity_type: 'page', plain_text: 'Project plan' },
+      ])
+
+      const result = await executor.executeToolCall(
+        'search_workspace',
+        { query: 'project plan' },
+        context
+      )
+
+      expect(result.success).toBe(true)
+      expect(workspaceAgentInstance.searchWorkspace).toHaveBeenCalledWith('workspace-456', {
+        query: 'project plan',
+        entityTypes: undefined,
+        limit: undefined,
+      })
+    })
+
+    it('should handle create_page tool', async () => {
+      workspaceAgentInstance.createPage.mockResolvedValue({
+        page: { id: 'page-1', title: 'Spec draft' },
+        blocks: [],
+        databases: [],
+      })
+
+      const result = await executor.executeToolCall(
+        'create_page',
+        { title: 'Spec draft' },
+        context
+      )
+
+      expect(result.success).toBe(true)
+      expect(workspaceAgentInstance.createPage).toHaveBeenCalledWith('workspace-456', 'user-123', {
+        title: 'Spec draft',
+        parent_id: null,
+        project_id: null,
+        template: null,
+        metadata: undefined,
+        blocks: undefined,
+      })
+    })
   })
 
   describe('Audit Logging', () => {
@@ -273,6 +347,21 @@ describe('ToolExecutor', () => {
       )
 
       expect(result).toBeDefined()
+    })
+
+    it('should block workspace write tools when approval is required', async () => {
+      context.aiPolicy.constraints = {
+        require_approval_for_changes: true,
+      } as any
+
+      const result = await executor.executeToolCall(
+        'create_page',
+        { title: 'Needs approval' },
+        context
+      )
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Write operations require manual approval')
     })
   })
 })

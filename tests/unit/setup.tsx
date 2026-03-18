@@ -233,9 +233,9 @@ vi.mock('@/lib/supabase-client', () => ({
 // Mock Framer Motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+    div: ({ children, whileHover, whileTap, whileInView, variants, initial, animate, exit, transition, layout, ...props }: any) => <div {...props}>{children}</div>,
+    button: ({ children, whileHover, whileTap, whileInView, variants, initial, animate, exit, transition, layout, ...props }: any) => <button {...props}>{children}</button>,
+    span: ({ children, whileHover, whileTap, whileInView, variants, initial, animate, exit, transition, layout, ...props }: any) => <span {...props}>{children}</span>,
   },
   AnimatePresence: ({ children }: any) => children,
   useScroll: () => ({

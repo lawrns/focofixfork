@@ -5,12 +5,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { handleIntakeCallback } from '@/features/task-intake';
+import { authorizeAgentCallback } from '@/lib/security/agent-callback-auth'
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text()
+    if (!authorizeAgentCallback(req, rawBody)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = rawBody ? JSON.parse(rawBody) : {};
     
     // ClawdBot sends: task_id (format: "intake:{uuid}"), output, status
     const { task_id, output, status } = body;

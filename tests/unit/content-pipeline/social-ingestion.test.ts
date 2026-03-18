@@ -1,19 +1,25 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { execFileSync } from 'child_process'
-import { mkdtemp, readFile, rm } from 'fs/promises'
-import os from 'os'
-import path from 'path'
+import { writeFile } from 'fs/promises'
 
 const {
   mockTranscribeAudio,
   mockAssertEgressAllowed,
+  mockExecFile,
 } = vi.hoisted(() => ({
   mockTranscribeAudio: vi.fn(),
   mockAssertEgressAllowed: vi.fn(),
+  mockExecFile: vi.fn(),
 }))
 
 vi.mock('@/lib/security/egress-filter', () => ({
   assertEgressAllowed: mockAssertEgressAllowed,
+}))
+
+vi.mock('child_process', () => ({
+  default: {
+    execFile: mockExecFile,
+  },
+  execFile: mockExecFile,
 }))
 
 vi.mock('@/lib/ai/openai-whisper', () => ({
@@ -25,31 +31,15 @@ import { prepareApifyItemsForSource } from '@/features/content-pipeline/services
 describe('social ingestion', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockExecFile.mockImplementation(async (_command, args, callback) => {
+      const outputPath = args[args.length - 1]
+      await writeFile(outputPath, Buffer.from('fake-mp3-audio'))
+      callback?.(null)
+    })
   })
 
   test('downloads and transcribes instagram videos locally', async () => {
-    const fixtureDir = await mkdtemp(path.join(os.tmpdir(), 'foco-social-fixture-'))
-    const videoPath = path.join(fixtureDir, 'fixture.mp4')
-    execFileSync('ffmpeg', [
-      '-loglevel',
-      'error',
-      '-y',
-      '-f',
-      'lavfi',
-      '-i',
-      'sine=frequency=440:duration=1',
-      '-f',
-      'lavfi',
-      '-i',
-      'color=c=black:s=320x240:d=1',
-      '-shortest',
-      '-c:v',
-      'libx264',
-      '-c:a',
-      'aac',
-      videoPath,
-    ])
-    const videoBuffer = await readFile(videoPath)
+    const videoBuffer = Buffer.from('fake-mp4-video')
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       headers: {
@@ -99,6 +89,15 @@ describe('social ingestion', () => {
     expect(result.transcriptsCompleted).toBe(1)
     expect(result.transcriptsFailed).toBe(0)
     expect(result.warnings).toEqual([])
+    expect(mockExecFile).toHaveBeenCalledWith(
+      'ffmpeg',
+      expect.arrayContaining([
+        '-i',
+        expect.stringContaining('source-video.mp4'),
+        expect.stringContaining('source-audio.mp3'),
+      ]),
+      expect.any(Function),
+    )
     expect(result.items[0]).toEqual(
       expect.objectContaining({
         caption_text: 'Five things we learned this week',
@@ -110,7 +109,6 @@ describe('social ingestion', () => {
       })
     )
     expect(result.items[0].content).toContain('Transcript:')
-    await rm(fixtureDir, { recursive: true, force: true })
   })
 
   test('keeps text-only social posts without transcription', async () => {

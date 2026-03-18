@@ -1,9 +1,8 @@
 import { NextRequest } from 'next/server'
-import { WorkspaceRepository } from '@/lib/repositories/workspace-repository'
-import { isError } from '@/lib/repositories/base-repository'
 import { authRequiredResponse, successResponse, databaseErrorResponse, missingFieldResponse, internalErrorResponse } from '@/lib/api/response-helpers'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { hasFounderFullAccess } from '@/lib/auth/founder-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,26 +29,50 @@ export async function GET(request: NextRequest) {
       return authRequiredResponse()
     }
 
-    // Use admin client to bypass RLS recursion on foco_workspace_members
-    const repo = new WorkspaceRepository(supabaseAdmin || supabase)
-    const result = await repo.findByUser(user.id)
+    const accessClient = supabaseAdmin || supabase
+    let workspaceIds: string[] | null = null
 
-    if (isError(result)) {
-      console.error('[Workspaces API] GET error:', result.error.message, result.error.details)
-      // Safely serialize error details (PostgrestError can have non-serializable fields)
-      const safeDetails = result.error.details
-        ? { message: String((result.error.details as any)?.message ?? result.error.details) }
-        : undefined
-      const errorRes = databaseErrorResponse(result.error.message, safeDetails)
+    if (!hasFounderFullAccess(user)) {
+      const { data: memberships, error: membershipError } = await accessClient
+        .from('foco_workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id)
+
+      if (membershipError) {
+        const errorRes = databaseErrorResponse('Failed to fetch workspace memberships', membershipError)
+        return mergeAuthResponse(errorRes, authResponse)
+      }
+
+      workspaceIds = (memberships ?? [])
+        .map((membership: { workspace_id: string | null }) => membership.workspace_id)
+        .filter((workspaceId: string | null): workspaceId is string => typeof workspaceId === 'string' && workspaceId.length > 0)
+    }
+
+    let workspacesQuery = accessClient
+      .from('foco_workspaces')
+      .select('id, name, slug, logo_url')
+      .order('created_at', { ascending: false })
+
+    if (Array.isArray(workspaceIds)) {
+      if (workspaceIds.length === 0) {
+        const successRes = successResponse({ workspaces: [], total: 0 })
+        return mergeAuthResponse(successRes, authResponse)
+      }
+      workspacesQuery = workspacesQuery.in('id', workspaceIds)
+    }
+
+    const { data: workspaceRows, error: workspacesError } = await workspacesQuery
+    if (workspacesError) {
+      const errorRes = databaseErrorResponse('Failed to fetch workspaces', workspacesError)
       return mergeAuthResponse(errorRes, authResponse)
     }
 
     // Map to workspace format with icon
-    const workspaces = (result.data || []).map(ws => ({
-      id: ws.id,
-      name: ws.name,
-      slug: ws.slug,
-      icon: ws.logo_url ? undefined : '📦',
+    const workspaces = (workspaceRows || []).map((workspace: { id: string; name: string; slug: string; logo_url: string | null }) => ({
+      id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      icon: workspace.logo_url ? undefined : '📦',
     }))
 
     const successRes = successResponse({

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import type { WorkItem, WorkItemStatus } from '@/types/foco';
 import { WorkItemCard } from './WorkItemCard';
 
-export function BoardColumn({ status, label, color, items, onDrop, onAddTask, onComplete, onArchive }: {
+export function BoardColumn({ status, label, color, items, onDrop, onAddTask, onComplete, onArchive, onQueueToAI }: {
   status: WorkItemStatus;
   label: string;
   color: string;
@@ -16,6 +16,7 @@ export function BoardColumn({ status, label, color, items, onDrop, onAddTask, on
   onAddTask?: (status: WorkItemStatus) => void;
   onComplete?: (item: WorkItem) => void;
   onArchive?: (item: WorkItem) => void;
+  onQueueToAI?: (taskId: string) => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -80,6 +81,7 @@ export function BoardColumn({ status, label, color, items, onDrop, onAddTask, on
             item={item}
             onComplete={onComplete}
             onArchive={onArchive}
+            onQueueToAI={onQueueToAI}
           />
         ))}
 

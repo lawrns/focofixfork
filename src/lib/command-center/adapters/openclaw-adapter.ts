@@ -1,4 +1,5 @@
 import type { UnifiedAgent } from '../types'
+import { getOpenClawServerConfig } from '@/lib/openclaw/config'
 
 interface TabRecord {
   id: string
@@ -16,8 +17,9 @@ export async function fetchOpenClawAgents(_baseUrl: string): Promise<UnifiedAgen
   let status: OpenClawStatus | null = null
 
   try {
-    const relayUrl = process.env.FOCO_OPENCLAW_RELAY ?? 'http://127.0.0.1:18792'
-    const token = process.env.FOCO_OPENCLAW_TOKEN ?? process.env.OPENCLAW_SERVICE_TOKEN ?? ''
+    const serverConfig = await getOpenClawServerConfig()
+    const relayUrl = serverConfig.relayUrl
+    const token = serverConfig.gatewayToken
     const headers: Record<string, string> = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
 
@@ -42,14 +44,14 @@ export async function fetchOpenClawAgents(_baseUrl: string): Promise<UnifiedAgen
   }
 
   if (!status || !status.relay?.reachable) {
+    // Return idle instead of error - OpenClaw may not be running locally
     return [{
       id: 'openclaw::relay',
       backend: 'openclaw',
       nativeId: 'relay',
-      name: 'Browser Agent',
-      role: 'Browser orchestration',
-      status: 'error',
-      errorMessage: 'Relay unreachable',
+      name: 'OpenClaw Agent',
+      role: 'AI agent gateway',
+      status: 'idle',
       raw: {},
     }]
   }

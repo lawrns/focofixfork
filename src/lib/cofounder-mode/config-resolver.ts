@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { hasFounderFullAccessById } from '@/lib/auth/founder-access'
 import {
   DEFAULT_COFOUNDER_MODE_CONFIG,
   mergeCoFounderModeConfig,
@@ -79,6 +80,10 @@ export async function verifyWorkspaceMembership(
   userId: string,
   workspaceId: string
 ): Promise<boolean> {
+  if (hasFounderFullAccessById(userId)) {
+    return true
+  }
+
   const { data: membership } = await supabase
     .from('foco_workspace_members')
     .select('workspace_id')

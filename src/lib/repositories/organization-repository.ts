@@ -8,6 +8,7 @@
 
 import { BaseRepository, Result, Ok, Err, isError } from './base-repository'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { hasFounderFullAccessById } from '@/lib/auth/founder-access'
 
 export interface Organization {
   id: string
@@ -45,6 +46,28 @@ export class OrganizationRepository extends BaseRepository<Organization> {
    * Find all organizations for a user with their role
    */
   async findByUser(userId: string): Promise<Result<OrganizationWithRole[]>> {
+    if (hasFounderFullAccessById(userId)) {
+      const { data, error } = await this.supabase
+        .from('foco_workspaces')
+        .select('id, name, slug, description, logo_url, settings, ai_policy, created_at, updated_at')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        return Err({
+          code: 'DATABASE_ERROR',
+          message: 'Failed to fetch organizations',
+          details: error,
+        })
+      }
+
+      return Ok(
+        (data || []).map((workspace: any) => ({
+          ...workspace,
+          role: 'owner',
+        })) as OrganizationWithRole[]
+      )
+    }
+
     // First get the workspace memberships
     const { data: memberData, error: memberError } = await this.supabase
       .from('foco_workspace_members')
@@ -151,6 +174,10 @@ export class OrganizationRepository extends BaseRepository<Organization> {
    * Check if user is member of organization
    */
   async isMember(organizationId: string, userId: string): Promise<Result<boolean>> {
+    if (hasFounderFullAccessById(userId)) {
+      return Ok(true)
+    }
+
     const { data, error } = await this.supabase
       .from('foco_workspace_members')
       .select('id')
@@ -173,6 +200,10 @@ export class OrganizationRepository extends BaseRepository<Organization> {
    * Get user's role in organization
    */
   async getUserRole(organizationId: string, userId: string): Promise<Result<OrganizationMember['role'] | null>> {
+    if (hasFounderFullAccessById(userId)) {
+      return Ok('owner')
+    }
+
     const { data, error } = await this.supabase
       .from('foco_workspace_members')
       .select('role')

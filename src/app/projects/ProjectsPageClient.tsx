@@ -151,8 +151,8 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
             </Button>
           }
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-56 rounded-xl" />)}
         </div>
       </PageShell>
     );
@@ -172,7 +172,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
       />
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
         <div className="relative w-full sm:flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input
@@ -208,7 +208,7 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
 
       {/* Projects Grid / List */}
       {view === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {sortedProjects.map((project) => (
             <ProjectCard key={project.id} project={project} {...sharedCardProps} />
           ))}
@@ -231,8 +231,8 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
       )}
 
       {/* Empty / Error States */}
-      {sortedProjects.length === 0 && !search && currentWorkspaceId && !fetchFailed && (
-        <ProjectEmptyState workspaceId={currentWorkspaceId} hasProjects={false} />
+      {sortedProjects.length === 0 && !search && !fetchFailed && (
+        <ProjectEmptyState hasProjects={false} />
       )}
 
       {fetchFailed && sortedProjects.length === 0 && (
@@ -240,7 +240,6 @@ export default function ProjectsPageClient({ pageTitle = 'Projects' }: { pageTit
           icon={AlertTriangle}
           title={
             fetchFailureReason === 'unauthenticated' ? 'Sign in required'
-              : fetchFailureReason === 'workspace-missing' ? 'No workspace found'
               : fetchFailureReason === 'forbidden' ? 'Access denied'
               : fetchFailureReason === 'network' ? 'Network problem'
               : 'Failed to load projects'

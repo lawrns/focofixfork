@@ -30,7 +30,18 @@ export const TOOL_OPTIONS = [
   { id: 'get_project_overview', name: 'Project Overview', description: 'Summarize project state.' },
   { id: 'get_team_workload', name: 'Team Workload', description: 'Analyze capacity and load.' },
   { id: 'analyze_blockers', name: 'Analyze Blockers', description: 'Find blocked work and dependencies.' },
-  { id: 'search_docs', name: 'Search Docs', description: 'Reserved for document search integrations.' },
+  { id: 'search_workspace', name: 'Search Workspace', description: 'Search pages, blocks, databases, and rows.' },
+  { id: 'get_page', name: 'Get Page', description: 'Load a page with optional blocks and databases.' },
+  { id: 'query_database', name: 'Query Database', description: 'Filter and sort structured database rows.' },
+  { id: 'list_connectors', name: 'List Connectors', description: 'Inspect available Slack and Mail connectors.' },
+  { id: 'search_mail', name: 'Search Mail', description: 'Search queued and delivered workspace mail records.' },
+  { id: 'create_page', name: 'Create Page', description: 'Create a workspace page.' },
+  { id: 'update_page', name: 'Update Page', description: 'Update page metadata or hierarchy.' },
+  { id: 'append_blocks', name: 'Append Blocks', description: 'Append or replace blocks on a page.' },
+  { id: 'create_database', name: 'Create Database', description: 'Create a structured workspace database.' },
+  { id: 'upsert_database_row', name: 'Upsert Database Row', description: 'Create or update a database row.' },
+  { id: 'send_mail', name: 'Send Mail', description: 'Queue or send a workspace email through a connected mail channel.' },
+  { id: 'post_slack_message', name: 'Post Slack Message', description: 'Send a governed message into a connected Slack channel.' },
 ] as const
 
 export const TASK_PROMPTS = [
@@ -83,6 +94,10 @@ export const ADVANCED_USE_CASES: Array<{
   { id: 'command_surface_plan', title: 'Command Surface Plan', description: 'Plan phase for the live command surface.', badge: 'Advanced' },
   { id: 'command_surface_execute', title: 'Command Surface Execute', description: 'Execution phase for the live command surface.', badge: 'Advanced' },
   { id: 'command_surface_review', title: 'Command Surface Review', description: 'Review phase for the live command surface.', badge: 'Advanced' },
+  { id: 'workspace_plan', title: 'Workspace Planning', description: 'Page- and database-scoped planning in the workspace app.', badge: 'Workspace' },
+  { id: 'workspace_execute', title: 'Workspace Execution', description: 'Agent execution from the workspace rail and thread surface.', badge: 'Workspace' },
+  { id: 'workspace_review', title: 'Workspace Review', description: 'Review and critique runs attached to workspace entities.', badge: 'Workspace' },
+  { id: 'workspace_automation', title: 'Workspace Automations', description: 'Scheduled and event-driven OpenClaw automations in workspaces.', badge: 'Workspace' },
   { id: 'prompt_optimization', title: 'Prompt Optimization', description: 'Prompt optimizer and prompt-refinement flows.', badge: 'Advanced' },
   { id: 'cofounder_evaluation', title: 'Co-Founder Evaluation', description: 'Autonomy, validation, and decision-evaluation flows.', badge: 'Advanced' },
 ]

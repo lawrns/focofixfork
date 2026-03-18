@@ -39,11 +39,11 @@ export function PageHeader({
   return (
     <div className={cn('flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4', className)}>
       <div className="min-w-0 flex-1">
-        <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-50 break-words">
+        <h1 className="text-xl sm:text-2xl font-semibold text-zinc-50 break-words">
           {title}
         </h1>
         {subtitle && (
-          <div className="text-sm text-zinc-500 mt-1">
+          <div className="text-sm text-zinc-400 mt-1">
             {subtitle}
           </div>
         )}

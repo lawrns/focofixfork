@@ -14,6 +14,15 @@ import { createTask, createTaskSchema } from './tools/create-task.js';
 import { assignTask, assignTaskSchema } from './tools/assign-task.js';
 import { listTasks, listTasksSchema } from './tools/list-tasks.js';
 import { getUserTasks, getUserTasksSchema } from './tools/get-user-tasks.js';
+import { listPages, listPagesSchema } from './tools/list-pages.js';
+import { getPage, getPageSchema } from './tools/get-page.js';
+import { createPage, createPageSchema } from './tools/create-page.js';
+import { appendBlocks, appendBlocksSchema } from './tools/append-blocks.js';
+import { listDatabases, listDatabasesSchema } from './tools/list-databases.js';
+import { createDatabase, createDatabaseSchema } from './tools/create-database.js';
+import { queryDatabase, queryDatabaseSchema } from './tools/query-database.js';
+import { upsertDatabaseRow, upsertDatabaseRowSchema } from './tools/upsert-database-row.js';
+import { searchWorkspace, searchWorkspaceSchema } from './tools/search-workspace.js';
 
 const server = new Server(
   {
@@ -198,6 +207,144 @@ const TOOLS = [
       required: [],
     },
   },
+  {
+    name: 'list_pages',
+    description: 'List workspace pages backed by the block-based document model.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        project_id: { type: 'string', description: 'Optional project filter' },
+        parent_id: { type: 'string', description: 'Optional parent page filter' },
+        include_archived: { type: 'boolean', description: 'Include archived pages' },
+        limit: { type: 'number', description: 'Maximum page count' },
+      },
+      required: ['workspace_id'],
+    },
+  },
+  {
+    name: 'get_page',
+    description: 'Fetch a workspace page with optional blocks and databases.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        page_id: { type: 'string', description: 'Page ID' },
+        include_blocks: { type: 'boolean', description: 'Include page blocks' },
+        include_databases: { type: 'boolean', description: 'Include databases attached to the page' },
+        include_archived: { type: 'boolean', description: 'Include archived records' },
+      },
+      required: ['workspace_id', 'page_id'],
+    },
+  },
+  {
+    name: 'create_page',
+    description: 'Create a workspace page and optionally seed initial blocks.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        title: { type: 'string', description: 'Page title' },
+        parent_id: { type: 'string', description: 'Optional parent page ID' },
+        project_id: { type: 'string', description: 'Optional project ID' },
+        template: { type: 'string', description: 'Optional template key' },
+        metadata: { type: 'object', description: 'Optional metadata' },
+        blocks: { type: 'array', description: 'Optional initial blocks', items: { type: 'object' } },
+      },
+      required: ['workspace_id', 'title'],
+    },
+  },
+  {
+    name: 'append_blocks',
+    description: 'Append or replace blocks on an existing page.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        page_id: { type: 'string', description: 'Page ID' },
+        mode: { type: 'string', enum: ['append', 'replace'], description: 'Write mode' },
+        blocks: { type: 'array', description: 'Blocks to write', items: { type: 'object' } },
+      },
+      required: ['workspace_id', 'page_id', 'blocks'],
+    },
+  },
+  {
+    name: 'list_databases',
+    description: 'List structured workspace databases.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        parent_doc_id: { type: 'string', description: 'Optional parent page filter' },
+        include_archived: { type: 'boolean', description: 'Include archived databases' },
+        limit: { type: 'number', description: 'Maximum database count' },
+      },
+      required: ['workspace_id'],
+    },
+  },
+  {
+    name: 'create_database',
+    description: 'Create a structured workspace database.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        parent_doc_id: { type: 'string', description: 'Optional parent page ID' },
+        title: { type: 'string', description: 'Database title' },
+        description: { type: 'string', description: 'Optional description' },
+        schema: { type: 'array', description: 'Property schema', items: { type: 'object' } },
+        default_view: { type: 'object', description: 'Optional default view config' },
+      },
+      required: ['workspace_id', 'title', 'schema'],
+    },
+  },
+  {
+    name: 'query_database',
+    description: 'Query a structured database with filters and sorting.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        database_id: { type: 'string', description: 'Database ID' },
+        filters: { type: 'array', description: 'Optional filters', items: { type: 'object' } },
+        sorts: { type: 'array', description: 'Optional sort order', items: { type: 'object' } },
+        include_archived: { type: 'boolean', description: 'Include archived rows' },
+        limit: { type: 'number', description: 'Maximum row count' },
+        offset: { type: 'number', description: 'Pagination offset' },
+      },
+      required: ['workspace_id', 'database_id'],
+    },
+  },
+  {
+    name: 'upsert_database_row',
+    description: 'Create or update a structured database row.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        database_id: { type: 'string', description: 'Database ID' },
+        row_id: { type: 'string', description: 'Optional row ID to update' },
+        page_id: { type: 'string', description: 'Optional linked page ID' },
+        position: { type: 'number', description: 'Optional row position' },
+        properties: { type: 'object', description: 'Structured row properties' },
+      },
+      required: ['workspace_id', 'database_id', 'properties'],
+    },
+  },
+  {
+    name: 'search_workspace',
+    description: 'Search pages, blocks, databases, and rows in a workspace.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspace_id: { type: 'string', description: 'Workspace ID' },
+        query: { type: 'string', description: 'Search query' },
+        entity_types: { type: 'array', description: 'Optional entity type filter', items: { type: 'string' } },
+        limit: { type: 'number', description: 'Maximum result count' },
+      },
+      required: ['workspace_id', 'query'],
+    },
+  },
 ];
 
 // Handle list tools request
@@ -237,6 +384,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request: { params: { name
       case 'get_user_tasks':
         const getUserInput = getUserTasksSchema.parse(args);
         return await getUserTasks(getUserInput);
+
+      case 'list_pages':
+        return await listPages(listPagesSchema.parse(args));
+
+      case 'get_page':
+        return await getPage(getPageSchema.parse(args));
+
+      case 'create_page':
+        return await createPage(createPageSchema.parse(args));
+
+      case 'append_blocks':
+        return await appendBlocks(appendBlocksSchema.parse(args));
+
+      case 'list_databases':
+        return await listDatabases(listDatabasesSchema.parse(args));
+
+      case 'create_database':
+        return await createDatabase(createDatabaseSchema.parse(args));
+
+      case 'query_database':
+        return await queryDatabase(queryDatabaseSchema.parse(args));
+
+      case 'upsert_database_row':
+        return await upsertDatabaseRow(upsertDatabaseRowSchema.parse(args));
+
+      case 'search_workspace':
+        return await searchWorkspace(searchWorkspaceSchema.parse(args));
 
       default:
         return {

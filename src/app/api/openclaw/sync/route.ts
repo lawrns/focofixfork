@@ -4,7 +4,7 @@ import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
 
 export const dynamic = 'force-dynamic'
 
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789'
+const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18799'
 
 function supabaseAdmin() {
   return createClient(

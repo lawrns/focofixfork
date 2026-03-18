@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { resolveAIExecutionProfileFromWorkspace } from '@/lib/ai/resolver'
 import { isLane } from '@/lib/agent-ops/lane-policy'
+import { mergeRunTrace } from '@/lib/runs/trace'
 
 export const COMMAND_PIPELINE_RUNTIME = 'nodejs'
 export const COMMAND_PIPELINE_DYNAMIC = 'force-dynamic'
@@ -149,36 +150,31 @@ export async function runPipelineStreamJob(args: PipelineRunnerArgs, callbacks: 
     })
 
     if (args.bootstrapRunId) {
-      await args.supabase
-        .from('runs')
-        .update({
-          trace: {
-            ai_routing: {
-              requested: {
-                model: args.requestedModel,
-                planner_model: args.requestedPlannerModel,
-                executor_model: args.requestedExecutorModel,
-                reviewer_model: args.requestedReviewerModel,
-                fallback_chain: args.requestedFallbackChain ?? [],
-              },
-              actual: {
-                planner_model: plannerModel,
-                executor_model: executorModel,
-                reviewer_model: reviewerModel,
-                planner_provider: planProfile.provider,
-                executor_provider: executeProfile.provider,
-                reviewer_provider: reviewProfile.provider,
-                fallback_chain: executeProfile.fallback_chain,
-              },
-            },
-            command_surface: {
-              workspace_id: resolvedWorkspaceId,
-              project_id: args.projectId,
-              lane: normalizedLane,
-            },
+      await mergeRunTrace(args.supabase, args.bootstrapRunId, {
+        ai_routing: {
+          requested: {
+            model: args.requestedModel,
+            planner_model: args.requestedPlannerModel,
+            executor_model: args.requestedExecutorModel,
+            reviewer_model: args.requestedReviewerModel,
+            fallback_chain: args.requestedFallbackChain ?? [],
           },
-        })
-        .eq('id', args.bootstrapRunId)
+          actual: {
+            planner_model: plannerModel,
+            executor_model: executorModel,
+            reviewer_model: reviewerModel,
+            planner_provider: planProfile.provider,
+            executor_provider: executeProfile.provider,
+            reviewer_provider: reviewProfile.provider,
+            fallback_chain: executeProfile.fallback_chain,
+          },
+        },
+        command_surface: {
+          workspace_id: resolvedWorkspaceId,
+          project_id: args.projectId,
+          lane: normalizedLane,
+        },
+      })
     }
 
     const pipelineRes = await fetch(`${args.origin}/api/pipeline/stream`, {

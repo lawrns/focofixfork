@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, Sun, GitPullRequest, Heart, Scissors, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { LoopType, ExecutionBackend, ExecutionMode } from '@/lib/autonomy/loop-types'
+import { getCurrentWorkspaceId } from '@/hooks/use-current-workspace'
 import { toast } from 'sonner'
 
 export interface CreateLoopDialogProps {
@@ -103,7 +104,7 @@ function initialForm(): FormState {
     schedulePreset: 'every_morning',
     scheduleCronCustom: '',
     timezone: defaultTimezone(),
-    backend: 'clawdbot',
+    backend: 'openclaw',
     mode: 'report_only',
     objective: '',
   }
@@ -118,6 +119,31 @@ export function CreateLoopDialog({
   const [form, setForm] = useState<FormState>(initialForm)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [resolvedWorkspaceId, setResolvedWorkspaceId] = useState<string | null>(workspaceId)
+  const [resolvingWorkspace, setResolvingWorkspace] = useState(false)
+
+  useEffect(() => {
+    setResolvedWorkspaceId(workspaceId)
+  }, [workspaceId])
+
+  useEffect(() => {
+    if (!open || workspaceId || resolvedWorkspaceId || resolvingWorkspace) return
+
+    let cancelled = false
+
+    void (async () => {
+      setResolvingWorkspace(true)
+      const nextWorkspaceId = await getCurrentWorkspaceId()
+      if (!cancelled) {
+        setResolvedWorkspaceId(nextWorkspaceId)
+        setResolvingWorkspace(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, resolvingWorkspace, resolvedWorkspaceId, workspaceId])
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -125,7 +151,9 @@ export function CreateLoopDialog({
   }
 
   async function handleSubmit() {
-    if (!workspaceId) {
+    const effectiveWorkspaceId = workspaceId ?? resolvedWorkspaceId
+
+    if (!effectiveWorkspaceId) {
       setSubmitError('No workspace selected.')
       return
     }
@@ -146,7 +174,7 @@ export function CreateLoopDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          workspace_id: workspaceId,
+          workspace_id: effectiveWorkspaceId,
           loop_type: form.loopType,
           schedule_kind: isCustomCron ? 'cron' : 'preset',
           schedule_value: scheduleValue,
@@ -187,6 +215,7 @@ export function CreateLoopDialog({
   }
 
   const isCustomCron = form.schedulePreset === '__custom__'
+  const effectiveWorkspaceId = workspaceId ?? resolvedWorkspaceId
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -292,22 +321,14 @@ export function CreateLoopDialog({
             {/* Execution backend */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Execution Engine</label>
-              <p className="text-[11px] text-muted-foreground">Standard is recommended for most tasks.</p>
+              <p className="text-[11px] text-muted-foreground">Recurring autonomy now dispatches through OpenClaw only.</p>
               <div className="flex gap-1">
-                {([
-                  { value: 'clawdbot', label: 'Standard' },
-                  { value: 'openclaw', label: 'Advanced' },
-                ] as { value: ExecutionBackend; label: string }[]).map((b) => (
+                {([{ value: 'openclaw', label: 'OpenClaw' }] as { value: ExecutionBackend; label: string }[]).map((b) => (
                   <button
                     key={b.value}
                     type="button"
                     onClick={() => setField('backend', b.value)}
-                    className={cn(
-                      'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
-                      form.backend === b.value
-                        ? 'border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/10 text-[color:var(--foco-teal)]'
-                        : 'border-border text-muted-foreground hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-foreground',
-                    )}
+                    className="rounded-md border border-[color:var(--foco-teal)] bg-[color:var(--foco-teal)]/10 px-3 py-1.5 text-xs font-medium text-[color:var(--foco-teal)]"
                   >
                     {b.label}
                   </button>
@@ -384,6 +405,11 @@ export function CreateLoopDialog({
               {submitError}
             </p>
           )}
+          {!effectiveWorkspaceId && resolvingWorkspace && (
+            <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              Loading workspace context…
+            </p>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
@@ -399,10 +425,14 @@ export function CreateLoopDialog({
             size="sm"
             className="gap-1.5 bg-[color:var(--foco-teal)] hover:bg-[color:var(--foco-teal)]/90 text-white"
             onClick={handleSubmit}
-            disabled={submitting || !workspaceId}
+            disabled={submitting || resolvingWorkspace || !effectiveWorkspaceId}
           >
-            {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {submitting ? 'Creating…' : 'Create Recurring Task'}
+            {(submitting || resolvingWorkspace) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {submitting
+              ? 'Creating…'
+              : resolvingWorkspace
+              ? 'Loading workspace…'
+              : 'Create Recurring Task'}
           </Button>
         </DialogFooter>
       </DialogContent>

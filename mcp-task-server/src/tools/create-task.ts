@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { supabase, WorkItemStatus, PriorityLevel, WorkItemType } from '../db.js';
 import { validateAdmin, isAdminOfWorkspace } from '../admin-auth.js';
+import { isWorkspaceMember } from '../workspace-agent.js';
 
 export const createTaskSchema = z.object({
   project_id: z.string().uuid().describe('The project ID to create the task in'),
@@ -85,13 +86,7 @@ export async function createTask(input: CreateTaskInput) {
 
   // Verify assignee is a workspace member
   if (assigneeId) {
-    const { data: membership } = await supabase
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', project.workspace_id)
-      .eq('user_id', assigneeId)
-      .single();
-
+    const membership = await isWorkspaceMember(project.workspace_id, assigneeId);
     if (!membership) {
       return {
         content: [

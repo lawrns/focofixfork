@@ -1,6 +1,6 @@
 import './globals.css';
 import { Providers } from './providers';
-import { AppShell } from '@/components/foco/layout/app-shell';
+import { OpsShell } from '@/components/cockpit/ops-shell';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
@@ -25,6 +25,7 @@ export default function AppLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&true)){document.documentElement.classList.add('dark')}}catch(e){}})()` }} />
         <Script id="suppress-extension-errors" strategy="beforeInteractive">
           {`
             (function() {
@@ -74,7 +75,7 @@ export default function AppLayout({
       <body className={GeistSans.className} suppressHydrationWarning>
         <Providers>
           <TooltipProvider>
-            <AppShell>{children}</AppShell>
+            <OpsShell>{children}</OpsShell>
           </TooltipProvider>
         </Providers>
       </body>

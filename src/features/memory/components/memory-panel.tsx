@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,11 +37,7 @@ export function MemoryPanel({ projectId }: MemoryPanelProps) {
   const [expandedTopics, setExpandedTopics] = useState<Set<MemoryTopic>>(new Set());
   const [selectedSegment, setSelectedSegment] = useState<MemorySegment | null>(null);
 
-  useEffect(() => {
-    loadMemoryData();
-  }, [projectId]);
-
-  const loadMemoryData = async () => {
+  const loadMemoryData = useCallback(async () => {
     try {
       setLoading(true);
       const [segmentsRes, statsRes] = await Promise.all([
@@ -63,7 +59,11 @@ export function MemoryPanel({ projectId }: MemoryPanelProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadMemoryData();
+  }, [loadMemoryData]);
 
   const toggleTopic = (topic: MemoryTopic) => {
     const newExpanded = new Set(expandedTopics);

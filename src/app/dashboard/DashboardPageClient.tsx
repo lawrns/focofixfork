@@ -43,7 +43,7 @@ import type { TerminalLine } from '@/components/dashboard/run-card'
 import type { Run } from '@/components/dashboard/use-dashboard-data'
 import type { AgentExecutionStatus } from '@/components/command-surface/types'
 import { redactSensitiveText } from '@/lib/security/redaction'
-import { useUserModelPreferences } from '@/lib/stores/user-model-preferences'
+import { buildPriorityItems } from '@/components/dashboard/priority-feed'
 
 const AIInsights = dynamic(
   () => import('@/components/dashboard/AIInsights').then((m) => m.AIInsights),
@@ -52,6 +52,8 @@ const AIInsights = dynamic(
 
 const SHARED_SPRING = { type: 'spring', stiffness: 300, damping: 30 }
 const DASHBOARD_VIEWS = ['dispatch', 'work', 'proposals', 'runs', 'activity'] as const
+const DASHBOARD_DEFAULT_EXECUTOR_MODEL = 'kimi-k2-standard'
+const DASHBOARD_DISMISSED_ATTENTION_STORAGE_KEY = 'dashboard_dismissed_attention_items'
 
 type DashboardView = (typeof DASHBOARD_VIEWS)[number]
 
@@ -141,14 +143,6 @@ export default function DashboardPageClient() {
   const searchParams = useSearchParams()
   const { user, loading } = useAuth()
   const selectedView = normalizeDashboardView(searchParams?.get('view') ?? null)
-  const {
-    defaultModel,
-    fallbackChain,
-    plannerModel: preferredPlannerModel,
-    executorModel: preferredExecutorModel,
-    reviewerModel: preferredReviewerModel,
-  } = useUserModelPreferences()
-
   const data = useDashboardData(user)
 
   const [showStrategicBanner, setShowStrategicBanner] = useState(true)
@@ -162,6 +156,7 @@ export default function DashboardPageClient() {
   const [blockedSheetOpen, setBlockedSheetOpen] = useState(false)
 
   const [syntheticRuns, setSyntheticRuns] = useState<Run[]>([])
+  const [dismissedAttentionItemIds, setDismissedAttentionItemIds] = useState<string[]>([])
   const [terminalLinesMap, setTerminalLinesMap] = useState<Record<string, TerminalLine[]>>({})
   const [streamStateMap, setStreamStateMap] = useState<Record<string, 'idle' | 'resolving' | 'connecting' | 'live' | 'ended' | 'unavailable'>>({})
   const [runJobMap, setRunJobMap] = useState<Record<string, string>>({})
@@ -170,10 +165,33 @@ export default function DashboardPageClient() {
   const runsRef = useRef<HTMLDivElement>(null)
   const activityRef = useRef<HTMLDivElement>(null)
   const persistedRunStatusRef = useRef<Record<string, string>>({})
+  const activeModelLabel = data.openclawRuntime?.modelAlias ?? data.openclawRuntime?.primaryModel ?? 'Inherited'
 
   useEffect(() => {
-    document.title = 'Dashboard | Critter'
+    document.title = 'Cockpit | Critter'
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const stored = window.localStorage.getItem(DASHBOARD_DISMISSED_ATTENTION_STORAGE_KEY)
+      if (!stored) return
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        setDismissedAttentionItemIds(parsed.filter((item): item is string => typeof item === 'string'))
+      }
+    } catch {
+      // Ignore malformed persisted dismissals.
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(
+      DASHBOARD_DISMISSED_ATTENTION_STORAGE_KEY,
+      JSON.stringify(dismissedAttentionItemIds)
+    )
+  }, [dismissedAttentionItemIds])
 
   useEffect(() => {
     if (selectedView) setActiveView(selectedView)
@@ -270,19 +288,23 @@ export default function DashboardPageClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          runner: args.agentId || args.personaLabel,
+          runner: args.agentId || 'cofounder',
           status: 'pending',
           summary: summarizeDispatch(args.task),
           project_id: data.selectedProjectId || null,
           trace: {
             ai_routing: {
               requested: {
-                model: defaultModel,
-                planner_model: preferredPlannerModel,
-                executor_model: preferredExecutorModel,
-                reviewer_model: preferredReviewerModel,
-                fallback_chain: fallbackChain,
+                model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
+                executor_model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
+                fallback_chain: [],
               },
+              actual: null,
+            },
+            openclaw: {
+              dispatch_kind: 'dashboard',
+              agent_id: args.agentId || 'cofounder',
+              model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
             },
           },
         }),
@@ -309,17 +331,13 @@ export default function DashboardPageClient() {
           mode: 'auto',
           project_id: data.selectedProjectId || null,
           selected_agents: args.agentId ? [args.agentId] : null,
+          preferred_model: DASHBOARD_DEFAULT_EXECUTOR_MODEL,
           context: {
             persona: args.persona,
             source: 'dashboard',
             lane: args.lane ?? null,
           },
           bootstrap_run_id: bootstrapRun.id,
-          requested_model: defaultModel,
-          requested_planner_model: preferredPlannerModel,
-          requested_executor_model: preferredExecutorModel,
-          requested_reviewer_model: preferredReviewerModel,
-          requested_fallback_chain: fallbackChain,
         }),
       })
 
@@ -348,7 +366,7 @@ export default function DashboardPageClient() {
     } finally {
       setDispatching(false)
     }
-  }, [data, defaultModel, fallbackChain, preferredExecutorModel, preferredPlannerModel, preferredReviewerModel, triggerDispatchArc])
+  }, [data, triggerDispatchArc])
 
   const displayedRuns = (() => {
     const realIds = new Set(data.activeRuns.map((run) => run.id))
@@ -359,9 +377,41 @@ export default function DashboardPageClient() {
   })()
   const navigateToView = useCallback((view: DashboardView) => {
     setActiveView(view)
-  }, [])
+    const params = new URLSearchParams(searchParams?.toString() ?? '')
+    params.set('view', view)
+    router.replace(`/dashboard?${params.toString()}`, { scroll: false })
+  }, [router, searchParams])
   const blockedWorkItems = data.workItems.filter((item) => item.status === 'blocked' || item.section === 'waiting')
   const blockedCount = blockedWorkItems.length + (data.fleetPaused ? 1 : 0)
+  const dismissedAttentionSet = new Set(dismissedAttentionItemIds)
+  const visibleAttentionCount = buildPriorityItems({
+    proposals: data.proposals,
+    workItems: data.workItems,
+    runs: data.allRuns,
+    agents: data.agents,
+    onRetryRun: undefined,
+    onApproveProposal: undefined,
+    onDismissItem: undefined,
+  }).filter((item) => !dismissedAttentionSet.has(item.id)).length
+
+  const handleDismissAttentionItem = useCallback(async (itemId: string) => {
+    setDismissedAttentionItemIds((prev) => prev.includes(itemId) ? prev : [...prev, itemId])
+
+    if (!itemId.startsWith('run-')) {
+      return
+    }
+
+    const runId = itemId.slice(4)
+    try {
+      const response = await fetch(`/api/runs/${runId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        throw new Error(`Failed to delete run ${runId}`)
+      }
+      window.dispatchEvent(new Event('runs:mutated'))
+    } catch {
+      setDismissedAttentionItemIds((prev) => prev.filter((id) => id !== itemId))
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -378,11 +428,11 @@ export default function DashboardPageClient() {
       <TooltipProvider delayDuration={120}>
         <PageShell className="space-y-3 rounded-xl bg-gradient-to-b from-background to-muted/20 px-1 py-2 sm:px-2 lg:px-3">
           <PageHeader
-            title="Overview"
-            subtitle="What happened, what needs attention, and what the cofounder is doing now."
+            title="Critter Cockpit"
+            subtitle="Dispatch, observe, and diagnose the OpenClaw runtime from one operator surface."
             primaryAction={
               <div className="flex items-center gap-2">
-                <AttentionCountBadge count={data.attentionCount} />
+                <AttentionCountBadge count={visibleAttentionCount} />
                 <Button variant="outline" size="sm" onClick={() => data.fetchAll()} disabled={data.refreshing} className="h-8 gap-1.5">
                   <RefreshCw className={cn('h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
                   Refresh
@@ -394,7 +444,11 @@ export default function DashboardPageClient() {
           <AutonomySummaryBar />
 
           {/* While you slept strip — only shown when there is non-zero data */}
-          {(data.doneCount > 0 || (data.autonomousStats?.improvementsWeek ?? 0) > 0 || data.proposals.filter((p) => p.status === 'pending_review').length > 0) && (
+          {(data.doneCount > 0
+            || (data.autonomousStats?.improvementsWeek ?? 0) > 0
+            || data.proposals.filter((p) => p.status === 'pending_review').length > 0
+            || (data.autonomy?.activeLoops ?? 0) > 0
+            || (data.autonomy?.pendingDecisions ?? 0) > 0) && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="font-medium text-foreground/70">Last 24h:</span>
               {data.doneCount > 0 && (
@@ -412,38 +466,20 @@ export default function DashboardPageClient() {
                   {data.proposals.filter((p) => p.status === 'pending_review').length} proposals waiting
                 </Badge>
               )}
+              {(data.autonomy?.activeLoops ?? 0) > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-[color:var(--foco-teal)] border-[color:var(--foco-teal)]/30">
+                  {data.autonomy.activeLoops} recurring jobs active
+                </Badge>
+              )}
+              {(data.autonomy?.pendingDecisions ?? 0) > 0 && (
+                <Badge variant="outline" className="h-6 gap-1 text-xs font-normal text-amber-500 border-amber-500/30">
+                  {data.autonomy.pendingDecisions} approvals pending
+                </Badge>
+              )}
             </div>
           )}
 
           <StrategicBanner visible={showStrategicBanner} onDismiss={() => setShowStrategicBanner(false)} />
-
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'proposals', label: 'Proposals', icon: ClipboardList },
-              { id: 'dispatch', label: 'Dispatch', icon: Send },
-              { id: 'work', label: 'Work', icon: FolderKanban },
-              { id: 'runs', label: 'Runs', icon: RefreshCw },
-              { id: 'activity', label: 'Activity', icon: BookOpen },
-            ].map((item) => {
-              const Icon = item.icon
-              const active = selectedView === item.id
-              return (
-                <Button
-                  key={item.id}
-                  type="button"
-                  size="sm"
-                  variant={active ? 'default' : 'outline'}
-                  className="h-8 gap-1.5"
-                  onClick={() => navigateToView(item.id as DashboardView)}
-                  aria-label={`${item.label} view`}
-                  aria-pressed={active}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {item.label}
-                </Button>
-              )
-            })}
-          </div>
 
           <StatPillsBar
             runningCount={data.runningCount}
@@ -471,12 +507,14 @@ export default function DashboardPageClient() {
               workItems={data.workItems}
               runs={data.allRuns}
               agents={data.agents}
+              dismissedItemIds={dismissedAttentionItemIds}
               onRetryRun={async (runId) => {
                 try {
                   const res = await fetch(`/api/runs/${runId}/retry`, { method: 'POST' })
                   if (res.ok) window.dispatchEvent(new Event('runs:mutated'))
                 } catch { /* handled in feed */ }
               }}
+              onDismissItem={handleDismissAttentionItem}
               maxItems={12}
             />
           </section>
@@ -508,6 +546,7 @@ export default function DashboardPageClient() {
               className="w-full flex items-center gap-2 px-3 py-2 text-left"
             >
               <Badge variant="outline" className="text-[10px]">AI Gateway · {data.gatewayStatus}</Badge>
+              <Badge variant="outline" className="text-[10px]">Model · {activeModelLabel}</Badge>
               <Badge variant="outline" className="text-[10px]">Workload · {data.activeRuns.length} active</Badge>
               <Badge variant="outline" className="text-[10px]">Errors · {data.failedCount}</Badge>
               <span className="ml-auto text-xs text-muted-foreground">Fleet status</span>
@@ -528,7 +567,10 @@ export default function DashboardPageClient() {
                       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">System Health</p>
                       <p className="mt-2 text-sm font-medium">Gateway: {data.gatewayStatus}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Auth: {data.tokenValid ? 'Valid' : data.tokenValid === null ? 'Checking...' : 'Invalid'} · Sessions: {data.attachedTabs}
+                        Auth: {data.tokenValid ? 'Configured' : data.tokenValid === null ? 'Checking...' : 'Missing'} · Sessions: {data.attachedTabs}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Primary model: {activeModelLabel}
                       </p>
                     </div>
                     <div className="rounded-lg border p-3">

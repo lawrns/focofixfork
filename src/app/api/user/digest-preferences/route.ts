@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper';
+import { ensureEmailDigestCron } from '@/lib/services/email-digest-cron';
 
 import { createClient } from '@/lib/supabase/server';
 
@@ -121,6 +122,10 @@ export async function PATCH(request: NextRequest) {
         { error: 'Failed to save digest preferences' },
         { status: 500 }
       );
+    }
+
+    if (digestPreferences.frequency !== 'none') {
+      void ensureEmailDigestCron();
     }
 
     return mergeAuthResponse(NextResponse.json({

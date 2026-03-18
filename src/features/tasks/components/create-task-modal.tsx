@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -15,6 +16,7 @@ import { filterValidSelectOptions } from '@/lib/ui/select-validation'
 import { audioService } from '@/lib/audio/audio-service'
 import { hapticService } from '@/lib/audio/haptic-service'
 import { apiClient } from '@/lib/api-client'
+import { apiFetch } from '@/lib/api/fetch-client'
 
 interface CreateTaskModalProps {
   isOpen: boolean
@@ -59,6 +61,7 @@ export function CreateTaskModal({
   const [priority, setPriority] = useState('medium')
   const [status, setStatus] = useState<string>(defaultSection)
   const [dueDate, setDueDate] = useState('')
+  const [sendToAIWhenReady, setSendToAIWhenReady] = useState(false)
 
   // Reset form when modal opens
   useEffect(() => {
@@ -70,6 +73,7 @@ export function CreateTaskModal({
       setPriority('medium')
       setStatus(defaultSection)
       setDueDate('')
+      setSendToAIWhenReady(false)
     }
   }, [isOpen, defaultProjectId, defaultSection])
 
@@ -81,13 +85,13 @@ export function CreateTaskModal({
         setLoadingData(true)
 
         // Fetch projects with workspace_id
-        const workspacesRes = await fetch('/api/workspaces')
+        const workspacesRes = await apiFetch('/api/workspaces')
         const workspacesData = await workspacesRes.json()
         
         if (workspacesData.success && workspacesData.data && workspacesData.data.length > 0) {
           const workspaceId = workspacesData.data[0].id
           
-          const projectsRes = await fetch(`/api/projects?workspace_id=${workspaceId}`)
+          const projectsRes = await apiFetch(`/api/projects?workspace_id=${workspaceId}`)
           const projectsData = await projectsRes.json()
           
           if (projectsData.success && projectsData.data) {
@@ -95,7 +99,7 @@ export function CreateTaskModal({
           }
 
           // Fetch workspace members
-          const membersRes = await fetch(`/api/workspaces/${workspaceId}/members`)
+          const membersRes = await apiFetch(`/api/workspaces/${workspaceId}/members`)
           const membersData = await membersRes.json()
 
           if (membersData.success && Array.isArray(membersData.data)) {
@@ -145,6 +149,7 @@ export function CreateTaskModal({
         status,
         due_date: dueDate || null,
         type: 'task',
+        send_to_ai_when_ready: sendToAIWhenReady,
       })
 
       const data = response
@@ -296,6 +301,22 @@ export function CreateTaskModal({
                 onChange={(e) => setDueDate(e.target.value)}
                 className="min-h-[44px]"
               />
+            </div>
+
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="sendToAI"
+                  checked={sendToAIWhenReady}
+                  onCheckedChange={(checked) => setSendToAIWhenReady(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="sendToAI" className="text-sm font-semibold">Send to AI when ready</Label>
+                  <p className="text-xs text-zinc-500">
+                    Queue this task for OpenClaw. It will dispatch automatically once project dependencies are clear.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 pb-2">

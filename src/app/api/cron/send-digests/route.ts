@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailDigestScheduler } from '@/lib/services/email-digest-scheduler';
 
+function isAuthorized(request: NextRequest): boolean {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) return true;
+  const bearer = request.headers.get('authorization');
+  const header = request.headers.get('x-cron-secret');
+  return bearer === `Bearer ${expected}` || header === expected;
+}
+
 /**
  * Cron endpoint for sending email digests
  * This should be called periodically (e.g., every minute) by a cron service like:
@@ -13,11 +21,7 @@ import { EmailDigestScheduler } from '@/lib/services/email-digest-scheduler';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authorization
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (!cronSecret || !authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    if (!isAuthorized(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

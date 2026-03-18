@@ -113,7 +113,7 @@ export interface ProjectReportRequest {
 
 export type PipelineStatus = 'planning' | 'executing' | 'reviewing' | 'complete' | 'failed' | 'cancelled'
 
-export type PipelineRunnerKind = 'clawdbot_stream' | 'clawdbot_async' | 'in_app_direct'
+export type PipelineRunnerKind = 'openclaw_stream' | 'openclaw_async' | 'clawdbot_stream' | 'clawdbot_async' | 'in_app_direct'
 
 export interface PipelineFallbackEvent {
   phase: PipelinePhase

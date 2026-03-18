@@ -5,6 +5,7 @@
 
 import { BaseRepository, Result, Ok, Err, isError } from './base-repository'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { hasFounderFullAccessById } from '@/lib/auth/founder-access'
 
 export interface Workspace {
   id: string
@@ -36,6 +37,26 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
 
   constructor(supabase: SupabaseClient) {
     super(supabase)
+  }
+
+  /**
+   * Find all workspaces.
+   */
+  async findAll(): Promise<Result<Workspace[]>> {
+    const { data, error } = await this.supabase
+      .from('foco_workspaces')
+      .select('id, name, slug, description, logo_url, created_at, updated_at')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      return Err({
+        code: 'DATABASE_ERROR',
+        message: 'Failed to fetch workspaces',
+        details: error,
+      })
+    }
+
+    return Ok((data || []) as Workspace[])
   }
 
   /**
@@ -71,6 +92,10 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    * Find all workspaces for a user
    */
   async findByUser(userId: string): Promise<Result<Workspace[]>> {
+    if (hasFounderFullAccessById(userId)) {
+      return this.findAll()
+    }
+
     // First get the workspace IDs the user is a member of
     const { data: memberData, error: memberError } = await this.supabase
       .from('foco_workspace_members')
@@ -111,6 +136,10 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    * Check if user is member of workspace
    */
   async isMember(workspaceId: string, userId: string): Promise<Result<boolean>> {
+    if (hasFounderFullAccessById(userId)) {
+      return Ok(true)
+    }
+
     const { data, error } = await this.supabase
       .from('foco_workspace_members')
       .select('id')
@@ -133,6 +162,10 @@ export class WorkspaceRepository extends BaseRepository<Workspace> {
    * Get user's role in workspace
    */
   async getUserRole(workspaceId: string, userId: string): Promise<Result<WorkspaceMember['role'] | null>> {
+    if (hasFounderFullAccessById(userId)) {
+      return Ok('owner')
+    }
+
     const { data, error } = await this.supabase
       .from('foco_workspace_members')
       .select('role')

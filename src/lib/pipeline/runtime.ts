@@ -3,7 +3,7 @@ import { getAIRuntimeHealth } from '@/lib/ai/runtime-health'
 import { findModelCatalogEntry, getModelLabel } from '@/lib/ai/model-catalog'
 import type { PipelinePhase, PlanResult, ExecutionResult, ReviewReport } from '@/lib/pipeline/types'
 
-export type PipelineRunnerKind = 'clawdbot_stream' | 'clawdbot_async' | 'in_app_direct'
+export type PipelineRunnerKind = 'openclaw_stream' | 'openclaw_async' | 'in_app_direct'
 
 export interface PipelineFallbackEvent {
   phase: PipelinePhase
@@ -230,7 +230,7 @@ export async function dispatchOrFallbackPhase<T>(options: {
     })
     return {
       ok: true,
-      runner: 'clawdbot_async',
+      runner: 'openclaw_async',
       requestedModel: options.requestedModel,
       resolvedModel: options.resolvedModel,
       actualModel: null,
@@ -241,14 +241,19 @@ export async function dispatchOrFallbackPhase<T>(options: {
       elapsedMs: Date.now() - start,
       fallbackEvents: [],
     }
-  } catch {
-    return runPhaseDirect<T>({
-      phase: options.phase,
+  } catch (error) {
+    return {
+      ok: false,
+      runner: 'openclaw_async',
       requestedModel: options.requestedModel,
       resolvedModel: options.resolvedModel,
-      fallbackChain: options.fallbackChain,
-      taskDescription: options.taskDescription,
-      context: options.context,
-    })
+      actualModel: null,
+      tokensIn: 0,
+      tokensOut: 0,
+      costUsd: 0,
+      elapsedMs: Date.now() - start,
+      error: error instanceof Error ? error.message : 'OpenClaw dispatch failed',
+      fallbackEvents: [],
+    }
   }
 }

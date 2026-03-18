@@ -33,6 +33,7 @@ import { useOpenClawLogs } from '@/lib/hooks/use-openclaw-logs'
 import { useCommandCenterStore } from '@/lib/stores/command-center-store'
 import type { UnifiedAgent } from '@/lib/command-center/types'
 import type { Run } from '@/lib/types/runs'
+import { apiFetch } from '@/lib/api/fetch-client'
 import {
   RefreshCw,
   Plus,
@@ -347,16 +348,32 @@ export function CommandCenterClient() {
   useEffect(() => {
     const fetchActiveLoops = async () => {
       try {
-        const res = await fetch('/api/autonomy/loops?status=active&limit=1')
+        const res = await apiFetch('/api/crons')
         if (res.ok) {
           const json = await res.json()
-          setActiveLoopCount(json?.data?.count ?? json?.count ?? 0)
+          const jobs = Array.isArray(json?.data) ? json.data : []
+          setActiveLoopCount(jobs.filter((job: { enabled?: boolean }) => job.enabled !== false).length)
         }
       } catch {
         // noop — loop count is non-critical
       }
     }
     void fetchActiveLoops()
+
+    const interval = window.setInterval(() => {
+      void fetchActiveLoops()
+    }, 30_000)
+
+    const handleFocus = () => {
+      void fetchActiveLoops()
+    }
+
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [])
 
   useEffect(() => {
@@ -1048,7 +1065,7 @@ function ExecutionStatBar({
     { label: 'Blocked', value: blocked, icon: ShieldCheck, teal: false },
     { label: 'Failed', value: failed, icon: AlertCircle, teal: false },
     { label: 'Stale', value: stale, icon: Gauge, teal: false },
-    { label: 'Active Loops', value: activeLoops, icon: RotateCw, teal: true },
+    { label: 'Active Jobs', value: activeLoops, icon: RotateCw, teal: true },
   ]
 
   return (

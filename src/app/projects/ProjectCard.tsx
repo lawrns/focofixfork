@@ -43,37 +43,37 @@ export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, on
   const [isPinned, setIsPinned] = useState(project.isPinned);
 
   return (
-    <Link href={`/projects/${project.slug}`} className="group block">
-      <Card variant="interactive" padding="none" className="overflow-hidden">
-      <div className="p-4 sm:p-5">
-      <div className="flex items-start justify-between mb-3">
+    <Link href={`/projects/${project.slug}`} className="group block h-full">
+      <Card variant="interactive" padding="none" className="h-full overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--foco-teal)]/30 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950/90">
+      <div className="flex h-full flex-col p-3.5">
+      <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div
-              className="h-10 w-10 rounded-lg flex items-center justify-center text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-white shadow-sm"
               style={{ backgroundColor: project.color }}
             >
-              <FolderKanban className="h-5 w-5" />
+              <FolderKanban className="h-4 w-4" />
             </div>
             <ProjectHealthIndicator
               projectId={project.id}
               className="absolute -bottom-0.5 -right-0.5 ring-2 ring-background"
             />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
               {project.name}
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Updated {formatRelativeDate(project.updatedAt)}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
             onClick={(e) => { e.preventDefault(); setIsPinned(!isPinned); }}
           >
             {isPinned ? (
@@ -87,7 +87,7 @@ export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, on
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
                 onClick={(e) => e.preventDefault()}
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -119,62 +119,62 @@ export function ProjectCard({ project, onEdit, onDuplicate, onGenerateStatus, on
       </div>
 
       {project.description && (
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+        <p className="mb-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
           {project.description}
         </p>
       )}
 
       {project.localPath && (
-        <div className="flex items-center gap-1 mb-3 text-[10px] font-mono text-muted-foreground/70 truncate" title={project.localPath}>
+        <div className="mb-3 flex items-center gap-1 text-[10px] font-mono text-muted-foreground/70 truncate" title={project.localPath}>
           <FolderOpen className="h-3 w-3 shrink-0" />
           <span className="truncate">{project.localPath.replace(/^\/home\/[^/]+/, '~')}</span>
         </div>
       )}
 
-      <div className="mb-4">
+      <div className="mb-3">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-muted-foreground">Progress</span>
-          <span className="text-xs font-medium">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Progress</span>
+          <span className="text-[11px] font-medium">
             {project.tasksCompleted}/{project.totalTasks} tasks
           </span>
         </div>
         <div className="overflow-hidden rounded-full">
-          <Progress value={project.progress} className="h-1.5" />
+          <Progress value={project.progress} className="h-1.5 bg-zinc-100 dark:bg-zinc-900" />
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-3 flex min-h-6 items-center justify-between gap-2">
         {project.risk !== 'none' && (
-          <Badge variant="outline" className={cn('text-xs', riskColors[project.risk])}>
+          <Badge variant="outline" className={cn('text-[10px]', riskColors[project.risk])}>
             <AlertTriangle className="h-3 w-3" />
             {project.risk} risk
           </Badge>
         )}
         {project.nextMilestone && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>{project.nextMilestone.name}</span>
+            <span className="truncate">{project.nextMilestone.name}</span>
           </div>
         )}
       </div>
 
-      <div className="pt-3 border-t border-border space-y-2">
+      <div className="mt-auto space-y-2 border-t border-border pt-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar className="h-6 w-6 shrink-0">
               <AvatarFallback className="text-[10px]">
                 {project.owner.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground">{project.owner.name}</span>
+            <span className="truncate text-[11px] text-muted-foreground">{project.owner.name}</span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <CheckSquare className="h-3 w-3" />
             <span>{project.tasksCompleted}/{project.totalTasks}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
+        <div className="flex items-center gap-1.5 border-t border-border/40 pt-1">
           {project.activeRuns > 0 && (
             <Link
               href="/system"

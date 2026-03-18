@@ -21,7 +21,7 @@ interface UserModelPreferencesState extends UserModelPreferences {
 }
 
 const DEFAULT_PREFERENCES: UserModelPreferences = {
-  defaultModel: 'gpt-5.4-medium',
+  defaultModel: 'glm-5',
   fallbackChain: ['claude-opus-4-6', 'glm-5'],
   plannerModel: null,
   executorModel: null,

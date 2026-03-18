@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { Settings, Terminal, Circle } from 'lucide-react'
+import { apiFetch } from '@/lib/api/fetch-client'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,8 +64,8 @@ export function AutonomySummaryBar() {
     async function load() {
       try {
         const [decisionsRes, loopsRes] = await Promise.allSettled([
-          fetch('/api/command-center/decisions'),
-          fetch('/api/autonomy/loops?status=active&limit=100'),
+          apiFetch('/api/command-center/decisions'),
+          apiFetch('/api/crons'),
         ])
 
         if (cancelled) return
@@ -79,12 +80,9 @@ export function AutonomySummaryBar() {
         // --- loops ---
         let activeLoops = 0
         if (loopsRes.status === 'fulfilled' && loopsRes.value.ok) {
-          const body = await loopsRes.value.json() as { data?: { data?: unknown[]; count?: number } | unknown[]; count?: number }
-          const inner = body?.data
-          activeLoops = (inner && !Array.isArray(inner) ? (inner as { count?: number }).count : null)
-            ?? (Array.isArray(inner) ? inner.length : null)
-            ?? (body as { count?: number })?.count
-            ?? 0
+          const body = await loopsRes.value.json() as { data?: Array<{ enabled?: boolean }> }
+          const jobs = Array.isArray(body?.data) ? body.data : []
+          activeLoops = jobs.filter((job) => job.enabled !== false).length
         }
 
         // Mode not fetched from settings (that endpoint is unreliable server-side).
@@ -101,7 +99,30 @@ export function AutonomySummaryBar() {
     }
 
     void load()
-    return () => { cancelled = true }
+
+    const interval = window.setInterval(() => {
+      void load()
+    }, 30_000)
+
+    const handleFocus = () => {
+      void load()
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void load()
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   if (loading) {
@@ -201,10 +222,10 @@ export function AutonomySummaryBar() {
               <span className={cn('tabular-nums', activeLoops > 0 && 'text-[color:var(--foco-teal)]')}>
                 {activeLoops}
               </span>
-              <span>loop{activeLoops === 1 ? '' : 's'} active</span>
+              <span>job{activeLoops === 1 ? '' : 's'} active</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent>Recurring autonomy loops currently running</TooltipContent>
+          <TooltipContent>OpenClaw recurring jobs currently enabled</TooltipContent>
         </Tooltip>
 
         <Divider />

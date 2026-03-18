@@ -10,11 +10,12 @@ export async function POST(
 ) {
   const { user, supabase, error, response: authResponse } = await getAuthUser(req)
   if (error || !user) return mergeAuthResponse(authRequiredResponse(), authResponse)
+  const retryRequest = await req.json().catch(() => null)
 
   // Fetch original run
   const { data: original, error: fetchError } = await supabase
     .from('runs')
-    .select('runner, task_id')
+    .select('runner, task_id, summary, trace')
     .eq('id', params.id)
     .single()
 
@@ -28,8 +29,13 @@ export async function POST(
     .insert({
       runner: original.runner,
       task_id: original.task_id,
+      summary: original.summary ?? `Retry of ${params.id}`,
       status: 'pending',
-      trace: { retried_from: params.id },
+      trace: {
+        retried_from: params.id,
+        retry_request: retryRequest,
+        original_trace: original.trace ?? null,
+      },
     })
     .select()
     .single()

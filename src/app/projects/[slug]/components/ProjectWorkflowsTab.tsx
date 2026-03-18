@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Activity, AlertTriangle, Bot, CheckCircle2, Clock3, ExternalLink, PlayCircle, ShieldAlert, Sparkles, Workflow } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
+import { apiFetch } from '@/lib/api/fetch-client'
 import { ApprovalButtons } from '@/components/proposals/approval-buttons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ export function ProjectWorkflowsTab({
 }) {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [canReview, setCanReview] = useState(isReviewer)
   const [proposals, setProposals] = useState<ProjectWorkflowProposal[]>([])
   const [liveWorkflows, setLiveWorkflows] = useState<ProjectWorkflowLiveItem[]>([])
   const [expandedIds, setExpandedIds] = useState<string[]>([])
@@ -38,15 +40,30 @@ export function ProjectWorkflowsTab({
     try {
       setLoading(true)
       const [proposalRes, liveRes] = await Promise.all([
-        fetch(`/api/projects/${project.id}/workflows/proposals`),
-        fetch(`/api/projects/${project.id}/workflows`),
+        apiFetch(`/api/projects/${project.id}/workflows/proposals`, { cache: 'no-store' }),
+        apiFetch(`/api/projects/${project.id}/workflows`, { cache: 'no-store' }),
       ])
       const proposalJson = await proposalRes.json().catch(() => ({}))
       const liveJson = await liveRes.json().catch(() => ({}))
+      const nextCanReview =
+        proposalJson?.data?.permissions?.canReview ??
+        liveJson?.data?.permissions?.canReview ??
+        false
+
+      if (!proposalRes.ok || !liveRes.ok) {
+        const message =
+          proposalJson?.error?.message ||
+          liveJson?.error?.message ||
+          'Failed to load project workflows'
+        throw new Error(message)
+      }
+
+      setCanReview(Boolean(nextCanReview))
       setProposals(proposalJson?.data?.proposals ?? [])
       setLiveWorkflows(liveJson?.data?.workflows ?? [])
-    } catch {
-      toast.error('Failed to load project workflows')
+    } catch (error) {
+      setCanReview(false)
+      toast.error(error instanceof Error ? error.message : 'Failed to load project workflows')
     } finally {
       setLoading(false)
     }
@@ -64,7 +81,9 @@ export function ProjectWorkflowsTab({
   const handleGenerate = useCallback(async () => {
     try {
       setGenerating(true)
-      const res = await fetch(`/api/projects/${project.id}/workflows/proposals/generate`, { method: 'POST' })
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/proposals/generate`, {
+        method: 'POST',
+      })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? 'Failed to generate workflow proposals')
       setProposals(json.data.proposals ?? [])
@@ -79,7 +98,7 @@ export function ProjectWorkflowsTab({
 
   const handleApprove = useCallback(async (proposal: ProjectWorkflowProposal) => {
     try {
-      const res = await fetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/approve`, {
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selected_add_ons: selectedAddOns[proposal.id] ?? proposal.suggested_add_ons.map((item) => item.id) }),
@@ -95,7 +114,9 @@ export function ProjectWorkflowsTab({
 
   const handleReject = useCallback(async (proposal: ProjectWorkflowProposal) => {
     try {
-      const res = await fetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/reject`, { method: 'POST' })
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/proposals/${proposal.id}/reject`, {
+        method: 'POST',
+      })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? 'Failed to reject workflow')
       toast.success('Workflow proposal rejected')
@@ -107,7 +128,9 @@ export function ProjectWorkflowsTab({
 
   const handleToggleWorkflow = useCallback(async (workflow: ProjectWorkflowLiveItem, action: 'activate' | 'deactivate') => {
     try {
-      const res = await fetch(`/api/projects/${project.id}/workflows/${workflow.workflow_id}/${action}`, { method: 'POST' })
+      const res = await apiFetch(`/api/projects/${project.id}/workflows/${workflow.workflow_id}/${action}`, {
+        method: 'POST',
+      })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? `Failed to ${action} workflow`)
       toast.success(`Workflow ${action}d`)
@@ -119,20 +142,21 @@ export function ProjectWorkflowsTab({
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-slate-200 shadow-sm">
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-800 px-6 py-5 text-white">
+      <Card className="overflow-hidden border-0 bg-transparent p-0 shadow-[0_22px_55px_-28px_rgba(15,23,42,0.55)]">
+        <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-900 px-6 py-6 text-white">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.18),transparent_30%)]" />
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium">
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur">
                 <Workflow className="h-3.5 w-3.5" />
                 Project-scoped automations
               </div>
               <h3 className="mt-3 text-2xl font-semibold">Governed n8n workflows for {project.name}</h3>
-              <p className="mt-1 max-w-3xl text-sm text-white/75">
+              <p className="mt-1 max-w-3xl text-sm text-white/72">
                 Generate a small set of operator-reviewed workflow proposals from approved templates, then activate them inside the project control plane.
               </p>
             </div>
-            <Button onClick={() => void handleGenerate()} disabled={generating || !isReviewer} size="lg" className="gap-2 bg-white text-slate-900 hover:bg-white/90">
+            <Button onClick={() => void handleGenerate()} disabled={generating || !canReview} size="lg" className="relative z-10 gap-2 border border-white/15 bg-white text-slate-950 shadow-[0_14px_30px_-18px_rgba(255,255,255,0.65)] hover:bg-white/90">
               <Sparkles className="h-4 w-4" />
               {generating ? 'Generating…' : 'Generate proposals'}
             </Button>
@@ -173,7 +197,7 @@ export function ProjectWorkflowsTab({
                       <p className="text-sm text-muted-foreground">Trigger: {proposal.trigger_label}</p>
                     </div>
                     <ApprovalButtons
-                      isReviewer={isReviewer}
+                      isReviewer={canReview}
                       onApprove={() => void handleApprove(proposal)}
                       onReject={() => void handleReject(proposal)}
                       onDiscuss={() => toast.info('Discussion routing is not wired for workflow proposals yet')}
@@ -284,7 +308,7 @@ export function ProjectWorkflowsTab({
                     <div className="text-sm text-muted-foreground">Owner: {workflow.owner_agent} · Status: {workflow.last_status ?? 'pending'}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => void handleToggleWorkflow(workflow, workflow.enabled ? 'deactivate' : 'activate')} disabled={!isReviewer}>
+                    <Button variant="outline" size="sm" onClick={() => void handleToggleWorkflow(workflow, workflow.enabled ? 'deactivate' : 'activate')} disabled={!canReview}>
                       {workflow.enabled ? 'Deactivate' : 'Activate'}
                     </Button>
                     <Button asChild variant="ghost" size="icon" className="h-8 w-8">

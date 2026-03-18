@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth as useAuthContext } from '@/lib/contexts/auth-context'
 import { supabase } from '@/lib/supabase-client'
+import { hasFounderFullAccess } from '@/lib/auth/founder-access'
 
 // Use untyped supabase client to avoid type instantiation depth issues
 const untypedSupabase = supabase as any
@@ -19,6 +20,7 @@ export function usePermissions() {
 
   const canAccessOrganization = async (organizationId: string): Promise<boolean> => {
     if (!user) return false
+    if (hasFounderFullAccess(user)) return true
 
     try {
       const { data, error } = await untypedSupabase
@@ -42,6 +44,7 @@ export function usePermissions() {
 
   const canManageOrganization = async (organizationId: string): Promise<boolean> => {
     if (!user) return false
+    if (hasFounderFullAccess(user)) return true
 
     try {
       const { data, error } = await untypedSupabase
@@ -65,6 +68,7 @@ export function usePermissions() {
 
   const isOrganizationOwner = async (organizationId: string): Promise<boolean> => {
     if (!user) return false
+    if (hasFounderFullAccess(user)) return true
 
     try {
       const { data, error } = await untypedSupabase
@@ -163,5 +167,4 @@ export function useUserProfile() {
     updateProfile,
   }
 }
-
 

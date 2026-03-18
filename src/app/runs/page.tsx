@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Activity, RefreshCw, Clock, Zap, CheckCircle2, DollarSign, Square, Trash2 } from 'lucide-react'
+import { Activity, RefreshCw, Clock, Zap, CheckCircle2, DollarSign, Square, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -72,9 +72,11 @@ function RunsPageContent() {
   const load = useCallback(async () => {
     setFetching(true)
     try {
-      const params = filter !== 'all' ? `?status=${filter}` : ''
+      const params = new URLSearchParams()
+      params.set('include', 'diagnostics,stream')
+      if (filter !== 'all') params.set('status', filter)
       const [runsRes, statsRes] = await Promise.all([
-        fetch(`/api/runs${params}`),
+        fetch(`/api/runs?${params.toString()}`),
         fetch('/api/runs/stats'),
       ])
       const runsJson = await runsRes.json()
@@ -134,6 +136,30 @@ function RunsPageContent() {
       setRunActionId(null)
     }
   }, [load])
+
+  const retryRun = useCallback(async (run: Run) => {
+    setRunActionId(run.id)
+    try {
+      const res = await fetch(`/api/runs/${run.id}/retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        ...(run.diagnostics?.retryHint ? { body: JSON.stringify(run.diagnostics.retryHint) } : {}),
+      })
+      if (!res.ok) throw new Error('Failed to retry run')
+      const json = await res.json()
+      const nextId = json.data?.id ?? json.id
+      toast.success(run.diagnostics?.retryLabel ?? 'Run retried')
+      if (typeof nextId === 'string') {
+        router.push(`/runs/${nextId}`)
+        return
+      }
+      await load()
+    } catch {
+      toast.error('Could not retry run')
+    } finally {
+      setRunActionId(null)
+    }
+  }, [load, router])
 
   if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--foco-teal)]" /></div>
   if (!user) return null
@@ -232,6 +258,11 @@ function RunsPageContent() {
                     <Badge className={cn('text-[10px] px-1.5 py-0 rounded-sm border-0', statusColors[run.status] ?? statusColors.cancelled)}>
                       {run.status}
                     </Badge>
+                    {run.stream?.stream_state && ['pending', 'running'].includes(run.status) && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-sm text-muted-foreground capitalize">
+                        stream {run.stream.stream_state}
+                      </Badge>
+                    )}
                     {wait && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-sm text-muted-foreground">
                         {wait}
@@ -243,17 +274,12 @@ function RunsPageContent() {
                       </Badge>
                     )}
                   </div>
-                  {runDetailText(run) && (
-                    <p
-                      className={cn(
-                        'text-[12px] truncate mt-0.5',
-                        run.status === 'failed'
-                          ? 'text-red-600 dark:text-red-400 font-medium'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      {runDetailText(run)}
-                    </p>
+                  {run.summary && <p className="text-[12px] text-muted-foreground truncate mt-0.5">{run.summary}</p>}
+                  {run.status === 'failed' && run.diagnostics && (
+                    <>
+                      <p className="mt-1 text-[12px] text-red-600 dark:text-red-400 truncate">{run.diagnostics.lastError}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground truncate">{run.diagnostics.suggestion}</p>
+                    </>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -270,6 +296,21 @@ function RunsPageContent() {
                       title="Stop run"
                     >
                       <Square className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {run.status === 'failed' && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={e => {
+                        e.preventDefault()
+                        void retryRun(run)
+                      }}
+                      disabled={runActionId === run.id}
+                      title={run.diagnostics?.retryLabel ?? 'Retry run'}
+                    >
+                      <RotateCcw className="h-3 w-3" />
                     </Button>
                   )}
                   <Button

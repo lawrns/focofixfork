@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
-@import '../styles/design-tokens.css';
-@import './styles/accessibility.css';
+@import "../styles/design-tokens.css";
+@import "./styles/accessibility.css";
 
 @tailwind base;
 @tailwind components;
@@ -10,13 +10,13 @@
 @layer base {
   :root {
     /* ── Light Mode: Cybernetic Clean ── */
-    --background: 220 20% 98%;           /* #F8F9FB */
-    --foreground: 220 22% 9%;            /* #0E1014 */
+    --background: 220 20% 98%; /* #F8F9FB */
+    --foreground: 220 22% 9%; /* #0E1014 */
     --card: 0 0% 100%;
     --card-foreground: 220 22% 9%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 22% 9%;
-    --primary: 165 100% 38%;             /* #00C49A — electric teal */
+    --primary: 165 100% 38%; /* #00C49A — electric teal */
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 92%;
     --secondary-foreground: 220 20% 18%;
@@ -32,76 +32,76 @@
     --radius: 0.375rem;
 
     /* Cybernetic custom */
-    --foco-teal: #00C49A;
+    --foco-teal: #00c49a;
     --foco-teal-rgb: 0, 196, 154;
     --foco-teal-dim: rgba(0, 196, 154, 0.12);
     --foco-teal-glow: 0 0 28px rgba(0, 196, 154, 0.22);
-    --foco-rail-bg: #F5F6F8;
-    --foco-rail-border: #E3E6ED;
+    --foco-rail-bg: #f5f6f8;
+    --foco-rail-border: #e3e6ed;
   }
 
   .dark {
     /* ── Dark Mode: Cybernetic Ops Console ── */
-    --background: 220 24% 5%;            /* #09090F — deep void */
-    --foreground: 210 14% 89%;           /* #E0E3EC — cool near-white */
-    --card: 220 22% 8%;                  /* #0F1117 — card surface */
+    --background: 220 24% 5%; /* #09090F — deep void */
+    --foreground: 210 14% 89%; /* #E0E3EC — cool near-white */
+    --card: 220 22% 8%; /* #0F1117 — card surface */
     --card-foreground: 210 14% 89%;
     --popover: 220 20% 9%;
     --popover-foreground: 210 14% 89%;
-    --primary: 165 100% 42%;             /* #00D4AA — electric teal */
+    --primary: 165 100% 42%; /* #00D4AA — electric teal */
     --primary-foreground: 220 24% 5%;
-    --secondary: 220 17% 13%;            /* #17191F */
+    --secondary: 220 17% 13%; /* #17191F */
     --secondary-foreground: 210 12% 70%;
     --muted: 220 17% 13%;
     --muted-foreground: 220 10% 47%;
-    --accent: 165 60% 11%;               /* deep teal tint bg */
+    --accent: 165 60% 11%; /* deep teal tint bg */
     --accent-foreground: 165 100% 65%;
     --destructive: 0 62% 36%;
     --destructive-foreground: 0 0% 95%;
-    --border: 220 17% 14%;               /* #1C1F28 */
+    --border: 220 17% 14%; /* #1C1F28 */
     --input: 220 17% 13%;
     --ring: 165 100% 42%;
     --radius: 0.375rem;
 
     /* Cybernetic custom */
-    --foco-teal: #00D4AA;
+    --foco-teal: #00d4aa;
     --foco-teal-rgb: 0, 212, 170;
-    --foco-teal-dim: rgba(0, 212, 170, 0.10);
+    --foco-teal-dim: rgba(0, 212, 170, 0.1);
     --foco-teal-glow: 0 0 28px rgba(0, 212, 170, 0.18);
-    --foco-rail-bg: #0B0D12;
-    --foco-rail-border: #1C1F28;
+    --foco-rail-bg: #0b0d12;
+    --foco-rail-border: #1c1f28;
   }
 
   .oled {
     /* ── OLED Mode: Pure Black for AMOLED displays ── */
-    --background: 0 0% 0%;               /* #000000 — pure black */
-    --foreground: 0 0% 95%;              /* #F2F2F2 — near white for readability */
-    --card: 0 0% 3%;                     /* #080808 — slightly elevated */
+    --background: 0 0% 0%; /* #000000 — pure black */
+    --foreground: 0 0% 95%; /* #F2F2F2 — near white for readability */
+    --card: 0 0% 3%; /* #080808 — slightly elevated */
     --card-foreground: 0 0% 95%;
     --popover: 0 0% 3%;
     --popover-foreground: 0 0% 95%;
-    --primary: 165 100% 45%;             /* #00E6B8 — brighter teal for contrast */
+    --primary: 165 100% 45%; /* #00E6B8 — brighter teal for contrast */
     --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 8%;                /* #141414 — subtle elevation */
+    --secondary: 0 0% 8%; /* #141414 — subtle elevation */
     --secondary-foreground: 0 0% 80%;
     --muted: 0 0% 8%;
-    --muted-foreground: 0 0% 55%;        /* #8C8C8C — adjusted for pure black */
-    --accent: 165 70% 12%;               /* deep teal tint on pure black */
+    --muted-foreground: 0 0% 55%; /* #8C8C8C — adjusted for pure black */
+    --accent: 165 70% 12%; /* deep teal tint on pure black */
     --accent-foreground: 165 100% 70%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 15%;                  /* #262626 — visible on pure black */
+    --border: 0 0% 15%; /* #262626 — visible on pure black */
     --input: 0 0% 12%;
     --ring: 165 100% 45%;
     --radius: 0.375rem;
 
     /* Cybernetic custom - OLED optimized */
-    --foco-teal: #00E6B8;
+    --foco-teal: #00e6b8;
     --foco-teal-rgb: 0, 230, 184;
     --foco-teal-dim: rgba(0, 230, 184, 0.12);
     --foco-teal-glow: 0 0 32px rgba(0, 230, 184, 0.25);
     --foco-rail-bg: #050505;
-    --foco-rail-border: #1A1A1A;
+    --foco-rail-border: #1a1a1a;
   }
 }
 
@@ -112,16 +112,25 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-    font-feature-settings: 'cv11', 'ss01';
+    font-family:
+      "DM Sans",
+      system-ui,
+      -apple-system,
+      sans-serif;
+    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
   }
 
-  code, kbd, pre, .mono {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    font-feature-settings: 'calt' 1, 'liga' 1;
+  code,
+  kbd,
+  pre,
+  .mono {
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    font-feature-settings:
+      "calt" 1,
+      "liga" 1;
   }
 
   /* Smooth scrolling */
@@ -137,8 +146,147 @@
 }
 
 @layer utilities {
+  /* ──── TYPOGRAPHY HIERARCHY ──── */
+  /* Page Title: 28px bold */
+  .title-page {
+    @apply text-4xl font-bold;
+  }
+
+  /* Section heading: 24px bold */
+  .title-section {
+    @apply text-2xl font-bold;
+  }
+
+  /* Subsection heading: 20px bold */
+  .title-subsection {
+    @apply text-xl font-bold;
+  }
+
+  /* Label: 14px regular/medium */
+  .label-text {
+    @apply text-sm font-medium;
+  }
+
+  /* Small text: 12px */
+  .text-small {
+    @apply text-xs;
+  }
+
+  /* Secondary text with proper contrast */
+  .text-muted {
+    @apply text-gray-500;
+  }
+
+  /* Tertiary text */
+  .text-hint {
+    @apply text-gray-400;
+  }
+
+  /* ──── FORM FIELD UTILITIES ──── */
+  /* Standard form field height */
+  .form-field {
+    @apply min-h-11 px-3 py-2 rounded-md border border-gray-300 text-base;
+  }
+
+  /* Focus state for form fields */
+  .form-field:focus {
+    @apply outline-none ring-2 ring-offset-2 ring-primary;
+  }
+
+  /* Placeholder text styling */
+  .form-field::placeholder {
+    @apply text-gray-500;
+  }
+
+  /* ──── TAB NAVIGATION ──---- */
+  /* Active tab indicator - bottom border style */
+  .tab-active {
+    @apply border-b-2 border-primary;
+  }
+
+  /* Inactive tab - no indicator */
+  .tab-inactive {
+    @apply border-b-2 border-transparent;
+  }
+
+  /* ──── ALERT STYLING ──── */
+  /* Failure/Error alert - prominent red */
+  .alert-error {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md bg-red-50 text-error border border-error/20;
+  }
+
+  .alert-error-icon::before {
+    content: "🔴";
+    @apply mr-1;
+  }
+
+  /* Warning alert - amber */
+  .alert-warning {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 text-warning border border-warning/20;
+  }
+
+  /* Success alert - green */
+  .alert-success {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 text-success border border-success/20;
+  }
+
+  /* ──── BUTTON STATE VISIBILITY ──── */
+  /* Button hover state - ensure visibility */
+  .btn-secondary:hover {
+    @apply border-gray-400 bg-gray-50 transition-colors;
+  }
+
+  .btn-secondary:focus {
+    @apply ring-2 ring-offset-2 ring-primary outline-none;
+  }
+
+  .btn-secondary:active {
+    @apply bg-gray-100;
+  }
+
+  /* ──── SIDEBAR ACTIVE STATE ──── */
+  /* Only active sidebar item should have background */
+  .sidebar-item-active {
+    @apply bg-teal-dim text-sidebar-text-active border-l-2 border-primary rounded-r-md;
+  }
+
+  /* Inactive sidebar items - transparent background */
+  .sidebar-item {
+    @apply bg-transparent text-sidebar-text hover:bg-gray-100 transition-colors;
+  }
+
+  /* ──── SPACING UTILITIES ──---- */
+  /* Consistent spacing for sections */
+  .section-gap {
+    @apply gap-12; /* 48px gap between major sections */
+  }
+
+  .element-gap {
+    @apply gap-4; /* 16px gap between elements */
+  }
+
+  /* ──── METRIC CARD DISTINCTION ──── */
+  /* Icons for metric cards */
+  .metric-icon {
+    @apply w-10 h-10 rounded-lg flex items-center justify-center text-lg;
+  }
+
+  .metric-people {
+    @apply bg-blue-100 text-blue-600;
+  }
+
+  .metric-tasks {
+    @apply bg-green-100 text-green-600;
+  }
+
+  .metric-projects {
+    @apply bg-purple-100 text-purple-600;
+  }
+
   /* Scrollbar utilities */
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -168,8 +316,8 @@
 
   /* Mono font utility */
   .font-mono-display {
-    font-family: 'JetBrains Mono', monospace;
-    font-feature-settings: 'calt' 1;
+    font-family: "JetBrains Mono", monospace;
+    font-feature-settings: "calt" 1;
   }
 
   /* Editorial line */
@@ -208,7 +356,7 @@
 
   /* Scan-line overlay — optional cybernetic texture */
   .scanlines::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: repeating-linear-gradient(
@@ -237,11 +385,83 @@
   .animate-slide-up-delay-2 {
     animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
   }
+
+  .signal-field {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .signal-field::before,
+  .signal-field::after {
+    content: "";
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    filter: blur(48px);
+    opacity: 0.7;
+    z-index: -1;
+    animation: signalDrift 14s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+  }
+
+  .signal-field::before {
+    top: -4rem;
+    right: -2rem;
+    width: 18rem;
+    height: 18rem;
+    background: radial-gradient(
+      circle at center,
+      rgba(var(--foco-teal-rgb), 0.22),
+      rgba(var(--foco-teal-rgb), 0)
+    );
+  }
+
+  .signal-field::after {
+    left: -3rem;
+    bottom: -5rem;
+    width: 15rem;
+    height: 15rem;
+    background: radial-gradient(
+      circle at center,
+      rgba(14, 165, 233, 0.12),
+      rgba(14, 165, 233, 0)
+    );
+    animation-duration: 17s;
+  }
+
+  .signal-grid {
+    background-image:
+      linear-gradient(
+        to right,
+        rgba(var(--foco-teal-rgb), 0.06) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        rgba(var(--foco-teal-rgb), 0.05) 1px,
+        transparent 1px
+      );
+    background-size: 28px 28px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 92%);
+  }
+
+  .signal-divider {
+    background: linear-gradient(
+      90deg,
+      rgba(var(--foco-teal-rgb), 0) 0%,
+      rgba(var(--foco-teal-rgb), 0.32) 26%,
+      rgba(var(--foco-teal-rgb), 0.12) 100%
+    );
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -255,15 +475,43 @@
   }
 }
 
+@keyframes signalDrift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(0, 18px, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-field::before,
+  .signal-field::after {
+    animation: none;
+  }
+
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-up-delay,
+  .animate-slide-up-delay-2 {
+    animation: none;
+  }
+}
+
 @keyframes terminalBlink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 .terminal-cursor::after {
-  content: '▋';
+  content: "▋";
   animation: terminalBlink 1.1s step-start infinite;
   color: var(--foco-teal);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   margin-left: 1px;
 }

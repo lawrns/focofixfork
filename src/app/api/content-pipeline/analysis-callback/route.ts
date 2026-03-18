@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { successResponse, databaseErrorResponse, authRequiredResponse, forbiddenResponse, validationFailedResponse, missingFieldResponse } from '@/lib/api/response-helpers';
 import { ContentAnalyzer } from '@/features/content-pipeline/services/content-analyzer';
 import { logger } from '@/lib/logger';
+import { authorizeAgentCallback } from '@/lib/security/agent-callback-auth'
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +26,22 @@ const CALLBACK_SECRET = process.env.CONTENT_PIPELINE_CALLBACK_SECRET;
  */
 export async function POST(req: NextRequest) {
   try {
-    // Validate secret if configured
-    if (CALLBACK_SECRET) {
-      const secret = req.headers.get('x-callback-secret');
+    const rawBody = await req.text()
+    const bearerAuthorized = authorizeAgentCallback(req, rawBody)
+
+    // Validate secret if configured for compatibility with older callers.
+    if (!bearerAuthorized && CALLBACK_SECRET) {
+      const secret = req.headers.get('x-callback-secret')
       if (secret !== CALLBACK_SECRET) {
-        return forbiddenResponse('Invalid callback secret');
+        return forbiddenResponse('Invalid callback secret')
       }
     }
 
-    const body = await req.json();
+    if (!bearerAuthorized && !CALLBACK_SECRET) {
+      return forbiddenResponse('Unauthorized callback')
+    }
+
+    const body = rawBody ? JSON.parse(rawBody) : {};
 
     // Extract item ID from task ID
     const taskId = body.task_id || body.taskId;

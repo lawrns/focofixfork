@@ -16,7 +16,6 @@ import { summarizeOutput } from './pipeline-utils';
 import { detectIntent, determineMode } from './intent-detection';
 import { generatePlan } from './plan-generator';
 import { executeStep } from './step-executor';
-import { useUserModelPreferences } from '@/lib/stores/user-model-preferences'
 
 interface ExecutionDeps {
   setIsProcessing: (v: boolean) => void;
@@ -165,8 +164,8 @@ export function useExecuteCommand(deps: ExecutionDeps) {
     setIsProcessing(true);
     setStreamingText('');
     setExecutionEvents([
-      { type: 'status_update', status: 'queued', message: 'Starting local workflow', timestamp: nowIso() },
-      { type: 'status_update', status: 'executing', message: 'Executing fallback steps', timestamp: nowIso() },
+      { type: 'status_update', status: 'queued', message: 'Queueing OpenClaw task', timestamp: nowIso() },
+      { type: 'status_update', status: 'executing', message: 'Waiting for OpenClaw acceptance', timestamp: nowIso() },
     ]);
     cancelRequestedRef.current = false;
 
@@ -384,7 +383,6 @@ export function useExecuteCommand(deps: ExecutionDeps) {
       const controller = new AbortController();
       abortControllerRef.current = controller;
       const workspaceId = await fetchCurrentWorkspaceId();
-      const modelPrefs = useUserModelPreferences.getState()
 
       const executeRes = await fetch('/api/command-surface/execute', {
         method: 'POST',
@@ -395,11 +393,6 @@ export function useExecuteCommand(deps: ExecutionDeps) {
           project_id: projectId ?? null,
           workspace_id: workspaceId,
           selected_agents: options?.selectedAgents ?? null,
-          requested_model: modelPrefs.defaultModel,
-          requested_planner_model: modelPrefs.plannerModel,
-          requested_executor_model: modelPrefs.executorModel,
-          requested_reviewer_model: modelPrefs.reviewerModel,
-          requested_fallback_chain: modelPrefs.fallbackChain,
         }),
         signal: controller.signal,
       });
@@ -416,20 +409,6 @@ export function useExecuteCommand(deps: ExecutionDeps) {
         if (!executeRes.ok || !payload.ok || !payload.stream_url) {
           const errorMsg = payload.error ?? payload.message ?? `HTTP ${executeRes.status}`;
 
-          if (executeRes.status >= 500) {
-            setStreamingText(`Agent stream unavailable (${errorMsg}). Running local fallback workflow...`);
-            const fallback = await executeCommand(prompt, resolvedMode, plan, decision, {
-              historyId,
-              existingRunId: runId,
-              projectId,
-              selectedAgents: options?.selectedAgents,
-            });
-            if (fallback.status === 'failed') {
-              fallback.error = `Agent stream unavailable: ${errorMsg}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
-            }
-            return fallback;
-          }
-
           return completeWithFailure(errorMsg);
         }
 
@@ -445,19 +424,6 @@ export function useExecuteCommand(deps: ExecutionDeps) {
 
       if (!streamRes.ok || !streamRes.body) {
         const errorText = `Stream endpoint failed (HTTP ${streamRes.status})`;
-        if (streamRes.status >= 500) {
-          setStreamingText(`${errorText}. Running local fallback workflow...`);
-          const fallback = await executeCommand(prompt, resolvedMode, plan, decision, {
-            historyId,
-            existingRunId: runId,
-            projectId,
-            selectedAgents: options?.selectedAgents,
-          });
-          if (fallback.status === 'failed') {
-            fallback.error = `${errorText}. Local fallback failed: ${fallback.error ?? 'unknown error'}`;
-          }
-          return fallback;
-        }
         return completeWithFailure(errorText);
       }
 
@@ -567,7 +533,6 @@ export function useExecuteCommand(deps: ExecutionDeps) {
     appendExecutionEvent,
     cancelRequestedRef,
     createCommandRun,
-    executeCommand,
     finalizeCommandRun,
     logHistoryEvent,
     setExecution,

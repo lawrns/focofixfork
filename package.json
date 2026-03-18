@@ -12,10 +12,11 @@
     "public/"
   ],
   "scripts": {
-    "dev": "next dev --port 4000",
-    "build": "next build",
+    "dev": "node scripts/dev-guard.mjs",
+    "dev:next": "next dev --hostname 0.0.0.0 --port 4000",
+    "build": "node scripts/build-with-runtime-fix.js",
     "postbuild": "node scripts/fix-next-pages-runtime.js",
-    "start": "next start --port 4000",
+    "start": "next start --hostname 0.0.0.0 --port 4000",
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -49,11 +50,16 @@
     "format:check": "prettier --check .",
     "db:migrate:test": "supabase db push --schema test",
     "db:seed:test": "supabase db seed --schema test",
-    "start:test": "NODE_ENV=test next start --port 4000",
-    "build:test": "NODE_ENV=test next build",
+    "db:local:start": "supabase start",
+    "db:local:stop": "supabase stop",
+    "db:local:status": "supabase status",
+    "db:local:env": "node scripts/sync-local-supabase-env.mjs",
+    "db:local:reset": "supabase db reset",
+    "start:test": "NODE_ENV=test next start --hostname 0.0.0.0 --port 4000",
+    "build:test": "NODE_ENV=test node scripts/build-with-runtime-fix.js",
     "type-check": "tsc --noEmit",
-    "preview": "next build && next start --port 4000",
-    "analyze": "ANALYZE=true next build"
+    "preview": "npm run build && next start --hostname 0.0.0.0 --port 4000",
+    "analyze": "ANALYZE=true node scripts/build-with-runtime-fix.js"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
@@ -94,6 +100,7 @@
     "@supabase/supabase-js": "^2.75.0",
     "@tanstack/react-query": "^5.90.2",
     "@types/nprogress": "^0.2.3",
+    "@types/ws": "^8.18.1",
     "@uiw/react-codemirror": "^4.25.2",
     "@upstash/redis": "^1.36.1",
     "chrono-node": "^2.9.0",
@@ -137,6 +144,7 @@
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.1",
     "web-push": "^3.6.7",
+    "ws": "^8.19.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.2"
   },

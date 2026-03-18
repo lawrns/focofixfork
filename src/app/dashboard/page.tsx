@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import DashboardPageClient from './DashboardPageClient';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -24,7 +25,15 @@ function DashboardFallback() {
   );
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: { view?: string }
+}) {
+  if (!searchParams?.view) {
+    redirect('/cockpit')
+  }
+
   return (
     <Suspense fallback={<DashboardFallback />}>
       <DashboardPageClient />

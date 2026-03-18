@@ -15,7 +15,8 @@ interface LedgerEvent {
 }
 
 interface OpenClawStatus {
-  relay: { reachable: boolean }
+  relayReachable: boolean
+  attachedTabs: number
   tabs: Array<{ id: string; attached: boolean }>
 }
 
@@ -78,14 +79,29 @@ export function BossBar({ className, sidebarCollapsed = false }: BossBarProps) {
   const pollOpenClaw = useCallback(async () => {
     if (!apiAvailability.openclaw) return
     try {
-      const res = await fetch('/api/openclaw/status')
+      const res = await fetch('/api/openclaw/runtime')
       if (res.status === 404) {
         setApiAvailability(prev => ({ ...prev, openclaw: false }))
         return
       }
       if (res.ok) {
         const json = await res.json()
-        setOpenclawStatus(json)
+        const data = json?.data ?? {}
+        const tabs = Array.isArray(data.tabs)
+          ? data.tabs.map((tab: Record<string, unknown>) => ({
+              id: String(tab.id ?? ''),
+              attached: Boolean(tab.attached ?? true),
+            }))
+          : []
+
+        setOpenclawStatus({
+          relayReachable: Boolean(data.relayReachable),
+          attachedTabs:
+            typeof data.attachedTabs === 'number'
+              ? data.attachedTabs
+              : tabs.filter((tab: { attached: boolean }) => tab.attached).length,
+          tabs,
+        })
       }
     } catch {
       // ignore — OpenClaw is optional
@@ -167,17 +183,17 @@ export function BossBar({ className, sidebarCollapsed = false }: BossBarProps) {
 
       {/* OpenClaw gateway health + tab count */}
       <SwarmDockTarget>
-        <div className="flex items-center gap-1.5 flex-shrink-0" title={`${openclawStatus?.tabs.filter(t => t.attached).length ?? 0} browser tabs attached to Critter`}>
+        <div className="flex items-center gap-1.5 flex-shrink-0" title={`${openclawStatus?.attachedTabs ?? 0} browser tabs attached to Critter`}>
           <span className={cn(
             'h-1.5 w-1.5 rounded-full flex-shrink-0',
-            openclawStatus?.relay.reachable
+            openclawStatus?.relayReachable
               ? 'bg-[color:var(--foco-teal)]'
               : 'bg-muted-foreground/40'
           )} />
           <span className="text-muted-foreground">critter</span>
-          {openclawStatus && openclawStatus.relay.reachable && (
+          {openclawStatus && openclawStatus.relayReachable && (
             <span className="text-[color:var(--foco-teal)]">
-              {openclawStatus.tabs.filter(t => t.attached).length} tabs
+              {openclawStatus.attachedTabs} tabs
             </span>
           )}
         </div>

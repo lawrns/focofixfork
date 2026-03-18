@@ -37,7 +37,7 @@ function getEnvProvider(): AIProvider {
 }
 
 function getEnvDefaultModel(provider: AIProvider): string {
-  if (provider === 'openai') return process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
+  if (provider === 'openai') return process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
   if (provider === 'anthropic') return process.env.ANTHROPIC_MODEL || 'claude-opus-4-6'
   if (provider === 'deepseek') return process.env.DEEPSEEK_MODEL || 'deepseek-chat'
   if (provider === 'ollama') return 'ollama-qwen3.5'
@@ -45,7 +45,7 @@ function getEnvDefaultModel(provider: AIProvider): string {
 }
 
 async function getRoutingDefault(useCase: AIUseCase): Promise<Partial<AIExecutionProfile>> {
-  if (!useCase.startsWith('command_surface_') && !useCase.startsWith('pipeline_')) {
+  if (!useCase.startsWith('command_surface_') && !useCase.startsWith('pipeline_') && !useCase.startsWith('workspace_')) {
     return {}
   }
 

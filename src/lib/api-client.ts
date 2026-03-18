@@ -10,6 +10,7 @@
 
 import { apiCache } from './api-cache'
 import { PWAService } from './services/pwa'
+import { supabase } from './supabase-client'
 
 interface ApiClientOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -43,6 +44,23 @@ class ApiClient {
   private defaultCacheTTL = 30000 // 30 seconds
   private maxBackoffTime = 32000 // Max backoff of 32 seconds (2^5 * 1000)
   private rateLimitInfo: Map<string, RateLimitInfo> = new Map()
+
+  private async buildHeaders(headers: Record<string, string>): Promise<Record<string, string>> {
+    const nextHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...headers,
+    }
+
+    if (typeof window !== 'undefined' && !nextHeaders.Authorization) {
+      const { data } = await supabase.auth.getSession()
+      const accessToken = data.session?.access_token
+      if (accessToken) {
+        nextHeaders.Authorization = `Bearer ${accessToken}`
+      }
+    }
+
+    return nextHeaders
+  }
 
   /**
    * Calculate exponential backoff time with jitter
@@ -163,10 +181,7 @@ class ApiClient {
 
         const fetchOptions: RequestInit = {
           method,
-          headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-          },
+          headers: await this.buildHeaders(headers),
           signal: controller.signal,
           credentials: 'include',
         }

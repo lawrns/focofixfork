@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authorizeOpenClawRequest } from '@/lib/security/openclaw-auth'
 import { getAuthUser, mergeAuthResponse } from '@/lib/api/auth-helper'
 import { getSpecialistAdvisor, wrapAdvisorTask } from '@/lib/agent-avatars'
+import { dispatchOpenClawTask } from '@/lib/openclaw/client'
 
 export const dynamic = 'force-dynamic'
-
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +18,12 @@ export async function POST(request: NextRequest) {
 
     const body = rawBody ? JSON.parse(rawBody) : {}
     const { agentId, task, context } = body
-    const correlationId = crypto.randomUUID()
+    const callbackUrl = typeof body.callbackUrl === 'string' && body.callbackUrl.trim()
+      ? body.callbackUrl.trim()
+      : new URL('/api/openclaw/callback', request.url).toString()
+    const correlationId = typeof body.correlationId === 'string' && body.correlationId.trim()
+      ? body.correlationId.trim()
+      : crypto.randomUUID()
     const advisor = typeof agentId === 'string' ? getSpecialistAdvisor(agentId) : undefined
     const resolvedTask = advisor && typeof task === 'string' ? wrapAdvisorTask(advisor, task) : task
     const resolvedContext = advisor
@@ -36,18 +40,28 @@ export async function POST(request: NextRequest) {
           },
         }
       : context
+    const executionContext = {
+      ...(resolvedContext && typeof resolvedContext === 'object' ? resolvedContext : {}),
+      ...(typeof agentId === 'string' && agentId.trim() ? { agent_id: agentId.trim() } : {}),
+      ...(typeof (resolvedContext as Record<string, unknown> | null)?.ai_use_case === 'string'
+        ? {}
+        : { ai_use_case: 'command_surface_execute' }),
+    }
 
-    // Try Gateway hooks/agent-run
     try {
-      const response = await fetch(`${GATEWAY_URL}/hooks/agent-run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: agentId, task: resolvedTask, context: resolvedContext, correlation_id: correlationId }),
+      const data = await dispatchOpenClawTask({
+        agentId,
+        task: resolvedTask,
+        context: executionContext,
+        correlationId,
+        callbackUrl,
+        taskId: typeof body.taskId === 'string' ? body.taskId : null,
+        title: typeof body.title === 'string' ? body.title : null,
+        preferredModel: typeof body.preferredModel === 'string' ? body.preferredModel : null,
       })
-      if (response.ok) {
-        const data = await response.json()
+      if (data.accepted) {
         return mergeAuthResponse(
-          NextResponse.json({ runId: data.run_id || correlationId, agentId, correlationId, status: 'accepted' }),
+          NextResponse.json({ runId: data.runId || correlationId, agentId, correlationId: data.correlationId, status: data.status }),
           authResponse
         )
       }

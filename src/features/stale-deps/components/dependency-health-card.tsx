@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ export function DependencyHealthCard({ projectId, className }: DependencyHealthC
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHealthData = async () => {
+  const fetchHealthData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -56,7 +56,7 @@ export function DependencyHealthCard({ projectId, className }: DependencyHealthC
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   const triggerScan = async () => {
     try {
@@ -80,8 +80,8 @@ export function DependencyHealthCard({ projectId, className }: DependencyHealthC
   };
 
   useEffect(() => {
-    fetchHealthData();
-  }, [projectId]);
+    void fetchHealthData();
+  }, [fetchHealthData]);
 
   if (loading) {
     return (

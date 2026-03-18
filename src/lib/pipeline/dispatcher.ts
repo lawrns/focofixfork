@@ -1,9 +1,9 @@
 /**
- * Pipeline dispatcher — sends plan/execute/review phases to ClawdBot.
- * All model calls go through ClawdBot; model names are routing hints only.
+ * Pipeline dispatcher — sends plan/execute/review phases to OpenClaw.
+ * Model names are preserved as hints and observability labels.
  */
 
-import { dispatchToClawdBot } from '@/lib/delegation/dispatchers'
+import { dispatchOpenClawTask } from '@/lib/openclaw/client'
 
 export const PIPELINE_PROMPTS = {
   plan: `You are the orchestration layer for a multi-agent reasoning, debate, and planning system.
@@ -144,7 +144,7 @@ Output ONLY valid JSON matching this exact schema (no markdown, no explanation o
 
 export { type PipelinePhase } from './types'
 
-// Determine the callback URL for ClawdBot to POST results back
+// Determine the callback URL for OpenClaw to POST results back
 function getCallbackUrl(): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL ?? 'http://127.0.0.1:3000'
   const normalized = base.startsWith('http') ? base : `https://${base}`
@@ -162,24 +162,37 @@ export async function dispatchPipelinePhase(options: {
 
   const systemPrompt = PIPELINE_PROMPTS[phase]
 
-  // Embed pipeline routing metadata into the task ID so ClawdBot callback
-  // can route back via the callback endpoint.
+  // Embed pipeline routing metadata into the task ID so the callback endpoint
+  // can route results back into the correct pipeline run and phase.
   const taskId = `pipeline:${pipelineRunId}:${phase}`
 
-  const result = await dispatchToClawdBot({
+  const result = await dispatchOpenClawTask({
     taskId,
     title: `[Pipeline:${phase.toUpperCase()}] ${taskDescription.slice(0, 120)}`,
-    description: context,
-    projectContext: '',
-    featureContext: '',
-    systemPrompt: `${systemPrompt}\n\n# Preferred Model\n${preferredModel}\n\n# Pipeline Run ID\n${pipelineRunId}\n\n# Phase\n${phase}`,
     agentId: `pipeline-${phase}`,
     callbackUrl: getCallbackUrl(),
+    preferredModel,
+    correlationId: taskId,
+    task: [
+      systemPrompt,
+      `# Preferred Model\n${preferredModel}`,
+      `# Pipeline Run ID\n${pipelineRunId}`,
+      `# Phase\n${phase}`,
+      `# Task\n${taskDescription}`,
+    ].join('\n\n'),
+    context: {
+      pipeline_run_id: pipelineRunId,
+      phase,
+      task_description: taskDescription,
+      preferred_model: preferredModel,
+      callback_url: getCallbackUrl(),
+      task_context: context,
+    },
   })
 
-  if (!result.success) {
-    throw new Error(result.error ?? 'ClawdBot dispatch failed')
+  if (!result.accepted) {
+    throw new Error('OpenClaw dispatch failed')
   }
 
-  return result.externalRunId ?? taskId
+  return result.runId ?? result.correlationId
 }

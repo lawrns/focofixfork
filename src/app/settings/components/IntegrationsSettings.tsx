@@ -142,18 +142,14 @@ export function IntegrationsSettings() {
                   <div className="text-sm text-zinc-500">{integration.description}</div>
                 </div>
                 {integration.connected ? (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                      Connected
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleConfigure(integration)}
-                    >
-                      Configure
-                    </Button>
-                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleConfigure(integration)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Configure
+                  </Button>
                 ) : (
                   <Button
                     variant="outline"

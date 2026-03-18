@@ -14,6 +14,7 @@ import { useToast } from '@/components/toast/toast'
 import { Loader2, UserPlus, Trash2, Crown, Users, Eye } from 'lucide-react'
 import { useRealtimeTeam } from '@/hooks/useRealtimeTeam'
 import { usePermissions } from '@/hooks/usePermissions'
+import { getCurrentWorkspaceId } from '@/hooks/use-current-workspace'
 import {
   AddTeamMemberSchema,
   type AddTeamMember,
@@ -84,12 +85,8 @@ export default function TeamManagementDialog({
   useEffect(() => {
     const fetchOrgUsers = async () => {
       try {
-        // Get workspace ID first
-        const workspaceResponse = await fetch('/api/user/workspace')
-        if (!workspaceResponse.ok) return
-
-        const workspaceData = await workspaceResponse.json()
-        const workspaceId = workspaceData.workspace_id
+        const workspaceId = await getCurrentWorkspaceId()
+        if (!workspaceId) return
 
         const response = await fetch(`/api/workspaces/${workspaceId}/members`)
         if (response.ok) {

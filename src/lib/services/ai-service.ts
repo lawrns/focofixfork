@@ -116,7 +116,7 @@ export class AIService {
       this.config = {
         provider: 'openai',
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: profile?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-5.4-medium'
+        model: profile?.model || process.env.NEXT_PUBLIC_OPENAI_MODEL || 'gpt-4o-mini'
       };
       console.log('[AIService] Using OpenAI provider with model:', this.config.model)
     }

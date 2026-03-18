@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Archive, Camera, Terminal, FileText, File, ExternalLink, Download, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -105,7 +106,7 @@ export default function ArtifactsPage() {
               >
                 <div className="h-8 w-8 rounded-lg bg-[color:var(--foco-teal-dim)] flex items-center justify-center flex-shrink-0">
                   {isImage ? (
-                    <img src={artifact.uri} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                    <Image src={artifact.uri} alt="" width={32} height={32} className="h-8 w-8 rounded-lg object-cover" unoptimized />
                   ) : (
                     <Icon className="h-4 w-4 text-[color:var(--foco-teal)]" />
                   )}

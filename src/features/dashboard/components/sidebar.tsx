@@ -78,7 +78,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   }
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', href: '/', active: true },
+    { icon: Home, label: 'Dashboard', href: '/' },
     { icon: Folder, label: 'Projects', href: '/projects' },
   ]
 
@@ -144,14 +144,14 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150',
                 'min-h-[44px]',
-                item.active
+                pathname === item.href
                   ? 'bg-zinc-100 dark:bg-zinc-800 font-medium text-zinc-900 dark:text-zinc-100'
                   : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'
               )}
             >
               <item.icon className={cn(
                 'h-5 w-5 flex-shrink-0 transition-colors duration-150',
-                item.active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-500'
+                pathname === item.href ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-500'
               )} />
               <span className="truncate">{item.label}</span>
             </a>

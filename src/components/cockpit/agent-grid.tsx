@@ -249,10 +249,24 @@ AgentCard.displayName = 'AgentCard'
 interface AgentGridProps {
   agents: AgentOption[]
   runs: Run[]
+  loading?: boolean
 }
 
-export function AgentGrid({ agents, runs }: AgentGridProps) {
+export function AgentGrid({ agents, runs, loading }: AgentGridProps) {
   const [inspecting, setInspecting] = useState<AgentOption | null>(null)
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="h-3 w-24 animate-pulse rounded bg-zinc-800" />
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-800/40" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   // Sort: active first, then by trust
   const sorted = [...agents].sort((a, b) => {

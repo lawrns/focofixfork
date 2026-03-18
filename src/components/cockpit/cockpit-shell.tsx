@@ -98,20 +98,26 @@ function CockpitContent() {
 
         <div className="flex min-h-0 flex-col gap-3">
           <div className="min-h-0 flex-1 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
-            <MachinePanel machine={snapshot?.machine ?? {
-              signalStrength: 0,
-              gatewayHealthy: false,
-              primaryModel: null,
-              attachedTabs: 0,
-              cpuPercent: 0,
-              memPercent: 0,
-              workspacePath: null,
-              cronSummary: { total: 0, enabled: 0, healthy: 0, degraded: 0, failing: 0 },
-              alerts: [],
-            }} runtime={snapshot?.runtime ?? null} streamState={data.streamState} />
+            <MachinePanel
+              loading={!snapshot}
+              machine={snapshot?.machine ?? {
+                signalStrength: 0,
+                gatewayHealthy: false,
+                primaryModel: null,
+                attachedTabs: 0,
+                cpuPercent: 0,
+                memPercent: 0,
+                workspacePath: null,
+                cronSummary: { total: 0, enabled: 0, healthy: 0, degraded: 0, failing: 0 },
+                alerts: [],
+              }}
+              runtime={snapshot?.runtime ?? null}
+              streamState={data.streamState}
+            />
           </div>
           <div className="max-h-64 rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
             <AttentionPanel
+              loading={!snapshot}
               runs={snapshot?.runs ?? []}
               workItems={(snapshot?.tasks ?? []).map((task) => ({
                 id: task.id,
@@ -151,7 +157,7 @@ function CockpitContent() {
             />
           </div>
           <div className="rounded-2xl border border-zinc-800/50 bg-[#0e0e10] p-3">
-            <AgentGrid agents={snapshot?.agents ?? []} runs={snapshot?.runs ?? []} />
+            <AgentGrid agents={snapshot?.agents ?? []} runs={snapshot?.runs ?? []} loading={!snapshot} />
           </div>
         </div>
       </div>

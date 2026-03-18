@@ -189,30 +189,40 @@ interface AttentionPanelProps {
   workItems: DashboardWorkItem[]
   proposals: DashboardProposal[]
   agents: AgentOption[]
+  loading?: boolean
 }
 
-export function AttentionPanel({ runs, workItems, proposals, agents }: AttentionPanelProps) {
+export function AttentionPanel({ runs, workItems, proposals, agents, loading }: AttentionPanelProps) {
   const items = buildAttentionItems(runs, workItems, proposals, agents)
   const critical = items.filter(i => i.level === 'critical').length
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Attention</h2>
-          {critical > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 font-mono border border-rose-900/40">
-              {critical} critical
-            </span>
-          )}
-        </div>
-        {items.length > 0 && (
-          <span className="text-[10px] text-zinc-600 font-mono">{items.length} items</span>
+        <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Attention</h2>
+        {!loading && critical > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 font-mono border border-rose-900/40">
+            {critical} critical
+          </span>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-2">
-        {items.length === 0 ? (
+        {loading ? (
+          <>
+            {[0, 1].map(i => (
+              <div key={i} className="rounded-xl border border-zinc-800/60 p-3">
+                <div className="flex items-start gap-2">
+                  <div className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 animate-pulse rounded bg-zinc-800" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-3/4 animate-pulse rounded bg-zinc-800" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-zinc-800/60" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-zinc-700 gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-800" />
             <span className="text-xs font-mono text-zinc-600">all clear</span>

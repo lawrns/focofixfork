@@ -515,3 +515,36 @@
   font-family: "JetBrains Mono", monospace;
   margin-left: 1px;
 }
+
+/* ── Cinematic utilities ── */
+.glass-card-glow {
+  transition: box-shadow 0.3s ease;
+}
+.glass-card-glow:hover {
+  box-shadow: var(--foco-teal-glow);
+}
+
+.glow-amber { box-shadow: 0 0 28px rgba(245, 158, 11, 0.14); }
+.glow-crimson { box-shadow: 0 0 28px rgba(239, 68, 68, 0.14); }
+.glow-emerald { box-shadow: 0 0 28px rgba(16, 185, 129, 0.14); }
+
+/* SVG topology connection lines */
+.topology-line {
+  stroke-dasharray: 8 6;
+  stroke-width: 1.5;
+  fill: none;
+}
+.topology-line-active {
+  animation: dashFlow 1.5s linear infinite;
+}
+.topology-node-pulse {
+  animation: topologyPulse 2.4s ease-in-out infinite;
+}
+@keyframes topologyPulse {
+  0%, 100% { opacity: 0.5; r: 18; }
+  50% { opacity: 0.15; r: 26; }
+}
+@keyframes topologyDotTravel {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}

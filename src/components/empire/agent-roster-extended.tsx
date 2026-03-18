@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { AlertCircle, Bot, Crown, Eye, FileText, Pencil, RefreshCw, SendHorizontal, Settings2, Sparkles, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -263,7 +264,13 @@ function FocusAgentCard({
   onSaved: () => void
 }) {
   return (
-    <div className="rounded-xl border bg-card/80 p-4">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2, scale: 1.005 }}
+      className="rounded-xl border bg-card/80 p-4 transition-shadow duration-200 hover:shadow-[0_0_24px_rgba(0,212,170,0.06)]"
+    >
       <div className="flex items-start gap-3">
         <Avatar className="h-12 w-12 flex-shrink-0">
           {agent.avatarUrl ? <AvatarImage src={agent.avatarUrl} alt={agent.name} /> : null}
@@ -358,7 +365,7 @@ function FocusAgentCard({
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
 

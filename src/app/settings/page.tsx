@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Settings,
@@ -23,7 +24,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PageShell } from '@/components/layout/page-shell';
-import { PageHeader } from '@/components/layout/page-header';
+import { HeroSection } from '@/components/cinematic/hero-section';
+import { GlassCard } from '@/components/cinematic/glass-card';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { WorkspaceSettings } from './components/WorkspaceSettings';
 import { MembersSettings } from './components/MembersSettings';
@@ -103,19 +105,18 @@ export default function SettingsPage() {
   };
 
   return (
-    <PageShell className="space-y-5">
-      <PageHeader
+    <PageShell className="space-y-4">
+      <HeroSection
         title="Settings"
-        subtitle="Manage workspace policy, memberships, appearance, integrations, and security in one place."
+        subtitle="Manage workspace policy, memberships, appearance, integrations, and security."
+        badge={
+          <Badge variant="outline" className="border-zinc-700 text-[10px] text-zinc-400">
+            {settingsSections.find(s => s.id === activeSection)?.label}
+          </Badge>
+        }
       />
 
-      <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-3 sm:p-4 animate-slide-up">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <Badge variant="outline" className="text-[10px]">Workspace Control Plane</Badge>
-          <Badge variant="secondary" className="text-[10px]">Responsive Layout</Badge>
-          <Badge variant="outline" className="text-[10px]">Section: {settingsSections.find(s => s.id === activeSection)?.label}</Badge>
-        </div>
-
+      <GlassCard hover={false} className="p-3 sm:p-4">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4 lg:gap-5">
           {isMobile ? (
             <Select value={activeSection} onValueChange={setActiveSection}>
@@ -145,16 +146,16 @@ export default function SettingsPage() {
             </Select>
           ) : (
             <nav className="w-full shrink-0 lg:sticky lg:top-16 self-start">
-              <div className="rounded-lg border bg-background/80 p-2 space-y-1">
+              <div className="rounded-lg border border-zinc-800/50 bg-[#0a0b0d]/80 p-2 space-y-0.5">
                 {settingsSections.map((section) => (
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
                     className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                      'relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all',
                       activeSection === section.id
-                        ? 'bg-secondary text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
+                        ? 'bg-[color:var(--foco-teal-dim)] text-foreground border-l-2 border-l-[color:var(--foco-teal)]'
+                        : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground border-l-2 border-l-transparent'
                     )}
                   >
                     <section.icon className="h-4 w-4" />
@@ -165,11 +166,21 @@ export default function SettingsPage() {
             </nav>
           )}
 
-          <div className="flex-1 min-w-0 animate-slide-up-delay">
-            {renderContent()}
+          <div className="flex-1 min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
-      </div>
+      </GlassCard>
     </PageShell>
   );
 }

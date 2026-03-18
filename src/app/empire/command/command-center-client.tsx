@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageShell } from '@/components/layout/page-shell'
-import { PageHeader } from '@/components/layout/page-header'
+import { HeroSection } from '@/components/cinematic/hero-section'
+import { GlassCard } from '@/components/cinematic/glass-card'
+import { PulsingTopology, defaultSystemTopology, type NodeStatus as TopoNodeStatus } from '@/components/cinematic/pulsing-topology'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -622,23 +624,27 @@ export function CommandCenterClient() {
   return (
     <TooltipProvider delayDuration={120}>
       <PageShell className="space-y-3">
-        <PageHeader
+        <HeroSection
+          metric={store.agents.filter((a) => a.status === 'working').length}
+          metricLabel="agents active"
           title="Command Center"
-          subtitle="Live agent operations and decision review."
-          primaryAction={
+          subtitle="Live agent operations, fleet topology, and decision review"
+          badge={
+            store.error ? (
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{store.error}</span>
+              </div>
+            ) : undefined
+          }
+          actions={
             <div className="flex items-center gap-2">
-              {store.error && (
-                <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{store.error}</span>
-                </div>
-              )}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => fetchAgents()}
                 disabled={store.isLoading}
-                className="h-8 gap-1.5"
+                className="h-8 gap-1.5 border-zinc-700 bg-black/20 text-zinc-200 hover:bg-zinc-900"
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', store.isLoading && 'animate-spin')} />
                 Refresh
@@ -944,12 +950,44 @@ export function CommandCenterClient() {
         })()}
 
         {/* Zone 4: Deep Inspection */}
-        <div className="hidden md:block rounded-xl border overflow-hidden bg-card/80" style={{ minHeight: '220px' }}>
-          <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
-            <Cpu className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">Swarm topology</span>
-          </div>
-          <DiagramContainer className="min-h-[180px]" />
+        <div className="hidden md:grid md:grid-cols-2 gap-3">
+          <GlassCard hover={false} className="overflow-hidden" style={{ minHeight: '220px' }}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800/40">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
+              <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">Swarm topology</span>
+            </div>
+            <DiagramContainer className="min-h-[180px]" />
+          </GlassCard>
+          <GlassCard hover={false} className="overflow-hidden p-4" style={{ minHeight: '220px' }}>
+            <p className="mb-2 text-[11px] font-mono uppercase tracking-[0.28em] text-zinc-500">System graph</p>
+            <PulsingTopology
+              nodes={(() => {
+                const topo = defaultSystemTopology(
+                  store.agents.slice(0, 5).map((a) => ({
+                    id: a.id,
+                    label: a.name.length > 12 ? a.name.slice(0, 11) + '…' : a.name,
+                    status: (a.status === 'working' ? 'healthy'
+                      : a.status === 'error' || a.status === 'blocked' ? 'down'
+                      : 'idle') as TopoNodeStatus,
+                  }))
+                )
+                return topo.nodes
+              })()}
+              edges={(() => {
+                const topo = defaultSystemTopology(
+                  store.agents.slice(0, 5).map((a) => ({
+                    id: a.id,
+                    label: a.name.length > 12 ? a.name.slice(0, 11) + '…' : a.name,
+                    status: (a.status === 'working' ? 'healthy'
+                      : a.status === 'error' || a.status === 'blocked' ? 'down'
+                      : 'idle') as TopoNodeStatus,
+                  }))
+                )
+                return topo.edges
+              })()}
+              height={200}
+            />
+          </GlassCard>
         </div>
 
         <div className="md:hidden">

@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Activity, RefreshCw, Clock, Zap, CheckCircle2, DollarSign, Square, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
-import { PageHeader } from '@/components/layout/page-header'
+import { HeroSection } from '@/components/cinematic/hero-section'
+import { GlassCard } from '@/components/cinematic/glass-card'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { cn } from '@/lib/utils'
 import { CritterLaunchPadButton } from '@/components/critter/critter-launch-pad-button'
@@ -165,48 +167,38 @@ function RunsPageContent() {
   if (!user) return null
 
   return (
-    <PageShell className="space-y-5">
-      <PageHeader
+    <PageShell className="space-y-4">
+      <HeroSection
+        metric={stats?.running ?? 0}
+        metricLabel="running"
         title="Runs"
-        subtitle="Agent execution history"
-        primaryAction={
-          <Button variant="outline" size="sm" onClick={load} disabled={fetching}>
-            <RefreshCw className={cn('h-4 w-4 mr-2', fetching && 'animate-spin')} />
+        subtitle="Agent execution history — live fleet status and diagnostics"
+        badge={
+          stats ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-zinc-700 text-[10px] text-yellow-400">
+                {stats.pending} pending
+              </Badge>
+              <Badge variant="outline" className="border-zinc-700 text-[10px] text-emerald-400">
+                {stats.completed_today} today
+              </Badge>
+              {stats.total_cost_today > 0 && (
+                <Badge variant="outline" className="border-zinc-700 text-[10px] text-zinc-400">
+                  ${stats.total_cost_today.toFixed(4)}
+                </Badge>
+              )}
+            </div>
+          ) : undefined
+        }
+        actions={
+          <Button variant="outline" size="sm" className="border-zinc-700 bg-black/20 text-zinc-200 hover:bg-zinc-900" onClick={load} disabled={fetching}>
+            <RefreshCw className={cn('mr-2 h-3.5 w-3.5', fetching && 'animate-spin')} />
             Refresh
           </Button>
         }
       />
 
-      <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-3 sm:p-4 space-y-3 animate-slide-up">
-        {/* Summary bar */}
-        {stats && (
-          <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-background text-[12px] text-muted-foreground">
-            <span>
-              <span className="font-semibold text-yellow-600 dark:text-yellow-400">{stats.pending}</span> pending
-              {stats.pending > 0 && stats.avg_pending_wait_seconds > 0 && (
-                <span className="ml-1">— avg wait {formatWait(stats.avg_pending_wait_seconds)}</span>
-              )}
-            </span>
-            <span className="text-border hidden sm:inline">|</span>
-            <span>
-              <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.running}</span> running
-            </span>
-            <span className="text-border hidden sm:inline">|</span>
-            <span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed_today}</span> completed today
-            </span>
-            {stats.total_cost_today > 0 && (
-              <>
-                <span className="text-border hidden sm:inline">|</span>
-                <span className="flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  Total today: <span className="font-semibold">${stats.total_cost_today.toFixed(4)}</span>
-                </span>
-              </>
-            )}
-          </div>
-        )}
-
+      <GlassCard hover={false} className="p-3 sm:p-4">
         <Tabs value={filter} onValueChange={handleFilterChange}>
           <TabsList className="w-full flex flex-wrap">
             {['all','pending','running','completed','failed'].map(s => (
@@ -214,7 +206,7 @@ function RunsPageContent() {
             ))}
           </TabsList>
         </Tabs>
-      </div>
+      </GlassCard>
 
       {runs.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
@@ -240,14 +232,27 @@ function RunsPageContent() {
           )}
         </div>
       ) : (
-        <div className="space-y-2 animate-slide-up-delay">
-          {runs.map(run => {
+        <div className="space-y-2">
+          <AnimatePresence mode="popLayout">
+          {runs.map((run, i) => {
             const wait = queueTime(run)
             return (
-              <Link
+              <motion.div
                 key={run.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22, delay: i * 0.03, ease: [0.16, 1, 0.3, 1] }}
+              >
+              <Link
                 href={`/runs/${run.id}`}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/40 hover:shadow-sm transition-all cursor-pointer"
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:bg-secondary/40 transition-all cursor-pointer',
+                  run.status === 'running' && 'border-l-2 border-l-emerald-500/60 border-zinc-800/60',
+                  run.status === 'failed' && 'border-l-2 border-l-rose-500/60 border-zinc-800/60',
+                  run.status === 'pending' && 'border-l-2 border-l-amber-500/60 border-zinc-800/60',
+                  !['running', 'failed', 'pending'].includes(run.status) && 'border-border',
+                )}
               >
                 <div className="flex-shrink-0 h-8 w-8 rounded-full bg-[color:var(--foco-teal-dim)] flex items-center justify-center">
                   <Activity className="h-4 w-4 text-[color:var(--foco-teal)]" />
@@ -345,8 +350,10 @@ function RunsPageContent() {
                   </div>
                 </div>
               </Link>
+              </motion.div>
             )
           })}
+          </AnimatePresence>
         </div>
       )}
     </PageShell>

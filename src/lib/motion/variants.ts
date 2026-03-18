@@ -68,6 +68,29 @@ export const dispatchFlash: Variants = {
   },
 }
 
+export const staggerParent: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+}
+
+export const heroMetric: Variants = {
+  hidden: { opacity: 0, scale: 0.85 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: MOTION_SPRINGS.hero,
+  },
+}
+
+export const chartDraw: Variants = {
+  hidden: { pathLength: 0, opacity: 0 },
+  visible: {
+    pathLength: 1,
+    opacity: 1,
+    transition: { duration: 0.8, ease: MOTION_EASINGS.enter },
+  },
+}
+
 export const listItem: Variants = {
   hidden: { opacity: 0, y: 6 },
   visible: {

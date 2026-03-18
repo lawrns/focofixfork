@@ -16,6 +16,7 @@ export const MOTION_SPRINGS = {
   panel: { type: 'spring', stiffness: 260, damping: 26, mass: 0.9 },
   chip: { type: 'spring', stiffness: 340, damping: 24, mass: 0.7 },
   listReorder: { type: 'spring', stiffness: 300, damping: 30, mass: 0.8 },
+  hero: { type: 'spring', stiffness: 200, damping: 20, mass: 1.2 },
 } as const
 
 export type MotionDurationKey = keyof typeof MOTION_DURATIONS

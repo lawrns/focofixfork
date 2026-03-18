@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { PageShell } from '@/components/layout/page-shell'
-import { PageHeader } from '@/components/layout/page-header'
+import { HeroSection } from '@/components/cinematic/hero-section'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -426,18 +426,18 @@ export default function DashboardPageClient() {
   return (
     <ErrorBoundary>
       <TooltipProvider delayDuration={120}>
-        <PageShell className="space-y-3 rounded-xl bg-gradient-to-b from-background to-muted/20 px-1 py-2 sm:px-2 lg:px-3">
-          <PageHeader
+        <PageShell className="signal-field space-y-3 rounded-xl px-1 py-2 sm:px-2 lg:px-3">
+          <HeroSection
+            metric={data.runningCount}
+            metricLabel="in flight"
             title="Critter Cockpit"
             subtitle="Dispatch, observe, and diagnose the OpenClaw runtime from one operator surface."
-            primaryAction={
-              <div className="flex items-center gap-2">
-                <AttentionCountBadge count={visibleAttentionCount} />
-                <Button variant="outline" size="sm" onClick={() => data.fetchAll()} disabled={data.refreshing} className="h-8 gap-1.5">
-                  <RefreshCw className={cn('h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
-                  Refresh
-                </Button>
-              </div>
+            badge={<AttentionCountBadge count={visibleAttentionCount} />}
+            actions={
+              <Button variant="outline" size="sm" className="border-zinc-700 bg-black/20 text-zinc-200 hover:bg-zinc-900" onClick={() => data.fetchAll()} disabled={data.refreshing}>
+                <RefreshCw className={cn('mr-2 h-3.5 w-3.5', data.refreshing && 'animate-spin')} />
+                Refresh
+              </Button>
             }
           />
 
